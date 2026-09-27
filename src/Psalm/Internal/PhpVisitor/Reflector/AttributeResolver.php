@@ -12,12 +12,11 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Interner;
 use Psalm\Storage\AttributeArg;
 use Psalm\Storage\AttributeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
-
-use function strtolower;
 
 /**
  * @internal
@@ -30,21 +29,21 @@ final class AttributeResolver
         FileStorage $file_storage,
         Aliases $aliases,
         PhpParser\Node\Attribute $stmt,
-        ?string $fq_classlike_name,
+        ?int $fq_classlike_name,
     ): AttributeStorage {
         if ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-            $fq_type_string = (string)$stmt->name;
+            $fq_type_string = Interner::intern((string)$stmt->name);
         } else {
             $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->name, $aliases);
         }
 
         $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-        $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
+        $file_storage->referenced_classlikes[$fq_type_string] = $fq_type_string;
 
         $args = [];
 
         foreach ($stmt->args as $arg_node) {
-            $key = $arg_node->name->name ?? null;
+            $key = $arg_node->name !== null ? Interner::intern($arg_node->name->name) : null;
 
             $const_type = SimpleTypeInferer::infer(
                 $codebase,

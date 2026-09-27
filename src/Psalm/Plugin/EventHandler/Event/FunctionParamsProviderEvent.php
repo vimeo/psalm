@@ -22,7 +22,7 @@ final class FunctionParamsProviderEvent
      */
     public function __construct(
         private readonly StatementsSource $statements_source,
-        private readonly string $function_id,
+        private readonly int $function_id,
         private readonly array $call_args,
         private readonly ?Context $context = null,
         private readonly ?CodeLocation $code_location = null,
@@ -34,7 +34,7 @@ final class FunctionParamsProviderEvent
         return $this->statements_source;
     }
 
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
         return $this->function_id;
     }

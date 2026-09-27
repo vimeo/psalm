@@ -16,6 +16,7 @@ use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockParser;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Interner;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 final class FunctionLikeDocblockParserTest extends BaseTestCase
@@ -133,7 +134,7 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
             $this->test_code_location,
             $this->test_cased_function_id,
         );
-        $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
+        $this->assertSame([[Interner::intern('T'), 'of', 'string', false]], $function_docblock->templates);
     }
 
     public function testReturnsUnexpectedTags(): void

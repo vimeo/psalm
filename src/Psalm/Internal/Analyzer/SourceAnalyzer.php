@@ -18,6 +18,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type\Union;
 
 use function max;
@@ -46,7 +47,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @psalm-mutation-free
-     * @return array<lowercase-string, string>
+     * @return array<int, int>
      */
     #[Override]
     public function getAliasedClassesFlipped(): array
@@ -56,7 +57,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @psalm-mutation-free
-     * @return array<string, string>
+     * @return array<int, int>
      */
     #[Override]
     public function getAliasedClassesFlippedReplaceable(): array
@@ -66,21 +67,21 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getFQCLN(): ?string
+    public function getFQCLN(): ?int
     {
         return $this->source->getFQCLN();
     }
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getClassName(): ?string
+    public function getClassName(): ?int
     {
         return $this->source->getClassName();
     }
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getParentFQCLN(): ?string
+    public function getParentFQCLN(): ?int
     {
         return $this->source->getParentFQCLN();
     }
@@ -186,7 +187,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getNamespace(): ?string
+    public function getNamespace(): ?int
     {
         return $this->source->getNamespace();
     }
@@ -225,7 +226,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @psalm-mutation-free
-     * @return array<string, array<string, Union>>|null
+     * @return array<int, array<int, Union>>|null
      */
     #[Override]
     public function getTemplateTypeMap(): ?array
@@ -259,7 +260,7 @@ abstract class SourceAnalyzer implements StatementsSource
                 && $src->storage instanceof MethodStorage
                 && (
                     // Allow constructors to mutate (override immutability)
-                    $src->storage->cased_name === '__construct'
+                    $src->storage->cased_name === StrId::__construct
                     
                     // ???
                     || $src->storage->mutation_free_assumed

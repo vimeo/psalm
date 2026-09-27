@@ -8,12 +8,16 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function assert;
 use function implode;
+use function str_starts_with;
 use function strrpos;
 use function substr;
 
@@ -27,16 +31,17 @@ class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;
 
-    public string $value;
+    /** Interned class name */
+    public int $value;
 
     public bool $is_static_resolved = false;
 
     /**
-     * @param string $value the name of the object
+     * @param int $value the interned name of the object
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
-        string $value,
+        int $value,
         public bool $is_static = false,
         /**
          * Whether or not this type can represent a child of the class named in $value
@@ -45,10 +50,10 @@ class TNamedObject extends Atomic
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
-        if ($value[0] === '\\') {
-            $value = substr($value, 1);
-        }
-
+        assert(
+            !str_starts_with(Interner::$strings[$value], '\\'),
+            'Class names must be interned without a leading backslash',
+        );
         $this->value = $value;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
@@ -72,11 +77,8 @@ class TNamedObject extends Atomic
     /**
      * @return static
      */
-    public function setValue(string $value): self
+    public function setValue(int $value): self
     {
-        if ($value[0] === '\\') {
-            $value = substr($value, 1);
-        }
         if ($value === $this->value) {
             return $this;
         }
@@ -87,12 +89,9 @@ class TNamedObject extends Atomic
     /**
      * @return static
      */
-    public function setValueIsStatic(string $value, bool $is_static, ?bool $is_static_resolved = null): self
+    public function setValueIsStatic(int $value, bool $is_static, ?bool $is_static_resolved = null): self
     {
         $is_static_resolved ??= $this->is_static_resolved;
-        if ($value[0] === '\\') {
-            $value = substr($value, 1);
-        }
         if ($value === $this->value
             && $this->is_static === $is_static
             && $this->is_static_resolved === $is_static_resolved
@@ -105,21 +104,23 @@ class TNamedObject extends Atomic
         $cloned->is_static_resolved = $is_static;
         return $cloned;
     }
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
-            return $this->value . '&' . implode('&', $this->extra_types);
+            return Interner::$strings[$this->value] . '&' . implode('&', $this->extra_types);
         }
 
-        return $this->value;
+        return Interner::$strings[$this->value];
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->extra_types) {
-            return $this->value . '&' . implode(
+            return Interner::$strings[$this->value] . '&' . implode(
                 '&',
                 array_map(
                     static fn(Atomic $type): string => $type->getId($exact, true),
@@ -128,20 +129,22 @@ class TNamedObject extends Atomic
             );
         }
 
-        return $this->is_static && $exact ? $this->value . '&static' : $this->value;
+        return $this->is_static && $exact
+            ? Interner::$strings[$this->value] . '&static'
+            : Interner::$strings[$this->value];
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        if ($this->value === 'static') {
+        if ($this->value === StrId::static) {
             return 'static';
         }
 
@@ -163,16 +166,16 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        if ($this->value === 'static') {
+        if ($this->value === StrId::static) {
             return $analysis_php_version_id >= 8_00_00 ? 'static' : null;
         }
 
@@ -191,7 +194,7 @@ class TNamedObject extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
+        return ($this->value !== StrId::static && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 
     /**
@@ -221,8 +224,8 @@ class TNamedObject extends Atomic
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -260,13 +263,13 @@ class TNamedObject extends Atomic
      * @psalm-pure
      */
     public static function createFromName(
-        string $value,
+        int $value,
         bool $is_static = false,
         bool $definite_class = false,
         array $extra_types = [],
         bool $from_docblock = false,
     ): TNamedObject {
-        if ($value === 'Closure') {
+        if ($value === StrId::Closure) {
             return new TClosure(null, null, Mutations::LEVEL_ALL, [], $extra_types, $from_docblock);
         }
 

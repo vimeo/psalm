@@ -53,7 +53,6 @@ use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
 use function is_subclass_of;
-use function strtolower;
 
 /**
  * @internal
@@ -62,7 +61,7 @@ final class FunctionReturnTypeProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(FunctionReturnTypeProviderEvent): ?Union>
      * >
      */
@@ -128,11 +127,10 @@ final class FunctionReturnTypeProvider
     }
 
     /**
-     * @param lowercase-string $function_id
      * @param Closure(FunctionReturnTypeProviderEvent): ?Union $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $function_id, Closure $c): void
+    public function registerClosure(int $function_id, Closure $c): void
     {
         self::$handlers[$function_id][] = $c;
     }
@@ -140,22 +138,19 @@ final class FunctionReturnTypeProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $function_id): bool
+    public function has(int $function_id): bool
     {
-        return isset(self::$handlers[strtolower($function_id)]);
+        return isset(self::$handlers[$function_id]);
     }
 
-    /**
-     * @param  non-empty-string $function_id
-     */
     public function getReturnType(
         StatementsSource $statements_source,
-        string $function_id,
+        int $function_id,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
         CodeLocation $code_location,
     ): ?Union {
-        foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
+        foreach (self::$handlers[$function_id] ?? [] as $function_handler) {
             $event = new FunctionReturnTypeProviderEvent(
                 $statements_source,
                 $function_id,

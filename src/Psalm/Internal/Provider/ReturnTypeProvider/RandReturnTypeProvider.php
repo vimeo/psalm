@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -20,13 +21,13 @@ use function count;
 final class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['rand', 'mt_rand', 'random_int'];
+        return [StrId::rand, StrId::mt_rand, StrId::random_int];
     }
 
     #[Override]

@@ -6,14 +6,15 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
-use function strtolower;
-
 /**
  * @api
  */
 abstract class FunctionIssue extends CodeIssue
 {
-    public string $function_id;
+    /**
+     * Interned function id, as written (case-sensitive)
+     */
+    public int $function_id;
 
     /**
      * @psalm-mutation-free
@@ -21,9 +22,9 @@ abstract class FunctionIssue extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        string $function_id,
+        int $function_id,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = strtolower($function_id);
+        $this->function_id = $function_id;
     }
 }

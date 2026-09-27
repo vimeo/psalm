@@ -11,8 +11,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 
-use function strtolower;
-
 /**
  * @internal
  */
@@ -21,11 +19,11 @@ final class ContainsClassLikeVisitor extends TypeVisitor
     private bool $contains_classlike = false;
 
     /**
-     * @param lowercase-string $fq_classlike_name
+     * @param int $fq_classlike_name class name id
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_classlike_name,
+        private readonly int $fq_classlike_name,
     ) {
     }
 
@@ -36,21 +34,21 @@ final class ContainsClassLikeVisitor extends TypeVisitor
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
-            if (strtolower($type->value) === $this->fq_classlike_name) {
+            if ($type->value === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TClassConstant) {
-            if (strtolower($type->fq_classlike_name) === $this->fq_classlike_name) {
+            if ($type->fq_classlike_name === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TLiteralClassString) {
-            if (strtolower($type->value) === $this->fq_classlike_name) {
+            if ($type->class_name === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }

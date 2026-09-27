@@ -12,10 +12,12 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -68,7 +70,7 @@ final class CloneAnalyzer
                     } else {
                         $clone_method_id = new MethodIdentifier(
                             $clone_type_part->value,
-                            '__clone',
+                            StrId::__clone,
                         );
 
                         $does_method_exist = $codebase->methodExists(
@@ -88,7 +90,9 @@ final class CloneAnalyzer
                                 $codebase,
                                 $context,
                                 $clone_method_id,
-                                $statements_analyzer->getNamespace(),
+                                ($namespace = $statements_analyzer->getNamespace()) === null
+                                    ? null
+                                    : Interner::str($namespace),
                                 $location,
                                 $statements_analyzer->getSuppressedIssues(),
                             );

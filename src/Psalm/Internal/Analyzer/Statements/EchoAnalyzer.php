@@ -16,6 +16,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
@@ -33,7 +34,7 @@ final class EchoAnalyzer
         Context $context,
     ): bool {
         $echo_param = new FunctionLikeParameter(
-            'var',
+            StrId::var,
             false,
         );
 
@@ -98,7 +99,7 @@ final class EchoAnalyzer
             }
         }
 
-        if (isset($codebase->config->forbidden_functions['echo'])) {
+        if (isset($codebase->config->forbidden_functions[StrId::echo])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of echo',

@@ -16,6 +16,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
@@ -38,11 +39,11 @@ final class ExitAnalyzer
 
         $forbidden = null;
 
-        if (isset($config->forbidden_functions['exit'])
+        if (isset($config->forbidden_functions[StrId::exit])
             && $stmt->getAttribute('kind') === Exit_::KIND_EXIT
         ) {
             $forbidden = 'exit';
-        } elseif (isset($config->forbidden_functions['die'])
+        } elseif (isset($config->forbidden_functions[StrId::die])
             && $stmt->getAttribute('kind') === Exit_::KIND_DIE
         ) {
             $forbidden = 'die';
@@ -84,7 +85,7 @@ final class ExitAnalyzer
 
             if ($expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 $exit_param = new FunctionLikeParameter(
-                    'var',
+                    StrId::var,
                     false,
                 );
 

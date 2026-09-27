@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -22,8 +23,8 @@ final class TTemplateValueOf extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(
-        public string $param_name,
-        public string $defining_class,
+        public int $param_name,
+        public int $defining_class,
         public Union $as,
         bool $from_docblock = false,
     ) {
@@ -33,41 +34,41 @@ final class TTemplateValueOf extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'value-of<' . $this->param_name . '>';
+        return 'value-of<' . Interner::str($this->param_name) . '>';
     }
 
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
-            return 'value-of<' . $this->param_name . '>';
+            return 'value-of<' . Interner::str($this->param_name) . '>';
         }
 
         return 'value-of<' . $this->as->getId($exact) . '>';
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return 'value-of<' . $this->param_name . '>';
+        return 'value-of<' . Interner::str($this->param_name) . '>';
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;

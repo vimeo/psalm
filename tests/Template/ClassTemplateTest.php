@@ -1042,7 +1042,7 @@ final class ClassTemplateTest extends TestCase
                         /**
                          * @return T
                          */
-                        public function getID()
+                        public function getId()
                         {
                             return $this->id;
                         }

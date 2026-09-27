@@ -12,11 +12,13 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 
 use function in_array;
@@ -36,14 +38,14 @@ use const SORT_STRING;
 final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
         return [
-            'array_multisort',
+            StrId::array_multisort,
         ];
     }
 
@@ -84,7 +86,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
             if (!$param_type && $call_arg->value instanceof ConstFetch) {
                 $param_type = ConstFetchAnalyzer::getConstType(
                     $statements_source,
-                    $call_arg->value->name->toString(),
+                    Interner::intern($call_arg->value->name->toString()),
                     true,
                     $event->getContext(),
                 );
@@ -101,7 +103,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                 $last_array_index = $key;
                 $previous_param = 'array';
                 $params[] = new FunctionLikeParameter(
-                    'array' . ($last_array_index + 1),
+                    Interner::intern('array' . ($last_array_index + 1)),
                     // function calls will not be used by reference
                     false,
                     Type::getArray(),
@@ -139,7 +141,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                 $last_array_index = $key;
                 $previous_param = 'array';
                 $params[] = new FunctionLikeParameter(
-                    'array' . ($last_array_index + 1),
+                    Interner::intern('array' . ($last_array_index + 1)),
                     true,
                     $param_type,
                     $key === 0 ? Type::getArray() : null,
@@ -210,7 +212,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                                 'Argument ' . ( $key + 1 )
                                 . ' of array_multisort sort order/flag contains an invalid value of ' . $atomic->value,
                                 $code_location,
-                                'array_multisort',
+                                StrId::array_multisort,
                             ),
                             $statements_source->getSuppressedIssues(),
                         );
@@ -230,7 +232,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                                 . ' of array_multisort contains sort order flags'
                                 . ' and can only be used after an array parameter',
                                 $code_location,
-                                'array_multisort',
+                                StrId::array_multisort,
                             ),
                             $statements_source->getSuppressedIssues(),
                         );
@@ -247,7 +249,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                                 . ' of array_multisort are sort flags'
                                 . ' and cannot be used after a parameter with sort flags',
                                 $code_location,
-                                'array_multisort',
+                                StrId::array_multisort,
                             ),
                             $statements_source->getSuppressedIssues(),
                         );
@@ -263,7 +265,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                 }
 
                 $params[] = new FunctionLikeParameter(
-                    'array' . ($last_array_index + 1) . '_' . $previous_param,
+                    Interner::intern('array' . ($last_array_index + 1) . '_' . $previous_param),
                     false,
                     Type::getInt(),
                 );
@@ -283,7 +285,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
             $last_array_index = $key;
             $previous_param = 'array';
             $params[] = new FunctionLikeParameter(
-                'array' . ($last_array_index + 1),
+                Interner::intern('array' . ($last_array_index + 1)),
                 false,
                 Type::getArray(),
             );
@@ -296,7 +298,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                         'At least 1 array argument of array_multisort must be a variable,'
                         . ' since the sorting happens by reference and otherwise this function call does nothing',
                         $code_location,
-                        'array_multisort',
+                        StrId::array_multisort,
                     ),
                     $statements_source->getSuppressedIssues(),
                 );
@@ -307,7 +309,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                         . ', which are after the last by reference passed array argument and its flags,'
                         . ' are redundant and can be removed, since the sorting happens by reference',
                         $code_location,
-                        'array_multisort',
+                        StrId::array_multisort,
                     ),
                     $statements_source->getSuppressedIssues(),
                 );

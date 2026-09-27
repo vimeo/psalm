@@ -288,26 +288,6 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
-            'internalMethodWithCallWithCaseMisMatched' => [
-                'code' => '<?php
-                    namespace A\B {
-                        class Foo {
-                            /**
-                             * @psalm-internal A\B
-                             */
-                            public static function barBar(): void {
-                            }
-                        }
-                    }
-
-                    namespace a\b\c {
-                        class Bat {
-                            public function batBat() : void {
-                                \A\B\Foo::barBar();
-                            }
-                        }
-                    }',
-            ],
             'psalmInternalMethodWithTrailingWhitespace' => [
                 'code' => '<?php
                     namespace A\B {
@@ -710,6 +690,27 @@ final class InternalAnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'internalMethodWithCallWithCaseMismatchedNamespace' => [
+                'code' => '<?php
+                    namespace A\B {
+                        class Foo {
+                            /**
+                             * @psalm-internal A\B
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace a\b\c {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\B\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
             'internalMethodWithCall' => [
                 'code' => '<?php
                     namespace A {

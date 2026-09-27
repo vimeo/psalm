@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 
 /**
@@ -23,7 +24,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['PDOStatement'];
+        return [StrId::PDOStatement];
     }
 
     /**
@@ -33,14 +34,14 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
         $statements_source = $event->getStatementsSource();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
         $context = $event->getContext();
         $call_args = $event->getCallArgs();
         if (!$statements_source instanceof StatementsAnalyzer) {
             return null;
         }
 
-        if ($method_name_lowercase === 'setfetchmode') {
+        if ($method_name === StrId::setFetchMode) {
             if (!$context
                 || !$call_args
                 || ExpressionAnalyzer::analyze(
@@ -57,7 +58,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
             ) {
                 $params = [
                     new FunctionLikeParameter(
-                        'mode',
+                        StrId::mode,
                         false,
                         Type::getInt(),
                         Type::getInt(),
@@ -72,7 +73,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                 switch ($value) {
                     case 7: // PDO::FETCH_COLUMN
                         $params[] = new FunctionLikeParameter(
-                            'colno',
+                            StrId::colno,
                             false,
                             Type::getInt(),
                             Type::getInt(),
@@ -84,7 +85,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 
                     case 8: // PDO::FETCH_CLASS
                         $params[] = new FunctionLikeParameter(
-                            'classname',
+                            StrId::classname,
                             false,
                             Type::getClassString(),
                             Type::getClassString(),
@@ -94,7 +95,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
                         );
 
                         $params[] = new FunctionLikeParameter(
-                            'ctorargs',
+                            StrId::ctorargs,
                             false,
                             Type::getArray(),
                             Type::getArray(),
@@ -106,7 +107,7 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 
                     case 9: // PDO::FETCH_INTO
                         $params[] = new FunctionLikeParameter(
-                            'object',
+                            StrId::object,
                             false,
                             Type::getObject(),
                             Type::getObject(),

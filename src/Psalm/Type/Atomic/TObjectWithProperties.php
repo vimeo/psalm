@@ -7,9 +7,12 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -34,7 +37,7 @@ final class TObjectWithProperties extends TObject
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
-     * @param array<lowercase-string, string> $methods
+     * @param array<int, MethodIdentifier> $methods method name id => method id
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
@@ -45,10 +48,50 @@ final class TObjectWithProperties extends TObject
     ) {
         $this->extra_types = $extra_types;
 
-        $this->is_stringable_object_only =
-            $this->properties === [] && $this->methods === ['__tostring' => 'string'];
+        $this->is_stringable_object_only = self::isStringableOnly($this->properties, $this->methods);
 
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * Creates the `stringable-object` type.
+     *
+     * @psalm-pure
+     */
+    public static function makeStringable(): self
+    {
+        return new self([], [StrId::__toString => new MethodIdentifier(StrId::string, StrId::__toString)]);
+    }
+
+    /**
+     * @param array<string|int, Union> $properties
+     * @param array<int, MethodIdentifier> $methods
+     * @psalm-pure
+     */
+    private static function isStringableOnly(array $properties, array $methods): bool
+    {
+        return $properties === []
+            && count($methods) === 1
+            && isset($methods[StrId::__toString])
+            && $methods[StrId::__toString]->fq_class_name === StrId::string;
+    }
+
+    /**
+     * @param array<int, MethodIdentifier> $a
+     * @param array<int, MethodIdentifier> $b
+     * @psalm-pure
+     */
+    private static function methodsEqual(array $a, array $b): bool
+    {
+        if (count($a) !== count($b)) {
+            return false;
+        }
+        foreach ($a as $name => $method_id) {
+            if (!isset($b[$name]) || !$method_id->equals($b[$name])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -62,25 +105,23 @@ final class TObjectWithProperties extends TObject
         $cloned = clone $this;
         $cloned->properties = $properties;
 
-        $cloned->is_stringable_object_only =
-            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+        $cloned->is_stringable_object_only = self::isStringableOnly($cloned->properties, $cloned->methods);
 
         return $cloned;
     }
 
     /**
-     * @param array<lowercase-string, string> $methods
+     * @param array<int, MethodIdentifier> $methods method name id => method id
      */
     public function setMethods(array $methods): self
     {
-        if ($methods === $this->methods) {
+        if (self::methodsEqual($methods, $this->methods)) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->methods = $methods;
 
-        $cloned->is_stringable_object_only =
-            $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+        $cloned->is_stringable_object_only = self::isStringableOnly($cloned->properties, $cloned->methods);
 
         return $cloned;
     }
@@ -114,7 +155,7 @@ final class TObjectWithProperties extends TObject
                 /**
                  * @psalm-pure
                  */
-                static fn(string $name): string => $name . '()',
+                static fn(int $name): string => Interner::str($name) . '()',
                 array_keys($this->methods),
             ),
         );
@@ -126,13 +167,13 @@ final class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
@@ -165,13 +206,13 @@ final class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): string {
         return $this->getKey();
@@ -197,7 +238,7 @@ final class TObjectWithProperties extends TObject
             return false;
         }
 
-        if ($this->methods !== $other_type->methods) {
+        if (!self::methodsEqual($this->methods, $other_type->methods)) {
             return false;
         }
 
@@ -224,8 +265,8 @@ final class TObjectWithProperties extends TObject
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,

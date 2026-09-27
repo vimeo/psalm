@@ -19,18 +19,19 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function count;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -54,7 +55,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if ($stmt->class->getFirst() === 'parent') {
                     $child_fq_class_name = $context->self;
@@ -84,16 +85,18 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     if ($context->collect_initializations
                         && isset($stmt->name->name)
                         && $stmt->name->name === '__construct'
-                        && isset($class_storage->declaring_method_ids['__construct'])) {
-                        $construct_fq_class_name = $class_storage->declaring_method_ids['__construct']->fq_class_name;
+                        && isset($class_storage->declaring_method_ids[StrId::__construct])) {
+                        $construct_fq_class_name = $class_storage->declaring_method_ids[StrId::__construct]
+                            ->fq_class_name;
                         $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
                         $construct_fq_class_name = $construct_class_storage->name;
 
                         foreach ($construct_class_storage->properties as $property_name => $property_storage) {
+                            $property_var_id = '$this->' . Interner::str($property_name);
                             if ($property_storage->is_promoted
-                                && isset($context->vars_in_scope['$this->' . $property_name])) {
-                                $context_type = $context->vars_in_scope['$this->' . $property_name];
-                                $context->vars_in_scope['$this->' . $property_name] = $context_type->setProperties(
+                                && isset($context->vars_in_scope[$property_var_id])) {
+                                $context_type = $context->vars_in_scope[$property_var_id];
+                                $context->vars_in_scope[$property_var_id] = $context_type->setProperties(
                                     [
                                         'initialized_class' => $construct_fq_class_name,
                                         'initialized' => true,
@@ -104,7 +107,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
-                        $fq_class_name = (string) $context->vars_in_scope['$this'];
+                        $fq_class_name = Interner::intern((string) $context->vars_in_scope['$this']);
                         $lhs_type = $context->vars_in_scope['$this'];
                     } else {
                         $fq_class_name = $context->self;
@@ -134,7 +137,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->addReferenceToUseAlias(
-                        $stmt->class->getFirst(),
+                        Interner::intern($stmt->class->getFirst()),
                         $statements_analyzer->getFilePath(),
                         $context,
                     );
@@ -149,13 +152,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 if ($context->self) {
                     $self_storage = $codebase->classlike_storage_provider->get($context->self);
 
-                    if (isset($self_storage->used_traits[strtolower($fq_class_name)])) {
+                    if (isset($self_storage->used_traits[$fq_class_name])) {
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }
                 }
 
-                if (!isset($context->phantom_classes[strtolower($fq_class_name)])
+                if (!$context->isPhantomClass($fq_class_name)
                     && !$does_class_exist
                 ) {
                     $does_class_exist = ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -185,7 +188,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name,
+                    Interner::str($fq_class_name),
                 );
             }
 
@@ -340,7 +343,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($conditionally_removed_taints && $method_location) {
             $assignment_node = DataFlowNode::getForAssignment(
-                $method_id . '-escaped',
+                (string) $method_id . '-escaped',
                 $method_location,
                 $method_source->specialization_key,
             );

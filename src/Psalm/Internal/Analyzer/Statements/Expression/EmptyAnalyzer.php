@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
@@ -32,7 +33,7 @@ final class EmptyAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (isset($codebase->config->forbidden_functions['empty'])) {
+        if (isset($codebase->config->forbidden_functions[StrId::empty])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of empty',
@@ -53,7 +54,7 @@ final class EmptyAnalyzer
                     new InvalidArgument(
                         'Calling empty on a boolean value is almost certainly unintended',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
-                        'empty',
+                        StrId::empty,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );

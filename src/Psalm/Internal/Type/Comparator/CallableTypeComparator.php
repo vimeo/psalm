@@ -17,6 +17,8 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -34,7 +36,6 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
-use function strtolower;
 use function substr;
 
 /**
@@ -310,10 +311,11 @@ final class CallableTypeComparator
         }
 
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
+            $function_id = Interner::intern($input_type_part->value);
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
-                    strtolower($input_type_part->value),
+                    $function_id,
                 );
 
                 if ($expand_callable) {
@@ -367,7 +369,10 @@ final class CallableTypeComparator
                     $function_storage->allowed_mutations,
                 );
             } catch (UnexpectedValueException) {
-                if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
+                // may also be a method (e.g. `DateTime::format`)
+                $function_id = InternalCallMapHandler::getIdFromCallableString($input_type_part->value);
+
+                if (InternalCallMapHandler::inCallMap($function_id)) {
                     $args = [];
 
                     $nodes = new NodeDataProvider();
@@ -388,7 +393,7 @@ final class CallableTypeComparator
 
                     $matching_callable = InternalCallMapHandler::getCallableFromCallMapById(
                         $codebase,
-                        $input_type_part->value,
+                        $function_id,
                         $args,
                         $nodes,
                     );
@@ -400,7 +405,7 @@ final class CallableTypeComparator
                             $statements_analyzer,
                             $context,
                             $codebase,
-                            $input_type_part->value,
+                            $function_id,
                             null,
                             $must_use,
                         ),
@@ -438,7 +443,7 @@ final class CallableTypeComparator
                 }
             }
         } elseif ($input_type_part instanceof TNamedObject
-            && $input_type_part->value === 'Closure'
+            && $input_type_part->value === StrId::Closure
         ) {
             return new TCallable();
         } elseif ($input_type_part instanceof TNamedObject
@@ -446,7 +451,7 @@ final class CallableTypeComparator
         ) {
             $invoke_id = new MethodIdentifier(
                 $input_type_part->value,
-                '__invoke',
+                StrId::__invoke,
             );
 
             if ($codebase->methodExists($invoke_id)) {
@@ -524,9 +529,11 @@ final class CallableTypeComparator
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
-        ?string $calling_method_id = null,
+        ?MethodIdentifier $calling_method_id = null,
         ?string $file_name = null,
     ): string|MethodIdentifier|null {
+        $reference = $calling_method_id !== null ? (string) $calling_method_id : $file_name;
+
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
             || count($input_type_part->properties) > 2
@@ -543,12 +550,12 @@ final class CallableTypeComparator
                 return 'not-callable';
             }
 
-            if ($codebase && ($calling_method_id || $file_name)) {
+            if ($codebase && $reference !== null && $reference !== '') {
                 foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
-                            strtolower($lhs_atomic_type->value) . '::',
-                            $calling_method_id ?: $file_name,
+                            Interner::str($lhs_atomic_type->value) . '::',
+                            $reference,
                         );
                     } elseif ($lhs_atomic_type instanceof TTemplateParam) {
                         $lhs_template_type = $lhs_atomic_type->as;
@@ -561,11 +568,10 @@ final class CallableTypeComparator
                                 $member_id = $lhs_template_atomic_type->as;
                             }
 
-                            if ($member_id) {
-                                /** @psalm-suppress PossiblyNullArgument Psalm bug */
+                            if ($member_id !== null) {
                                 $codebase->analyzer->addMixedMemberName(
-                                    strtolower($member_id) . '::',
-                                    $calling_method_id ?: $file_name,
+                                    Interner::str($member_id) . '::',
+                                    $reference,
                                 );
                             }
                         }
@@ -581,9 +587,12 @@ final class CallableTypeComparator
         $class_name = null;
 
         if ($lhs->isSingleStringLiteral()) {
-            $class_name = $lhs->getSingleStringLiteral()->value;
-            if ($class_name[0] === '\\') {
-                $class_name = substr($class_name, 1);
+            $class_name_str = $lhs->getSingleStringLiteral()->value;
+            if ($class_name_str !== '' && $class_name_str[0] === '\\') {
+                $class_name_str = substr($class_name_str, 1);
+            }
+            if ($class_name_str !== '') {
+                $class_name = Interner::intern($class_name_str);
             }
         } elseif ($lhs->isSingle()) {
             foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
@@ -607,18 +616,18 @@ final class CallableTypeComparator
             }
         }
 
-        if ($class_name === 'self'
-            || $class_name === 'static'
-            || $class_name === 'parent'
+        if ($class_name === StrId::self
+            || $class_name === StrId::static
+            || $class_name === StrId::parent
         ) {
             return null;
         }
 
-        if (!$class_name) {
-            if ($codebase && ($calling_method_id || $file_name)) {
+        if ($class_name === null) {
+            if ($codebase && $reference !== null && $reference !== '') {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower($method_name),
-                    $calling_method_id ?: $file_name,
+                    $method_name,
+                    $reference,
                 );
             }
 
@@ -627,7 +636,7 @@ final class CallableTypeComparator
 
         return new MethodIdentifier(
             $class_name,
-            strtolower($method_name),
+            Interner::intern($method_name),
         );
     }
 }

@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -35,12 +36,12 @@ final class TGenericObject extends TNamedObject
     public array $type_params;
 
     /**
-     * @param string                $value the name of the object
+     * @param int                   $value the interned name of the object
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
-        string $value,
+        int $value,
         array $type_params,
         /** @var bool if the parameters have been remapped to another class */
         public bool $remapped_params = false,
@@ -48,10 +49,6 @@ final class TGenericObject extends TNamedObject
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
-        if ($value[0] === '\\') {
-            $value = substr($value, 1);
-        }
-
         $this->type_params = $type_params;
         parent::__construct(
             $value,
@@ -77,7 +74,7 @@ final class TGenericObject extends TNamedObject
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        return Interner::str($this->value) . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
     /**
@@ -90,13 +87,13 @@ final class TGenericObject extends TNamedObject
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
@@ -130,7 +127,7 @@ final class TGenericObject extends TNamedObject
     #[Override]
     public function getAssertionString(): string
     {
-        return $this->value;
+        return Interner::str($this->value);
     }
 
     /**
@@ -152,8 +149,8 @@ final class TGenericObject extends TNamedObject
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -218,5 +215,14 @@ final class TGenericObject extends TNamedObject
             $this->is_static,
             $intersection ?? $this->extra_types,
         );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    protected function getGenericName(): string
+    {
+        return Interner::str($this->value);
     }
 }

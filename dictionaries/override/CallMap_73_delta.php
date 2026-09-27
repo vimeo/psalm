@@ -13,7 +13,7 @@ return array (
       0 => 'int|null|string',
       'arg' => 'array<array-key, mixed>',
     ),
-    'datetime::createfromimmutable' => 
+    'DateTime::createFromImmutable' => 
     array (
       0 => 'static',
       'DateTimeImmutable' => 'DateTimeImmutable',
@@ -64,50 +64,50 @@ return array (
       0 => 'bool',
       'var' => 'mixed',
     ),
-    'jsonexception::__clone' => 
+    'JsonException::__clone' => 
     array (
       0 => 'void',
     ),
-    'jsonexception::__construct' => 
+    'JsonException::__construct' => 
     array (
       0 => 'void',
       'message=' => 'string',
       'code=' => 'int',
       'previous=' => 'Throwable|null',
     ),
-    'jsonexception::__tostring' => 
+    'JsonException::__toString' => 
     array (
       0 => 'string',
     ),
-    'jsonexception::__wakeup' => 
+    'JsonException::__wakeup' => 
     array (
       0 => 'void',
     ),
-    'jsonexception::getcode' => 
+    'JsonException::getCode' => 
     array (
       0 => 'int',
     ),
-    'jsonexception::getfile' => 
+    'JsonException::getFile' => 
     array (
       0 => 'string',
     ),
-    'jsonexception::getline' => 
+    'JsonException::getLine' => 
     array (
       0 => 'int',
     ),
-    'jsonexception::getmessage' => 
+    'JsonException::getMessage' => 
     array (
       0 => 'string',
     ),
-    'jsonexception::getprevious' => 
+    'JsonException::getPrevious' => 
     array (
       0 => 'Throwable|null',
     ),
-    'jsonexception::gettrace' => 
+    'JsonException::getTrace' => 
     array (
       0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
     ),
-    'jsonexception::gettraceasstring' => 
+    'JsonException::getTraceAsString' => 
     array (
       0 => 'string',
     ),
@@ -115,7 +115,7 @@ return array (
     array (
       0 => 'array<string, array<string, mixed>>|false',
     ),
-    'normalizer::getrawdecomposition' => 
+    'Normalizer::getRawDecomposition' => 
     array (
       0 => 'null|string',
       'input' => 'string',
@@ -171,11 +171,11 @@ return array (
       0 => 'bool',
       'info_id' => 'string',
     ),
-    'splpriorityqueue::iscorrupted' => 
+    'SplPriorityQueue::isCorrupted' => 
     array (
       0 => 'bool',
     ),
-    'spoofchecker::setrestrictionlevel' => 
+    'Spoofchecker::setRestrictionLevel' => 
     array (
       0 => 'void',
       'level' => 'int',
@@ -226,7 +226,7 @@ return array (
         'scale=' => 'int',
       ),
     ),
-    'dateinterval::__set_state' => 
+    'DateInterval::__set_state' => 
     array (
       'old' => 
       array (
@@ -238,7 +238,7 @@ return array (
         'array' => 'array<array-key, mixed>',
       ),
     ),
-    'datetimezone::__set_state' => 
+    'DateTimeZone::__set_state' => 
     array (
       'old' => 
       array (
@@ -742,7 +742,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'recursivetreeiterator::setpostfix' => 
+    'RecursiveTreeIterator::setPostfix' => 
     array (
       'old' => 
       array (
@@ -836,7 +836,7 @@ return array (
         'httponly=' => 'bool',
       ),
     ),
-    'soapserver::setclass' => 
+    'SoapServer::setClass' => 
     array (
       'old' => 
       array (

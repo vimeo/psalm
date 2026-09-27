@@ -13,6 +13,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\RedundantFlag;
 use Psalm\IssueBuffer;
@@ -161,7 +162,7 @@ final class FilterUtils
         Context $context,
         Codebase $codebase,
         CodeLocation $code_location,
-        string $function_id,
+        int $function_id,
         int $filter_int_used,
     ): array|Union|null {
         $options_arg_type = $statements_analyzer->node_data->getType($options_arg->value);
@@ -242,7 +243,7 @@ final class FilterUtils
                         // silently ignored by the function, but this usually indicates a bug
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
-                                'The "options" key in ' . $function_id . ' must be an array',
+                                'The "options" key in ' . Interner::str($function_id) . ' must be an array',
                                 $code_location,
                                 $function_id,
                             ),
@@ -267,7 +268,7 @@ final class FilterUtils
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
                                 'The "flags" key in ' .
-                                $function_id . ' must be a valid flag',
+                                Interner::str($function_id) . ' must be a valid flag',
                                 $code_location,
                                 $function_id,
                             ),
@@ -344,14 +345,14 @@ final class FilterUtils
     }
 
     public static function missingFilterCallbackCallable(
-        string $function_id,
+        int $function_id,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
     ): Union {
         IssueBuffer::maybeAdd(
             new InvalidArgument(
-                'The "options" key in ' . $function_id
+                'The "options" key in ' . Interner::str($function_id)
                 . ' must be a callable for FILTER_CALLBACK',
                 $code_location,
                 $function_id,
@@ -514,7 +515,7 @@ final class FilterUtils
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Codebase $codebase,
-        string $function_id,
+        int $function_id,
     ): array {
         $default = null;
         $min_range = null;
@@ -549,7 +550,7 @@ final class FilterUtils
                 // since the filtering/option will not do what you expect
                 IssueBuffer::maybeAdd(
                     new InvalidArgument(
-                        'The option "' . $option . '" of ' . $function_id . ' expects '
+                        'The option "' . $option . '" of ' . Interner::str($function_id) . ' expects '
                         . $all_filters[ $filter_int_used ]['options'][ $option ]->getId()
                         . ', but ' . $option_value->getId() . ' provided',
                         $code_location,
@@ -624,7 +625,7 @@ final class FilterUtils
         float|int|null $max_range,
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
-        string $function_id,
+        int $function_id,
     ): bool {
         if ($min_range !== null && $max_range !== null && $min_range > $max_range) {
             IssueBuffer::maybeAdd(
@@ -658,7 +659,7 @@ final class FilterUtils
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Codebase $codebase,
-        string $function_id,
+        int $function_id,
         bool $has_range,
         float|int|null $min_range,
         float|int|null $max_range,
@@ -1493,12 +1494,12 @@ final class FilterUtils
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Union $return_type,
-        string $function_id,
+        int $function_id,
     ): Union {
         if ($statements_analyzer->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForCallableReturn(
                 'builtin',
-                $function_id,
+                Interner::str($function_id),
                 $code_location,
             );
 
@@ -1506,7 +1507,7 @@ final class FilterUtils
 
             $function_param_sink = DataFlowNode::getForCallableArg(
                 'builtin',
-                $function_id,
+                Interner::str($function_id),
                 0,
                 $code_location,
             );

@@ -94,14 +94,14 @@ final class TIterable extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return $analysis_php_version_id >= 7_01_00 ? 'iterable' : null;
@@ -172,8 +172,8 @@ final class TIterable extends Atomic
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -209,5 +209,14 @@ final class TIterable extends Atomic
             $types ?? $this->type_params,
             $intersection ?? $this->extra_types,
         );
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    protected function getGenericName(): string
+    {
+        return $this->value;
     }
 }

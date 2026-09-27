@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -23,13 +24,13 @@ use function count;
 final class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['version_compare'];
+        return [StrId::version_compare];
     }
 
     #[Override]

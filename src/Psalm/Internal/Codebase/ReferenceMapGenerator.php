@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Interner;
 
 /**
  * @internal
@@ -27,7 +28,7 @@ final class ReferenceMapGenerator
                 continue;
             }
 
-            $fq_classlike_name = $storage->name;
+            $fq_classlike_name = Interner::str($storage->name);
 
             if (isset($expected_references[$fq_classlike_name])) {
                 $reference_dictionary[$fq_classlike_name]
@@ -36,10 +37,12 @@ final class ReferenceMapGenerator
                         . ':' . $storage->location->getColumn();
             }
 
-            foreach ($storage->methods as $method_name => $method_storage) {
+            foreach ($storage->methods as $method_name_id => $method_storage) {
                 if (!$method_storage->location) {
                     continue;
                 }
+
+                $method_name = Interner::str($method_name_id);
 
                 if (isset($expected_references[$fq_classlike_name . '::' . $method_name . '()'])) {
                     $reference_dictionary[$fq_classlike_name . '::' . $method_name . '()']
@@ -49,10 +52,12 @@ final class ReferenceMapGenerator
                 }
             }
 
-            foreach ($storage->properties as $property_name => $property_storage) {
+            foreach ($storage->properties as $property_name_id => $property_storage) {
                 if (!$property_storage->location) {
                     continue;
                 }
+
+                $property_name = Interner::str($property_name_id);
 
                 if (isset($expected_references[$fq_classlike_name . '::$' . $property_name])) {
                     $reference_dictionary[$fq_classlike_name . '::$' . $property_name]

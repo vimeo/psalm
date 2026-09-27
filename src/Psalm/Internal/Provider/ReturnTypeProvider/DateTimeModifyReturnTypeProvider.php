@@ -9,8 +9,10 @@ use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 /**
@@ -24,7 +26,7 @@ final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProvider
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['DateTime', 'DateTimeImmutable'];
+        return [StrId::DateTime, StrId::DateTimeImmutable];
     }
 
     #[Override]
@@ -32,9 +34,9 @@ final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProvider
     {
         $statements_source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
         if (!$statements_source instanceof StatementsAnalyzer
-            || $method_name_lowercase !== 'modify'
+            || $method_name !== StrId::modify
             || !isset($call_args[0])
         ) {
             return null;
@@ -64,7 +66,7 @@ final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProvider
             return Type::getFalse();
         }
         if ($has_date_time && !$has_false) {
-            return Type::parseString($event->getCalledFqClasslikeName() ?? $event->getFqClasslikeName());
+            return new Union([new TNamedObject($event->getCalledFqClasslikeName() ?? $event->getFqClasslikeName())]);
         }
 
         return null;

@@ -30,7 +30,8 @@ final class MethodStorage extends FunctionLikeStorage
 
     public ?bool $inherited_return_type = false;
 
-    public ?string $defining_fqcln = null;
+    /** Interned name of the class defining this method */
+    public ?int $defining_fqcln = null;
 
     public bool $has_docblock_param_types = false;
 
@@ -46,7 +47,7 @@ final class MethodStorage extends FunctionLikeStorage
     public int $containing_class_allowed_mutations = Mutations::LEVEL_ALL;
 
     /**
-     * @var ?array<string, bool>
+     * @var ?array<int, bool> property name id => true
      */
     public ?array $this_property_mutations = null;
 

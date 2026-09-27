@@ -15,6 +15,7 @@ use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotType;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -38,7 +39,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
-use function strtolower;
 
 /**
  * @internal
@@ -149,15 +149,15 @@ final class NegatedAssertionReconciler extends Reconciler
 
         if (!$is_equality
             && $assertion_type instanceof TNamedObject
-            && ($assertion_type->value === 'DateTime' || $assertion_type->value === 'DateTimeImmutable')
+            && ($assertion_type->value === StrId::DateTime || $assertion_type->value === StrId::DateTimeImmutable)
             && isset($existing_var_atomic_types['DateTimeInterface'])
         ) {
             $existing_var_type->removeType('DateTimeInterface');
 
-            if ($assertion_type->value === 'DateTime') {
-                $existing_var_type->addType(new TNamedObject('DateTimeImmutable'));
+            if ($assertion_type->value === StrId::DateTime) {
+                $existing_var_type->addType(new TNamedObject(StrId::DateTimeImmutable));
             } else {
-                $existing_var_type->addType(new TNamedObject('DateTime'));
+                $existing_var_type->addType(new TNamedObject(StrId::DateTime));
             }
 
             return $existing_var_type->freeze();
@@ -174,7 +174,7 @@ final class NegatedAssertionReconciler extends Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assertion_type instanceof TNamedObject
-            && strtolower($assertion_type->value) === 'traversable'
+            && $assertion_type->value === StrId::Traversable
             && isset($existing_var_atomic_types['iterable'])
         ) {
             /** @var TIterable */

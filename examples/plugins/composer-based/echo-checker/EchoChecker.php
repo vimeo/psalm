@@ -8,6 +8,7 @@ use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 
@@ -32,7 +33,7 @@ final class EchoChecker implements AfterStatementAnalysisInterface
                         new ArgumentTypeCoercion(
                             'Echo requires an unescaped string, ' . $expr_type . ' provided',
                             new CodeLocation($statements_source, $expr),
-                            'echo',
+                            StrId::echo,
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
@@ -49,7 +50,7 @@ final class EchoChecker implements AfterStatementAnalysisInterface
                             new ArgumentTypeCoercion(
                                 'Echo requires an unescaped string, ' . $expr_type . ' provided',
                                 new CodeLocation($statements_source, $expr),
-                                'echo',
+                                StrId::echo,
                             ),
                             $statements_source->getSuppressedIssues(),
                         );

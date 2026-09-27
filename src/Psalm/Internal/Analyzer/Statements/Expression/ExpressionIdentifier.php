@@ -9,12 +9,12 @@ use Psalm\Config;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 
 use function count;
 use function implode;
 use function in_array;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -23,7 +23,7 @@ final class ExpressionIdentifier
 {
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
-        ?string $this_class_name,
+        ?int $this_class_name,
         ?FileSource $source = null,
         ?int &$nesting = null,
     ): ?string {
@@ -36,19 +36,19 @@ final class ExpressionIdentifier
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
             if (count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if (!$this_class_name) {
                     $fq_class_name = $stmt->class->getFirst();
                 } else {
-                    $fq_class_name = $this_class_name;
+                    $fq_class_name = Interner::str($this_class_name);
                 }
             } else {
                 $fq_class_name = $source
-                    ? ClassLikeAnalyzer::getFQCLNFromNameObject(
+                    ? Interner::str(ClassLikeAnalyzer::getFQCLNFromNameObject(
                         $stmt->class,
                         $source->getAliases(),
-                    )
+                    ))
                     : implode('\\', $stmt->class->getParts());
             }
 
@@ -76,7 +76,7 @@ final class ExpressionIdentifier
 
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
-        ?string $this_class_name,
+        ?int $this_class_name,
         ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
@@ -102,7 +102,7 @@ final class ExpressionIdentifier
 
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
-        ?string $this_class_name,
+        ?int $this_class_name,
         ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
@@ -202,7 +202,7 @@ final class ExpressionIdentifier
 
             if ($resolved_name) {
                 if (($resolved_name === 'self' || $resolved_name === 'static') && $this_class_name) {
-                    $resolved_name = $this_class_name;
+                    $resolved_name = Interner::str($this_class_name);
                 }
 
                 return $resolved_name . '::' . $stmt->name;
@@ -227,7 +227,7 @@ final class ExpressionIdentifier
                     return null;
                 }
 
-                return $lhs_var_name . '->' . strtolower($stmt->name->name) . '()';
+                return $lhs_var_name . '->' . $stmt->name->name . '()';
             }
         }
 

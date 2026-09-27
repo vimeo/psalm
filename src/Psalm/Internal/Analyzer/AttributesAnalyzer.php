@@ -16,14 +16,17 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Interner;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\HasAttributesInterface;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
@@ -31,7 +34,6 @@ use function array_key_first;
 use function array_shift;
 use function assert;
 use function count;
-use function strtolower;
 
 /**
  * @internal
@@ -65,7 +67,7 @@ final class AttributesAnalyzer
         $appearing_non_repeatable_attributes = [];
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
             if ($attribute->name instanceof FullyQualified) {
-                $fq_attribute_name = (string) $attribute->name;
+                $fq_attribute_name = Interner::intern((string) $attribute->name);
             } else {
                 $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
             }
@@ -123,7 +125,7 @@ final class AttributesAnalyzer
             // PHP 8.5 rejects #[\NoDiscard] at declaration time when there is no return value
             // to discard (a fatal error for void/never native return types). Below 8.5 the
             // attribute class does not exist, and Psalm already reports it as unknown.
-            if ($fq_attribute_name === 'NoDiscard'
+            if ($fq_attribute_name === StrId::NoDiscard
                 && $codebase->analysis_php_version_id >= 8_05_00
                 && $storage instanceof FunctionLikeStorage
                 && $storage->signature_return_type !== null
@@ -147,7 +149,7 @@ final class AttributesAnalyzer
     private static function analyzeAttributeConstruction(
         SourceAnalyzer $source,
         Context $context,
-        string $fq_attribute_name,
+        int $fq_attribute_name,
         Attribute $attribute,
         array $suppressed_issues,
         ?ClassLikeStorage $classlike_storage = null,
@@ -172,7 +174,7 @@ final class AttributesAnalyzer
             return;
         }
 
-        if (strtolower($fq_attribute_name) === 'attribute' && $classlike_storage) {
+        if ($fq_attribute_name === StrId::Attribute && $classlike_storage) {
             if ($classlike_storage->is_trait) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
@@ -197,8 +199,8 @@ final class AttributesAnalyzer
                     ),
                     $suppressed_issues,
                 );
-            } elseif (isset($classlike_storage->methods['__construct'])
-                && $classlike_storage->methods['__construct']->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            } elseif (isset($classlike_storage->methods[StrId::__construct])
+                && $classlike_storage->methods[StrId::__construct]->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
@@ -237,7 +239,7 @@ final class AttributesAnalyzer
         $statements_analyzer->analyze(
             [new Expression(new New_($attribute->name, $attribute->args, $attribute->getAttributes()))],
             // Use a new Context for the Attribute attribute so that it can't access `self`
-            strtolower($fq_attribute_name) === "attribute" ? new Context() : $context,
+            $fq_attribute_name === StrId::Attribute ? new Context() : $context,
         );
         $context->has_returned = $had_returned;
         $context->inside_attribute = $was_inside_attribute;
@@ -259,12 +261,12 @@ final class AttributesAnalyzer
     private static function getAttributeClassFlags(
         SourceAnalyzer $source,
         string $attribute_name,
-        string $fq_attribute_name,
+        int $fq_attribute_name,
         CodeLocation $attribute_name_location,
         ?ClassLikeStorage $attribute_class_storage,
         array $suppressed_issues,
     ): int {
-        if (strtolower($fq_attribute_name) === "attribute") {
+        if ($fq_attribute_name === StrId::Attribute) {
             // We override this here because we still want to analyze attributes
             // for PHP 7.4 when the Attribute class doesn't yet exist.
             return GlobalAttribute::TARGET_CLASS;
@@ -275,7 +277,7 @@ final class AttributesAnalyzer
         }
 
         foreach ($attribute_class_storage->attributes as $attribute_attribute) {
-            if ($attribute_attribute->fq_class_name === 'Attribute') {
+            if ($attribute_attribute->fq_class_name === StrId::Attribute) {
                 if (!$attribute_attribute->args) {
                     return GlobalAttribute::TARGET_ALL; // Defaults to TARGET_ALL
                 }
@@ -333,7 +335,7 @@ final class AttributesAnalyzer
      */
     public static function analyzeGetAttributes(
         StatementsAnalyzer $statements_analyzer,
-        string $method_id,
+        MethodIdentifier $method_id,
         array $args,
     ): void {
         if (count($args) !== 1) {
@@ -343,23 +345,27 @@ final class AttributesAnalyzer
             return;
         }
 
-        switch ($method_id) {
-            case "ReflectionClass::getattributes":
+        if ($method_id->method_name !== StrId::getAttributes) {
+            return;
+        }
+
+        switch ($method_id->fq_class_name) {
+            case StrId::ReflectionClass:
                 $target = GlobalAttribute::TARGET_CLASS;
                 break;
-            case "ReflectionFunction::getattributes":
+            case StrId::ReflectionFunction:
                 $target = GlobalAttribute::TARGET_FUNCTION;
                 break;
-            case "ReflectionMethod::getattributes":
+            case StrId::ReflectionMethod:
                 $target = GlobalAttribute::TARGET_METHOD;
                 break;
-            case "ReflectionProperty::getattributes":
+            case StrId::ReflectionProperty:
                 $target = GlobalAttribute::TARGET_PROPERTY;
                 break;
-            case "ReflectionClassConstant::getattributes":
+            case StrId::ReflectionClassConstant:
                 $target = GlobalAttribute::TARGET_CLASS_CONSTANT;
                 break;
-            case "ReflectionParameter::getattributes":
+            case StrId::ReflectionParameter:
                 $target = GlobalAttribute::TARGET_PARAMETER;
                 break;
             default:
@@ -385,16 +391,18 @@ final class AttributesAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->classExists($class_string->value)) {
+        $class_name = Interner::intern($class_string->value);
+
+        if (!$codebase->classExists($class_name)) {
             return;
         }
 
-        $class_storage = $codebase->classlike_storage_provider->get($class_string->value);
+        $class_storage = $codebase->classlike_storage_provider->get($class_name);
         $arg_location = new CodeLocation($statements_analyzer, $arg);
         $class_attribute_target = self::getAttributeClassFlags(
             $statements_analyzer,
             $class_string->value,
-            $class_string->value,
+            $class_name,
             $arg_location,
             $class_storage,
             $statements_analyzer->getSuppressedIssues(),

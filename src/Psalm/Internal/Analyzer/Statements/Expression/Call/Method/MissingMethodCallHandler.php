@@ -17,19 +17,20 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
 use function array_map;
-use function array_merge;
 
 /**
  * @internal
@@ -54,12 +55,12 @@ final class MissingMethodCallHandler
         if ($stmt->isFirstClassCallable()) {
             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
                 $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[$method_id->__toString()] = true;
+                $result->addExistentMethodId($method_id);
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $class_storage->pseudo_methods[$method_name_lc],
                 );
             } else {
-                $result->non_existent_magic_method_ids[] = $method_id->__toString();
+                $result->non_existent_magic_method_ids[] = $method_id;
                 $result->return_type = self::createFirstClassCallableReturnType();
             }
 
@@ -112,7 +113,7 @@ final class MissingMethodCallHandler
 
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[$method_id->__toString()] = true;
+            $result->addExistentMethodId($method_id);
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -129,7 +130,7 @@ final class MissingMethodCallHandler
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
-                (string) $method_id,
+                $method_id,
                 true,
                 $context,
                 $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
@@ -193,14 +194,14 @@ final class MissingMethodCallHandler
             );
 
             if ($class_storage->hasSealedMethods($config)) {
-                $result->non_existent_magic_method_ids[] = $method_id->__toString();
+                $result->non_existent_magic_method_ids[] = $method_id;
 
                 return null;
             }
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[$method_id->__toString()] = true;
+        $result->addExistentMethodId($method_id);
 
         $array_values = array_map(
             static fn(PhpParser\Node\Arg $arg): PhpParser\Node\ArrayItem => new VirtualArrayItem(
@@ -215,10 +216,10 @@ final class MissingMethodCallHandler
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         return new AtomicCallContext(
-            new MethodIdentifier($fq_class_name, '__call'),
+            new MethodIdentifier($fq_class_name, StrId::__call),
             [
                 new VirtualArg(
-                    new VirtualString($method_name_lc),
+                    new VirtualString(Interner::str($method_name_lc)),
                     false,
                     false,
                     $stmt->getAttributes(),
@@ -237,7 +238,9 @@ final class MissingMethodCallHandler
     }
 
     /**
-     * @param array<string, bool> $all_intersection_existent_method_ids
+     * @param array<int, array<int, MethodIdentifier>> $all_intersection_existent_method_ids
+     * @param array{MethodIdentifier, string} $reported_method_id method id and cased method id to report
+     *                                                           if the method doesn't exist
      */
     public static function handleMissingOrMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -249,8 +252,7 @@ final class MissingMethodCallHandler
         Config $config,
         ?Union $all_intersection_return_type,
         array $all_intersection_existent_method_ids,
-        ?string $intersection_method_id,
-        string $cased_method_id,
+        array $reported_method_id,
         AtomicMethodCallAnalysisResult $result,
         ?Atomic $lhs_type_part,
     ): void {
@@ -269,7 +271,7 @@ final class MissingMethodCallHandler
             && $found_method_and_class_storage
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[$method_id->__toString()] = true;
+            $result->addExistentMethodId($method_id);
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -291,7 +293,7 @@ final class MissingMethodCallHandler
                 $statements_analyzer,
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
-                (string) $method_id,
+                $method_id,
                 true,
                 $context,
                 $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
@@ -354,7 +356,7 @@ final class MissingMethodCallHandler
         }
 
         if ($stmt->isFirstClassCallable()) {
-            $result->non_existent_class_method_ids[] = $method_id->__toString();
+            $result->non_existent_class_method_ids[] = [$method_id, (string) $method_id];
             $result->return_type = self::createFirstClassCallableReturnType();
             return;
         }
@@ -371,7 +373,7 @@ final class MissingMethodCallHandler
         }
 
         if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
-            $result->existent_method_ids = array_merge(
+            $result->existent_method_ids = AtomicMethodCallAnalysisResult::mergeMethodIds(
                 $result->existent_method_ids,
                 $all_intersection_existent_method_ids,
             );
@@ -385,9 +387,9 @@ final class MissingMethodCallHandler
             || !isset($class_storage->pseudo_methods[$method_name_lc])
         ) {
             if ($is_interface) {
-                $result->non_existent_interface_method_ids[] = $intersection_method_id ?: $cased_method_id;
+                $result->non_existent_interface_method_ids[] = $reported_method_id;
             } else {
-                $result->non_existent_class_method_ids[] = $intersection_method_id ?: $cased_method_id;
+                $result->non_existent_class_method_ids[] = $reported_method_id;
             }
         }
     }
@@ -415,14 +417,14 @@ final class MissingMethodCallHandler
      * If the method is not declared, null is returned.
      *
      * @param ClassLikeStorage $static_class_storage The called class
-     * @param lowercase-string $method_name_lc
+     * @param int $method_name_lc method name id
      * @return array{MethodStorage, ClassLikeStorage}
      * @psalm-mutation-free
      */
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
-        string $method_name_lc,
+        int $method_name_lc,
     ): ?array {
         if (isset($static_class_storage->declaring_pseudo_method_ids[$method_name_lc])) {
             $method_id = $static_class_storage->declaring_pseudo_method_ids[$method_name_lc];

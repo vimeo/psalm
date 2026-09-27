@@ -50,11 +50,12 @@ final class PropertyStorage implements HasAttributesInterface
     public bool $allow_private_mutation = false;
 
     /**
-     * @var list<non-empty-string>
+     * @var list<int> namespace name ids
      */
     public array $internal = [];
 
-    public ?string $getter_method = null;
+    /** Interned getter method name (as declared) */
+    public ?int $getter_method = null;
 
     public bool $is_promoted = false;
 

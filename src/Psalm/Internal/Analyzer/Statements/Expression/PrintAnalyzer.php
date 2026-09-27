@@ -16,6 +16,7 @@ use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
@@ -65,7 +66,7 @@ final class PrintAnalyzer
                 $stmt->expr,
                 $context,
                 null,
-                new FunctionLikeParameter('var', false),
+                new FunctionLikeParameter(StrId::var, false),
                 false,
                 null,
                 true,
@@ -76,7 +77,7 @@ final class PrintAnalyzer
             }
         }
 
-        if (isset($codebase->config->forbidden_functions['print'])) {
+        if (isset($codebase->config->forbidden_functions[StrId::print])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of print',

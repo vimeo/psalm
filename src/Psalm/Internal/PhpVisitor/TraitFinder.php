@@ -6,13 +6,13 @@ namespace Psalm\Internal\PhpVisitor;
 
 use Override;
 use PhpParser;
+use Psalm\Interner;
 use ReflectionClass;
 use Throwable;
 
 use function count;
 use function end;
 use function explode;
-use function strcasecmp;
 use function trait_exists;
 
 /**
@@ -26,12 +26,16 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private array $matching_trait_nodes = [];
 
+    private readonly string $fq_trait_name;
+
     /**
+     * @param int $fq_trait_name interned trait name
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_trait_name,
+        int $fq_trait_name,
     ) {
+        $this->fq_trait_name = Interner::str($fq_trait_name);
     }
 
     #[Override]
@@ -48,10 +52,10 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
                 $fq_trait_name_parts = explode('\\', $this->fq_trait_name);
 
                 /** @psalm-suppress PossiblyNullPropertyFetch */
-                if ($node->name->name !== null && strcasecmp($node->name->name, end($fq_trait_name_parts)) === 0) {
+                if ($node->name->name !== null && $node->name->name === end($fq_trait_name_parts)) {
                     $this->matching_trait_nodes[] = $node;
                 }
-            } elseif (strcasecmp($resolved_name, $this->fq_trait_name) === 0) {
+            } elseif ($resolved_name === $this->fq_trait_name) {
                 $this->matching_trait_nodes[] = $node;
             }
         }

@@ -10,11 +10,11 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Type;
 
 use function implode;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -41,7 +41,7 @@ final class InstanceofAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
                 return false;
             }
-        } elseif (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
+        } elseif (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
             if ($context->check_classes) {
                 $codebase = $statements_analyzer->getCodebase();
 
@@ -59,16 +59,18 @@ final class InstanceofAnalyzer
                         $statements_analyzer->getFilePath(),
                         $stmt->class,
                         $codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)
-                            ? $fq_class_name
+                            ? Interner::str($fq_class_name)
                             : '*'
                                 . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
                                     ? '\\'
-                                    : $statements_analyzer->getNamespace() . '-')
+                                    : (($namespace = $statements_analyzer->getNamespace()) === null
+                                        ? ''
+                                        : Interner::str($namespace)) . '-')
                                 . implode('\\', $stmt->class->getParts()),
                     );
                 }
 
-                if (!isset($context->phantom_classes[strtolower($fq_class_name)])) {
+                if (!isset($context->phantom_classes[$fq_class_name])) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_class_name,

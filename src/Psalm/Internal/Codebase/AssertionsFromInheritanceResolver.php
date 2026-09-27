@@ -11,7 +11,6 @@ use Psalm\Storage\Possibilities;
 
 use function array_filter;
 use function array_values;
-use function strtolower;
 
 /**
  * @internal
@@ -35,24 +34,29 @@ final class AssertionsFromInheritanceResolver
         MethodStorage $method_storage,
         ClassLikeStorage $called_class,
     ): array {
-        $method_name_lc = strtolower($method_storage->cased_name ?? '');
-
         $assertions = $method_storage->assertions;
+
+        if ($method_storage->cased_name === null) {
+            return $assertions;
+        }
+
+        $method_name = $method_storage->cased_name;
+
         $inherited_classes_and_interfaces = array_values(array_filter([
-            ...$called_class->parent_classes,
-            ...$called_class->class_implements,
-        ], fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
+            ...array_values($called_class->parent_classes),
+            ...array_values($called_class->class_implements),
+        ], fn(int $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
 
         foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(
                 $potential_assertion_providing_class,
             );
-            if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name_lc])) {
+            if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name])) {
                 continue;
             }
 
             $potential_assertion_providing_method_storage = $potential_assertion_providing_classlike_storage
-                ->methods[$method_name_lc];
+                ->methods[$method_name];
 
             /**
              * Since the inheritance does not provide its own assertions, we have to detect those

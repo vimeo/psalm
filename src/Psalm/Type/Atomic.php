@@ -14,8 +14,10 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Interner;
 use Psalm\Storage\Mutations;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -71,13 +73,12 @@ use Psalm\Type\Atomic\TVoid;
 use Stringable;
 
 use function array_any;
-use function array_keys;
 use function count;
 use function is_array;
 use function is_numeric;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
+use function substr;
 
 /**
  * @psalm-immutable
@@ -131,7 +132,7 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
+    public function replaceClassLike(int $old, int $new): self
     {
         $type = $this;
         /** @psalm-suppress ImpureMethodCall ClasslikeReplacer will always clone */
@@ -145,8 +146,8 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * @psalm-suppress InaccessibleProperty Allowed during construction
      * @param int $analysis_php_version_id contains php version when the type comes from signature
-     * @param array<string, array<string, Union>> $template_type_map
-     * @param array<string, TypeAlias> $type_aliases
+     * @param array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param array<int, TypeAlias> $type_aliases alias name id => alias
      */
     public static function create(
         string $value,
@@ -174,8 +175,8 @@ abstract class Atomic implements TypeNode, Stringable
     /**
      * @psalm-suppress InaccessibleProperty Allowed during construction
      * @param int $analysis_php_version_id contains php version when the type comes from signature
-     * @param array<string, array<string, Union>> $template_type_map
-     * @param array<string, TypeAlias> $type_aliases
+     * @param array<int, array<int, Union>> $template_type_map
+     * @param array<int, TypeAlias> $type_aliases
      */
     private static function createInner(
         string $value,
@@ -266,7 +267,7 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'callable-array':
                 $classString = new TClassString(
-                    'object',
+                    StrId::object,
                     null,
                     false,
                     false,
@@ -282,7 +283,7 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'callable-list':
                 $classString = new TClassString(
-                    'object',
+                    StrId::object,
                     null,
                     false,
                     false,
@@ -317,7 +318,7 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TNonEmptyLowercaseString();
 
             case 'resource':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TResource();
+                return $analysis_php_version_id !== null ? new TNamedObject(Interner::intern($value)) : new TResource();
 
             case 'resource (closed)':
             case 'closed-resource':
@@ -336,43 +337,43 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TIntRange(0, null);
 
             case 'numeric':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TNumeric();
+                return $analysis_php_version_id !== null ? new TNamedObject(Interner::intern($value)) : new TNumeric();
 
             case 'true':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_02_00) {
                     return new TTrue();
                 }
-                return new TNamedObject($value);
+                return new TNamedObject(Interner::intern($value));
 
             case 'false':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
                     return new TFalse();
                 }
 
-                return new TNamedObject($value);
+                return new TNamedObject(Interner::intern($value));
 
             case 'scalar':
-                return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();
+                return $analysis_php_version_id !== null ? new TNamedObject(Interner::intern($value)) : new TScalar();
 
             case 'null':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_00_00) {
                     return new TNull();
                 }
 
-                return new TNamedObject($value);
+                return new TNamedObject(Interner::intern($value));
 
             case 'mixed':
                 if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
                     return new TMixed();
                 }
 
-                return new TNamedObject($value);
+                return new TNamedObject(Interner::intern($value));
 
             case 'callable-object':
                 return new TCallableObject();
 
             case 'stringable-object':
-                return new TObjectWithProperties([], ['__tostring' => 'string']);
+                return TObjectWithProperties::makeStringable();
 
             case 'class-string':
                 return new TClassString();
@@ -406,7 +407,7 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TNonspecificLiteralInt();
 
             case '$this':
-                return new TNamedObject('static');
+                return new TNamedObject(StrId::static);
 
             case 'non-empty-scalar':
                 return new TNonEmptyScalar;
@@ -442,18 +443,18 @@ abstract class Atomic implements TypeNode, Stringable
             throw new TypeParseTreeException('First character of type cannot be numeric');
         }
 
-        if (isset($template_type_map[$value])) {
-            $first_class = array_keys($template_type_map[$value])[0];
+        $value_id = Interner::intern($value);
 
+        foreach ($template_type_map[$value_id] ?? [] as $first_class => $template_as) {
             return new TTemplateParam(
-                $value,
-                $template_type_map[$value][$first_class],
+                $value_id,
+                $template_as,
                 $first_class,
             );
         }
 
-        if (isset($type_aliases[$value])) {
-            $type_alias = $type_aliases[$value];
+        if (isset($type_aliases[$value_id])) {
+            $type_alias = $type_aliases[$value_id];
 
             if ($type_alias instanceof LinkableTypeAlias) {
                 return new TTypeAlias($type_alias->declaring_fq_classlike_name, $type_alias->alias_name);
@@ -462,7 +463,7 @@ abstract class Atomic implements TypeNode, Stringable
             throw new TypeParseTreeException('Invalid type alias ' . $value . ' provided');
         }
 
-        return new TNamedObject($value);
+        return new TNamedObject($value[0] === '\\' ? Interner::intern(substr($value, 1)) : $value_id);
     }
 
     /**
@@ -540,7 +541,7 @@ abstract class Atomic implements TypeNode, Stringable
             return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
         }
         if ($this->hasTraversableInterface($codebase)) {
-            if (strtolower($this->value) === "traversable") {
+            if ($this->value === StrId::Traversable) {
                 if ($this instanceof TGenericObject) {
                     if (count($this->type_params) > 2) {
                         throw new InvalidArgumentException('Too many templates!');
@@ -550,10 +551,11 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TIterable([Type::getMixed(), Type::getMixed()]);
             }
 
+            /** @psalm-suppress ImpureMethodCall */
             $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $this,
-                new TGenericObject("Traversable", [Type::getMixed(), Type::getMixed()]),
+                new TGenericObject(StrId::Traversable, [Type::getMixed(), Type::getMixed()]),
             );
             if (count($implemented_traversable_templates) > 2) {
                 throw new InvalidArgumentException('Too many templates!');
@@ -577,14 +579,14 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                strtolower($this->value) === 'traversable'
+                $this->value === StrId::Traversable
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'Traversable',
+                        StrId::Traversable,
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'Traversable',
+                        StrId::Traversable,
                     )))
                 || (
                     $this->extra_types
@@ -600,14 +602,14 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                strtolower($this->value) === 'countable'
+                $this->value === StrId::Countable
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'Countable',
+                        StrId::Countable,
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'Countable',
+                        StrId::Countable,
                     )))
                 || (
                     $this->extra_types
@@ -625,7 +627,7 @@ abstract class Atomic implements TypeNode, Stringable
             || $this instanceof TKeyedArray
             || $this instanceof TClassStringMap
             || $this->hasArrayAccessInterface($codebase)
-            || ($this instanceof TNamedObject && $this->value === 'SimpleXMLElement');
+            || ($this instanceof TNamedObject && $this->value === StrId::SimpleXMLElement);
     }
 
     public function isArrayAccessibleWithIntOrStringKey(Codebase $codebase): bool
@@ -638,14 +640,14 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                strtolower($this->value) === 'arrayaccess'
+                $this->value === StrId::ArrayAccess
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
-                        'ArrayAccess',
+                        StrId::ArrayAccess,
                     ) || $codebase->interfaceExtends(
                         $this->value,
-                        'ArrayAccess',
+                        StrId::ArrayAccess,
                     )))
                 || (
                     $this->extra_types
@@ -775,13 +777,13 @@ abstract class Atomic implements TypeNode, Stringable
      * Returns the detailed description of the type, either in phpdoc standard format or Psalm format depending on flag
      * Default to self::getKey()
      *
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-mutation-free
      */
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         return $this->getKey();
@@ -792,12 +794,12 @@ abstract class Atomic implements TypeNode, Stringable
      *  with the given php version
      *
      * @psalm-mutation-free
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     abstract public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string;
 
@@ -814,8 +816,8 @@ abstract class Atomic implements TypeNode, Stringable
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -888,8 +890,8 @@ abstract class Atomic implements TypeNode, Stringable
         }
 
         if ($this instanceof TNamedObject
-            && $this->value !== 'SimpleXMLElement'
-            && $this->value !== 'SimpleXMLIterator') {
+            && $this->value !== StrId::SimpleXMLElement
+            && $this->value !== StrId::SimpleXMLIterator) {
             return true;
         }
 

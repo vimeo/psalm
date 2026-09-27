@@ -42,7 +42,6 @@ use function array_merge;
 use function array_reduce;
 use function count;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -100,7 +99,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier
-                && strtolower($stmt->name->name) === '__construct'
+                && $stmt->name->name === '__construct'
             ) {
                 IssueBuffer::maybeAdd(
                     new DirectConstructorCall(
@@ -225,7 +224,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
             if ($codebase->config->memoize_method_calls || $result->can_memoize) {
-                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
+                $method_var_id = $lhs_var_id . '->' . $stmt->name->name . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];
@@ -274,7 +273,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             if ($context->check_methods) {
                 IssueBuffer::maybeAdd(
                     new UndefinedMagicMethod(
-                        'Magic method ' . $result->non_existent_magic_method_ids[0] . ' does not exist',
+                        'Magic method ' . (string) $result->non_existent_magic_method_ids[0] . ' does not exist',
                         new CodeLocation($source, $stmt->name),
                         $result->non_existent_magic_method_ids[0],
                     ),
@@ -288,18 +287,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
-                            'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_class_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0],
+                            $result->non_existent_class_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedMethod(
-                            'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_class_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0],
+                            $result->non_existent_class_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -314,18 +313,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
-                            'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_interface_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0],
+                            $result->non_existent_interface_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedInterfaceMethod(
-                            'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_interface_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0],
+                            $result->non_existent_interface_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -342,7 +341,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 new TooManyArguments(
                     'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id,
+                    $error_method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -355,7 +354,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 new TooFewArguments(
                     'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id,
+                    $error_method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );

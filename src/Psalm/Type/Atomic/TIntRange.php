@@ -45,13 +45,13 @@ final class TIntRange extends TInt
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         return $use_phpdoc_format ?

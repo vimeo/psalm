@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -73,9 +74,9 @@ final class MutableUnion implements TypeNode
     public bool $initialized = true;
 
     /**
-     * Which class the type was initialised in
+     * Which class the type was initialised in (interned class name)
      */
-    public ?string $initialized_class = null;
+    public ?int $initialized_class = null;
 
     /**
      * Whether or not the type has been checked yet
@@ -374,7 +375,7 @@ final class MutableUnion implements TypeNode
                     $this->types['false'] = new TFalse;
                 } elseif (isset($this->types['iterable'])) {
                     if ($old_type_part instanceof TNamedObject
-                        && $old_type_part->value === 'Traversable'
+                        && $old_type_part->value === StrId::Traversable
                         && !isset($this->types['array'])
                     ) {
                         $this->removeType('iterable');
@@ -385,7 +386,7 @@ final class MutableUnion implements TypeNode
                         && !isset($this->types['traversable'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['traversable'] = new TNamedObject('Traversable');
+                        $this->types['traversable'] = new TNamedObject(StrId::Traversable);
                     }
                 } elseif (isset($this->types['array-key'])) {
                     if ($old_type_part instanceof TString

@@ -18,14 +18,13 @@ use Psalm\Type\Union;
 final class AfterFunctionCallAnalysisEvent
 {
     /**
-     * @param non-empty-string $function_id
      * @param FileManipulation[] $file_replacements
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly FuncCall $expr,
-        private readonly string $function_id,
+        private readonly int $function_id,
         private readonly Context $context,
         private readonly StatementsSource $statements_source,
         private readonly Codebase $codebase,
@@ -43,10 +42,9 @@ final class AfterFunctionCallAnalysisEvent
     }
 
     /**
-     * @return non-empty-string
      * @psalm-mutation-free
      */
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
         return $this->function_id;
     }

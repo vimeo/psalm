@@ -18,10 +18,11 @@ final class AttributeArg
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
+     * @param ?int $name interned argument name, for named arguments
      * @psalm-mutation-free
      */
     public function __construct(
-        public readonly ?string $name,
+        public readonly ?int $name,
         public readonly Union|UnresolvedConstantComponent $type,
         public readonly CodeLocation $location,
     ) {

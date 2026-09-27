@@ -971,14 +971,7 @@ final class ClassTest extends TestCase
                 'code' => '<?php
                     class Foo {}
                     (new foo());',
-                'error_message' => 'InvalidClass',
-            ],
-            'wrongCaseClassWithCall' => [
-                'code' => '<?php
-                    class A {}
-                    needsA(new A);
-                    function needsA(a $x): void {}',
-                'error_message' => 'InvalidClass',
+                'error_message' => 'UndefinedClass',
             ],
             'invalidThisFetch' => [
                 'code' => '<?php
@@ -1472,7 +1465,7 @@ final class ClassTest extends TestCase
                      * @psalm-inheritors BarClass
                      */
                     interface InterfaceB {}
-                    class BazClass implements InterFaceA, InterFaceB {}
+                    class BazClass implements InterfaceA, InterfaceB {}
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],

@@ -3,11 +3,11 @@
 return array (
   'added' => 
   array (
-    'datetimeinterface::__serialize' => 
+    'DateTimeInterface::__serialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'datetimeinterface::__unserialize' => 
+    'DateTimeInterface::__unserialize' => 
     array (
       0 => 'void',
       'data' => 'array<array-key, mixed>',
@@ -268,13 +268,13 @@ return array (
       'host' => 'string',
       'port' => 'int',
     ),
-    'ziparchive::getstreamindex' => 
+    'ZipArchive::getStreamIndex' => 
     array (
       0 => 'false|resource',
       'index' => 'int',
       'flags=' => 'int',
     ),
-    'ziparchive::getstreamname' => 
+    'ZipArchive::getStreamName' => 
     array (
       0 => 'false|resource',
       'name' => 'string',
@@ -554,178 +554,178 @@ return array (
   ),
   'removed' => 
   array (
-    'ds\\deque::allocate' => 
+    'Ds\\Deque::allocate' => 
     array (
       0 => 'void',
       'capacity' => 'int',
     ),
-    'ds\\deque::apply' => 
+    'Ds\\Deque::apply' => 
     array (
       0 => 'void',
       'callback' => 'impure-callable',
     ),
-    'ds\\deque::clear' => 
+    'Ds\\Deque::clear' => 
     array (
       0 => 'void',
     ),
-    'ds\\deque::get' => 
+    'Ds\\Deque::get' => 
     array (
       0 => 'void',
       'index' => 'int',
     ),
-    'ds\\deque::insert' => 
+    'Ds\\Deque::insert' => 
     array (
       0 => 'void',
       'index' => 'int',
       '...values=' => 'mixed',
     ),
-    'ds\\deque::jsonserialize' => 
+    'Ds\\Deque::jsonSerialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'ds\\deque::push' => 
+    'Ds\\Deque::push' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',
     ),
-    'ds\\deque::reverse' => 
+    'Ds\\Deque::reverse' => 
     array (
       0 => 'void',
     ),
-    'ds\\deque::rotate' => 
+    'Ds\\Deque::rotate' => 
     array (
       0 => 'void',
       'rotations' => 'int',
     ),
-    'ds\\deque::set' => 
+    'Ds\\Deque::set' => 
     array (
       0 => 'void',
       'index' => 'int',
       'value' => 'mixed',
     ),
-    'ds\\deque::sort' => 
+    'Ds\\Deque::sort' => 
     array (
       0 => 'void',
       'comparator=' => 'impure-callable|null',
     ),
-    'ds\\deque::sum' => 
+    'Ds\\Deque::sum' => 
     array (
       0 => 'float|int',
     ),
-    'ds\\deque::unshift' => 
+    'Ds\\Deque::unshift' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',
     ),
-    'ds\\priorityqueue::allocate' => 
+    'Ds\\PriorityQueue::allocate' => 
     array (
       0 => 'void',
       'capacity' => 'int',
     ),
-    'ds\\priorityqueue::clear' => 
+    'Ds\\PriorityQueue::clear' => 
     array (
       0 => 'void',
     ),
-    'ds\\priorityqueue::jsonserialize' => 
+    'Ds\\PriorityQueue::jsonSerialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'ds\\priorityqueue::push' => 
+    'Ds\\PriorityQueue::push' => 
     array (
       0 => 'void',
       'value' => 'mixed',
       'priority' => 'int',
     ),
-    'ds\\queue::allocate' => 
+    'Ds\\Queue::allocate' => 
     array (
       0 => 'void',
       'capacity' => 'int',
     ),
-    'ds\\queue::clear' => 
+    'Ds\\Queue::clear' => 
     array (
       0 => 'void',
     ),
-    'ds\\queue::jsonserialize' => 
+    'Ds\\Queue::jsonSerialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'ds\\queue::push' => 
+    'Ds\\Queue::push' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',
     ),
-    'ds\\stack::allocate' => 
+    'Ds\\Stack::allocate' => 
     array (
       0 => 'void',
       'capacity' => 'int',
     ),
-    'ds\\stack::clear' => 
+    'Ds\\Stack::clear' => 
     array (
       0 => 'void',
     ),
-    'ds\\stack::jsonserialize' => 
+    'Ds\\Stack::jsonSerialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'ds\\stack::push' => 
+    'Ds\\Stack::push' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',
     ),
-    'ds\\vector::allocate' => 
+    'Ds\\Vector::allocate' => 
     array (
       0 => 'void',
       'capacity' => 'int',
     ),
-    'ds\\vector::apply' => 
+    'Ds\\Vector::apply' => 
     array (
       0 => 'void',
       'callback' => 'impure-callable',
     ),
-    'ds\\vector::clear' => 
+    'Ds\\Vector::clear' => 
     array (
       0 => 'void',
     ),
-    'ds\\vector::insert' => 
+    'Ds\\Vector::insert' => 
     array (
       0 => 'void',
       'index' => 'int',
       '...values=' => 'mixed',
     ),
-    'ds\\vector::jsonserialize' => 
+    'Ds\\Vector::jsonSerialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'ds\\vector::push' => 
+    'Ds\\Vector::push' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',
     ),
-    'ds\\vector::reverse' => 
+    'Ds\\Vector::reverse' => 
     array (
       0 => 'void',
     ),
-    'ds\\vector::rotate' => 
+    'Ds\\Vector::rotate' => 
     array (
       0 => 'void',
       'rotations' => 'int',
     ),
-    'ds\\vector::set' => 
+    'Ds\\Vector::set' => 
     array (
       0 => 'void',
       'index' => 'int',
       'value' => 'mixed',
     ),
-    'ds\\vector::sort' => 
+    'Ds\\Vector::sort' => 
     array (
       0 => 'void',
       'comparator=' => 'impure-callable|null',
     ),
-    'ds\\vector::sum' => 
+    'Ds\\Vector::sum' => 
     array (
       0 => 'float|int',
     ),
-    'ds\\vector::unshift' => 
+    'Ds\\Vector::unshift' => 
     array (
       0 => 'void',
       '...values=' => 'mixed',

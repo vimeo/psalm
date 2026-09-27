@@ -28,6 +28,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\StatementsSource;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -57,7 +58,6 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
-use function strtolower;
 
 /**
  * @internal
@@ -666,22 +666,22 @@ final class ArithmeticOpAnalyzer
          * // Todo remove this hint reset after fixing #10267
          */
 
-        if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
-            || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
+        if (($left_type_part instanceof TNamedObject && $left_type_part->value === StrId::GMP)
+            || ($right_type_part instanceof TNamedObject && $right_type_part->value === StrId::GMP)
         ) {
             if ((($left_type_part instanceof TNamedObject
-                        && strtolower($left_type_part->value) === 'gmp')
+                        && $left_type_part->value === StrId::GMP)
                     && (($right_type_part instanceof TNamedObject
-                            && strtolower($right_type_part->value) === 'gmp')
+                            && $right_type_part->value === StrId::GMP)
                         || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
                 || (($right_type_part instanceof TNamedObject
-                        && strtolower($right_type_part->value) === 'gmp')
+                        && $right_type_part->value === StrId::GMP)
                     && (($left_type_part instanceof TNamedObject
-                            && strtolower($left_type_part->value) === 'gmp')
+                            && $left_type_part->value === StrId::GMP)
                         || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
             ) {
                 $result_type = Type::combineUnionTypes(
-                    new Union([new TNamedObject('GMP')]),
+                    new Union([new TNamedObject(StrId::GMP)]),
                     $result_type,
                 );
             } else {
@@ -708,11 +708,11 @@ final class ArithmeticOpAnalyzer
         ) {
             $non_decimal_type = null;
             if ($left_type_part instanceof TNamedObject
-                && strtolower($left_type_part->value) === "decimal\\decimal"
+                && $left_type_part->value === StrId::Decimal_Decimal
             ) {
                 $non_decimal_type = $right_type_part;
             } elseif ($right_type_part instanceof TNamedObject
-                && strtolower($right_type_part->value) === "decimal\\decimal"
+                && $right_type_part->value === StrId::Decimal_Decimal
             ) {
                 $non_decimal_type = $left_type_part;
             }
@@ -720,10 +720,10 @@ final class ArithmeticOpAnalyzer
                 if ($non_decimal_type instanceof TInt
                     || $non_decimal_type instanceof TNumericString
                     || $non_decimal_type instanceof TNamedObject
-                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+                        && $non_decimal_type->value === StrId::Decimal_Decimal
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject(StrId::Decimal_Decimal)]),
                         $result_type,
                     );
                 } else {

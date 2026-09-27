@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Interner;
 
 /**
  * Denotes an enum with a specific value
@@ -14,7 +15,11 @@ use Override;
  */
 final class TEnumCase extends TNamedObject
 {
-    public function __construct(string $fq_enum_name, public string $case_name)
+    /**
+     * @param int $fq_enum_name interned enum name
+     * @param int $case_name interned case name
+     */
+    public function __construct(int $fq_enum_name, public int $case_name)
     {
         parent::__construct($fq_enum_name);
     }
@@ -22,23 +27,23 @@ final class TEnumCase extends TNamedObject
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'enum(' . $this->value . '::' . $this->case_name . ')';
+        return 'enum(' . Interner::str($this->value) . '::' . Interner::str($this->case_name) . ')';
     }
 
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        return 'enum(' . $this->value . '::' . $this->case_name . ')';
+        return 'enum(' . Interner::str($this->value) . '::' . Interner::str($this->case_name) . ')';
     }
 
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return $this->value;
+        return Interner::str($this->value);
     }
 
     /**
@@ -51,15 +56,15 @@ final class TEnumCase extends TNamedObject
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->value . '::' . $this->case_name;
+        return Interner::str($this->value) . '::' . Interner::str($this->case_name);
     }
 }

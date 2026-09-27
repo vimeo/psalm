@@ -42,11 +42,11 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     public ?string $description = null;
 
     /**
-     * @param string $name parameter name, without the "$" prefix
+     * @param int $name interned parameter name, without the "$" prefix
      * @psalm-mutation-free
      */
     public function __construct(
-        public string $name,
+        public int $name,
         public bool $by_ref,
         public ?Union $type = null,
         public ?Union $signature_type = null,

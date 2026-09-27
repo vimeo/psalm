@@ -32,6 +32,8 @@ use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Lz4Serializer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
@@ -49,13 +51,13 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use ReflectionFunction;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
 use XdgBaseDir\Xdg;
-use stdClass;
 
 use function array_key_exists;
 use function array_merge;
@@ -86,6 +88,7 @@ use function is_a;
 use function is_array;
 use function is_dir;
 use function is_file;
+use function is_int;
 use function is_resource;
 use function is_string;
 use function json_decode;
@@ -190,7 +193,7 @@ final class Config
     /**
      * These are special object classes that allow any and all properties to be get/set on them
      *
-     * @var array<int, lowercase-string>
+     * @var list<int> class name ids
      */
     private array $universal_object_crates;
 
@@ -289,7 +292,7 @@ final class Config
     private array $issue_handlers = [];
 
     /**
-     * @var array<int, string>
+     * @var list<int> class name ids
      */
     private array $mock_classes = [];
 
@@ -360,22 +363,22 @@ final class Config
     public bool $ignore_internal_nullable_issues = false;
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> class name id => true
      */
     public array $ignored_exceptions = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> class name id => true
      */
     public array $ignored_exceptions_in_global_scope = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> class name id => true
      */
     public array $ignored_exceptions_and_descendants = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> class name id => true
      */
     public array $ignored_exceptions_and_descendants_in_global_scope = [];
 
@@ -388,11 +391,11 @@ final class Config
     public bool $ensure_override_attribute = true;
 
     /**
-     * @var array<lowercase-string, bool>
+     * @var array<int, bool> function name id => true
      */
     public array $forbidden_functions = [];
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> constant name id => true
      */
     public array $forbidden_constants = [];
 
@@ -446,10 +449,10 @@ final class Config
 
     public bool $allow_named_arg_calls = true;
 
-    /** @var array<string, mixed> */
+    /** @var array<int, mixed> constant name id => value */
     private array $predefined_constants = [];
 
-    /** @var array<callable-string, bool> */
+    /** @var array<int, bool> function name id => true */
     private array $predefined_functions = [];
 
     /** @var list<ClassLoader> $autoloaders */
@@ -629,7 +632,7 @@ final class Config
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();
         $this->universal_object_crates = [
-            strtolower(stdClass::class),
+            StrId::stdClass,
         ];
     }
 
@@ -1329,7 +1332,7 @@ final class Config
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
-                $config->mock_classes[] = strtolower((string)$mock_class['name']);
+                $config->mock_classes[] = Interner::intern((string)$mock_class['name']);
             }
         }
 
@@ -1337,14 +1340,14 @@ final class Config
             /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
                 $classString = (string) $universal_object_crate['name'];
-                $config->addUniversalObjectCrate($classString);
+                $config->addUniversalObjectCrate(Interner::intern($classString));
             }
         }
 
         if (isset($config_xml->ignoreExceptions)) {
             if (isset($config_xml->ignoreExceptions->class)) {
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
-                    $exception_name = (string) $exception_class['name'];
+                    $exception_name = Interner::intern((string) $exception_class['name']);
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
                     if ($global_attribute_text !== 'true' && $global_attribute_text !== '1') {
                         $config->ignored_exceptions[$exception_name] = true;
@@ -1354,7 +1357,7 @@ final class Config
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
-                    $exception_name = (string) $exception_class['name'];
+                    $exception_name = Interner::intern((string) $exception_class['name']);
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
                     if ($global_attribute_text !== 'true' && $global_attribute_text !== '1') {
                         $config->ignored_exceptions_and_descendants[$exception_name] = true;
@@ -1367,14 +1370,14 @@ final class Config
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
-                $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
+                $config->forbidden_functions[Interner::intern((string) $forbidden_function['name'])] = true;
             }
         }
 
         if (isset($config_xml->forbiddenConstants) && isset($config_xml->forbiddenConstants->constant)) {
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenConstants->constant as $forbidden_function) {
-                $config->forbidden_constants[(string) $forbidden_function['name']] = true;
+                $config->forbidden_constants[Interner::intern((string) $forbidden_function['name'])] = true;
             }
         }
 
@@ -1715,7 +1718,8 @@ final class Config
             // plugins from Psalm directory or phar file. If that fails as well, it
             // will fall back to project autoloader. It may seem that the last step
             // will always fail, but it's only true if project uses Composer autoloader
-            if (false !== $pluginclas_class_path = $this->getComposerFilePathForClassLike($pluginClassName)) {
+            $pluginclas_class_path = $this->getComposerFilePathForClassLike(Interner::intern($pluginClassName));
+            if (false !== $pluginclas_class_path) {
                 $projectAnalyzer->progress->debug(
                     'Loading plugin ' . $pluginClassName . ' via require' . PHP_EOL,
                 );
@@ -1773,7 +1777,7 @@ final class Config
 
         if (!$codebase->classlikes->classExtends(
             $fq_class_name,
-            $must_extend,
+            Interner::intern($must_extend),
         )
         ) {
             throw new InvalidArgumentException(
@@ -1784,7 +1788,7 @@ final class Config
         /**
          * @var class-string<T>
          */
-        return $fq_class_name;
+        return Interner::str($fq_class_name);
     }
 
     public function shortenFileName(string $to): string
@@ -1937,8 +1941,12 @@ final class Config
         } elseif ($e instanceof PropertyIssue) {
             $reporting_level = $this->getReportingLevelForProperty($issue_type, $e->property_id);
         } elseif ($e instanceof ClassConstantIssue) {
-            $reporting_level = $this->getReportingLevelForClassConstant($issue_type, $e->const_id);
-        } elseif ($e instanceof ArgumentIssue && $e->function_id) {
+            $reporting_level = $this->getReportingLevelForClassConstant(
+                $issue_type,
+                $e->fq_classlike_name,
+                $e->const_name,
+            );
+        } elseif ($e instanceof ArgumentIssue && $e->function_id !== null) {
             $reporting_level = $this->getReportingLevelForArgument($issue_type, $e->function_id);
         } elseif ($e instanceof VariableIssue) {
             $reporting_level = $this->getReportingLevelForVariable($issue_type, $e->var_name);
@@ -2146,38 +2154,40 @@ final class Config
         return self::REPORT_ERROR;
     }
 
-    public function getReportingLevelForClass(string $issue_type, string $fq_classlike_name): ?string
+    public function getReportingLevelForClass(string $issue_type, int $fq_classlike_name): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForClass($fq_classlike_name);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForClass(Interner::str($fq_classlike_name));
         }
 
         return null;
     }
 
-    public function getReportingLevelForMethod(string $issue_type, string $method_id): ?string
+    public function getReportingLevelForMethod(string $issue_type, MethodIdentifier $method_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForMethod($method_id);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForMethod((string) $method_id);
         }
 
         return null;
     }
 
     /**
+     * @param int $function_id interned function id
      * @psalm-mutation-free
      */
-    public function getReportingLevelForFunction(string $issue_type, string $function_id): ?string
+    public function getReportingLevelForFunction(string $issue_type, int $function_id): ?string
     {
         $level = null;
         if (isset($this->issue_handlers[$issue_type])) {
-            $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id);
+            $function_id_str = Interner::str($function_id);
+            $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($function_id_str);
 
             if ($level === null && $issue_type === 'UndefinedFunction') {
                 // undefined functions trigger global namespace fallback
                 // so we should also check reporting levels for the symbol in global scope
-                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
-                if ($root_function_id !== $function_id) {
+                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id_str);
+                if ($root_function_id !== $function_id_str) {
                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
                 }
@@ -2187,28 +2197,38 @@ final class Config
         return $level;
     }
 
-    public function getReportingLevelForArgument(string $issue_type, string $function_id): ?string
+    /**
+     * @param MethodIdentifier|int $function_id method identifier, or interned function id
+     */
+    public function getReportingLevelForArgument(string $issue_type, MethodIdentifier|int $function_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForArgument($function_id);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForArgument(
+                is_int($function_id) ? Interner::str($function_id) : (string) $function_id,
+            );
         }
 
         return null;
     }
 
-    public function getReportingLevelForProperty(string $issue_type, string $property_id): ?string
+    public function getReportingLevelForProperty(string $issue_type, PropertyIdentifier $property_id): ?string
     {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForProperty((string) $property_id);
         }
 
         return null;
     }
 
-    public function getReportingLevelForClassConstant(string $issue_type, string $constant_id): ?string
-    {
+    public function getReportingLevelForClassConstant(
+        string $issue_type,
+        int $fq_classlike_name,
+        int $const_name,
+    ): ?string {
         if (isset($this->issue_handlers[$issue_type])) {
-            return $this->issue_handlers[$issue_type]->getReportingLevelForClassConstant($constant_id);
+            return $this->issue_handlers[$issue_type]->getReportingLevelForClassConstant(
+                Interner::str($fq_classlike_name) . '::' . Interner::str($const_name),
+            );
         }
 
         return null;
@@ -2305,7 +2325,7 @@ final class Config
     }
 
     /**
-     * @return array<int, string>
+     * @return list<int> class name ids
      */
     public function getMockClasses(): array
     {
@@ -2540,7 +2560,7 @@ final class Config
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<int, mixed> constant name id => value
      */
     public function getPredefinedConstants(): array
     {
@@ -2549,11 +2569,14 @@ final class Config
 
     public function collectPredefinedConstants(): void
     {
-        $this->predefined_constants = get_defined_constants();
+        $this->predefined_constants = [];
+        foreach (get_defined_constants() as $constant_name => $value) {
+            $this->predefined_constants[Interner::intern($constant_name)] = $value;
+        }
     }
 
     /**
-     * @return array<callable-string, bool>
+     * @return array<int, bool> function name id => true
      */
     public function getPredefinedFunctions(): array
     {
@@ -2564,10 +2587,12 @@ final class Config
     {
         $defined_functions = get_defined_functions();
         foreach ($defined_functions['user'] as $function_name) {
-            $this->predefined_functions[$function_name] = true;
+            // get_defined_functions() lowercases user function names: use the declared name
+            $this->predefined_functions[Interner::intern((new ReflectionFunction($function_name))->getName())]
+                = true;
         }
         foreach ($defined_functions['internal'] as $function_name) {
-            $this->predefined_functions[$function_name] = true;
+            $this->predefined_functions[Interner::intern($function_name)] = true;
         }
     }
 
@@ -2639,8 +2664,9 @@ final class Config
     }
 
     /** @return string|false */
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
+    public function getComposerFilePathForClassLike(int $fq_classlike_name): string|bool
     {
+        $fq_classlike_name = Interner::str($fq_classlike_name);
         foreach ($this->autoloaders as $autoloader) {
             $f = $autoloader->findFile($fq_classlike_name);
             if ($f !== false) {
@@ -2650,11 +2676,13 @@ final class Config
         return false;
     }
 
-    public function getPotentialComposerFilePathForClassLike(string $class): ?string
+    public function getPotentialComposerFilePathForClassLike(int $class): ?string
     {
         if (!$this->autoloaders) {
             return null;
         }
+
+        $class = Interner::str($class);
 
         $psr4_prefixes = reset($this->autoloaders)->getPrefixesPsr4();
 
@@ -2877,16 +2905,17 @@ final class Config
         return null;
     }
 
-    public function addUniversalObjectCrate(string $class): void
+    public function addUniversalObjectCrate(int $class): void
     {
-        if (!class_exists($class)) {
-            throw new UnexpectedValueException($class . ' is not a known class');
+        $class_str = Interner::str($class);
+        if (!class_exists($class_str)) {
+            throw new UnexpectedValueException($class_str . ' is not a known class');
         }
-        $this->universal_object_crates[] = strtolower($class);
+        $this->universal_object_crates[] = $class;
     }
 
     /**
-     * @return array<int, lowercase-string>
+     * @return list<int> class name ids
      */
     public function getUniversalObjectCrates(): array
     {

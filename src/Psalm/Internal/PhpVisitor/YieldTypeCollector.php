@@ -11,6 +11,7 @@ use PhpParser\Node\Expr\Yield_;
 use PhpParser\Node\FunctionLike;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Union;
@@ -45,7 +46,7 @@ final class YieldTypeCollector extends NodeVisitorAbstract
                 && $value_type = $this->nodes->getType($node->value)
             ) {
                 $generator_type = new TGenericObject(
-                    'Generator',
+                    StrId::Generator,
                     [
                         $key_type ?: Type::getInt(),
                         $value_type,

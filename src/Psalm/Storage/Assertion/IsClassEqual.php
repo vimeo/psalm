@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage\Assertion;
 
 use Override;
+use Psalm\Interner;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
@@ -15,7 +16,8 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class IsClassEqual extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    public function __construct(public readonly string $type)
+    /** @param int $type interned class name */
+    public function __construct(public readonly int $type)
     {
     }
 
@@ -36,7 +38,7 @@ final class IsClassEqual extends Assertion
 
     public function __toString(): string
     {
-        return '=get-class-' . $this->type;
+        return '=get-class-' . Interner::str($this->type);
     }
 
     #[Override]

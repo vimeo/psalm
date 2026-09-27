@@ -12,7 +12,6 @@ use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\StatementsSource;
 
 use function is_subclass_of;
-use function strtolower;
 
 /**
  * @internal
@@ -21,7 +20,7 @@ final class PropertyExistenceProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(PropertyExistenceProviderEvent): ?bool>
      * >
      */
@@ -54,28 +53,28 @@ final class PropertyExistenceProvider
      * @param Closure(PropertyExistenceProviderEvent): ?bool $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $fq_classlike_name, Closure $c): void
+    public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $fq_classlike_name): bool
+    public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function doesPropertyExist(
-        string $fq_classlike_name,
-        string $property_name,
+        int $fq_classlike_name,
+        int $property_name,
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): ?bool {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $property_handler) {
             $event = new PropertyExistenceProviderEvent(
                 $fq_classlike_name,
                 $property_name,

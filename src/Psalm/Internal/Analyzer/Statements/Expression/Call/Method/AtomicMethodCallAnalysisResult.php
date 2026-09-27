@@ -28,22 +28,48 @@ final class AtomicMethodCallAnalysisResult
     public array $invalid_method_call_types = [];
 
     /**
-     * @var array<string, bool>
+     * class name id => method name id => method id
+     *
+     * @var array<int, array<int, MethodIdentifier>>
      */
     public array $existent_method_ids = [];
 
     /**
-     * @var array<string>
+     * @psalm-external-mutation-free
+     */
+    public function addExistentMethodId(MethodIdentifier $method_id): void
+    {
+        $this->existent_method_ids[$method_id->fq_class_name][$method_id->method_name] = $method_id;
+    }
+
+    /**
+     * @param array<int, array<int, MethodIdentifier>> $a
+     * @param array<int, array<int, MethodIdentifier>> $b
+     * @return array<int, array<int, MethodIdentifier>>
+     * @psalm-pure
+     */
+    public static function mergeMethodIds(array $a, array $b): array
+    {
+        foreach ($b as $class => $method_ids) {
+            foreach ($method_ids as $method_name => $method_id) {
+                $a[$class][$method_name] = $method_id;
+            }
+        }
+        return $a;
+    }
+
+    /**
+     * @var list<array{MethodIdentifier, string}> method id, cased method id (for messages)
      */
     public array $non_existent_class_method_ids = [];
 
     /**
-     * @var array<string>
+     * @var list<array{MethodIdentifier, string}> method id, cased method id (for messages)
      */
     public array $non_existent_interface_method_ids = [];
 
     /**
-     * @var array<string>
+     * @var list<MethodIdentifier>
      */
     public array $non_existent_magic_method_ids = [];
 

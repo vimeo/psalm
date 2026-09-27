@@ -9,6 +9,7 @@ use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
+use Psalm\Interner;
 use Psalm\IssueBuffer;
 
 use function assert;
@@ -24,7 +25,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     public function __construct(
         Trait_ $class,
         SourceAnalyzer $source,
-        string $fq_class_name,
+        int $fq_class_name,
         private readonly Aliases $aliases,
     ) {
         $this->source = $source;
@@ -37,7 +38,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getNamespace(): ?string
+    public function getNamespace(): ?int
     {
         return $this->aliases->namespace;
     }
@@ -50,7 +51,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @return array<lowercase-string, string>
+     * @return array<int, int>
      * @psalm-pure
      */
     #[Override]
@@ -60,7 +61,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     }
 
     /**
-     * @return array<string, string>
+     * @return array<int, int>
      * @psalm-pure
      */
     #[Override]
@@ -74,11 +75,12 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         assert($stmt->name !== null);
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->classlike_storage_provider->has($stmt->name->name)) {
+        $name = Interner::intern($stmt->name->name);
+        if (!$codebase->classlike_storage_provider->has($name)) {
             return;
         }
 
-        $storage = $codebase->classlike_storage_provider->get($stmt->name->name);
+        $storage = $codebase->classlike_storage_provider->get($name);
 
         ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
 

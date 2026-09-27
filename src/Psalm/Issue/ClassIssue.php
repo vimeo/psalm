@@ -12,12 +12,13 @@ use Psalm\CodeLocation;
 abstract class ClassIssue extends CodeIssue
 {
     /**
+     * @param int $fq_classlike_name interned class name
      * @psalm-mutation-free
      */
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        public string $fq_classlike_name,
+        public int $fq_classlike_name,
     ) {
         parent::__construct($message, $code_location);
     }

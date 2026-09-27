@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
@@ -111,7 +112,7 @@ final class TemplateInferredTypeReplacer
 
                             $class_template_type = new TTemplateParamClass(
                                 $template_type_part->param_name,
-                                $template_type_part->as->getId(),
+                                Interner::intern($template_type_part->as->getId()),
                                 $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
                                 $template_type_part->defining_class,
                             );
@@ -245,7 +246,7 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @param array<int, array<int, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      * @psalm-external-mutation-free
      */
     private static function replaceTemplateParam(
@@ -331,7 +332,7 @@ final class TemplateInferredTypeReplacer
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
                 foreach ($template_type_map as $template_class => $_) {
-                    if (str_starts_with($template_class, 'fn-')) {
+                    if (str_starts_with(Interner::str($template_class), 'fn-')) {
                         continue;
                     }
 
@@ -344,9 +345,12 @@ final class TemplateInferredTypeReplacer
                             if (isset($classlike_storage->template_extended_params[$defining_class])) {
                                 $param_map = $classlike_storage->template_extended_params[$defining_class];
 
-                                if (isset($param_map[$key])) {
-                                    $template_name = (string) $param_map[$key];
-                                    if (isset($inferred_lower_bounds[$template_name][$template_class])) {
+                                $key_id = Interner::find($key);
+                                if ($key_id !== null && isset($param_map[$key_id])) {
+                                    $template_name = Interner::find((string) $param_map[$key_id]);
+                                    if ($template_name !== null
+                                        && isset($inferred_lower_bounds[$template_name][$template_class])
+                                    ) {
                                         $template_type
                                             = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                                                 $inferred_lower_bounds[$template_name][$template_class],
@@ -367,7 +371,7 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @param array<int, array<int, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      * @psalm-external-mutation-free
      */
     private static function replaceTemplateKeyOfValueOf(
@@ -400,7 +404,7 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @param array<int, array<int, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      * @psalm-external-mutation-free
      */
     private static function replaceTemplatePropertiesOf(
@@ -429,7 +433,7 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
-     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @param array<int, array<int, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      */
     private static function replaceConditional(
         TemplateResult $template_result,

@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -27,13 +28,13 @@ use function count;
 final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_column'];
+        return [StrId::array_column];
     }
 
     #[Override]

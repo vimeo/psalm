@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Interner;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
@@ -25,6 +27,7 @@ use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -33,7 +36,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_merge;
 use function array_shift;
 use function rtrim;
-use function strtolower;
 
 /**
  * @internal
@@ -67,11 +69,12 @@ final class InstancePropertyFetchAnalyzer
         $context->inside_general_use = $was_inside_general_use;
 
         if ($stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
+            $prop_name = Interner::intern($stmt->name->name);
         } elseif (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
             && $stmt_name_type->isSingleStringLiteral()
+            && $stmt_name_type->getSingleStringLiteral()->value !== ''
         ) {
-            $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
+            $prop_name = Interner::intern($stmt_name_type->getSingleStringLiteral()->value);
         } else {
             $prop_name = null;
         }
@@ -154,7 +157,9 @@ final class InstancePropertyFetchAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
-                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                    $context->calling_method_id !== null
+                        ? (string) $context->calling_method_id
+                        : $statements_analyzer->getFileName(),
                 );
             }
 
@@ -209,13 +214,15 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if (!$prop_name) {
+        if ($prop_name === null) {
             if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
                 foreach ($stmt_var_type->getAtomicTypes() as $type) {
                     if ($type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
-                            strtolower($type->value) . '::$',
-                            $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                            Interner::str($type->value) . '::$',
+                            $context->calling_method_id !== null
+                            ? (string) $context->calling_method_id
+                            : $statements_analyzer->getFileName(),
                         );
                     }
                 }
@@ -369,13 +376,16 @@ final class InstancePropertyFetchAnalyzer
                         continue;
                     }
 
-                    $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
+                    $property_id = new PropertyIdentifier(
+                        $lhs_type_part->value,
+                        Interner::intern($stmt->name->name),
+                    );
                 }
             }
 
             if ($property_id
                 && $source instanceof FunctionLikeAnalyzer
-                && $source->getMethodName() === '__construct'
+                && $source->getMethodName() === StrId::__construct
                 && !$context->inside_unset
             ) {
                 if ($context->inside_isset
@@ -392,7 +402,7 @@ final class InstancePropertyFetchAnalyzer
                         new UninitializedProperty(
                             'Cannot use uninitialized property ' . $var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_id,
+                            $property_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -417,8 +427,8 @@ final class InstancePropertyFetchAnalyzer
                         continue;
                     }
 
-                    $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
-
+                    $prop_name = Interner::intern($stmt->name->name);
+                    $property_id = new PropertyIdentifier($lhs_type_part->value, $prop_name);
 
                     $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
@@ -442,7 +452,7 @@ final class InstancePropertyFetchAnalyzer
 
                     if ($declaring_property_class) {
                         AtomicPropertyFetchAnalyzer::checkPropertyDeprecation(
-                            $stmt->name->name,
+                            $prop_name,
                             $declaring_property_class,
                             $stmt,
                             $statements_analyzer,
@@ -466,7 +476,7 @@ final class InstancePropertyFetchAnalyzer
                         $codebase->analyzer->addNodeReference(
                             $statements_analyzer->getFilePath(),
                             $stmt->name,
-                            $property_id,
+                            (string) $property_id,
                         );
                     }
 

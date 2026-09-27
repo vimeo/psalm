@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
+use function array_replace;
 use function array_replace_recursive;
 
 /**
@@ -28,12 +29,12 @@ use function array_replace_recursive;
 final class TemplateResult
 {
     /**
-     * @var array<string, array<string, non-empty-list<TemplateBound>>>
+     * @var array<int, array<int, non-empty-list<TemplateBound>>> template name id => defining entity id => bounds
      */
     public array $lower_bounds = [];
 
     /**
-     * @var array<string, array<string, TemplateBound>>
+     * @var array<int, array<int, TemplateBound>> template name id => defining entity id => bound
      */
     public array $upper_bounds = [];
 
@@ -48,8 +49,8 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
-     * @param array<string, array<string, Union>> $template_types
-     * @param array<string, array<string, Union>> $lower_bounds
+     * @param array<int, array<int, Union>> $template_types template name id => defining entity id => type
+     * @param array<int, array<int, Union>> $lower_bounds template name id => defining entity id => type
      * @psalm-mutation-free
      */
     public function __construct(public array $template_types, array $lower_bounds)
@@ -68,10 +69,10 @@ final class TemplateResult
         }
 
         $instance = clone $this;
-        /** @var array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds */
+        /** @var array<int, array<int, non-empty-list<TemplateBound>>> $lower_bounds */
         $lower_bounds = array_replace_recursive($instance->lower_bounds, $result->lower_bounds);
         $instance->lower_bounds = $lower_bounds;
-        $instance->template_types = [...$instance->template_types, ...$result->template_types];
+        $instance->template_types = array_replace($instance->template_types, $result->template_types);
 
         return $instance;
     }

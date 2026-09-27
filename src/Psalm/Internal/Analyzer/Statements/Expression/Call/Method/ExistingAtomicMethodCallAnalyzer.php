@@ -21,12 +21,14 @@ use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
@@ -38,6 +40,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Possibilities;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -48,11 +51,8 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_map;
 use function count;
-use function explode;
-use function in_array;
 use function is_string;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -81,23 +81,25 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $fq_class_name = $lhs_type_part->value;
 
-        if ($fq_class_name === 'static') {
-            $fq_class_name = (string) $context->self;
+        if ($fq_class_name === StrId::static) {
+            $fq_class_name = $context->self ?? $fq_class_name;
         }
 
         $method_name_lc = $method_id->method_name;
 
-        $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
+        $cased_method_id = Interner::str($fq_class_name) . '::' . $stmt_name->name;
 
 
-        $result->existent_method_ids[$method_id->__toString()] = true;
+        $result->addExistentMethodId($method_id);
 
         if ($context->collect_initializations && $context->calling_method_id) {
             $initialization_context = clone $context;
-            [$calling_method_class] = explode('::', $context->calling_method_id);
-            $initialization_context->calling_method_id = $calling_method_class . '::__construct';
+            $initialization_context->calling_method_id = new MethodIdentifier(
+                $context->calling_method_id->fq_class_name,
+                StrId::__construct,
+            );
             $codebase->addReferenceToFunctionLike(
-                strtolower((string) $method_id),
+                $method_id,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $initialization_context,
             );
@@ -116,7 +118,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($fq_class_name === 'Closure' && $method_name_lc === '__invoke') {
+        if ($fq_class_name === StrId::Closure && $method_name_lc === StrId::__invoke) {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
             $fake_function_call = new VirtualFuncCall(
@@ -149,10 +151,12 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($context->collect_initializations && $context->calling_method_id) {
             $initialization_context = clone $context;
-            [$calling_method_class] = explode('::', $context->calling_method_id);
-            $initialization_context->calling_method_id = $calling_method_class . '::__construct';
+            $initialization_context->calling_method_id = new MethodIdentifier(
+                $context->calling_method_id->fq_class_name,
+                StrId::__construct,
+            );
             $codebase->addReferenceToFunctionLike(
-                strtolower((string) $method_id),
+                $method_id,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $initialization_context,
             );
@@ -163,7 +167,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             && $stmt->var->name === 'this'
             && $source instanceof FunctionLikeAnalyzer
         ) {
-            self::collectSpecialInformation($source, $stmt_name->name, $context);
+            self::collectSpecialInformation($source, Interner::intern($stmt_name->name), $context);
         }
 
         $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
@@ -187,9 +191,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             if ($grandparent_source instanceof TraitAnalyzer) {
                 $fq_trait_name = $grandparent_source->getFQCLN();
 
-                $fq_trait_name_lc = strtolower($fq_trait_name);
-
-                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name_lc);
+                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
 
                 if (isset($trait_storage->methods[$method_name_lc])) {
                     $trait_method_id = new MethodIdentifier($trait_storage->name, $method_name_lc);
@@ -286,7 +288,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             return $return_type_candidate;
         }
 
-        $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
+        $in_call_map = InternalCallMapHandler::inCallMap($declaring_method_id ?? $method_id);
 
         if (!$in_call_map) {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
@@ -488,21 +490,25 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($codebase->methods_to_rename) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-            foreach ($codebase->methods_to_rename as $original_method_id => $new_method_name) {
-                if ($declaring_method_id && (strtolower((string) $declaring_method_id)) === $original_method_id) {
-                    $file_manipulations = [
-                        new FileManipulation(
-                            (int) $stmt_name->getAttribute('startFilePos'),
-                            (int) $stmt_name->getAttribute('endFilePos') + 1,
-                            $new_method_name,
-                        ),
-                    ];
+            $new_method_name = $declaring_method_id
+                ? $codebase->methods_to_rename
+                    [$declaring_method_id->fq_class_name]
+                    [$declaring_method_id->method_name] ?? null
+                : null;
 
-                    FileManipulationBuffer::add(
-                        $statements_analyzer->getFilePath(),
-                        $file_manipulations,
-                    );
-                }
+            if ($new_method_name !== null) {
+                $file_manipulations = [
+                    new FileManipulation(
+                        (int) $stmt_name->getAttribute('startFilePos'),
+                        (int) $stmt_name->getAttribute('endFilePos') + 1,
+                        Interner::str($new_method_name),
+                    ),
+                ];
+
+                FileManipulationBuffer::add(
+                    $statements_analyzer->getFilePath(),
+                    $file_manipulations,
+                );
             }
         }
 
@@ -515,9 +521,9 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             if ($appearing_method_id !== null && $declaring_method_id !== null) {
                 $event = new AfterMethodCallAnalysisEvent(
                     $stmt,
-                    (string) $method_id,
-                    (string) $appearing_method_id,
-                    (string) $declaring_method_id,
+                    $method_id,
+                    $appearing_method_id,
+                    $declaring_method_id,
                     $context,
                     $statements_analyzer,
                     $codebase,
@@ -549,10 +555,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        string $fq_class_name,
+        int $fq_class_name,
     ): ?Union {
-        $method_name = strtolower($stmt_name->name);
-        if (!in_array($method_name, ['__get', '__set'], true)) {
+        $method_name = $stmt_name->name;
+        if ($method_name !== '__get' && $method_name !== '__set') {
             return null;
         }
 
@@ -565,7 +571,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         $prop_name = $first_arg_value->value;
-        $property_id = $fq_class_name . '::$' . $prop_name;
+        $prop_name_id = Interner::intern($prop_name);
+        $property_id = new PropertyIdentifier($fq_class_name, $prop_name_id);
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -582,11 +589,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // If `@psalm-seal-properties` is set, the property must be defined with
                 // a `@property` annotation
                 if (($class_storage->hasSealedProperties($codebase->config))
-                    && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+                    && !isset($class_storage->pseudo_property_set_types[$prop_name_id])
                 ) {
                     IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyAssignment(
-                            'Instance property ' . $property_id . ' is not defined',
+                            'Instance property ' . (string) $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id,
                         ),
@@ -600,10 +607,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     ? $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value)
                     : null;
 
-                if (isset($class_storage->pseudo_property_set_types['$' . $prop_name]) && $second_arg_type) {
+                if (isset($class_storage->pseudo_property_set_types[$prop_name_id]) && $second_arg_type) {
                     $pseudo_set_type = TypeExpander::expandUnion(
                         $codebase,
-                        $class_storage->pseudo_property_set_types['$' . $prop_name],
+                        $class_storage->pseudo_property_set_types[$prop_name_id],
                         $fq_class_name,
                         new TNamedObject($fq_class_name),
                         $class_storage->parent_class,
@@ -680,11 +687,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 // If `@psalm-seal-properties` is set, the property must be defined with
                 // a `@property` annotation
                 if (($class_storage->hasSealedProperties($codebase->config))
-                    && !isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+                    && !isset($class_storage->pseudo_property_get_types[$prop_name_id])
                 ) {
                     IssueBuffer::maybeAdd(
                         new UndefinedThisPropertyFetch(
-                            'Instance property ' . $property_id . ' is not defined',
+                            'Instance property ' . (string) $property_id . ' is not defined',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id,
                         ),
@@ -692,8 +699,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                    return $class_storage->pseudo_property_get_types['$' . $prop_name];
+                if (isset($class_storage->pseudo_property_get_types[$prop_name_id])) {
+                    return $class_storage->pseudo_property_get_types[$prop_name_id];
                 }
 
                 break;

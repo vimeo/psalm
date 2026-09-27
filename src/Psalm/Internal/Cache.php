@@ -9,6 +9,7 @@ use AssertionError;
 use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Interner;
 use RuntimeException;
 use Webmozart\Assert\Assert;
 
@@ -60,6 +61,9 @@ final class Cache
 
     private readonly bool $arrayCache;
 
+    /** Path of the file where interned strings referenced by cached data are persisted */
+    private readonly string $interner_path;
+
     public function __construct(
         Config $config,
         string $subdir,
@@ -68,9 +72,12 @@ final class Cache
     ) {
         $this->serializer = $config->getCacheSerializer();
         $this->arrayCache = $config->array_cache;
+        $this->interner_path = $config->getCacheDirectory().DIRECTORY_SEPARATOR.'interned_strings';
         if (!$persistent) {
             return;
         }
+
+        Interner::load($this->interner_path);
 
         $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
 
@@ -133,6 +140,7 @@ final class Cache
                 unlink(substr($f->getPathname(), 0, -5));
             }
         }
+        Interner::persist($this->interner_path);
         $consolidated = $this->serializer->serialize($this->cache);
 
         file_put_contents($this->dir . 'consolidated', $consolidated, LOCK_EX);
@@ -246,6 +254,7 @@ final class Cache
             return;
         }
         if ($this->persistent) {
+            Interner::persist($this->interner_path);
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);

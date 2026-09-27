@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Interner;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -56,7 +57,10 @@ final class MagicConstAnalyzer
                     );
                 }
 
-                $statements_analyzer->node_data->setType($stmt, Type::getLiteralClassString($context->self));
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::getLiteralClassString($context->self),
+                );
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
             $namespace = $statements_analyzer->getNamespace();
@@ -70,14 +74,21 @@ final class MagicConstAnalyzer
                 );
             }
 
-            $statements_analyzer->node_data->setType($stmt, Type::getString($namespace));
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getString($namespace === null ? null : Interner::str($namespace)),
+            );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Method
             || $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
         ) {
             $source = $statements_analyzer->getSource();
             if ($source instanceof MethodAnalyzer) {
                 if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_) {
-                    $statements_analyzer->node_data->setType($stmt, Type::getString($source->getMethodName()));
+                    $method_name = $source->getMethodName();
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        Type::getString($method_name === null ? null : Interner::str($method_name)),
+                    );
                 } else {
                     $statements_analyzer->node_data->setType(
                         $stmt,

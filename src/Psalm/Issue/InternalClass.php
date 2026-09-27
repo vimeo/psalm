@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
+use Psalm\Interner;
+
 use function array_pop;
 use function array_unique;
+use function array_values;
 use function count;
 use function implode;
 use function reset;
@@ -19,12 +22,15 @@ final class InternalClass extends ClassIssue
     public const SHORTCODE = 174;
 
     /**
-     * @param non-empty-list<non-empty-string> $words
+     * @param list<int> $ids interned names
      * @psalm-pure
      */
-    public static function listToPhrase(array $words): string
+    public static function listToPhrase(array $ids): string
     {
-        $words = array_unique($words);
+        $words = array_values(array_unique(Interner::strAll($ids)));
+        if (!$words) {
+            return '';
+        }
         if (count($words) === 1) {
             return reset($words);
         }

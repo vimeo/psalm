@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -26,12 +27,14 @@ final class TTemplateParam extends Atomic
     use HasIntersectionTrait;
 
     /**
+     * @param int $param_name interned template name
+     * @param int $defining_class interned defining entity (class name, `fn-` function id, method id...)
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
-        public string $param_name,
+        public int $param_name,
         public Union $as,
-        public string $defining_class,
+        public int $defining_class,
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
@@ -52,14 +55,17 @@ final class TTemplateParam extends Atomic
         return $cloned;
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
+        $key = Interner::$strings[$this->param_name] . ':' . Interner::$strings[$this->defining_class];
+
         if ($include_extra && $this->extra_types) {
-            return $this->param_name . ':' . $this->defining_class . '&' . implode('&', $this->extra_types);
+            return $key . '&' . implode('&', $this->extra_types);
         }
 
-        return $this->param_name . ':' . $this->defining_class;
+        return $key;
     }
 
     #[Override]
@@ -68,47 +74,50 @@ final class TTemplateParam extends Atomic
         return $this->as->getId();
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
-            return $this->param_name;
+            return Interner::$strings[$this->param_name];
         }
 
         if ($this->extra_types) {
-            return '(' . $this->param_name . ':' . $this->defining_class . ' as ' . $this->as->getId($exact)
+            return '(' . Interner::$strings[$this->param_name] . ':' . Interner::$strings[$this->defining_class]
+                . ' as ' . $this->as->getId($exact)
                 . ')&' . implode('&', array_map(static fn(Atomic $type): string
                     => $type->getId($exact, true), $this->extra_types));
         }
 
-        return ($nested ? '(' : '') . $this->param_name
-            . ':' . $this->defining_class
+        return ($nested ? '(' : '') . Interner::$strings[$this->param_name]
+            . ':' . Interner::$strings[$this->defining_class]
             . ' as ' . $this->as->getId($exact) . ($nested ? ')' : '');
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @return null
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
+     * @psalm-suppress ImpureStaticProperty read-only access to the interned strings table
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
@@ -127,7 +136,7 @@ final class TTemplateParam extends Atomic
             false,
         );
 
-        return $this->param_name . $intersection_types;
+        return Interner::$strings[$this->param_name] . $intersection_types;
     }
 
     /**

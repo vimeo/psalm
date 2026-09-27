@@ -7,8 +7,10 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -19,14 +21,14 @@ use UnexpectedValueException;
 final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
         return [
-            'strtr',
+            StrId::strtr,
         ];
     }
 
@@ -46,7 +48,7 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         if ($statements_source->data_flow_graph) {
             $function_return_sink = DataFlowNode::getForCallableReturn(
                 'builtin',
-                $function_id,
+                Interner::str($function_id),
                 $code_location,
             );
 
@@ -54,7 +56,7 @@ final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             foreach ($call_args as $i => $_) {
                 $function_param_sink = DataFlowNode::getForCallableArg(
                     'builtin',
-                    $function_id,
+                    Interner::str($function_id),
                     $i,
                     $code_location,
                 );

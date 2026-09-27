@@ -11,6 +11,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -263,13 +264,13 @@ final class TKeyedArray extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
@@ -343,14 +344,14 @@ final class TKeyedArray extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): string {
         return 'array';
@@ -383,7 +384,7 @@ final class TKeyedArray extends Atomic
             if (is_int($key)) {
                 $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
-                $key_types[] = new TLiteralClassString($key);
+                $key_types[] = new TLiteralClassString(Interner::intern($key));
             } else {
                 /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
                 $key_types[] = Type::getAtomicStringFromLiteral($key);
@@ -437,7 +438,7 @@ final class TKeyedArray extends Atomic
             } elseif (is_int($key)) {
                 $key_types[] = new TLiteralInt($key);
             } elseif (isset($this->class_strings[$key])) {
-                $key_types[] = new TLiteralClassString($key);
+                $key_types[] = new TLiteralClassString(Interner::intern($key));
             } else {
                 /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
                 $key_types[] = Type::getAtomicStringFromLiteral($key);
@@ -571,8 +572,8 @@ final class TKeyedArray extends Atomic
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,

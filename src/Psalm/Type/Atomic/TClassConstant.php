@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -18,9 +20,13 @@ use Psalm\Type\Atomic;
 final class TClassConstant extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @param int $fq_classlike_name interned class name
+     * @param int $const_name interned constant name (may contain `*` wildcards)
+     */
     public function __construct(
-        public string $fq_classlike_name,
-        public string $const_name,
+        public int $fq_classlike_name,
+        public int $const_name,
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
@@ -29,30 +35,30 @@ final class TClassConstant extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
+        return 'class-constant(' . $this->getId() . ')';
     }
 
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        return $this->fq_classlike_name . '::' . $this->const_name;
+        return Interner::str($this->fq_classlike_name) . '::' . Interner::str($this->const_name);
     }
 
     #[Override]
     public function getAssertionString(): string
     {
-        return 'class-constant(' . $this->fq_classlike_name . '::' . $this->const_name . ')';
+        return 'class-constant(' . $this->getId() . ')';
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;
@@ -68,21 +74,21 @@ final class TClassConstant extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        if ($this->fq_classlike_name === 'static') {
-            return 'static::' . $this->const_name;
+        if ($this->fq_classlike_name === StrId::static) {
+            return 'static::' . Interner::str($this->const_name);
         }
 
         return Type::getStringFromFQCLN($this->fq_classlike_name, $namespace, $aliased_classes, $this_class)
             . '::'
-            . $this->const_name;
+            . Interner::str($this->const_name);
     }
 }

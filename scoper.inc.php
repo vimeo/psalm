@@ -67,6 +67,8 @@ return [
     ],
     'exclude-files' => [
         'src/spl_object_id.php',
+        // Precomputed interned string ids: the strings must stay exactly as they are, or they won't match their ids
+        'src/Psalm/StrId.php',
         '/vendor\/symfony\/polyfill-php8\d/',
     ],
 ];

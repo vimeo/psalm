@@ -10,6 +10,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 
 use function array_fill;
@@ -24,25 +25,25 @@ final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
 {
 
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
         return [
-            'array_diff_ukey',
-            'array_diff_uassoc',
-            'array_intersect_ukey',
-            'array_intersect_uassoc',
+            StrId::array_diff_ukey,
+            StrId::array_diff_uassoc,
+            StrId::array_intersect_ukey,
+            StrId::array_intersect_uassoc,
 
-            'array_udiff_uassoc',
-            'array_uintersect_uassoc',
+            StrId::array_udiff_uassoc,
+            StrId::array_uintersect_uassoc,
 
-            'array_udiff',
-            'array_udiff_assoc',
-            'array_uintersect',
-            'array_uintersect_assoc',
+            StrId::array_udiff,
+            StrId::array_udiff_assoc,
+            StrId::array_uintersect,
+            StrId::array_uintersect_assoc,
         ];
     }
 
@@ -62,12 +63,12 @@ final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
         }
 
         /** @psalm-suppress PossiblyNullPropertyFetch, PossiblyNullArrayAccess */
-        $cb = InternalCallMapHandler::getCallablesFromCallMap('array_udiff_uassoc')[0]->params;
+        $cb = InternalCallMapHandler::getCallablesFromCallMap(StrId::array_udiff_uassoc)[0]->params;
         assert(isset($cb[2]) && isset($cb[3]));
         $valCb = $cb[2];
         $keyCb = $cb[3];
         $arr = self::$arr ??= new FunctionLikeParameter(
-            "array",
+            StrId::array,
             false,
             Type::getArray(),
             null,
@@ -80,16 +81,16 @@ final class ArrayUArrayParamsProvider implements FunctionParamsProviderInterface
         $call_args = $event->getCallArgs();
         $array_cnt = count($call_args)-1;
 
-        if ($func === 'array_diff_ukey'
-            || $func === 'array_diff_uassoc'
-            || $func === 'array_intersect_ukey'
-            || $func === 'array_intersect_uassoc'
+        if ($func === StrId::array_diff_ukey
+            || $func === StrId::array_diff_uassoc
+            || $func === StrId::array_intersect_ukey
+            || $func === StrId::array_intersect_uassoc
         ) {
             // Key comparison
             $args = array_fill(0, max($array_cnt, 1), $arr);
             $args []= $keyCb;
-        } elseif ($func === 'array_udiff_uassoc'
-            || $func === 'array_uintersect_uassoc'
+        } elseif ($func === StrId::array_udiff_uassoc
+            || $func === StrId::array_uintersect_uassoc
         ) {
             // Key+value comparison
             $args = array_fill(0, max($array_cnt-1, 1), $arr);

@@ -54,6 +54,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -98,7 +99,6 @@ use function implode;
 use function in_array;
 use function is_int;
 use function strlen;
-use function strtolower;
 
 /**
  * @internal
@@ -881,7 +881,7 @@ final class ArrayFetchAnalyzer
                             && !$atomic_key_type instanceof TTemplateParam
                             && !(
                                 $atomic_key_type instanceof TObjectWithProperties
-                                && isset($atomic_key_type->methods['__tostring'])
+                                && isset($atomic_key_type->methods[StrId::__toString])
                             )
                         ) {
                             $bad_types[] = $atomic_key_type;
@@ -1473,7 +1473,7 @@ final class ArrayFetchAnalyzer
                         [],
                         [
                             $type->param_name => [
-                                'class-string-map' => new Union([
+                                StrId::class_string_map => new Union([
                                     new TTemplateParam(
                                         $offset_type_part->param_name,
                                         $offset_type_part->as_type
@@ -1496,7 +1496,7 @@ final class ArrayFetchAnalyzer
                                         $type->as_type
                                             ? new Union([$type->as_type])
                                             : Type::getObject(),
-                                        'class-string-map',
+                                        StrId::class_string_map,
                                     ),
                                 ]),
                             ],
@@ -1507,7 +1507,7 @@ final class ArrayFetchAnalyzer
                         [],
                         [
                             $type->param_name => [
-                                'class-string-map' => new Union([
+                                StrId::class_string_map => new Union([
                                     $offset_type_part->as_type
                                         ?: new TObject(),
                                 ]),
@@ -1833,12 +1833,12 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
-        if (strtolower($type->value) === 'simplexmlelement'
+        if ($type->value === StrId::SimpleXMLElement
             || ($codebase->classExists($type->value, null, $context)
-                && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
+                && $codebase->classExtendsOrImplements($type->value, StrId::SimpleXMLElement))
         ) {
-            $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
-        } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
+            $call_array_access_type = new Union([new TNull(), new TNamedObject(StrId::SimpleXMLElement)]);
+        } elseif ($type->value === StrId::DOMNodeList && $stmt->dim) {
             $old_data_provider = $statements_analyzer->node_data;
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;

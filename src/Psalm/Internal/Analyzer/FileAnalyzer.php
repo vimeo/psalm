@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Interner;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
@@ -37,7 +38,6 @@ use function array_diff_key;
 use function array_keys;
 use function count;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -67,27 +67,27 @@ class FileAnalyzer extends SourceAnalyzer
     private array $suppressed_issues = [];
 
     /**
-     * @var array<string, array<string, string>>
+     * @var array<int, array<int, int>> namespace id => alias id => class name id
      */
     private array $namespace_aliased_classes = [];
 
     /**
-     * @var array<string, array<lowercase-string, string>>
+     * @var array<int, array<int, int>> namespace id => class name id => alias id
      */
     private array $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<string, array<string, string>>
+     * @var array<int, array<int, int>> namespace id => class name id => alias id
      */
     private array $namespace_aliased_classes_flipped_replaceable = [];
 
     /**
-     * @var array<lowercase-string, InterfaceAnalyzer>
+     * @var array<int, InterfaceAnalyzer> interface name id => analyzer
      */
     public array $interface_analyzers_to_analyze = [];
 
     /**
-     * @var array<lowercase-string, ClassAnalyzer>
+     * @var array<int, ClassAnalyzer> class name id => analyzer
      */
     public array $class_analyzers_to_analyze = [];
 
@@ -217,7 +217,7 @@ class FileAnalyzer extends SourceAnalyzer
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
                     IssueBuffer::maybeAdd(
                         new UncaughtThrowInGlobalScope(
-                            $possibly_thrown_exception . ' is thrown but not caught in global scope',
+                            Interner::str($possibly_thrown_exception) . ' is thrown but not caught in global scope',
                             $codelocation,
                         ),
                     );
@@ -257,8 +257,8 @@ class FileAnalyzer extends SourceAnalyzer
                     if (!isset($referenced_class_storage->type_aliases[$alias->alias_name])) {
                         IssueBuffer::maybeAdd(
                             new InvalidTypeImport(
-                                'Type alias ' . $alias->alias_name
-                                . ' imported from ' . $fq_source_classlike
+                                'Type alias ' . Interner::str($alias->alias_name)
+                                . ' imported from ' . Interner::str($fq_source_classlike)
                                 . ' is not defined on the source class',
                                 $location,
                             ),
@@ -289,7 +289,7 @@ class FileAnalyzer extends SourceAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->populateClassLikeAnalyzers($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                $namespace_name = $stmt->name ? $stmt->name->toString() : '';
+                $namespace_name = Interner::intern($stmt->name ? $stmt->name->toString() : '');
 
                 $namespace_analyzer = new NamespaceAnalyzer($stmt, $this);
                 $namespace_analyzer->collectAnalyzableInformation();
@@ -327,50 +327,52 @@ class FileAnalyzer extends SourceAnalyzer
             }
 
             // this can happen when stubbing
-            if (!$this->codebase->classExists($stmt->name->name)
-                && !$this->codebase->classlikes->enumExists($stmt->name->name)
+            $name = Interner::intern($stmt->name->name);
+            if (!$this->codebase->classExists($name)
+                && !$this->codebase->classlikes->enumExists($name)
             ) {
                 return;
             }
 
 
-            $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
+            $class_analyzer = new ClassAnalyzer($stmt, $this, $name);
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
+            $this->class_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
             if (!$stmt->name) {
                 return;
             }
 
             // this can happen when stubbing
-            if (!$this->codebase->interfaceExists($stmt->name->name)) {
+            $name = Interner::intern($stmt->name->name);
+            if (!$this->codebase->interfaceExists($name)) {
                 return;
             }
 
-            $class_analyzer = new InterfaceAnalyzer($stmt, $this, $stmt->name->name);
+            $class_analyzer = new InterfaceAnalyzer($stmt, $this, $name);
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
+            $this->interface_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
         }
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer): void
+    public function addNamespacedClassAnalyzer(int $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
-        $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
+        $this->class_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function addNamespacedInterfaceAnalyzer(string $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
+    public function addNamespacedInterfaceAnalyzer(int $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
-        $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
+        $this->interface_analyzers_to_analyze[$fq_class_name] = $interface_analyzer;
     }
 
     public function getMethodMutations(
@@ -380,10 +382,9 @@ class FileAnalyzer extends SourceAnalyzer
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
-        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if (isset($this->class_analyzers_to_analyze[$fq_class_name_lc])) {
-            $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name_lc];
+        if (isset($this->class_analyzers_to_analyze[$fq_class_name])) {
+            $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name];
         } else {
             if (!$from_project_analyzer) {
                 $this->project_analyzer->getMethodMutations(
@@ -442,13 +443,11 @@ class FileAnalyzer extends SourceAnalyzer
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        $fq_class_name_lc = strtolower($fq_class_name);
-
-        if (!isset($this->class_analyzers_to_analyze[$fq_class_name_lc])) {
+        if (!isset($this->class_analyzers_to_analyze[$fq_class_name])) {
             return null;
         }
 
-        $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name_lc];
+        $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name];
 
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }
@@ -457,19 +456,20 @@ class FileAnalyzer extends SourceAnalyzer
      * @psalm-pure
      */
     #[Override]
-    public function getNamespace(): ?string
+    public function getNamespace(): ?int
     {
         return null;
     }
 
     /**
      * @psalm-mutation-free
-     * @return array<lowercase-string, string>
+     * @param ?int $namespace_name namespace id
+     * @return array<int, int>
      */
     #[Override]
-    public function getAliasedClassesFlipped(?string $namespace_name = null): array
+    public function getAliasedClassesFlipped(?int $namespace_name = null): array
     {
-        if ($namespace_name && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
+        if ($namespace_name !== null && isset($this->namespace_aliased_classes_flipped[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped[$namespace_name];
         }
 
@@ -478,12 +478,13 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @psalm-mutation-free
-     * @return array<string, string>
+     * @param ?int $namespace_name namespace id
+     * @return array<int, int>
      */
     #[Override]
-    public function getAliasedClassesFlippedReplaceable(?string $namespace_name = null): array
+    public function getAliasedClassesFlippedReplaceable(?int $namespace_name = null): array
     {
-        if ($namespace_name && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
+        if ($namespace_name !== null && isset($this->namespace_aliased_classes_flipped_replaceable[$namespace_name])) {
             return $this->namespace_aliased_classes_flipped_replaceable[$namespace_name];
         }
 
@@ -642,7 +643,7 @@ class FileAnalyzer extends SourceAnalyzer
      * @psalm-pure
      */
     #[Override]
-    public function getFQCLN(): ?string
+    public function getFQCLN(): ?int
     {
         return null;
     }
@@ -651,7 +652,7 @@ class FileAnalyzer extends SourceAnalyzer
      * @psalm-pure
      */
     #[Override]
-    public function getParentFQCLN(): ?string
+    public function getParentFQCLN(): ?int
     {
         return null;
     }
@@ -660,13 +661,13 @@ class FileAnalyzer extends SourceAnalyzer
      * @psalm-pure
      */
     #[Override]
-    public function getClassName(): ?string
+    public function getClassName(): ?int
     {
         return null;
     }
 
     /**
-     * @return array<string, array<string, Union>>|null
+     * @return array<int, array<int, Union>>|null
      * @psalm-pure
      */
     #[Override]

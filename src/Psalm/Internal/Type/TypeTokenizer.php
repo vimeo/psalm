@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\Aliases;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
+use Psalm\Interner;
 use Psalm\Type;
 
 use function array_slice;
@@ -360,8 +361,8 @@ final class TypeTokenizer
     }
 
     /**
-     * @param array<string, mixed>|null       $template_type_map
-     * @param array<string, TypeAlias>|null   $type_aliases
+     * @param array<int, mixed>|null       $template_type_map template name id => mixed
+     * @param array<int, TypeAlias>|null   $type_aliases alias name id => alias
      * @return list<array{0: string, 1: int, 2?: string}>
      * @psalm-external-mutation-free
      */
@@ -370,8 +371,8 @@ final class TypeTokenizer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
-        ?string $self_fqcln = null,
-        ?string $parent_fqcln = null,
+        ?int $self_fqcln = null,
+        ?int $parent_fqcln = null,
         bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
@@ -430,13 +431,13 @@ final class TypeTokenizer
             $type_tokens[$i][0] = $fixed_token;
             $string_type_token[0] = $fixed_token;
 
-            if ($string_type_token[0] === 'self' && $self_fqcln) {
-                $type_tokens[$i][0] = $self_fqcln;
+            if ($string_type_token[0] === 'self' && $self_fqcln !== null) {
+                $type_tokens[$i][0] = Interner::str($self_fqcln);
                 continue;
             }
 
-            if ($string_type_token[0] === 'parent' && $parent_fqcln) {
-                $type_tokens[$i][0] = $parent_fqcln;
+            if ($string_type_token[0] === 'parent' && $parent_fqcln !== null) {
+                $type_tokens[$i][0] = Interner::str($parent_fqcln);
                 continue;
             }
 
@@ -444,7 +445,9 @@ final class TypeTokenizer
                 continue;
             }
 
-            if (isset($template_type_map[$string_type_token[0]])) {
+            $token_id = Interner::intern($string_type_token[0]);
+
+            if (isset($template_type_map[$token_id])) {
                 continue;
             }
 
@@ -452,7 +455,7 @@ final class TypeTokenizer
                 && ($type_tokens[$i - 2][0] === 'class-string-map')
                 && ($type_tokens[$i - 1][0] === '<')
             ) {
-                $template_type_map[$string_type_token[0]] = true;
+                $template_type_map[$token_id] = true;
                 continue;
             }
 
@@ -493,8 +496,8 @@ final class TypeTokenizer
 
             $type_tokens[$i][2] = $string_type_token[0];
 
-            if (isset($type_aliases[$string_type_token[0]])) {
-                $type_alias = $type_aliases[$string_type_token[0]];
+            if (isset($type_aliases[$token_id])) {
+                $type_alias = $type_aliases[$token_id];
 
                 if ($type_alias instanceof InlineTypeAlias) {
                     $replacement_tokens = $type_alias->replacement_tokens;
@@ -510,10 +513,10 @@ final class TypeTokenizer
                     $l += $diff;
                 }
             } else {
-                $type_tokens[$i][0] = Type::getFQCLNFromString(
+                $type_tokens[$i][0] = Interner::str(Type::getFQCLNFromString(
                     $string_type_token[0],
                     $aliases,
-                );
+                ));
             }
         }
 

@@ -63,6 +63,13 @@ trait CallableTrait
         return $cloned;
     }
 
+    /**
+     * The base name of the callable type (`callable` or `Closure`)
+     *
+     * @psalm-mutation-free
+     */
+    abstract protected function getCallableBaseName(): string;
+
     public function getParamString(): string
     {
         $param_string = '';
@@ -108,21 +115,21 @@ trait CallableTrait
             Mutations::LEVEL_EXTERNAL => 'impure-',
         };
 
-        return $prefix . $this->value . $param_string . $return_type_string;
+        return $prefix . $this->getCallableBaseName() . $param_string . $return_type_string;
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
-            return $this->value;
+            return $this->getCallableBaseName();
         }
 
         $prefix = match ($this->allowed_mutations) {
@@ -162,24 +169,7 @@ trait CallableTrait
             ) . ($return_type_multiple ? ')' : '');
         }
 
-        return $prefix . $this->value . $param_string . $return_type_string;
-    }
-
-    /**
-     * @param  array<lowercase-string, string> $aliased_classes
-     */
-    #[Override]
-    public function toPhpString(
-        ?string $namespace,
-        array $aliased_classes,
-        ?string $this_class,
-        int $analysis_php_version_id,
-    ): string {
-        if ($this instanceof TNamedObject) {
-            return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
-        }
-
-        return $this->value;
+        return $prefix . $this->getCallableBaseName() . $param_string . $return_type_string;
     }
 
     #[Override]
@@ -214,7 +204,7 @@ trait CallableTrait
             Mutations::LEVEL_EXTERNAL => 'impure-',
         };
         return $prefix
-            . $this->value . $param_string . $return_type_string;
+            . $this->getCallableBaseName() . $param_string . $return_type_string;
     }
 
     /**
@@ -226,8 +216,8 @@ trait CallableTrait
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,

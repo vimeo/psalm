@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
@@ -25,14 +26,14 @@ final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypePro
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['Closure'];
+        return [StrId::Closure];
     }
 
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
         $call_args = $event->getCallArgs();
         if (!$source instanceof StatementsAnalyzer) {
             return null;
@@ -42,7 +43,7 @@ final class ClosureFromCallableReturnTypeProvider implements MethodReturnTypePro
         $codebase = $source->getCodebase();
         $context = $event->getContext();
 
-        if ($method_name_lowercase === 'fromcallable') {
+        if ($method_name === StrId::fromCallable) {
             $closure_types = [];
 
             if (isset($call_args[0])

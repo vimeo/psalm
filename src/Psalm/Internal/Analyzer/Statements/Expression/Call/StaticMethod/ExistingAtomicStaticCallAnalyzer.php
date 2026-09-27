@@ -26,6 +26,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Interner;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
@@ -33,6 +34,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -44,11 +46,11 @@ use function array_map;
 use function count;
 use function explode;
 use function in_array;
-use function is_string;
+use function is_int;
+use function ltrim;
 use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -126,8 +128,10 @@ final class ExistingAtomicStaticCallAnalyzer
                         }
                     }
 
-                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        $context->initialized_methods[(string) $appearing_method_id] = true;
+                    $appearing_class_lc = $appearing_method_id->fq_class_name;
+                    $appearing_method_name = $appearing_method_id->method_name;
+                    if (!isset($context->initialized_methods[$appearing_class_lc][$appearing_method_name])) {
+                        $context->initialized_methods[$appearing_class_lc][$appearing_method_name] = true;
 
                         $file_analyzer->getMethodMutations($appearing_method_id, $context);
 
@@ -203,7 +207,7 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
-            ? (string) $statements_analyzer->getFQCLN()
+            ? ($statements_analyzer->getFQCLN() ?? $fq_class_name)
             : $fq_class_name;
 
         $self_fq_class_name = $fq_class_name;
@@ -214,7 +218,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
                 $fq_class_name,
-                $stmt_name->name,
+                $method_name_lc,
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt_name),
@@ -225,7 +229,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if (!$return_type_candidate
             && $declaring_method_id
-            && (string) $declaring_method_id !== (string) $method_id
+            && !$declaring_method_id->equals($method_id)
         ) {
             $declaring_fq_class_name = $declaring_method_id->fq_class_name;
             $declaring_method_name = $declaring_method_id->method_name;
@@ -240,7 +244,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                     null,
                     $fq_class_name,
-                    $stmt_name->name,
+                    $method_name_lc,
                 );
             }
         }
@@ -312,7 +316,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     new UnusedMethodCall(
                         'The call to ' . $cased_method_id . ' is not used',
                         new CodeLocation($statements_analyzer, $stmt_name),
-                        (string) $method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -362,7 +366,7 @@ final class ExistingAtomicStaticCallAnalyzer
         if ($codebase->alter_code) {
             foreach ($codebase->call_transforms as $original_pattern => $transformation) {
                 if ($declaring_method_id
-                    && strtolower((string) $declaring_method_id) . '\((.*\))' === $original_pattern
+                    && (string) $declaring_method_id . '\((.*\))' === $original_pattern
                 ) {
                     if (strpos($transformation, '($1)') === strlen($transformation) - 4
                         && $stmt->class instanceof PhpParser\Node\Name
@@ -370,6 +374,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         $new_method_id = substr($transformation, 0, -4);
                         $old_declaring_fq_class_name = $declaring_method_id->fq_class_name;
                         [$new_fq_class_name, $new_method_name] = explode('::', $new_method_id);
+                        $new_fq_class_name = Interner::intern(ltrim($new_fq_class_name, '\\'));
 
                         if ($codebase->classlikes->handleClassLikeReferenceInMigration(
                             $codebase,
@@ -377,7 +382,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $stmt->class,
                             $new_fq_class_name,
                             $context,
-                            strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
+                            $old_declaring_fq_class_name !== $new_fq_class_name,
                             $stmt->class->getFirst() === 'self',
                         )) {
                             $moved_call = true;
@@ -408,9 +413,9 @@ final class ExistingAtomicStaticCallAnalyzer
             if ($appearing_method_id !== null && $declaring_method_id) {
                 $event = new AfterMethodCallAnalysisEvent(
                     $stmt,
-                    (string) $method_id,
-                    (string) $appearing_method_id,
-                    (string) $declaring_method_id,
+                    $method_id,
+                    $appearing_method_id,
+                    $declaring_method_id,
                     $context,
                     $statements_analyzer,
                     $codebase,
@@ -477,10 +482,10 @@ final class ExistingAtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         array $args,
         TemplateResult $template_result,
-        ?string &$self_fq_class_name,
+        ?int &$self_fq_class_name,
         Atomic $lhs_type_part,
         Context $context,
-        string $fq_class_name,
+        int $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config,
     ): ?Union {
@@ -528,7 +533,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             } elseif ($stmt->class instanceof PhpParser\Node\Name
                 && count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
                 && $lhs_type_part instanceof TNamedObject
                 && $context->self
             ) {
@@ -570,7 +575,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $class_storage->parent_class,
                 true,
                 false,
-                is_string($static_type)
+                is_int($static_type)
                 && ($static_type !== $context->self
                     || $class_storage->final
                     || $context_final),
@@ -619,7 +624,7 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
-     * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     * @return non-empty-array<int,non-empty-list<TemplateBound>> defining entity id => bounds
      * @psalm-mutation-free
      */
     private static function resolveTemplateResultLowerBound(
@@ -629,9 +634,9 @@ final class ExistingAtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         TTemplateParam $template_type,
     ): array {
-        if ($template_type->param_name === 'TFunctionArgCount') {
+        if ($template_type->param_name === StrId::TFunctionArgCount) {
             return [
-                'fn-' . $method_id->method_name => [
+                Interner::intern('fn-' . Interner::str($method_id->method_name)) => [
                     new TemplateBound(
                         Type::getInt(false, count($stmt->getArgs())),
                     ),
@@ -639,9 +644,9 @@ final class ExistingAtomicStaticCallAnalyzer
             ];
         }
 
-        if ($template_type->param_name === 'TPhpMajorVersion') {
+        if ($template_type->param_name === StrId::TPhpMajorVersion) {
             return [
-                'fn-' . $method_id->method_name => [
+                Interner::intern('fn-' . Interner::str($method_id->method_name)) => [
                     new TemplateBound(
                         Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                     ),
@@ -649,9 +654,9 @@ final class ExistingAtomicStaticCallAnalyzer
             ];
         }
 
-        if ($template_type->param_name === 'TPhpVersionId') {
+        if ($template_type->param_name === StrId::TPhpVersionId) {
             return [
-                'fn-' . $method_id->method_name => [
+                Interner::intern('fn-' . Interner::str($method_id->method_name)) => [
                     new TemplateBound(
                         Type::getInt(
                             false,

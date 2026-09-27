@@ -18,39 +18,39 @@ final class FileStorage
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $classlikes_in_file = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $referenced_classlikes = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $required_classes = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> interface name id => interface name id (same id)
      */
     public array $required_interfaces = [];
 
     /**
-     * @var array<string, FunctionStorage>
+     * @var array<int, FunctionStorage> function id => storage
      */
     public array $functions = [];
 
-    /** @var array<string, string> */
+    /** @var array<int, string> function id => lowercase file path */
     public array $declaring_function_ids = [];
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> constant name id => type
      */
     public array $constants = [];
 
-    /** @var array<string, string> */
+    /** @var array<int, string> constant name id => file path */
     public array $declaring_constants = [];
 
     /** @var array<lowercase-string, string> */
@@ -73,12 +73,12 @@ final class FileStorage
     public array $docblock_issues = [];
 
     /**
-     * @var array<string, TypeAlias>
+     * @var array<int, TypeAlias> alias name id => alias
      */
     public array $type_aliases = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> alias class name id => aliased class name id
      */
     public array $classlike_aliases = [];
 

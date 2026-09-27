@@ -12,7 +12,7 @@ use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 interface MethodExistenceProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<int> interned class names, with their exact declared casing (names are case-sensitive)
      */
     public static function getClassLikeNames(): array;
 

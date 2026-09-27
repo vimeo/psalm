@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
@@ -30,13 +31,13 @@ use function min;
 final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['min', 'max'];
+        return [StrId::min, StrId::max];
     }
 
     #[Override]
@@ -106,7 +107,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         if ($all_int) {
-            if ($event->getFunctionId() === 'min') {
+            if ($event->getFunctionId() === StrId::min) {
                 assert(count($min_bounds) !== 0);
                 //null values in $max_bounds doesn't make sense for min() so we remove them
                 $max_bounds = array_filter($max_bounds, static fn($v): bool => $v !== null) ?: [null];

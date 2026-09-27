@@ -16,7 +16,6 @@ use Psalm\Storage\FunctionLikeParameter;
 
 use function array_values;
 use function is_subclass_of;
-use function strtolower;
 
 /**
  * @internal
@@ -25,7 +24,7 @@ final class MethodParamsProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(MethodParamsProviderEvent): ?array<int, FunctionLikeParameter>>
      * >
      */
@@ -56,17 +55,17 @@ final class MethodParamsProvider
      * @param Closure(MethodParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $fq_classlike_name, Closure $c): void
+    public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $fq_classlike_name): bool
+    public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     /**
@@ -74,17 +73,17 @@ final class MethodParamsProvider
      * @return  ?list<FunctionLikeParameter>
      */
     public function getMethodParams(
-        string $fq_classlike_name,
-        string $method_name_lowercase,
+        int $fq_classlike_name,
+        int $method_name,
         ?array $call_args = null,
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): ?array {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $class_handler) {
             $event = new MethodParamsProviderEvent(
                 $fq_classlike_name,
-                $method_name_lowercase,
+                $method_name,
                 $call_args,
                 $statements_source,
                 $context,

@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Interner;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
@@ -49,6 +50,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -71,13 +73,13 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function ltrim;
 use function ord;
 use function preg_split;
 use function reset;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
 use function substr;
 use function substr_count;
 
@@ -98,49 +100,51 @@ final class ArgumentAnalyzer
     // this is NOT a complete list, but just what was easily available and to be extended
     private const PHP_NATIVE_NON_PUBLIC_CB = [
         ...ArgumentsAnalyzer::ARRAY_FILTERLIKE,
-        'array_diff_uassoc',
-        'array_diff_ukey',
-        'array_intersect_uassoc',
-        'array_intersect_ukey',
-        'array_map',
-        'array_reduce',
-        'array_udiff',
-        'array_udiff_assoc',
-        'array_udiff_uassoc',
-        'array_uintersect',
-        'array_uintersect_assoc',
-        'array_uintersect_uassoc',
-        'array_walk',
-        'array_walk_recursive',
-        'preg_replace_callback',
-        'preg_replace_callback_array',
-        'call_user_func',
-        'call_user_func_array',
-        'forward_static_call',
-        'forward_static_call_array',
-        'is_callable',
-        'ob_start',
-        'register_shutdown_function',
-        'register_tick_function',
-        'session_set_save_handler',
-        'set_error_handler',
-        'set_exception_handler',
-        'spl_autoload_register',
-        'spl_autoload_unregister',
-        'uasort',
-        'uksort',
-        'usort',
+        StrId::array_diff_uassoc,
+        StrId::array_diff_ukey,
+        StrId::array_intersect_uassoc,
+        StrId::array_intersect_ukey,
+        StrId::array_map,
+        StrId::array_reduce,
+        StrId::array_udiff,
+        StrId::array_udiff_assoc,
+        StrId::array_udiff_uassoc,
+        StrId::array_uintersect,
+        StrId::array_uintersect_assoc,
+        StrId::array_uintersect_uassoc,
+        StrId::array_walk,
+        StrId::array_walk_recursive,
+        StrId::preg_replace_callback,
+        StrId::preg_replace_callback_array,
+        StrId::call_user_func,
+        StrId::call_user_func_array,
+        StrId::forward_static_call,
+        StrId::forward_static_call_array,
+        StrId::is_callable,
+        StrId::ob_start,
+        StrId::register_shutdown_function,
+        StrId::register_tick_function,
+        StrId::session_set_save_handler,
+        StrId::set_error_handler,
+        StrId::set_exception_handler,
+        StrId::spl_autoload_register,
+        StrId::spl_autoload_unregister,
+        StrId::uasort,
+        StrId::uksort,
+        StrId::usort,
     ];
     /**
-     * @param  array<string, array<string, Union>> $class_generic_params
+     * @param  array<int, array<int, Union>> $class_generic_params
+     * @param  ?string $cased_method_id human-readable function/method id, for messages
+     * @param  int|MethodIdentifier|null $method_id function id or method id
      * @return false|null
      */
     public static function checkArgumentMatches(
         StatementsAnalyzer $statements_analyzer,
         ?string $cased_method_id,
-        ?MethodIdentifier $method_id,
-        ?string $self_fq_class_name,
-        ?string $static_fq_class_name,
+        int|MethodIdentifier|null $method_id,
+        ?int $self_fq_class_name,
+        ?int $static_fq_class_name,
         CodeLocation $function_call_location,
         ?FunctionLikeStorage $function_storage,
         ?FunctionLikeParameter $function_param,
@@ -187,10 +191,10 @@ final class ArgumentAnalyzer
                 if ($param_type && !$param_type->hasMixed()) {
                     IssueBuffer::maybeAdd(
                         new MixedArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                            'Argument ' . ($argument_offset + 1) . ' of ' . (string) $cased_method_id
                                 . ' cannot be mixed, expecting ' . $param_type,
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -232,10 +236,10 @@ final class ArgumentAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidLiteralArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                            'Argument ' . ($argument_offset + 1) . ' of ' . (string) $cased_method_id
                                 . ' expects a non-literal value, but ' . $arg_value_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -271,16 +275,16 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * @param  array<string, array<string, Union>> $class_generic_params
+     * @param  array<int, array<int, Union>> $class_generic_params
      * @return false|null
      */
     private static function checkFunctionLikeTypeMatches(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         ?string $cased_method_id,
-        ?MethodIdentifier $method_id,
-        ?string $self_fq_class_name,
-        ?string $static_fq_class_name,
+        int|MethodIdentifier|null $method_id,
+        ?int $self_fq_class_name,
+        ?int $static_fq_class_name,
         CodeLocation $function_call_location,
         ?FunctionLikeStorage $function_storage,
         FunctionLikeParameter $function_param,
@@ -362,7 +366,7 @@ final class ArgumentAnalyzer
                 $arg_value_type,
                 $argument_offset,
                 $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
+                ArgumentsAnalyzer::getCallingFunctionId($context),
             );
 
             $arg_value_type = TemplateStandinTypeReplacer::replace(
@@ -373,7 +377,7 @@ final class ArgumentAnalyzer
                 $arg_value_type,
                 $argument_offset,
                 $context->self,
-                $context->calling_function_id ?: $context->calling_method_id,
+                ArgumentsAnalyzer::getCallingFunctionId($context),
             );
         }
 
@@ -419,10 +423,10 @@ final class ArgumentAnalyzer
                 $arg_type_param,
                 $argument_offset,
                 !$statements_analyzer->isStatic()
-                    && (!$method_id || $method_id->method_name !== '__construct')
+                    && (!$method_id instanceof MethodIdentifier || $method_id->method_name !== StrId::__construct)
                     ? $context->self
                     : null,
-                $context->calling_method_id ?: $context->calling_function_id,
+                ArgumentsAnalyzer::getCallingFunctionId($context),
             );
 
             foreach ($bindable_template_params as $template_type) {
@@ -492,10 +496,10 @@ final class ArgumentAnalyzer
 
                 IssueBuffer::maybeAdd(
                     new MixedArgument(
-                        'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        'Argument ' . ($argument_offset + 1) . ' of ' . (string) $cased_method_id
                             . ' cannot unpack ' . $arg_value_type->getId() . ', expecting iterable',
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -536,9 +540,9 @@ final class ArgumentAnalyzer
                         $arg_value_type = $unpacked_atomic_array->getGenericValueType();
                     } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
-                        && isset($unpacked_atomic_array->properties[$function_param->name])
+                        && isset($unpacked_atomic_array->properties[Interner::str($function_param->name)])
                     ) {
-                        $arg_value_type = $unpacked_atomic_array->properties[$function_param->name];
+                        $arg_value_type = $unpacked_atomic_array->properties[Interner::str($function_param->name)];
                     } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
                     ) {
@@ -572,11 +576,11 @@ final class ArgumentAnalyzer
                 if (!$arg_key_allowed) {
                     IssueBuffer::maybeAdd(
                         new NamedArgumentNotAllowed(
-                            'Method ' . $cased_method_id
+                            'Method ' . (string) $cased_method_id
                                 . ' called with named unpacked array ' . $unpacked_atomic_array->getId()
                                 . ' (array with string keys)',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -617,7 +621,7 @@ final class ArgumentAnalyzer
                         new $issue_type(
                             'Tried to unpack non-iterable ' . $arg_value_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -625,12 +629,12 @@ final class ArgumentAnalyzer
                 if ($invalid_key) {
                     IssueBuffer::maybeAdd(
                         new $issue_type(
-                            'Method ' . $cased_method_id
+                            'Method ' . (string) $cased_method_id
                                 . ' called with unpacked iterable ' . $arg_value_type->getId()
                                 . ' with invalid key (must be '
                                 . ($codebase->analysis_php_version_id < 8_00_00 ? 'int' : 'int|string') . ')',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -641,18 +645,18 @@ final class ArgumentAnalyzer
                             new $issue_type(
                                 'String keys not supported in unpacked arguments',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                                $cased_method_id,
+                                $method_id,
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
                     } else {
                         IssueBuffer::maybeAdd(
                             new NamedArgumentNotAllowed(
-                                'Method ' . $cased_method_id
+                                'Method ' . (string) $cased_method_id
                                     . ' called with named unpacked iterable ' . $arg_value_type->getId()
                                     . ' (iterable with string keys)',
                                 new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                                $cased_method_id,
+                                $method_id,
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
@@ -665,9 +669,9 @@ final class ArgumentAnalyzer
             if (!$allow_named_args && $arg->name !== null) {
                 IssueBuffer::maybeAdd(
                     new NamedArgumentNotAllowed(
-                        'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
+                        'Method ' . (string) $cased_method_id . ' called with named argument ' . $arg->name->name,
                         new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -718,7 +722,7 @@ final class ArgumentAnalyzer
         Union $param_type,
         ?Union $signature_param_type,
         ?string $cased_method_id,
-        ?MethodIdentifier $method_id,
+        int|MethodIdentifier|null $method_id,
         int $argument_offset,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
@@ -738,16 +742,18 @@ final class ArgumentAnalyzer
                 && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
-                && $method_id
-                && !str_starts_with($method_id->method_name, '__')
+                && $method_id instanceof MethodIdentifier
+                && !str_starts_with(Interner::str($method_id->method_name), '__')
             ) {
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
-                    $id_lc = strtolower((string) $declaring_method_id);
-                    $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
+                    $class_lc = $declaring_method_id->fq_class_name;
+                    $method_lc = $declaring_method_id->method_name;
+                    $codebase->analyzer->possible_method_param_types[$class_lc][$method_lc][$argument_offset]
                         = Type::combineUnionTypes(
-                            $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
+                            $codebase->analyzer->possible_method_param_types
+                                [$class_lc][$method_lc][$argument_offset] ?? null,
                             $input_type,
                             $codebase,
                         );
@@ -811,7 +817,7 @@ final class ArgumentAnalyzer
                         . ' cannot be ' . $input_type->getId() . ', expecting ' .
                         $param_type,
                     $arg_location,
-                    $cased_method_id,
+                    $method_id,
                     $origin_location,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -932,11 +938,7 @@ final class ArgumentAnalyzer
                     } elseif ($atomic_type instanceof TLiteralString
                               && strpos($atomic_type->value, '::')
                     ) {
-                        $parts = explode('::', $atomic_type->value);
-                        $potential_method_id = new MethodIdentifier(
-                            $parts[0],
-                            strtolower($parts[1]),
-                        );
+                        $potential_method_id = MethodIdentifier::fromMethodIdReference($atomic_type->value);
                     }
 
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
@@ -1074,7 +1076,7 @@ final class ArgumentAnalyzer
                         [$lhs,] = $input_type_part->properties;
                         if ($lhs->isSingleStringLiteral()
                             && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
+                                $lhs->getSingleStringLiteral()->value,
                                 ['self', 'parent', 'static'],
                                 true,
                             )) {
@@ -1117,22 +1119,18 @@ final class ArgumentAnalyzer
                         continue;
                     }
 
-                    $parts = explode('::', $input_type_part->value);
-                    /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-                    $potential_method_id = new MethodIdentifier(
-                        $parts[0],
-                        strtolower($parts[1]),
-                    );
+                    $potential_method_id = MethodIdentifier::fromMethodIdReference($input_type_part->value);
 
                     if ($codebase->analysis_php_version_id >= 8_02_00
                         && in_array(
-                            strtolower($potential_method_id->fq_class_name),
-                            ['self', 'parent', 'static'],
+                            $potential_method_id->fq_class_name,
+                            [StrId::self, StrId::parent, StrId::static],
                             true,
                         )) {
                         IssueBuffer::maybeAdd(
                             new DeprecatedConstant(
-                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
+                                'Use of "' . Interner::str($potential_method_id->fq_class_name)
+                                    . '" in callables is deprecated',
                                 $arg_location,
                             ),
                             $statements_analyzer->getSuppressedIssues(),
@@ -1209,7 +1207,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', but parent type ' . $input_type->getId() . ' provided',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                         $origin_location,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1220,7 +1218,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', but parent type ' . $input_type->getId() . ' provided',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1255,7 +1253,7 @@ final class ArgumentAnalyzer
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
                                 $param_type->getId() . ', but ' . $type . ' provided',
                             $arg_location,
-                            $cased_method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -1266,7 +1264,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
                             ', but possibly different type ' . $type . ' provided',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1282,7 +1280,7 @@ final class ArgumentAnalyzer
                                 : '')
                             . ' provided',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1328,7 +1326,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
                             'null value provided to parameter with type ' . $param_type->getId(),
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1342,7 +1340,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
                             'null value provided',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1361,7 +1359,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, ' .
                         $param_type->getId() . ' value expected',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1375,7 +1373,7 @@ final class ArgumentAnalyzer
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
                         $param_type->getId() . ' value expected',
                         $arg_location,
-                        $cased_method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -1408,7 +1406,7 @@ final class ArgumentAnalyzer
     private static function verifyCallableInContext(
         MethodIdentifier $potential_method_id,
         ?string $cased_method_id,
-        ?MethodIdentifier $method_id,
+        int|MethodIdentifier|null $method_id,
         Atomic $input_type_part,
         int $argument_offset,
         CodeLocation $arg_location,
@@ -1418,13 +1416,13 @@ final class ArgumentAnalyzer
     ): ?bool {
         $method_identifier = $cased_method_id !== null ? ' of ' . $cased_method_id : '';
 
-        if (!$method_id
+        if (!$method_id instanceof MethodIdentifier
             || $potential_method_id->fq_class_name !== $context->self
             || $method_id->fq_class_name !== $context->self) {
             if ($input_type_part instanceof TKeyedArray) {
                 [$lhs,] = $input_type_part->properties;
             } else {
-                $lhs = Type::getString($potential_method_id->fq_class_name);
+                $lhs = Type::getString(Interner::str($potential_method_id->fq_class_name));
             }
 
             try {
@@ -1439,11 +1437,11 @@ final class ArgumentAnalyzer
                             && $lhs_atomic->value === $context->self))) {
                     if ($potential_method_id->fq_class_name !== $context->self
                         || ($cased_method_id !== null
-                            && !$method_id
-                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
-                        || ($method_id
+                            && !$method_id instanceof MethodIdentifier
+                            && !in_array($method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+                        || ($method_id instanceof MethodIdentifier
                             && $method_id->fq_class_name !== $context->self
-                            && $method_id->fq_class_name !== 'Closure')
+                            && $method_id->fq_class_name !== StrId::Closure)
                     ) {
                         if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
                             IssueBuffer::maybeAdd(
@@ -1451,7 +1449,7 @@ final class ArgumentAnalyzer
                                     'Argument ' . ($argument_offset + 1) . $method_identifier
                                     . ' expects a public callable, but a non-public callable provided',
                                     $arg_location,
-                                    $cased_method_id,
+                                    $method_id,
                                 ),
                                 $statements_analyzer->getSuppressedIssues(),
                             );
@@ -1471,7 +1469,7 @@ final class ArgumentAnalyzer
                                 . (!$method_storage->is_static ? 'non-static ' : '')
                                 . 'callable provided',
                                 $arg_location,
-                                $cased_method_id,
+                                $method_id,
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
@@ -1506,7 +1504,7 @@ final class ArgumentAnalyzer
             ) {
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
-                    $input_expr->value,
+                    Interner::intern(ltrim($input_expr->value, '\\')),
                     $arg_location,
                     $context,
                     $statements_analyzer->getSuppressedIssues(),
@@ -1524,7 +1522,7 @@ final class ArgumentAnalyzer
                             if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
-                                    $item->value->value,
+                                    Interner::intern(ltrim($item->value->value, '\\')),
                                     $arg_location,
                                     $context,
                                     $statements_analyzer->getSuppressedIssues(),
@@ -1573,15 +1571,17 @@ final class ArgumentAnalyzer
                             $non_existent_method_ids = [];
 
                             foreach ($function_id_parts as $function_id_part) {
-                                [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
+                                [$callable_fq_class_name_str, $method_name] = explode('::', $function_id_part);
 
-                                switch ($callable_fq_class_name) {
+                                $callable_fq_class_name = Interner::intern(ltrim($callable_fq_class_name_str, '\\'));
+
+                                switch ($callable_fq_class_name_str) {
                                     case 'self':
                                     case 'static':
                                     case 'parent':
                                         $container_class = $statements_analyzer->getFQCLN();
 
-                                        if ($callable_fq_class_name === 'parent') {
+                                        if ($callable_fq_class_name_str === 'parent') {
                                             $container_class = $statements_analyzer->getParentFQCLN();
                                             if ($container_class === null) {
                                                 IssueBuffer::accepts(
@@ -1595,7 +1595,7 @@ final class ArgumentAnalyzer
                                             }
                                         }
 
-                                        if (!$container_class) {
+                                        if ($container_class === null) {
                                             continue 2;
                                         }
 
@@ -1616,12 +1616,12 @@ final class ArgumentAnalyzer
 
                                 $function_id_part = new MethodIdentifier(
                                     $callable_fq_class_name,
-                                    strtolower($method_name),
+                                    Interner::intern($method_name),
                                 );
 
                                 $call_method_id = new MethodIdentifier(
                                     $callable_fq_class_name,
-                                    '__call',
+                                    StrId::__call,
                                 );
 
                                 if (!$codebase->classOrInterfaceOrEnumExists(
@@ -1651,6 +1651,7 @@ final class ArgumentAnalyzer
                                 }
                             }
                         } else {
+                            $function_id = Interner::intern(ltrim($function_id, '\\'));
                             if (!$param_type->hasString()
                                 && !$param_type->hasArray()
                                 && $context->check_functions
@@ -1803,7 +1804,7 @@ final class ArgumentAnalyzer
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
-        ?MethodIdentifier $method_id,
+        int|MethodIdentifier|null $method_id,
         int $argument_offset,
         CodeLocation $arg_location,
         CodeLocation $function_call_location,
@@ -1839,7 +1840,9 @@ final class ArgumentAnalyzer
             );
         }
 
-        $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
+        $callable_kind = $in_call_map
+            ? 'builtin'
+            : ($method_id instanceof MethodIdentifier ? 'magic-method' : 'callable-object');
 
         $specialization_location = $specialize_taint ? $function_call_location : null;
 
@@ -1876,8 +1879,8 @@ final class ArgumentAnalyzer
 
         if (!$specialize_taint
             && $taint_flow_graph
-            && $method_id
-            && $method_id->method_name !== '__construct'
+            && $method_id instanceof MethodIdentifier
+            && $method_id->method_name !== StrId::__construct
         ) {
             $fq_classlike_name = $method_id->fq_class_name;
             $cased_method_name = explode('::', $cased_method_id)[1];
@@ -1895,13 +1898,13 @@ final class ArgumentAnalyzer
                 // the node id is created.
                 $new_sink = DataFlowNode::getForMethodArgumentById(
                     $codebase->methods,
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
+                    Interner::str($dependent_classlike_storage->name) . '::' . $cased_method_name,
                     $argument_offset,
                     null,
                     $function_param,
                 ) ?? DataFlowNode::getForCallableArg(
                     'inherited-method',
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
+                    Interner::str($dependent_classlike_storage->name) . '::' . $cased_method_name,
                     $argument_offset,
                 );
 
@@ -1916,10 +1919,10 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $taint_flow_graph) {
+        if ($method_id instanceof MethodIdentifier && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-            if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
+            if ($declaring_method_id && !$declaring_method_id->equals($method_id)) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
                 $new_sink = DataFlowNode::getForMethodArgument(
                     $codebase->methods->getCasedMethodId($declaring_method_id),

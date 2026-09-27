@@ -13,6 +13,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Interner;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -30,6 +31,7 @@ use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -84,7 +86,7 @@ final class AssertionReconciler extends Reconciler
      *  - notEmpty(Object|false) => Object
      *
      * @param   string[]            $suppressed_issues
-     * @param   array<string, array<string, Union>> $template_type_map
+     * @param   array<int, array<int, Union>> $template_type_map
      * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     public static function reconcile(
@@ -229,7 +231,7 @@ final class AssertionReconciler extends Reconciler
             }
 
             if ($assertion instanceof IsClassEqual) {
-                $new_type_part = Atomic::create($assertion->type, null, $template_type_map);
+                $new_type_part = Atomic::create(Interner::str($assertion->type), null, $template_type_map);
             } elseif ($assertion_type = $assertion->getAtomicType()) {
                 $new_type_part = $assertion_type;
             } else {
@@ -1699,7 +1701,7 @@ final class AssertionReconciler extends Reconciler
                     if (count($acceptable_atomic_types) === 1) {
                         $should_return = true;
 
-                        return [new TClassString('object', $acceptable_atomic_types[0])];
+                        return [new TClassString(StrId::object, $acceptable_atomic_types[0])];
                     }
                 }
             }

@@ -11,8 +11,6 @@ use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
 
-use function strtolower;
-
 /**
  * @internal
  */
@@ -20,7 +18,7 @@ final class PropertyVisibilityProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(PropertyVisibilityProviderEvent): ?bool>
      * >
      */
@@ -50,28 +48,28 @@ final class PropertyVisibilityProvider
      * @param Closure(PropertyVisibilityProviderEvent): ?bool $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $fq_classlike_name, Closure $c): void
+    public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $fq_classlike_name): bool
+    public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function isPropertyVisible(
         StatementsSource $source,
-        string $fq_classlike_name,
-        string $property_name,
+        int $fq_classlike_name,
+        int $property_name,
         bool $read_mode,
         Context $context,
         CodeLocation $code_location,
     ): ?bool {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $property_handler) {
             $event = new PropertyVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,

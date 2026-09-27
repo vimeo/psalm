@@ -15,26 +15,38 @@ use Psalm\Type\Union;
  */
 interface StatementsSource extends FileSource
 {
-    public function getNamespace(): ?string;
+    /**
+     * @return ?int interned namespace name
+     */
+    public function getNamespace(): ?int;
 
     /**
-     * @return array<lowercase-string, string>
+     * @return array<int, int> class name id => alias name id
      */
     public function getAliasedClassesFlipped(): array;
 
     /**
-     * @return array<string, string>
+     * @return array<int, int> class name id => alias name id
      */
     public function getAliasedClassesFlippedReplaceable(): array;
 
-    public function getFQCLN(): ?string;
-
-    public function getClassName(): ?string;
-
-    public function getParentFQCLN(): ?string;
+    /**
+     * @return ?int interned class name
+     */
+    public function getFQCLN(): ?int;
 
     /**
-     * @return array<string, array<string, Union>>|null
+     * @return ?int interned class name
+     */
+    public function getClassName(): ?int;
+
+    /**
+     * @return ?int interned class name
+     */
+    public function getParentFQCLN(): ?int;
+
+    /**
+     * @return array<int, array<int, Union>>|null template name id => defining entity id => type
      */
     public function getTemplateTypeMap(): ?array;
 

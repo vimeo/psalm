@@ -47,7 +47,7 @@ final class ForbiddenCodeTest extends TestCase
             'varDumpCased' => [
                 'code' => '<?php
                     vAr_dUMp("hello");',
-                'error_message' => 'ForbiddenCode',
+                'error_message' => 'UndefinedFunction',
             ],
             'execTicks' => [
                 'code' => '<?php
@@ -62,7 +62,7 @@ final class ForbiddenCodeTest extends TestCase
             'execCased' => [
                 'code' => '<?php
                     sHeLl_EXeC("rm -rf");',
-                'error_message' => 'ForbiddenCode',
+                'error_message' => 'UndefinedFunction',
             ],
         ];
     }

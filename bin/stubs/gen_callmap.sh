@@ -19,3 +19,6 @@ wait
 
 php bin/stubs/gen_callmap.php
 php bin/stubs/gen_callmap.php
+
+# preload the names used in the callmaps
+php bin/generate_str_ids.php

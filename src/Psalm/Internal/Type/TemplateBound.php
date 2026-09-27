@@ -32,9 +32,9 @@ final class TemplateBound
          */
         public ?int $arg_offset = null,
         /**
-         * When non-null, indicates an equality template bound (vs a lower or upper bound)
+         * When non-null (an interned class name), indicates an equality template bound (vs a lower or upper bound)
          */
-        public ?string $equality_bound_classlike = null,
+        public ?int $equality_bound_classlike = null,
         /**
          * Where the bound was recorded, when it constrains a type variable
          */

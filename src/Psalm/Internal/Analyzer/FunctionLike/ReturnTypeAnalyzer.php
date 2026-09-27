@@ -30,6 +30,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -47,6 +48,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -59,7 +61,6 @@ use function count;
 use function implode;
 use function in_array;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -80,8 +81,8 @@ final class ReturnTypeAnalyzer
         NodeDataProvider $type_provider,
         FunctionLikeAnalyzer $function_like_analyzer,
         ?Union $return_type = null,
-        ?string $fq_class_name = null,
-        ?string $static_fq_class_name = null,
+        ?int $fq_class_name = null,
+        ?int $static_fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
@@ -122,7 +123,7 @@ final class ReturnTypeAnalyzer
             return null;
         }
 
-        $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
+        $is_to_string = $function instanceof ClassMethod && $function->name->name === '__toString';
 
         if ($function instanceof ClassMethod
             && str_starts_with($function->name->name, '__')
@@ -419,13 +420,13 @@ final class ReturnTypeAnalyzer
             return null;
         }
 
-        $self_fq_class_name = $fq_class_name ?: $source->getFQCLN();
+        $self_fq_class_name = $fq_class_name ?? $source->getFQCLN();
 
         $parent_class = null;
 
         $classlike_storage = null;
 
-        if ($self_fq_class_name) {
+        if ($self_fq_class_name !== null) {
             $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             $parent_class = $classlike_storage->parent_class;
         }
@@ -823,7 +824,7 @@ final class ReturnTypeAnalyzer
 
         $classlike_storage = null;
 
-        if ($context->self) {
+        if ($context->self !== null) {
             $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
             $parent_class = $classlike_storage->parent_class;
         }
@@ -831,7 +832,7 @@ final class ReturnTypeAnalyzer
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
             foreach ($storage->return_type->getAtomicTypes() as $type) {
                 if ($type instanceof TNamedObject
-                    && 'parent' === $type->value
+                    && StrId::parent === $type->value
                     && null === $parent_class
                 ) {
                     if (IssueBuffer::accepts(
@@ -929,12 +930,12 @@ final class ReturnTypeAnalyzer
             return false;
         }
 
-        if ($classlike_storage && $context->self) {
+        if ($classlike_storage && $context->self !== null) {
             $class_template_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $classlike_storage,
                 $codebase->classlike_storage_provider->get($context->self),
-                strtolower($function->name->name),
+                Interner::intern($function->name->name),
                 new TNamedObject($context->self),
                 true,
             );

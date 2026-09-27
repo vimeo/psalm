@@ -8,6 +8,7 @@ use Override;
 use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Atomic;
@@ -85,7 +86,7 @@ final class TaintActiveRecords implements AddTaintsInterface
             return false;
         }
 
-        return strpos($type->value, 'app\models\\') === 0;
+        return strpos(Interner::str($type->value), 'app\models\\') === 0;
     }
 
 

@@ -13,7 +13,7 @@ use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
 interface DynamicFunctionStorageProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int> interned function ids, with their exact declared casing (names are case-sensitive)
      */
     public static function getFunctionIds(): array;
 

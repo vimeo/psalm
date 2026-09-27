@@ -21,7 +21,7 @@ final class AfterClassLikeExistenceCheckEvent
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_class_name,
+        private readonly int $fq_class_name,
         private readonly CodeLocation $code_location,
         private readonly StatementsSource $statements_source,
         private readonly Codebase $codebase,
@@ -32,7 +32,7 @@ final class AfterClassLikeExistenceCheckEvent
     /**
      * @psalm-mutation-free
      */
-    public function getFqClassName(): string
+    public function getFqClassName(): int
     {
         return $this->fq_class_name;
     }

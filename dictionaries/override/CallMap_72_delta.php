@@ -3,11 +3,11 @@
 return array (
   'added' => 
   array (
-    'domnamednodemap::count' => 
+    'DOMNamedNodeMap::count' => 
     array (
       0 => 'int',
     ),
-    'domnodelist::count' => 
+    'DOMNodeList::count' => 
     array (
       0 => 'int',
     ),
@@ -137,48 +137,48 @@ return array (
       'str' => 'string',
       'encoding=' => 'string',
     ),
-    'mongodb\\bson\\document::fromphp' => 
+    'MongoDB\\BSON\\Document::fromPHP' => 
     array (
       0 => 'MongoDB\\BSON\\Document',
       'value' => 'array<array-key, mixed>|object',
     ),
-    'mongodb\\bson\\document::tophp' => 
+    'MongoDB\\BSON\\Document::toPHP' => 
     array (
       0 => 'array<array-key, mixed>|object',
       'typeMap=' => 'array<array-key, mixed>|null',
     ),
-    'mongodb\\bson\\document::unserialize' => 
+    'MongoDB\\BSON\\Document::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\iterator::key' => 
+    'MongoDB\\BSON\\Iterator::key' => 
     array (
       0 => 'int|string',
     ),
-    'mongodb\\bson\\packedarray::tophp' => 
+    'MongoDB\\BSON\\PackedArray::toPHP' => 
     array (
       0 => 'array<array-key, mixed>|object',
       'typeMap=' => 'array<array-key, mixed>|null',
     ),
-    'mongodb\\bson\\packedarray::unserialize' => 
+    'MongoDB\\BSON\\PackedArray::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\clientencryption::encryptexpression' => 
+    'MongoDB\\Driver\\ClientEncryption::encryptExpression' => 
     array (
       0 => 'object',
       'expr' => 'array<array-key, mixed>|object',
       'options=' => 'array<array-key, mixed>|null',
     ),
-    'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
+    'MongoDB\\Driver\\ClientEncryption::rewrapManyDataKey' => 
     array (
       0 => 'object',
       'filter' => 'array<array-key, mixed>|object',
       'options=' => 'array<array-key, mixed>|null',
     ),
-    'mongodb\\driver\\manager::getencryptedfieldsmap' => 
+    'MongoDB\\Driver\\Manager::getEncryptedFieldsMap' => 
     array (
       0 => 'array<array-key, mixed>|null|object',
     ),
@@ -228,11 +228,11 @@ return array (
       'infilename' => 'string',
       '&w certs' => 'array<array-key, mixed>',
     ),
-    'reflectionclass::isiterable' => 
+    'ReflectionClass::isIterable' => 
     array (
       0 => 'bool',
     ),
-    'reflectionobject::isiterable' => 
+    'ReflectionObject::isIterable' => 
     array (
       0 => 'bool',
     ),
@@ -761,18 +761,18 @@ return array (
       0 => 'mixed',
       'category=' => 'string',
     ),
-    'ziparchive::count' => 
+    'ZipArchive::count' => 
     array (
       0 => 'int',
     ),
-    'ziparchive::setencryptionindex' => 
+    'ZipArchive::setEncryptionIndex' => 
     array (
       0 => 'bool',
       'index' => 'int',
       'method' => 'int',
       'password=' => 'string',
     ),
-    'ziparchive::setencryptionname' => 
+    'ZipArchive::setEncryptionName' => 
     array (
       0 => 'bool',
       'name' => 'string',
@@ -782,7 +782,7 @@ return array (
   ),
   'changed' => 
   array (
-    'arrayiterator::__construct' => 
+    'ArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -960,7 +960,7 @@ return array (
         'is_hex=' => 'mixed',
       ),
     ),
-    'mongodb\\bson\\binary::__construct' => 
+    'MongoDB\\BSON\\Binary::__construct' => 
     array (
       'old' => 
       array (
@@ -975,7 +975,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'mongodb\\bson\\int64::__construct' => 
+    'MongoDB\\BSON\\Int64::__construct' => 
     array (
       'old' => 
       array (
@@ -987,7 +987,7 @@ return array (
         'value' => 'int|string',
       ),
     ),
-    'mongodb\\bson\\javascript::__construct' => 
+    'MongoDB\\BSON\\Javascript::__construct' => 
     array (
       'old' => 
       array (
@@ -1002,7 +1002,7 @@ return array (
         'scope=' => 'array<array-key, mixed>|null|object',
       ),
     ),
-    'mongodb\\driver\\bulkwrite::delete' => 
+    'MongoDB\\Driver\\BulkWrite::delete' => 
     array (
       'old' => 
       array (
@@ -1017,7 +1017,7 @@ return array (
         'deleteOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\bulkwrite::update' => 
+    'MongoDB\\Driver\\BulkWrite::update' => 
     array (
       'old' => 
       array (
@@ -1034,7 +1034,7 @@ return array (
         'updateOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\command::__construct' => 
+    'MongoDB\\Driver\\Command::__construct' => 
     array (
       'old' => 
       array (
@@ -1049,7 +1049,7 @@ return array (
         'commandOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\exception\\runtimeexception::haserrorlabel' => 
+    'MongoDB\\Driver\\Exception\\RuntimeException::hasErrorLabel' => 
     array (
       'old' => 
       array (
@@ -1062,7 +1062,7 @@ return array (
         'errorLabel' => 'string',
       ),
     ),
-    'mongodb\\driver\\manager::__construct' => 
+    'MongoDB\\Driver\\Manager::__construct' => 
     array (
       'old' => 
       array (
@@ -1079,7 +1079,7 @@ return array (
         'driverOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\manager::executebulkwrite' => 
+    'MongoDB\\Driver\\Manager::executeBulkWrite' => 
     array (
       'old' => 
       array (
@@ -1096,7 +1096,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\manager::executequery' => 
+    'MongoDB\\Driver\\Manager::executeQuery' => 
     array (
       'old' => 
       array (
@@ -1113,7 +1113,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\manager::executereadcommand' => 
+    'MongoDB\\Driver\\Manager::executeReadCommand' => 
     array (
       'old' => 
       array (
@@ -1130,7 +1130,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\manager::executewritecommand' => 
+    'MongoDB\\Driver\\Manager::executeWriteCommand' => 
     array (
       'old' => 
       array (
@@ -1147,7 +1147,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\query::__construct' => 
+    'MongoDB\\Driver\\Query::__construct' => 
     array (
       'old' => 
       array (
@@ -1162,7 +1162,7 @@ return array (
         'queryOptions=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executebulkwrite' => 
+    'MongoDB\\Driver\\Server::executeBulkWrite' => 
     array (
       'old' => 
       array (
@@ -1179,7 +1179,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executequery' => 
+    'MongoDB\\Driver\\Server::executeQuery' => 
     array (
       'old' => 
       array (
@@ -1196,7 +1196,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executereadcommand' => 
+    'MongoDB\\Driver\\Server::executeReadCommand' => 
     array (
       'old' => 
       array (
@@ -1213,7 +1213,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executereadwritecommand' => 
+    'MongoDB\\Driver\\Server::executeReadWriteCommand' => 
     array (
       'old' => 
       array (
@@ -1230,7 +1230,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executewritecommand' => 
+    'MongoDB\\Driver\\Server::executeWriteCommand' => 
     array (
       'old' => 
       array (
@@ -1247,7 +1247,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\session::advanceoperationtime' => 
+    'MongoDB\\Driver\\Session::advanceOperationTime' => 
     array (
       'old' => 
       array (
@@ -1260,7 +1260,7 @@ return array (
         'operationTime' => 'MongoDB\\BSON\\TimestampInterface',
       ),
     ),
-    'mongodb\\driver\\writeresult::getdeletedcount' => 
+    'MongoDB\\Driver\\WriteResult::getDeletedCount' => 
     array (
       'old' => 
       array (
@@ -1271,7 +1271,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'mongodb\\driver\\writeresult::getinsertedcount' => 
+    'MongoDB\\Driver\\WriteResult::getInsertedCount' => 
     array (
       'old' => 
       array (
@@ -1282,7 +1282,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'mongodb\\driver\\writeresult::getmatchedcount' => 
+    'MongoDB\\Driver\\WriteResult::getMatchedCount' => 
     array (
       'old' => 
       array (
@@ -1293,7 +1293,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'mongodb\\driver\\writeresult::getmodifiedcount' => 
+    'MongoDB\\Driver\\WriteResult::getModifiedCount' => 
     array (
       'old' => 
       array (
@@ -1304,7 +1304,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'mongodb\\driver\\writeresult::getupsertedcount' => 
+    'MongoDB\\Driver\\WriteResult::getUpsertedCount' => 
     array (
       'old' => 
       array (
@@ -1354,7 +1354,7 @@ return array (
         'delim_char=' => 'null|string',
       ),
     ),
-    'recursivearrayiterator::__construct' => 
+    'RecursiveArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -1370,7 +1370,7 @@ return array (
         'ar_flags=' => 'int',
       ),
     ),
-    'redis::auth' => 
+    'Redis::auth' => 
     array (
       'old' => 
       array (
@@ -1383,7 +1383,7 @@ return array (
         'credentials' => 'string',
       ),
     ),
-    'redis::bitcount' => 
+    'Redis::bitcount' => 
     array (
       'old' => 
       array (
@@ -1399,7 +1399,7 @@ return array (
         'bybit=' => 'mixed',
       ),
     ),
-    'redis::bitop' => 
+    'Redis::bitop' => 
     array (
       'old' => 
       array (
@@ -1418,7 +1418,7 @@ return array (
         '...other_keys=' => 'string',
       ),
     ),
-    'redis::bitpos' => 
+    'Redis::bitpos' => 
     array (
       'old' => 
       array (
@@ -1438,7 +1438,7 @@ return array (
         'bybit=' => 'mixed',
       ),
     ),
-    'redis::blpop' => 
+    'Redis::blPop' => 
     array (
       'old' => 
       array (
@@ -1455,7 +1455,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'redis::brpop' => 
+    'Redis::brPop' => 
     array (
       'old' => 
       array (
@@ -1472,7 +1472,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'redis::client' => 
+    'Redis::client' => 
     array (
       'old' => 
       array (
@@ -1487,7 +1487,7 @@ return array (
         '...args=' => 'string',
       ),
     ),
-    'redis::config' => 
+    'Redis::config' => 
     array (
       'old' => 
       array (
@@ -1504,7 +1504,7 @@ return array (
         'value=' => 'string',
       ),
     ),
-    'redis::connect' => 
+    'Redis::connect' => 
     array (
       'old' => 
       array (
@@ -1526,7 +1526,7 @@ return array (
         'context=' => 'mixed',
       ),
     ),
-    'redis::decr' => 
+    'Redis::decr' => 
     array (
       'old' => 
       array (
@@ -1540,7 +1540,7 @@ return array (
         'by=' => 'mixed',
       ),
     ),
-    'redis::echo' => 
+    'Redis::echo' => 
     array (
       'old' => 
       array (
@@ -1553,7 +1553,7 @@ return array (
         'str' => 'string',
       ),
     ),
-    'redis::evalsha' => 
+    'Redis::evalsha' => 
     array (
       'old' => 
       array (
@@ -1570,7 +1570,7 @@ return array (
         'num_keys=' => 'int',
       ),
     ),
-    'redis::expire' => 
+    'Redis::expire' => 
     array (
       'old' => 
       array (
@@ -1586,7 +1586,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'redis::expireat' => 
+    'Redis::expireAt' => 
     array (
       'old' => 
       array (
@@ -1602,7 +1602,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'redis::flushall' => 
+    'Redis::flushAll' => 
     array (
       'old' => 
       array (
@@ -1615,7 +1615,7 @@ return array (
         'sync=' => 'bool',
       ),
     ),
-    'redis::flushdb' => 
+    'Redis::flushDB' => 
     array (
       'old' => 
       array (
@@ -1628,7 +1628,7 @@ return array (
         'sync=' => 'bool',
       ),
     ),
-    'redis::geoadd' => 
+    'Redis::geoadd' => 
     array (
       'old' => 
       array (
@@ -1649,7 +1649,7 @@ return array (
         '...other_triples_and_options=' => 'float|int|string',
       ),
     ),
-    'redis::georadius' => 
+    'Redis::georadius' => 
     array (
       'old' => 
       array (
@@ -1672,7 +1672,7 @@ return array (
         'options=' => 'array<string, mixed>',
       ),
     ),
-    'redis::georadiusbymember' => 
+    'Redis::georadiusbymember' => 
     array (
       'old' => 
       array (
@@ -1693,7 +1693,7 @@ return array (
         'options=' => 'array<string, mixed>',
       ),
     ),
-    'redis::getbit' => 
+    'Redis::getBit' => 
     array (
       'old' => 
       array (
@@ -1708,7 +1708,7 @@ return array (
         'idx' => 'int',
       ),
     ),
-    'redis::hdel' => 
+    'Redis::hDel' => 
     array (
       'old' => 
       array (
@@ -1725,7 +1725,7 @@ return array (
         '...other_fields=' => 'string',
       ),
     ),
-    'redis::hexists' => 
+    'Redis::hExists' => 
     array (
       'old' => 
       array (
@@ -1740,7 +1740,7 @@ return array (
         'field' => 'string',
       ),
     ),
-    'redis::hincrby' => 
+    'Redis::hIncrBy' => 
     array (
       'old' => 
       array (
@@ -1757,7 +1757,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'redis::hincrbyfloat' => 
+    'Redis::hIncrByFloat' => 
     array (
       'old' => 
       array (
@@ -1774,7 +1774,7 @@ return array (
         'value' => 'float',
       ),
     ),
-    'redis::hmget' => 
+    'Redis::hMget' => 
     array (
       'old' => 
       array (
@@ -1789,7 +1789,7 @@ return array (
         'fields' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::hmset' => 
+    'Redis::hMset' => 
     array (
       'old' => 
       array (
@@ -1804,7 +1804,7 @@ return array (
         'fieldvals' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::hscan' => 
+    'Redis::hscan' => 
     array (
       'old' => 
       array (
@@ -1823,7 +1823,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::hsetnx' => 
+    'Redis::hSetNx' => 
     array (
       'old' => 
       array (
@@ -1840,7 +1840,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'redis::incr' => 
+    'Redis::incr' => 
     array (
       'old' => 
       array (
@@ -1854,7 +1854,7 @@ return array (
         'by=' => 'mixed',
       ),
     ),
-    'redis::info' => 
+    'Redis::info' => 
     array (
       'old' => 
       array (
@@ -1867,7 +1867,7 @@ return array (
         '...sections=' => 'string',
       ),
     ),
-    'redis::linsert' => 
+    'Redis::lInsert' => 
     array (
       'old' => 
       array (
@@ -1886,7 +1886,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'redis::lpop' => 
+    'Redis::lPop' => 
     array (
       'old' => 
       array (
@@ -1900,7 +1900,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::lpush' => 
+    'Redis::lPush' => 
     array (
       'old' => 
       array (
@@ -1915,7 +1915,7 @@ return array (
         '...elements=' => 'string',
       ),
     ),
-    'redis::lrem' => 
+    'Redis::lrem' => 
     array (
       'old' => 
       array (
@@ -1932,7 +1932,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::ltrim' => 
+    'Redis::ltrim' => 
     array (
       'old' => 
       array (
@@ -1949,7 +1949,7 @@ return array (
         'end' => 'int',
       ),
     ),
-    'redis::migrate' => 
+    'Redis::migrate' => 
     array (
       'old' => 
       array (
@@ -1975,7 +1975,7 @@ return array (
         'credentials=' => 'mixed',
       ),
     ),
-    'redis::move' => 
+    'Redis::move' => 
     array (
       'old' => 
       array (
@@ -1990,7 +1990,7 @@ return array (
         'index' => 'int',
       ),
     ),
-    'redis::mset' => 
+    'Redis::mset' => 
     array (
       'old' => 
       array (
@@ -2003,7 +2003,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::msetnx' => 
+    'Redis::msetnx' => 
     array (
       'old' => 
       array (
@@ -2016,7 +2016,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::multi' => 
+    'Redis::multi' => 
     array (
       'old' => 
       array (
@@ -2029,7 +2029,7 @@ return array (
         'value=' => 'int',
       ),
     ),
-    'redis::object' => 
+    'Redis::object' => 
     array (
       'old' => 
       array (
@@ -2044,7 +2044,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redis::open' => 
+    'Redis::open' => 
     array (
       'old' => 
       array (
@@ -2066,7 +2066,7 @@ return array (
         'context=' => 'mixed',
       ),
     ),
-    'redis::pconnect' => 
+    'Redis::pconnect' => 
     array (
       'old' => 
       array (
@@ -2087,7 +2087,7 @@ return array (
         'context=' => 'mixed',
       ),
     ),
-    'redis::pexpire' => 
+    'Redis::pexpire' => 
     array (
       'old' => 
       array (
@@ -2103,7 +2103,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'redis::pexpireat' => 
+    'Redis::pexpireAt' => 
     array (
       'old' => 
       array (
@@ -2119,7 +2119,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'redis::pfcount' => 
+    'Redis::pfcount' => 
     array (
       'old' => 
       array (
@@ -2132,7 +2132,7 @@ return array (
         'key_or_keys' => 'array<array-key, mixed>|string',
       ),
     ),
-    'redis::pfmerge' => 
+    'Redis::pfmerge' => 
     array (
       'old' => 
       array (
@@ -2147,7 +2147,7 @@ return array (
         'srckeys' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::ping' => 
+    'Redis::ping' => 
     array (
       'old' => 
       array (
@@ -2159,7 +2159,7 @@ return array (
         'message=' => 'mixed',
       ),
     ),
-    'redis::popen' => 
+    'Redis::popen' => 
     array (
       'old' => 
       array (
@@ -2180,7 +2180,7 @@ return array (
         'context=' => 'mixed',
       ),
     ),
-    'redis::psubscribe' => 
+    'Redis::psubscribe' => 
     array (
       'old' => 
       array (
@@ -2195,7 +2195,7 @@ return array (
         'cb' => 'array<array-key, mixed>|string',
       ),
     ),
-    'redis::pubsub' => 
+    'Redis::pubsub' => 
     array (
       'old' => 
       array (
@@ -2210,7 +2210,7 @@ return array (
         'arg=' => 'array<array-key, mixed>|string',
       ),
     ),
-    'redis::punsubscribe' => 
+    'Redis::punsubscribe' => 
     array (
       'old' => 
       array (
@@ -2224,7 +2224,7 @@ return array (
         'patterns' => 'string',
       ),
     ),
-    'redis::rawcommand' => 
+    'Redis::rawcommand' => 
     array (
       'old' => 
       array (
@@ -2239,7 +2239,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'redis::rename' => 
+    'Redis::rename' => 
     array (
       'old' => 
       array (
@@ -2254,7 +2254,7 @@ return array (
         'new_name' => 'string',
       ),
     ),
-    'redis::renamenx' => 
+    'Redis::renameNx' => 
     array (
       'old' => 
       array (
@@ -2269,7 +2269,7 @@ return array (
         'key_dst' => 'string',
       ),
     ),
-    'redis::restore' => 
+    'Redis::restore' => 
     array (
       'old' => 
       array (
@@ -2287,7 +2287,7 @@ return array (
         'options=' => 'mixed',
       ),
     ),
-    'redis::rpop' => 
+    'Redis::rPop' => 
     array (
       'old' => 
       array (
@@ -2301,7 +2301,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::rpoplpush' => 
+    'Redis::rpoplpush' => 
     array (
       'old' => 
       array (
@@ -2316,7 +2316,7 @@ return array (
         'dstkey' => 'string',
       ),
     ),
-    'redis::rpush' => 
+    'Redis::rPush' => 
     array (
       'old' => 
       array (
@@ -2331,7 +2331,7 @@ return array (
         '...elements=' => 'string',
       ),
     ),
-    'redis::sadd' => 
+    'Redis::sAdd' => 
     array (
       'old' => 
       array (
@@ -2347,7 +2347,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'redis::saddarray' => 
+    'Redis::sAddArray' => 
     array (
       'old' => 
       array (
@@ -2362,7 +2362,7 @@ return array (
         'values' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::scan' => 
+    'Redis::scan' => 
     array (
       'old' => 
       array (
@@ -2380,7 +2380,7 @@ return array (
         'type=' => 'mixed',
       ),
     ),
-    'redis::script' => 
+    'Redis::script' => 
     array (
       'old' => 
       array (
@@ -2395,7 +2395,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'redis::select' => 
+    'Redis::select' => 
     array (
       'old' => 
       array (
@@ -2408,7 +2408,7 @@ return array (
         'db' => 'int',
       ),
     ),
-    'redis::set' => 
+    'Redis::set' => 
     array (
       'old' => 
       array (
@@ -2425,7 +2425,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::setbit' => 
+    'Redis::setBit' => 
     array (
       'old' => 
       array (
@@ -2442,7 +2442,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'redis::setrange' => 
+    'Redis::setRange' => 
     array (
       'old' => 
       array (
@@ -2459,7 +2459,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'redis::sinterstore' => 
+    'Redis::sInterStore' => 
     array (
       'old' => 
       array (
@@ -2475,7 +2475,7 @@ return array (
         '...other_keys=' => 'string',
       ),
     ),
-    'redis::slowlog' => 
+    'Redis::slowlog' => 
     array (
       'old' => 
       array (
@@ -2490,7 +2490,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'redis::sortasc' => 
+    'Redis::sortAsc' => 
     array (
       'old' => 
       array (
@@ -2513,7 +2513,7 @@ return array (
         'store=' => 'bool',
       ),
     ),
-    'redis::sortascalpha' => 
+    'Redis::sortAscAlpha' => 
     array (
       'old' => 
       array (
@@ -2536,7 +2536,7 @@ return array (
         'store=' => 'bool',
       ),
     ),
-    'redis::sortdesc' => 
+    'Redis::sortDesc' => 
     array (
       'old' => 
       array (
@@ -2559,7 +2559,7 @@ return array (
         'store=' => 'bool',
       ),
     ),
-    'redis::sortdescalpha' => 
+    'Redis::sortDescAlpha' => 
     array (
       'old' => 
       array (
@@ -2582,7 +2582,7 @@ return array (
         'store=' => 'bool',
       ),
     ),
-    'redis::spop' => 
+    'Redis::sPop' => 
     array (
       'old' => 
       array (
@@ -2596,7 +2596,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::srem' => 
+    'Redis::srem' => 
     array (
       'old' => 
       array (
@@ -2613,7 +2613,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'redis::sscan' => 
+    'Redis::sscan' => 
     array (
       'old' => 
       array (
@@ -2632,7 +2632,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::subscribe' => 
+    'Redis::subscribe' => 
     array (
       'old' => 
       array (
@@ -2647,7 +2647,7 @@ return array (
         'cb' => 'array<array-key, mixed>|string',
       ),
     ),
-    'redis::swapdb' => 
+    'Redis::swapdb' => 
     array (
       'old' => 
       array (
@@ -2662,7 +2662,7 @@ return array (
         'dst' => 'int',
       ),
     ),
-    'redis::unsubscribe' => 
+    'Redis::unsubscribe' => 
     array (
       'old' => 
       array (
@@ -2676,7 +2676,7 @@ return array (
         'channels' => 'string',
       ),
     ),
-    'redis::wait' => 
+    'Redis::wait' => 
     array (
       'old' => 
       array (
@@ -2691,7 +2691,7 @@ return array (
         'timeout' => 'int',
       ),
     ),
-    'redis::xack' => 
+    'Redis::xack' => 
     array (
       'old' => 
       array (
@@ -2708,7 +2708,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xadd' => 
+    'Redis::xadd' => 
     array (
       'old' => 
       array (
@@ -2730,7 +2730,7 @@ return array (
         'nomkstream=' => 'mixed',
       ),
     ),
-    'redis::xclaim' => 
+    'Redis::xclaim' => 
     array (
       'old' => 
       array (
@@ -2753,7 +2753,7 @@ return array (
         'options' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xdel' => 
+    'Redis::xdel' => 
     array (
       'old' => 
       array (
@@ -2768,7 +2768,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xgroup' => 
+    'Redis::xgroup' => 
     array (
       'old' => 
       array (
@@ -2790,7 +2790,7 @@ return array (
         'entries_read=' => 'mixed',
       ),
     ),
-    'redis::xinfo' => 
+    'Redis::xinfo' => 
     array (
       'old' => 
       array (
@@ -2808,7 +2808,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::xpending' => 
+    'Redis::xpending' => 
     array (
       'old' => 
       array (
@@ -2831,7 +2831,7 @@ return array (
         'consumer=' => 'string',
       ),
     ),
-    'redis::xrange' => 
+    'Redis::xrange' => 
     array (
       'old' => 
       array (
@@ -2850,7 +2850,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::xread' => 
+    'Redis::xread' => 
     array (
       'old' => 
       array (
@@ -2867,7 +2867,7 @@ return array (
         'block=' => 'mixed',
       ),
     ),
-    'redis::xreadgroup' => 
+    'Redis::xreadgroup' => 
     array (
       'old' => 
       array (
@@ -2888,7 +2888,7 @@ return array (
         'block=' => 'mixed',
       ),
     ),
-    'redis::xrevrange' => 
+    'Redis::xrevrange' => 
     array (
       'old' => 
       array (
@@ -2907,7 +2907,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'redis::xtrim' => 
+    'Redis::xtrim' => 
     array (
       'old' => 
       array (
@@ -2926,7 +2926,7 @@ return array (
         'limit=' => 'mixed',
       ),
     ),
-    'redis::zadd' => 
+    'Redis::zAdd' => 
     array (
       'old' => 
       array (
@@ -2944,7 +2944,7 @@ return array (
         '...more_scores_and_mems=' => 'string',
       ),
     ),
-    'redis::zcount' => 
+    'Redis::zCount' => 
     array (
       'old' => 
       array (
@@ -2961,7 +2961,7 @@ return array (
         'end' => 'string',
       ),
     ),
-    'redis::zinter' => 
+    'Redis::zinter' => 
     array (
       'old' => 
       array (
@@ -2979,7 +2979,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::zinterstore' => 
+    'Redis::zinterstore' => 
     array (
       'old' => 
       array (
@@ -2998,7 +2998,7 @@ return array (
         'aggregate=' => 'string',
       ),
     ),
-    'redis::zrange' => 
+    'Redis::zRange' => 
     array (
       'old' => 
       array (
@@ -3017,7 +3017,7 @@ return array (
         'options=' => 'bool',
       ),
     ),
-    'redis::zrangebylex' => 
+    'Redis::zRangeByLex' => 
     array (
       'old' => 
       array (
@@ -3038,7 +3038,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zremrangebyscore' => 
+    'Redis::zRemRangeByScore' => 
     array (
       'old' => 
       array (
@@ -3055,7 +3055,7 @@ return array (
         'end' => 'float|string',
       ),
     ),
-    'redis::zrevrangebylex' => 
+    'Redis::zRevRangeByLex' => 
     array (
       'old' => 
       array (
@@ -3076,7 +3076,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zrevrangebyscore' => 
+    'Redis::zRevRangeByScore' => 
     array (
       'old' => 
       array (
@@ -3095,7 +3095,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::zscan' => 
+    'Redis::zscan' => 
     array (
       'old' => 
       array (
@@ -3114,7 +3114,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zunion' => 
+    'Redis::zunion' => 
     array (
       'old' => 
       array (
@@ -3132,7 +3132,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::zunionstore' => 
+    'Redis::zunionstore' => 
     array (
       'old' => 
       array (
@@ -3151,7 +3151,7 @@ return array (
         'aggregate=' => 'string',
       ),
     ),
-    'redisarray::__construct' => 
+    'RedisArray::__construct' => 
     array (
       'old' => 
       array (
@@ -3166,7 +3166,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redisarray::_rehash' => 
+    'RedisArray::_rehash' => 
     array (
       'old' => 
       array (
@@ -3179,7 +3179,7 @@ return array (
         'fn=' => 'impure-callable',
       ),
     ),
-    'redisarray::del' => 
+    'RedisArray::del' => 
     array (
       'old' => 
       array (
@@ -3193,7 +3193,7 @@ return array (
         '...otherkeys=' => 'string',
       ),
     ),
-    'redisarray::flushall' => 
+    'RedisArray::flushall' => 
     array (
       'old' => 
       array (
@@ -3205,7 +3205,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'redisarray::flushdb' => 
+    'RedisArray::flushdb' => 
     array (
       'old' => 
       array (
@@ -3217,7 +3217,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'redisarray::unlink' => 
+    'RedisArray::unlink' => 
     array (
       'old' => 
       array (
@@ -3230,7 +3230,7 @@ return array (
         '...otherkeys=' => 'string',
       ),
     ),
-    'rediscluster::__construct' => 
+    'RedisCluster::__construct' => 
     array (
       'old' => 
       array (
@@ -3254,7 +3254,7 @@ return array (
         'context=' => 'mixed',
       ),
     ),
-    'rediscluster::bitcount' => 
+    'RedisCluster::bitcount' => 
     array (
       'old' => 
       array (
@@ -3270,7 +3270,7 @@ return array (
         'bybit=' => 'mixed',
       ),
     ),
-    'rediscluster::bitop' => 
+    'RedisCluster::bitop' => 
     array (
       'old' => 
       array (
@@ -3289,7 +3289,7 @@ return array (
         '...otherkeys=' => 'string',
       ),
     ),
-    'rediscluster::bitpos' => 
+    'RedisCluster::bitpos' => 
     array (
       'old' => 
       array (
@@ -3309,7 +3309,7 @@ return array (
         'bybit=' => 'mixed',
       ),
     ),
-    'rediscluster::brpoplpush' => 
+    'RedisCluster::brpoplpush' => 
     array (
       'old' => 
       array (
@@ -3326,7 +3326,7 @@ return array (
         'timeout' => 'int',
       ),
     ),
-    'rediscluster::client' => 
+    'RedisCluster::client' => 
     array (
       'old' => 
       array (
@@ -3343,7 +3343,7 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
-    'rediscluster::cluster' => 
+    'RedisCluster::cluster' => 
     array (
       'old' => 
       array (
@@ -3360,7 +3360,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'rediscluster::command' => 
+    'RedisCluster::command' => 
     array (
       'old' => 
       array (
@@ -3373,7 +3373,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'rediscluster::config' => 
+    'RedisCluster::config' => 
     array (
       'old' => 
       array (
@@ -3390,7 +3390,7 @@ return array (
         '...extra_args=' => 'string',
       ),
     ),
-    'rediscluster::decr' => 
+    'RedisCluster::decr' => 
     array (
       'old' => 
       array (
@@ -3404,7 +3404,7 @@ return array (
         'by=' => 'mixed',
       ),
     ),
-    'rediscluster::echo' => 
+    'RedisCluster::echo' => 
     array (
       'old' => 
       array (
@@ -3418,7 +3418,7 @@ return array (
         'msg' => 'string',
       ),
     ),
-    'rediscluster::exists' => 
+    'RedisCluster::exists' => 
     array (
       'old' => 
       array (
@@ -3432,7 +3432,7 @@ return array (
         '...other_keys=' => 'mixed',
       ),
     ),
-    'rediscluster::expire' => 
+    'RedisCluster::expire' => 
     array (
       'old' => 
       array (
@@ -3448,7 +3448,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'rediscluster::expireat' => 
+    'RedisCluster::expireat' => 
     array (
       'old' => 
       array (
@@ -3464,7 +3464,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'rediscluster::geoadd' => 
+    'RedisCluster::geoadd' => 
     array (
       'old' => 
       array (
@@ -3485,7 +3485,7 @@ return array (
         '...other_triples_and_options=' => 'float|string',
       ),
     ),
-    'rediscluster::geodist' => 
+    'RedisCluster::geodist' => 
     array (
       'old' => 
       array (
@@ -3504,7 +3504,7 @@ return array (
         'unit=' => 'string',
       ),
     ),
-    'rediscluster::georadius' => 
+    'RedisCluster::georadius' => 
     array (
       'old' => 
       array (
@@ -3527,7 +3527,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::georadiusbymember' => 
+    'RedisCluster::georadiusbymember' => 
     array (
       'old' => 
       array (
@@ -3548,7 +3548,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::getbit' => 
+    'RedisCluster::getbit' => 
     array (
       'old' => 
       array (
@@ -3563,7 +3563,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'rediscluster::hmset' => 
+    'RedisCluster::hmset' => 
     array (
       'old' => 
       array (
@@ -3578,7 +3578,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::hscan' => 
+    'RedisCluster::hscan' => 
     array (
       'old' => 
       array (
@@ -3597,7 +3597,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::hstrlen' => 
+    'RedisCluster::hstrlen' => 
     array (
       'old' => 
       array (
@@ -3612,7 +3612,7 @@ return array (
         'field' => 'string',
       ),
     ),
-    'rediscluster::incr' => 
+    'RedisCluster::incr' => 
     array (
       'old' => 
       array (
@@ -3626,7 +3626,7 @@ return array (
         'by=' => 'mixed',
       ),
     ),
-    'rediscluster::info' => 
+    'RedisCluster::info' => 
     array (
       'old' => 
       array (
@@ -3641,7 +3641,7 @@ return array (
         '...sections=' => 'string',
       ),
     ),
-    'rediscluster::linsert' => 
+    'RedisCluster::linsert' => 
     array (
       'old' => 
       array (
@@ -3660,7 +3660,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'rediscluster::lpop' => 
+    'RedisCluster::lpop' => 
     array (
       'old' => 
       array (
@@ -3674,7 +3674,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::lpush' => 
+    'RedisCluster::lpush' => 
     array (
       'old' => 
       array (
@@ -3690,7 +3690,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'rediscluster::lrem' => 
+    'RedisCluster::lrem' => 
     array (
       'old' => 
       array (
@@ -3706,7 +3706,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::ltrim' => 
+    'RedisCluster::ltrim' => 
     array (
       'old' => 
       array (
@@ -3723,7 +3723,7 @@ return array (
         'end' => 'int',
       ),
     ),
-    'rediscluster::mset' => 
+    'RedisCluster::mset' => 
     array (
       'old' => 
       array (
@@ -3736,7 +3736,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::msetnx' => 
+    'RedisCluster::msetnx' => 
     array (
       'old' => 
       array (
@@ -3749,7 +3749,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::multi' => 
+    'RedisCluster::multi' => 
     array (
       'old' => 
       array (
@@ -3761,7 +3761,7 @@ return array (
         'value=' => 'int',
       ),
     ),
-    'rediscluster::object' => 
+    'RedisCluster::object' => 
     array (
       'old' => 
       array (
@@ -3776,7 +3776,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'rediscluster::pexpire' => 
+    'RedisCluster::pexpire' => 
     array (
       'old' => 
       array (
@@ -3792,7 +3792,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'rediscluster::pexpireat' => 
+    'RedisCluster::pexpireat' => 
     array (
       'old' => 
       array (
@@ -3808,7 +3808,7 @@ return array (
         'mode=' => 'mixed',
       ),
     ),
-    'rediscluster::pfmerge' => 
+    'RedisCluster::pfmerge' => 
     array (
       'old' => 
       array (
@@ -3823,7 +3823,7 @@ return array (
         'keys' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::ping' => 
+    'RedisCluster::ping' => 
     array (
       'old' => 
       array (
@@ -3837,7 +3837,7 @@ return array (
         'message=' => 'mixed',
       ),
     ),
-    'rediscluster::psetex' => 
+    'RedisCluster::psetex' => 
     array (
       'old' => 
       array (
@@ -3854,7 +3854,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'rediscluster::pubsub' => 
+    'RedisCluster::pubsub' => 
     array (
       'old' => 
       array (
@@ -3870,7 +3870,7 @@ return array (
         '...values=' => 'string',
       ),
     ),
-    'rediscluster::rawcommand' => 
+    'RedisCluster::rawcommand' => 
     array (
       'old' => 
       array (
@@ -3886,7 +3886,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'rediscluster::rename' => 
+    'RedisCluster::rename' => 
     array (
       'old' => 
       array (
@@ -3901,7 +3901,7 @@ return array (
         'key_dst' => 'string',
       ),
     ),
-    'rediscluster::restore' => 
+    'RedisCluster::restore' => 
     array (
       'old' => 
       array (
@@ -3919,7 +3919,7 @@ return array (
         'options=' => 'mixed',
       ),
     ),
-    'rediscluster::role' => 
+    'RedisCluster::role' => 
     array (
       'old' => 
       array (
@@ -3931,7 +3931,7 @@ return array (
         'key_or_address' => 'mixed',
       ),
     ),
-    'rediscluster::rpop' => 
+    'RedisCluster::rpop' => 
     array (
       'old' => 
       array (
@@ -3945,7 +3945,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::rpush' => 
+    'RedisCluster::rpush' => 
     array (
       'old' => 
       array (
@@ -3960,7 +3960,7 @@ return array (
         '...elements=' => 'string',
       ),
     ),
-    'rediscluster::sadd' => 
+    'RedisCluster::sadd' => 
     array (
       'old' => 
       array (
@@ -3976,7 +3976,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'rediscluster::saddarray' => 
+    'RedisCluster::saddarray' => 
     array (
       'old' => 
       array (
@@ -3991,7 +3991,7 @@ return array (
         'values' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::scan' => 
+    'RedisCluster::scan' => 
     array (
       'old' => 
       array (
@@ -4010,7 +4010,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::script' => 
+    'RedisCluster::script' => 
     array (
       'old' => 
       array (
@@ -4026,7 +4026,7 @@ return array (
         '...args=' => 'string',
       ),
     ),
-    'rediscluster::set' => 
+    'RedisCluster::set' => 
     array (
       'old' => 
       array (
@@ -4043,7 +4043,7 @@ return array (
         'options=' => 'array<array-key, mixed>|int',
       ),
     ),
-    'rediscluster::setbit' => 
+    'RedisCluster::setbit' => 
     array (
       'old' => 
       array (
@@ -4060,7 +4060,7 @@ return array (
         'onoff' => 'bool|int',
       ),
     ),
-    'rediscluster::sinterstore' => 
+    'RedisCluster::sinterstore' => 
     array (
       'old' => 
       array (
@@ -4076,7 +4076,7 @@ return array (
         '...other_keys=' => 'string',
       ),
     ),
-    'rediscluster::slowlog' => 
+    'RedisCluster::slowlog' => 
     array (
       'old' => 
       array (
@@ -4092,7 +4092,7 @@ return array (
         '...args=' => 'string',
       ),
     ),
-    'rediscluster::smove' => 
+    'RedisCluster::smove' => 
     array (
       'old' => 
       array (
@@ -4109,7 +4109,7 @@ return array (
         'member' => 'string',
       ),
     ),
-    'rediscluster::spop' => 
+    'RedisCluster::spop' => 
     array (
       'old' => 
       array (
@@ -4123,7 +4123,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::srem' => 
+    'RedisCluster::srem' => 
     array (
       'old' => 
       array (
@@ -4139,7 +4139,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'rediscluster::sscan' => 
+    'RedisCluster::sscan' => 
     array (
       'old' => 
       array (
@@ -4158,7 +4158,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::subscribe' => 
+    'RedisCluster::subscribe' => 
     array (
       'old' => 
       array (
@@ -4173,7 +4173,7 @@ return array (
         'cb' => 'string',
       ),
     ),
-    'rediscluster::time' => 
+    'RedisCluster::time' => 
     array (
       'old' => 
       array (
@@ -4185,7 +4185,7 @@ return array (
         'key_or_address' => 'mixed',
       ),
     ),
-    'rediscluster::xack' => 
+    'RedisCluster::xack' => 
     array (
       'old' => 
       array (
@@ -4202,7 +4202,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xadd' => 
+    'RedisCluster::xadd' => 
     array (
       'old' => 
       array (
@@ -4223,7 +4223,7 @@ return array (
         'approx=' => 'mixed',
       ),
     ),
-    'rediscluster::xclaim' => 
+    'RedisCluster::xclaim' => 
     array (
       'old' => 
       array (
@@ -4246,7 +4246,7 @@ return array (
         'options' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xdel' => 
+    'RedisCluster::xdel' => 
     array (
       'old' => 
       array (
@@ -4261,7 +4261,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xgroup' => 
+    'RedisCluster::xgroup' => 
     array (
       'old' => 
       array (
@@ -4283,7 +4283,7 @@ return array (
         'entries_read=' => 'mixed',
       ),
     ),
-    'rediscluster::xinfo' => 
+    'RedisCluster::xinfo' => 
     array (
       'old' => 
       array (
@@ -4301,7 +4301,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::xpending' => 
+    'RedisCluster::xpending' => 
     array (
       'old' => 
       array (
@@ -4324,7 +4324,7 @@ return array (
         'consumer=' => 'string',
       ),
     ),
-    'rediscluster::xrange' => 
+    'RedisCluster::xrange' => 
     array (
       'old' => 
       array (
@@ -4343,7 +4343,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::xread' => 
+    'RedisCluster::xread' => 
     array (
       'old' => 
       array (
@@ -4360,7 +4360,7 @@ return array (
         'block=' => 'mixed',
       ),
     ),
-    'rediscluster::xreadgroup' => 
+    'RedisCluster::xreadgroup' => 
     array (
       'old' => 
       array (
@@ -4381,7 +4381,7 @@ return array (
         'block=' => 'mixed',
       ),
     ),
-    'rediscluster::xrevrange' => 
+    'RedisCluster::xrevrange' => 
     array (
       'old' => 
       array (
@@ -4400,7 +4400,7 @@ return array (
         'count=' => 'mixed',
       ),
     ),
-    'rediscluster::xtrim' => 
+    'RedisCluster::xtrim' => 
     array (
       'old' => 
       array (
@@ -4419,7 +4419,7 @@ return array (
         'limit=' => 'mixed',
       ),
     ),
-    'rediscluster::zadd' => 
+    'RedisCluster::zadd' => 
     array (
       'old' => 
       array (
@@ -4437,7 +4437,7 @@ return array (
         '...more_scores_and_mems=' => 'string',
       ),
     ),
-    'rediscluster::zcount' => 
+    'RedisCluster::zcount' => 
     array (
       'old' => 
       array (
@@ -4454,7 +4454,7 @@ return array (
         'end' => 'string',
       ),
     ),
-    'rediscluster::zinterstore' => 
+    'RedisCluster::zinterstore' => 
     array (
       'old' => 
       array (
@@ -4473,7 +4473,7 @@ return array (
         'aggregate=' => 'string',
       ),
     ),
-    'rediscluster::zrange' => 
+    'RedisCluster::zrange' => 
     array (
       'old' => 
       array (
@@ -4492,7 +4492,7 @@ return array (
         'options=' => 'bool',
       ),
     ),
-    'rediscluster::zrangebylex' => 
+    'RedisCluster::zrangebylex' => 
     array (
       'old' => 
       array (
@@ -4513,7 +4513,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::zrem' => 
+    'RedisCluster::zrem' => 
     array (
       'old' => 
       array (
@@ -4530,7 +4530,7 @@ return array (
         '...other_values=' => 'string',
       ),
     ),
-    'rediscluster::zrevrange' => 
+    'RedisCluster::zrevrange' => 
     array (
       'old' => 
       array (
@@ -4549,7 +4549,7 @@ return array (
         'options=' => 'bool',
       ),
     ),
-    'rediscluster::zrevrangebylex' => 
+    'RedisCluster::zrevrangebylex' => 
     array (
       'old' => 
       array (
@@ -4569,7 +4569,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'rediscluster::zrevrangebyscore' => 
+    'RedisCluster::zrevrangebyscore' => 
     array (
       'old' => 
       array (
@@ -4588,7 +4588,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::zscan' => 
+    'RedisCluster::zscan' => 
     array (
       'old' => 
       array (
@@ -4607,7 +4607,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::zunionstore' => 
+    'RedisCluster::zunionstore' => 
     array (
       'old' => 
       array (
@@ -4626,7 +4626,7 @@ return array (
         'aggregate=' => 'string',
       ),
     ),
-    'reflectionclass::getmethods' => 
+    'ReflectionClass::getMethods' => 
     array (
       'old' => 
       array (
@@ -4639,7 +4639,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionclass::getproperties' => 
+    'ReflectionClass::getProperties' => 
     array (
       'old' => 
       array (
@@ -4652,7 +4652,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionobject::getmethods' => 
+    'ReflectionObject::getMethods' => 
     array (
       'old' => 
       array (
@@ -4665,7 +4665,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionobject::getproperties' => 
+    'ReflectionObject::getProperties' => 
     array (
       'old' => 
       array (
@@ -4678,7 +4678,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'sqlite3::openblob' => 
+    'SQLite3::openBlob' => 
     array (
       'old' => 
       array (
@@ -4698,7 +4698,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'swoole\\connection\\iterator::next' => 
+    'Swoole\\Connection\\Iterator::next' => 
     array (
       'old' => 
       array (
@@ -4709,7 +4709,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'swoole\\http\\response::header' => 
+    'Swoole\\Http\\Response::header' => 
     array (
       'old' => 
       array (
@@ -4726,7 +4726,7 @@ return array (
         'format=' => 'string',
       ),
     ),
-    'swoole\\server::task' => 
+    'Swoole\\Server::task' => 
     array (
       'old' => 
       array (
@@ -4743,7 +4743,7 @@ return array (
         'finish_callback=' => 'impure-callable|null',
       ),
     ),
-    'swoole\\server::taskwait' => 
+    'Swoole\\Server::taskwait' => 
     array (
       'old' => 
       array (
@@ -4760,7 +4760,7 @@ return array (
         'task_worker_index=' => 'int',
       ),
     ),
-    'swoole\\table::next' => 
+    'Swoole\\Table::next' => 
     array (
       'old' => 
       array (
@@ -4774,151 +4774,151 @@ return array (
   ),
   'removed' => 
   array (
-    'mongodb\\bson\\tophp' => 
+    'MongoDB\\BSON\\toPHP' => 
     array (
       0 => 'array<array-key, mixed>|object',
       'bson' => 'string',
       'typemap=' => 'array<array-key, mixed>',
     ),
-    'redis::evaluate' => 
+    'Redis::evaluate' => 
     array (
       0 => 'mixed',
       'script' => 'string',
       'args=' => 'array<array-key, mixed>',
       'num_keys=' => 'int',
     ),
-    'redis::evaluatesha' => 
+    'Redis::evaluateSha' => 
     array (
       0 => 'mixed',
       'script_sha' => 'string',
       'args=' => 'array<array-key, mixed>',
       'num_keys=' => 'int',
     ),
-    'redis::getkeys' => 
+    'Redis::getKeys' => 
     array (
       0 => 'array<int, string>',
       'pattern' => 'string',
     ),
-    'redis::getmultiple' => 
+    'Redis::getMultiple' => 
     array (
       0 => 'array<array-key, mixed>',
       'keys' => 'array<array-key, string>',
     ),
-    'redis::lget' => 
+    'Redis::lGet' => 
     array (
       0 => 'string',
       'key' => 'string',
       'index' => 'int',
     ),
-    'redis::lgetrange' => 
+    'Redis::lGetRange' => 
     array (
       0 => 'array<array-key, mixed>',
       'key' => 'string',
       'start' => 'int',
       'end' => 'int',
     ),
-    'redis::listtrim' => 
+    'Redis::listTrim' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'start' => 'int',
       'stop' => 'int',
     ),
-    'redis::lremove' => 
+    'Redis::lRemove' => 
     array (
       0 => 'int',
       'key' => 'string',
       'value' => 'string',
       'count' => 'int',
     ),
-    'redis::lsize' => 
+    'Redis::lSize' => 
     array (
       0 => 'int',
       'key' => 'string',
     ),
-    'redis::renamekey' => 
+    'Redis::renameKey' => 
     array (
       0 => 'bool',
       'key' => 'string',
       'newkey' => 'string',
     ),
-    'redis::scontains' => 
+    'Redis::sContains' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'value' => 'string',
     ),
-    'redis::sendecho' => 
+    'Redis::sendEcho' => 
     array (
       0 => 'string',
       'msg' => 'string',
     ),
-    'redis::settimeout' => 
+    'Redis::setTimeout' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'timeout' => 'int',
     ),
-    'redis::sgetmembers' => 
+    'Redis::sGetMembers' => 
     array (
       0 => 'mixed',
       'key' => 'string',
     ),
-    'redis::sremove' => 
+    'Redis::sRemove' => 
     array (
       0 => 'int',
       'key' => 'string',
       'member' => 'string',
       '...other_members=' => 'string',
     ),
-    'redis::ssize' => 
+    'Redis::sSize' => 
     array (
       0 => 'int',
       'key' => 'string',
     ),
-    'redis::substr' => 
+    'Redis::substr' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'start' => 'int',
       'end' => 'int',
     ),
-    'redis::zdelete' => 
+    'Redis::zDelete' => 
     array (
       0 => 'int',
       'key' => 'string',
       'member' => 'string',
       '...other_members=' => 'string',
     ),
-    'redis::zdeleterangebyrank' => 
+    'Redis::zDeleteRangeByRank' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'min' => 'int',
       'max' => 'int',
     ),
-    'redis::zdeleterangebyscore' => 
+    'Redis::zDeleteRangeByScore' => 
     array (
       0 => 'mixed',
       'key' => 'string',
       'min' => 'float',
       'max' => 'float',
     ),
-    'redis::zremove' => 
+    'Redis::zRemove' => 
     array (
       0 => 'int',
       'key' => 'string',
       'member' => 'string',
       '...other_members=' => 'string',
     ),
-    'redis::zremoverangebyscore' => 
+    'Redis::zRemoveRangeByScore' => 
     array (
       0 => 'int',
       'key' => 'string',
       'min' => 'float|string',
       'max' => 'float|string',
     ),
-    'redis::zreverserange' => 
+    'Redis::zReverseRange' => 
     array (
       0 => 'array<array-key, mixed>',
       'key' => 'string',
@@ -4926,34 +4926,34 @@ return array (
       'end' => 'int',
       'scores=' => 'bool',
     ),
-    'redis::zsize' => 
+    'Redis::zSize' => 
     array (
       0 => 'mixed',
       'key' => 'string',
     ),
-    'redisarray::delete' => 
+    'RedisArray::delete' => 
     array (
       0 => 'bool',
       'keys' => 'string',
     ),
-    'sodium\\add' => 
+    'Sodium\\add' => 
     array (
       0 => 'void',
       '&left' => 'string',
       'right' => 'string',
     ),
-    'sodium\\bin2hex' => 
+    'Sodium\\bin2hex' => 
     array (
       0 => 'string',
       'binary' => 'string',
     ),
-    'sodium\\compare' => 
+    'Sodium\\compare' => 
     array (
       0 => 'int',
       'left' => 'string',
       'right' => 'string',
     ),
-    'sodium\\crypto_aead_aes256gcm_decrypt' => 
+    'Sodium\\crypto_aead_aes256gcm_decrypt' => 
     array (
       0 => 'false|string',
       'msg' => 'string',
@@ -4961,7 +4961,7 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'sodium\\crypto_aead_aes256gcm_encrypt' => 
+    'Sodium\\crypto_aead_aes256gcm_encrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -4969,11 +4969,11 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'sodium\\crypto_aead_aes256gcm_is_available' => 
+    'Sodium\\crypto_aead_aes256gcm_is_available' => 
     array (
       0 => 'bool',
     ),
-    'sodium\\crypto_aead_chacha20poly1305_decrypt' => 
+    'Sodium\\crypto_aead_chacha20poly1305_decrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -4981,7 +4981,7 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'sodium\\crypto_aead_chacha20poly1305_encrypt' => 
+    'Sodium\\crypto_aead_chacha20poly1305_encrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -4989,101 +4989,101 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'sodium\\crypto_auth' => 
+    'Sodium\\crypto_auth' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_auth_verify' => 
+    'Sodium\\crypto_auth_verify' => 
     array (
       0 => 'bool',
       'mac' => 'string',
       'msg' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_box' => 
+    'Sodium\\crypto_box' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'nonce' => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_box_keypair' => 
+    'Sodium\\crypto_box_keypair' => 
     array (
       0 => 'string',
     ),
-    'sodium\\crypto_box_keypair_from_secretkey_and_publickey' => 
+    'Sodium\\crypto_box_keypair_from_secretkey_and_publickey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
       'publickey' => 'string',
     ),
-    'sodium\\crypto_box_open' => 
+    'Sodium\\crypto_box_open' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'nonce' => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_box_publickey' => 
+    'Sodium\\crypto_box_publickey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_box_publickey_from_secretkey' => 
+    'Sodium\\crypto_box_publickey_from_secretkey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
     ),
-    'sodium\\crypto_box_seal' => 
+    'Sodium\\crypto_box_seal' => 
     array (
       0 => 'string',
       'message' => 'string',
       'publickey' => 'string',
     ),
-    'sodium\\crypto_box_seal_open' => 
+    'Sodium\\crypto_box_seal_open' => 
     array (
       0 => 'string',
       'encrypted' => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_box_secretkey' => 
+    'Sodium\\crypto_box_secretkey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_box_seed_keypair' => 
+    'Sodium\\crypto_box_seed_keypair' => 
     array (
       0 => 'string',
       'seed' => 'string',
     ),
-    'sodium\\crypto_generichash' => 
+    'Sodium\\crypto_generichash' => 
     array (
       0 => 'string',
       'input' => 'string',
       'key=' => 'string',
       'length=' => 'int',
     ),
-    'sodium\\crypto_generichash_final' => 
+    'Sodium\\crypto_generichash_final' => 
     array (
       0 => 'string',
       'state' => 'string',
       'length=' => 'int',
     ),
-    'sodium\\crypto_generichash_init' => 
+    'Sodium\\crypto_generichash_init' => 
     array (
       0 => 'string',
       'key=' => 'string',
       'length=' => 'int',
     ),
-    'sodium\\crypto_generichash_update' => 
+    'Sodium\\crypto_generichash_update' => 
     array (
       0 => 'bool',
       '&hashState' => 'string',
       'append' => 'string',
     ),
-    'sodium\\crypto_kx' => 
+    'Sodium\\crypto_kx' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
@@ -5091,7 +5091,7 @@ return array (
       'client_publickey' => 'string',
       'server_publickey' => 'string',
     ),
-    'sodium\\crypto_pwhash' => 
+    'Sodium\\crypto_pwhash' => 
     array (
       0 => 'string',
       'out_len' => 'int',
@@ -5100,7 +5100,7 @@ return array (
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'sodium\\crypto_pwhash_scryptsalsa208sha256' => 
+    'Sodium\\crypto_pwhash_scryptsalsa208sha256' => 
     array (
       0 => 'string',
       'out_len' => 'int',
@@ -5109,186 +5109,186 @@ return array (
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'sodium\\crypto_pwhash_scryptsalsa208sha256_str' => 
+    'Sodium\\crypto_pwhash_scryptsalsa208sha256_str' => 
     array (
       0 => 'string',
       'passwd' => 'string',
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'sodium\\crypto_pwhash_scryptsalsa208sha256_str_verify' => 
+    'Sodium\\crypto_pwhash_scryptsalsa208sha256_str_verify' => 
     array (
       0 => 'bool',
       'hash' => 'string',
       'passwd' => 'string',
     ),
-    'sodium\\crypto_pwhash_str' => 
+    'Sodium\\crypto_pwhash_str' => 
     array (
       0 => 'string',
       'passwd' => 'string',
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'sodium\\crypto_pwhash_str_verify' => 
+    'Sodium\\crypto_pwhash_str_verify' => 
     array (
       0 => 'bool',
       'hash' => 'string',
       'passwd' => 'string',
     ),
-    'sodium\\crypto_scalarmult' => 
+    'Sodium\\crypto_scalarmult' => 
     array (
       0 => 'string',
       'ecdhA' => 'string',
       'ecdhB' => 'string',
     ),
-    'sodium\\crypto_scalarmult_base' => 
+    'Sodium\\crypto_scalarmult_base' => 
     array (
       0 => 'string',
       'sk' => 'string',
     ),
-    'sodium\\crypto_secretbox' => 
+    'Sodium\\crypto_secretbox' => 
     array (
       0 => 'string',
       'plaintext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_secretbox_open' => 
+    'Sodium\\crypto_secretbox_open' => 
     array (
       0 => 'string',
       'ciphertext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_shorthash' => 
+    'Sodium\\crypto_shorthash' => 
     array (
       0 => 'string',
       'message' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_sign' => 
+    'Sodium\\crypto_sign' => 
     array (
       0 => 'string',
       'message' => 'string',
       'secretkey' => 'string',
     ),
-    'sodium\\crypto_sign_detached' => 
+    'Sodium\\crypto_sign_detached' => 
     array (
       0 => 'string',
       'message' => 'string',
       'secretkey' => 'string',
     ),
-    'sodium\\crypto_sign_ed25519_pk_to_curve25519' => 
+    'Sodium\\crypto_sign_ed25519_pk_to_curve25519' => 
     array (
       0 => 'string',
       'sign_pk' => 'string',
     ),
-    'sodium\\crypto_sign_ed25519_sk_to_curve25519' => 
+    'Sodium\\crypto_sign_ed25519_sk_to_curve25519' => 
     array (
       0 => 'string',
       'sign_sk' => 'string',
     ),
-    'sodium\\crypto_sign_keypair' => 
+    'Sodium\\crypto_sign_keypair' => 
     array (
       0 => 'string',
     ),
-    'sodium\\crypto_sign_keypair_from_secretkey_and_publickey' => 
+    'Sodium\\crypto_sign_keypair_from_secretkey_and_publickey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
       'publickey' => 'string',
     ),
-    'sodium\\crypto_sign_open' => 
+    'Sodium\\crypto_sign_open' => 
     array (
       0 => 'false|string',
       'signed_message' => 'string',
       'publickey' => 'string',
     ),
-    'sodium\\crypto_sign_publickey' => 
+    'Sodium\\crypto_sign_publickey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_sign_publickey_from_secretkey' => 
+    'Sodium\\crypto_sign_publickey_from_secretkey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
     ),
-    'sodium\\crypto_sign_secretkey' => 
+    'Sodium\\crypto_sign_secretkey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'sodium\\crypto_sign_seed_keypair' => 
+    'Sodium\\crypto_sign_seed_keypair' => 
     array (
       0 => 'string',
       'seed' => 'string',
     ),
-    'sodium\\crypto_sign_verify_detached' => 
+    'Sodium\\crypto_sign_verify_detached' => 
     array (
       0 => 'bool',
       'signature' => 'string',
       'msg' => 'string',
       'publickey' => 'string',
     ),
-    'sodium\\crypto_stream' => 
+    'Sodium\\crypto_stream' => 
     array (
       0 => 'string',
       'length' => 'int',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'sodium\\crypto_stream_xor' => 
+    'Sodium\\crypto_stream_xor' => 
     array (
       0 => 'string',
       'plaintext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'sodium\\hex2bin' => 
+    'Sodium\\hex2bin' => 
     array (
       0 => 'string',
       'hex' => 'string',
     ),
-    'sodium\\increment' => 
+    'Sodium\\increment' => 
     array (
       0 => 'string',
       '&nonce' => 'string',
     ),
-    'sodium\\library_version_major' => 
+    'Sodium\\library_version_major' => 
     array (
       0 => 'int',
     ),
-    'sodium\\library_version_minor' => 
+    'Sodium\\library_version_minor' => 
     array (
       0 => 'int',
     ),
-    'sodium\\memcmp' => 
+    'Sodium\\memcmp' => 
     array (
       0 => 'int',
       'left' => 'string',
       'right' => 'string',
     ),
-    'sodium\\memzero' => 
+    'Sodium\\memzero' => 
     array (
       0 => 'void',
       '&target' => 'string',
     ),
-    'sodium\\randombytes_buf' => 
+    'Sodium\\randombytes_buf' => 
     array (
       0 => 'string',
       'length' => 'int',
     ),
-    'sodium\\randombytes_random16' => 
+    'Sodium\\randombytes_random16' => 
     array (
       0 => 'int|string',
     ),
-    'sodium\\randombytes_uniform' => 
+    'Sodium\\randombytes_uniform' => 
     array (
       0 => 'int',
       'upperBoundNonInclusive' => 'int',
     ),
-    'sodium\\version_string' => 
+    'Sodium\\version_string' => 
     array (
       0 => 'string',
     ),

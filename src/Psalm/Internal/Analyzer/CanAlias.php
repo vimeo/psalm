@@ -10,8 +10,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
-
-use function strtolower;
+use Psalm\Interner;
 
 /**
  * @psalm-mutable
@@ -20,32 +19,32 @@ use function strtolower;
 trait CanAlias
 {
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> alias id => class name id
      */
     private array $aliased_classes = [];
 
     /**
-     * @var array<lowercase-string, CodeLocation>
+     * @var array<int, CodeLocation> alias id => location
      */
     private array $aliased_class_locations = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> class name id => alias id
      */
     private array $aliased_classes_flipped = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> class name id => alias id
      */
     private array $aliased_classes_flipped_replaceable = [];
 
     /**
-     * @var array<lowercase-string, non-empty-string>
+     * @var array<int, int> alias id => function name id
      */
     private array $aliased_functions = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> alias id => constant name id
      */
     private array $aliased_constants = [];
 
@@ -54,14 +53,14 @@ trait CanAlias
         $codebase = $this->getCodebase();
 
         foreach ($stmt->uses as $use) {
-            $use_path = $use->name->toString();
-            $use_path_lc = strtolower($use_path);
-            $use_alias = $use->alias->name ?? $use->name->getLast();
-            $use_alias_lc = strtolower($use_alias);
+            $use_path_str = $use->name->toString();
+            $use_path = Interner::intern($use_path_str);
+            $use_alias_str = $use->alias->name ?? $use->name->getLast();
+            $use_alias = Interner::intern($use_alias_str);
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliased_functions[$use_alias_lc] = $use_path;
+                    $this->aliased_functions[$use_alias] = $use_path;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
@@ -73,35 +72,35 @@ trait CanAlias
                         $this->getFilePath(),
                         (int) $use->getAttribute('startFilePos'),
                         (int) $use->getAttribute('endFilePos'),
-                        $use_path,
+                        $use_path_str,
                     );
                     if ($codebase->collect_locations) {
                         // register the path
-                        $codebase->use_referencing_locations[$use_path_lc][] =
+                        $codebase->use_referencing_locations[$use_path][] =
                             new CodeLocation($this, $use);
                     }
 
                     if ($codebase->alter_code) {
-                        if (isset($codebase->class_transforms[$use_path_lc])) {
-                            $new_fq_class_name = $codebase->class_transforms[$use_path_lc];
+                        if (isset($codebase->class_transforms[$use_path])) {
+                            $new_fq_class_name = $codebase->class_transforms[$use_path];
 
                             $file_manipulations = [];
 
                             $file_manipulations[] = new FileManipulation(
                                 (int) $use->getAttribute('startFilePos'),
                                 (int) $use->getAttribute('endFilePos') + 1,
-                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : ''),
+                                Interner::str($new_fq_class_name) . ($use->alias ? ' as ' . $use_alias_str : ''),
                             );
 
                             FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);
                         }
 
-                        $this->aliased_classes_flipped_replaceable[$use_path_lc] = $use_alias;
+                        $this->aliased_classes_flipped_replaceable[$use_path] = $use_alias;
                     }
 
-                    $this->aliased_classes[$use_alias_lc] = $use_path;
-                    $this->aliased_class_locations[$use_alias_lc] = new CodeLocation($this, $stmt);
-                    $this->aliased_classes_flipped[$use_path_lc] = $use_alias;
+                    $this->aliased_classes[$use_alias] = $use_path;
+                    $this->aliased_class_locations[$use_alias] = new CodeLocation($this, $stmt);
+                    $this->aliased_classes_flipped[$use_path] = $use_alias;
                     break;
             }
         }
@@ -114,12 +113,12 @@ trait CanAlias
         $codebase = $this->getCodebase();
 
         foreach ($stmt->uses as $use) {
-            $use_path = $use_prefix . '\\' . $use->name->toString();
-            $use_alias = $use->alias->name ?? $use->name->getLast();
+            $use_path = Interner::intern($use_prefix . '\\' . $use->name->toString());
+            $use_alias = Interner::intern($use->alias->name ?? $use->name->getLast());
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $stmt->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliased_functions[strtolower($use_alias)] = $use_path;
+                    $this->aliased_functions[$use_alias] = $use_path;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
@@ -129,12 +128,12 @@ trait CanAlias
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
                     if ($codebase->collect_locations) {
                         // register the path
-                        $codebase->use_referencing_locations[strtolower($use_path)][] =
+                        $codebase->use_referencing_locations[$use_path][] =
                             new CodeLocation($this, $use);
                     }
 
-                    $this->aliased_classes[strtolower($use_alias)] = $use_path;
-                    $this->aliased_classes_flipped[strtolower($use_path)] = $use_alias;
+                    $this->aliased_classes[$use_alias] = $use_path;
+                    $this->aliased_classes_flipped[$use_path] = $use_alias;
                     break;
             }
         }
@@ -142,7 +141,7 @@ trait CanAlias
 
     /**
      * @psalm-mutation-free
-     * @return array<lowercase-string, string>
+     * @return array<int, int>
      */
     #[Override]
     public function getAliasedClassesFlipped(): array
@@ -152,7 +151,7 @@ trait CanAlias
 
     /**
      * @psalm-mutation-free
-     * @return array<string, string>
+     * @return array<int, int>
      */
     #[Override]
     public function getAliasedClassesFlippedReplaceable(): array

@@ -46,7 +46,7 @@ final class MethodCallProhibitionAnalyzer
                     'The method ' . $codebase_methods->getCasedMethodId($method_id) .
                         ' has been marked as deprecated',
                     $code_location,
-                    (string) $method_id,
+                    $method_id,
                 ),
                 $suppressed_issues,
             );
@@ -62,7 +62,7 @@ final class MethodCallProhibitionAnalyzer
                             . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
                             . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         $code_location,
-                        (string) $method_id,
+                        $method_id,
                     ),
                     $suppressed_issues,
                 );

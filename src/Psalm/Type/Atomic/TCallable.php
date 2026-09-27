@@ -32,7 +32,7 @@ final class TCallable extends Atomic
      *
      * @param list<FunctionLikeParameter> $params
      * @param Mutations::LEVEL_* $allowed_mutations
-     * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
+     * @param ?int $callable_id The interned id of the underlying function/method, when
      *                                        known. Metadata only - it does not affect the structural
      *                                        type - and is used to re-dispatch taint sinks/sources on invocation.
      */
@@ -41,7 +41,7 @@ final class TCallable extends Atomic
         ?Union $return_type = null,
         int $allowed_mutations = Mutations::LEVEL_EXTERNAL,
         bool $from_docblock = false,
-        public ?string $callable_id = null,
+        public ?int $callable_id = null,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -50,14 +50,14 @@ final class TCallable extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): string {
         return 'callable';
@@ -97,8 +97,8 @@ final class TCallable extends Atomic
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -141,5 +141,14 @@ final class TCallable extends Atomic
     public function isCallableType(): bool
     {
         return true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    protected function getCallableBaseName(): string
+    {
+        return $this->value;
     }
 }

@@ -4,6 +4,8 @@ namespace Psalm\Example\Plugin;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
@@ -11,6 +13,7 @@ use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 
 use function in_array;
+use function ltrim;
 use function preg_match;
 use function preg_split;
 use function strpos;
@@ -42,7 +45,7 @@ final class StringChecker implements AfterExpressionAnalysisInterface
                     new InvalidClass(
                         'Use ::class constants when representing class names',
                         new CodeLocation($statements_source, $expr),
-                        $absolute_class,
+                        Interner::intern(ltrim($absolute_class, '\\')),
                     ),
                     $statements_source->getSuppressedIssues(),
                 );
@@ -56,14 +59,16 @@ final class StringChecker implements AfterExpressionAnalysisInterface
             && $expr->right instanceof PhpParser\Node\Scalar\String_
             && preg_match('/^::[A-Za-z0-9]+$/', $expr->right->value)
         ) {
-            $method_id = ((string) $expr->left->class->getAttribute('resolvedName')) . $expr->right->value;
+            $method_id = MethodIdentifier::fromMethodIdReference(
+                ((string) $expr->left->class->getAttribute('resolvedName')) . $expr->right->value,
+            );
 
             $appearing_method_id = $codebase->getAppearingMethodId($method_id);
 
             if (!$appearing_method_id) {
                 if (IssueBuffer::accepts(
                     new UndefinedMethod(
-                        'Method ' . $method_id . ' does not exist',
+                        'Method ' . (string) $method_id . ' does not exist',
                         new CodeLocation($statements_source, $expr),
                         $method_id,
                     ),

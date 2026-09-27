@@ -23,7 +23,7 @@ use function get_object_vars;
  *      from_property?: bool,
  *      from_static_property?: bool,
  *      initialized?: bool,
- *      initialized_class?: ?string,
+ *      initialized_class?: ?int,
  *      checked?: bool,
  *      failed_reconciliation?: bool,
  *      ignore_nullable_issues?: bool,
@@ -85,9 +85,9 @@ final class Union implements TypeNode
     public bool $initialized = true;
 
     /**
-     * Which class the type was initialised in
+     * Which class the type was initialised in (interned class name)
      */
-    public ?string $initialized_class = null;
+    public ?int $initialized_class = null;
 
     /**
      * Whether or not the type has been checked yet

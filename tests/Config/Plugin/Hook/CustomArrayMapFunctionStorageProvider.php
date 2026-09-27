@@ -6,11 +6,13 @@ namespace Psalm\Tests\Config\Plugin\Hook;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Interner;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
 use Psalm\Plugin\EventHandler\DynamicFunctionStorageProviderInterface;
 use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -31,7 +33,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['custom_array_map'];
+        return [StrId::custom_array_map];
     }
 
     #[Override]
@@ -67,7 +69,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
             ...array_map(
                 static function (TCallable $expected, int $offset) {
                     $t = new Union([$expected]);
-                    $param = new FunctionLikeParameter('fn' . $offset, false, $t, $t);
+                    $param = new FunctionLikeParameter(Interner::intern('fn' . $offset), false, $t, $t);
                     $param->is_optional = false;
                     return $param;
                 },
@@ -86,7 +88,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
     private static function createLastArrayMapParam(Union $input_array_type): FunctionLikeParameter
     {
         return new FunctionLikeParameter(
-            'input',
+            StrId::input,
             false,
             $input_array_type,
             $input_array_type,
@@ -129,9 +131,9 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         int $return_template_offset = 0,
     ): TCallable {
         return new TCallable(
-            [new FunctionLikeParameter('a', false, $input_type, $input_type)],
+            [new FunctionLikeParameter(StrId::a, false, $input_type, $input_type)],
             new Union([
-                $template_provider->createTemplate('T' . $return_template_offset),
+                $template_provider->createTemplate(Interner::intern('T' . $return_template_offset)),
             ]),
         );
     }
@@ -149,7 +151,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         for ($template_offset = 0; $template_offset < $expected_callable_args_count - 1; $template_offset++) {
             $rest_callable_params[] = self::createExpectedCallable(
                 new Union([
-                    $template_provider->createTemplate('T' . $template_offset),
+                    $template_provider->createTemplate(Interner::intern('T' . $template_offset)),
                 ]),
                 $template_provider,
                 $template_offset + 1,
@@ -185,7 +187,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
         $template_params = [];
 
         for ($i = 0; $i < $expected_callable_count; $i++) {
-            $template_params[] = $template_provider->createTemplate('T' . $i);
+            $template_params[] = $template_provider->createTemplate(Interner::intern('T' . $i));
         }
 
         return $template_params;

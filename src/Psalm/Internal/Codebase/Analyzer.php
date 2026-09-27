@@ -21,9 +21,11 @@ use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Interner;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
@@ -52,7 +54,6 @@ use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 use function usort;
 
@@ -79,13 +80,13 @@ use const PHP_INT_MAX;
  *      method_param_uses: array<string, array<int, array<string, bool>>>,
  *      analyzed_methods: array<string, array<string, int>>,
  *      file_maps: array<string, FileMapType>,
- *      possible_method_param_types: array<string, array<int, Union>>,
+ *      possible_method_param_types: array<int, array<int, array<int, Union>>>,
  *      code_use_data: CodeUseGraph,
  *      taint_data: ?TaintFlowGraph,
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, Mutations::LEVEL_*>,
+ *      mutable_classes: array<int, Mutations::LEVEL_*>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
@@ -168,12 +169,14 @@ final class Analyzer
     private array $argument_map = [];
 
     /**
-     * @var array<string, array<int, Union>>
+     * class name id => method name id => offset => type
+     *
+     * @var array<int, array<int, array<int, Union>>>
      */
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, Mutations::LEVEL_*>
+     * @var array<int, Mutations::LEVEL_*> class name id => level
      */
     public array $mutable_classes = [];
 
@@ -383,17 +386,19 @@ final class Analyzer
                     }
                 }
 
-                foreach ($pool_data['possible_method_param_types'] as $declaring_method_id => $possible_param_types) {
-                    if (!isset($this->possible_method_param_types[$declaring_method_id])) {
-                        $this->possible_method_param_types[$declaring_method_id] = $possible_param_types;
-                    } else {
-                        foreach ($possible_param_types as $offset => $possible_param_type) {
-                            $this->possible_method_param_types[$declaring_method_id][$offset]
-                                = Type::combineUnionTypes(
-                                    $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
-                                    $possible_param_type,
-                                    $codebase,
-                                );
+                foreach ($pool_data['possible_method_param_types'] as $class => $class_param_types) {
+                    foreach ($class_param_types as $method => $possible_param_types) {
+                        if (!isset($this->possible_method_param_types[$class][$method])) {
+                            $this->possible_method_param_types[$class][$method] = $possible_param_types;
+                        } else {
+                            foreach ($possible_param_types as $offset => $possible_param_type) {
+                                $this->possible_method_param_types[$class][$method][$offset]
+                                    = Type::combineUnionTypes(
+                                        $this->possible_method_param_types[$class][$method][$offset] ?? null,
+                                        $possible_param_type,
+                                        $codebase,
+                                    );
+                            }
                         }
                     }
                 }
@@ -497,7 +502,7 @@ final class Analyzer
                             } else {
                                 try {
                                     $referencing_storage = $codebase->classlike_storage_provider->get(
-                                        $referencing_base_classlike,
+                                        Interner::intern($referencing_base_classlike),
                                     );
                                 } catch (InvalidArgumentException) {
                                     // Workaround for #3671
@@ -505,8 +510,12 @@ final class Analyzer
                                     $referencing_storage = null;
                                 }
 
-                                if (isset($referencing_storage->used_traits[$unchanged_signature_classlike])
-                                    || isset($referencing_storage->parent_classes[$unchanged_signature_classlike])
+                                $unchanged_signature_classlike_id = Interner::intern(
+                                    $unchanged_signature_classlike,
+                                );
+
+                                if (isset($referencing_storage->used_traits[$unchanged_signature_classlike_id])
+                                    || isset($referencing_storage->parent_classes[$unchanged_signature_classlike_id])
                                 ) {
                                     $newly_invalidated_methods[$referencing_method_id] = true;
                                 }
@@ -558,7 +567,7 @@ final class Analyzer
         }
 
         foreach ($newly_invalidated_methods as $method_id => $_) {
-            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($method_id)));
+            $code_use_graph->removeReferencesFrom(self::getFunctionLikeNodeFromString($method_id));
 
             foreach ($method_dependencies as $i => $_) {
                 unset($method_dependencies[$i][$method_id]);
@@ -662,7 +671,7 @@ final class Analyzer
         $keep_nodes = [];
 
         foreach ($this->analyzed_methods[$file_path] ?? [] as $trait_safe_method_id => $_) {
-            $keep_nodes[CodeUseGraph::functionLikeNode(strtolower(explode('&', $trait_safe_method_id)[0]))] = true;
+            $keep_nodes[self::getFunctionLikeNodeFromString(explode('&', $trait_safe_method_id)[0])] = true;
         }
 
         $code_use_graph->removeReferencesFromFile($file_path, $keep_nodes);
@@ -673,21 +682,21 @@ final class Analyzer
             return;
         }
 
-        foreach ($file_storage->classlikes_in_file as $fq_class_name_lc => $_) {
-            $code_use_graph->removeReferencesFrom(CodeUseGraph::classNode($fq_class_name_lc));
+        foreach ($file_storage->classlikes_in_file as $fq_class_name => $_) {
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::classNode($fq_class_name));
 
             try {
-                $classlike_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             } catch (InvalidArgumentException) {
                 continue;
             }
 
             foreach ($classlike_storage->appearing_method_ids as $appearing_method_id) {
-                if (strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc) {
+                if ($appearing_method_id->fq_class_name !== $fq_class_name) {
                     continue;
                 }
 
-                $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $appearing_method_id));
+                $method_node = CodeUseGraph::functionLikeNode($appearing_method_id);
 
                 if (!isset($keep_nodes[$method_node])) {
                     $code_use_graph->removeReferencesFrom($method_node);
@@ -696,8 +705,23 @@ final class Analyzer
         }
 
         foreach ($file_storage->functions as $function_id => $_) {
-            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(strtolower($function_id)));
+            $code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode($function_id));
         }
+    }
+
+    /**
+     * Builds the function-like node of a function or method id string,
+     * in the format used by the incremental analysis maps (`foo::bar` or `foo`).
+     *
+     * @psalm-pure
+     */
+    private static function getFunctionLikeNodeFromString(string $function_id): string
+    {
+        if (MethodIdentifier::isValidMethodIdReference($function_id)) {
+            return CodeUseGraph::functionLikeNode(MethodIdentifier::fromMethodIdReference($function_id));
+        }
+
+        return CodeUseGraph::functionLikeNode(Interner::intern($function_id));
     }
 
     public function shiftFileOffsets(StatementsProvider $statements_provider): void
@@ -1366,7 +1390,7 @@ final class Analyzer
     }
 
     /**
-     * @return array<string, array<int, Union>>
+     * @return array<int, array<int, array<int, Union>>>
      */
     public function getPossibleMethodParamTypes(): array
     {
@@ -1377,9 +1401,8 @@ final class Analyzer
      * @param Mutations::LEVEL_* $allowed_mutations
      * @psalm-external-mutation-free
      */
-    public function addMutableClass(string $fqcln, int $allowed_mutations): void
+    public function addMutableClass(int $fqcln, int $allowed_mutations): void
     {
-        $fqcln = strtolower($fqcln);
         if (array_key_exists($fqcln, $this->mutable_classes)) {
             $this->mutable_classes[$fqcln] = max(
                 $this->mutable_classes[$fqcln],

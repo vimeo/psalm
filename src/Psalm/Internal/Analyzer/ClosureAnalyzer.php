@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
+use Psalm\Interner;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -41,10 +42,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     {
         $codebase = $source->getCodebase();
 
-        $function_id = strtolower($source->getFilePath())
-            . ':' . $function->getLine()
-            . ':' . (int)$function->getAttribute('startFilePos')
-            . ':-:closure';
+        $function_id = self::buildClosureId($source->getFilePath(), $function);
 
         $this->closure_id = $function_id;
 
@@ -53,8 +51,21 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         parent::__construct($function, $source, $storage);
     }
 
-    /** @var lowercase-string */
-    private readonly string $closure_id;
+    /** lowercase closure id */
+    private readonly int $closure_id;
+
+    /**
+     * @return int lowercase closure id
+     */
+    private static function buildClosureId(string $file_path, PhpParser\Node\FunctionLike $function): int
+    {
+        return Interner::intern(
+            strtolower($file_path)
+            . ':' . $function->getStartLine()
+            . ':' . (int)$function->getAttribute('startFilePos')
+            . ':-:closure',
+        );
+    }
 
     /**
      * @psalm-mutation-free
@@ -86,14 +97,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @return non-empty-lowercase-string
+     * @return int lowercase closure id
      */
-    public function getClosureId(): string
+    public function getClosureId(): int
     {
-        return strtolower($this->getFilePath())
-            . ':' . $this->function->getLine()
-            . ':' . (int)$this->function->getAttribute('startFilePos')
-            . ':-:closure';
+        return self::buildClosureId($this->getFilePath(), $this->function);
     }
 
     /**
@@ -117,16 +125,18 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
+            $statements_fqcln = $statements_analyzer->getFQCLN();
             if ($context->collect_mutations &&
-                $context->self &&
+                $context->self !== null &&
+                $statements_fqcln !== null &&
                 $codebase->classExtends(
                     $context->self,
-                    (string)$statements_analyzer->getFQCLN(),
+                    $statements_fqcln,
                 )
             ) {
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
-            } elseif ($context->self) {
+            } elseif ($context->self !== null) {
                 $this_atomic = new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
@@ -139,7 +149,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
-        if ($context->self) {
+        if ($context->self !== null) {
             $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
 
             ClassAnalyzer::addContextProperties(

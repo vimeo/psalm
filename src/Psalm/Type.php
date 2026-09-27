@@ -62,13 +62,10 @@ use function array_values;
 use function explode;
 use function implode;
 use function is_int;
-use function preg_quote;
-use function preg_replace;
 use function str_contains;
-use function stripos;
+use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -79,7 +76,7 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  array<string, array<string, Union>> $template_type_map
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
      */
     public static function parseString(
         string $type_string,
@@ -96,18 +93,20 @@ abstract class Type
     }
 
     /**
+     * Resolves a class name as written in the source (possibly relative or aliased) to an interned FQCLN.
+     *
      * @psalm-mutation-free
      */
     public static function getFQCLNFromString(
         string $class,
         Aliases $aliases,
-    ): string {
+    ): int {
         if ($class === '') {
             throw new InvalidArgumentException('$class cannot be empty');
         }
 
         if ($class[0] === '\\') {
-            return substr($class, 1);
+            return Interner::intern(substr($class, 1));
         }
 
         $imported_namespaces = $aliases->uses;
@@ -116,27 +115,33 @@ abstract class Type
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
-            if (isset($imported_namespaces[strtolower($first_namespace)])) {
-                return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $class_parts);
+            $first_namespace_id = Interner::find($first_namespace);
+            if ($first_namespace_id !== null && isset($imported_namespaces[$first_namespace_id])) {
+                return Interner::intern(
+                    Interner::str($imported_namespaces[$first_namespace_id]) . '\\' . implode('\\', $class_parts),
+                );
             }
-        } elseif (isset($imported_namespaces[strtolower($class)])) {
-            return $imported_namespaces[strtolower($class)];
+        } else {
+            $class_id = Interner::find($class);
+            if ($class_id !== null && isset($imported_namespaces[$class_id])) {
+                return $imported_namespaces[$class_id];
+            }
         }
 
-        $namespace = $aliases->namespace;
+        $namespace = $aliases->namespace === null ? '' : Interner::str($aliases->namespace);
 
-        return ($namespace ? $namespace . '\\' : '') . $class;
+        return Interner::intern(($namespace !== '' ? $namespace . '\\' : '') . $class);
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes class name id => alias id
      * @psalm-pure
      */
     public static function getStringFromFQCLN(
-        string $value,
-        ?string $namespace,
+        int $value,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $allow_self = false,
         bool $is_static = false,
     ): string {
@@ -147,23 +152,22 @@ abstract class Type
             return 'self';
         }
 
-        if (isset($aliased_classes[strtolower($value)])) {
-            return $aliased_classes[strtolower($value)];
+        if (isset($aliased_classes[$value])) {
+            return Interner::str($aliased_classes[$value]);
         }
 
-        if ($namespace && stripos($value, $namespace . '\\') === 0) {
-            $candidate = (string) preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
-                '',
-                $value,
-            );
+        $value = Interner::str($value);
+        $namespace = $namespace === null ? '' : Interner::str($namespace);
+
+        if ($namespace !== '' && str_starts_with($value, $namespace . '\\')) {
+            $candidate = substr($value, strlen($namespace) + 1);
 
             $candidate_parts = explode('\\', $candidate);
 
-            if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
+            if (self::getAliasedClass($aliased_classes, $candidate_parts[0]) === null) {
                 return $candidate;
             }
-        } elseif (!$namespace && !str_contains($value, '\\')) {
+        } elseif ($namespace === '' && !str_contains($value, '\\')) {
             return $value;
         }
 
@@ -175,8 +179,9 @@ abstract class Type
             while ($parts) {
                 $left = implode('\\', $parts);
 
-                if (isset($aliased_classes[strtolower($left)])) {
-                    return $aliased_classes[strtolower($left)] . '\\' . $suffix;
+                $alias = self::getAliasedClass($aliased_classes, $left);
+                if ($alias !== null) {
+                    return $alias . '\\' . $suffix;
                 }
 
                 $suffix = array_pop($parts) . '\\' . $suffix;
@@ -184,6 +189,19 @@ abstract class Type
         }
 
         return '\\' . $value;
+    }
+
+    /**
+     * @param array<int, int> $aliased_classes class name id => alias id
+     * @psalm-pure
+     */
+    private static function getAliasedClass(array $aliased_classes, string $class): ?string
+    {
+        $class_id = Interner::find($class);
+        if ($class_id === null || !isset($aliased_classes[$class_id])) {
+            return null;
+        }
+        return Interner::str($aliased_classes[$class_id]);
     }
 
     /**
@@ -322,12 +340,12 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getClassString(string $extends = 'object'): Union
+    public static function getClassString(int $extends = StrId::object): Union
     {
         return new Union([
             new TClassString(
                 $extends,
-                $extends === 'object'
+                $extends === StrId::object
                     ? null
                     : new TNamedObject($extends),
             ),
@@ -337,7 +355,7 @@ abstract class Type
     /**
      * @psalm-pure
      */
-    public static function getLiteralClassString(string $class_type, bool $definite_class = false): Union
+    public static function getLiteralClassString(int $class_type, bool $definite_class = false): Union
     {
         $type = new TLiteralClassString($class_type, $definite_class);
 

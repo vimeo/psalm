@@ -28,6 +28,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Interner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -275,7 +276,7 @@ final class ConstantTypeResolver
         }
 
         if ($c instanceof ClassConstant) {
-            if ($c->name === 'class') {
+            if ($c->name === Interner::intern('class')) {
                 return new TLiteralClassString($c->fqcln);
             }
 
@@ -354,7 +355,7 @@ final class ConstantTypeResolver
                             }
                         }
                     } elseif ($c instanceof EnumNameFetch) {
-                        return Type::getString($c->case)->getSingleAtomic();
+                        return Type::getString(Interner::str($c->case))->getSingleAtomic();
                     }
                 }
             }
@@ -369,7 +370,7 @@ final class ConstantTypeResolver
     public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|UnitEnum|null $value): Atomic
     {
         if ($value instanceof UnitEnum) {
-            return new TEnumCase($value::class, $value->name);
+            return new TEnumCase(Interner::intern($value::class), Interner::intern($value->name));
         }
         if (is_array($value)) {
             if (empty($value)) {

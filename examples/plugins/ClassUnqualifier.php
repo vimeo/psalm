@@ -3,6 +3,7 @@
 namespace Psalm\Example\Plugin;
 
 use Psalm\FileManipulation;
+use Psalm\Interner;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\AfterClassLikeExistenceCheckInterface;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
@@ -10,7 +11,6 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use function array_map;
 use function implode;
 use function strpos;
-use function strtolower;
 
 final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
@@ -18,7 +18,8 @@ final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
     public static function afterClassLikeExistenceCheck(
         AfterClassLikeExistenceCheckEvent $event
     ): void {
-        $fq_class_name = $event->getFqClassName();
+        $fq_class_name_id = $event->getFqClassName();
+        $fq_class_name = Interner::str($fq_class_name_id);
         $code_location = $event->getCodeLocation();
         $statements_source = $event->getStatementsSource();
         $file_replacements = $event->getFileReplacements();
@@ -35,9 +36,9 @@ final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 
             foreach ($type_tokens as &$type_token) {
                 if ($type_token[0] === ('\\' . $fq_class_name)
-                    && isset($aliases[strtolower($fq_class_name)])
+                    && isset($aliases[$fq_class_name_id])
                 ) {
-                    $type_token[0] = $aliases[strtolower($fq_class_name)];
+                    $type_token[0] = Interner::str($aliases[$fq_class_name_id]);
                 }
             }
             unset($type_token);

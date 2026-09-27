@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -31,19 +32,19 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
      * These functions are already handled by the CoreGenericFunctions stub
      */
     public const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
-        'reset',
-        'end',
-        'current',
+        StrId::reset,
+        StrId::end,
+        StrId::current,
     ];
 
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['current', 'next', 'prev', 'reset', 'end'];
+        return [StrId::current, StrId::next, StrId::prev, StrId::reset, StrId::end];
     }
 
     #[Override]
@@ -125,7 +126,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
     /**
      * @psalm-pure
      */
-    private static function isFunctionAlreadyHandledByStub(string $function_id): bool
+    private static function isFunctionAlreadyHandledByStub(int $function_id): bool
     {
         return !in_array($function_id, self::IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE, true);
     }

@@ -17,6 +17,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InvalidTemplateParam;
@@ -27,6 +28,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
@@ -45,7 +47,6 @@ use function count;
 use function explode;
 use function str_contains;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -56,7 +57,7 @@ final class TypeChecker extends TypeVisitor
 
     /**
      * @param array<string>    $suppressed_issues
-     * @param array<string, bool> $phantom_classes
+     * @param array<int, bool> $phantom_classes class name id => true
      * @psalm-mutation-free
      */
     public function __construct(
@@ -119,7 +120,7 @@ final class TypeChecker extends TypeVisitor
                 $this->source->getFilePath(),
                 $this->code_location->raw_file_start + $atomic->offset_start,
                 $this->code_location->raw_file_start + $atomic->offset_end,
-                $atomic->value,
+                Interner::str($atomic->value),
             );
         }
 
@@ -127,19 +128,19 @@ final class TypeChecker extends TypeVisitor
             && $atomic->text !== null
         ) {
             $codebase->addReferenceToClass(
-                strtolower($atomic->value),
+                $atomic->value,
                 $this->code_location,
                 $this->context,
             );
             // the type was written using an import alias: re-analyse if the import changes
             $codebase->addReferenceToUseAlias(
-                explode('\\', $atomic->text, 2)[0],
+                Interner::intern(explode('\\', $atomic->text, 2)[0]),
                 $this->source->getFilePath(),
                 $this->context,
             );
         }
 
-        if (!isset($this->phantom_classes[strtolower($atomic->value)])) {
+        if (!isset($this->phantom_classes[$atomic->value])) {
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
@@ -153,19 +154,17 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
-        $fq_class_name_lc = strtolower($atomic->value);
-
         if (!$this->inherited
-            && $codebase->classlike_storage_provider->has($fq_class_name_lc)
+            && $codebase->classlike_storage_provider->has($atomic->value)
             && $this->source->getFQCLN() !== $atomic->value
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+            $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
 
             if ($class_storage->deprecated) {
                 if ($class_storage->is_interface) {
                     IssueBuffer::maybeAdd(
                         new DeprecatedInterface(
-                            'Interface ' . $atomic->value . ' is marked as deprecated',
+                            'Interface ' . Interner::str($atomic->value) . ' is marked as deprecated',
                             $this->code_location,
                             $atomic->value,
                         ),
@@ -174,7 +173,7 @@ final class TypeChecker extends TypeVisitor
                 } else {
                     IssueBuffer::maybeAdd(
                         new DeprecatedClass(
-                            'Class ' . $atomic->value . ' is marked as deprecated',
+                            'Class ' . Interner::str($atomic->value) . ' is marked as deprecated',
                             $this->code_location,
                             $atomic->value,
                         ),
@@ -194,7 +193,7 @@ final class TypeChecker extends TypeVisitor
         $codebase = $this->source->getCodebase();
 
         try {
-            $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
+            $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
         } catch (InvalidArgumentException) {
             return;
         }
@@ -208,7 +207,7 @@ final class TypeChecker extends TypeVisitor
         if ($template_type_count > $template_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
-                    $atomic->value . ' has missing template params, expecting '
+                    Interner::str($atomic->value) . ' has missing template params, expecting '
                         . $template_type_count,
                     $this->code_location,
                 ),
@@ -230,7 +229,7 @@ final class TypeChecker extends TypeVisitor
 
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
-                && $this->source->getMethodName() !== '__construct'
+                && $this->source->getMethodName() !== StrId::__construct
                 && empty($expected_param_covariants[$i]);
 
             if (isset($expected_type_param_keys[$i])) {
@@ -260,7 +259,7 @@ final class TypeChecker extends TypeVisitor
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
                         IssueBuffer::maybeAdd(
                             new InvalidTemplateParam(
-                                'Extended template param ' . $expected_template_name
+                                'Extended template param ' . Interner::str($expected_template_name)
                                     . ' of ' . $atomic->getId()
                                     . ' expects type '
                                     . $expected_type_param->getId()
@@ -280,7 +279,7 @@ final class TypeChecker extends TypeVisitor
 
     public function checkScalarClassConstant(TClassConstant $atomic): void
     {
-        $fq_classlike_name = $atomic->fq_classlike_name === 'self'
+        $fq_classlike_name = $atomic->fq_classlike_name === StrId::self
             ? $this->source->getClassName()
             : $atomic->fq_classlike_name;
 
@@ -302,7 +301,7 @@ final class TypeChecker extends TypeVisitor
         }
 
         $const_name = $atomic->const_name;
-        if (str_contains($const_name, '*')) {
+        if (str_contains(Interner::str($const_name), '*')) {
             TypeExpander::expandAtomic(
                 $this->source->getCodebase(),
                 $atomic,
@@ -328,7 +327,8 @@ final class TypeChecker extends TypeVisitor
         if (!$is_defined) {
             IssueBuffer::maybeAdd(
                 new UndefinedConstant(
-                    'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
+                    'Constant ' . Interner::str($fq_classlike_name) . '::' . Interner::str($const_name)
+                        . ' is not defined',
                     $this->code_location,
                 ),
                 $this->source->getSuppressedIssues(),
@@ -339,8 +339,8 @@ final class TypeChecker extends TypeVisitor
     public function checkTemplateParam(TTemplateParam $atomic): void
     {
         if ($this->prevent_template_covariance
-            && !str_starts_with($atomic->defining_class, 'fn-')
-            && $atomic->defining_class !== 'class-string-map'
+            && !str_starts_with(Interner::str($atomic->defining_class), 'fn-')
+            && $atomic->defining_class !== StrId::class_string_map
         ) {
             $codebase = $this->source->getCodebase();
 
@@ -366,8 +366,9 @@ final class TypeChecker extends TypeVisitor
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidTemplateParam(
-                            'Template param ' . $atomic->param_name . ' of '
-                                . $atomic->defining_class . ' is marked covariant and cannot be used here',
+                            'Template param ' . Interner::str($atomic->param_name) . ' of '
+                                . Interner::str($atomic->defining_class)
+                                . ' is marked covariant and cannot be used here',
                             $this->code_location,
                         ),
                         $this->source->getSuppressedIssues(),
@@ -384,7 +385,7 @@ final class TypeChecker extends TypeVisitor
                 new ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
-                    'resource',
+                    StrId::resource,
                 ),
                 $this->source->getSuppressedIssues(),
             );

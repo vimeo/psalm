@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -378,16 +380,19 @@ final class KeyedArrayComparator
 
         $properties = [];
 
-        foreach ($storage->appearing_property_ids as $property_name => $property_id) {
-            if (!isset($container_type_part->properties[$property_name])) {
+        foreach ($storage->appearing_property_ids as $property_name => $appearing_class_name) {
+            $property_name_str = Interner::str($property_name);
+            if (!isset($container_type_part->properties[$property_name_str])) {
                 continue;
             }
+
+            $property_id = new PropertyIdentifier($appearing_class_name, $property_name);
 
             $property_type = $codebase->properties->hasStorage($property_id)
                 ? $codebase->properties->getStorage($property_id)->type
                 : null;
 
-            $properties[$property_name] = $property_type ?? Type::getMixed();
+            $properties[$property_name_str] = $property_type ?? Type::getMixed();
         }
 
         $replaced_object = TemplateInferredTypeReplacer::replace(

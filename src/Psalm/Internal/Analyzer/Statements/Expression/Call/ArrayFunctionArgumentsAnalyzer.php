@@ -23,6 +23,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
@@ -32,6 +33,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -51,8 +53,8 @@ use function count;
 use function explode;
 use function in_array;
 use function is_numeric;
+use function ltrim;
 use function str_contains;
-use function strtolower;
 use function substr;
 
 /**
@@ -67,15 +69,15 @@ final class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         array $args,
-        string $method_id,
+        int $method_id,
         bool $check_functions,
     ): void {
-        $closure_index = $method_id === 'array_map' ? 0 : 1;
+        $closure_index = $method_id === StrId::array_map ? 0 : 1;
 
         $array_arg_types = [];
 
         foreach ($args as $i => $arg) {
-            if ($i === 0 && $method_id === 'array_map') {
+            if ($i === 0 && $method_id === StrId::array_map) {
                 continue;
             }
 
@@ -109,7 +111,7 @@ final class ArrayFunctionArgumentsAnalyzer
         if ($closure_arg && $closure_arg_type) {
             $min_closure_param_count = $max_closure_param_count = count($array_arg_types);
 
-            if ($method_id === 'array_filter') {
+            if ($method_id === StrId::array_filter) {
                 $max_closure_param_count = count($args) > 2 ? 2 : 1;
             } elseif (in_array($method_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true)) {
                 $max_closure_param_count = 2;
@@ -146,7 +148,7 @@ final class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context,
-        string $method_id,
+        int $method_id,
     ): ?bool {
         $array_arg = $args[0]->value;
         $nb_args = count($args);
@@ -156,7 +158,7 @@ final class ArrayFunctionArgumentsAnalyzer
             static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack,
         );
 
-        if ($method_id === 'array_push' && !$unpacked_args) {
+        if ($method_id === StrId::array_push && !$unpacked_args) {
             for ($i = 1; $i < $nb_args; $i++) {
                 $was_inside_assignment = $context->inside_assignment;
 
@@ -244,7 +246,7 @@ final class ArrayFunctionArgumentsAnalyzer
                     return false;
                 }
 
-                if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
+                if ($method_id === StrId::array_unshift && $nb_args === 2 && !$unpacked_args) {
                     $new_offset_type = Type::getInt(false, 0);
                 } else {
                     $new_offset_type = Type::getInt();
@@ -732,7 +734,7 @@ final class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        string $method_id,
+        int $method_id,
         Atomic &$closure_type,
         PhpParser\Node\Arg $closure_arg,
         int $min_closure_param_count,
@@ -743,7 +745,7 @@ final class ArrayFunctionArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof TClosure) {
-            if ($method_id === 'array_map') {
+            if ($method_id === StrId::array_map) {
                 return;
             }
 
@@ -761,10 +763,10 @@ final class ArrayFunctionArgumentsAnalyzer
 
             $closure_types = [];
 
-            foreach ($function_ids as $function_id) {
-                $function_id = strtolower($function_id);
+            foreach ($function_ids as $function_id_str) {
+                if (str_contains($function_id_str, '::')) {
+                    $function_id = $function_id_str;
 
-                if (str_contains($function_id, '::')) {
                     if ($function_id[0] === '$') {
                         $function_id = substr($function_id, 1);
                     }
@@ -772,19 +774,21 @@ final class ArrayFunctionArgumentsAnalyzer
                     $function_id_parts = explode('&', $function_id);
 
                     foreach ($function_id_parts as $function_id_part) {
-                        [$callable_fq_class_name, $method_name] = explode('::', $function_id_part);
+                        [$callable_fq_class_name_str, $method_name] = explode('::', $function_id_part);
 
-                        switch ($callable_fq_class_name) {
+                        $callable_fq_class_name = Interner::intern(ltrim($callable_fq_class_name_str, '\\'));
+
+                        switch ($callable_fq_class_name_str) {
                             case 'self':
                             case 'static':
                             case 'parent':
                                 $container_class = $statements_analyzer->getFQCLN();
 
-                                if ($callable_fq_class_name === 'parent') {
+                                if ($callable_fq_class_name_str === 'parent') {
                                     $container_class = $statements_analyzer->getParentFQCLN();
                                 }
 
-                                if (!$container_class) {
+                                if ($container_class === null) {
                                     continue 2;
                                 }
 
@@ -797,7 +801,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         $function_id_part = new MethodIdentifier(
                             $callable_fq_class_name,
-                            strtolower($method_name),
+                            Interner::intern($method_name),
                         );
 
                         try {
@@ -816,6 +820,8 @@ final class ArrayFunctionArgumentsAnalyzer
                     if (!$check_functions) {
                         continue;
                     }
+
+                    $function_id = Interner::intern(ltrim($function_id_str, '\\'));
 
                     if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
                         continue;
@@ -896,7 +902,7 @@ final class ArrayFunctionArgumentsAnalyzer
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
-        string $method_id,
+        int $method_id,
         Atomic &$closure_type,
         PhpParser\Node\Arg $closure_arg,
         int $min_closure_param_count,
@@ -924,7 +930,8 @@ final class ArrayFunctionArgumentsAnalyzer
 
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
+                    'The callable passed to ' . Interner::str($method_id) . ' will be called with ' . $argument_text
+                        . ', expecting '
                         . $required_param_count,
                     new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                     $method_id,
@@ -940,7 +947,8 @@ final class ArrayFunctionArgumentsAnalyzer
 
             IssueBuffer::maybeAdd(
                 new TooFewArguments(
-                    'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
+                    'The callable passed to ' . Interner::str($method_id) . ' will be called with ' . $argument_text
+                        . ', expecting '
                         . $required_param_count,
                     new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                     $method_id,
@@ -952,7 +960,7 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         // abandon attempt to validate closure params if we have an extra arg for ARRAY_FILTER
-        if ($method_id === 'array_filter' && $max_closure_param_count > 1) {
+        if ($method_id === StrId::array_filter && $max_closure_param_count > 1) {
             return;
         }
 
@@ -975,7 +983,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            if ($method_id === 'array_map'
+            if ($method_id === StrId::array_map
                 && $i === 0
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
@@ -999,7 +1007,7 @@ final class ArrayFunctionArgumentsAnalyzer
                     $input_type,
                     $i,
                     $context->self,
-                    $context->calling_method_id ?: $context->calling_function_id,
+                    ArgumentsAnalyzer::getCallingFunctionId($context),
                 );
 
                 $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
@@ -1031,7 +1039,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     IssueBuffer::maybeAdd(
                         new MixedArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . Interner::str($method_id)
+                                . ' expects ' .
                                 $closure_param_type->getId() .
                                 ', but parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
@@ -1042,7 +1051,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new ArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . Interner::str($method_id)
+                                . ' expects ' .
                                 $closure_param_type->getId() .
                                 ', but parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
@@ -1063,7 +1073,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 if ($union_comparison_results->scalar_type_match_found) {
                     IssueBuffer::maybeAdd(
                         new InvalidScalarArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . Interner::str($method_id)
+                                . ' expects ' .
                                 $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id,
@@ -1073,7 +1084,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 } elseif ($types_can_be_identical) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . Interner::str($method_id)
+                                . ' expects '
                                 . $closure_param_type->getId() . ', but possibly different type '
                                 . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
@@ -1084,7 +1096,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . Interner::str($method_id)
+                                . ' expects ' .
                             $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                             $method_id,

@@ -12,6 +12,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Interner;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
@@ -22,6 +23,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
 
+use function count;
 use function function_exists;
 use function mb_substr;
 use function print_r;
@@ -717,7 +719,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? string : int)',
-            (string) Type::parseString('(T is string ? string : int)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is string ? string : int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -725,7 +727,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string|true ? int|string : int)',
-            Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => Type::getArray()]])->getId(false),
+            Type::parseString('(T is "hello"|true ? string|int : int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]])->getId(false),
         );
     }
 
@@ -733,7 +735,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is array{a: string} ? string : int)',
-            (string) Type::parseString('(T is array{a: string} ? string : int)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is array{a: string} ? string : int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -741,7 +743,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is array<array-key, string> ? string : int)',
-            (string) Type::parseString('(T is array<string> ? string : int)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is array<string> ? string : int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -749,7 +751,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is A&B ? string : int)',
-            (string) Type::parseString('(T is A&B ? string : int)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is A&B ? string : int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -757,21 +759,21 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? string : int)',
-            (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is string?string:int)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
     public function testConditionalTypeWithCallableElseBool(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('(T is string ? impure-callable() : bool)', null, ['T' => ['' => Type::getArray()]]);
+        Type::parseString('(T is string ? impure-callable() : bool)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]);
     }
 
     public function testConditionalTypeWithCallableReturningBoolElseBool(): void
     {
         $this->assertSame(
             '(T is string ? impure-callable():bool : bool)',
-            (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, ['T' => ['' => Type::getArray()]]),
+            (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -782,7 +784,7 @@ final class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? string : array<string, string>)',
                 null,
-                ['T' => ['' => Type::getArray()]],
+                [Interner::intern('T') => [Interner::intern('') => Type::getArray()]],
             ),
         );
     }
@@ -794,7 +796,7 @@ final class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? (callable(string, string):string) : (callable(mixed...):mixed))',
                 null,
-                ['T' => ['' => Type::getArray()]],
+                [Interner::intern('T') => [Interner::intern('') => Type::getArray()]],
             ),
         );
     }
@@ -806,7 +808,7 @@ final class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
                 null,
-                ['T' => ['' => Type::getArray()]],
+                [Interner::intern('T') => [Interner::intern('') => Type::getArray()]],
             ),
         );
     }
@@ -967,7 +969,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'key-of<T>',
-            Type::parseString('key-of<T>', null, ['T' => ['' => Type::getArray()]])->getId(false),
+            Type::parseString('key-of<T>', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]])->getId(false),
         );
     }
 
@@ -975,7 +977,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'value-of<T>',
-            (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]]),
+            (string)Type::parseString('value-of<T>', null, [Interner::intern('T') => [Interner::intern('') => Type::getArray()]]),
         );
     }
 
@@ -987,9 +989,9 @@ final class TypeParseTest extends TestCase
                 'T[K]',
                 null,
                 [
-                    'T' => ['' => Type::getArray()],
-                    'K' => ['' => new Union([
-                        new TTemplateKeyOf('T', 'fn-foo', Type::getMixed()),
+                    Interner::intern('T') => [Interner::intern('') => Type::getArray()],
+                    Interner::intern('K') => [Interner::intern('') => new Union([
+                        new TTemplateKeyOf(Interner::intern('T'), Interner::intern('fn-foo'), Type::getMixed()),
                     ])],
                 ],
             ),
@@ -1168,9 +1170,9 @@ final class TypeParseTest extends TestCase
 
         $resolved_type = new Union([
             new TLiteralString('baz'),
-            new TClassConstant('One2', 'TWO_THREE'),
-            new TClassConstant('Foo', 'BAR_BAR'),
-            new TClassConstant('Bat\\Bar', 'BAZ_BAM'),
+            new TClassConstant(Interner::intern('One2'), Interner::intern('TWO_THREE')),
+            new TClassConstant(Interner::intern('Foo'), Interner::intern('BAR_BAR')),
+            new TClassConstant(Interner::intern('Bat\\Bar'), Interner::intern('BAZ_BAM')),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -1277,60 +1279,32 @@ final class TypeParseTest extends TestCase
 
     public function testValidCallMapType(): void
     {
-        $callmap_types = InternalCallMapHandler::getCallMap();
+        $callmap = InternalCallMapHandler::getCallMap();
 
-        foreach ($callmap_types as $signature) {
-            $return_type = $signature[0] ?? null;
-            $param_type_1 = $signature[1] ?? null;
-            $param_type_2 = $signature[2] ?? null;
-            $param_type_3 = $signature[3] ?? null;
-            $param_type_4 = $signature[4] ?? null;
-
-            if ($return_type && $return_type !== 'void') {
-                if (stripos($return_type, 'oci-') !== false) {
-                    continue;
-                }
-
-                try {
-                    Type::parseString($return_type);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
+        $entries = $callmap['functions'];
+        foreach ($callmap['methods'] as $methods) {
+            foreach ($methods as $signatures) {
+                $entries[] = $signatures;
             }
+        }
 
-            if ($param_type_1 && $param_type_1 !== 'mixed') {
-                if (stripos($param_type_1, 'oci-') !== false) {
-                    continue;
+        foreach ($entries as $signatures) {
+            foreach ($signatures as $signature) {
+                $types = [$signature[0]];
+                for ($i = 1, $count = count($signature); $i < $count; $i++) {
+                    $types[] = $signature[$i][1];
                 }
 
-                try {
-                    Type::parseString($param_type_1);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
+                foreach ($types as $type) {
+                    if ($type === 'void' || $type === 'mixed' || stripos($type, 'oci-') !== false) {
+                        continue;
+                    }
 
-            if ($param_type_2 && $param_type_2 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_2);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
-
-            if ($param_type_3 && $param_type_3 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_3);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
-
-            if ($param_type_4 && $param_type_4 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_4);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
+                    try {
+                        Type::parseString($type);
+                    } catch (TypeParseTreeException $e) {
+                        self::assertTrue(false, $e . ' | ' . print_r($signature, true));
+                    }
                 }
             }
         }

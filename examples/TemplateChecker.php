@@ -5,8 +5,8 @@ namespace Psalm\Examples\Template;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm;
-use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
@@ -16,18 +16,18 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Interner;
 use Psalm\Node\Stmt\VirtualClass;
 use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function explode;
 use function preg_match;
 use function preg_replace;
 use function str_replace;
-use function strtolower;
 use function trim;
 
 final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
@@ -62,8 +62,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                     throw new InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                /** @psalm-suppress ArgumentTypeCoercion */
-                $method_id = new MethodIdentifier(...explode('::', $matches[1]));
+                $method_id = MethodIdentifier::fromMethodIdReference($matches[1]);
 
                 $this_params = $this->checkMethod($method_id, $first_stmt, $codebase);
 
@@ -72,7 +71,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                 }
 
                 $this_params->vars_in_scope['$this'] = new Union([
-                    new TNamedObject(self::VIEW_CLASS),
+                    new TNamedObject(Interner::intern(self::VIEW_CLASS)),
                 ]);
             }
         }
@@ -80,9 +79,9 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         if (!$this_params) {
             $this_params = new Context();
             $this_params->check_variables = false;
-            $this_params->self = self::VIEW_CLASS;
+            $this_params->self = Interner::intern(self::VIEW_CLASS);
             $this_params->vars_in_scope['$this'] = new Union([
-                new TNamedObject(self::VIEW_CLASS),
+                new TNamedObject(Interner::intern(self::VIEW_CLASS)),
             ]);
         }
 
@@ -114,7 +113,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         $this_context->vars_in_scope['$this'] = new Union([new TNamedObject($class_storage->name)]);
 
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier($method_id->fq_class_name, '__construct'),
+            new MethodIdentifier($method_id->fq_class_name, StrId::__construct),
             $this_context,
             $this->getRootFilePath(),
             $this->getRootFileName(),
@@ -131,7 +130,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
         );
 
         $view_context = new Context();
-        $view_context->self = strtolower(self::VIEW_CLASS);
+        $view_context->self = Interner::intern(self::VIEW_CLASS);
 
         // add all $this-> vars to scope
         foreach ($this_context->vars_possibly_in_scope as $var => $_) {
@@ -166,7 +165,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $class = new VirtualClass(self::VIEW_CLASS);
 
-        $class_analyzer = new ClassAnalyzer($class, $this, self::VIEW_CLASS);
+        $class_analyzer = new ClassAnalyzer($class, $this, Interner::intern(self::VIEW_CLASS));
 
         $view_method_analyzer = new MethodAnalyzer($class_method, $class_analyzer, new MethodStorage());
 

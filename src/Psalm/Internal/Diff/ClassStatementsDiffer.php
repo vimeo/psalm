@@ -10,7 +10,6 @@ use UnexpectedValueException;
 use function count;
 use function is_string;
 use function str_contains;
-use function strtolower;
 use function substr;
 use function trim;
 
@@ -201,38 +200,37 @@ final class ClassStatementsDiffer extends AstDiffer
         $add_or_delete = [];
         $deletion_ranges = [];
 
-        $name_lc = strtolower($name);
         foreach ($diff as $diff_elem) {
             if ($diff_elem->type === DiffElem::TYPE_KEEP) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    $keep[] = $name_lc . '::' . strtolower((string) $diff_elem->old->name);
+                    $keep[] = $name . '::' . (string) $diff_elem->old->name;
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($diff_elem->old->props as $prop) {
-                        $keep[] = $name_lc . '::$' . $prop->name;
+                        $keep[] = $name . '::$' . $prop->name;
                     }
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassConst) {
                     foreach ($diff_elem->old->consts as $const) {
-                        $keep[] = $name_lc . '::' . $const->name;
+                        $keep[] = $name . '::' . $const->name;
                     }
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\TraitUse) {
                     foreach ($diff_elem->old->traits as $trait) {
-                        $keep[] = $name_lc . '&' . strtolower((string) $trait->getAttribute('resolvedName'));
+                        $keep[] = $name . '&' . (string) $trait->getAttribute('resolvedName');
                     }
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_KEEP_SIGNATURE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    $keep_signature[] = $name_lc . '::' . strtolower((string) $diff_elem->old->name);
+                    $keep_signature[] = $name . '::' . (string) $diff_elem->old->name;
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($diff_elem->old->props as $prop) {
-                        $keep_signature[] = $name_lc . '::$' . $prop->name;
+                        $keep_signature[] = $name . '::$' . $prop->name;
                     }
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE || $diff_elem->type === DiffElem::TYPE_ADD) {
                 /** @var PhpParser\Node */
                 $affected_elem = $diff_elem->type === DiffElem::TYPE_REMOVE ? $diff_elem->old : $diff_elem->new;
                 if ($affected_elem instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    $method_name = strtolower((string) $affected_elem->name);
-                    $add_or_delete[] = $name_lc . '::' . $method_name;
+                    $method_name = (string) $affected_elem->name;
+                    $add_or_delete[] = $name . '::' . $method_name;
                     if ($method_name === '__construct') {
                         foreach ($affected_elem->getParams() as $param) {
                             if (!$param->flags || !$param->var instanceof PhpParser\Node\Expr\Variable) {
@@ -241,20 +239,20 @@ final class ClassStatementsDiffer extends AstDiffer
                             if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
                                 throw new UnexpectedValueException('Not expecting param name to be non-string');
                             }
-                            $add_or_delete[] = $name_lc . '::$' . $param->var->name;
+                            $add_or_delete[] = $name . '::$' . $param->var->name;
                         }
                     }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($affected_elem->props as $prop) {
-                        $add_or_delete[] = $name_lc . '::$' . $prop->name;
+                        $add_or_delete[] = $name . '::$' . $prop->name;
                     }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\ClassConst) {
                     foreach ($affected_elem->consts as $const) {
-                        $add_or_delete[] = $name_lc . '::' . $const->name;
+                        $add_or_delete[] = $name . '::' . $const->name;
                     }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\TraitUse) {
                     foreach ($affected_elem->traits as $trait) {
-                        $add_or_delete[] = $name_lc . '&' . strtolower((string) $trait->getAttribute('resolvedName'));
+                        $add_or_delete[] = $name . '&' . (string) $trait->getAttribute('resolvedName');
                     }
                 }
 

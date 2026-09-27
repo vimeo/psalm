@@ -22,6 +22,7 @@ use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -30,6 +31,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Interner;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -41,6 +43,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -60,11 +63,11 @@ use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function is_int;
 use function is_string;
 use function max;
 use function min;
 use function reset;
-use function str_contains;
 use function strtolower;
 
 /**
@@ -72,24 +75,26 @@ use function strtolower;
  */
 final class ArgumentsAnalyzer
 {
+    /** function ids */
     public const ARRAY_FILTERLIKE = [
-        'array_filter',
-        'array_find',
-        'array_find_key',
-        'array_any',
-        'array_all',
+        StrId::array_filter,
+        StrId::array_find,
+        StrId::array_find_key,
+        StrId::array_any,
+        StrId::array_all,
     ];
 
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
+     * @param   int|MethodIdentifier|null $method_id function id or method id
      * @return  false|null
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         array $args,
         ?array $function_params,
-        ?string $method_id,
+        int|MethodIdentifier|null $method_id,
         bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null,
@@ -99,7 +104,7 @@ final class ArgumentsAnalyzer
             : null;
 
         // if this modifies the array type based on further args
-        if (in_array($method_id, ['array_push', 'array_unshift'], true)
+        if (($method_id === StrId::array_push || $method_id === StrId::array_unshift)
             && $function_params
             && isset($args[0])
             && isset($args[1])
@@ -117,7 +122,7 @@ final class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id === 'array_splice' && $function_params && count($args) > 1) {
+        if ($method_id === StrId::array_splice && $function_params && count($args) > 1) {
             if (ArrayFunctionArgumentsAnalyzer::handleSplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }
@@ -125,7 +130,7 @@ final class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id === 'array_map') {
+        if ($method_id === StrId::array_map) {
             $args = array_reverse($args, true);
         }
 
@@ -145,8 +150,9 @@ final class ArgumentsAnalyzer
             $param = null;
 
             if ($arg->name && $allow_named_args) {
+                $arg_name = Interner::intern($arg->name->name);
                 foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name) {
+                    if ($candidate_param->name === $arg_name) {
                         $param = $candidate_param;
                         break;
                     }
@@ -199,7 +205,11 @@ final class ArgumentsAnalyzer
 
             $toggled_class_exists = false;
 
-            if (in_array($method_id, ['class_exists', 'interface_exists', 'enum_exists', 'trait_exists'], true)
+            if (in_array(
+                $method_id,
+                [StrId::class_exists, StrId::interface_exists, StrId::enum_exists, StrId::trait_exists],
+                true,
+            )
                 && $argument_offset === 0
                 && !$context->inside_class_exists
             ) {
@@ -271,7 +281,7 @@ final class ArgumentsAnalyzer
             }
 
             if (($argument_offset === 0 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
-                || ($argument_offset > 0 && $method_id === 'array_map' && count($args) >= 2)
+                || ($argument_offset > 0 && $method_id === StrId::array_map && count($args) >= 2)
             ) {
                 self::handleArrayMapFilterArrayArg(
                     $statements_analyzer,
@@ -301,7 +311,7 @@ final class ArgumentsAnalyzer
                     $inferred_arg_type,
                     $argument_offset,
                     $context->self,
-                    $context->calling_method_id ?: $context->calling_function_id,
+                    self::getCallingFunctionId($context),
                 );
             }
 
@@ -310,12 +320,20 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id === "ReflectionClass::getattributes"
-            || $method_id === "ReflectionClassConstant::getattributes"
-            || $method_id === "ReflectionFunction::getattributes"
-            || $method_id === "ReflectionMethod::getattributes"
-            || $method_id === "ReflectionParameter::getattributes"
-            || $method_id === "ReflectionProperty::getattributes"
+        if ($method_id instanceof MethodIdentifier
+            && $method_id->method_name === StrId::getAttributes
+            && in_array(
+                $method_id->fq_class_name,
+                [
+                    StrId::ReflectionClass,
+                    StrId::ReflectionClassConstant,
+                    StrId::ReflectionFunction,
+                    StrId::ReflectionMethod,
+                    StrId::ReflectionParameter,
+                    StrId::ReflectionProperty,
+                ],
+                true,
+            )
         ) {
             AttributesAnalyzer::analyzeGetAttributes($statements_analyzer, $method_id, array_values($args));
         }
@@ -323,9 +341,30 @@ final class ArgumentsAnalyzer
         return null;
     }
 
+    /** @var array<int, array<int, int>> class id => method name id => "Foo::bar" method id string id */
+    private static array $calling_method_function_ids = [];
+
+    /**
+     * Returns the id of the template defining entity of the calling function or method, if any
+     * (the function id or the "Foo::bar" method id)
+     *
+     * @psalm-external-mutation-free
+     * @psalm-suppress ImpureStaticProperty memoization only
+     */
+    public static function getCallingFunctionId(Context $context): ?int
+    {
+        $method_id = $context->calling_method_id;
+        if ($method_id) {
+            return self::$calling_method_function_ids[$method_id->fq_class_name][$method_id->method_name]
+                ??= Interner::intern((string) $method_id);
+        }
+
+        return $context->calling_function_id;
+    }
+
     private static function handleArrayMapFilterArrayArg(
         StatementsAnalyzer $statements_analyzer,
-        string $method_id,
+        int $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
@@ -333,7 +372,9 @@ final class ArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
+        $template_name = Interner::intern('ArrayValue' . $argument_offset);
+
+        $template_types = [$template_name => [$method_id => Type::getMixed()]];
 
         $replace_template_result = new TemplateResult(
             $template_types,
@@ -348,7 +389,7 @@ final class ArgumentsAnalyzer
                     Type::getArrayKey(),
                     new Union([
                         new TTemplateParam(
-                            'ArrayValue' . $argument_offset,
+                            $template_name,
                             Type::getMixed(),
                             $method_id,
                         ),
@@ -361,7 +402,7 @@ final class ArgumentsAnalyzer
             $existing_type,
             $argument_offset,
             $context->self,
-            $context->calling_method_id ?: $context->calling_function_id,
+            self::getCallingFunctionId($context),
         );
 
         if ($replace_template_result->lower_bounds) {
@@ -379,7 +420,7 @@ final class ArgumentsAnalyzer
     private static function handleClosureArg(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        ?string $method_id,
+        int|MethodIdentifier|null $method_id,
         Context $context,
         TemplateResult $template_result,
         int $argument_offset,
@@ -393,7 +434,7 @@ final class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
-            || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
+            || ($argument_offset === 0 && $method_id === StrId::array_map && count($args) >= 2)
         ) {
             $function_like_params = [];
 
@@ -406,7 +447,7 @@ final class ArgumentsAnalyzer
                     ),
                 ]);
                 $function_like_params[] = new FunctionLikeParameter(
-                    'function',
+                    StrId::function,
                     false,
                     $t,
                     $t,
@@ -446,7 +487,7 @@ final class ArgumentsAnalyzer
             null,
             null,
             null,
-            $context->calling_method_id ?: $context->calling_function_id,
+            self::getCallingFunctionId($context),
         );
 
         $replaced_type = TemplateInferredTypeReplacer::replace(
@@ -455,10 +496,12 @@ final class ArgumentsAnalyzer
             $codebase,
         );
 
-        $closure_id = strtolower($statements_analyzer->getFilePath())
+        $closure_id = Interner::intern(
+            strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
             . ':' . (int)$arg->value->getAttribute('startFilePos')
-            . ':-:closure';
+            . ':-:closure',
+        );
 
         try {
             $closure_storage = $codebase->getClosureStorage(
@@ -548,7 +591,7 @@ final class ArgumentsAnalyzer
             }
 
             if ($param_storage->type
-                && ($method_id === 'array_map' || in_array($method_id, self::ARRAY_FILTERLIKE, true))
+                && ($method_id === StrId::array_map || in_array($method_id, self::ARRAY_FILTERLIKE, true))
             ) {
                 $temp = Type::getMixed();
                 ArrayFetchAnalyzer::taintArrayFetch(
@@ -571,7 +614,7 @@ final class ArgumentsAnalyzer
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        string|MethodIdentifier|null $method_id,
+        int|MethodIdentifier|null $method_id,
         array $function_params,
         ?FunctionLikeStorage $function_storage,
         ?ClassLikeStorage $class_storage,
@@ -579,9 +622,13 @@ final class ArgumentsAnalyzer
         CodeLocation $code_location,
         Context $context,
     ): ?bool {
-        $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
+        $in_call_map = $method_id !== null
+            ? InternalCallMapHandler::inCallMap($method_id)
+            : false;
 
-        $cased_method_id = (string) $method_id;
+        $cased_method_id = $method_id instanceof MethodIdentifier
+            ? (string) $method_id
+            : ($method_id !== null ? Interner::str($method_id) : '');
 
         $is_variadic = false;
 
@@ -589,17 +636,17 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($method_id) {
+        if ($method_id !== null) {
             if ($method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
             }
 
             if ($function_storage) {
                 $is_variadic = $function_storage->variadic;
-            } elseif (is_string($method_id)) {
+            } elseif (is_int($method_id)) {
                 $is_variadic = Functions::isVariadic(
                     $codebase,
-                    strtolower($method_id),
+                    $method_id,
                     $statements_analyzer->getRootFilePath(),
                 );
             } else {
@@ -609,8 +656,8 @@ final class ArgumentsAnalyzer
 
         if ($method_id instanceof MethodIdentifier) {
             $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
-        } elseif ($function_storage) {
-            $cased_method_id = $function_storage->cased_name;
+        } elseif ($function_storage && $function_storage->cased_name !== null) {
+            $cased_method_id = Interner::str($function_storage->cased_name);
         }
 
         $calling_class_storage = $class_storage;
@@ -621,7 +668,7 @@ final class ArgumentsAnalyzer
         if ($method_id instanceof MethodIdentifier) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-            if ($declaring_method_id && (string)$declaring_method_id !== (string)$method_id) {
+            if ($declaring_method_id && !$declaring_method_id->equals($method_id)) {
                 $self_fq_class_name = $declaring_method_id->fq_class_name;
                 $class_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             }
@@ -702,7 +749,7 @@ final class ArgumentsAnalyzer
                         ArgumentAnalyzer::checkArgumentMatches(
                             $statements_analyzer,
                             $cased_method_id,
-                            $method_id instanceof MethodIdentifier ? $method_id : null,
+                            $method_id,
                             $self_fq_class_name,
                             $static_fq_class_name,
                             $code_location,
@@ -726,7 +773,7 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if (($method_id === 'preg_match_all' || $method_id === 'preg_match') && count($args) > 3) {
+        if (($method_id === StrId::preg_match_all || $method_id === StrId::preg_match) && count($args) > 3) {
             $args = array_reverse($args, true);
         }
 
@@ -740,7 +787,7 @@ final class ArgumentsAnalyzer
                     new InvalidNamedArgument(
                         'Cannot use positional argument after named argument',
                         new CodeLocation($statements_analyzer, $arg),
-                        (string)$method_id,
+                        $method_id,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -772,16 +819,18 @@ final class ArgumentsAnalyzer
 
                             $param_found = false;
 
+                            $key_name = Interner::intern($key_type->value);
+
                             foreach ($function_params as $candidate_param) {
-                                if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
-                                    if ($candidate_param->name === $key_type->value) {
+                                if ($candidate_param->name === $key_name || $candidate_param->is_variadic) {
+                                    if ($candidate_param->name === $key_name) {
                                         if (isset($matched_args[$candidate_param->name])) {
                                             IssueBuffer::maybeAdd(
                                                 new InvalidNamedArgument(
                                                     'Parameter $' . $key_type->value . ' has already been used in '
-                                                    . ($cased_method_id ?: $method_id),
+                                                    . $cased_method_id,
                                                     new CodeLocation($statements_analyzer, $arg),
-                                                    (string)$method_id,
+                                                    $method_id,
                                                 ),
                                                 $statements_analyzer->getSuppressedIssues(),
                                             );
@@ -799,9 +848,9 @@ final class ArgumentsAnalyzer
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $key_type->value . ' does not exist on function '
-                                            . ($cased_method_id ?: $method_id),
+                                            . $cased_method_id,
                                         new CodeLocation($statements_analyzer, $arg),
-                                        (string)$method_id,
+                                        $method_id,
                                     ),
                                     $statements_analyzer->getSuppressedIssues(),
                                 );
@@ -812,16 +861,18 @@ final class ArgumentsAnalyzer
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 $named_args_was_used = true;
 
+                $arg_name = Interner::intern($arg->name->name);
+
                 foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
-                        if ($candidate_param->name === $arg->name->name) {
+                    if ($candidate_param->name === $arg_name || $candidate_param->is_variadic) {
+                        if ($candidate_param->name === $arg_name) {
                             if (isset($matched_args[$candidate_param->name])) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
-                                            . ($cased_method_id ?: $method_id),
+                                            . $cased_method_id,
                                         new CodeLocation($statements_analyzer, $arg->name),
-                                        (string) $method_id,
+                                        $method_id,
                                     ),
                                     $statements_analyzer->getSuppressedIssues(),
                                 );
@@ -839,9 +890,9 @@ final class ArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidNamedArgument(
                             'Parameter $' . $arg->name->name . ' does not exist on function '
-                            . ($cased_method_id ?: $method_id),
+                            . $cased_method_id,
                             new CodeLocation($statements_analyzer, $arg->name),
-                            (string) $method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -861,12 +912,12 @@ final class ArgumentsAnalyzer
             }
 
             if ($arg_function_params[$argument_offset][0]->by_ref
-                && $method_id !== 'extract'
+                && $method_id !== StrId::extract
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
                     $codebase,
-                    (string) $method_id,
+                    $method_id,
                     $cased_method_id,
                     $last_param,
                     $function_params,
@@ -885,7 +936,7 @@ final class ArgumentsAnalyzer
                 if (ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
-                    $method_id instanceof MethodIdentifier ? $method_id : null,
+                    $method_id,
                     $self_fq_class_name,
                     $static_fq_class_name,
                     $code_location,
@@ -973,12 +1024,12 @@ final class ArgumentsAnalyzer
         }
 
         $f = in_array($method_id, self::ARRAY_FILTERLIKE, true);
-        if ($f || $method_id === 'array_map') {
-            assert(is_string($method_id));
+        if ($f || $method_id === StrId::array_map) {
+            assert(is_int($method_id));
             if (!$f && count($args) < 2) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
-                        'Too few arguments for ' . $method_id,
+                        'Too few arguments for ' . $cased_method_id,
                         $code_location,
                         $method_id,
                     ),
@@ -987,7 +1038,7 @@ final class ArgumentsAnalyzer
             } elseif ($f && count($args) < 1) {
                 IssueBuffer::maybeAdd(
                     new TooFewArguments(
-                        'Too few arguments for ' . $method_id,
+                        'Too few arguments for ' . $cased_method_id,
                         $code_location,
                         $method_id,
                     ),
@@ -1006,7 +1057,7 @@ final class ArgumentsAnalyzer
             return null;
         }
 
-        if ($method_id === 'get_class' && $args === []) {
+        if ($method_id === StrId::get_class && $args === []) {
             //get_class without args only works when inside a class
             if (!$context->self) {
                 IssueBuffer::maybeAdd(
@@ -1047,7 +1098,7 @@ final class ArgumentsAnalyzer
     private static function handlePossiblyMatchingByRefParam(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        string $method_id,
+        int|MethodIdentifier|null $method_id,
         ?string $cased_method_id,
         ?FunctionLikeParameter $last_param,
         array $function_params,
@@ -1088,9 +1139,9 @@ final class ArgumentsAnalyzer
         if (!in_array(
             $method_id,
             [
-                'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
-                'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
-                'array_push', 'array_unshift', 'socket_select', 'array_splice',
+                StrId::ksort, StrId::asort, StrId::krsort, StrId::arsort, StrId::natcasesort, StrId::natsort,
+                StrId::reset, StrId::end, StrId::next, StrId::prev, StrId::array_pop, StrId::array_shift,
+                StrId::array_push, StrId::array_unshift, StrId::socket_select, StrId::array_splice,
             ],
             true,
         )) {
@@ -1101,15 +1152,16 @@ final class ArgumentsAnalyzer
 
             if ($last_param) {
                 if ($arg->name !== null) {
+                    $arg_name = Interner::intern($arg->name->name);
                     $function_param = array_reduce(
                         $function_params,
                         static function (
                             ?FunctionLikeParameter $function_param,
                             FunctionLikeParameter $param,
                         ) use (
-                            $arg,
+                            $arg_name,
                         ) {
-                            if ($param->name === $arg->name->name) {
+                            if ($param->name === $arg_name) {
                                 return $param;
                             }
                             return $function_param;
@@ -1147,7 +1199,7 @@ final class ArgumentsAnalyzer
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
                         $context->self,
-                        $context->calling_method_id ?: $context->calling_function_id,
+                        self::getCallingFunctionId($context),
                     );
 
                     if ($template_result->lower_bounds) {
@@ -1172,7 +1224,7 @@ final class ArgumentsAnalyzer
                         $statements_analyzer->node_data->getType($arg->value),
                         $argument_offset,
                         $context->self,
-                        $context->calling_method_id ?: $context->calling_function_id,
+                        self::getCallingFunctionId($context),
                     );
 
                     if ($template_result->lower_bounds) {
@@ -1204,7 +1256,8 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
+                $method_id instanceof MethodIdentifier
+                    || ($method_id !== null && !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,
             );
         }
@@ -1325,18 +1378,22 @@ final class ArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        string $fq_class_name,
-        string $prop_name,
+        int $fq_class_name,
+        int $prop_name,
         ?string $lhs_var_id,
     ): void {
-        $property_id = $fq_class_name . '::$' . $prop_name;
+        $property_id = new PropertyIdentifier($fq_class_name, $prop_name);
 
         $codebase = $statements_analyzer->getCodebase();
-        $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             true,
             $statements_analyzer,
         );
+
+        if ($declaring_property_class === null) {
+            return;
+        }
 
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
@@ -1364,7 +1421,7 @@ final class ArgumentsAnalyzer
      */
     private static function handleByRefFunctionArg(
         StatementsAnalyzer $statements_analyzer,
-        ?string $method_id,
+        int|MethodIdentifier|null $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
@@ -1376,13 +1433,14 @@ final class ArgumentsAnalyzer
         );
 
         $builtin_array_functions = [
-            'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
-            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift', 'extract',
+            StrId::ksort, StrId::asort, StrId::krsort, StrId::arsort, StrId::natcasesort, StrId::natsort,
+            StrId::reset, StrId::end, StrId::next, StrId::prev, StrId::array_pop, StrId::array_shift,
+            StrId::extract,
         ];
 
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             && $arg->value->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $arg->value->name->name;
+            $prop_name = Interner::intern($arg->value->name->name);
 
             // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
             // I guess there's a function to do this, but I couldn't locate it
@@ -1392,7 +1450,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer,
             );
 
-            if (!empty($statements_analyzer->getFQCLN())) {
+            if ($statements_analyzer->getFQCLN() !== null) {
                 $fq_class_name = $statements_analyzer->getFQCLN();
 
                 self::handleByRefReadonlyArg(
@@ -1422,7 +1480,7 @@ final class ArgumentsAnalyzer
         }
 
         if (($var_id && isset($context->vars_in_scope[$var_id]))
-            || ($method_id
+            || (is_int($method_id)
                 && in_array(
                     $method_id,
                     $builtin_array_functions,
@@ -1449,26 +1507,26 @@ final class ArgumentsAnalyzer
 
         // special handling for array sort
         if ($argument_offset === 0
-            && $method_id
+            && is_int($method_id)
             && in_array(
                 $method_id,
                 $builtin_array_functions,
                 true,
             )
         ) {
-            if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+            if ($method_id === StrId::array_pop || $method_id === StrId::array_shift) {
                 ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
                     $statements_analyzer,
                     $arg,
                     $context,
-                    $method_id === 'array_shift',
+                    $method_id === StrId::array_shift,
                 );
 
                 return null;
             }
 
             // noops
-            if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
+            if (in_array($method_id, [StrId::reset, StrId::end, StrId::next, StrId::prev, StrId::ksort], true)) {
                 return null;
             }
 
@@ -1499,7 +1557,7 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if ($method_id === 'socket_select') {
+        if ($method_id === StrId::socket_select) {
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
@@ -1533,14 +1591,14 @@ final class ArgumentsAnalyzer
     /**
      * @param   list<PhpParser\Node\Arg> $args
      * @param   array<int,FunctionLikeParameter>        $function_params
-     * @param   array<string, array<string, Union>>  $class_generic_params
+     * @param   array<int, array<int, Union>>  $class_generic_params
      */
     private static function getProvisionalTemplateResultForFunctionLike(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         Context $context,
         ?ClassLikeStorage $class_storage,
-        ?string $self_fq_class_name,
+        ?int $self_fq_class_name,
         ?ClassLikeStorage $calling_class_storage,
         FunctionLikeStorage $function_storage,
         array $class_generic_params,
@@ -1574,8 +1632,9 @@ final class ArgumentsAnalyzer
             $function_param = null;
 
             if ($arg->name && $function_storage->allow_named_arg_calls) {
+                $arg_name = Interner::intern($arg->name->name);
                 foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name) {
+                    if ($candidate_param->name === $arg_name) {
                         $function_param = $candidate_param;
                         break;
                     }
@@ -1617,7 +1676,7 @@ final class ArgumentsAnalyzer
                 $arg_value_type,
                 $argument_offset,
                 $context->self,
-                $context->calling_method_id ?: $context->calling_function_id,
+                self::getCallingFunctionId($context),
                 false,
             );
         }
@@ -1639,25 +1698,26 @@ final class ArgumentsAnalyzer
         array $args,
         array $function_params,
         bool $in_call_map,
-        string|MethodIdentifier|null $method_id,
+        int|MethodIdentifier|null $method_id,
         ?string $cased_method_id,
         CodeLocation $code_location,
     ): void {
         if (!$is_variadic
             && count($args) > count($function_params)
-            && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
+            && (!count($function_params)
+                || $function_params[count($function_params) - 1]->name !== Interner::intern('...='))
             && ($in_call_map
                 || !$function_storage instanceof MethodStorage
                 || $function_storage->is_static
                 || ($method_id instanceof MethodIdentifier
-                    && $method_id->method_name === '__construct'))
+                    && $method_id->method_name === StrId::__construct))
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for ' . (string) $cased_method_id
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
-                    (string)$method_id,
+                    $method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -1685,6 +1745,10 @@ final class ArgumentsAnalyzer
                         ) {
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
+                                if (!is_string($property_name)) {
+                                    continue;
+                                }
+                                $property_name = Interner::intern($property_name);
                                 foreach ($function_params as $k => $param) {
                                     if ($param->name === $property_name) {
                                         unset($function_params[$k]);
@@ -1738,8 +1802,9 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
+                $arg_name = Interner::intern($arg->name->name);
                 foreach ($function_params as $k => $param) {
-                    if ($param->name === $arg->name->name) {
+                    if ($param->name === $arg_name) {
                         unset($function_params[$k]);
                         continue;
                     }
@@ -1752,10 +1817,10 @@ final class ArgumentsAnalyzer
                 if (!$param->is_optional && !$param->is_variadic) {
                     IssueBuffer::maybeAdd(
                         new TooFewArguments(
-                            'Too few arguments for ' . $cased_method_id
-                            . ' - expecting ' . $param->name . ' to be passed',
+                            'Too few arguments for ' . (string) $cased_method_id
+                            . ' - expecting ' . Interner::str($param->name) . ' to be passed',
                             $code_location,
-                            (string)$method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -1787,7 +1852,7 @@ final class ArgumentsAnalyzer
                         $default_type,
                         $i,
                         $context->self,
-                        $context->calling_method_id ?: $context->calling_function_id,
+                        self::getCallingFunctionId($context),
                         true,
                     );
                 }

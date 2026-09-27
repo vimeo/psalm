@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\StrId;
+
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
  * The parent type from which the classes descend may or may not be specified in the constructor.
@@ -19,7 +21,7 @@ final class TUnknownClassString extends TClassString
         bool $from_docblock = false,
     ) {
         parent::__construct(
-            'object',
+            StrId::object,
             null,
             $is_loaded,
             false,

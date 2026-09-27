@@ -1011,8 +1011,8 @@ final class CompletionTest extends TestCase
             'somefile.php',
             '<?php
                 namespace Bar;
-                use phpunit\framework as phpf;
-                atleaston',
+                use PHPUnit\Framework as phpf;
+                atLeastOn',
         );
 
         $codebase->file_provider->openFile('somefile.php');
@@ -1021,7 +1021,7 @@ final class CompletionTest extends TestCase
 
         $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(3, 25));
         $this->assertNotNull($completion_data);
-        $this->assertSame('*Bar-atleaston', $completion_data[0]);
+        $this->assertSame('*Bar-atLeastOn', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
         $this->assertSame(1, count($completion_items));
@@ -1109,7 +1109,7 @@ final class CompletionTest extends TestCase
             '<?php
 
             namespace Foo;
-            use function phpunit\framework\atleastonce;
+            use function PHPUnit\Framework\atLeastOnce;
             ',
         );
 
@@ -1117,7 +1117,7 @@ final class CompletionTest extends TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atLeastOn', 81, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 
@@ -1132,7 +1132,7 @@ final class CompletionTest extends TestCase
             '<?php
 
             namespace Foo;
-            use phpunit\framework;
+            use PHPUnit\Framework;
             ',
         );
 
@@ -1140,7 +1140,7 @@ final class CompletionTest extends TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
+        $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atLeastOn', 81, 'somefile.php', $codebase);
         $this->assertSame(1, count($functions));
     }
 

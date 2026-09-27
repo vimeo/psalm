@@ -12,10 +12,12 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -27,7 +29,6 @@ use function explode;
 use function in_array;
 use function reset;
 use function str_contains;
-use function strtolower;
 use function substr;
 
 /**
@@ -36,13 +37,13 @@ use function substr;
 final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_reduce'];
+        return [StrId::array_reduce];
     }
 
     #[Override]
@@ -80,8 +81,6 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                 || $array_arg_types['array'] instanceof TKeyedArray)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
-
-
 
             if ($array_arg_atomic_type instanceof TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();
@@ -201,18 +200,21 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                 $function_call_arg,
             );
 
-            $call_map = InternalCallMapHandler::getCallMap();
-
             foreach ($mapping_function_ids as $mapping_function_id) {
                 $mapping_function_id_parts = explode('&', $mapping_function_id);
 
                 $part_match_found = false;
 
                 foreach ($mapping_function_id_parts as $mapping_function_id_part) {
-                    if (isset($call_map[$mapping_function_id_part][0])) {
-                        if ($call_map[$mapping_function_id_part][0]) {
-                            $mapped_function_return =
-                                Type::parseString($call_map[$mapping_function_id_part][0]);
+                    $callmap_callables = $mapping_function_id_part !== ''
+                        && !str_contains($mapping_function_id_part, '::')
+                        ? InternalCallMapHandler::getCallablesFromCallMap(
+                            Interner::intern($mapping_function_id_part),
+                        )
+                        : null;
+                    if ($callmap_callables) {
+                        if ($callmap_callables[0]->return_type) {
+                            $mapped_function_return = $callmap_callables[0]->return_type;
 
                             $reduce_return_type = Type::combineUnionTypes(
                                 $reduce_return_type,
@@ -230,19 +232,19 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                             [$callable_fq_class_name, $method_name] = explode('::', $mapping_function_id_part);
 
                             if (in_array($callable_fq_class_name, ['self', 'static'], true)) {
-                                $callable_fq_class_name = $statements_source->getFQCLN();
-                                if ($callable_fq_class_name === null) {
+                                $callable_fq_class_id = $statements_source->getFQCLN();
+                                if ($callable_fq_class_id === null) {
                                     continue;
                                 }
-                            }
-
-                            if ($callable_fq_class_name === 'parent') {
+                            } elseif ($callable_fq_class_name === 'parent') {
                                 continue;
+                            } else {
+                                $callable_fq_class_id = Interner::intern($callable_fq_class_name);
                             }
 
                             $method_id = new MethodIdentifier(
-                                $callable_fq_class_name,
-                                strtolower($method_name),
+                                $callable_fq_class_id,
+                                Interner::intern($method_name),
                             );
 
                             if (!$codebase->methodExists(
@@ -264,7 +266,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $part_match_found = true;
 
-                            $self_class = 'self';
+                            $self_class = StrId::self;
 
                             $return_type = $codebase->getMethodReturnType(
                                 $method_id,
@@ -273,7 +275,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
-                                strtolower($mapping_function_id_part),
+                                Interner::intern($mapping_function_id_part),
                             )
                             ) {
                                 return Type::getMixed();
@@ -283,7 +285,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $function_storage = $codebase->functions->getStorage(
                                 $statements_source,
-                                strtolower($mapping_function_id_part),
+                                Interner::intern($mapping_function_id_part),
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();

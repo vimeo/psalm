@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-
-use function strtolower;
+use Psalm\Internal\MethodIdentifier;
 
 /**
  * @api
  */
 abstract class ArgumentIssue extends CodeIssue
 {
-    public ?string $function_id = null;
+    /**
+     * Interned function id (as written, case-sensitive), or method id
+     */
+    public int|MethodIdentifier|null $function_id = null;
 
     /**
      * @psalm-mutation-free
@@ -21,9 +23,9 @@ abstract class ArgumentIssue extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        ?string $function_id = null,
+        int|MethodIdentifier|null $function_id = null,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = $function_id ? strtolower($function_id) : null;
+        $this->function_id = $function_id;
     }
 }

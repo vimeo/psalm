@@ -20,8 +20,8 @@ final class MethodVisibilityProviderEvent
      */
     public function __construct(
         private readonly StatementsSource $source,
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
+        private readonly int $fq_classlike_name,
+        private readonly int $method_name,
         private readonly Context $context,
         private readonly ?CodeLocation $code_location = null,
     ) {
@@ -32,14 +32,20 @@ final class MethodVisibilityProviderEvent
         return $this->source;
     }
 
-    public function getFqClasslikeName(): string
+    /**
+     * Interned class name id, as declared (class names are case-sensitive).
+     */
+    public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
-    public function getMethodNameLowercase(): string
+    /**
+     * Interned method name id, as written (method names are case-sensitive, no case folding is applied).
+     */
+    public function getMethodName(): int
     {
-        return $this->method_name_lowercase;
+        return $this->method_name;
     }
 
     public function getContext(): Context

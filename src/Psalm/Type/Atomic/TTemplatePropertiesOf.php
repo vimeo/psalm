@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -25,8 +26,8 @@ final class TTemplatePropertiesOf extends Atomic
      * @param TPropertiesOf::VISIBILITY_*|null $visibility_filter
      */
     public function __construct(
-        public string $param_name,
-        public string $defining_class,
+        public int $param_name,
+        public int $defining_class,
         public TTemplateParam $as,
         public ?int $visibility_filter,
         bool $from_docblock = false,
@@ -37,7 +38,8 @@ final class TTemplatePropertiesOf extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return TPropertiesOf::tokenNameForFilter($this->visibility_filter) . '<' . $this->param_name . '>';
+        return TPropertiesOf::tokenNameForFilter($this->visibility_filter)
+            . '<' . Interner::str($this->param_name) . '>';
     }
 
     #[Override]
@@ -51,13 +53,13 @@ final class TTemplatePropertiesOf extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): string {
         return $this->getKey();

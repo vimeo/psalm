@@ -8,6 +8,7 @@ use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Interner;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionProperty;
 
@@ -999,14 +1000,14 @@ final class IncludeTest extends TestCase
         // Simulate reflection overwriting the interface storage with a class
         // that lacks the interface's methods (this is what happens when a
         // vendor class with the same FQCN is loaded via reflection).
-        $overwritten = new ClassLikeStorage('Foo\\Bar');
+        $overwritten = new ClassLikeStorage(Interner::intern('Foo\\Bar'));
         $overwritten->is_interface = false;
         $overwritten->populated = true;
 
         $ref = new ReflectionProperty(ClassLikeStorageProvider::class, 'storage');
-        /** @var array<string, ClassLikeStorage> $all */
+        /** @var array<int, ClassLikeStorage> $all */
         $all = $ref->getValue();
-        $all['foo\\bar'] = $overwritten;
+        $all[Interner::intern('foo\\bar')] = $overwritten;
         $ref->setValue(null, $all);
 
         $file_analyzer = new FileAnalyzer(

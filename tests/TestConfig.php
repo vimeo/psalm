@@ -88,7 +88,7 @@ final class TestConfig extends Config
      * @psalm-pure
      */
     #[Override]
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
+    public function getComposerFilePathForClassLike(int $fq_classlike_name): bool
     {
         return false;
     }

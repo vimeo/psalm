@@ -6,17 +6,17 @@ use Exception;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\PluginIssue;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\StrId;
 
 use function end;
 use function explode;
-use function strtolower;
 
 /**
  * Checks that functions and methods are correctly-cased
@@ -35,22 +35,26 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
         }
 
         try {
-            /** @psalm-suppress ArgumentTypeCoercion */
-            $method_id = new MethodIdentifier(...explode('::', $declaring_method_id));
-            $function_storage = $codebase->methods->getStorage($method_id);
+            $function_storage = $codebase->methods->getStorage($declaring_method_id);
 
-            if ($function_storage->cased_name === '__call') {
+            if ($function_storage->cased_name === null) {
                 return;
             }
 
-            if ($function_storage->cased_name === '__callStatic') {
+            if ($function_storage->cased_name === StrId::__call) {
                 return;
             }
 
-            if ($function_storage->cased_name !== (string)$expr->name) {
+            if ($function_storage->cased_name === StrId::__callStatic) {
+                return;
+            }
+
+            $cased_name = Interner::str($function_storage->cased_name);
+
+            if ($cased_name !== (string)$expr->name) {
                 IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
-                        'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
+                        'Function is incorrectly cased, expecting ' . $cased_name,
                         new CodeLocation($statements_source, $expr->name),
                     ),
                     $statements_source->getSuppressedIssues(),
@@ -77,19 +81,20 @@ final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface,
                 $statements_source instanceof StatementsAnalyzer
                     ? $statements_source
                     : null,
-                strtolower($function_id),
+                $function_id,
             );
 
-            if (!$function_storage->cased_name) {
+            if ($function_storage->cased_name === null) {
                 return;
             }
 
-            $function_name_parts = explode('\\', $function_storage->cased_name);
+            $cased_name = Interner::str($function_storage->cased_name);
+            $function_name_parts = explode('\\', $cased_name);
 
             if (end($function_name_parts) !== $expr->name->getLast()) {
                 IssueBuffer::maybeAdd(
                     new IncorrectFunctionCasing(
-                        'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
+                        'Function is incorrectly cased, expecting ' . $cased_name,
                         new CodeLocation($statements_source, $expr->name),
                     ),
                     $statements_source->getSuppressedIssues(),

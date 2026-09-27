@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 
 /**
@@ -50,7 +51,7 @@ final class IssetAnalyzer
                     new InvalidArgument(
                         'Isset only works with variables and array elements',
                         new CodeLocation($statements_analyzer->getSource(), $isset_var),
-                        'empty',
+                        StrId::empty,
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );

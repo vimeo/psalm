@@ -14,9 +14,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
@@ -30,7 +32,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function explode;
-use function strtolower;
 
 /**
  * @internal
@@ -93,15 +94,18 @@ final class StaticPropertyAssignmentAnalyzer
 
                 if (!$context->ignore_variable_property) {
                     $codebase->analyzer->addMixedMemberName(
-                        strtolower($fq_class_name) . '::$',
-                        $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                        Interner::str($fq_class_name) . '::$',
+                        $context->calling_method_id !== null
+                            ? (string) $context->calling_method_id
+                            : $statements_analyzer->getFileName(),
                     );
                 }
 
                 return null;
             }
 
-            $property_id = $fq_class_name . '::$' . $prop_name;
+            $prop_name_id = Interner::intern($prop_name->name);
+            $property_id = new PropertyIdentifier($fq_class_name, $prop_name_id);
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
@@ -110,20 +114,20 @@ final class StaticPropertyAssignmentAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name,
+                    Interner::str($fq_class_name),
                 );
 
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $property_id,
+                    (string) $property_id,
                 );
             }
 
             if (!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
+                        'Static property ' . (string) $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -143,12 +147,16 @@ final class StaticPropertyAssignmentAnalyzer
                 return false;
             }
 
-            $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                $fq_class_name . '::$' . $prop_name->name,
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
                 false,
             );
 
-            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+            if ($declaring_property_class === null) {
+                return null;
+            }
+
+            $declaring_property_id = Interner::str($declaring_property_class) . '::$' . $prop_name->name;
 
             if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -167,12 +175,12 @@ final class StaticPropertyAssignmentAnalyzer
 
                             $file_manipulations = [];
 
-                            if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
+                            if ($new_fq_class_name !== $old_declaring_fq_class_name) {
                                 $file_manipulations[] = new FileManipulation(
                                     (int) $stmt->class->getAttribute('startFilePos'),
                                     (int) $stmt->class->getAttribute('endFilePos') + 1,
                                     Type::getStringFromFQCLN(
-                                        $new_fq_class_name,
+                                        Interner::intern($new_fq_class_name),
                                         $statements_analyzer->getNamespace(),
                                         $statements_analyzer->getAliasedClassesFlipped(),
                                         null,
@@ -223,7 +231,7 @@ final class StaticPropertyAssignmentAnalyzer
 
                 $source_analyzer = $statements_analyzer->getSource()->getSource();
 
-                $prop_name_name = $prop_name->name;
+                $prop_name_name = $prop_name_id;
 
                 if ($source_analyzer instanceof ClassAnalyzer
                     && $fq_class_name === $source_analyzer->getFQCLN()

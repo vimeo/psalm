@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\PhpVisitor\YieldTypeCollector;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
@@ -285,7 +286,7 @@ final class ReturnTypeCollector
         return [
             new Union([
                 new TGenericObject(
-                    'Generator',
+                    StrId::Generator,
                     [
                         $key_type ?? Type::getMixed(),
                         $value_type ?? Type::getMixed(),

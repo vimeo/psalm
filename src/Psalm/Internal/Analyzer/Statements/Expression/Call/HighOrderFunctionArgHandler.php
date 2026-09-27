@@ -14,7 +14,9 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Interner;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
@@ -22,8 +24,8 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function is_string;
+use function ltrim;
 use function str_contains;
-use function strtolower;
 
 /**
  * @internal
@@ -169,11 +171,13 @@ final class HighOrderFunctionArgHandler
 
         try {
             if ($input_arg_expr instanceof PhpParser\Node\Expr\FuncCall) {
-                $function_id = strtolower((string) $input_arg_expr->name->getAttribute('resolvedName'));
+                $function_name = (string) $input_arg_expr->name->getAttribute('resolvedName');
 
-                if (empty($function_id)) {
+                if ($function_name === '') {
                     return null;
                 }
+
+                $function_id = Interner::intern($function_name);
 
                 $dynamic_storage = !$input_arg_expr->isFirstClassCallable()
                     ? $codebase->functions->dynamic_storage_provider->getFunctionStorage(
@@ -207,7 +211,7 @@ final class HighOrderFunctionArgHandler
 
                 $method_id = new MethodIdentifier(
                     $lhs_type->value,
-                    strtolower((string)$input_arg_expr->name),
+                    Interner::intern((string)$input_arg_expr->name),
                 );
 
                 return new HighOrderFunctionArgInfo(
@@ -222,8 +226,8 @@ final class HighOrderFunctionArgHandler
                 $input_arg_expr->name instanceof PhpParser\Node\Identifier
             ) {
                 $method_id = new MethodIdentifier(
-                    (string)$input_arg_expr->class->getAttribute('resolvedName'),
-                    strtolower($input_arg_expr->name->toString()),
+                    Interner::intern((string)$input_arg_expr->class->getAttribute('resolvedName')),
+                    Interner::intern($input_arg_expr->name->toString()),
                 );
 
                 return new HighOrderFunctionArgInfo(
@@ -239,7 +243,7 @@ final class HighOrderFunctionArgHandler
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
-                $constant = $context->constants[$input_arg_expr->name->toString()] ?? null;
+                $constant = $context->constants[Interner::intern($input_arg_expr->name->toString())] ?? null;
 
                 return null !== $constant
                     ? self::fromLiteralString($constant, $statements_analyzer)
@@ -250,10 +254,10 @@ final class HighOrderFunctionArgHandler
                 $input_arg_expr->name instanceof PhpParser\Node\Identifier
             ) {
                 $storage = $codebase->classlikes
-                    ->getStorageFor((string)$input_arg_expr->class->getAttribute('resolvedName'));
+                    ->getStorageFor(Interner::intern((string)$input_arg_expr->class->getAttribute('resolvedName')));
 
                 $constant = null !== $storage
-                    ? $storage->constants[$input_arg_expr->name->toString()] ?? null
+                    ? $storage->constants[Interner::intern($input_arg_expr->name->toString())] ?? null
                     : null;
 
                 return null !== $constant && null !== $constant->type
@@ -265,10 +269,10 @@ final class HighOrderFunctionArgHandler
                 $input_arg_expr->class instanceof PhpParser\Node\Name
             ) {
                 $class_storage = $codebase->classlikes
-                    ->getStorageFor((string) $input_arg_expr->class->getAttribute('resolvedName'));
+                    ->getStorageFor(Interner::intern((string) $input_arg_expr->class->getAttribute('resolvedName')));
 
-                $invoke_storage = $class_storage && isset($class_storage->methods['__invoke'])
-                    ? $class_storage->methods['__invoke']
+                $invoke_storage = $class_storage && isset($class_storage->methods[StrId::__invoke])
+                    ? $class_storage->methods[StrId::__invoke]
                     : null;
 
                 if (!$invoke_storage) {
@@ -331,8 +335,11 @@ final class HighOrderFunctionArgHandler
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
             str_contains($literal->value, '::')
-                ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
-                : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
+                ? $codebase->methods->getStorage(MethodIdentifier::fromMethodIdReference($literal->value))
+                : $codebase->functions->getStorage(
+                    $statements_analyzer,
+                    Interner::intern(ltrim($literal->value, '\\')),
+                ),
         );
     }
 }

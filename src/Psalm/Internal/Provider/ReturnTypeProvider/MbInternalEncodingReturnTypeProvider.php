@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
@@ -25,13 +26,13 @@ use function count;
 final class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['mb_internal_encoding'];
+        return [StrId::mb_internal_encoding];
     }
 
     #[Override]
@@ -63,14 +64,14 @@ final class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypePr
 
         foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TNamedObject
-                && $codebase->classlikes->classImplements($atomic_type->value, 'Stringable')
+                && $codebase->classlikes->classImplements($atomic_type->value, StrId::Stringable)
             ) {
                 $has_stringable = true;
                 continue;
             }
 
             if ($atomic_type instanceof Type\Atomic\TObjectWithProperties
-                && isset($atomic_type->methods['__tostring'])
+                && isset($atomic_type->methods[StrId::__toString])
             ) {
                 $has_tostring = true;
                 continue;

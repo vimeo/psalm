@@ -263,15 +263,6 @@ final class MethodCallTest extends TestCase
                     $foo = new A;
                     $b = $foo::bar();',
             ],
-            'uppercasedSelf' => [
-                'code' => '<?php
-                    class X33{
-                        public static function main(): void {
-                            echo SELF::class . "\n";  // Class or interface SELF does not exist
-                        }
-                    }
-                    X33::main();',
-            ],
             'dateTimeImmutableStatic' => [
                 'code' => '<?php
                     final class MyDate extends DateTimeImmutable {}
@@ -473,7 +464,7 @@ final class MethodCallTest extends TestCase
                     function foo(ReturnsString $user, $a): string {
                         strlen($user->getId());
 
-                        (is_object($a) && method_exists($a, "getS")) ? (string)$a->GETS() : "";
+                        (is_object($a) && method_exists($a, "getS")) ? (string)$a->getS() : "";
 
                         return $user->getId();
                     }',

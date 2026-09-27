@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-
-use function strtolower;
+use Psalm\Internal\MethodIdentifier;
 
 /**
  * @api
  */
 abstract class MethodIssue extends CodeIssue
 {
-    public string $method_id;
+    /**
+     * The method id
+     */
+    public MethodIdentifier $method_id;
 
     /**
      * @psalm-mutation-free
@@ -21,9 +23,9 @@ abstract class MethodIssue extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        string $method_id,
+        MethodIdentifier $method_id,
     ) {
         parent::__construct($message, $code_location);
-        $this->method_id = strtolower($method_id);
+        $this->method_id = $method_id;
     }
 }

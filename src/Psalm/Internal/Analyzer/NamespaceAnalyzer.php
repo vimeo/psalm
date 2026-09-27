@@ -10,6 +10,7 @@ use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Interner;
 use Psalm\Type;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -19,7 +20,6 @@ use function assert;
 use function count;
 use function preg_replace;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -29,12 +29,13 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    private readonly string $namespace_name;
+    /** namespace name id */
+    private readonly int $namespace_name;
 
     /**
      * A lookup table for public namespace constants
      *
-     * @var array<string, array<string, Union>>
+     * @var array<int, array<int, Union>> namespace id => constant name id => type
      */
     private static array $public_namespace_constants = [];
 
@@ -48,7 +49,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
          */
         protected SourceAnalyzer $source,
     ) {
-        $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
+        $this->namespace_name = Interner::intern($this->namespace->name ? $this->namespace->name->toString() : '');
     }
 
     public function collectAnalyzableInformation(): void
@@ -70,7 +71,8 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $this->visitGroupUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
-                    self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                    self::$public_namespace_constants[$this->namespace_name][Interner::intern($const->name->name)]
+                        = Type::getMixed();
                 }
 
                 $leftover_stmts[] = $stmt;
@@ -116,25 +118,27 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
     }
 
+    /** @psalm-mutation-free */
     #[Override]
-    public function getNamespace(): string
+    public function getNamespace(): ?int
     {
-        return $this->namespace_name;
+        return $this->namespace->name ? $this->namespace_name : null;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function setConstType(string $const_name, Union $const_type): void
+    public function setConstType(int $const_name, Union $const_type): void
     {
         self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
     }
 
     /**
-     * @return array<string, Union>
+     * @param int $namespace_name namespace id
+     * @return array<int, Union> constant name id => type
      * @psalm-external-mutation-free
      */
-    public static function getConstantsForNamespace(string $namespace_name, int $visibility): array
+    public static function getConstantsForNamespace(int $namespace_name, int $visibility): array
     {
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {
@@ -155,8 +159,8 @@ final class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Returns true if $calling_identifier is the same as, or is within with $identifier, in a
-     * case-insensitive comparison. Identifiers can be namespaces, classlikes, functions, or methods.
+     * Returns true if $calling_identifier is the same as, or is within with $identifier.
+     * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
      * @throws InvalidArgumentException if $identifier is not a valid identifier
@@ -188,12 +192,12 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * Returns true if $calling_identifier is the same as or is within any identifier
-     * in $identifiers in a case-insensitive comparison, or if $identifiers is empty.
+     * in $identifiers, or if $identifiers is empty.
      * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
      * @psalm-assert-if-false !empty $identifiers
-     * @param list<string> $identifiers
+     * @param array<int> $identifiers namespace/classlike/function name ids
      */
     public static function isWithinAny(string $calling_identifier, array $identifiers): bool
     {
@@ -202,7 +206,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         foreach ($identifiers as $identifier) {
-            if (self::isWithin($calling_identifier, $identifier)) {
+            if (self::isWithin($calling_identifier, Interner::str($identifier))) {
                 return true;
             }
         }
@@ -211,31 +215,30 @@ final class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param non-empty-string $fullyQualifiedClassName e.g. '\Psalm\Internal\Analyzer\NamespaceAnalyzer'
-     * @return non-empty-string , e.g. 'Psalm'
+     * @param int $fullyQualifiedClassName id of e.g. 'Psalm\Internal\Analyzer\NamespaceAnalyzer'
+     * @return int id of e.g. 'Psalm'
      * @psalm-pure
      */
-    public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
+    public static function getNameSpaceRoot(int $fullyQualifiedClassName): int
     {
-        $root_namespace = (string) preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
+        $name = Interner::str($fullyQualifiedClassName);
+        $root_namespace = (string) preg_replace('/^([^\\\]+).*/', '$1', $name, 1);
         if ($root_namespace === "") {
-            throw new InvalidArgumentException("Invalid classname \"$fullyQualifiedClassName\"");
+            throw new InvalidArgumentException("Invalid classname \"$name\"");
         }
-        return $root_namespace;
+        return Interner::intern($root_namespace);
     }
 
     /**
-     * @return ($lowercase is true ? lowercase-string : string)
      * @psalm-pure
      */
-    public static function normalizeIdentifier(string $identifier, bool $lowercase = true): string
+    public static function normalizeIdentifier(string $identifier): string
     {
         if ($identifier === "") {
             return "";
         }
 
-        $identifier = $identifier[0] === "\\" ? substr($identifier, 1) : $identifier;
-        return $lowercase ? strtolower($identifier) : $identifier;
+        return $identifier[0] === "\\" ? substr($identifier, 1) : $identifier;
     }
 
     /**

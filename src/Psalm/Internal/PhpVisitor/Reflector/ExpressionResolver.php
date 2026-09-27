@@ -31,6 +31,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Interner;
 use ReflectionClass;
 use ReflectionFunction;
 
@@ -42,6 +43,7 @@ use function function_exists;
 use function get_defined_constants;
 use function in_array;
 use function interface_exists;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -52,8 +54,8 @@ final class ExpressionResolver
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        ?string $fq_classlike_name,
-        ?string $parent_fq_class_name = null,
+        ?int $fq_classlike_name,
+        ?int $parent_fq_class_name = null,
     ): ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
@@ -157,17 +159,17 @@ final class ExpressionResolver
             }
 
             if ($part0_lc === '__namespace__') {
-                return new ScalarValue($aliases->namespace);
+                return new ScalarValue($aliases->namespace === null ? '' : Interner::str($aliases->namespace));
             }
 
             return new Constant(
-                $stmt->name->toString(),
+                Interner::intern($stmt->name->toString()),
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
             );
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
-            return new ScalarValue($aliases->namespace);
+            return new ScalarValue($aliases->namespace === null ? '' : Interner::str($aliases->namespace));
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch && $stmt->dim) {
@@ -211,7 +213,7 @@ final class ExpressionResolver
                     }
                 }
 
-                return new ClassConstant($const_fq_class_name, $stmt->name->name);
+                return new ClassConstant($const_fq_class_name, Interner::intern($stmt->name->name));
             }
 
             return null;
@@ -329,9 +331,9 @@ final class ExpressionResolver
                 }
             }
             if ($stmt->name->name === 'value') {
-                return new EnumValueFetch($enum_fq_class_name, $stmt->var->name->name);
+                return new EnumValueFetch($enum_fq_class_name, Interner::intern($stmt->var->name->name));
             } else /*if ($stmt->name->name === 'name')*/ {
-                return new EnumNameFetch($enum_fq_class_name, $stmt->var->name->name);
+                return new EnumNameFetch($enum_fq_class_name, Interner::intern($stmt->var->name->name));
             }
         }
 
@@ -436,7 +438,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
@@ -446,7 +448,7 @@ final class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
+                        Interner::intern(ltrim($string_value, '\\')),
                     );
 
                     return true;
@@ -466,7 +468,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
@@ -476,7 +478,7 @@ final class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
+                        Interner::intern(ltrim($string_value, '\\')),
                     );
 
                     return true;
@@ -496,7 +498,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
@@ -508,7 +510,7 @@ final class ExpressionResolver
 
                 if ($reflection_class->getFileName() !== $file_path) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
+                        Interner::intern(ltrim($string_value, '\\')),
                     );
 
                     return true;

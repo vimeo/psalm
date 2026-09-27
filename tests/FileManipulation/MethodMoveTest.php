@@ -741,7 +741,7 @@ final class MethodMoveTest extends TestCase
                         }
 
                         public function bat() {
-                            $this->foo();
+                            $this->Foo();
                         }
                     }
 
@@ -749,8 +749,8 @@ final class MethodMoveTest extends TestCase
                         public static function bar(A $a) : void {
                             $a->Foo();
 
-                            $this->foo();
-                            parent::foo();
+                            $this->Foo();
+                            parent::Foo();
 
                             foreach ($a->Foo() as $f) {}
                         }
@@ -784,7 +784,7 @@ final class MethodMoveTest extends TestCase
                         }
                     }',
                 'migrations' => [
-                    'Ns\A::foo' => 'Ns\A::Fedcba',
+                    'Ns\A::Foo' => 'Ns\A::Fedcba',
                 ],
             ],
         ];

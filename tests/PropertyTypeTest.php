@@ -9,6 +9,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Interner;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -501,7 +502,7 @@ final class PropertyTypeTest extends TestCase
 
     public function testUniversalObjectCrates(): void
     {
-        Config::getInstance()->addUniversalObjectCrate(DateTime::class);
+        Config::getInstance()->addUniversalObjectCrate(Interner::intern(DateTime::class));
 
         $this->addFile(
             'somefile.php',

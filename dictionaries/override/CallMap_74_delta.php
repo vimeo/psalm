@@ -16,20 +16,20 @@ return array (
       'cert' => 'resource|string',
       'key' => 'array<array-key, mixed>|resource|string',
     ),
-    'reflectionproperty::gettype' => 
+    'ReflectionProperty::getType' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'reflectionproperty::hastype' => 
+    'ReflectionProperty::hasType' => 
     array (
       0 => 'bool',
     ),
-    'reflectionproperty::isinitialized' => 
+    'ReflectionProperty::isInitialized' => 
     array (
       0 => 'bool',
       'object=' => 'object',
     ),
-    'sqlite3stmt::getsql' => 
+    'SQLite3Stmt::getSQL' => 
     array (
       0 => 'string',
       'expanded=' => 'bool',
@@ -37,7 +37,7 @@ return array (
   ),
   'changed' => 
   array (
-    'amqpbasicproperties::getappid' => 
+    'AMQPBasicProperties::getAppId' => 
     array (
       'old' => 
       array (
@@ -48,7 +48,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getclusterid' => 
+    'AMQPBasicProperties::getClusterId' => 
     array (
       'old' => 
       array (
@@ -59,7 +59,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getcontentencoding' => 
+    'AMQPBasicProperties::getContentEncoding' => 
     array (
       'old' => 
       array (
@@ -70,7 +70,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getcontenttype' => 
+    'AMQPBasicProperties::getContentType' => 
     array (
       'old' => 
       array (
@@ -81,7 +81,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getcorrelationid' => 
+    'AMQPBasicProperties::getCorrelationId' => 
     array (
       'old' => 
       array (
@@ -92,7 +92,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getexpiration' => 
+    'AMQPBasicProperties::getExpiration' => 
     array (
       'old' => 
       array (
@@ -103,7 +103,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getmessageid' => 
+    'AMQPBasicProperties::getMessageId' => 
     array (
       'old' => 
       array (
@@ -114,7 +114,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getreplyto' => 
+    'AMQPBasicProperties::getReplyTo' => 
     array (
       'old' => 
       array (
@@ -125,7 +125,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::gettimestamp' => 
+    'AMQPBasicProperties::getTimestamp' => 
     array (
       'old' => 
       array (
@@ -136,7 +136,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'amqpbasicproperties::gettype' => 
+    'AMQPBasicProperties::getType' => 
     array (
       'old' => 
       array (
@@ -147,7 +147,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpbasicproperties::getuserid' => 
+    'AMQPBasicProperties::getUserId' => 
     array (
       'old' => 
       array (
@@ -158,7 +158,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpchannel::basicrecover' => 
+    'AMQPChannel::basicRecover' => 
     array (
       'old' => 
       array (
@@ -171,7 +171,7 @@ return array (
         'requeue=' => 'bool',
       ),
     ),
-    'amqpchannel::committransaction' => 
+    'AMQPChannel::commitTransaction' => 
     array (
       'old' => 
       array (
@@ -182,7 +182,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpchannel::qos' => 
+    'AMQPChannel::qos' => 
     array (
       'old' => 
       array (
@@ -199,7 +199,7 @@ return array (
         'global=' => 'bool',
       ),
     ),
-    'amqpchannel::rollbacktransaction' => 
+    'AMQPChannel::rollbackTransaction' => 
     array (
       'old' => 
       array (
@@ -210,7 +210,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpchannel::setconfirmcallback' => 
+    'AMQPChannel::setConfirmCallback' => 
     array (
       'old' => 
       array (
@@ -225,7 +225,7 @@ return array (
         'nackCallback=' => 'impure-callable|null',
       ),
     ),
-    'amqpchannel::setprefetchcount' => 
+    'AMQPChannel::setPrefetchCount' => 
     array (
       'old' => 
       array (
@@ -238,7 +238,7 @@ return array (
         'count' => 'int',
       ),
     ),
-    'amqpchannel::setprefetchsize' => 
+    'AMQPChannel::setPrefetchSize' => 
     array (
       'old' => 
       array (
@@ -251,7 +251,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'amqpchannel::setreturncallback' => 
+    'AMQPChannel::setReturnCallback' => 
     array (
       'old' => 
       array (
@@ -264,7 +264,7 @@ return array (
         'returnCallback' => 'impure-callable|null',
       ),
     ),
-    'amqpchannel::starttransaction' => 
+    'AMQPChannel::startTransaction' => 
     array (
       'old' => 
       array (
@@ -275,7 +275,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpchannel::waitforbasicreturn' => 
+    'AMQPChannel::waitForBasicReturn' => 
     array (
       'old' => 
       array (
@@ -288,7 +288,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'amqpchannel::waitforconfirm' => 
+    'AMQPChannel::waitForConfirm' => 
     array (
       'old' => 
       array (
@@ -301,7 +301,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'amqpconnection::connect' => 
+    'AMQPConnection::connect' => 
     array (
       'old' => 
       array (
@@ -312,7 +312,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::disconnect' => 
+    'AMQPConnection::disconnect' => 
     array (
       'old' => 
       array (
@@ -323,7 +323,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::getcacert' => 
+    'AMQPConnection::getCACert' => 
     array (
       'old' => 
       array (
@@ -334,7 +334,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpconnection::getcert' => 
+    'AMQPConnection::getCert' => 
     array (
       'old' => 
       array (
@@ -345,7 +345,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpconnection::getkey' => 
+    'AMQPConnection::getKey' => 
     array (
       'old' => 
       array (
@@ -356,7 +356,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpconnection::getmaxchannels' => 
+    'AMQPConnection::getMaxChannels' => 
     array (
       'old' => 
       array (
@@ -367,7 +367,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'amqpconnection::ispersistent' => 
+    'AMQPConnection::isPersistent' => 
     array (
       'old' => 
       array (
@@ -378,7 +378,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'amqpconnection::pconnect' => 
+    'AMQPConnection::pconnect' => 
     array (
       'old' => 
       array (
@@ -389,7 +389,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::pdisconnect' => 
+    'AMQPConnection::pdisconnect' => 
     array (
       'old' => 
       array (
@@ -400,7 +400,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::preconnect' => 
+    'AMQPConnection::preconnect' => 
     array (
       'old' => 
       array (
@@ -411,7 +411,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::reconnect' => 
+    'AMQPConnection::reconnect' => 
     array (
       'old' => 
       array (
@@ -422,7 +422,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpconnection::setcacert' => 
+    'AMQPConnection::setCACert' => 
     array (
       'old' => 
       array (
@@ -435,7 +435,7 @@ return array (
         'cacert' => 'null|string',
       ),
     ),
-    'amqpconnection::setcert' => 
+    'AMQPConnection::setCert' => 
     array (
       'old' => 
       array (
@@ -448,7 +448,7 @@ return array (
         'cert' => 'null|string',
       ),
     ),
-    'amqpconnection::sethost' => 
+    'AMQPConnection::setHost' => 
     array (
       'old' => 
       array (
@@ -461,7 +461,7 @@ return array (
         'host' => 'string',
       ),
     ),
-    'amqpconnection::setkey' => 
+    'AMQPConnection::setKey' => 
     array (
       'old' => 
       array (
@@ -474,7 +474,7 @@ return array (
         'key' => 'null|string',
       ),
     ),
-    'amqpconnection::setlogin' => 
+    'AMQPConnection::setLogin' => 
     array (
       'old' => 
       array (
@@ -487,7 +487,7 @@ return array (
         'login' => 'string',
       ),
     ),
-    'amqpconnection::setpassword' => 
+    'AMQPConnection::setPassword' => 
     array (
       'old' => 
       array (
@@ -500,7 +500,7 @@ return array (
         'password' => 'string',
       ),
     ),
-    'amqpconnection::setport' => 
+    'AMQPConnection::setPort' => 
     array (
       'old' => 
       array (
@@ -513,7 +513,7 @@ return array (
         'port' => 'int',
       ),
     ),
-    'amqpconnection::setreadtimeout' => 
+    'AMQPConnection::setReadTimeout' => 
     array (
       'old' => 
       array (
@@ -526,7 +526,7 @@ return array (
         'timeout' => 'float',
       ),
     ),
-    'amqpconnection::settimeout' => 
+    'AMQPConnection::setTimeout' => 
     array (
       'old' => 
       array (
@@ -539,7 +539,7 @@ return array (
         'timeout' => 'float',
       ),
     ),
-    'amqpconnection::setverify' => 
+    'AMQPConnection::setVerify' => 
     array (
       'old' => 
       array (
@@ -552,7 +552,7 @@ return array (
         'verify' => 'bool',
       ),
     ),
-    'amqpconnection::setvhost' => 
+    'AMQPConnection::setVhost' => 
     array (
       'old' => 
       array (
@@ -565,7 +565,7 @@ return array (
         'vhost' => 'string',
       ),
     ),
-    'amqpconnection::setwritetimeout' => 
+    'AMQPConnection::setWriteTimeout' => 
     array (
       'old' => 
       array (
@@ -578,7 +578,7 @@ return array (
         'timeout' => 'float',
       ),
     ),
-    'amqpenvelope::getappid' => 
+    'AMQPEnvelope::getAppId' => 
     array (
       'old' => 
       array (
@@ -589,7 +589,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getclusterid' => 
+    'AMQPEnvelope::getClusterId' => 
     array (
       'old' => 
       array (
@@ -600,7 +600,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getconsumertag' => 
+    'AMQPEnvelope::getConsumerTag' => 
     array (
       'old' => 
       array (
@@ -611,7 +611,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getcontentencoding' => 
+    'AMQPEnvelope::getContentEncoding' => 
     array (
       'old' => 
       array (
@@ -622,7 +622,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getcontenttype' => 
+    'AMQPEnvelope::getContentType' => 
     array (
       'old' => 
       array (
@@ -633,7 +633,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getcorrelationid' => 
+    'AMQPEnvelope::getCorrelationId' => 
     array (
       'old' => 
       array (
@@ -644,7 +644,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getdeliverytag' => 
+    'AMQPEnvelope::getDeliveryTag' => 
     array (
       'old' => 
       array (
@@ -655,7 +655,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'amqpenvelope::getexchangename' => 
+    'AMQPEnvelope::getExchangeName' => 
     array (
       'old' => 
       array (
@@ -666,7 +666,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getexpiration' => 
+    'AMQPEnvelope::getExpiration' => 
     array (
       'old' => 
       array (
@@ -677,7 +677,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getheader' => 
+    'AMQPEnvelope::getHeader' => 
     array (
       'old' => 
       array (
@@ -690,7 +690,7 @@ return array (
         'headerName' => 'string',
       ),
     ),
-    'amqpenvelope::getmessageid' => 
+    'AMQPEnvelope::getMessageId' => 
     array (
       'old' => 
       array (
@@ -701,7 +701,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getreplyto' => 
+    'AMQPEnvelope::getReplyTo' => 
     array (
       'old' => 
       array (
@@ -712,7 +712,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::gettimestamp' => 
+    'AMQPEnvelope::getTimestamp' => 
     array (
       'old' => 
       array (
@@ -723,7 +723,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'amqpenvelope::gettype' => 
+    'AMQPEnvelope::getType' => 
     array (
       'old' => 
       array (
@@ -734,7 +734,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::getuserid' => 
+    'AMQPEnvelope::getUserId' => 
     array (
       'old' => 
       array (
@@ -745,7 +745,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpenvelope::hasheader' => 
+    'AMQPEnvelope::hasHeader' => 
     array (
       'old' => 
       array (
@@ -758,7 +758,7 @@ return array (
         'headerName' => 'string',
       ),
     ),
-    'amqpexchange::bind' => 
+    'AMQPExchange::bind' => 
     array (
       'old' => 
       array (
@@ -775,7 +775,7 @@ return array (
         'arguments=' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpexchange::declareexchange' => 
+    'AMQPExchange::declareExchange' => 
     array (
       'old' => 
       array (
@@ -786,7 +786,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'amqpexchange::delete' => 
+    'AMQPExchange::delete' => 
     array (
       'old' => 
       array (
@@ -801,7 +801,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpexchange::getargument' => 
+    'AMQPExchange::getArgument' => 
     array (
       'old' => 
       array (
@@ -814,7 +814,7 @@ return array (
         'argumentName' => 'string',
       ),
     ),
-    'amqpexchange::getname' => 
+    'AMQPExchange::getName' => 
     array (
       'old' => 
       array (
@@ -825,7 +825,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpexchange::gettype' => 
+    'AMQPExchange::getType' => 
     array (
       'old' => 
       array (
@@ -836,7 +836,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpexchange::hasargument' => 
+    'AMQPExchange::hasArgument' => 
     array (
       'old' => 
       array (
@@ -849,7 +849,7 @@ return array (
         'argumentName' => 'string',
       ),
     ),
-    'amqpexchange::publish' => 
+    'AMQPExchange::publish' => 
     array (
       'old' => 
       array (
@@ -868,7 +868,7 @@ return array (
         'headers=' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpexchange::setargument' => 
+    'AMQPExchange::setArgument' => 
     array (
       'old' => 
       array (
@@ -883,7 +883,7 @@ return array (
         'argumentValue' => 'int|string',
       ),
     ),
-    'amqpexchange::setarguments' => 
+    'AMQPExchange::setArguments' => 
     array (
       'old' => 
       array (
@@ -896,7 +896,7 @@ return array (
         'arguments' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpexchange::setflags' => 
+    'AMQPExchange::setFlags' => 
     array (
       'old' => 
       array (
@@ -909,7 +909,7 @@ return array (
         'flags' => 'int|null',
       ),
     ),
-    'amqpexchange::setname' => 
+    'AMQPExchange::setName' => 
     array (
       'old' => 
       array (
@@ -922,7 +922,7 @@ return array (
         'exchangeName' => 'null|string',
       ),
     ),
-    'amqpexchange::settype' => 
+    'AMQPExchange::setType' => 
     array (
       'old' => 
       array (
@@ -935,7 +935,7 @@ return array (
         'exchangeType' => 'null|string',
       ),
     ),
-    'amqpexchange::unbind' => 
+    'AMQPExchange::unbind' => 
     array (
       'old' => 
       array (
@@ -952,7 +952,7 @@ return array (
         'arguments=' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpqueue::ack' => 
+    'AMQPQueue::ack' => 
     array (
       'old' => 
       array (
@@ -967,7 +967,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpqueue::bind' => 
+    'AMQPQueue::bind' => 
     array (
       'old' => 
       array (
@@ -984,7 +984,7 @@ return array (
         'arguments=' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpqueue::cancel' => 
+    'AMQPQueue::cancel' => 
     array (
       'old' => 
       array (
@@ -997,7 +997,7 @@ return array (
         'consumerTag=' => 'string',
       ),
     ),
-    'amqpqueue::consume' => 
+    'AMQPQueue::consume' => 
     array (
       'old' => 
       array (
@@ -1014,7 +1014,7 @@ return array (
         'consumerTag=' => 'null|string',
       ),
     ),
-    'amqpqueue::delete' => 
+    'AMQPQueue::delete' => 
     array (
       'old' => 
       array (
@@ -1027,7 +1027,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpqueue::get' => 
+    'AMQPQueue::get' => 
     array (
       'old' => 
       array (
@@ -1040,7 +1040,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpqueue::getargument' => 
+    'AMQPQueue::getArgument' => 
     array (
       'old' => 
       array (
@@ -1053,7 +1053,7 @@ return array (
         'argumentName' => 'string',
       ),
     ),
-    'amqpqueue::getname' => 
+    'AMQPQueue::getName' => 
     array (
       'old' => 
       array (
@@ -1064,7 +1064,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'amqpqueue::hasargument' => 
+    'AMQPQueue::hasArgument' => 
     array (
       'old' => 
       array (
@@ -1077,7 +1077,7 @@ return array (
         'argumentName' => 'string',
       ),
     ),
-    'amqpqueue::nack' => 
+    'AMQPQueue::nack' => 
     array (
       'old' => 
       array (
@@ -1092,7 +1092,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpqueue::purge' => 
+    'AMQPQueue::purge' => 
     array (
       'old' => 
       array (
@@ -1103,7 +1103,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'amqpqueue::reject' => 
+    'AMQPQueue::reject' => 
     array (
       'old' => 
       array (
@@ -1118,7 +1118,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'amqpqueue::setargument' => 
+    'AMQPQueue::setArgument' => 
     array (
       'old' => 
       array (
@@ -1133,7 +1133,7 @@ return array (
         'argumentValue' => 'mixed',
       ),
     ),
-    'amqpqueue::setarguments' => 
+    'AMQPQueue::setArguments' => 
     array (
       'old' => 
       array (
@@ -1146,7 +1146,7 @@ return array (
         'arguments' => 'array<array-key, mixed>',
       ),
     ),
-    'amqpqueue::setflags' => 
+    'AMQPQueue::setFlags' => 
     array (
       'old' => 
       array (
@@ -1159,7 +1159,7 @@ return array (
         'flags' => 'int|null',
       ),
     ),
-    'amqpqueue::setname' => 
+    'AMQPQueue::setName' => 
     array (
       'old' => 
       array (
@@ -1172,7 +1172,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'amqpqueue::unbind' => 
+    'AMQPQueue::unbind' => 
     array (
       'old' => 
       array (
@@ -1189,7 +1189,7 @@ return array (
         'arguments=' => 'array<array-key, mixed>',
       ),
     ),
-    'amqptimestamp::__construct' => 
+    'AMQPTimestamp::__construct' => 
     array (
       'old' => 
       array (
@@ -1202,7 +1202,7 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'amqptimestamp::gettimestamp' => 
+    'AMQPTimestamp::getTimestamp' => 
     array (
       'old' => 
       array (
@@ -1241,7 +1241,7 @@ return array (
         '...arrays=' => 'array<array-key, mixed>',
       ),
     ),
-    'arrayiterator::__construct' => 
+    'ArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -1256,7 +1256,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'arrayobject::exchangearray' => 
+    'ArrayObject::exchangeArray' => 
     array (
       'old' => 
       array (
@@ -1269,7 +1269,7 @@ return array (
         'input' => 'array<array-key, mixed>|object',
       ),
     ),
-    'domdocument::createprocessinginstruction' => 
+    'DOMDocument::createProcessingInstruction' => 
     array (
       'old' => 
       array (
@@ -1284,7 +1284,7 @@ return array (
         'data=' => 'string',
       ),
     ),
-    'domdocument::importnode' => 
+    'DOMDocument::importNode' => 
     array (
       'old' => 
       array (
@@ -1299,7 +1299,7 @@ return array (
         'deep=' => 'bool',
       ),
     ),
-    'domimplementation::createdocument' => 
+    'DOMImplementation::createDocument' => 
     array (
       'old' => 
       array (
@@ -1389,7 +1389,7 @@ return array (
         'pct' => 'int',
       ),
     ),
-    'locale::lookup' => 
+    'Locale::lookup' => 
     array (
       'old' => 
       array (
@@ -1427,7 +1427,7 @@ return array (
         'def=' => 'null|string',
       ),
     ),
-    'mongodb\\driver\\cursor::getid' => 
+    'MongoDB\\Driver\\Cursor::getId' => 
     array (
       'old' => 
       array (
@@ -1610,7 +1610,7 @@ return array (
         'other_options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'recursivearrayiterator::__construct' => 
+    'RecursiveArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -1625,7 +1625,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'redis::hset' => 
+    'Redis::hSet' => 
     array (
       'old' => 
       array (
@@ -1641,7 +1641,7 @@ return array (
         '...fields_and_vals=' => 'string',
       ),
     ),
-    'reflectionmethod::getclosure' => 
+    'ReflectionMethod::getClosure' => 
     array (
       'old' => 
       array (
@@ -1654,7 +1654,7 @@ return array (
         'object=' => 'object',
       ),
     ),
-    'spldoublylinkedlist::setiteratormode' => 
+    'SplDoublyLinkedList::setIteratorMode' => 
     array (
       'old' => 
       array (
@@ -1667,7 +1667,7 @@ return array (
         'mode' => 'int',
       ),
     ),
-    'splfileobject::fwrite' => 
+    'SplFileObject::fwrite' => 
     array (
       'old' => 
       array (
@@ -1682,7 +1682,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'splfixedarray::fromarray' => 
+    'SplFixedArray::fromArray' => 
     array (
       'old' => 
       array (
@@ -1697,7 +1697,7 @@ return array (
         'save_indexes=' => 'bool',
       ),
     ),
-    'splmaxheap::compare' => 
+    'SplMaxHeap::compare' => 
     array (
       'old' => 
       array (
@@ -1712,7 +1712,7 @@ return array (
         'value2' => 'mixed',
       ),
     ),
-    'splminheap::compare' => 
+    'SplMinHeap::compare' => 
     array (
       'old' => 
       array (
@@ -1727,7 +1727,7 @@ return array (
         'value2' => 'mixed',
       ),
     ),
-    'splobjectstorage::attach' => 
+    'SplObjectStorage::attach' => 
     array (
       'old' => 
       array (
@@ -1742,7 +1742,7 @@ return array (
         'data=' => 'mixed',
       ),
     ),
-    'splobjectstorage::offsetset' => 
+    'SplObjectStorage::offsetSet' => 
     array (
       'old' => 
       array (
@@ -1757,7 +1757,7 @@ return array (
         'data=' => 'mixed',
       ),
     ),
-    'splpriorityqueue::compare' => 
+    'SplPriorityQueue::compare' => 
     array (
       'old' => 
       array (
@@ -1772,7 +1772,7 @@ return array (
         'value2' => 'mixed',
       ),
     ),
-    'splqueue::setiteratormode' => 
+    'SplQueue::setIteratorMode' => 
     array (
       'old' => 
       array (
@@ -1785,7 +1785,7 @@ return array (
         'mode' => 'int',
       ),
     ),
-    'splstack::setiteratormode' => 
+    'SplStack::setIteratorMode' => 
     array (
       'old' => 
       array (
@@ -1798,7 +1798,7 @@ return array (
         'mode' => 'int',
       ),
     ),
-    'spltempfileobject::fwrite' => 
+    'SplTempFileObject::fwrite' => 
     array (
       'old' => 
       array (
@@ -1865,7 +1865,7 @@ return array (
   ),
   'removed' => 
   array (
-    'reflectionfunctionabstract::export' => 
+    'ReflectionFunctionAbstract::export' => 
     array (
       0 => 'null|string',
     ),

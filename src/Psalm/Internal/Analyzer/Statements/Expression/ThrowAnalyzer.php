@@ -10,8 +10,10 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Issue\InvalidThrow;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
@@ -53,7 +55,7 @@ final class ThrowAnalyzer
             && ($throw_type = $statements_analyzer->node_data->getType($stmt->expr))
             && !$throw_type->hasMixed()
         ) {
-            $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+            $exception_type = new Union([new TNamedObject(StrId::Exception), new TNamedObject(StrId::Throwable)]);
 
             $file_analyzer = $statements_analyzer->getFileAnalyzer();
             $codebase = $statements_analyzer->getCodebase();
@@ -67,7 +69,9 @@ final class ThrowAnalyzer
                             'Cannot throw ' . $throw_type_part
                                 . ' as it does not extend Exception or implement Throwable',
                             new CodeLocation($file_analyzer, $stmt),
-                            (string) $throw_type_part,
+                            $throw_type_part instanceof TNamedObject
+                                ? $throw_type_part->value
+                                : Interner::intern((string) $throw_type_part),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     )) {

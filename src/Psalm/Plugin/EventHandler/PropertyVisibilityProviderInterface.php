@@ -12,7 +12,7 @@ use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 interface PropertyVisibilityProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<int> interned class names, with their exact declared casing (names are case-sensitive)
      */
     public static function getClassLikeNames(): array;
 

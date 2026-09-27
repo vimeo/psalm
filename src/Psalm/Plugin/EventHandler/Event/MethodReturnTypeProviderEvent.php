@@ -22,21 +22,19 @@ final class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param non-empty-list<Union>|null $template_type_parameters
-     * @param lowercase-string $method_name_lowercase
-     * @param lowercase-string $called_method_name_lowercase
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
+        private readonly int $fq_classlike_name,
+        private readonly int $method_name,
         private readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
         private readonly Context $context,
         private readonly CodeLocation $code_location,
         private readonly ?array $template_type_parameters = null,
-        private readonly ?string $called_fq_classlike_name = null,
-        private readonly ?string $called_method_name_lowercase = null,
+        private readonly ?int $called_fq_classlike_name = null,
+        private readonly ?int $called_method_name = null,
     ) {
     }
 
@@ -45,17 +43,20 @@ final class MethodReturnTypeProviderEvent
         return $this->source;
     }
 
-    public function getFqClasslikeName(): string
+    /**
+     * Interned class name id, as declared (class names are case-sensitive).
+     */
+    public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
     /**
-     * @return lowercase-string
+     * Interned method name id, as written (method names are case-sensitive, no case folding is applied).
      */
-    public function getMethodNameLowercase(): string
+    public function getMethodName(): int
     {
-        return $this->method_name_lowercase;
+        return $this->method_name;
     }
 
     /**
@@ -85,17 +86,17 @@ final class MethodReturnTypeProviderEvent
         return $this->template_type_parameters;
     }
 
-    public function getCalledFqClasslikeName(): ?string
+    public function getCalledFqClasslikeName(): ?int
     {
         return $this->called_fq_classlike_name;
     }
 
     /**
-     * @return lowercase-string|null
+     * Interned called method name id, as written (method names are case-sensitive, no case folding is applied).
      */
-    public function getCalledMethodNameLowercase(): ?string
+    public function getCalledMethodName(): ?int
     {
-        return $this->called_method_name_lowercase;
+        return $this->called_method_name;
     }
 
     public function getStmt(): PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall

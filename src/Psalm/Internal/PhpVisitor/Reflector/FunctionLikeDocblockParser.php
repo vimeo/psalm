@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Interner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Mutations;
@@ -33,7 +34,6 @@ use function preg_replace;
 use function preg_split;
 use function reset;
 use function str_contains;
-use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function stripos;
@@ -507,13 +507,13 @@ final class FunctionLikeDocblockParser
                 ) {
                     $template_modifier = strtolower(array_shift($template_type));
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
+                    $templates[$template_name][$source_prefix] = [Interner::intern($template_name), null, null, false];
                 }
             }
         }
@@ -619,18 +619,6 @@ final class FunctionLikeDocblockParser
         }
 
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-        if ($line_parts[1][0] === '$') {
-            $param_name_parts = explode('->', $line_parts[1]);
-
-            foreach ($param_name_parts as $i => $param_name_part) {
-                if (str_ends_with($param_name_part, '()')) {
-                    $param_name_parts[$i] = strtolower($param_name_part);
-                }
-            }
-
-            $line_parts[1] = implode('->', $param_name_parts);
-        }
 
         return $line_parts;
     }

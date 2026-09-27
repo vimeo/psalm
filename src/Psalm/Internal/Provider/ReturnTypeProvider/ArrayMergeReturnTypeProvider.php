@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -31,13 +32,13 @@ use function max;
 final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_merge', 'array_replace'];
+        return [StrId::array_merge, StrId::array_replace];
     }
 
     #[Override]
@@ -51,7 +52,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
             return Type::getMixed();
         }
 
-        $is_replace = $event->getFunctionId() === 'array_replace';
+        $is_replace = $event->getFunctionId() === StrId::array_replace;
 
         $inner_value_types = [];
         $inner_key_types = [];

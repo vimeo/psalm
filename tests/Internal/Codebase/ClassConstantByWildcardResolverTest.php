@@ -6,6 +6,7 @@ namespace Psalm\Tests\Internal\Codebase;
 
 use Override;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
+use Psalm\Interner;
 use Psalm\Tests\TestCase;
 use Psalm\Type\Atomic\TLiteralString;
 
@@ -39,7 +40,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
         );
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->scanFiles();
-        $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', '*');
+        $resolved = $this->resolver->resolve(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('*'));
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
             self::assertInstanceOf(TLiteralString::class, $type);
@@ -64,14 +65,14 @@ final class ClassConstantByWildcardResolverTest extends TestCase
         );
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->scanFiles();
-        $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'BA*');
+        $resolved = $this->resolver->resolve(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('BA*'));
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
             self::assertInstanceOf(TLiteralString::class, $type);
             self::assertTrue($type->value === 'bar' || $type->value === 'baz');
         }
 
-        $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'QOO');
+        $resolved = $this->resolver->resolve(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('QOO'));
         self::assertNotNull($resolved);
         self::assertCount(1, $resolved);
         $type = reset($resolved);

@@ -7,6 +7,7 @@ namespace Psalm\Internal\Scanner;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
@@ -18,9 +19,9 @@ use ReflectionProperty;
 
 use function count;
 use function is_string;
+use function ltrim;
 use function str_contains;
 use function str_replace;
-use function strtolower;
 
 /**
  * @internal
@@ -57,10 +58,9 @@ final class PhpStormMetaScanner
                     if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
                         && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
-                        && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Union([
-                            new TNamedObject($array_item->value->class->toString()),
+                            new TNamedObject(Interner::intern($array_item->value->class->toString())),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -77,8 +77,8 @@ final class PhpStormMetaScanner
                     }
 
                     $constant_type = $codebase->classlikes->getClassConstantType(
-                        $resolved_name,
-                        $array_item->key->name->name,
+                        Interner::intern($resolved_name),
+                        Interner::intern($array_item->key->name->name),
                         ReflectionProperty::IS_PRIVATE,
                     );
 
@@ -91,10 +91,9 @@ final class PhpStormMetaScanner
                     if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
                         && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
-                        && strtolower($array_item->value->name->name)
                     ) {
                         $map[$meta_key] = new Union([
-                            new TNamedObject($array_item->value->class->toString()),
+                            new TNamedObject(Interner::intern($array_item->value->class->toString())),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$meta_key] = $array_item->value->value;
@@ -129,9 +128,9 @@ final class PhpStormMetaScanner
                 || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
-            $meta_fq_classlike_name = $identifier->class->toString();
+            $meta_fq_classlike_name = Interner::intern($identifier->class->toString());
 
-            $meta_method_name = strtolower($identifier->name->name);
+            $meta_method_name = Interner::intern($identifier->name->name);
 
             if ($map) {
                 $offset = 0;
@@ -153,7 +152,7 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
@@ -183,7 +182,7 @@ final class PhpStormMetaScanner
 
                                     if (!str_contains($mapped_type, '.')) {
                                         return new Union([
-                                            new TNamedObject($mapped_type),
+                                            new TNamedObject(Interner::intern(ltrim($mapped_type, '\\'))),
                                         ]);
                                     }
                                 }
@@ -205,7 +204,7 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
@@ -239,7 +238,7 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
@@ -281,7 +280,7 @@ final class PhpStormMetaScanner
                 || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
-            $function_id = strtolower($identifier->name->toString());
+            $function_id = Interner::intern($identifier->name->toString());
 
             if ($map) {
                 $offset = 0;
@@ -325,7 +324,7 @@ final class PhpStormMetaScanner
 
                                     if (!str_contains($mapped_type, '.')) {
                                         return new Union([
-                                            new TNamedObject($mapped_type),
+                                            new TNamedObject(Interner::intern(ltrim($mapped_type, '\\'))),
                                         ]);
                                     }
                                 }
@@ -334,7 +333,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -364,7 +363,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -404,7 +403,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            strtolower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();

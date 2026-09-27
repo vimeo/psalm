@@ -64,7 +64,7 @@ final class FunctionDocblockComment
     /**
      * If set, the function is internal to the given namespace.
      *
-     * @var list<non-empty-string>
+     * @var list<int> interned namespaces
      */
     public array $psalm_internal = [];
 
@@ -138,7 +138,7 @@ final class FunctionDocblockComment
     public array $throws = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool}>
+     * @var array<int, array{int, ?string, ?string, bool}> interned template name, ...
      */
     public array $templates = [];
 

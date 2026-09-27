@@ -199,6 +199,8 @@ final class DocumentationTest extends TestCase
         $code_blocks['ComplexFunction'] = true;
         $code_blocks['ComplexMethod'] = true;
         $code_blocks['ConfigIssue'] = true;
+        // only emitted by plugins since class names are resolved case-sensitively
+        $code_blocks['InvalidClass'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);

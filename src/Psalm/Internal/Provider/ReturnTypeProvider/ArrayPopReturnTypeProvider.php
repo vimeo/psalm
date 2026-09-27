@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -21,13 +22,13 @@ use Psalm\Type\Union;
 final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_pop', 'array_shift'];
+        return [StrId::array_pop, StrId::array_shift];
     }
 
     #[Override]
@@ -69,7 +70,10 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
             }
         } else {
             // special case where we know the type of the first element
-            if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
+            if ($function_id === StrId::array_shift
+                && $first_arg_array->is_list
+                && isset($first_arg_array->properties[0])
+            ) {
                 $value_type = $first_arg_array->properties[0];
                 if ($value_type->possibly_undefined) {
                     $value_type = $value_type->setPossiblyUndefined(false);

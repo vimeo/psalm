@@ -194,7 +194,7 @@ final class TraitTemplateTest extends TestCase
 
                     class Bar {
                         /**
-                         * @template-use MyTrait<int, string, bar>
+                         * @template-use MyTrait<int, string, Bar>
                          */
                         use MyTrait;
                     }',

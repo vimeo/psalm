@@ -3,12 +3,12 @@
 return array (
   'added' => 
   array (
-    'datetime::createfrominterface' => 
+    'DateTime::createFromInterface' => 
     array (
       0 => 'static',
       'object' => 'DateTimeInterface',
     ),
-    'datetimeimmutable::createfrominterface' => 
+    'DateTimeImmutable::createFromInterface' => 
     array (
       0 => 'static',
       'object' => 'DateTimeInterface',
@@ -18,52 +18,52 @@ return array (
       0 => 'int',
       'resource' => 'resource',
     ),
-    'phptoken::is' => 
+    'PhpToken::is' => 
     array (
       0 => 'bool',
       'kind' => 'array<array-key, int|string>|int|string',
     ),
-    'phptoken::tokenize' => 
+    'PhpToken::tokenize' => 
     array (
       0 => 'list<PhpToken>',
       'code' => 'string',
       'flags=' => 'int',
     ),
-    'reflectionclass::getattributes' => 
+    'ReflectionClass::getAttributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionclassconstant::getattributes' => 
+    'ReflectionClassConstant::getAttributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionfunctionabstract::getattributes' => 
+    'ReflectionFunctionAbstract::getAttributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionparameter::getattributes' => 
+    'ReflectionParameter::getAttributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionproperty::getattributes' => 
+    'ReflectionProperty::getAttributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'reflectionuniontype::gettypes' => 
+    'ReflectionUnionType::getTypes' => 
     array (
       0 => 'list<ReflectionNamedType>',
     ),
-    'soapheader::__construct' => 
+    'SoapHeader::__construct' => 
     array (
       0 => 'void',
       'namespace' => 'string',
@@ -72,39 +72,39 @@ return array (
       'mustUnderstand=' => 'bool',
       'actor=' => 'null|string',
     ),
-    'weakmap::offsetexists' => 
+    'WeakMap::offsetExists' => 
     array (
       0 => 'bool',
       'object' => 'object',
     ),
-    'weakmap::offsetget' => 
+    'WeakMap::offsetGet' => 
     array (
       0 => 'mixed',
       'object' => 'object',
     ),
-    'weakmap::offsetset' => 
+    'WeakMap::offsetSet' => 
     array (
       0 => 'void',
       'object' => 'object',
       'value' => 'mixed',
     ),
-    'weakmap::offsetunset' => 
+    'WeakMap::offsetUnset' => 
     array (
       0 => 'void',
       'object' => 'object',
     ),
-    'ziparchive::registercancelcallback' => 
+    'ZipArchive::registerCancelCallback' => 
     array (
       0 => 'bool',
       'callback' => 'impure-callable',
     ),
-    'ziparchive::registerprogresscallback' => 
+    'ZipArchive::registerProgressCallback' => 
     array (
       0 => 'bool',
       'rate' => 'float',
       'callback' => 'impure-callable',
     ),
-    'ziparchive::replacefile' => 
+    'ZipArchive::replaceFile' => 
     array (
       0 => 'bool',
       'filepath' => 'string',
@@ -113,14 +113,14 @@ return array (
       'length=' => 'int',
       'flags=' => 'int',
     ),
-    'ziparchive::setmtimeindex' => 
+    'ZipArchive::setMtimeIndex' => 
     array (
       0 => 'bool',
       'index' => 'int',
       'timestamp' => 'int',
       'flags=' => 'int',
     ),
-    'ziparchive::setmtimename' => 
+    'ZipArchive::setMtimeName' => 
     array (
       0 => 'bool',
       'name' => 'string',
@@ -793,7 +793,7 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
-    'arrayiterator::asort' => 
+    'ArrayIterator::asort' => 
     array (
       'old' => 
       array (
@@ -805,7 +805,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'arrayiterator::ksort' => 
+    'ArrayIterator::ksort' => 
     array (
       'old' => 
       array (
@@ -817,7 +817,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'arrayiterator::offsetexists' => 
+    'ArrayIterator::offsetExists' => 
     array (
       'old' => 
       array (
@@ -830,7 +830,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayiterator::offsetget' => 
+    'ArrayIterator::offsetGet' => 
     array (
       'old' => 
       array (
@@ -843,7 +843,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayiterator::offsetset' => 
+    'ArrayIterator::offsetSet' => 
     array (
       'old' => 
       array (
@@ -858,7 +858,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'arrayiterator::offsetunset' => 
+    'ArrayIterator::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -871,7 +871,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayiterator::seek' => 
+    'ArrayIterator::seek' => 
     array (
       'old' => 
       array (
@@ -884,7 +884,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'arrayiterator::uasort' => 
+    'ArrayIterator::uasort' => 
     array (
       'old' => 
       array (
@@ -897,7 +897,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'arrayiterator::uksort' => 
+    'ArrayIterator::uksort' => 
     array (
       'old' => 
       array (
@@ -910,7 +910,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'arrayiterator::unserialize' => 
+    'ArrayIterator::unserialize' => 
     array (
       'old' => 
       array (
@@ -923,7 +923,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'arrayobject::__construct' => 
+    'ArrayObject::__construct' => 
     array (
       'old' => 
       array (
@@ -940,7 +940,7 @@ return array (
         'iteratorClass=' => 'class-string',
       ),
     ),
-    'arrayobject::asort' => 
+    'ArrayObject::asort' => 
     array (
       'old' => 
       array (
@@ -952,7 +952,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'arrayobject::exchangearray' => 
+    'ArrayObject::exchangeArray' => 
     array (
       'old' => 
       array (
@@ -965,7 +965,7 @@ return array (
         'array' => 'array<array-key, mixed>|object',
       ),
     ),
-    'arrayobject::ksort' => 
+    'ArrayObject::ksort' => 
     array (
       'old' => 
       array (
@@ -977,7 +977,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'arrayobject::offsetexists' => 
+    'ArrayObject::offsetExists' => 
     array (
       'old' => 
       array (
@@ -990,7 +990,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayobject::offsetget' => 
+    'ArrayObject::offsetGet' => 
     array (
       'old' => 
       array (
@@ -1003,7 +1003,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayobject::offsetset' => 
+    'ArrayObject::offsetSet' => 
     array (
       'old' => 
       array (
@@ -1018,7 +1018,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'arrayobject::offsetunset' => 
+    'ArrayObject::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -1031,7 +1031,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'arrayobject::uasort' => 
+    'ArrayObject::uasort' => 
     array (
       'old' => 
       array (
@@ -1044,7 +1044,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'arrayobject::uksort' => 
+    'ArrayObject::uksort' => 
     array (
       'old' => 
       array (
@@ -1057,7 +1057,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'arrayobject::unserialize' => 
+    'ArrayObject::unserialize' => 
     array (
       'old' => 
       array (
@@ -1479,7 +1479,7 @@ return array (
         'length=' => 'int|null',
       ),
     ),
-    'cachingiterator::offsetexists' => 
+    'CachingIterator::offsetExists' => 
     array (
       'old' => 
       array (
@@ -1492,7 +1492,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'cachingiterator::offsetget' => 
+    'CachingIterator::offsetGet' => 
     array (
       'old' => 
       array (
@@ -1505,7 +1505,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'cachingiterator::offsetset' => 
+    'CachingIterator::offsetSet' => 
     array (
       'old' => 
       array (
@@ -1520,7 +1520,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'cachingiterator::offsetunset' => 
+    'CachingIterator::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -1715,7 +1715,7 @@ return array (
         'autoload=' => 'bool',
       ),
     ),
-    'closure::bind' => 
+    'Closure::bind' => 
     array (
       'old' => 
       array (
@@ -1732,7 +1732,7 @@ return array (
         'newScope=' => 'null|object|string',
       ),
     ),
-    'closure::bindto' => 
+    'Closure::bindTo' => 
     array (
       'old' => 
       array (
@@ -1747,7 +1747,7 @@ return array (
         'newScope=' => 'null|object|string',
       ),
     ),
-    'closure::call' => 
+    'Closure::call' => 
     array (
       'old' => 
       array (
@@ -1762,7 +1762,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'closure::fromcallable' => 
+    'Closure::fromCallable' => 
     array (
       'old' => 
       array (
@@ -1775,7 +1775,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'collator::__construct' => 
+    'Collator::__construct' => 
     array (
       'old' => 
       array (
@@ -1788,7 +1788,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'collator::asort' => 
+    'Collator::asort' => 
     array (
       'old' => 
       array (
@@ -1803,7 +1803,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'collator::compare' => 
+    'Collator::compare' => 
     array (
       'old' => 
       array (
@@ -1818,7 +1818,7 @@ return array (
         'string2' => 'string',
       ),
     ),
-    'collator::create' => 
+    'Collator::create' => 
     array (
       'old' => 
       array (
@@ -1831,7 +1831,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'collator::getattribute' => 
+    'Collator::getAttribute' => 
     array (
       'old' => 
       array (
@@ -1844,7 +1844,7 @@ return array (
         'attribute' => 'int',
       ),
     ),
-    'collator::getlocale' => 
+    'Collator::getLocale' => 
     array (
       'old' => 
       array (
@@ -1857,7 +1857,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'collator::getsortkey' => 
+    'Collator::getSortKey' => 
     array (
       'old' => 
       array (
@@ -1870,7 +1870,7 @@ return array (
         'string' => 'string',
       ),
     ),
-    'collator::getstrength' => 
+    'Collator::getStrength' => 
     array (
       'old' => 
       array (
@@ -1881,7 +1881,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'collator::setattribute' => 
+    'Collator::setAttribute' => 
     array (
       'old' => 
       array (
@@ -1896,7 +1896,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'collator::setstrength' => 
+    'Collator::setStrength' => 
     array (
       'old' => 
       array (
@@ -1909,7 +1909,7 @@ return array (
         'strength' => 'int',
       ),
     ),
-    'collator::sort' => 
+    'Collator::sort' => 
     array (
       'old' => 
       array (
@@ -1924,7 +1924,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'collator::sortwithsortkeys' => 
+    'Collator::sortWithSortKeys' => 
     array (
       'old' => 
       array (
@@ -1942,14 +1942,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         '&arr' => 'array<array-key, mixed>',
         'sort_flags=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         '&array' => 'array<array-key, mixed>',
         'flags=' => 'int',
       ),
@@ -1959,14 +1959,14 @@ return array (
       'old' => 
       array (
         0 => 'int',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'string',
         'arg2' => 'string',
       ),
       'new' => 
       array (
         0 => 'int',
-        'object' => 'collator',
+        'object' => 'Collator',
         'string1' => 'string',
         'string2' => 'string',
       ),
@@ -1989,13 +1989,13 @@ return array (
       'old' => 
       array (
         0 => 'false|int',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'int',
       ),
       'new' => 
       array (
         0 => 'false|int',
-        'object' => 'collator',
+        'object' => 'Collator',
         'attribute' => 'int',
       ),
     ),
@@ -2004,13 +2004,13 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'int',
       ),
       'new' => 
       array (
         0 => 'string',
-        'object' => 'collator',
+        'object' => 'Collator',
         'type' => 'int',
       ),
     ),
@@ -2019,13 +2019,13 @@ return array (
       'old' => 
       array (
         0 => 'string',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'string',
       ),
       'new' => 
       array (
         0 => 'string',
-        'object' => 'collator',
+        'object' => 'Collator',
         'string' => 'string',
       ),
     ),
@@ -2034,12 +2034,12 @@ return array (
       'old' => 
       array (
         0 => 'false|int',
-        'object' => 'collator',
+        'object' => 'Collator',
       ),
       'new' => 
       array (
         0 => 'int',
-        'object' => 'collator',
+        'object' => 'Collator',
       ),
     ),
     'collator_set_attribute' => 
@@ -2047,14 +2047,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'int',
         'arg2' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         'attribute' => 'int',
         'value' => 'int',
       ),
@@ -2064,13 +2064,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         'arg1' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         'strength' => 'int',
       ),
     ),
@@ -2079,14 +2079,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         '&arr' => 'array<array-key, mixed>',
         'sort_flags=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         '&array' => 'array<array-key, mixed>',
         'flags=' => 'int',
       ),
@@ -2096,13 +2096,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'coll' => 'collator',
+        'coll' => 'Collator',
         '&arr' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         '&array' => 'array<array-key, mixed>',
       ),
     ),
@@ -2737,7 +2737,7 @@ return array (
         0 => 'array<array-key, mixed>',
       ),
     ),
-    'curlfile::__construct' => 
+    'CURLFile::__construct' => 
     array (
       'old' => 
       array (
@@ -2754,7 +2754,7 @@ return array (
         'posted_filename=' => 'null|string',
       ),
     ),
-    'curlfile::setmimetype' => 
+    'CURLFile::setMimeType' => 
     array (
       'old' => 
       array (
@@ -2767,7 +2767,7 @@ return array (
         'mime_type' => 'string',
       ),
     ),
-    'curlfile::setpostfilename' => 
+    'CURLFile::setPostFilename' => 
     array (
       'old' => 
       array (
@@ -3439,7 +3439,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'dateinterval::__construct' => 
+    'DateInterval::__construct' => 
     array (
       'old' => 
       array (
@@ -3452,7 +3452,7 @@ return array (
         'duration' => 'string',
       ),
     ),
-    'dateinterval::createfromdatestring' => 
+    'DateInterval::createFromDateString' => 
     array (
       'old' => 
       array (
@@ -3465,7 +3465,7 @@ return array (
         'datetime' => 'string',
       ),
     ),
-    'dateperiod::__construct' => 
+    'DatePeriod::__construct' => 
     array (
       'old' => 
       array (
@@ -3483,7 +3483,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'datetime::__construct' => 
+    'DateTime::__construct' => 
     array (
       'old' => 
       array (
@@ -3498,7 +3498,7 @@ return array (
         'timezone=' => 'DateTimeZone|null',
       ),
     ),
-    'datetime::createfromformat' => 
+    'DateTime::createFromFormat' => 
     array (
       'old' => 
       array (
@@ -3515,7 +3515,7 @@ return array (
         'timezone=' => 'DateTimeZone|null',
       ),
     ),
-    'datetime::createfromimmutable' => 
+    'DateTime::createFromImmutable' => 
     array (
       'old' => 
       array (
@@ -3528,7 +3528,7 @@ return array (
         'object' => 'DateTimeImmutable',
       ),
     ),
-    'datetime::diff' => 
+    'DateTime::diff' => 
     array (
       'old' => 
       array (
@@ -3543,7 +3543,7 @@ return array (
         'absolute=' => 'bool',
       ),
     ),
-    'datetime::format' => 
+    'DateTime::format' => 
     array (
       'old' => 
       array (
@@ -3556,7 +3556,7 @@ return array (
         'format' => 'string',
       ),
     ),
-    'datetime::gettimestamp' => 
+    'DateTime::getTimestamp' => 
     array (
       'old' => 
       array (
@@ -3567,7 +3567,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'datetime::modify' => 
+    'DateTime::modify' => 
     array (
       'old' => 
       array (
@@ -3580,7 +3580,7 @@ return array (
         'modifier' => 'string',
       ),
     ),
-    'datetime::setisodate' => 
+    'DateTime::setISODate' => 
     array (
       'old' => 
       array (
@@ -3597,7 +3597,7 @@ return array (
         'dayOfWeek=' => 'int',
       ),
     ),
-    'datetime::settime' => 
+    'DateTime::setTime' => 
     array (
       'old' => 
       array (
@@ -3616,7 +3616,7 @@ return array (
         'microsecond=' => 'int',
       ),
     ),
-    'datetime::settimestamp' => 
+    'DateTime::setTimestamp' => 
     array (
       'old' => 
       array (
@@ -3629,7 +3629,7 @@ return array (
         'timestamp' => 'int',
       ),
     ),
-    'datetimeinterface::gettimestamp' => 
+    'DateTimeInterface::getTimestamp' => 
     array (
       'old' => 
       array (
@@ -3640,7 +3640,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'datetimezone::getoffset' => 
+    'DateTimeZone::getOffset' => 
     array (
       'old' => 
       array (
@@ -3653,7 +3653,7 @@ return array (
         'datetime' => 'DateTimeInterface',
       ),
     ),
-    'datetimezone::gettransitions' => 
+    'DateTimeZone::getTransitions' => 
     array (
       'old' => 
       array (
@@ -3668,7 +3668,7 @@ return array (
         'timestampEnd=' => 'int',
       ),
     ),
-    'datetimezone::listidentifiers' => 
+    'DateTimeZone::listIdentifiers' => 
     array (
       'old' => 
       array (
@@ -3870,7 +3870,7 @@ return array (
         'num' => 'float',
       ),
     ),
-    'directory::close' => 
+    'Directory::close' => 
     array (
       'old' => 
       array (
@@ -3882,7 +3882,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'directory::read' => 
+    'Directory::read' => 
     array (
       'old' => 
       array (
@@ -3894,7 +3894,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'directory::rewind' => 
+    'Directory::rewind' => 
     array (
       'old' => 
       array (
@@ -3906,7 +3906,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'directoryiterator::__construct' => 
+    'DirectoryIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -3919,7 +3919,7 @@ return array (
         'directory' => 'string',
       ),
     ),
-    'directoryiterator::getfileinfo' => 
+    'DirectoryIterator::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -3932,7 +3932,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'directoryiterator::getpathinfo' => 
+    'DirectoryIterator::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -3945,7 +3945,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'directoryiterator::openfile' => 
+    'DirectoryIterator::openFile' => 
     array (
       'old' => 
       array (
@@ -3962,7 +3962,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'directoryiterator::seek' => 
+    'DirectoryIterator::seek' => 
     array (
       'old' => 
       array (
@@ -3975,7 +3975,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'directoryiterator::setfileclass' => 
+    'DirectoryIterator::setFileClass' => 
     array (
       'old' => 
       array (
@@ -3988,7 +3988,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'directoryiterator::setinfoclass' => 
+    'DirectoryIterator::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -4106,7 +4106,7 @@ return array (
         'node' => 'SimpleXMLElement',
       ),
     ),
-    'domattr::insertbefore' => 
+    'DOMAttr::insertBefore' => 
     array (
       'old' => 
       array (
@@ -4121,7 +4121,7 @@ return array (
         'child=' => 'DOMNode|null',
       ),
     ),
-    'domattr::isdefaultnamespace' => 
+    'DOMAttr::isDefaultNamespace' => 
     array (
       'old' => 
       array (
@@ -4134,7 +4134,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'domattr::issamenode' => 
+    'DOMAttr::isSameNode' => 
     array (
       'old' => 
       array (
@@ -4147,7 +4147,7 @@ return array (
         'otherNode' => 'DOMNode',
       ),
     ),
-    'domattr::lookupprefix' => 
+    'DOMAttr::lookupPrefix' => 
     array (
       'old' => 
       array (
@@ -4160,7 +4160,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'domattr::removechild' => 
+    'DOMAttr::removeChild' => 
     array (
       'old' => 
       array (
@@ -4173,7 +4173,7 @@ return array (
         'child' => 'DOMNode',
       ),
     ),
-    'domattr::replacechild' => 
+    'DOMAttr::replaceChild' => 
     array (
       'old' => 
       array (
@@ -4188,7 +4188,7 @@ return array (
         'child' => 'DOMNode',
       ),
     ),
-    'domcdatasection::__construct' => 
+    'DOMCdataSection::__construct' => 
     array (
       'old' => 
       array (
@@ -4201,7 +4201,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'domcharacterdata::appenddata' => 
+    'DOMCharacterData::appendData' => 
     array (
       'old' => 
       array (
@@ -4214,7 +4214,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'domcharacterdata::insertdata' => 
+    'DOMCharacterData::insertData' => 
     array (
       'old' => 
       array (
@@ -4229,7 +4229,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'domcharacterdata::replacedata' => 
+    'DOMCharacterData::replaceData' => 
     array (
       'old' => 
       array (
@@ -4246,7 +4246,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'domcomment::__construct' => 
+    'DOMComment::__construct' => 
     array (
       'old' => 
       array (
@@ -4259,7 +4259,7 @@ return array (
         'data=' => 'string',
       ),
     ),
-    'domdocument::createattribute' => 
+    'DOMDocument::createAttribute' => 
     array (
       'old' => 
       array (
@@ -4272,7 +4272,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domdocument::createattributens' => 
+    'DOMDocument::createAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4287,7 +4287,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domdocument::createelement' => 
+    'DOMDocument::createElement' => 
     array (
       'old' => 
       array (
@@ -4302,7 +4302,7 @@ return array (
         'value=' => 'string',
       ),
     ),
-    'domdocument::createelementns' => 
+    'DOMDocument::createElementNS' => 
     array (
       'old' => 
       array (
@@ -4319,7 +4319,7 @@ return array (
         'value=' => 'string',
       ),
     ),
-    'domdocument::getelementsbytagname' => 
+    'DOMDocument::getElementsByTagName' => 
     array (
       'old' => 
       array (
@@ -4332,7 +4332,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domdocument::getelementsbytagnamens' => 
+    'DOMDocument::getElementsByTagNameNS' => 
     array (
       'old' => 
       array (
@@ -4347,7 +4347,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domdocument::importnode' => 
+    'DOMDocument::importNode' => 
     array (
       'old' => 
       array (
@@ -4362,7 +4362,7 @@ return array (
         'deep=' => 'bool',
       ),
     ),
-    'domdocument::load' => 
+    'DOMDocument::load' => 
     array (
       'old' => 
       array (
@@ -4377,7 +4377,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'domdocument::loadhtml' => 
+    'DOMDocument::loadHTML' => 
     array (
       'old' => 
       array (
@@ -4392,7 +4392,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'domdocument::loadhtmlfile' => 
+    'DOMDocument::loadHTMLFile' => 
     array (
       'old' => 
       array (
@@ -4407,7 +4407,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'domdocument::loadxml' => 
+    'DOMDocument::loadXML' => 
     array (
       'old' => 
       array (
@@ -4422,7 +4422,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'domdocument::save' => 
+    'DOMDocument::save' => 
     array (
       'old' => 
       array (
@@ -4436,7 +4436,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'domdocument::savehtml' => 
+    'DOMDocument::saveHTML' => 
     array (
       'old' => 
       array (
@@ -4448,7 +4448,7 @@ return array (
         'node=' => 'DOMNode|null',
       ),
     ),
-    'domdocument::savehtmlfile' => 
+    'DOMDocument::saveHTMLFile' => 
     array (
       'old' => 
       array (
@@ -4461,7 +4461,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'domdocument::schemavalidate' => 
+    'DOMDocument::schemaValidate' => 
     array (
       'old' => 
       array (
@@ -4475,7 +4475,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'domdocument::schemavalidatesource' => 
+    'DOMDocument::schemaValidateSource' => 
     array (
       'old' => 
       array (
@@ -4489,7 +4489,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'domelement::__construct' => 
+    'DOMElement::__construct' => 
     array (
       'old' => 
       array (
@@ -4506,7 +4506,7 @@ return array (
         'namespace=' => 'string',
       ),
     ),
-    'domelement::getattribute' => 
+    'DOMElement::getAttribute' => 
     array (
       'old' => 
       array (
@@ -4519,7 +4519,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domelement::getattributenode' => 
+    'DOMElement::getAttributeNode' => 
     array (
       'old' => 
       array (
@@ -4532,7 +4532,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domelement::getattributenodens' => 
+    'DOMElement::getAttributeNodeNS' => 
     array (
       'old' => 
       array (
@@ -4547,7 +4547,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domelement::getattributens' => 
+    'DOMElement::getAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4562,7 +4562,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domelement::getelementsbytagname' => 
+    'DOMElement::getElementsByTagName' => 
     array (
       'old' => 
       array (
@@ -4575,7 +4575,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domelement::getelementsbytagnamens' => 
+    'DOMElement::getElementsByTagNameNS' => 
     array (
       'old' => 
       array (
@@ -4590,7 +4590,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domelement::hasattribute' => 
+    'DOMElement::hasAttribute' => 
     array (
       'old' => 
       array (
@@ -4603,7 +4603,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domelement::hasattributens' => 
+    'DOMElement::hasAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4618,7 +4618,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domelement::removeattribute' => 
+    'DOMElement::removeAttribute' => 
     array (
       'old' => 
       array (
@@ -4631,7 +4631,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domelement::removeattributenode' => 
+    'DOMElement::removeAttributeNode' => 
     array (
       'old' => 
       array (
@@ -4644,7 +4644,7 @@ return array (
         'attr' => 'DOMAttr',
       ),
     ),
-    'domelement::removeattributens' => 
+    'DOMElement::removeAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4659,7 +4659,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domelement::setattribute' => 
+    'DOMElement::setAttribute' => 
     array (
       'old' => 
       array (
@@ -4674,7 +4674,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'domelement::setattributenode' => 
+    'DOMElement::setAttributeNode' => 
     array (
       'old' => 
       array (
@@ -4687,7 +4687,7 @@ return array (
         'attr' => 'DOMAttr',
       ),
     ),
-    'domelement::setattributenodens' => 
+    'DOMElement::setAttributeNodeNS' => 
     array (
       'old' => 
       array (
@@ -4700,7 +4700,7 @@ return array (
         'attr' => 'DOMAttr',
       ),
     ),
-    'domelement::setattributens' => 
+    'DOMElement::setAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4717,7 +4717,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'domelement::setidattribute' => 
+    'DOMElement::setIdAttribute' => 
     array (
       'old' => 
       array (
@@ -4732,7 +4732,7 @@ return array (
         'isId' => 'bool',
       ),
     ),
-    'domelement::setidattributens' => 
+    'DOMElement::setIdAttributeNS' => 
     array (
       'old' => 
       array (
@@ -4749,7 +4749,7 @@ return array (
         'isId' => 'bool',
       ),
     ),
-    'domimplementation::createdocument' => 
+    'DOMImplementation::createDocument' => 
     array (
       'old' => 
       array (
@@ -4766,7 +4766,7 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
-    'domimplementation::createdocumenttype' => 
+    'DOMImplementation::createDocumentType' => 
     array (
       'old' => 
       array (
@@ -4783,7 +4783,7 @@ return array (
         'systemId=' => 'string',
       ),
     ),
-    'domimplementation::hasfeature' => 
+    'DOMImplementation::hasFeature' => 
     array (
       'old' => 
       array (
@@ -4796,7 +4796,7 @@ return array (
         'version' => 'string',
       ),
     ),
-    'domnamednodemap::getnameditem' => 
+    'DOMNamedNodeMap::getNamedItem' => 
     array (
       'old' => 
       array (
@@ -4809,7 +4809,7 @@ return array (
         'qualifiedName' => 'string',
       ),
     ),
-    'domnamednodemap::getnameditemns' => 
+    'DOMNamedNodeMap::getNamedItemNS' => 
     array (
       'old' => 
       array (
@@ -4824,7 +4824,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'domnamednodemap::item' => 
+    'DOMNamedNodeMap::item' => 
     array (
       'old' => 
       array (
@@ -4837,7 +4837,7 @@ return array (
         'index' => 'int',
       ),
     ),
-    'domnode::appendchild' => 
+    'DOMNode::appendChild' => 
     array (
       'old' => 
       array (
@@ -4850,7 +4850,7 @@ return array (
         'node' => 'DOMNode',
       ),
     ),
-    'domnode::c14n' => 
+    'DOMNode::C14N' => 
     array (
       'old' => 
       array (
@@ -4869,7 +4869,7 @@ return array (
         'nsPrefixes=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'domnode::c14nfile' => 
+    'DOMNode::C14NFile' => 
     array (
       'old' => 
       array (
@@ -4890,7 +4890,7 @@ return array (
         'nsPrefixes=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'domnode::insertbefore' => 
+    'DOMNode::insertBefore' => 
     array (
       'old' => 
       array (
@@ -4905,7 +4905,7 @@ return array (
         'child=' => 'DOMNode|null',
       ),
     ),
-    'domnode::isdefaultnamespace' => 
+    'DOMNode::isDefaultNamespace' => 
     array (
       'old' => 
       array (
@@ -4918,7 +4918,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'domnode::issamenode' => 
+    'DOMNode::isSameNode' => 
     array (
       'old' => 
       array (
@@ -4931,7 +4931,7 @@ return array (
         'otherNode' => 'DOMNode',
       ),
     ),
-    'domnode::lookupprefix' => 
+    'DOMNode::lookupPrefix' => 
     array (
       'old' => 
       array (
@@ -4944,7 +4944,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'domnode::removechild' => 
+    'DOMNode::removeChild' => 
     array (
       'old' => 
       array (
@@ -4957,7 +4957,7 @@ return array (
         'child' => 'DOMNode',
       ),
     ),
-    'domnode::replacechild' => 
+    'DOMNode::replaceChild' => 
     array (
       'old' => 
       array (
@@ -4972,7 +4972,7 @@ return array (
         'child' => 'DOMNode',
       ),
     ),
-    'domtext::__construct' => 
+    'DOMText::__construct' => 
     array (
       'old' => 
       array (
@@ -4985,7 +4985,7 @@ return array (
         'data=' => 'string',
       ),
     ),
-    'domxpath::evaluate' => 
+    'DOMXPath::evaluate' => 
     array (
       'old' => 
       array (
@@ -5002,7 +5002,7 @@ return array (
         'registerNodeNS=' => 'bool',
       ),
     ),
-    'domxpath::query' => 
+    'DOMXPath::query' => 
     array (
       'old' => 
       array (
@@ -5019,7 +5019,7 @@ return array (
         'registerNodeNS=' => 'bool',
       ),
     ),
-    'domxpath::registernamespace' => 
+    'DOMXPath::registerNamespace' => 
     array (
       'old' => 
       array (
@@ -5034,7 +5034,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'domxpath::registerphpfunctions' => 
+    'DOMXPath::registerPhpFunctions' => 
     array (
       'old' => 
       array (
@@ -5439,7 +5439,7 @@ return array (
         'error_level=' => 'int|null',
       ),
     ),
-    'errorexception::__construct' => 
+    'ErrorException::__construct' => 
     array (
       'old' => 
       array (
@@ -5462,7 +5462,7 @@ return array (
         'previous=' => 'Throwable|null',
       ),
     ),
-    'evcheck::getloop' => 
+    'EvCheck::getLoop' => 
     array (
       'old' => 
       array (
@@ -5473,7 +5473,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evcheck::keepalive' => 
+    'EvCheck::keepalive' => 
     array (
       'old' => 
       array (
@@ -5486,7 +5486,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evchild::getloop' => 
+    'EvChild::getLoop' => 
     array (
       'old' => 
       array (
@@ -5497,7 +5497,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evchild::keepalive' => 
+    'EvChild::keepalive' => 
     array (
       'old' => 
       array (
@@ -5510,7 +5510,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evembed::__construct' => 
+    'EvEmbed::__construct' => 
     array (
       'old' => 
       array (
@@ -5529,7 +5529,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evembed::createstopped' => 
+    'EvEmbed::createStopped' => 
     array (
       'old' => 
       array (
@@ -5548,7 +5548,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evembed::getloop' => 
+    'EvEmbed::getLoop' => 
     array (
       'old' => 
       array (
@@ -5559,7 +5559,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evembed::keepalive' => 
+    'EvEmbed::keepalive' => 
     array (
       'old' => 
       array (
@@ -5572,7 +5572,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evembed::set' => 
+    'EvEmbed::set' => 
     array (
       'old' => 
       array (
@@ -5585,7 +5585,7 @@ return array (
         'other' => 'EvLoop',
       ),
     ),
-    'event::set' => 
+    'Event::set' => 
     array (
       'old' => 
       array (
@@ -5606,7 +5606,7 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
-    'eventbase::__construct' => 
+    'EventBase::__construct' => 
     array (
       'old' => 
       array (
@@ -5619,7 +5619,7 @@ return array (
         'cfg=' => 'EventConfig|null',
       ),
     ),
-    'eventbase::dispatch' => 
+    'EventBase::dispatch' => 
     array (
       'old' => 
       array (
@@ -5630,7 +5630,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'eventbuffer::lock' => 
+    'EventBuffer::lock' => 
     array (
       'old' => 
       array (
@@ -5642,7 +5642,7 @@ return array (
         'at_front' => 'bool',
       ),
     ),
-    'eventbuffer::pullup' => 
+    'EventBuffer::pullup' => 
     array (
       'old' => 
       array (
@@ -5655,7 +5655,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'eventbuffer::readline' => 
+    'EventBuffer::readLine' => 
     array (
       'old' => 
       array (
@@ -5668,7 +5668,7 @@ return array (
         'eol_style' => 'int',
       ),
     ),
-    'eventbuffer::search' => 
+    'EventBuffer::search' => 
     array (
       'old' => 
       array (
@@ -5685,7 +5685,7 @@ return array (
         'end=' => 'int',
       ),
     ),
-    'eventbuffer::searcheol' => 
+    'EventBuffer::searchEol' => 
     array (
       'old' => 
       array (
@@ -5700,7 +5700,7 @@ return array (
         'eol_style=' => 'int',
       ),
     ),
-    'eventbuffer::unlock' => 
+    'EventBuffer::unlock' => 
     array (
       'old' => 
       array (
@@ -5712,7 +5712,7 @@ return array (
         'at_front' => 'bool',
       ),
     ),
-    'eventbufferevent::__construct' => 
+    'EventBufferEvent::__construct' => 
     array (
       'old' => 
       array (
@@ -5736,7 +5736,7 @@ return array (
         'arg=' => 'mixed',
       ),
     ),
-    'eventbufferevent::connecthost' => 
+    'EventBufferEvent::connectHost' => 
     array (
       'old' => 
       array (
@@ -5755,7 +5755,7 @@ return array (
         'family=' => 'int',
       ),
     ),
-    'eventbufferevent::read' => 
+    'EventBufferEvent::read' => 
     array (
       'old' => 
       array (
@@ -5768,7 +5768,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'eventbufferevent::setcallbacks' => 
+    'EventBufferEvent::setCallbacks' => 
     array (
       'old' => 
       array (
@@ -5787,7 +5787,7 @@ return array (
         'arg=' => 'string',
       ),
     ),
-    'eventdnsbase::setsearchndots' => 
+    'EventDnsBase::setSearchNdots' => 
     array (
       'old' => 
       array (
@@ -5800,7 +5800,7 @@ return array (
         'ndots' => 'int',
       ),
     ),
-    'eventhttp::bind' => 
+    'EventHttp::bind' => 
     array (
       'old' => 
       array (
@@ -5815,7 +5815,7 @@ return array (
         'port' => 'int',
       ),
     ),
-    'eventhttp::setcallback' => 
+    'EventHttp::setCallback' => 
     array (
       'old' => 
       array (
@@ -5832,7 +5832,7 @@ return array (
         'arg=' => 'string',
       ),
     ),
-    'eventhttp::setdefaultcallback' => 
+    'EventHttp::setDefaultCallback' => 
     array (
       'old' => 
       array (
@@ -5847,7 +5847,7 @@ return array (
         'arg=' => 'string',
       ),
     ),
-    'eventhttpconnection::__construct' => 
+    'EventHttpConnection::__construct' => 
     array (
       'old' => 
       array (
@@ -5868,7 +5868,7 @@ return array (
         'ctx=' => 'EventSslContext|null',
       ),
     ),
-    'eventhttpconnection::makerequest' => 
+    'EventHttpConnection::makeRequest' => 
     array (
       'old' => 
       array (
@@ -5885,7 +5885,7 @@ return array (
         'uri' => 'string',
       ),
     ),
-    'eventhttpconnection::setmaxbodysize' => 
+    'EventHttpConnection::setMaxBodySize' => 
     array (
       'old' => 
       array (
@@ -5898,7 +5898,7 @@ return array (
         'max_size' => 'int',
       ),
     ),
-    'eventhttpconnection::setmaxheaderssize' => 
+    'EventHttpConnection::setMaxHeadersSize' => 
     array (
       'old' => 
       array (
@@ -5911,7 +5911,7 @@ return array (
         'max_size' => 'int',
       ),
     ),
-    'eventhttprequest::findheader' => 
+    'EventHttpRequest::findHeader' => 
     array (
       'old' => 
       array (
@@ -5926,7 +5926,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'eventhttprequest::getbufferevent' => 
+    'EventHttpRequest::getBufferEvent' => 
     array (
       'old' => 
       array (
@@ -5937,7 +5937,7 @@ return array (
         0 => 'EventBufferEvent|null',
       ),
     ),
-    'eventhttprequest::getcommand' => 
+    'EventHttpRequest::getCommand' => 
     array (
       'old' => 
       array (
@@ -5948,7 +5948,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'eventhttprequest::getconnection' => 
+    'EventHttpRequest::getConnection' => 
     array (
       'old' => 
       array (
@@ -5959,7 +5959,7 @@ return array (
         0 => 'EventHttpConnection|null',
       ),
     ),
-    'eventhttprequest::getoutputheaders' => 
+    'EventHttpRequest::getOutputHeaders' => 
     array (
       'old' => 
       array (
@@ -5970,7 +5970,7 @@ return array (
         0 => 'array<array-key, mixed>',
       ),
     ),
-    'eventhttprequest::removeheader' => 
+    'EventHttpRequest::removeHeader' => 
     array (
       'old' => 
       array (
@@ -5985,7 +5985,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'eventhttprequest::senderror' => 
+    'EventHttpRequest::sendError' => 
     array (
       'old' => 
       array (
@@ -6000,7 +6000,7 @@ return array (
         'reason=' => 'null|string',
       ),
     ),
-    'eventhttprequest::sendreply' => 
+    'EventHttpRequest::sendReply' => 
     array (
       'old' => 
       array (
@@ -6017,7 +6017,7 @@ return array (
         'buf=' => 'EventBuffer|null',
       ),
     ),
-    'eventlistener::getbase' => 
+    'EventListener::getBase' => 
     array (
       'old' => 
       array (
@@ -6028,7 +6028,7 @@ return array (
         0 => 'EventBase',
       ),
     ),
-    'eventlistener::getsocketname' => 
+    'EventListener::getSocketName' => 
     array (
       'old' => 
       array (
@@ -6043,7 +6043,7 @@ return array (
         '&w port' => 'mixed',
       ),
     ),
-    'eventlistener::seterrorcallback' => 
+    'EventListener::setErrorCallback' => 
     array (
       'old' => 
       array (
@@ -6056,7 +6056,7 @@ return array (
         'cb' => 'impure-callable',
       ),
     ),
-    'eventsslcontext::__construct' => 
+    'EventSslContext::__construct' => 
     array (
       'old' => 
       array (
@@ -6071,7 +6071,7 @@ return array (
         'options' => 'array<array-key, mixed>',
       ),
     ),
-    'eventutil::getlastsocketerrno' => 
+    'EventUtil::getLastSocketErrno' => 
     array (
       'old' => 
       array (
@@ -6084,7 +6084,7 @@ return array (
         'socket=' => 'Socket|null',
       ),
     ),
-    'eventutil::sslrandpoll' => 
+    'EventUtil::sslRandPoll' => 
     array (
       'old' => 
       array (
@@ -6095,7 +6095,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'evfork::__construct' => 
+    'EvFork::__construct' => 
     array (
       'old' => 
       array (
@@ -6113,7 +6113,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evfork::createstopped' => 
+    'EvFork::createStopped' => 
     array (
       'old' => 
       array (
@@ -6131,7 +6131,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evfork::getloop' => 
+    'EvFork::getLoop' => 
     array (
       'old' => 
       array (
@@ -6142,7 +6142,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evfork::keepalive' => 
+    'EvFork::keepalive' => 
     array (
       'old' => 
       array (
@@ -6155,7 +6155,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evidle::getloop' => 
+    'EvIdle::getLoop' => 
     array (
       'old' => 
       array (
@@ -6166,7 +6166,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evidle::keepalive' => 
+    'EvIdle::keepalive' => 
     array (
       'old' => 
       array (
@@ -6179,7 +6179,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evio::getloop' => 
+    'EvIo::getLoop' => 
     array (
       'old' => 
       array (
@@ -6190,7 +6190,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evio::keepalive' => 
+    'EvIo::keepalive' => 
     array (
       'old' => 
       array (
@@ -6203,7 +6203,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evloop::periodic' => 
+    'EvLoop::periodic' => 
     array (
       'old' => 
       array (
@@ -6225,7 +6225,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evperiodic::__construct' => 
+    'EvPeriodic::__construct' => 
     array (
       'old' => 
       array (
@@ -6248,7 +6248,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evperiodic::getloop' => 
+    'EvPeriodic::getLoop' => 
     array (
       'old' => 
       array (
@@ -6259,7 +6259,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evperiodic::keepalive' => 
+    'EvPeriodic::keepalive' => 
     array (
       'old' => 
       array (
@@ -6272,7 +6272,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evperiodic::set' => 
+    'EvPeriodic::set' => 
     array (
       'old' => 
       array (
@@ -6288,7 +6288,7 @@ return array (
         'reschedule_cb=' => 'mixed',
       ),
     ),
-    'evprepare::__construct' => 
+    'EvPrepare::__construct' => 
     array (
       'old' => 
       array (
@@ -6305,7 +6305,7 @@ return array (
         'priority=' => 'int',
       ),
     ),
-    'evprepare::getloop' => 
+    'EvPrepare::getLoop' => 
     array (
       'old' => 
       array (
@@ -6316,7 +6316,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evprepare::keepalive' => 
+    'EvPrepare::keepalive' => 
     array (
       'old' => 
       array (
@@ -6329,7 +6329,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evsignal::getloop' => 
+    'EvSignal::getLoop' => 
     array (
       'old' => 
       array (
@@ -6340,7 +6340,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evsignal::keepalive' => 
+    'EvSignal::keepalive' => 
     array (
       'old' => 
       array (
@@ -6353,7 +6353,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evstat::getloop' => 
+    'EvStat::getLoop' => 
     array (
       'old' => 
       array (
@@ -6364,7 +6364,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evstat::keepalive' => 
+    'EvStat::keepalive' => 
     array (
       'old' => 
       array (
@@ -6377,7 +6377,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evtimer::getloop' => 
+    'EvTimer::getLoop' => 
     array (
       'old' => 
       array (
@@ -6388,7 +6388,7 @@ return array (
         0 => 'EvLoop|null',
       ),
     ),
-    'evtimer::keepalive' => 
+    'EvTimer::keepalive' => 
     array (
       'old' => 
       array (
@@ -6401,7 +6401,7 @@ return array (
         'value=' => 'bool',
       ),
     ),
-    'evwatcher::getloop' => 
+    'EvWatcher::getLoop' => 
     array (
       'old' => 
       array (
@@ -6630,7 +6630,7 @@ return array (
         'length=' => 'int|null',
       ),
     ),
-    'filesystemiterator::__construct' => 
+    'FilesystemIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -6645,7 +6645,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'filesystemiterator::getfileinfo' => 
+    'FilesystemIterator::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -6658,7 +6658,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'filesystemiterator::getpathinfo' => 
+    'FilesystemIterator::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -6671,7 +6671,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'filesystemiterator::openfile' => 
+    'FilesystemIterator::openFile' => 
     array (
       'old' => 
       array (
@@ -6688,7 +6688,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'filesystemiterator::seek' => 
+    'FilesystemIterator::seek' => 
     array (
       'old' => 
       array (
@@ -6701,7 +6701,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'filesystemiterator::setfileclass' => 
+    'FilesystemIterator::setFileClass' => 
     array (
       'old' => 
       array (
@@ -6714,7 +6714,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'filesystemiterator::setflags' => 
+    'FilesystemIterator::setFlags' => 
     array (
       'old' => 
       array (
@@ -6727,7 +6727,7 @@ return array (
         'flags' => 'int',
       ),
     ),
-    'filesystemiterator::setinfoclass' => 
+    'FilesystemIterator::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -7901,7 +7901,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'globiterator::__construct' => 
+    'GlobIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -7916,7 +7916,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'globiterator::getfileinfo' => 
+    'GlobIterator::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -7929,7 +7929,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'globiterator::getpathinfo' => 
+    'GlobIterator::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -7942,7 +7942,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'globiterator::openfile' => 
+    'GlobIterator::openFile' => 
     array (
       'old' => 
       array (
@@ -7959,7 +7959,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'globiterator::seek' => 
+    'GlobIterator::seek' => 
     array (
       'old' => 
       array (
@@ -7972,7 +7972,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'globiterator::setfileclass' => 
+    'GlobIterator::setFileClass' => 
     array (
       'old' => 
       array (
@@ -7985,7 +7985,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'globiterator::setflags' => 
+    'GlobIterator::setFlags' => 
     array (
       'old' => 
       array (
@@ -7998,7 +7998,7 @@ return array (
         'flags' => 'int',
       ),
     ),
-    'globiterator::setinfoclass' => 
+    'GlobIterator::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -11499,7 +11499,7 @@ return array (
         'foreground_color=' => 'int|null',
       ),
     ),
-    'imagick::__construct' => 
+    'Imagick::__construct' => 
     array (
       'old' => 
       array (
@@ -11512,7 +11512,7 @@ return array (
         'files=' => 'array<array-key, string>|null|string',
       ),
     ),
-    'imagick::adaptiveresizeimage' => 
+    'Imagick::adaptiveResizeImage' => 
     array (
       'old' => 
       array (
@@ -11531,7 +11531,7 @@ return array (
         'legacy=' => 'bool',
       ),
     ),
-    'imagick::autogammaimage' => 
+    'Imagick::autoGammaImage' => 
     array (
       'old' => 
       array (
@@ -11544,7 +11544,7 @@ return array (
         'channel=' => 'int|null',
       ),
     ),
-    'imagick::autolevelimage' => 
+    'Imagick::autoLevelImage' => 
     array (
       'old' => 
       array (
@@ -11557,7 +11557,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::autoorient' => 
+    'Imagick::autoOrient' => 
     array (
       'old' => 
       array (
@@ -11568,7 +11568,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'imagick::blackthresholdimage' => 
+    'Imagick::blackThresholdImage' => 
     array (
       'old' => 
       array (
@@ -11581,7 +11581,7 @@ return array (
         'threshold_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::blueshiftimage' => 
+    'Imagick::blueShiftImage' => 
     array (
       'old' => 
       array (
@@ -11594,7 +11594,7 @@ return array (
         'factor=' => 'float',
       ),
     ),
-    'imagick::borderimage' => 
+    'Imagick::borderImage' => 
     array (
       'old' => 
       array (
@@ -11611,7 +11611,7 @@ return array (
         'height' => 'int',
       ),
     ),
-    'imagick::brightnesscontrastimage' => 
+    'Imagick::brightnessContrastImage' => 
     array (
       'old' => 
       array (
@@ -11628,7 +11628,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::clampimage' => 
+    'Imagick::clampImage' => 
     array (
       'old' => 
       array (
@@ -11641,7 +11641,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::clipimagepath' => 
+    'Imagick::clipImagePath' => 
     array (
       'old' => 
       array (
@@ -11656,7 +11656,7 @@ return array (
         'inside' => 'bool',
       ),
     ),
-    'imagick::clutimage' => 
+    'Imagick::clutImage' => 
     array (
       'old' => 
       array (
@@ -11671,7 +11671,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::colorizeimage' => 
+    'Imagick::colorizeImage' => 
     array (
       'old' => 
       array (
@@ -11688,7 +11688,7 @@ return array (
         'legacy=' => 'bool|null',
       ),
     ),
-    'imagick::colormatriximage' => 
+    'Imagick::colorMatrixImage' => 
     array (
       'old' => 
       array (
@@ -11701,7 +11701,7 @@ return array (
         'color_matrix' => 'array<array-key, mixed>',
       ),
     ),
-    'imagick::count' => 
+    'Imagick::count' => 
     array (
       'old' => 
       array (
@@ -11714,7 +11714,7 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'imagick::deleteimageproperty' => 
+    'Imagick::deleteImageProperty' => 
     array (
       'old' => 
       array (
@@ -11727,7 +11727,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'imagick::evaluateimages' => 
+    'Imagick::evaluateImages' => 
     array (
       'old' => 
       array (
@@ -11740,7 +11740,7 @@ return array (
         'evaluate' => 'int',
       ),
     ),
-    'imagick::floodfillpaintimage' => 
+    'Imagick::floodfillPaintImage' => 
     array (
       'old' => 
       array (
@@ -11765,7 +11765,7 @@ return array (
         'channel=' => 'int|null',
       ),
     ),
-    'imagick::forwardfouriertransformimage' => 
+    'Imagick::forwardFourierTransformImage' => 
     array (
       'old' => 
       array (
@@ -11778,7 +11778,7 @@ return array (
         'magnitude' => 'bool',
       ),
     ),
-    'imagick::frameimage' => 
+    'Imagick::frameImage' => 
     array (
       'old' => 
       array (
@@ -11799,7 +11799,7 @@ return array (
         'outer_bevel' => 'int',
       ),
     ),
-    'imagick::getconfigureoptions' => 
+    'Imagick::getConfigureOptions' => 
     array (
       'old' => 
       array (
@@ -11812,7 +11812,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'imagick::getfont' => 
+    'Imagick::getFont' => 
     array (
       'old' => 
       array (
@@ -11823,7 +11823,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'imagick::gethdrienabled' => 
+    'Imagick::getHdriEnabled' => 
     array (
       'old' => 
       array (
@@ -11834,7 +11834,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'imagick::getimagealphachannel' => 
+    'Imagick::getImageAlphaChannel' => 
     array (
       'old' => 
       array (
@@ -11845,7 +11845,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'imagick::getimageartifact' => 
+    'Imagick::getImageArtifact' => 
     array (
       'old' => 
       array (
@@ -11858,7 +11858,7 @@ return array (
         'artifact' => 'string',
       ),
     ),
-    'imagick::getimageproperty' => 
+    'Imagick::getImageProperty' => 
     array (
       'old' => 
       array (
@@ -11871,7 +11871,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'imagick::getregistry' => 
+    'Imagick::getRegistry' => 
     array (
       'old' => 
       array (
@@ -11884,7 +11884,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'imagick::getresourcelimit' => 
+    'Imagick::getResourceLimit' => 
     array (
       'old' => 
       array (
@@ -11897,7 +11897,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'imagick::identifyformat' => 
+    'Imagick::identifyFormat' => 
     array (
       'old' => 
       array (
@@ -11910,7 +11910,7 @@ return array (
         'format' => 'string',
       ),
     ),
-    'imagick::inversefouriertransformimage' => 
+    'Imagick::inverseFourierTransformImage' => 
     array (
       'old' => 
       array (
@@ -11925,7 +11925,7 @@ return array (
         'magnitude' => 'bool',
       ),
     ),
-    'imagick::key' => 
+    'Imagick::key' => 
     array (
       'old' => 
       array (
@@ -11936,7 +11936,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'imagick::morphology' => 
+    'Imagick::morphology' => 
     array (
       'old' => 
       array (
@@ -11955,7 +11955,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::newimage' => 
+    'Imagick::newImage' => 
     array (
       'old' => 
       array (
@@ -11974,7 +11974,7 @@ return array (
         'format=' => 'null|string',
       ),
     ),
-    'imagick::opaquepaintimage' => 
+    'Imagick::opaquePaintImage' => 
     array (
       'old' => 
       array (
@@ -11995,7 +11995,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::optimizeimagelayers' => 
+    'Imagick::optimizeImageLayers' => 
     array (
       'old' => 
       array (
@@ -12006,7 +12006,7 @@ return array (
         0 => 'Imagick',
       ),
     ),
-    'imagick::pingimagefile' => 
+    'Imagick::pingImageFile' => 
     array (
       'old' => 
       array (
@@ -12021,7 +12021,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'imagick::profileimage' => 
+    'Imagick::profileImage' => 
     array (
       'old' => 
       array (
@@ -12036,7 +12036,7 @@ return array (
         'profile' => 'null|string',
       ),
     ),
-    'imagick::queryfontmetrics' => 
+    'Imagick::queryFontMetrics' => 
     array (
       'old' => 
       array (
@@ -12053,7 +12053,7 @@ return array (
         'multiline=' => 'bool|null',
       ),
     ),
-    'imagick::readimageblob' => 
+    'Imagick::readImageBlob' => 
     array (
       'old' => 
       array (
@@ -12068,7 +12068,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'imagick::readimagefile' => 
+    'Imagick::readImageFile' => 
     array (
       'old' => 
       array (
@@ -12083,7 +12083,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'imagick::readimages' => 
+    'Imagick::readImages' => 
     array (
       'old' => 
       array (
@@ -12096,7 +12096,7 @@ return array (
         'filenames' => 'array<array-key, mixed>',
       ),
     ),
-    'imagick::resizeimage' => 
+    'Imagick::resizeImage' => 
     array (
       'old' => 
       array (
@@ -12119,7 +12119,7 @@ return array (
         'legacy=' => 'bool',
       ),
     ),
-    'imagick::rotateimage' => 
+    'Imagick::rotateImage' => 
     array (
       'old' => 
       array (
@@ -12134,7 +12134,7 @@ return array (
         'degrees' => 'float',
       ),
     ),
-    'imagick::rotationalblurimage' => 
+    'Imagick::rotationalBlurImage' => 
     array (
       'old' => 
       array (
@@ -12149,7 +12149,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::scaleimage' => 
+    'Imagick::scaleImage' => 
     array (
       'old' => 
       array (
@@ -12168,7 +12168,7 @@ return array (
         'legacy=' => 'bool',
       ),
     ),
-    'imagick::selectiveblurimage' => 
+    'Imagick::selectiveBlurImage' => 
     array (
       'old' => 
       array (
@@ -12187,7 +12187,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::setantialias' => 
+    'Imagick::setAntialias' => 
     array (
       'old' => 
       array (
@@ -12200,7 +12200,7 @@ return array (
         'antialias' => 'bool',
       ),
     ),
-    'imagick::setbackgroundcolor' => 
+    'Imagick::setBackgroundColor' => 
     array (
       'old' => 
       array (
@@ -12213,7 +12213,7 @@ return array (
         'background_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::setimageartifact' => 
+    'Imagick::setImageArtifact' => 
     array (
       'old' => 
       array (
@@ -12228,7 +12228,7 @@ return array (
         'value' => 'null|string',
       ),
     ),
-    'imagick::setimagebackgroundcolor' => 
+    'Imagick::setImageBackgroundColor' => 
     array (
       'old' => 
       array (
@@ -12241,7 +12241,7 @@ return array (
         'background_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::setimageblueprimary' => 
+    'Imagick::setImageBluePrimary' => 
     array (
       'old' => 
       array (
@@ -12258,7 +12258,7 @@ return array (
         'z' => 'float',
       ),
     ),
-    'imagick::setimagebordercolor' => 
+    'Imagick::setImageBorderColor' => 
     array (
       'old' => 
       array (
@@ -12271,7 +12271,7 @@ return array (
         'border_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::setimagechannelmask' => 
+    'Imagick::setImageChannelMask' => 
     array (
       'old' => 
       array (
@@ -12284,7 +12284,7 @@ return array (
         'channel' => 'int',
       ),
     ),
-    'imagick::setimagegreenprimary' => 
+    'Imagick::setImageGreenPrimary' => 
     array (
       'old' => 
       array (
@@ -12301,7 +12301,7 @@ return array (
         'z' => 'float',
       ),
     ),
-    'imagick::setimagemattecolor' => 
+    'Imagick::setImageMatteColor' => 
     array (
       'old' => 
       array (
@@ -12314,7 +12314,7 @@ return array (
         'matte_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::setimageredprimary' => 
+    'Imagick::setImageRedPrimary' => 
     array (
       'old' => 
       array (
@@ -12331,7 +12331,7 @@ return array (
         'z' => 'float',
       ),
     ),
-    'imagick::setimagewhitepoint' => 
+    'Imagick::setImageWhitePoint' => 
     array (
       'old' => 
       array (
@@ -12348,7 +12348,7 @@ return array (
         'z' => 'float',
       ),
     ),
-    'imagick::setprogressmonitor' => 
+    'Imagick::setProgressMonitor' => 
     array (
       'old' => 
       array (
@@ -12361,7 +12361,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'imagick::setregistry' => 
+    'Imagick::setRegistry' => 
     array (
       'old' => 
       array (
@@ -12376,7 +12376,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'imagick::shearimage' => 
+    'Imagick::shearImage' => 
     array (
       'old' => 
       array (
@@ -12393,7 +12393,7 @@ return array (
         'y_shear' => 'float',
       ),
     ),
-    'imagick::similarityimage' => 
+    'Imagick::similarityImage' => 
     array (
       'old' => 
       array (
@@ -12414,7 +12414,7 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagick::smushimages' => 
+    'Imagick::smushImages' => 
     array (
       'old' => 
       array (
@@ -12429,7 +12429,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'imagick::statisticimage' => 
+    'Imagick::statisticImage' => 
     array (
       'old' => 
       array (
@@ -12448,7 +12448,7 @@ return array (
         'channel=' => 'int',
       ),
     ),
-    'imagick::subimagematch' => 
+    'Imagick::subimageMatch' => 
     array (
       'old' => 
       array (
@@ -12469,7 +12469,7 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagick::textureimage' => 
+    'Imagick::textureImage' => 
     array (
       'old' => 
       array (
@@ -12482,7 +12482,7 @@ return array (
         'texture' => 'Imagick',
       ),
     ),
-    'imagick::thumbnailimage' => 
+    'Imagick::thumbnailImage' => 
     array (
       'old' => 
       array (
@@ -12503,7 +12503,7 @@ return array (
         'legacy=' => 'bool',
       ),
     ),
-    'imagick::tintimage' => 
+    'Imagick::tintImage' => 
     array (
       'old' => 
       array (
@@ -12520,7 +12520,7 @@ return array (
         'legacy=' => 'bool',
       ),
     ),
-    'imagick::transparentpaintimage' => 
+    'Imagick::transparentPaintImage' => 
     array (
       'old' => 
       array (
@@ -12539,7 +12539,7 @@ return array (
         'invert' => 'bool',
       ),
     ),
-    'imagick::whitethresholdimage' => 
+    'Imagick::whiteThresholdImage' => 
     array (
       'old' => 
       array (
@@ -12552,7 +12552,7 @@ return array (
         'threshold_color' => 'ImagickPixel|string',
       ),
     ),
-    'imagick::writeimage' => 
+    'Imagick::writeImage' => 
     array (
       'old' => 
       array (
@@ -12565,7 +12565,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'imagick::writeimagefile' => 
+    'Imagick::writeImageFile' => 
     array (
       'old' => 
       array (
@@ -12580,7 +12580,7 @@ return array (
         'format=' => 'null|string',
       ),
     ),
-    'imagick::writeimagesfile' => 
+    'Imagick::writeImagesFile' => 
     array (
       'old' => 
       array (
@@ -12595,7 +12595,7 @@ return array (
         'format=' => 'null|string',
       ),
     ),
-    'imagickdraw::getclippath' => 
+    'ImagickDraw::getClipPath' => 
     array (
       'old' => 
       array (
@@ -12606,7 +12606,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'imagickdraw::getfont' => 
+    'ImagickDraw::getFont' => 
     array (
       'old' => 
       array (
@@ -12617,7 +12617,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'imagickdraw::getfontfamily' => 
+    'ImagickDraw::getFontFamily' => 
     array (
       'old' => 
       array (
@@ -12628,7 +12628,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'imagickdraw::gettextdirection' => 
+    'ImagickDraw::getTextDirection' => 
     array (
       'old' => 
       array (
@@ -12639,7 +12639,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'imagickdraw::resetvectorgraphics' => 
+    'ImagickDraw::resetVectorGraphics' => 
     array (
       'old' => 
       array (
@@ -12650,7 +12650,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'imagickdraw::setopacity' => 
+    'ImagickDraw::setOpacity' => 
     array (
       'old' => 
       array (
@@ -12663,7 +12663,7 @@ return array (
         'opacity' => 'float',
       ),
     ),
-    'imagickdraw::setresolution' => 
+    'ImagickDraw::setResolution' => 
     array (
       'old' => 
       array (
@@ -12678,7 +12678,7 @@ return array (
         'resolution_y' => 'float',
       ),
     ),
-    'imagickdraw::setstrokedasharray' => 
+    'ImagickDraw::setStrokeDashArray' => 
     array (
       'old' => 
       array (
@@ -12691,7 +12691,7 @@ return array (
         'dashes' => 'list<float|int>|null',
       ),
     ),
-    'imagickdraw::settextinterlinespacing' => 
+    'ImagickDraw::setTextInterlineSpacing' => 
     array (
       'old' => 
       array (
@@ -12704,7 +12704,7 @@ return array (
         'spacing' => 'float',
       ),
     ),
-    'imagickdraw::settextinterwordspacing' => 
+    'ImagickDraw::setTextInterwordSpacing' => 
     array (
       'old' => 
       array (
@@ -12717,7 +12717,7 @@ return array (
         'spacing' => 'float',
       ),
     ),
-    'imagickdraw::settextkerning' => 
+    'ImagickDraw::setTextKerning' => 
     array (
       'old' => 
       array (
@@ -12730,7 +12730,7 @@ return array (
         'kerning' => 'float',
       ),
     ),
-    'imagickkernel::addunitykernel' => 
+    'ImagickKernel::addUnityKernel' => 
     array (
       'old' => 
       array (
@@ -12743,7 +12743,7 @@ return array (
         'scale' => 'float',
       ),
     ),
-    'imagickkernel::frombuiltin' => 
+    'ImagickKernel::fromBuiltin' => 
     array (
       'old' => 
       array (
@@ -12758,7 +12758,7 @@ return array (
         'shape' => 'string',
       ),
     ),
-    'imagickkernel::frommatrix' => 
+    'ImagickKernel::fromMatrix' => 
     array (
       'old' => 
       array (
@@ -12773,7 +12773,7 @@ return array (
         'origin=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'imagickkernel::scale' => 
+    'ImagickKernel::scale' => 
     array (
       'old' => 
       array (
@@ -12788,7 +12788,7 @@ return array (
         'normalize_kernel=' => 'int|null',
       ),
     ),
-    'imagickpixel::__construct' => 
+    'ImagickPixel::__construct' => 
     array (
       'old' => 
       array (
@@ -12801,7 +12801,7 @@ return array (
         'color=' => 'null|string',
       ),
     ),
-    'imagickpixel::ispixelsimilar' => 
+    'ImagickPixel::isPixelSimilar' => 
     array (
       'old' => 
       array (
@@ -12816,7 +12816,7 @@ return array (
         'fuzz' => 'float',
       ),
     ),
-    'imagickpixel::ispixelsimilarquantum' => 
+    'ImagickPixel::isPixelSimilarQuantum' => 
     array (
       'old' => 
       array (
@@ -12831,7 +12831,7 @@ return array (
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
     ),
-    'imagickpixel::issimilar' => 
+    'ImagickPixel::isSimilar' => 
     array (
       'old' => 
       array (
@@ -12846,7 +12846,7 @@ return array (
         'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
       ),
     ),
-    'imagickpixel::setcolorcount' => 
+    'ImagickPixel::setColorCount' => 
     array (
       'old' => 
       array (
@@ -12859,7 +12859,7 @@ return array (
         'color_count' => 'int',
       ),
     ),
-    'imagickpixel::setcolorvaluequantum' => 
+    'ImagickPixel::setColorValueQuantum' => 
     array (
       'old' => 
       array (
@@ -12874,7 +12874,7 @@ return array (
         'value' => 'float',
       ),
     ),
-    'imagickpixel::setindex' => 
+    'ImagickPixel::setIndex' => 
     array (
       'old' => 
       array (
@@ -12887,7 +12887,7 @@ return array (
         'index' => 'float',
       ),
     ),
-    'imagickpixeliterator::getcurrentiteratorrow' => 
+    'ImagickPixelIterator::getCurrentIteratorRow' => 
     array (
       'old' => 
       array (
@@ -12898,7 +12898,7 @@ return array (
         0 => 'array<array-key, mixed>|null',
       ),
     ),
-    'imagickpixeliterator::getnextiteratorrow' => 
+    'ImagickPixelIterator::getNextIteratorRow' => 
     array (
       'old' => 
       array (
@@ -12909,7 +12909,7 @@ return array (
         0 => 'array<array-key, mixed>|null',
       ),
     ),
-    'imagickpixeliterator::key' => 
+    'ImagickPixelIterator::key' => 
     array (
       'old' => 
       array (
@@ -13220,7 +13220,7 @@ return array (
         'errorCode' => 'int',
       ),
     ),
-    'intlbreakiterator::getlocale' => 
+    'IntlBreakIterator::getLocale' => 
     array (
       'old' => 
       array (
@@ -13233,7 +13233,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'intlbreakiterator::getpartsiterator' => 
+    'IntlBreakIterator::getPartsIterator' => 
     array (
       'old' => 
       array (
@@ -13533,7 +13533,7 @@ return array (
         'timezone' => 'mixed',
       ),
     ),
-    'intlcalendar::add' => 
+    'IntlCalendar::add' => 
     array (
       'old' => 
       array (
@@ -13548,7 +13548,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'intlcalendar::after' => 
+    'IntlCalendar::after' => 
     array (
       'old' => 
       array (
@@ -13561,7 +13561,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlcalendar::before' => 
+    'IntlCalendar::before' => 
     array (
       'old' => 
       array (
@@ -13574,7 +13574,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlcalendar::createinstance' => 
+    'IntlCalendar::createInstance' => 
     array (
       'old' => 
       array (
@@ -13589,7 +13589,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcalendar::equals' => 
+    'IntlCalendar::equals' => 
     array (
       'old' => 
       array (
@@ -13602,7 +13602,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlcalendar::fielddifference' => 
+    'IntlCalendar::fieldDifference' => 
     array (
       'old' => 
       array (
@@ -13617,7 +13617,7 @@ return array (
         'field' => 'int',
       ),
     ),
-    'intlcalendar::fromdatetime' => 
+    'IntlCalendar::fromDateTime' => 
     array (
       'old' => 
       array (
@@ -13631,7 +13631,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcalendar::getkeywordvaluesforlocale' => 
+    'IntlCalendar::getKeywordValuesForLocale' => 
     array (
       'old' => 
       array (
@@ -13648,7 +13648,7 @@ return array (
         'onlyCommon' => 'bool',
       ),
     ),
-    'intlcalendar::getlocale' => 
+    'IntlCalendar::getLocale' => 
     array (
       'old' => 
       array (
@@ -13661,7 +13661,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'intlcalendar::isequivalentto' => 
+    'IntlCalendar::isEquivalentTo' => 
     array (
       'old' => 
       array (
@@ -13674,7 +13674,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlcalendar::isweekend' => 
+    'IntlCalendar::isWeekend' => 
     array (
       'old' => 
       array (
@@ -13687,7 +13687,7 @@ return array (
         'timestamp=' => 'float|null',
       ),
     ),
-    'intlcalendar::roll' => 
+    'IntlCalendar::roll' => 
     array (
       'old' => 
       array (
@@ -13702,7 +13702,7 @@ return array (
         'value' => 'bool|int',
       ),
     ),
-    'intlcalendar::set' => 
+    'IntlCalendar::set' => 
     array (
       'old' => 
       array (
@@ -13725,7 +13725,7 @@ return array (
         'second=' => 'int',
       ),
     ),
-    'intlcalendar::setlenient' => 
+    'IntlCalendar::setLenient' => 
     array (
       'old' => 
       array (
@@ -13738,7 +13738,7 @@ return array (
         'lenient' => 'bool',
       ),
     ),
-    'intlcalendar::setminimaldaysinfirstweek' => 
+    'IntlCalendar::setMinimalDaysInFirstWeek' => 
     array (
       'old' => 
       array (
@@ -13751,7 +13751,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'intlcalendar::setrepeatedwalltimeoption' => 
+    'IntlCalendar::setRepeatedWallTimeOption' => 
     array (
       'old' => 
       array (
@@ -13764,7 +13764,7 @@ return array (
         'option' => 'int',
       ),
     ),
-    'intlcalendar::setskippedwalltimeoption' => 
+    'IntlCalendar::setSkippedWallTimeOption' => 
     array (
       'old' => 
       array (
@@ -13777,7 +13777,7 @@ return array (
         'option' => 'int',
       ),
     ),
-    'intlcalendar::settime' => 
+    'IntlCalendar::setTime' => 
     array (
       'old' => 
       array (
@@ -13790,7 +13790,7 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'intlcalendar::settimezone' => 
+    'IntlCalendar::setTimeZone' => 
     array (
       'old' => 
       array (
@@ -13803,7 +13803,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'intlchar::charfromname' => 
+    'IntlChar::charFromName' => 
     array (
       'old' => 
       array (
@@ -13818,7 +13818,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlchar::charname' => 
+    'IntlChar::charName' => 
     array (
       'old' => 
       array (
@@ -13833,7 +13833,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlchar::digit' => 
+    'IntlChar::digit' => 
     array (
       'old' => 
       array (
@@ -13848,7 +13848,7 @@ return array (
         'base=' => 'int',
       ),
     ),
-    'intlchar::enumcharnames' => 
+    'IntlChar::enumCharNames' => 
     array (
       'old' => 
       array (
@@ -13867,7 +13867,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlchar::enumchartypes' => 
+    'IntlChar::enumCharTypes' => 
     array (
       'old' => 
       array (
@@ -13880,7 +13880,7 @@ return array (
         'callback' => 'impure-callable(int, int, int):void',
       ),
     ),
-    'intlchar::fordigit' => 
+    'IntlChar::forDigit' => 
     array (
       'old' => 
       array (
@@ -13895,7 +13895,7 @@ return array (
         'base=' => 'int',
       ),
     ),
-    'intlchar::getpropertyname' => 
+    'IntlChar::getPropertyName' => 
     array (
       'old' => 
       array (
@@ -13910,7 +13910,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlchar::getpropertyvaluename' => 
+    'IntlChar::getPropertyValueName' => 
     array (
       'old' => 
       array (
@@ -13927,7 +13927,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlcodepointbreakiterator::getlocale' => 
+    'IntlCodePointBreakIterator::getLocale' => 
     array (
       'old' => 
       array (
@@ -13940,7 +13940,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'intlcodepointbreakiterator::getpartsiterator' => 
+    'IntlCodePointBreakIterator::getPartsIterator' => 
     array (
       'old' => 
       array (
@@ -13953,7 +13953,7 @@ return array (
         'type=' => 'string',
       ),
     ),
-    'intldateformatter::__construct' => 
+    'IntlDateFormatter::__construct' => 
     array (
       'old' => 
       array (
@@ -13976,7 +13976,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'intldateformatter::create' => 
+    'IntlDateFormatter::create' => 
     array (
       'old' => 
       array (
@@ -13999,7 +13999,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'intldateformatter::format' => 
+    'IntlDateFormatter::format' => 
     array (
       'old' => 
       array (
@@ -14013,7 +14013,7 @@ return array (
         'datetime' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
       ),
     ),
-    'intldateformatter::formatobject' => 
+    'IntlDateFormatter::formatObject' => 
     array (
       'old' => 
       array (
@@ -14030,7 +14030,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intldateformatter::getcalendar' => 
+    'IntlDateFormatter::getCalendar' => 
     array (
       'old' => 
       array (
@@ -14041,7 +14041,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'intldateformatter::getcalendarobject' => 
+    'IntlDateFormatter::getCalendarObject' => 
     array (
       'old' => 
       array (
@@ -14052,7 +14052,7 @@ return array (
         0 => 'IntlCalendar|false|null',
       ),
     ),
-    'intldateformatter::getdatetype' => 
+    'IntlDateFormatter::getDateType' => 
     array (
       'old' => 
       array (
@@ -14063,7 +14063,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'intldateformatter::getlocale' => 
+    'IntlDateFormatter::getLocale' => 
     array (
       'old' => 
       array (
@@ -14075,7 +14075,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intldateformatter::getpattern' => 
+    'IntlDateFormatter::getPattern' => 
     array (
       'old' => 
       array (
@@ -14086,7 +14086,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'intldateformatter::gettimetype' => 
+    'IntlDateFormatter::getTimeType' => 
     array (
       'old' => 
       array (
@@ -14097,7 +14097,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'intldateformatter::gettimezoneid' => 
+    'IntlDateFormatter::getTimeZoneId' => 
     array (
       'old' => 
       array (
@@ -14108,7 +14108,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'intldateformatter::localtime' => 
+    'IntlDateFormatter::localtime' => 
     array (
       'old' => 
       array (
@@ -14123,7 +14123,7 @@ return array (
         '&offset=' => 'int',
       ),
     ),
-    'intldateformatter::parse' => 
+    'IntlDateFormatter::parse' => 
     array (
       'old' => 
       array (
@@ -14138,7 +14138,7 @@ return array (
         '&offset=' => 'int',
       ),
     ),
-    'intldateformatter::setcalendar' => 
+    'IntlDateFormatter::setCalendar' => 
     array (
       'old' => 
       array (
@@ -14151,7 +14151,7 @@ return array (
         'calendar' => 'IntlCalendar|int|null',
       ),
     ),
-    'intldateformatter::setlenient' => 
+    'IntlDateFormatter::setLenient' => 
     array (
       'old' => 
       array (
@@ -14164,7 +14164,7 @@ return array (
         'lenient' => 'bool',
       ),
     ),
-    'intldateformatter::settimezone' => 
+    'IntlDateFormatter::setTimeZone' => 
     array (
       'old' => 
       array (
@@ -14215,7 +14215,7 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'intlgregoriancalendar::add' => 
+    'IntlGregorianCalendar::add' => 
     array (
       'old' => 
       array (
@@ -14230,7 +14230,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'intlgregoriancalendar::after' => 
+    'IntlGregorianCalendar::after' => 
     array (
       'old' => 
       array (
@@ -14243,7 +14243,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlgregoriancalendar::before' => 
+    'IntlGregorianCalendar::before' => 
     array (
       'old' => 
       array (
@@ -14256,7 +14256,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlgregoriancalendar::createinstance' => 
+    'IntlGregorianCalendar::createInstance' => 
     array (
       'old' => 
       array (
@@ -14271,7 +14271,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlgregoriancalendar::equals' => 
+    'IntlGregorianCalendar::equals' => 
     array (
       'old' => 
       array (
@@ -14284,7 +14284,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlgregoriancalendar::fielddifference' => 
+    'IntlGregorianCalendar::fieldDifference' => 
     array (
       'old' => 
       array (
@@ -14299,7 +14299,7 @@ return array (
         'field' => 'int',
       ),
     ),
-    'intlgregoriancalendar::fromdatetime' => 
+    'IntlGregorianCalendar::fromDateTime' => 
     array (
       'old' => 
       array (
@@ -14313,7 +14313,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlgregoriancalendar::getkeywordvaluesforlocale' => 
+    'IntlGregorianCalendar::getKeywordValuesForLocale' => 
     array (
       'old' => 
       array (
@@ -14330,7 +14330,7 @@ return array (
         'onlyCommon' => 'bool',
       ),
     ),
-    'intlgregoriancalendar::getlocale' => 
+    'IntlGregorianCalendar::getLocale' => 
     array (
       'old' => 
       array (
@@ -14343,7 +14343,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'intlgregoriancalendar::isequivalentto' => 
+    'IntlGregorianCalendar::isEquivalentTo' => 
     array (
       'old' => 
       array (
@@ -14356,7 +14356,7 @@ return array (
         'other' => 'IntlCalendar',
       ),
     ),
-    'intlgregoriancalendar::isweekend' => 
+    'IntlGregorianCalendar::isWeekend' => 
     array (
       'old' => 
       array (
@@ -14369,7 +14369,7 @@ return array (
         'timestamp=' => 'float|null',
       ),
     ),
-    'intlgregoriancalendar::roll' => 
+    'IntlGregorianCalendar::roll' => 
     array (
       'old' => 
       array (
@@ -14384,7 +14384,7 @@ return array (
         'value' => 'bool|int',
       ),
     ),
-    'intlgregoriancalendar::set' => 
+    'IntlGregorianCalendar::set' => 
     array (
       'old' => 
       array (
@@ -14407,7 +14407,7 @@ return array (
         'second=' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setgregorianchange' => 
+    'IntlGregorianCalendar::setGregorianChange' => 
     array (
       'old' => 
       array (
@@ -14420,7 +14420,7 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'intlgregoriancalendar::setlenient' => 
+    'IntlGregorianCalendar::setLenient' => 
     array (
       'old' => 
       array (
@@ -14433,7 +14433,7 @@ return array (
         'lenient' => 'bool',
       ),
     ),
-    'intlgregoriancalendar::setminimaldaysinfirstweek' => 
+    'IntlGregorianCalendar::setMinimalDaysInFirstWeek' => 
     array (
       'old' => 
       array (
@@ -14446,7 +14446,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setrepeatedwalltimeoption' => 
+    'IntlGregorianCalendar::setRepeatedWallTimeOption' => 
     array (
       'old' => 
       array (
@@ -14459,7 +14459,7 @@ return array (
         'option' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setskippedwalltimeoption' => 
+    'IntlGregorianCalendar::setSkippedWallTimeOption' => 
     array (
       'old' => 
       array (
@@ -14472,7 +14472,7 @@ return array (
         'option' => 'int',
       ),
     ),
-    'intlgregoriancalendar::settime' => 
+    'IntlGregorianCalendar::setTime' => 
     array (
       'old' => 
       array (
@@ -14485,7 +14485,7 @@ return array (
         'timestamp' => 'float',
       ),
     ),
-    'intlgregoriancalendar::settimezone' => 
+    'IntlGregorianCalendar::setTimeZone' => 
     array (
       'old' => 
       array (
@@ -14498,7 +14498,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::__construct' => 
+    'IntlRuleBasedBreakIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -14513,7 +14513,7 @@ return array (
         'compiled=' => 'bool',
       ),
     ),
-    'intlrulebasedbreakiterator::getlocale' => 
+    'IntlRuleBasedBreakIterator::getLocale' => 
     array (
       'old' => 
       array (
@@ -14526,7 +14526,7 @@ return array (
         'type' => 'int',
       ),
     ),
-    'intlrulebasedbreakiterator::getpartsiterator' => 
+    'IntlRuleBasedBreakIterator::getPartsIterator' => 
     array (
       'old' => 
       array (
@@ -14539,7 +14539,7 @@ return array (
         'type=' => 'string',
       ),
     ),
-    'intltimezone::countequivalentids' => 
+    'IntlTimeZone::countEquivalentIDs' => 
     array (
       'old' => 
       array (
@@ -14552,7 +14552,7 @@ return array (
         'timezoneId' => 'string',
       ),
     ),
-    'intltimezone::createtimezone' => 
+    'IntlTimeZone::createTimeZone' => 
     array (
       'old' => 
       array (
@@ -14565,7 +14565,7 @@ return array (
         'timezoneId' => 'string',
       ),
     ),
-    'intltimezone::createtimezoneidenumeration' => 
+    'IntlTimeZone::createTimeZoneIDEnumeration' => 
     array (
       'old' => 
       array (
@@ -14582,7 +14582,7 @@ return array (
         'rawOffset=' => 'int|null',
       ),
     ),
-    'intltimezone::fromdatetimezone' => 
+    'IntlTimeZone::fromDateTimeZone' => 
     array (
       'old' => 
       array (
@@ -14595,7 +14595,7 @@ return array (
         'timezone' => 'DateTimeZone',
       ),
     ),
-    'intltimezone::getcanonicalid' => 
+    'IntlTimeZone::getCanonicalID' => 
     array (
       'old' => 
       array (
@@ -14610,7 +14610,7 @@ return array (
         '&w isSystemId=' => 'bool',
       ),
     ),
-    'intltimezone::getdisplayname' => 
+    'IntlTimeZone::getDisplayName' => 
     array (
       'old' => 
       array (
@@ -14627,7 +14627,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intltimezone::getequivalentid' => 
+    'IntlTimeZone::getEquivalentID' => 
     array (
       'old' => 
       array (
@@ -14642,7 +14642,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'intltimezone::getidforwindowsid' => 
+    'IntlTimeZone::getIDForWindowsID' => 
     array (
       'old' => 
       array (
@@ -14657,7 +14657,7 @@ return array (
         'region=' => 'null|string',
       ),
     ),
-    'intltimezone::getoffset' => 
+    'IntlTimeZone::getOffset' => 
     array (
       'old' => 
       array (
@@ -14676,7 +14676,7 @@ return array (
         '&w dstOffset' => 'int',
       ),
     ),
-    'intltimezone::getregion' => 
+    'IntlTimeZone::getRegion' => 
     array (
       'old' => 
       array (
@@ -14689,7 +14689,7 @@ return array (
         'timezoneId' => 'string',
       ),
     ),
-    'intltimezone::getwindowsid' => 
+    'IntlTimeZone::getWindowsID' => 
     array (
       'old' => 
       array (
@@ -14702,7 +14702,7 @@ return array (
         'timezoneId' => 'string',
       ),
     ),
-    'intltimezone::hassamerules' => 
+    'IntlTimeZone::hasSameRules' => 
     array (
       'old' => 
       array (
@@ -15921,7 +15921,7 @@ return array (
         'use_errors=' => 'bool|null',
       ),
     ),
-    'limititerator::__construct' => 
+    'LimitIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -15938,7 +15938,7 @@ return array (
         'limit=' => 'int',
       ),
     ),
-    'limititerator::seek' => 
+    'LimitIterator::seek' => 
     array (
       'old' => 
       array (
@@ -15964,7 +15964,7 @@ return array (
         'path' => 'string',
       ),
     ),
-    'locale::filtermatches' => 
+    'Locale::filterMatches' => 
     array (
       'old' => 
       array (
@@ -15981,7 +15981,7 @@ return array (
         'canonicalize=' => 'bool',
       ),
     ),
-    'locale::getdisplaylanguage' => 
+    'Locale::getDisplayLanguage' => 
     array (
       'old' => 
       array (
@@ -15996,7 +15996,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'locale::getdisplayname' => 
+    'Locale::getDisplayName' => 
     array (
       'old' => 
       array (
@@ -16011,7 +16011,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'locale::getdisplayregion' => 
+    'Locale::getDisplayRegion' => 
     array (
       'old' => 
       array (
@@ -16026,7 +16026,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'locale::getdisplayscript' => 
+    'Locale::getDisplayScript' => 
     array (
       'old' => 
       array (
@@ -16041,7 +16041,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'locale::getdisplayvariant' => 
+    'Locale::getDisplayVariant' => 
     array (
       'old' => 
       array (
@@ -16056,7 +16056,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'locale::lookup' => 
+    'Locale::lookup' => 
     array (
       'old' => 
       array (
@@ -17310,7 +17310,7 @@ return array (
         'binary=' => 'bool',
       ),
     ),
-    'messageformatter::format' => 
+    'MessageFormatter::format' => 
     array (
       'old' => 
       array (
@@ -17323,7 +17323,7 @@ return array (
         'values' => 'array<array-key, mixed>',
       ),
     ),
-    'messageformatter::formatmessage' => 
+    'MessageFormatter::formatMessage' => 
     array (
       'old' => 
       array (
@@ -17340,7 +17340,7 @@ return array (
         'values' => 'array<array-key, mixed>',
       ),
     ),
-    'messageformatter::parse' => 
+    'MessageFormatter::parse' => 
     array (
       'old' => 
       array (
@@ -17353,7 +17353,7 @@ return array (
         'string' => 'string',
       ),
     ),
-    'messageformatter::parsemessage' => 
+    'MessageFormatter::parseMessage' => 
     array (
       'old' => 
       array (
@@ -17782,7 +17782,7 @@ return array (
         'pattern' => 'string',
       ),
     ),
-    'multipleiterator::__construct' => 
+    'MultipleIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -17795,7 +17795,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'multipleiterator::attachiterator' => 
+    'MultipleIterator::attachIterator' => 
     array (
       'old' => 
       array (
@@ -18072,7 +18072,7 @@ return array (
         'use_xhtml=' => 'bool',
       ),
     ),
-    'normalizer::getrawdecomposition' => 
+    'Normalizer::getRawDecomposition' => 
     array (
       'old' => 
       array (
@@ -18086,7 +18086,7 @@ return array (
         'form=' => 'int',
       ),
     ),
-    'normalizer::isnormalized' => 
+    'Normalizer::isNormalized' => 
     array (
       'old' => 
       array (
@@ -18101,7 +18101,7 @@ return array (
         'form=' => 'int',
       ),
     ),
-    'normalizer::normalize' => 
+    'Normalizer::normalize' => 
     array (
       'old' => 
       array (
@@ -18179,7 +18179,7 @@ return array (
         'thousands_separator=' => 'null|string',
       ),
     ),
-    'numberformatter::__construct' => 
+    'NumberFormatter::__construct' => 
     array (
       'old' => 
       array (
@@ -18196,7 +18196,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'numberformatter::create' => 
+    'NumberFormatter::create' => 
     array (
       'old' => 
       array (
@@ -18213,7 +18213,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'numberformatter::formatcurrency' => 
+    'NumberFormatter::formatCurrency' => 
     array (
       'old' => 
       array (
@@ -18228,7 +18228,7 @@ return array (
         'currency' => 'string',
       ),
     ),
-    'numberformatter::getattribute' => 
+    'NumberFormatter::getAttribute' => 
     array (
       'old' => 
       array (
@@ -18241,7 +18241,7 @@ return array (
         'attribute' => 'int',
       ),
     ),
-    'numberformatter::getsymbol' => 
+    'NumberFormatter::getSymbol' => 
     array (
       'old' => 
       array (
@@ -18254,7 +18254,7 @@ return array (
         'symbol' => 'int',
       ),
     ),
-    'numberformatter::gettextattribute' => 
+    'NumberFormatter::getTextAttribute' => 
     array (
       'old' => 
       array (
@@ -18267,7 +18267,7 @@ return array (
         'attribute' => 'int',
       ),
     ),
-    'numberformatter::parse' => 
+    'NumberFormatter::parse' => 
     array (
       'old' => 
       array (
@@ -18284,7 +18284,7 @@ return array (
         '&offset=' => 'int',
       ),
     ),
-    'numberformatter::parsecurrency' => 
+    'NumberFormatter::parseCurrency' => 
     array (
       'old' => 
       array (
@@ -18301,7 +18301,7 @@ return array (
         '&offset=' => 'int',
       ),
     ),
-    'numberformatter::setattribute' => 
+    'NumberFormatter::setAttribute' => 
     array (
       'old' => 
       array (
@@ -18316,7 +18316,7 @@ return array (
         'value' => 'float|int',
       ),
     ),
-    'numberformatter::setsymbol' => 
+    'NumberFormatter::setSymbol' => 
     array (
       'old' => 
       array (
@@ -18331,7 +18331,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'numberformatter::settextattribute' => 
+    'NumberFormatter::setTextAttribute' => 
     array (
       'old' => 
       array (
@@ -19965,7 +19965,7 @@ return array (
         '&w resource_usage=' => 'array<array-key, mixed>',
       ),
     ),
-    'pdo::__construct' => 
+    'PDO::__construct' => 
     array (
       'old' => 
       array (
@@ -19984,7 +19984,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'pdo::exec' => 
+    'PDO::exec' => 
     array (
       'old' => 
       array (
@@ -19997,7 +19997,7 @@ return array (
         'statement' => 'string',
       ),
     ),
-    'pdo::lastinsertid' => 
+    'PDO::lastInsertId' => 
     array (
       'old' => 
       array (
@@ -20010,7 +20010,7 @@ return array (
         'name=' => 'null|string',
       ),
     ),
-    'pdo::prepare' => 
+    'PDO::prepare' => 
     array (
       'old' => 
       array (
@@ -20025,7 +20025,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'pdo::query' => 
+    'PDO::query' => 
     array (
       'old' => 
       array (
@@ -20039,7 +20039,7 @@ return array (
         '...fetchModeArgs=' => 'mixed',
       ),
     ),
-    'pdo::quote' => 
+    'PDO::quote' => 
     array (
       'old' => 
       array (
@@ -20054,7 +20054,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'pdostatement::bindcolumn' => 
+    'PDOStatement::bindColumn' => 
     array (
       'old' => 
       array (
@@ -20075,7 +20075,7 @@ return array (
         'driverOptions=' => 'mixed',
       ),
     ),
-    'pdostatement::bindparam' => 
+    'PDOStatement::bindParam' => 
     array (
       'old' => 
       array (
@@ -20096,7 +20096,7 @@ return array (
         'driverOptions=' => 'mixed',
       ),
     ),
-    'pdostatement::bindvalue' => 
+    'PDOStatement::bindValue' => 
     array (
       'old' => 
       array (
@@ -20113,7 +20113,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'pdostatement::debugdumpparams' => 
+    'PDOStatement::debugDumpParams' => 
     array (
       'old' => 
       array (
@@ -20124,7 +20124,7 @@ return array (
         0 => 'bool|null',
       ),
     ),
-    'pdostatement::errorcode' => 
+    'PDOStatement::errorCode' => 
     array (
       'old' => 
       array (
@@ -20135,7 +20135,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'pdostatement::execute' => 
+    'PDOStatement::execute' => 
     array (
       'old' => 
       array (
@@ -20148,7 +20148,7 @@ return array (
         'params=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'pdostatement::fetch' => 
+    'PDOStatement::fetch' => 
     array (
       'old' => 
       array (
@@ -20165,7 +20165,7 @@ return array (
         'cursorOffset=' => 'int',
       ),
     ),
-    'pdostatement::fetchall' => 
+    'PDOStatement::fetchAll' => 
     array (
       'old' => 
       array (
@@ -20181,7 +20181,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'pdostatement::fetchcolumn' => 
+    'PDOStatement::fetchColumn' => 
     array (
       'old' => 
       array (
@@ -20194,7 +20194,7 @@ return array (
         'column=' => 'int',
       ),
     ),
-    'pdostatement::fetchobject' => 
+    'PDOStatement::fetchObject' => 
     array (
       'old' => 
       array (
@@ -20209,7 +20209,7 @@ return array (
         'constructorArgs=' => 'array<array-key, mixed>',
       ),
     ),
-    'pdostatement::getattribute' => 
+    'PDOStatement::getAttribute' => 
     array (
       'old' => 
       array (
@@ -20222,7 +20222,7 @@ return array (
         'name' => 'int',
       ),
     ),
-    'pdostatement::setfetchmode' => 
+    'PDOStatement::setFetchMode' => 
     array (
       'old' => 
       array (
@@ -21372,7 +21372,7 @@ return array (
         'connection=' => 'null|resource',
       ),
     ),
-    'phar::addemptydir' => 
+    'Phar::addEmptyDir' => 
     array (
       'old' => 
       array (
@@ -21385,7 +21385,7 @@ return array (
         'directory' => 'string',
       ),
     ),
-    'phar::addfile' => 
+    'Phar::addFile' => 
     array (
       'old' => 
       array (
@@ -21400,7 +21400,7 @@ return array (
         'localName=' => 'null|string',
       ),
     ),
-    'phar::addfromstring' => 
+    'Phar::addFromString' => 
     array (
       'old' => 
       array (
@@ -21415,7 +21415,7 @@ return array (
         'contents' => 'string',
       ),
     ),
-    'phar::buildfromdirectory' => 
+    'Phar::buildFromDirectory' => 
     array (
       'old' => 
       array (
@@ -21430,7 +21430,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'phar::buildfromiterator' => 
+    'Phar::buildFromIterator' => 
     array (
       'old' => 
       array (
@@ -21445,7 +21445,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'phar::cancompress' => 
+    'Phar::canCompress' => 
     array (
       'old' => 
       array (
@@ -21458,7 +21458,7 @@ return array (
         'compression=' => 'int',
       ),
     ),
-    'phar::compress' => 
+    'Phar::compress' => 
     array (
       'old' => 
       array (
@@ -21473,7 +21473,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phar::compressfiles' => 
+    'Phar::compressFiles' => 
     array (
       'old' => 
       array (
@@ -21486,7 +21486,7 @@ return array (
         'compression' => 'int',
       ),
     ),
-    'phar::converttodata' => 
+    'Phar::convertToData' => 
     array (
       'old' => 
       array (
@@ -21503,7 +21503,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phar::converttoexecutable' => 
+    'Phar::convertToExecutable' => 
     array (
       'old' => 
       array (
@@ -21520,7 +21520,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phar::copy' => 
+    'Phar::copy' => 
     array (
       'old' => 
       array (
@@ -21535,7 +21535,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'phar::count' => 
+    'Phar::count' => 
     array (
       'old' => 
       array (
@@ -21547,7 +21547,7 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'phar::createdefaultstub' => 
+    'Phar::createDefaultStub' => 
     array (
       'old' => 
       array (
@@ -21562,7 +21562,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'phar::decompress' => 
+    'Phar::decompress' => 
     array (
       'old' => 
       array (
@@ -21575,7 +21575,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phar::delete' => 
+    'Phar::delete' => 
     array (
       'old' => 
       array (
@@ -21588,7 +21588,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phar::extractto' => 
+    'Phar::extractTo' => 
     array (
       'old' => 
       array (
@@ -21605,7 +21605,7 @@ return array (
         'overwrite=' => 'bool',
       ),
     ),
-    'phar::isfileformat' => 
+    'Phar::isFileFormat' => 
     array (
       'old' => 
       array (
@@ -21618,7 +21618,7 @@ return array (
         'format' => 'int',
       ),
     ),
-    'phar::mount' => 
+    'Phar::mount' => 
     array (
       'old' => 
       array (
@@ -21633,7 +21633,7 @@ return array (
         'externalPath' => 'string',
       ),
     ),
-    'phar::mungserver' => 
+    'Phar::mungServer' => 
     array (
       'old' => 
       array (
@@ -21646,7 +21646,7 @@ return array (
         'variables' => 'list<string>',
       ),
     ),
-    'phar::offsetexists' => 
+    'Phar::offsetExists' => 
     array (
       'old' => 
       array (
@@ -21659,7 +21659,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phar::offsetget' => 
+    'Phar::offsetGet' => 
     array (
       'old' => 
       array (
@@ -21672,7 +21672,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phar::offsetset' => 
+    'Phar::offsetSet' => 
     array (
       'old' => 
       array (
@@ -21687,7 +21687,7 @@ return array (
         'value' => 'resource|string',
       ),
     ),
-    'phar::offsetunset' => 
+    'Phar::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -21700,7 +21700,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phar::running' => 
+    'Phar::running' => 
     array (
       'old' => 
       array (
@@ -21713,7 +21713,7 @@ return array (
         'returnPhar=' => 'bool',
       ),
     ),
-    'phar::setdefaultstub' => 
+    'Phar::setDefaultStub' => 
     array (
       'old' => 
       array (
@@ -21728,7 +21728,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'phar::setsignaturealgorithm' => 
+    'Phar::setSignatureAlgorithm' => 
     array (
       'old' => 
       array (
@@ -21743,7 +21743,7 @@ return array (
         'privateKey=' => 'null|string',
       ),
     ),
-    'phar::setstub' => 
+    'Phar::setStub' => 
     array (
       'old' => 
       array (
@@ -21758,7 +21758,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'phar::unlinkarchive' => 
+    'Phar::unlinkArchive' => 
     array (
       'old' => 
       array (
@@ -21771,7 +21771,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'phar::webphar' => 
+    'Phar::webPhar' => 
     array (
       'old' => 
       array (
@@ -21792,7 +21792,7 @@ return array (
         'rewrite=' => 'impure-callable|null',
       ),
     ),
-    'phardata::__construct' => 
+    'PharData::__construct' => 
     array (
       'old' => 
       array (
@@ -21811,7 +21811,7 @@ return array (
         'format=' => 'int',
       ),
     ),
-    'phardata::addemptydir' => 
+    'PharData::addEmptyDir' => 
     array (
       'old' => 
       array (
@@ -21824,7 +21824,7 @@ return array (
         'directory' => 'string',
       ),
     ),
-    'phardata::addfile' => 
+    'PharData::addFile' => 
     array (
       'old' => 
       array (
@@ -21839,7 +21839,7 @@ return array (
         'localName=' => 'null|string',
       ),
     ),
-    'phardata::addfromstring' => 
+    'PharData::addFromString' => 
     array (
       'old' => 
       array (
@@ -21854,7 +21854,7 @@ return array (
         'contents' => 'string',
       ),
     ),
-    'phardata::buildfromdirectory' => 
+    'PharData::buildFromDirectory' => 
     array (
       'old' => 
       array (
@@ -21869,7 +21869,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'phardata::buildfromiterator' => 
+    'PharData::buildFromIterator' => 
     array (
       'old' => 
       array (
@@ -21884,7 +21884,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'phardata::compress' => 
+    'PharData::compress' => 
     array (
       'old' => 
       array (
@@ -21899,7 +21899,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phardata::compressfiles' => 
+    'PharData::compressFiles' => 
     array (
       'old' => 
       array (
@@ -21912,7 +21912,7 @@ return array (
         'compression' => 'int',
       ),
     ),
-    'phardata::converttodata' => 
+    'PharData::convertToData' => 
     array (
       'old' => 
       array (
@@ -21929,7 +21929,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phardata::converttoexecutable' => 
+    'PharData::convertToExecutable' => 
     array (
       'old' => 
       array (
@@ -21946,7 +21946,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phardata::copy' => 
+    'PharData::copy' => 
     array (
       'old' => 
       array (
@@ -21961,7 +21961,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'phardata::decompress' => 
+    'PharData::decompress' => 
     array (
       'old' => 
       array (
@@ -21974,7 +21974,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'phardata::delete' => 
+    'PharData::delete' => 
     array (
       'old' => 
       array (
@@ -21987,7 +21987,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phardata::extractto' => 
+    'PharData::extractTo' => 
     array (
       'old' => 
       array (
@@ -22004,7 +22004,7 @@ return array (
         'overwrite=' => 'bool',
       ),
     ),
-    'phardata::offsetexists' => 
+    'PharData::offsetExists' => 
     array (
       'old' => 
       array (
@@ -22017,7 +22017,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phardata::offsetget' => 
+    'PharData::offsetGet' => 
     array (
       'old' => 
       array (
@@ -22030,7 +22030,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phardata::offsetset' => 
+    'PharData::offsetSet' => 
     array (
       'old' => 
       array (
@@ -22045,7 +22045,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'phardata::offsetunset' => 
+    'PharData::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -22058,7 +22058,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phardata::setdefaultstub' => 
+    'PharData::setDefaultStub' => 
     array (
       'old' => 
       array (
@@ -22073,7 +22073,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'phardata::setsignaturealgorithm' => 
+    'PharData::setSignatureAlgorithm' => 
     array (
       'old' => 
       array (
@@ -22088,7 +22088,7 @@ return array (
         'privateKey=' => 'null|string',
       ),
     ),
-    'phardata::setstub' => 
+    'PharData::setStub' => 
     array (
       'old' => 
       array (
@@ -22103,7 +22103,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'pharfileinfo::compress' => 
+    'PharFileInfo::compress' => 
     array (
       'old' => 
       array (
@@ -22116,7 +22116,7 @@ return array (
         'compression' => 'int',
       ),
     ),
-    'pharfileinfo::iscompressed' => 
+    'PharFileInfo::isCompressed' => 
     array (
       'old' => 
       array (
@@ -22907,7 +22907,7 @@ return array (
         'path' => 'string',
       ),
     ),
-    'recursivearrayiterator::asort' => 
+    'RecursiveArrayIterator::asort' => 
     array (
       'old' => 
       array (
@@ -22919,7 +22919,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'recursivearrayiterator::ksort' => 
+    'RecursiveArrayIterator::ksort' => 
     array (
       'old' => 
       array (
@@ -22931,7 +22931,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'recursivearrayiterator::offsetexists' => 
+    'RecursiveArrayIterator::offsetExists' => 
     array (
       'old' => 
       array (
@@ -22944,7 +22944,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'recursivearrayiterator::offsetget' => 
+    'RecursiveArrayIterator::offsetGet' => 
     array (
       'old' => 
       array (
@@ -22957,7 +22957,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'recursivearrayiterator::offsetset' => 
+    'RecursiveArrayIterator::offsetSet' => 
     array (
       'old' => 
       array (
@@ -22972,7 +22972,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'recursivearrayiterator::offsetunset' => 
+    'RecursiveArrayIterator::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -22985,7 +22985,7 @@ return array (
         'key' => 'int|string',
       ),
     ),
-    'recursivearrayiterator::seek' => 
+    'RecursiveArrayIterator::seek' => 
     array (
       'old' => 
       array (
@@ -22998,7 +22998,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'recursivearrayiterator::uasort' => 
+    'RecursiveArrayIterator::uasort' => 
     array (
       'old' => 
       array (
@@ -23011,7 +23011,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'recursivearrayiterator::uksort' => 
+    'RecursiveArrayIterator::uksort' => 
     array (
       'old' => 
       array (
@@ -23024,7 +23024,7 @@ return array (
         'callback' => 'impure-callable(mixed, mixed):int',
       ),
     ),
-    'recursivearrayiterator::unserialize' => 
+    'RecursiveArrayIterator::unserialize' => 
     array (
       'old' => 
       array (
@@ -23037,7 +23037,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'recursivecachingiterator::offsetexists' => 
+    'RecursiveCachingIterator::offsetExists' => 
     array (
       'old' => 
       array (
@@ -23050,7 +23050,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'recursivecachingiterator::offsetget' => 
+    'RecursiveCachingIterator::offsetGet' => 
     array (
       'old' => 
       array (
@@ -23063,7 +23063,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'recursivecachingiterator::offsetset' => 
+    'RecursiveCachingIterator::offsetSet' => 
     array (
       'old' => 
       array (
@@ -23078,7 +23078,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'recursivecachingiterator::offsetunset' => 
+    'RecursiveCachingIterator::offsetUnset' => 
     array (
       'old' => 
       array (
@@ -23091,7 +23091,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'recursivedirectoryiterator::__construct' => 
+    'RecursiveDirectoryIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -23106,7 +23106,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'recursivedirectoryiterator::getfileinfo' => 
+    'RecursiveDirectoryIterator::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -23119,7 +23119,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'recursivedirectoryiterator::getpathinfo' => 
+    'RecursiveDirectoryIterator::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -23132,7 +23132,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'recursivedirectoryiterator::haschildren' => 
+    'RecursiveDirectoryIterator::hasChildren' => 
     array (
       'old' => 
       array (
@@ -23145,7 +23145,7 @@ return array (
         'allowLinks=' => 'bool',
       ),
     ),
-    'recursivedirectoryiterator::openfile' => 
+    'RecursiveDirectoryIterator::openFile' => 
     array (
       'old' => 
       array (
@@ -23162,7 +23162,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'recursivedirectoryiterator::seek' => 
+    'RecursiveDirectoryIterator::seek' => 
     array (
       'old' => 
       array (
@@ -23175,7 +23175,7 @@ return array (
         'offset' => 'int',
       ),
     ),
-    'recursivedirectoryiterator::setfileclass' => 
+    'RecursiveDirectoryIterator::setFileClass' => 
     array (
       'old' => 
       array (
@@ -23188,7 +23188,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'recursivedirectoryiterator::setflags' => 
+    'RecursiveDirectoryIterator::setFlags' => 
     array (
       'old' => 
       array (
@@ -23201,7 +23201,7 @@ return array (
         'flags' => 'int',
       ),
     ),
-    'recursivedirectoryiterator::setinfoclass' => 
+    'RecursiveDirectoryIterator::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -23214,7 +23214,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'recursiveiteratoriterator::getsubiterator' => 
+    'RecursiveIteratorIterator::getSubIterator' => 
     array (
       'old' => 
       array (
@@ -23227,7 +23227,7 @@ return array (
         'level=' => 'int|null',
       ),
     ),
-    'recursiveiteratoriterator::setmaxdepth' => 
+    'RecursiveIteratorIterator::setMaxDepth' => 
     array (
       'old' => 
       array (
@@ -23240,7 +23240,7 @@ return array (
         'maxDepth=' => 'int',
       ),
     ),
-    'recursiveregexiterator::__construct' => 
+    'RecursiveRegexIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -23261,7 +23261,7 @@ return array (
         'pregFlags=' => 'int',
       ),
     ),
-    'recursiveregexiterator::setpregflags' => 
+    'RecursiveRegexIterator::setPregFlags' => 
     array (
       'old' => 
       array (
@@ -23274,7 +23274,7 @@ return array (
         'pregFlags' => 'int',
       ),
     ),
-    'recursivetreeiterator::__construct' => 
+    'RecursiveTreeIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -23293,7 +23293,7 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'recursivetreeiterator::getsubiterator' => 
+    'RecursiveTreeIterator::getSubIterator' => 
     array (
       'old' => 
       array (
@@ -23306,7 +23306,7 @@ return array (
         'level=' => 'int|null',
       ),
     ),
-    'recursivetreeiterator::setmaxdepth' => 
+    'RecursiveTreeIterator::setMaxDepth' => 
     array (
       'old' => 
       array (
@@ -23319,7 +23319,7 @@ return array (
         'maxDepth=' => 'int',
       ),
     ),
-    'redis::_prefix' => 
+    'Redis::_prefix' => 
     array (
       'old' => 
       array (
@@ -23332,7 +23332,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redis::bitcount' => 
+    'Redis::bitcount' => 
     array (
       'old' => 
       array (
@@ -23351,7 +23351,7 @@ return array (
         'bybit=' => 'bool',
       ),
     ),
-    'redis::bitpos' => 
+    'Redis::bitpos' => 
     array (
       'old' => 
       array (
@@ -23372,7 +23372,7 @@ return array (
         'bybit=' => 'bool',
       ),
     ),
-    'redis::blpop' => 
+    'Redis::blPop' => 
     array (
       'old' => 
       array (
@@ -23389,7 +23389,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'redis::brpop' => 
+    'Redis::brPop' => 
     array (
       'old' => 
       array (
@@ -23406,7 +23406,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'redis::config' => 
+    'Redis::config' => 
     array (
       'old' => 
       array (
@@ -23423,7 +23423,7 @@ return array (
         'value=' => 'null|string',
       ),
     ),
-    'redis::connect' => 
+    'Redis::connect' => 
     array (
       'old' => 
       array (
@@ -23448,7 +23448,7 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::decr' => 
+    'Redis::decr' => 
     array (
       'old' => 
       array (
@@ -23463,7 +23463,7 @@ return array (
         'by=' => 'int',
       ),
     ),
-    'redis::expire' => 
+    'Redis::expire' => 
     array (
       'old' => 
       array (
@@ -23480,7 +23480,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'redis::expireat' => 
+    'Redis::expireAt' => 
     array (
       'old' => 
       array (
@@ -23497,7 +23497,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'redis::flushall' => 
+    'Redis::flushAll' => 
     array (
       'old' => 
       array (
@@ -23510,7 +23510,7 @@ return array (
         'sync=' => 'bool|null',
       ),
     ),
-    'redis::flushdb' => 
+    'Redis::flushDB' => 
     array (
       'old' => 
       array (
@@ -23523,7 +23523,7 @@ return array (
         'sync=' => 'bool|null',
       ),
     ),
-    'redis::geodist' => 
+    'Redis::geodist' => 
     array (
       'old' => 
       array (
@@ -23542,7 +23542,7 @@ return array (
         'unit=' => 'null|string',
       ),
     ),
-    'redis::georadius' => 
+    'Redis::georadius' => 
     array (
       'old' => 
       array (
@@ -23565,7 +23565,7 @@ return array (
         'options=' => 'array<string, mixed>',
       ),
     ),
-    'redis::getdbnum' => 
+    'Redis::getDBNum' => 
     array (
       'old' => 
       array (
@@ -23576,7 +23576,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'redis::gethost' => 
+    'Redis::getHost' => 
     array (
       'old' => 
       array (
@@ -23587,7 +23587,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'redis::getpersistentid' => 
+    'Redis::getPersistentID' => 
     array (
       'old' => 
       array (
@@ -23598,7 +23598,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'redis::getport' => 
+    'Redis::getPort' => 
     array (
       'old' => 
       array (
@@ -23609,7 +23609,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'redis::getrange' => 
+    'Redis::getRange' => 
     array (
       'old' => 
       array (
@@ -23626,7 +23626,7 @@ return array (
         'end' => 'int',
       ),
     ),
-    'redis::getreadtimeout' => 
+    'Redis::getReadTimeout' => 
     array (
       'old' => 
       array (
@@ -23637,7 +23637,7 @@ return array (
         0 => 'float',
       ),
     ),
-    'redis::hscan' => 
+    'Redis::hscan' => 
     array (
       'old' => 
       array (
@@ -23656,7 +23656,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::incr' => 
+    'Redis::incr' => 
     array (
       'old' => 
       array (
@@ -23671,7 +23671,7 @@ return array (
         'by=' => 'int',
       ),
     ),
-    'redis::linsert' => 
+    'Redis::lInsert' => 
     array (
       'old' => 
       array (
@@ -23690,7 +23690,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'redis::lpop' => 
+    'Redis::lPop' => 
     array (
       'old' => 
       array (
@@ -23705,7 +23705,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::ltrim' => 
+    'Redis::ltrim' => 
     array (
       'old' => 
       array (
@@ -23722,7 +23722,7 @@ return array (
         'end' => 'int',
       ),
     ),
-    'redis::object' => 
+    'Redis::object' => 
     array (
       'old' => 
       array (
@@ -23737,7 +23737,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redis::open' => 
+    'Redis::open' => 
     array (
       'old' => 
       array (
@@ -23762,7 +23762,7 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::pconnect' => 
+    'Redis::pconnect' => 
     array (
       'old' => 
       array (
@@ -23787,7 +23787,7 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::pexpire' => 
+    'Redis::pexpire' => 
     array (
       'old' => 
       array (
@@ -23804,7 +23804,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'redis::pexpireat' => 
+    'Redis::pexpireAt' => 
     array (
       'old' => 
       array (
@@ -23821,7 +23821,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'redis::pfadd' => 
+    'Redis::pfadd' => 
     array (
       'old' => 
       array (
@@ -23836,7 +23836,7 @@ return array (
         'elements' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::ping' => 
+    'Redis::ping' => 
     array (
       'old' => 
       array (
@@ -23849,7 +23849,7 @@ return array (
         'message=' => 'null|string',
       ),
     ),
-    'redis::popen' => 
+    'Redis::popen' => 
     array (
       'old' => 
       array (
@@ -23874,7 +23874,7 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::psubscribe' => 
+    'Redis::psubscribe' => 
     array (
       'old' => 
       array (
@@ -23889,7 +23889,7 @@ return array (
         'cb' => 'impure-callable',
       ),
     ),
-    'redis::punsubscribe' => 
+    'Redis::punsubscribe' => 
     array (
       'old' => 
       array (
@@ -23902,7 +23902,7 @@ return array (
         'patterns' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::restore' => 
+    'Redis::restore' => 
     array (
       'old' => 
       array (
@@ -23921,7 +23921,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::rpop' => 
+    'Redis::rPop' => 
     array (
       'old' => 
       array (
@@ -23936,7 +23936,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::saddarray' => 
+    'Redis::sAddArray' => 
     array (
       'old' => 
       array (
@@ -23951,7 +23951,7 @@ return array (
         'values' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::scan' => 
+    'Redis::scan' => 
     array (
       'old' => 
       array (
@@ -23970,7 +23970,7 @@ return array (
         'type=' => 'null|string',
       ),
     ),
-    'redis::setbit' => 
+    'Redis::setBit' => 
     array (
       'old' => 
       array (
@@ -23987,7 +23987,7 @@ return array (
         'value' => 'bool',
       ),
     ),
-    'redis::setrange' => 
+    'Redis::setRange' => 
     array (
       'old' => 
       array (
@@ -24004,7 +24004,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'redis::slaveof' => 
+    'Redis::slaveof' => 
     array (
       'old' => 
       array (
@@ -24019,7 +24019,7 @@ return array (
         'port=' => 'int',
       ),
     ),
-    'redis::sort' => 
+    'Redis::sort' => 
     array (
       'old' => 
       array (
@@ -24034,7 +24034,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::sortasc' => 
+    'Redis::sortAsc' => 
     array (
       'old' => 
       array (
@@ -24057,7 +24057,7 @@ return array (
         'store=' => 'null|string',
       ),
     ),
-    'redis::sortascalpha' => 
+    'Redis::sortAscAlpha' => 
     array (
       'old' => 
       array (
@@ -24080,7 +24080,7 @@ return array (
         'store=' => 'null|string',
       ),
     ),
-    'redis::sortdesc' => 
+    'Redis::sortDesc' => 
     array (
       'old' => 
       array (
@@ -24103,7 +24103,7 @@ return array (
         'store=' => 'null|string',
       ),
     ),
-    'redis::sortdescalpha' => 
+    'Redis::sortDescAlpha' => 
     array (
       'old' => 
       array (
@@ -24126,7 +24126,7 @@ return array (
         'store=' => 'null|string',
       ),
     ),
-    'redis::spop' => 
+    'Redis::sPop' => 
     array (
       'old' => 
       array (
@@ -24141,7 +24141,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::sscan' => 
+    'Redis::sscan' => 
     array (
       'old' => 
       array (
@@ -24160,7 +24160,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::subscribe' => 
+    'Redis::subscribe' => 
     array (
       'old' => 
       array (
@@ -24175,7 +24175,7 @@ return array (
         'cb' => 'impure-callable',
       ),
     ),
-    'redis::unsubscribe' => 
+    'Redis::unsubscribe' => 
     array (
       'old' => 
       array (
@@ -24188,7 +24188,7 @@ return array (
         'channels' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::watch' => 
+    'Redis::watch' => 
     array (
       'old' => 
       array (
@@ -24203,7 +24203,7 @@ return array (
         '...other_keys=' => 'string',
       ),
     ),
-    'redis::xack' => 
+    'Redis::xack' => 
     array (
       'old' => 
       array (
@@ -24220,7 +24220,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xadd' => 
+    'Redis::xadd' => 
     array (
       'old' => 
       array (
@@ -24243,7 +24243,7 @@ return array (
         'nomkstream=' => 'bool',
       ),
     ),
-    'redis::xclaim' => 
+    'Redis::xclaim' => 
     array (
       'old' => 
       array (
@@ -24266,7 +24266,7 @@ return array (
         'options' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xdel' => 
+    'Redis::xdel' => 
     array (
       'old' => 
       array (
@@ -24281,7 +24281,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::xgroup' => 
+    'Redis::xgroup' => 
     array (
       'old' => 
       array (
@@ -24304,7 +24304,7 @@ return array (
         'entries_read=' => 'int',
       ),
     ),
-    'redis::xinfo' => 
+    'Redis::xinfo' => 
     array (
       'old' => 
       array (
@@ -24323,7 +24323,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::xpending' => 
+    'Redis::xpending' => 
     array (
       'old' => 
       array (
@@ -24346,7 +24346,7 @@ return array (
         'consumer=' => 'null|string',
       ),
     ),
-    'redis::xrange' => 
+    'Redis::xrange' => 
     array (
       'old' => 
       array (
@@ -24365,7 +24365,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::xread' => 
+    'Redis::xread' => 
     array (
       'old' => 
       array (
@@ -24382,7 +24382,7 @@ return array (
         'block=' => 'int',
       ),
     ),
-    'redis::xreadgroup' => 
+    'Redis::xreadgroup' => 
     array (
       'old' => 
       array (
@@ -24403,7 +24403,7 @@ return array (
         'block=' => 'int',
       ),
     ),
-    'redis::xrevrange' => 
+    'Redis::xrevrange' => 
     array (
       'old' => 
       array (
@@ -24422,7 +24422,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::xtrim' => 
+    'Redis::xtrim' => 
     array (
       'old' => 
       array (
@@ -24443,7 +24443,7 @@ return array (
         'limit=' => 'int',
       ),
     ),
-    'redis::zinter' => 
+    'Redis::zinter' => 
     array (
       'old' => 
       array (
@@ -24460,7 +24460,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::zinterstore' => 
+    'Redis::zinterstore' => 
     array (
       'old' => 
       array (
@@ -24479,7 +24479,7 @@ return array (
         'aggregate=' => 'null|string',
       ),
     ),
-    'redis::zrange' => 
+    'Redis::zRange' => 
     array (
       'old' => 
       array (
@@ -24498,7 +24498,7 @@ return array (
         'options=' => 'bool|null',
       ),
     ),
-    'redis::zrangebylex' => 
+    'Redis::zRangeByLex' => 
     array (
       'old' => 
       array (
@@ -24519,7 +24519,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zrangebyscore' => 
+    'Redis::zRangeByScore' => 
     array (
       'old' => 
       array (
@@ -24538,7 +24538,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'redis::zremrangebyscore' => 
+    'Redis::zRemRangeByScore' => 
     array (
       'old' => 
       array (
@@ -24555,7 +24555,7 @@ return array (
         'end' => 'string',
       ),
     ),
-    'redis::zscan' => 
+    'Redis::zscan' => 
     array (
       'old' => 
       array (
@@ -24574,7 +24574,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'redis::zunion' => 
+    'Redis::zunion' => 
     array (
       'old' => 
       array (
@@ -24591,7 +24591,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'redis::zunionstore' => 
+    'Redis::zunionstore' => 
     array (
       'old' => 
       array (
@@ -24610,7 +24610,7 @@ return array (
         'aggregate=' => 'null|string',
       ),
     ),
-    'redisarray::_function' => 
+    'RedisArray::_function' => 
     array (
       'old' => 
       array (
@@ -24621,7 +24621,7 @@ return array (
         0 => 'bool|impure-callable',
       ),
     ),
-    'redisarray::_rehash' => 
+    'RedisArray::_rehash' => 
     array (
       'old' => 
       array (
@@ -24634,7 +24634,7 @@ return array (
         'fn=' => 'impure-callable|null',
       ),
     ),
-    'redisarray::_target' => 
+    'RedisArray::_target' => 
     array (
       'old' => 
       array (
@@ -24647,7 +24647,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'redisarray::exec' => 
+    'RedisArray::exec' => 
     array (
       'old' => 
       array (
@@ -24658,7 +24658,7 @@ return array (
         0 => 'array<array-key, mixed>|null',
       ),
     ),
-    'redisarray::keys' => 
+    'RedisArray::keys' => 
     array (
       'old' => 
       array (
@@ -24671,7 +24671,7 @@ return array (
         'pattern' => 'string',
       ),
     ),
-    'redisarray::multi' => 
+    'RedisArray::multi' => 
     array (
       'old' => 
       array (
@@ -24686,7 +24686,7 @@ return array (
         'mode=' => 'int|null',
       ),
     ),
-    'redisarray::ping' => 
+    'RedisArray::ping' => 
     array (
       'old' => 
       array (
@@ -24697,7 +24697,7 @@ return array (
         0 => 'array<array-key, mixed>|bool',
       ),
     ),
-    'rediscluster::__construct' => 
+    'RedisCluster::__construct' => 
     array (
       'old' => 
       array (
@@ -24722,7 +24722,7 @@ return array (
         'context=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::_prefix' => 
+    'RedisCluster::_prefix' => 
     array (
       'old' => 
       array (
@@ -24735,7 +24735,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'rediscluster::bitcount' => 
+    'RedisCluster::bitcount' => 
     array (
       'old' => 
       array (
@@ -24754,7 +24754,7 @@ return array (
         'bybit=' => 'bool',
       ),
     ),
-    'rediscluster::bitpos' => 
+    'RedisCluster::bitpos' => 
     array (
       'old' => 
       array (
@@ -24775,7 +24775,7 @@ return array (
         'bybit=' => 'bool',
       ),
     ),
-    'rediscluster::blpop' => 
+    'RedisCluster::blpop' => 
     array (
       'old' => 
       array (
@@ -24792,7 +24792,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'rediscluster::brpop' => 
+    'RedisCluster::brpop' => 
     array (
       'old' => 
       array (
@@ -24809,7 +24809,7 @@ return array (
         '...extra_args=' => 'mixed',
       ),
     ),
-    'rediscluster::client' => 
+    'RedisCluster::client' => 
     array (
       'old' => 
       array (
@@ -24826,7 +24826,7 @@ return array (
         'arg=' => 'null|string',
       ),
     ),
-    'rediscluster::decr' => 
+    'RedisCluster::decr' => 
     array (
       'old' => 
       array (
@@ -24841,7 +24841,7 @@ return array (
         'by=' => 'int',
       ),
     ),
-    'rediscluster::exec' => 
+    'RedisCluster::exec' => 
     array (
       'old' => 
       array (
@@ -24852,7 +24852,7 @@ return array (
         0 => 'array<array-key, mixed>|false',
       ),
     ),
-    'rediscluster::expire' => 
+    'RedisCluster::expire' => 
     array (
       'old' => 
       array (
@@ -24869,7 +24869,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'rediscluster::expireat' => 
+    'RedisCluster::expireat' => 
     array (
       'old' => 
       array (
@@ -24886,7 +24886,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'rediscluster::geodist' => 
+    'RedisCluster::geodist' => 
     array (
       'old' => 
       array (
@@ -24905,7 +24905,7 @@ return array (
         'unit=' => 'null|string',
       ),
     ),
-    'rediscluster::hdel' => 
+    'RedisCluster::hdel' => 
     array (
       'old' => 
       array (
@@ -24922,7 +24922,7 @@ return array (
         '...other_members=' => 'string',
       ),
     ),
-    'rediscluster::hscan' => 
+    'RedisCluster::hscan' => 
     array (
       'old' => 
       array (
@@ -24941,7 +24941,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::incr' => 
+    'RedisCluster::incr' => 
     array (
       'old' => 
       array (
@@ -24956,7 +24956,7 @@ return array (
         'by=' => 'int',
       ),
     ),
-    'rediscluster::lget' => 
+    'RedisCluster::lget' => 
     array (
       'old' => 
       array (
@@ -24971,7 +24971,7 @@ return array (
         'index' => 'int',
       ),
     ),
-    'rediscluster::linsert' => 
+    'RedisCluster::linsert' => 
     array (
       'old' => 
       array (
@@ -24990,7 +24990,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'rediscluster::lpop' => 
+    'RedisCluster::lpop' => 
     array (
       'old' => 
       array (
@@ -25005,7 +25005,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::ltrim' => 
+    'RedisCluster::ltrim' => 
     array (
       'old' => 
       array (
@@ -25022,7 +25022,7 @@ return array (
         'end' => 'int',
       ),
     ),
-    'rediscluster::msetnx' => 
+    'RedisCluster::msetnx' => 
     array (
       'old' => 
       array (
@@ -25035,7 +25035,7 @@ return array (
         'key_values' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::multi' => 
+    'RedisCluster::multi' => 
     array (
       'old' => 
       array (
@@ -25048,7 +25048,7 @@ return array (
         'value=' => 'int',
       ),
     ),
-    'rediscluster::pexpire' => 
+    'RedisCluster::pexpire' => 
     array (
       'old' => 
       array (
@@ -25065,7 +25065,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'rediscluster::pexpireat' => 
+    'RedisCluster::pexpireat' => 
     array (
       'old' => 
       array (
@@ -25082,7 +25082,7 @@ return array (
         'mode=' => 'null|string',
       ),
     ),
-    'rediscluster::ping' => 
+    'RedisCluster::ping' => 
     array (
       'old' => 
       array (
@@ -25097,7 +25097,7 @@ return array (
         'message=' => 'null|string',
       ),
     ),
-    'rediscluster::psubscribe' => 
+    'RedisCluster::psubscribe' => 
     array (
       'old' => 
       array (
@@ -25112,7 +25112,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'rediscluster::restore' => 
+    'RedisCluster::restore' => 
     array (
       'old' => 
       array (
@@ -25131,7 +25131,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::role' => 
+    'RedisCluster::role' => 
     array (
       'old' => 
       array (
@@ -25144,7 +25144,7 @@ return array (
         'key_or_address' => 'array<array-key, mixed>|string',
       ),
     ),
-    'rediscluster::rpop' => 
+    'RedisCluster::rpop' => 
     array (
       'old' => 
       array (
@@ -25159,7 +25159,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::scan' => 
+    'RedisCluster::scan' => 
     array (
       'old' => 
       array (
@@ -25178,7 +25178,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::setbit' => 
+    'RedisCluster::setbit' => 
     array (
       'old' => 
       array (
@@ -25195,7 +25195,7 @@ return array (
         'onoff' => 'bool',
       ),
     ),
-    'rediscluster::setrange' => 
+    'RedisCluster::setrange' => 
     array (
       'old' => 
       array (
@@ -25212,7 +25212,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'rediscluster::sort' => 
+    'RedisCluster::sort' => 
     array (
       'old' => 
       array (
@@ -25227,7 +25227,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::spop' => 
+    'RedisCluster::spop' => 
     array (
       'old' => 
       array (
@@ -25242,7 +25242,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::sscan' => 
+    'RedisCluster::sscan' => 
     array (
       'old' => 
       array (
@@ -25261,7 +25261,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::subscribe' => 
+    'RedisCluster::subscribe' => 
     array (
       'old' => 
       array (
@@ -25276,7 +25276,7 @@ return array (
         'cb' => 'impure-callable',
       ),
     ),
-    'rediscluster::time' => 
+    'RedisCluster::time' => 
     array (
       'old' => 
       array (
@@ -25289,7 +25289,7 @@ return array (
         'key_or_address' => 'array<array-key, mixed>|string',
       ),
     ),
-    'rediscluster::watch' => 
+    'RedisCluster::watch' => 
     array (
       'old' => 
       array (
@@ -25304,7 +25304,7 @@ return array (
         '...other_keys=' => 'string',
       ),
     ),
-    'rediscluster::xack' => 
+    'RedisCluster::xack' => 
     array (
       'old' => 
       array (
@@ -25321,7 +25321,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xadd' => 
+    'RedisCluster::xadd' => 
     array (
       'old' => 
       array (
@@ -25342,7 +25342,7 @@ return array (
         'approx=' => 'bool',
       ),
     ),
-    'rediscluster::xclaim' => 
+    'RedisCluster::xclaim' => 
     array (
       'old' => 
       array (
@@ -25365,7 +25365,7 @@ return array (
         'options' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xdel' => 
+    'RedisCluster::xdel' => 
     array (
       'old' => 
       array (
@@ -25380,7 +25380,7 @@ return array (
         'ids' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::xgroup' => 
+    'RedisCluster::xgroup' => 
     array (
       'old' => 
       array (
@@ -25403,7 +25403,7 @@ return array (
         'entries_read=' => 'int',
       ),
     ),
-    'rediscluster::xinfo' => 
+    'RedisCluster::xinfo' => 
     array (
       'old' => 
       array (
@@ -25422,7 +25422,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::xpending' => 
+    'RedisCluster::xpending' => 
     array (
       'old' => 
       array (
@@ -25445,7 +25445,7 @@ return array (
         'consumer=' => 'null|string',
       ),
     ),
-    'rediscluster::xrange' => 
+    'RedisCluster::xrange' => 
     array (
       'old' => 
       array (
@@ -25464,7 +25464,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::xread' => 
+    'RedisCluster::xread' => 
     array (
       'old' => 
       array (
@@ -25481,7 +25481,7 @@ return array (
         'block=' => 'int',
       ),
     ),
-    'rediscluster::xreadgroup' => 
+    'RedisCluster::xreadgroup' => 
     array (
       'old' => 
       array (
@@ -25502,7 +25502,7 @@ return array (
         'block=' => 'int',
       ),
     ),
-    'rediscluster::xrevrange' => 
+    'RedisCluster::xrevrange' => 
     array (
       'old' => 
       array (
@@ -25521,7 +25521,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::xtrim' => 
+    'RedisCluster::xtrim' => 
     array (
       'old' => 
       array (
@@ -25542,7 +25542,7 @@ return array (
         'limit=' => 'int',
       ),
     ),
-    'rediscluster::zinterstore' => 
+    'RedisCluster::zinterstore' => 
     array (
       'old' => 
       array (
@@ -25561,7 +25561,7 @@ return array (
         'aggregate=' => 'null|string',
       ),
     ),
-    'rediscluster::zlexcount' => 
+    'RedisCluster::zlexcount' => 
     array (
       'old' => 
       array (
@@ -25578,7 +25578,7 @@ return array (
         'max' => 'string',
       ),
     ),
-    'rediscluster::zrange' => 
+    'RedisCluster::zrange' => 
     array (
       'old' => 
       array (
@@ -25597,7 +25597,7 @@ return array (
         'options=' => 'bool|null',
       ),
     ),
-    'rediscluster::zrangebylex' => 
+    'RedisCluster::zrangebylex' => 
     array (
       'old' => 
       array (
@@ -25618,7 +25618,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::zrangebyscore' => 
+    'RedisCluster::zrangebyscore' => 
     array (
       'old' => 
       array (
@@ -25637,7 +25637,7 @@ return array (
         'options=' => 'array<array-key, mixed>',
       ),
     ),
-    'rediscluster::zremrangebylex' => 
+    'RedisCluster::zremrangebylex' => 
     array (
       'old' => 
       array (
@@ -25654,7 +25654,7 @@ return array (
         'max' => 'string',
       ),
     ),
-    'rediscluster::zremrangebyrank' => 
+    'RedisCluster::zremrangebyrank' => 
     array (
       'old' => 
       array (
@@ -25671,7 +25671,7 @@ return array (
         'max' => 'string',
       ),
     ),
-    'rediscluster::zremrangebyscore' => 
+    'RedisCluster::zremrangebyscore' => 
     array (
       'old' => 
       array (
@@ -25688,7 +25688,7 @@ return array (
         'max' => 'string',
       ),
     ),
-    'rediscluster::zrevrange' => 
+    'RedisCluster::zrevrange' => 
     array (
       'old' => 
       array (
@@ -25707,7 +25707,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::zrevrangebylex' => 
+    'RedisCluster::zrevrangebylex' => 
     array (
       'old' => 
       array (
@@ -25726,7 +25726,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::zrevrangebyscore' => 
+    'RedisCluster::zrevrangebyscore' => 
     array (
       'old' => 
       array (
@@ -25745,7 +25745,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'rediscluster::zscan' => 
+    'RedisCluster::zscan' => 
     array (
       'old' => 
       array (
@@ -25764,7 +25764,7 @@ return array (
         'count=' => 'int',
       ),
     ),
-    'rediscluster::zunionstore' => 
+    'RedisCluster::zunionstore' => 
     array (
       'old' => 
       array (
@@ -25783,7 +25783,7 @@ return array (
         'aggregate=' => 'null|string',
       ),
     ),
-    'reflectionclass::__construct' => 
+    'ReflectionClass::__construct' => 
     array (
       'old' => 
       array (
@@ -25796,7 +25796,7 @@ return array (
         'objectOrClass' => 'class-string|object',
       ),
     ),
-    'reflectionclass::getconstants' => 
+    'ReflectionClass::getConstants' => 
     array (
       'old' => 
       array (
@@ -25808,7 +25808,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionclass::getreflectionconstants' => 
+    'ReflectionClass::getReflectionConstants' => 
     array (
       'old' => 
       array (
@@ -25820,7 +25820,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionclass::newinstance' => 
+    'ReflectionClass::newInstance' => 
     array (
       'old' => 
       array (
@@ -25833,7 +25833,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'reflectionclass::newinstanceargs' => 
+    'ReflectionClass::newInstanceArgs' => 
     array (
       'old' => 
       array (
@@ -25846,7 +25846,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'reflectionclassconstant::__construct' => 
+    'ReflectionClassConstant::__construct' => 
     array (
       'old' => 
       array (
@@ -25861,7 +25861,7 @@ return array (
         'constant' => 'string',
       ),
     ),
-    'reflectionfunction::__construct' => 
+    'ReflectionFunction::__construct' => 
     array (
       'old' => 
       array (
@@ -25874,7 +25874,7 @@ return array (
         'function' => 'callable-string|impure-Closure',
       ),
     ),
-    'reflectionmethod::__construct' => 
+    'ReflectionMethod::__construct' => 
     array (
       'old' => 
       array (
@@ -25889,7 +25889,7 @@ return array (
         'method=' => 'null|string',
       ),
     ),
-    'reflectionmethod::getclosure' => 
+    'ReflectionMethod::getClosure' => 
     array (
       'old' => 
       array (
@@ -25902,7 +25902,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'reflectionmethod::invoke' => 
+    'ReflectionMethod::invoke' => 
     array (
       'old' => 
       array (
@@ -25917,7 +25917,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'reflectionmethod::setaccessible' => 
+    'ReflectionMethod::setAccessible' => 
     array (
       'old' => 
       array (
@@ -25930,7 +25930,7 @@ return array (
         'accessible' => 'bool',
       ),
     ),
-    'reflectionobject::__construct' => 
+    'ReflectionObject::__construct' => 
     array (
       'old' => 
       array (
@@ -25943,7 +25943,7 @@ return array (
         'object' => 'object',
       ),
     ),
-    'reflectionobject::getconstants' => 
+    'ReflectionObject::getConstants' => 
     array (
       'old' => 
       array (
@@ -25955,7 +25955,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionobject::getreflectionconstants' => 
+    'ReflectionObject::getReflectionConstants' => 
     array (
       'old' => 
       array (
@@ -25967,7 +25967,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'reflectionobject::newinstance' => 
+    'ReflectionObject::newInstance' => 
     array (
       'old' => 
       array (
@@ -25980,7 +25980,7 @@ return array (
         '...args=' => 'array<array-key, mixed>',
       ),
     ),
-    'reflectionobject::newinstanceargs' => 
+    'ReflectionObject::newInstanceArgs' => 
     array (
       'old' => 
       array (
@@ -25993,7 +25993,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'reflectionparameter::__construct' => 
+    'ReflectionParameter::__construct' => 
     array (
       'old' => 
       array (
@@ -26008,7 +26008,7 @@ return array (
         'param' => 'int|string',
       ),
     ),
-    'reflectionproperty::__construct' => 
+    'ReflectionProperty::__construct' => 
     array (
       'old' => 
       array (
@@ -26023,7 +26023,7 @@ return array (
         'property' => 'string',
       ),
     ),
-    'reflectionproperty::getvalue' => 
+    'ReflectionProperty::getValue' => 
     array (
       'old' => 
       array (
@@ -26036,7 +26036,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'reflectionproperty::isinitialized' => 
+    'ReflectionProperty::isInitialized' => 
     array (
       'old' => 
       array (
@@ -26049,7 +26049,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'reflectionproperty::setaccessible' => 
+    'ReflectionProperty::setAccessible' => 
     array (
       'old' => 
       array (
@@ -26062,7 +26062,7 @@ return array (
         'accessible' => 'bool',
       ),
     ),
-    'reflectionproperty::setvalue' => 
+    'ReflectionProperty::setValue' => 
     array (
       'old' => 
       array (
@@ -26077,7 +26077,7 @@ return array (
         'value=' => 'mixed',
       ),
     ),
-    'regexiterator::__construct' => 
+    'RegexIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -26098,7 +26098,7 @@ return array (
         'pregFlags=' => 'int',
       ),
     ),
-    'regexiterator::setpregflags' => 
+    'RegexIterator::setPregFlags' => 
     array (
       'old' => 
       array (
@@ -26171,7 +26171,7 @@ return array (
         '&r array' => 'array<array-key, mixed>|object',
       ),
     ),
-    'resourcebundle::__construct' => 
+    'ResourceBundle::__construct' => 
     array (
       'old' => 
       array (
@@ -26188,7 +26188,7 @@ return array (
         'fallback=' => 'bool',
       ),
     ),
-    'resourcebundle::create' => 
+    'ResourceBundle::create' => 
     array (
       'old' => 
       array (
@@ -26205,7 +26205,7 @@ return array (
         'fallback=' => 'bool',
       ),
     ),
-    'resourcebundle::getlocales' => 
+    'ResourceBundle::getLocales' => 
     array (
       'old' => 
       array (
@@ -26527,7 +26527,7 @@ return array (
         'httponly=' => 'bool|null',
       ),
     ),
-    'sessionhandler::destroy' => 
+    'SessionHandler::destroy' => 
     array (
       'old' => 
       array (
@@ -26540,7 +26540,7 @@ return array (
         'id' => 'string',
       ),
     ),
-    'sessionhandler::gc' => 
+    'SessionHandler::gc' => 
     array (
       'old' => 
       array (
@@ -26553,7 +26553,7 @@ return array (
         'max_lifetime' => 'int',
       ),
     ),
-    'sessionhandler::open' => 
+    'SessionHandler::open' => 
     array (
       'old' => 
       array (
@@ -26568,7 +26568,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'sessionhandler::read' => 
+    'SessionHandler::read' => 
     array (
       'old' => 
       array (
@@ -26581,7 +26581,7 @@ return array (
         'id' => 'string',
       ),
     ),
-    'sessionhandler::write' => 
+    'SessionHandler::write' => 
     array (
       'old' => 
       array (
@@ -26995,7 +26995,7 @@ return array (
         'is_prefix=' => 'bool',
       ),
     ),
-    'simplexmlelement::__construct' => 
+    'SimpleXMLElement::__construct' => 
     array (
       'old' => 
       array (
@@ -27016,7 +27016,7 @@ return array (
         'isPrefix=' => 'bool',
       ),
     ),
-    'simplexmlelement::addattribute' => 
+    'SimpleXMLElement::addAttribute' => 
     array (
       'old' => 
       array (
@@ -27033,7 +27033,7 @@ return array (
         'namespace=' => 'null|string',
       ),
     ),
-    'simplexmlelement::addchild' => 
+    'SimpleXMLElement::addChild' => 
     array (
       'old' => 
       array (
@@ -27050,7 +27050,7 @@ return array (
         'namespace=' => 'null|string',
       ),
     ),
-    'simplexmlelement::asxml' => 
+    'SimpleXMLElement::asXML' => 
     array (
       'old' => 
       array (
@@ -27063,7 +27063,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'simplexmlelement::attributes' => 
+    'SimpleXMLElement::attributes' => 
     array (
       'old' => 
       array (
@@ -27078,7 +27078,7 @@ return array (
         'isPrefix=' => 'bool',
       ),
     ),
-    'simplexmlelement::children' => 
+    'SimpleXMLElement::children' => 
     array (
       'old' => 
       array (
@@ -27093,7 +27093,7 @@ return array (
         'isPrefix=' => 'bool',
       ),
     ),
-    'simplexmlelement::getdocnamespaces' => 
+    'SimpleXMLElement::getDocNamespaces' => 
     array (
       'old' => 
       array (
@@ -27108,7 +27108,7 @@ return array (
         'fromRoot=' => 'bool',
       ),
     ),
-    'simplexmlelement::getnamespaces' => 
+    'SimpleXMLElement::getNamespaces' => 
     array (
       'old' => 
       array (
@@ -27121,7 +27121,7 @@ return array (
         'recursive=' => 'bool',
       ),
     ),
-    'simplexmlelement::registerxpathnamespace' => 
+    'SimpleXMLElement::registerXPathNamespace' => 
     array (
       'old' => 
       array (
@@ -27136,7 +27136,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'simplexmlelement::savexml' => 
+    'SimpleXMLElement::saveXML' => 
     array (
       'old' => 
       array (
@@ -27149,7 +27149,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'simplexmlelement::xpath' => 
+    'SimpleXMLElement::xpath' => 
     array (
       'old' => 
       array (
@@ -27216,7 +27216,7 @@ return array (
         'seconds' => 'int<0, max>',
       ),
     ),
-    'soapclient::__call' => 
+    'SoapClient::__call' => 
     array (
       'old' => 
       array (
@@ -27231,7 +27231,7 @@ return array (
         'args' => 'array<array-key, mixed>',
       ),
     ),
-    'soapclient::__dorequest' => 
+    'SoapClient::__doRequest' => 
     array (
       'old' => 
       array (
@@ -27252,7 +27252,7 @@ return array (
         'oneWay=' => 'bool',
       ),
     ),
-    'soapclient::__setcookie' => 
+    'SoapClient::__setCookie' => 
     array (
       'old' => 
       array (
@@ -27267,7 +27267,7 @@ return array (
         'value=' => 'null|string',
       ),
     ),
-    'soapclient::__setlocation' => 
+    'SoapClient::__setLocation' => 
     array (
       'old' => 
       array (
@@ -27280,7 +27280,7 @@ return array (
         'location=' => 'null|string',
       ),
     ),
-    'soapclient::__setsoapheaders' => 
+    'SoapClient::__setSoapHeaders' => 
     array (
       'old' => 
       array (
@@ -27293,7 +27293,7 @@ return array (
         'headers=' => 'mixed',
       ),
     ),
-    'soapclient::__soapcall' => 
+    'SoapClient::__soapCall' => 
     array (
       'old' => 
       array (
@@ -27314,7 +27314,7 @@ return array (
         '&w outputHeaders=' => 'array<array-key, mixed>',
       ),
     ),
-    'soapfault::__construct' => 
+    'SoapFault::__construct' => 
     array (
       'old' => 
       array (
@@ -27334,7 +27334,7 @@ return array (
         'headerFault=' => 'mixed|null',
       ),
     ),
-    'soapserver::addsoapheader' => 
+    'SoapServer::addSoapHeader' => 
     array (
       'old' => 
       array (
@@ -27347,7 +27347,7 @@ return array (
         'header' => 'SoapHeader',
       ),
     ),
-    'soapserver::handle' => 
+    'SoapServer::handle' => 
     array (
       'old' => 
       array (
@@ -27360,7 +27360,7 @@ return array (
         'request=' => 'null|string',
       ),
     ),
-    'soapserver::setclass' => 
+    'SoapServer::setClass' => 
     array (
       'old' => 
       array (
@@ -28952,7 +28952,7 @@ return array (
         'object' => 'object',
       ),
     ),
-    'spldoublylinkedlist::add' => 
+    'SplDoublyLinkedList::add' => 
     array (
       'old' => 
       array (
@@ -28967,7 +28967,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'spldoublylinkedlist::offsetset' => 
+    'SplDoublyLinkedList::offsetSet' => 
     array (
       'old' => 
       array (
@@ -28982,7 +28982,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'spldoublylinkedlist::unserialize' => 
+    'SplDoublyLinkedList::unserialize' => 
     array (
       'old' => 
       array (
@@ -28995,7 +28995,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'splfileinfo::__construct' => 
+    'SplFileInfo::__construct' => 
     array (
       'old' => 
       array (
@@ -29008,7 +29008,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'splfileinfo::getfileinfo' => 
+    'SplFileInfo::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -29021,7 +29021,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'splfileinfo::getpathinfo' => 
+    'SplFileInfo::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -29034,7 +29034,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'splfileinfo::openfile' => 
+    'SplFileInfo::openFile' => 
     array (
       'old' => 
       array (
@@ -29051,7 +29051,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'splfileinfo::setfileclass' => 
+    'SplFileInfo::setFileClass' => 
     array (
       'old' => 
       array (
@@ -29064,7 +29064,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'splfileinfo::setinfoclass' => 
+    'SplFileInfo::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -29077,7 +29077,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'splfileobject::__construct' => 
+    'SplFileObject::__construct' => 
     array (
       'old' => 
       array (
@@ -29096,7 +29096,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'splfileobject::fgetcsv' => 
+    'SplFileObject::fgetcsv' => 
     array (
       'old' => 
       array (
@@ -29113,7 +29113,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'splfileobject::fgets' => 
+    'SplFileObject::fgets' => 
     array (
       'old' => 
       array (
@@ -29124,7 +29124,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'splfileobject::flock' => 
+    'SplFileObject::flock' => 
     array (
       'old' => 
       array (
@@ -29139,7 +29139,7 @@ return array (
         '&w wouldBlock=' => 'int',
       ),
     ),
-    'splfileobject::fputcsv' => 
+    'SplFileObject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -29158,7 +29158,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'splfileobject::fseek' => 
+    'SplFileObject::fseek' => 
     array (
       'old' => 
       array (
@@ -29173,7 +29173,7 @@ return array (
         'whence=' => 'int',
       ),
     ),
-    'splfileobject::fwrite' => 
+    'SplFileObject::fwrite' => 
     array (
       'old' => 
       array (
@@ -29188,7 +29188,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'splfileobject::getcurrentline' => 
+    'SplFileObject::getCurrentLine' => 
     array (
       'old' => 
       array (
@@ -29199,7 +29199,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'splfileobject::getfileinfo' => 
+    'SplFileObject::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -29212,7 +29212,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'splfileobject::getpathinfo' => 
+    'SplFileObject::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -29225,7 +29225,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'splfileobject::openfile' => 
+    'SplFileObject::openFile' => 
     array (
       'old' => 
       array (
@@ -29242,7 +29242,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'splfileobject::seek' => 
+    'SplFileObject::seek' => 
     array (
       'old' => 
       array (
@@ -29255,7 +29255,7 @@ return array (
         'line' => 'int',
       ),
     ),
-    'splfileobject::setcsvcontrol' => 
+    'SplFileObject::setCsvControl' => 
     array (
       'old' => 
       array (
@@ -29272,7 +29272,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'splfileobject::setfileclass' => 
+    'SplFileObject::setFileClass' => 
     array (
       'old' => 
       array (
@@ -29285,7 +29285,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'splfileobject::setinfoclass' => 
+    'SplFileObject::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -29298,7 +29298,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'splfileobject::setmaxlinelen' => 
+    'SplFileObject::setMaxLineLen' => 
     array (
       'old' => 
       array (
@@ -29311,7 +29311,7 @@ return array (
         'maxLength' => 'int',
       ),
     ),
-    'splfixedarray::fromarray' => 
+    'SplFixedArray::fromArray' => 
     array (
       'old' => 
       array (
@@ -29326,7 +29326,7 @@ return array (
         'preserveKeys=' => 'bool',
       ),
     ),
-    'splfixedarray::offsetset' => 
+    'SplFixedArray::offsetSet' => 
     array (
       'old' => 
       array (
@@ -29341,7 +29341,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'splfixedarray::setsize' => 
+    'SplFixedArray::setSize' => 
     array (
       'old' => 
       array (
@@ -29354,7 +29354,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'splheap::compare' => 
+    'SplHeap::compare' => 
     array (
       'old' => 
       array (
@@ -29367,7 +29367,7 @@ return array (
         'value2' => 'mixed',
       ),
     ),
-    'splobjectstorage::addall' => 
+    'SplObjectStorage::addAll' => 
     array (
       'old' => 
       array (
@@ -29380,7 +29380,7 @@ return array (
         'storage' => 'SplObjectStorage',
       ),
     ),
-    'splobjectstorage::attach' => 
+    'SplObjectStorage::attach' => 
     array (
       'old' => 
       array (
@@ -29395,7 +29395,7 @@ return array (
         'info=' => 'mixed',
       ),
     ),
-    'splobjectstorage::count' => 
+    'SplObjectStorage::count' => 
     array (
       'old' => 
       array (
@@ -29407,7 +29407,7 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'splobjectstorage::offsetset' => 
+    'SplObjectStorage::offsetSet' => 
     array (
       'old' => 
       array (
@@ -29422,7 +29422,7 @@ return array (
         'info=' => 'mixed',
       ),
     ),
-    'splobjectstorage::removeall' => 
+    'SplObjectStorage::removeAll' => 
     array (
       'old' => 
       array (
@@ -29435,7 +29435,7 @@ return array (
         'storage' => 'SplObjectStorage',
       ),
     ),
-    'splobjectstorage::removeallexcept' => 
+    'SplObjectStorage::removeAllExcept' => 
     array (
       'old' => 
       array (
@@ -29448,7 +29448,7 @@ return array (
         'storage' => 'SplObjectStorage',
       ),
     ),
-    'splobjectstorage::unserialize' => 
+    'SplObjectStorage::unserialize' => 
     array (
       'old' => 
       array (
@@ -29461,7 +29461,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'splpriorityqueue::compare' => 
+    'SplPriorityQueue::compare' => 
     array (
       'old' => 
       array (
@@ -29476,7 +29476,7 @@ return array (
         'priority2' => 'mixed',
       ),
     ),
-    'splqueue::offsetset' => 
+    'SplQueue::offsetSet' => 
     array (
       'old' => 
       array (
@@ -29491,7 +29491,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'splqueue::unserialize' => 
+    'SplQueue::unserialize' => 
     array (
       'old' => 
       array (
@@ -29504,7 +29504,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'splstack::add' => 
+    'SplStack::add' => 
     array (
       'old' => 
       array (
@@ -29519,7 +29519,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'splstack::offsetset' => 
+    'SplStack::offsetSet' => 
     array (
       'old' => 
       array (
@@ -29534,7 +29534,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'splstack::unserialize' => 
+    'SplStack::unserialize' => 
     array (
       'old' => 
       array (
@@ -29547,7 +29547,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'spltempfileobject::__construct' => 
+    'SplTempFileObject::__construct' => 
     array (
       'old' => 
       array (
@@ -29560,7 +29560,7 @@ return array (
         'maxMemory=' => 'int',
       ),
     ),
-    'spltempfileobject::fgetcsv' => 
+    'SplTempFileObject::fgetcsv' => 
     array (
       'old' => 
       array (
@@ -29577,7 +29577,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'spltempfileobject::flock' => 
+    'SplTempFileObject::flock' => 
     array (
       'old' => 
       array (
@@ -29592,7 +29592,7 @@ return array (
         '&w wouldBlock=' => 'int',
       ),
     ),
-    'spltempfileobject::fputcsv' => 
+    'SplTempFileObject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -29611,7 +29611,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'spltempfileobject::fseek' => 
+    'SplTempFileObject::fseek' => 
     array (
       'old' => 
       array (
@@ -29626,7 +29626,7 @@ return array (
         'whence=' => 'int',
       ),
     ),
-    'spltempfileobject::fwrite' => 
+    'SplTempFileObject::fwrite' => 
     array (
       'old' => 
       array (
@@ -29641,7 +29641,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'spltempfileobject::getfileinfo' => 
+    'SplTempFileObject::getFileInfo' => 
     array (
       'old' => 
       array (
@@ -29654,7 +29654,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'spltempfileobject::getpathinfo' => 
+    'SplTempFileObject::getPathInfo' => 
     array (
       'old' => 
       array (
@@ -29667,7 +29667,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'spltempfileobject::openfile' => 
+    'SplTempFileObject::openFile' => 
     array (
       'old' => 
       array (
@@ -29684,7 +29684,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'spltempfileobject::seek' => 
+    'SplTempFileObject::seek' => 
     array (
       'old' => 
       array (
@@ -29697,7 +29697,7 @@ return array (
         'line' => 'int',
       ),
     ),
-    'spltempfileobject::setcsvcontrol' => 
+    'SplTempFileObject::setCsvControl' => 
     array (
       'old' => 
       array (
@@ -29714,7 +29714,7 @@ return array (
         'escape=' => 'string',
       ),
     ),
-    'spltempfileobject::setfileclass' => 
+    'SplTempFileObject::setFileClass' => 
     array (
       'old' => 
       array (
@@ -29727,7 +29727,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'spltempfileobject::setinfoclass' => 
+    'SplTempFileObject::setInfoClass' => 
     array (
       'old' => 
       array (
@@ -29740,7 +29740,7 @@ return array (
         'class=' => 'class-string',
       ),
     ),
-    'spltempfileobject::setmaxlinelen' => 
+    'SplTempFileObject::setMaxLineLen' => 
     array (
       'old' => 
       array (
@@ -29753,7 +29753,7 @@ return array (
         'maxLength' => 'int',
       ),
     ),
-    'spoofchecker::areconfusable' => 
+    'Spoofchecker::areConfusable' => 
     array (
       'old' => 
       array (
@@ -29770,7 +29770,7 @@ return array (
         '&w errorCode=' => 'int',
       ),
     ),
-    'spoofchecker::issuspicious' => 
+    'Spoofchecker::isSuspicious' => 
     array (
       'old' => 
       array (
@@ -29785,7 +29785,7 @@ return array (
         '&w errorCode=' => 'int',
       ),
     ),
-    'spoofchecker::setallowedlocales' => 
+    'Spoofchecker::setAllowedLocales' => 
     array (
       'old' => 
       array (
@@ -29813,7 +29813,7 @@ return array (
         '...values=' => 'float|int|string',
       ),
     ),
-    'sqlite3::__construct' => 
+    'SQLite3::__construct' => 
     array (
       'old' => 
       array (
@@ -29830,7 +29830,7 @@ return array (
         'encryptionKey=' => 'string',
       ),
     ),
-    'sqlite3::busytimeout' => 
+    'SQLite3::busyTimeout' => 
     array (
       'old' => 
       array (
@@ -29843,7 +29843,7 @@ return array (
         'milliseconds' => 'int',
       ),
     ),
-    'sqlite3::createaggregate' => 
+    'SQLite3::createAggregate' => 
     array (
       'old' => 
       array (
@@ -29862,7 +29862,7 @@ return array (
         'argCount=' => 'int',
       ),
     ),
-    'sqlite3::createfunction' => 
+    'SQLite3::createFunction' => 
     array (
       'old' => 
       array (
@@ -29881,7 +29881,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'sqlite3::enableexceptions' => 
+    'SQLite3::enableExceptions' => 
     array (
       'old' => 
       array (
@@ -29894,7 +29894,7 @@ return array (
         'enable=' => 'bool',
       ),
     ),
-    'sqlite3::escapestring' => 
+    'SQLite3::escapeString' => 
     array (
       'old' => 
       array (
@@ -29907,7 +29907,7 @@ return array (
         'string' => 'string',
       ),
     ),
-    'sqlite3::loadextension' => 
+    'SQLite3::loadExtension' => 
     array (
       'old' => 
       array (
@@ -29920,7 +29920,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'sqlite3::open' => 
+    'SQLite3::open' => 
     array (
       'old' => 
       array (
@@ -29937,7 +29937,7 @@ return array (
         'encryptionKey=' => 'string',
       ),
     ),
-    'sqlite3::openblob' => 
+    'SQLite3::openBlob' => 
     array (
       'old' => 
       array (
@@ -29958,7 +29958,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'sqlite3::querysingle' => 
+    'SQLite3::querySingle' => 
     array (
       'old' => 
       array (
@@ -29973,7 +29973,7 @@ return array (
         'entireRow=' => 'bool',
       ),
     ),
-    'sqlite3result::columnname' => 
+    'SQLite3Result::columnName' => 
     array (
       'old' => 
       array (
@@ -29986,7 +29986,7 @@ return array (
         'column' => 'int',
       ),
     ),
-    'sqlite3result::columntype' => 
+    'SQLite3Result::columnType' => 
     array (
       'old' => 
       array (
@@ -29999,21 +29999,21 @@ return array (
         'column' => 'int',
       ),
     ),
-    'sqlite3stmt::__construct' => 
+    'SQLite3Stmt::__construct' => 
     array (
       'old' => 
       array (
         0 => 'void',
-        'sqlite3' => 'sqlite3',
+        'sqlite3' => 'SQLite3',
       ),
       'new' => 
       array (
         0 => 'void',
-        'sqlite3' => 'sqlite3',
+        'sqlite3' => 'SQLite3',
         'query' => 'string',
       ),
     ),
-    'sqlite3stmt::bindparam' => 
+    'SQLite3Stmt::bindParam' => 
     array (
       'old' => 
       array (
@@ -30030,7 +30030,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'sqlite3stmt::bindvalue' => 
+    'SQLite3Stmt::bindValue' => 
     array (
       'old' => 
       array (
@@ -30047,7 +30047,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'sqlite3stmt::getsql' => 
+    'SQLite3Stmt::getSQL' => 
     array (
       'old' => 
       array (
@@ -31255,7 +31255,7 @@ return array (
         'length=' => 'array<array-key, int>|int|null',
       ),
     ),
-    'swoole\\atomic::cmpset' => 
+    'Swoole\\Atomic::cmpset' => 
     array (
       'old' => 
       array (
@@ -31270,7 +31270,7 @@ return array (
         'new_value' => 'int',
       ),
     ),
-    'swoole\\atomic::set' => 
+    'Swoole\\Atomic::set' => 
     array (
       'old' => 
       array (
@@ -31283,7 +31283,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'swoole\\client::connect' => 
+    'Swoole\\Client::connect' => 
     array (
       'old' => 
       array (
@@ -31302,7 +31302,7 @@ return array (
         'sock_flag=' => 'int',
       ),
     ),
-    'swoole\\client::recv' => 
+    'Swoole\\Client::recv' => 
     array (
       'old' => 
       array (
@@ -31317,7 +31317,7 @@ return array (
         'flag=' => 'int',
       ),
     ),
-    'swoole\\client::send' => 
+    'Swoole\\Client::send' => 
     array (
       'old' => 
       array (
@@ -31332,7 +31332,7 @@ return array (
         'flag=' => 'int',
       ),
     ),
-    'swoole\\client::sendfile' => 
+    'Swoole\\Client::sendfile' => 
     array (
       'old' => 
       array (
@@ -31349,7 +31349,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'swoole\\client::set' => 
+    'Swoole\\Client::set' => 
     array (
       'old' => 
       array (
@@ -31362,7 +31362,7 @@ return array (
         'settings' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\coroutine::create' => 
+    'Swoole\\Coroutine::create' => 
     array (
       'old' => 
       array (
@@ -31377,7 +31377,7 @@ return array (
         '...param=' => 'mixed',
       ),
     ),
-    'swoole\\coroutine::getuid' => 
+    'Swoole\\Coroutine::getuid' => 
     array (
       'old' => 
       array (
@@ -31388,7 +31388,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'swoole\\coroutine::resume' => 
+    'Swoole\\Coroutine::resume' => 
     array (
       'old' => 
       array (
@@ -31401,7 +31401,7 @@ return array (
         'cid' => 'int',
       ),
     ),
-    'swoole\\coroutine::suspend' => 
+    'Swoole\\Coroutine::suspend' => 
     array (
       'old' => 
       array (
@@ -31412,7 +31412,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\coroutine\\client::close' => 
+    'Swoole\\Coroutine\\Client::close' => 
     array (
       'old' => 
       array (
@@ -31423,7 +31423,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\coroutine\\client::connect' => 
+    'Swoole\\Coroutine\\Client::connect' => 
     array (
       'old' => 
       array (
@@ -31442,7 +31442,7 @@ return array (
         'sock_flag=' => 'int',
       ),
     ),
-    'swoole\\coroutine\\client::getpeername' => 
+    'Swoole\\Coroutine\\Client::getpeername' => 
     array (
       'old' => 
       array (
@@ -31453,7 +31453,7 @@ return array (
         0 => 'array<array-key, mixed>|false',
       ),
     ),
-    'swoole\\coroutine\\client::getsockname' => 
+    'Swoole\\Coroutine\\Client::getsockname' => 
     array (
       'old' => 
       array (
@@ -31464,7 +31464,7 @@ return array (
         0 => 'array<array-key, mixed>|false',
       ),
     ),
-    'swoole\\coroutine\\client::isconnected' => 
+    'Swoole\\Coroutine\\Client::isConnected' => 
     array (
       'old' => 
       array (
@@ -31475,7 +31475,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\coroutine\\client::recv' => 
+    'Swoole\\Coroutine\\Client::recv' => 
     array (
       'old' => 
       array (
@@ -31488,7 +31488,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'swoole\\coroutine\\client::send' => 
+    'Swoole\\Coroutine\\Client::send' => 
     array (
       'old' => 
       array (
@@ -31502,7 +31502,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'swoole\\coroutine\\client::sendfile' => 
+    'Swoole\\Coroutine\\Client::sendfile' => 
     array (
       'old' => 
       array (
@@ -31519,7 +31519,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'swoole\\coroutine\\client::sendto' => 
+    'Swoole\\Coroutine\\Client::sendto' => 
     array (
       'old' => 
       array (
@@ -31536,7 +31536,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'swoole\\coroutine\\client::set' => 
+    'Swoole\\Coroutine\\Client::set' => 
     array (
       'old' => 
       array (
@@ -31549,7 +31549,7 @@ return array (
         'settings' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\coroutine\\http\\client::addfile' => 
+    'Swoole\\Coroutine\\Http\\Client::addFile' => 
     array (
       'old' => 
       array (
@@ -31572,7 +31572,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'swoole\\coroutine\\http\\client::close' => 
+    'Swoole\\Coroutine\\Http\\Client::close' => 
     array (
       'old' => 
       array (
@@ -31583,20 +31583,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\coroutine\\http\\client::execute' => 
-    array (
-      'old' => 
-      array (
-        0 => 'ReturnType',
-        'path' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'path' => 'string',
-      ),
-    ),
-    'swoole\\coroutine\\http\\client::get' => 
+    'Swoole\\Coroutine\\Http\\Client::execute' => 
     array (
       'old' => 
       array (
@@ -31609,7 +31596,20 @@ return array (
         'path' => 'string',
       ),
     ),
-    'swoole\\coroutine\\http\\client::getdefer' => 
+    'Swoole\\Coroutine\\Http\\Client::get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'path' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'path' => 'string',
+      ),
+    ),
+    'Swoole\\Coroutine\\Http\\Client::getDefer' => 
     array (
       'old' => 
       array (
@@ -31620,7 +31620,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\coroutine\\http\\client::post' => 
+    'Swoole\\Coroutine\\Http\\Client::post' => 
     array (
       'old' => 
       array (
@@ -31635,7 +31635,7 @@ return array (
         'data' => 'mixed',
       ),
     ),
-    'swoole\\coroutine\\http\\client::recv' => 
+    'Swoole\\Coroutine\\Http\\Client::recv' => 
     array (
       'old' => 
       array (
@@ -31648,7 +31648,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'swoole\\coroutine\\http\\client::set' => 
+    'Swoole\\Coroutine\\Http\\Client::set' => 
     array (
       'old' => 
       array (
@@ -31661,7 +31661,7 @@ return array (
         'settings' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\coroutine\\http\\client::setcookies' => 
+    'Swoole\\Coroutine\\Http\\Client::setCookies' => 
     array (
       'old' => 
       array (
@@ -31674,7 +31674,7 @@ return array (
         'cookies' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\coroutine\\http\\client::setdata' => 
+    'Swoole\\Coroutine\\Http\\Client::setData' => 
     array (
       'old' => 
       array (
@@ -31687,7 +31687,7 @@ return array (
         'data' => 'array<array-key, mixed>|string',
       ),
     ),
-    'swoole\\coroutine\\http\\client::setdefer' => 
+    'Swoole\\Coroutine\\Http\\Client::setDefer' => 
     array (
       'old' => 
       array (
@@ -31700,7 +31700,7 @@ return array (
         'defer=' => 'bool',
       ),
     ),
-    'swoole\\coroutine\\http\\client::setheaders' => 
+    'Swoole\\Coroutine\\Http\\Client::setHeaders' => 
     array (
       'old' => 
       array (
@@ -31713,7 +31713,7 @@ return array (
         'headers' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\coroutine\\http\\client::setmethod' => 
+    'Swoole\\Coroutine\\Http\\Client::setMethod' => 
     array (
       'old' => 
       array (
@@ -31726,7 +31726,7 @@ return array (
         'method' => 'string',
       ),
     ),
-    'swoole\\event::add' => 
+    'Swoole\\Event::add' => 
     array (
       'old' => 
       array (
@@ -31745,7 +31745,7 @@ return array (
         'events=' => 'int',
       ),
     ),
-    'swoole\\event::defer' => 
+    'Swoole\\Event::defer' => 
     array (
       'old' => 
       array (
@@ -31758,7 +31758,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\event::set' => 
+    'Swoole\\Event::set' => 
     array (
       'old' => 
       array (
@@ -31777,7 +31777,7 @@ return array (
         'events=' => 'int',
       ),
     ),
-    'swoole\\event::write' => 
+    'Swoole\\Event::write' => 
     array (
       'old' => 
       array (
@@ -31792,7 +31792,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'swoole\\http\\response::cookie' => 
+    'Swoole\\Http\\Response::cookie' => 
     array (
       'old' => 
       array (
@@ -31821,7 +31821,7 @@ return array (
         'priority=' => 'string',
       ),
     ),
-    'swoole\\http\\response::end' => 
+    'Swoole\\Http\\Response::end' => 
     array (
       'old' => 
       array (
@@ -31834,7 +31834,7 @@ return array (
         'content=' => 'null|string',
       ),
     ),
-    'swoole\\http\\response::header' => 
+    'Swoole\\Http\\Response::header' => 
     array (
       'old' => 
       array (
@@ -31851,7 +31851,7 @@ return array (
         'format=' => 'bool',
       ),
     ),
-    'swoole\\http\\response::initheader' => 
+    'Swoole\\Http\\Response::initHeader' => 
     array (
       'old' => 
       array (
@@ -31862,7 +31862,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\http\\response::rawcookie' => 
+    'Swoole\\Http\\Response::rawcookie' => 
     array (
       'old' => 
       array (
@@ -31891,7 +31891,7 @@ return array (
         'priority=' => 'string',
       ),
     ),
-    'swoole\\http\\response::sendfile' => 
+    'Swoole\\Http\\Response::sendfile' => 
     array (
       'old' => 
       array (
@@ -31908,7 +31908,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'swoole\\http\\response::status' => 
+    'Swoole\\Http\\Response::status' => 
     array (
       'old' => 
       array (
@@ -31923,7 +31923,7 @@ return array (
         'reason=' => 'string',
       ),
     ),
-    'swoole\\http\\response::write' => 
+    'Swoole\\Http\\Response::write' => 
     array (
       'old' => 
       array (
@@ -31936,7 +31936,7 @@ return array (
         'content' => 'string',
       ),
     ),
-    'swoole\\http\\server::on' => 
+    'Swoole\\Http\\Server::on' => 
     array (
       'old' => 
       array (
@@ -31951,7 +31951,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\http\\server::start' => 
+    'Swoole\\Http\\Server::start' => 
     array (
       'old' => 
       array (
@@ -31962,7 +31962,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\lock::lock' => 
+    'Swoole\\Lock::lock' => 
     array (
       'old' => 
       array (
@@ -31973,7 +31973,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\lock::lock_read' => 
+    'Swoole\\Lock::lock_read' => 
     array (
       'old' => 
       array (
@@ -31984,7 +31984,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\lock::trylock' => 
+    'Swoole\\Lock::trylock' => 
     array (
       'old' => 
       array (
@@ -31995,7 +31995,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\lock::trylock_read' => 
+    'Swoole\\Lock::trylock_read' => 
     array (
       'old' => 
       array (
@@ -32006,7 +32006,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\lock::unlock' => 
+    'Swoole\\Lock::unlock' => 
     array (
       'old' => 
       array (
@@ -32017,7 +32017,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\process::alarm' => 
+    'Swoole\\Process::alarm' => 
     array (
       'old' => 
       array (
@@ -32032,7 +32032,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'swoole\\process::close' => 
+    'Swoole\\Process::close' => 
     array (
       'old' => 
       array (
@@ -32044,7 +32044,7 @@ return array (
         'which=' => 'int',
       ),
     ),
-    'swoole\\process::daemon' => 
+    'Swoole\\Process::daemon' => 
     array (
       'old' => 
       array (
@@ -32061,7 +32061,7 @@ return array (
         'pipes=' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\process::exec' => 
+    'Swoole\\Process::exec' => 
     array (
       'old' => 
       array (
@@ -32076,7 +32076,7 @@ return array (
         'args' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\process::exit' => 
+    'Swoole\\Process::exit' => 
     array (
       'old' => 
       array (
@@ -32089,7 +32089,7 @@ return array (
         'exit_code=' => 'int',
       ),
     ),
-    'swoole\\process::freequeue' => 
+    'Swoole\\Process::freeQueue' => 
     array (
       'old' => 
       array (
@@ -32100,7 +32100,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\process::kill' => 
+    'Swoole\\Process::kill' => 
     array (
       'old' => 
       array (
@@ -32115,7 +32115,7 @@ return array (
         'signal_no=' => 'int',
       ),
     ),
-    'swoole\\process::name' => 
+    'Swoole\\Process::name' => 
     array (
       'old' => 
       array (
@@ -32128,7 +32128,7 @@ return array (
         'process_name' => 'string',
       ),
     ),
-    'swoole\\process::pop' => 
+    'Swoole\\Process::pop' => 
     array (
       'old' => 
       array (
@@ -32141,7 +32141,7 @@ return array (
         'size=' => 'int',
       ),
     ),
-    'swoole\\process::signal' => 
+    'Swoole\\Process::signal' => 
     array (
       'old' => 
       array (
@@ -32156,7 +32156,7 @@ return array (
         'callback=' => 'impure-callable|null',
       ),
     ),
-    'swoole\\process::start' => 
+    'Swoole\\Process::start' => 
     array (
       'old' => 
       array (
@@ -32167,7 +32167,7 @@ return array (
         0 => 'bool|int',
       ),
     ),
-    'swoole\\process::usequeue' => 
+    'Swoole\\Process::useQueue' => 
     array (
       'old' => 
       array (
@@ -32184,7 +32184,7 @@ return array (
         'capacity=' => 'int',
       ),
     ),
-    'swoole\\redis\\server::format' => 
+    'Swoole\\Redis\\Server::format' => 
     array (
       'old' => 
       array (
@@ -32199,7 +32199,7 @@ return array (
         'value=' => 'string',
       ),
     ),
-    'swoole\\redis\\server::sethandler' => 
+    'Swoole\\Redis\\Server::setHandler' => 
     array (
       'old' => 
       array (
@@ -32214,7 +32214,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\redis\\server::start' => 
+    'Swoole\\Redis\\Server::start' => 
     array (
       'old' => 
       array (
@@ -32225,7 +32225,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\server::addlistener' => 
+    'Swoole\\Server::addlistener' => 
     array (
       'old' => 
       array (
@@ -32242,7 +32242,7 @@ return array (
         'sock_type' => 'int',
       ),
     ),
-    'swoole\\server::addprocess' => 
+    'Swoole\\Server::addProcess' => 
     array (
       'old' => 
       array (
@@ -32255,7 +32255,7 @@ return array (
         'process' => 'Swoole\\Process',
       ),
     ),
-    'swoole\\server::connection_info' => 
+    'Swoole\\Server::connection_info' => 
     array (
       'old' => 
       array (
@@ -32271,7 +32271,7 @@ return array (
         'ignoreError=' => 'bool',
       ),
     ),
-    'swoole\\server::connection_list' => 
+    'Swoole\\Server::connection_list' => 
     array (
       'old' => 
       array (
@@ -32286,7 +32286,7 @@ return array (
         'find_count=' => 'int',
       ),
     ),
-    'swoole\\server::finish' => 
+    'Swoole\\Server::finish' => 
     array (
       'old' => 
       array (
@@ -32299,7 +32299,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'swoole\\server::getclientinfo' => 
+    'Swoole\\Server::getClientInfo' => 
     array (
       'old' => 
       array (
@@ -32315,7 +32315,7 @@ return array (
         'ignoreError=' => 'bool',
       ),
     ),
-    'swoole\\server::getclientlist' => 
+    'Swoole\\Server::getClientList' => 
     array (
       'old' => 
       array (
@@ -32330,7 +32330,7 @@ return array (
         'find_count=' => 'int',
       ),
     ),
-    'swoole\\server::heartbeat' => 
+    'Swoole\\Server::heartbeat' => 
     array (
       'old' => 
       array (
@@ -32343,7 +32343,7 @@ return array (
         'ifCloseConnection=' => 'bool',
       ),
     ),
-    'swoole\\server::listen' => 
+    'Swoole\\Server::listen' => 
     array (
       'old' => 
       array (
@@ -32360,7 +32360,7 @@ return array (
         'sock_type' => 'int',
       ),
     ),
-    'swoole\\server::on' => 
+    'Swoole\\Server::on' => 
     array (
       'old' => 
       array (
@@ -32375,7 +32375,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\server::pause' => 
+    'Swoole\\Server::pause' => 
     array (
       'old' => 
       array (
@@ -32388,7 +32388,7 @@ return array (
         'fd' => 'int',
       ),
     ),
-    'swoole\\server::protect' => 
+    'Swoole\\Server::protect' => 
     array (
       'old' => 
       array (
@@ -32403,7 +32403,7 @@ return array (
         'is_protected=' => 'bool',
       ),
     ),
-    'swoole\\server::reload' => 
+    'Swoole\\Server::reload' => 
     array (
       'old' => 
       array (
@@ -32415,7 +32415,7 @@ return array (
         'only_reload_taskworker=' => 'bool',
       ),
     ),
-    'swoole\\server::resume' => 
+    'Swoole\\Server::resume' => 
     array (
       'old' => 
       array (
@@ -32428,7 +32428,7 @@ return array (
         'fd' => 'int',
       ),
     ),
-    'swoole\\server::send' => 
+    'Swoole\\Server::send' => 
     array (
       'old' => 
       array (
@@ -32445,7 +32445,7 @@ return array (
         'serverSocket=' => 'int',
       ),
     ),
-    'swoole\\server::sendfile' => 
+    'Swoole\\Server::sendfile' => 
     array (
       'old' => 
       array (
@@ -32464,7 +32464,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'swoole\\server::sendmessage' => 
+    'Swoole\\Server::sendMessage' => 
     array (
       'old' => 
       array (
@@ -32479,7 +32479,7 @@ return array (
         'dst_worker_id' => 'int',
       ),
     ),
-    'swoole\\server::sendto' => 
+    'Swoole\\Server::sendto' => 
     array (
       'old' => 
       array (
@@ -32498,7 +32498,7 @@ return array (
         'server_socket=' => 'int',
       ),
     ),
-    'swoole\\server::set' => 
+    'Swoole\\Server::set' => 
     array (
       'old' => 
       array (
@@ -32511,7 +32511,7 @@ return array (
         'settings' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\server::shutdown' => 
+    'Swoole\\Server::shutdown' => 
     array (
       'old' => 
       array (
@@ -32522,7 +32522,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\server::start' => 
+    'Swoole\\Server::start' => 
     array (
       'old' => 
       array (
@@ -32533,7 +32533,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\server::stop' => 
+    'Swoole\\Server::stop' => 
     array (
       'old' => 
       array (
@@ -32547,7 +32547,7 @@ return array (
         'waitEvent=' => 'bool',
       ),
     ),
-    'swoole\\server::task' => 
+    'Swoole\\Server::task' => 
     array (
       'old' => 
       array (
@@ -32564,7 +32564,7 @@ return array (
         'finishCallback=' => 'impure-callable|null',
       ),
     ),
-    'swoole\\server::taskwait' => 
+    'Swoole\\Server::taskwait' => 
     array (
       'old' => 
       array (
@@ -32581,7 +32581,7 @@ return array (
         'taskWorkerIndex=' => 'int',
       ),
     ),
-    'swoole\\server::taskwaitmulti' => 
+    'Swoole\\Server::taskWaitMulti' => 
     array (
       'old' => 
       array (
@@ -32596,7 +32596,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'swoole\\server\\port::on' => 
+    'Swoole\\Server\\Port::on' => 
     array (
       'old' => 
       array (
@@ -32611,7 +32611,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\table::column' => 
+    'Swoole\\Table::column' => 
     array (
       'old' => 
       array (
@@ -32628,7 +32628,7 @@ return array (
         'size=' => 'int',
       ),
     ),
-    'swoole\\table::create' => 
+    'Swoole\\Table::create' => 
     array (
       'old' => 
       array (
@@ -32639,7 +32639,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\table::decr' => 
+    'Swoole\\Table::decr' => 
     array (
       'old' => 
       array (
@@ -32656,7 +32656,7 @@ return array (
         'incrby=' => 'int',
       ),
     ),
-    'swoole\\table::del' => 
+    'Swoole\\Table::del' => 
     array (
       'old' => 
       array (
@@ -32669,7 +32669,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'swoole\\table::destroy' => 
+    'Swoole\\Table::destroy' => 
     array (
       'old' => 
       array (
@@ -32680,7 +32680,7 @@ return array (
         0 => 'bool',
       ),
     ),
-    'swoole\\table::get' => 
+    'Swoole\\Table::get' => 
     array (
       'old' => 
       array (
@@ -32695,7 +32695,7 @@ return array (
         'field=' => 'null|string',
       ),
     ),
-    'swoole\\table::incr' => 
+    'Swoole\\Table::incr' => 
     array (
       'old' => 
       array (
@@ -32712,7 +32712,7 @@ return array (
         'incrby=' => 'int',
       ),
     ),
-    'swoole\\table::set' => 
+    'Swoole\\Table::set' => 
     array (
       'old' => 
       array (
@@ -32727,7 +32727,7 @@ return array (
         'value' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\timer::after' => 
+    'Swoole\\Timer::after' => 
     array (
       'old' => 
       array (
@@ -32744,7 +32744,7 @@ return array (
         '...params=' => 'mixed',
       ),
     ),
-    'swoole\\timer::clear' => 
+    'Swoole\\Timer::clear' => 
     array (
       'old' => 
       array (
@@ -32757,7 +32757,7 @@ return array (
         'timer_id' => 'int',
       ),
     ),
-    'swoole\\timer::tick' => 
+    'Swoole\\Timer::tick' => 
     array (
       'old' => 
       array (
@@ -32774,7 +32774,7 @@ return array (
         '...params=' => 'string',
       ),
     ),
-    'swoole\\websocket\\server::on' => 
+    'Swoole\\WebSocket\\Server::on' => 
     array (
       'old' => 
       array (
@@ -32789,7 +32789,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\websocket\\server::pack' => 
+    'Swoole\\WebSocket\\Server::pack' => 
     array (
       'old' => 
       array (
@@ -32806,7 +32806,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'swoole\\websocket\\server::push' => 
+    'Swoole\\WebSocket\\Server::push' => 
     array (
       'old' => 
       array (
@@ -32825,7 +32825,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'swoole\\websocket\\server::unpack' => 
+    'Swoole\\WebSocket\\Server::unpack' => 
     array (
       'old' => 
       array (
@@ -32945,7 +32945,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::parsefile' => 
+    'tidy::parseFile' => 
     array (
       'old' => 
       array (
@@ -32964,7 +32964,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::parsestring' => 
+    'tidy::parseString' => 
     array (
       'old' => 
       array (
@@ -32981,7 +32981,7 @@ return array (
         'encoding=' => 'null|string',
       ),
     ),
-    'tidy::repairfile' => 
+    'tidy::repairFile' => 
     array (
       'old' => 
       array (
@@ -33000,7 +33000,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::repairstring' => 
+    'tidy::repairString' => 
     array (
       'old' => 
       array (
@@ -33213,7 +33213,7 @@ return array (
         'autoload=' => 'bool',
       ),
     ),
-    'transliterator::transliterate' => 
+    'Transliterator::transliterate' => 
     array (
       'old' => 
       array (
@@ -33346,7 +33346,7 @@ return array (
         'string' => 'string',
       ),
     ),
-    'uconverter::reasontext' => 
+    'UConverter::reasonText' => 
     array (
       'old' => 
       array (
@@ -34006,7 +34006,7 @@ return array (
         'handler' => 'impure-callable',
       ),
     ),
-    'xmlreader::expand' => 
+    'XMLReader::expand' => 
     array (
       'old' => 
       array (
@@ -34019,7 +34019,7 @@ return array (
         'baseNode=' => 'DOMNode|null',
       ),
     ),
-    'xmlreader::getattributens' => 
+    'XMLReader::getAttributeNs' => 
     array (
       'old' => 
       array (
@@ -34034,7 +34034,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'xmlreader::movetoattributens' => 
+    'XMLReader::moveToAttributeNs' => 
     array (
       'old' => 
       array (
@@ -34049,7 +34049,7 @@ return array (
         'namespace' => 'string',
       ),
     ),
-    'xmlreader::next' => 
+    'XMLReader::next' => 
     array (
       'old' => 
       array (
@@ -34062,24 +34062,24 @@ return array (
         'name=' => 'null|string',
       ),
     ),
-    'xmlreader::open' => 
+    'XMLReader::open' => 
     array (
       'old' => 
       array (
-        0 => 'XmlReader|bool',
+        0 => 'XMLReader|bool',
         'URI' => 'string',
         'encoding=' => 'null|string',
         'options=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'XmlReader|bool',
+        0 => 'XMLReader|bool',
         'uri' => 'string',
         'encoding=' => 'null|string',
         'flags=' => 'int',
       ),
     ),
-    'xmlreader::xml' => 
+    'XMLReader::XML' => 
     array (
       'old' => 
       array (
@@ -34096,7 +34096,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'xmlwriter::flush' => 
+    'XMLWriter::flush' => 
     array (
       'old' => 
       array (
@@ -34109,7 +34109,7 @@ return array (
         'empty=' => 'bool',
       ),
     ),
-    'xmlwriter::setindent' => 
+    'XMLWriter::setIndent' => 
     array (
       'old' => 
       array (
@@ -34122,7 +34122,7 @@ return array (
         'enable' => 'bool',
       ),
     ),
-    'xmlwriter::setindentstring' => 
+    'XMLWriter::setIndentString' => 
     array (
       'old' => 
       array (
@@ -34135,7 +34135,7 @@ return array (
         'indentation' => 'string',
       ),
     ),
-    'xmlwriter::startattributens' => 
+    'XMLWriter::startAttributeNs' => 
     array (
       'old' => 
       array (
@@ -34152,7 +34152,7 @@ return array (
         'namespace' => 'null|string',
       ),
     ),
-    'xmlwriter::startdtdentity' => 
+    'XMLWriter::startDtdEntity' => 
     array (
       'old' => 
       array (
@@ -34167,7 +34167,7 @@ return array (
         'isParam' => 'bool',
       ),
     ),
-    'xmlwriter::startelementns' => 
+    'XMLWriter::startElementNs' => 
     array (
       'old' => 
       array (
@@ -34184,7 +34184,7 @@ return array (
         'namespace' => 'null|string',
       ),
     ),
-    'xmlwriter::writeattributens' => 
+    'XMLWriter::writeAttributeNs' => 
     array (
       'old' => 
       array (
@@ -34203,7 +34203,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'xmlwriter::writedtd' => 
+    'XMLWriter::writeDtd' => 
     array (
       'old' => 
       array (
@@ -34222,7 +34222,7 @@ return array (
         'content=' => 'null|string',
       ),
     ),
-    'xmlwriter::writedtdentity' => 
+    'XMLWriter::writeDtdEntity' => 
     array (
       'old' => 
       array (
@@ -34241,7 +34241,7 @@ return array (
         'notationData=' => 'null|string',
       ),
     ),
-    'xmlwriter::writeelementns' => 
+    'XMLWriter::writeElementNs' => 
     array (
       'old' => 
       array (
@@ -34923,7 +34923,7 @@ return array (
         'zip_entry' => 'resource',
       ),
     ),
-    'ziparchive::addemptydir' => 
+    'ZipArchive::addEmptyDir' => 
     array (
       'old' => 
       array (
@@ -34937,7 +34937,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ziparchive::addfile' => 
+    'ZipArchive::addFile' => 
     array (
       'old' => 
       array (
@@ -34957,7 +34957,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ziparchive::addfromstring' => 
+    'ZipArchive::addFromString' => 
     array (
       'old' => 
       array (
@@ -34973,7 +34973,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ziparchive::getfromname' => 
+    'ZipArchive::getFromName' => 
     array (
       'old' => 
       array (
@@ -34990,7 +34990,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ziparchive::getstatusstring' => 
+    'ZipArchive::getStatusString' => 
     array (
       'old' => 
       array (
@@ -35001,7 +35001,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'ziparchive::getstream' => 
+    'ZipArchive::getStream' => 
     array (
       'old' => 
       array (
@@ -35014,7 +35014,7 @@ return array (
         'name' => 'string',
       ),
     ),
-    'ziparchive::locatename' => 
+    'ZipArchive::locateName' => 
     array (
       'old' => 
       array (
@@ -35029,7 +35029,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ziparchive::setencryptionindex' => 
+    'ZipArchive::setEncryptionIndex' => 
     array (
       'old' => 
       array (
@@ -35046,7 +35046,7 @@ return array (
         'password=' => 'null|string',
       ),
     ),
-    'ziparchive::setencryptionname' => 
+    'ZipArchive::setEncryptionName' => 
     array (
       'old' => 
       array (
@@ -35063,7 +35063,7 @@ return array (
         'password=' => 'null|string',
       ),
     ),
-    'ziparchive::statname' => 
+    'ZipArchive::statName' => 
     array (
       'old' => 
       array (
@@ -35096,23 +35096,23 @@ return array (
   ),
   'removed' => 
   array (
-    'argumentcounterror::__clone' => 
+    'ArgumentCountError::__clone' => 
     array (
       0 => 'void',
     ),
-    'arithmeticerror::__clone' => 
+    'ArithmeticError::__clone' => 
     array (
       0 => 'void',
     ),
-    'badfunctioncallexception::__clone' => 
+    'BadFunctionCallException::__clone' => 
     array (
       0 => 'void',
     ),
-    'badmethodcallexception::__clone' => 
+    'BadMethodCallException::__clone' => 
     array (
       0 => 'void',
     ),
-    'closedgeneratorexception::__clone' => 
+    'ClosedGeneratorException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35129,7 +35129,7 @@ return array (
       'args' => 'string',
       'code' => 'string',
     ),
-    'domainexception::__clone' => 
+    'DomainException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35138,11 +35138,11 @@ return array (
       0 => 'array{0: int|string, 1: mixed, key: int|string, value: mixed}',
       '&r arr' => 'array<array-key, mixed>',
     ),
-    'errorexception::__clone' => 
+    'ErrorException::__clone' => 
     array (
       0 => 'void',
     ),
-    'eventbufferevent::sslfilter' => 
+    'EventBufferEvent::sslFilter' => 
     array (
       0 => 'EventBufferEvent',
       'unused' => 'EventBase',
@@ -35196,11 +35196,11 @@ return array (
       'filename=' => 'null|string',
       'foreground=' => 'int',
     ),
-    'intlexception::__clone' => 
+    'IntlException::__clone' => 
     array (
       0 => 'void',
     ),
-    'invalidargumentexception::__clone' => 
+    'InvalidArgumentException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35218,7 +35218,7 @@ return array (
       'd_width' => 'int',
       'd_threshold' => 'int',
     ),
-    'jsonexception::__clone' => 
+    'JsonException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35245,11 +35245,11 @@ return array (
       'result_identifier' => 'resource',
       'sortfilter' => 'string',
     ),
-    'lengthexception::__clone' => 
+    'LengthException::__clone' => 
     array (
       0 => 'void',
     ),
-    'logicexception::__clone' => 
+    'LogicException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35259,102 +35259,102 @@ return array (
       'format' => 'string',
       'value' => 'float',
     ),
-    'mongodb\\bson\\binary::unserialize' => 
+    'MongoDB\\BSON\\Binary::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\dbpointer::unserialize' => 
+    'MongoDB\\BSON\\DBPointer::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\decimal128::unserialize' => 
+    'MongoDB\\BSON\\Decimal128::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\document::unserialize' => 
+    'MongoDB\\BSON\\Document::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\int64::unserialize' => 
+    'MongoDB\\BSON\\Int64::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\javascript::unserialize' => 
+    'MongoDB\\BSON\\Javascript::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\maxkey::unserialize' => 
+    'MongoDB\\BSON\\MaxKey::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\minkey::unserialize' => 
+    'MongoDB\\BSON\\MinKey::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\objectid::unserialize' => 
+    'MongoDB\\BSON\\ObjectId::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\packedarray::unserialize' => 
+    'MongoDB\\BSON\\PackedArray::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\regex::unserialize' => 
+    'MongoDB\\BSON\\Regex::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\symbol::unserialize' => 
+    'MongoDB\\BSON\\Symbol::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\timestamp::unserialize' => 
+    'MongoDB\\BSON\\Timestamp::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\undefined::unserialize' => 
+    'MongoDB\\BSON\\Undefined::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\bson\\utcdatetime::unserialize' => 
+    'MongoDB\\BSON\\UTCDateTime::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\cursorid::unserialize' => 
+    'MongoDB\\Driver\\CursorId::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\readconcern::unserialize' => 
+    'MongoDB\\Driver\\ReadConcern::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\readpreference::unserialize' => 
+    'MongoDB\\Driver\\ReadPreference::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\serverapi::unserialize' => 
+    'MongoDB\\Driver\\ServerApi::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
     ),
-    'mongodb\\driver\\writeconcern::unserialize' => 
+    'MongoDB\\Driver\\WriteConcern::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
@@ -35367,36 +35367,36 @@ return array (
       'decimal_separator' => 'null|string',
       'thousands_separator' => 'null|string',
     ),
-    'outofboundsexception::__clone' => 
+    'OutOfBoundsException::__clone' => 
     array (
       0 => 'void',
     ),
-    'outofrangeexception::__clone' => 
+    'OutOfRangeException::__clone' => 
     array (
       0 => 'void',
     ),
-    'overflowexception::__clone' => 
+    'OverflowException::__clone' => 
     array (
       0 => 'void',
     ),
-    'parseerror::__clone' => 
+    'ParseError::__clone' => 
     array (
       0 => 'void',
     ),
-    'pdostatement::setfetchmode\'1' => 
+    'PDOStatement::setFetchMode\'1' => 
     array (
       0 => 'bool',
       'fetch_column' => 'int',
       'colno' => 'int',
     ),
-    'pdostatement::setfetchmode\'2' => 
+    'PDOStatement::setFetchMode\'2' => 
     array (
       0 => 'bool',
       'fetch_class' => 'int',
       'classname' => 'string',
       'ctorargs' => 'array<array-key, mixed>',
     ),
-    'pdostatement::setfetchmode\'3' => 
+    'PDOStatement::setFetchMode\'3' => 
     array (
       0 => 'bool',
       'fetch_into' => 'int',
@@ -35411,7 +35411,7 @@ return array (
       'd_width' => 'int',
       'd_threshold' => 'int',
     ),
-    'rangeexception::__clone' => 
+    'RangeException::__clone' => 
     array (
       0 => 'void',
     ),
@@ -35423,77 +35423,77 @@ return array (
       'sub_arrays=' => 'bool',
       'read_thumbnail=' => 'bool',
     ),
-    'reflection::export' => 
+    'Reflection::export' => 
     array (
       0 => 'null|string',
-      'reflector' => 'reflector',
+      'reflector' => 'Reflector',
       'return=' => 'bool',
     ),
-    'reflectionclass::export' => 
+    'ReflectionClass::export' => 
     array (
       0 => 'null|string',
       'argument' => 'object|string',
       'return=' => 'bool',
     ),
-    'reflectionclassconstant::export' => 
+    'ReflectionClassConstant::export' => 
     array (
       0 => 'string',
       'class' => 'mixed',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionextension::export' => 
+    'ReflectionExtension::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionfunction::export' => 
+    'ReflectionFunction::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionmethod::export' => 
+    'ReflectionMethod::export' => 
     array (
       0 => 'null|string',
       'class' => 'string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionnamedtype::__clone' => 
+    'ReflectionNamedType::__clone' => 
     array (
       0 => 'void',
     ),
-    'reflectionobject::__clone' => 
+    'ReflectionObject::__clone' => 
     array (
       0 => 'void',
     ),
-    'reflectionobject::export' => 
+    'ReflectionObject::export' => 
     array (
       0 => 'null|string',
       'argument' => 'object',
       'return=' => 'bool',
     ),
-    'reflectionparameter::export' => 
+    'ReflectionParameter::export' => 
     array (
       0 => 'null|string',
       'function' => 'string',
       'parameter' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionproperty::export' => 
+    'ReflectionProperty::export' => 
     array (
       0 => 'null|string',
       'class' => 'mixed',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectiontype::isbuiltin' => 
+    'ReflectionType::isBuiltin' => 
     array (
       0 => 'bool',
     ),
-    'reflectionzendextension::export' => 
+    'ReflectionZendExtension::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
@@ -35503,49 +35503,49 @@ return array (
     array (
       0 => 'void',
     ),
-    'runtimeexception::__clone' => 
+    'RuntimeException::__clone' => 
     array (
       0 => 'void',
     ),
-    'simplexmliterator::current' => 
+    'SimpleXMLIterator::current' => 
     array (
       0 => 'SimpleXMLIterator|null',
     ),
-    'simplexmliterator::getchildren' => 
+    'SimpleXMLIterator::getChildren' => 
     array (
       0 => 'SimpleXMLIterator|null',
     ),
-    'simplexmliterator::haschildren' => 
+    'SimpleXMLIterator::hasChildren' => 
     array (
       0 => 'bool',
     ),
-    'simplexmliterator::key' => 
+    'SimpleXMLIterator::key' => 
     array (
       0 => 'false|string',
     ),
-    'simplexmliterator::next' => 
+    'SimpleXMLIterator::next' => 
     array (
       0 => 'void',
     ),
-    'simplexmliterator::rewind' => 
+    'SimpleXMLIterator::rewind' => 
     array (
       0 => 'void',
     ),
-    'simplexmliterator::valid' => 
+    'SimpleXMLIterator::valid' => 
     array (
       0 => 'bool',
     ),
-    'soapclient::soapclient' => 
+    'SoapClient::SoapClient' => 
     array (
       0 => 'object',
       'wsdl' => 'mixed',
       'options=' => 'array<array-key, mixed>|null',
     ),
-    'soapfault::__clone' => 
+    'SoapFault::__clone' => 
     array (
       0 => 'void',
     ),
-    'soapfault::soapfault' => 
+    'SoapFault::SoapFault' => 
     array (
       0 => 'object',
       'faultcode' => 'string',
@@ -35555,7 +35555,7 @@ return array (
       'faultname=' => 'null|string',
       'headerfault=' => 'mixed|null',
     ),
-    'soapheader::soapheader' => 
+    'SoapHeader::SoapHeader' => 
     array (
       0 => 'object',
       'namespace' => 'string',
@@ -35564,19 +35564,19 @@ return array (
       'mustunderstand=' => 'bool',
       'actor=' => 'string',
     ),
-    'soapparam::soapparam' => 
+    'SoapParam::SoapParam' => 
     array (
       0 => 'object',
       'data' => 'mixed',
       'name' => 'string',
     ),
-    'soapserver::soapserver' => 
+    'SoapServer::SoapServer' => 
     array (
       0 => 'object',
       'wsdl' => 'null|string',
       'options=' => 'array<array-key, mixed>',
     ),
-    'soapvar::soapvar' => 
+    'SoapVar::SoapVar' => 
     array (
       0 => 'object',
       'data' => 'mixed',
@@ -35586,66 +35586,66 @@ return array (
       'node_name=' => 'null|string',
       'node_namespace=' => 'null|string',
     ),
-    'splfileobject::fgetss' => 
+    'SplFileObject::fgetss' => 
     array (
       0 => 'false|string',
       'allowable_tags=' => 'string',
     ),
-    'splfixedarray::key' => 
+    'SplFixedArray::key' => 
     array (
       0 => 'int',
     ),
-    'splfixedarray::next' => 
+    'SplFixedArray::next' => 
     array (
       0 => 'void',
     ),
-    'splfixedarray::rewind' => 
+    'SplFixedArray::rewind' => 
     array (
       0 => 'void',
     ),
-    'splfixedarray::valid' => 
+    'SplFixedArray::valid' => 
     array (
       0 => 'bool',
     ),
-    'spltempfileobject::fgetss' => 
+    'SplTempFileObject::fgetss' => 
     array (
       0 => 'string',
       'allowable_tags=' => 'string',
     ),
-    'swoole\\http\\request::__destruct' => 
+    'Swoole\\Http\\Request::__destruct' => 
     array (
       0 => 'void',
     ),
-    'swoole\\http\\response::__destruct' => 
+    'Swoole\\Http\\Response::__destruct' => 
     array (
       0 => 'void',
     ),
-    'swoole\\server::after' => 
+    'Swoole\\Server::after' => 
     array (
       0 => 'ReturnType',
       'ms' => 'int',
       'callback' => 'impure-callable',
     ),
-    'swoole\\server::defer' => 
+    'Swoole\\Server::defer' => 
     array (
       0 => 'void',
       'callback' => 'impure-callable',
     ),
-    'swoole\\server::tick' => 
+    'Swoole\\Server::tick' => 
     array (
       0 => 'void',
       'ms' => 'int',
       'callback' => 'impure-callable',
     ),
-    'typeerror::__clone' => 
+    'TypeError::__clone' => 
     array (
       0 => 'void',
     ),
-    'underflowexception::__clone' => 
+    'UnderflowException::__clone' => 
     array (
       0 => 'void',
     ),
-    'unexpectedvalueexception::__clone' => 
+    'UnexpectedValueException::__clone' => 
     array (
       0 => 'void',
     ),

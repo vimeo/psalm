@@ -26,8 +26,8 @@ use function array_search;
 final class ClassTemplateParamCollector
 {
     /**
-     * @param lowercase-string $method_name
-     * @return array<string, non-empty-array<string, Union>>|null
+     * @param ?int $method_name method name id
+     * @return array<int, non-empty-array<int, Union>>|null template name id => defining entity id => type
      * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress LessSpecificReturnStatement
      */
@@ -35,7 +35,7 @@ final class ClassTemplateParamCollector
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         ClassLikeStorage $static_class_storage,
-        ?string $method_name = null,
+        ?int $method_name = null,
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
     ): ?array {
@@ -256,14 +256,14 @@ final class ClassTemplateParamCollector
     }
 
     /**
-     * @param array<string, array<string, Union>> $e
+     * @param array<int, array<int, Union>> $e
      * @return non-empty-list<Atomic>
      */
     private static function expandType(
         Codebase $codebase,
         Union $input_type_extends,
         array $e,
-        string $static_fq_class_name,
+        int $static_fq_class_name,
         ?array $static_template_types,
     ): array {
         $output_type_extends = [];

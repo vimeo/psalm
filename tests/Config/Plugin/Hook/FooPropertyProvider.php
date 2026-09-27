@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Test\Config\Plugin\Hook;
 
 use Override;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Union;
 
@@ -23,13 +25,13 @@ final class FooPropertyProvider implements
     PropertyTypeProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['Ns\Foo'];
+        return [Interner::intern('Ns\Foo')];
     }
 
     /**
@@ -39,7 +41,7 @@ final class FooPropertyProvider implements
     public static function doesPropertyExist(PropertyExistenceProviderEvent $event): ?bool
     {
         $property_name = $event->getPropertyName();
-        return $property_name === 'magic_property';
+        return $property_name === StrId::magic_property;
     }
 
     /**
