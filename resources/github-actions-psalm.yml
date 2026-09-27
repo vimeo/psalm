@@ -1,0 +1,37 @@
+name: Psalm
+
+on:
+  pull_request: null
+# Run on push to the main branch as well:
+# push:
+#  branches:
+#   - main
+
+permissions:
+  contents: read
+
+jobs:
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+    # The image ships Psalm, PHP 8.4 and Composer; see https://github.com/danog/psalm/pkgs/container/psalm
+    container:
+      image: ghcr.io/danog/psalm:__PSALM_VERSION__
+    steps:
+      - uses: actions/checkout@v6
+
+      # Psalm needs your project's autoloader to resolve classes, and it loads
+      # Psalm plugins from your vendor directory, so dependencies are required.
+      - name: Install dependencies
+        env:
+          COMPOSER_ALLOW_SUPERUSER: '1'
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # --output-format=github annotates pull requests inline with Psalm issues.
+      #
+      # Tips for enhancing this step:
+      #  - respect baseline: --use-baseline=psalm-baseline.xml
+      #  - report results to Shepherd (https://shepherd.dev) for historical type coverage tracking: --shepherd
+      #  - specify a path to the config: -c psalm.xml
+      - name: Run Psalm
+        run: psalm --output-format=github --no-progress --no-suggestions
