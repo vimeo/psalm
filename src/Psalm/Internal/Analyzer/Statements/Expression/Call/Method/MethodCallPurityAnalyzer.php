@@ -67,28 +67,58 @@ final class MethodCallPurityAnalyzer
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
 
-        $receiver_type = $statements_analyzer->node_data->getType($var);
-
-        if ($receiver_type !== null
-            && $receiver_type->from_global_state
-            && ($method_storage->capabilities & (Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_PROPS)) !== 0
+        if (!self::isFromGlobalState($statements_analyzer, $var)
+            && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
         ) {
-            // mutating an object reached from global state mutates global state
-            return $capabilities | Capabilities::WRITE_GLOBALS;
+            return $capabilities & ~Capabilities::RECEIVER_LOCAL;
         }
 
-        if ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var)) {
-            $capabilities &= ~Capabilities::RECEIVER_LOCAL;
-        } elseif (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0 && !self::isThis($var)) {
+        return self::getCapabilitiesForReceiver(
+            $capabilities,
+            self::isThis($var),
+            self::isFromGlobalState($statements_analyzer, $var),
+        );
+    }
+
+    /**
+     * What a callee's writes to its own `$this` cost a caller that holds it as the receiver:
+     * write-this-props when the receiver is the caller's `$this`, write-props otherwise, plus
+     * write-globals when the receiver was reached from global state.
+     *
+     * @psalm-pure
+     */
+    public static function getCapabilitiesForReceiver(
+        int $capabilities,
+        bool $receiver_is_this,
+        bool $receiver_from_global_state,
+    ): int {
+        // an impure callee may do anything, to the caller's `$this` as well
+        if ($capabilities === Capabilities::ALL) {
+            return $capabilities;
+        }
+
+        if (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0 && !$receiver_is_this) {
             // the callee's `$this` is not the caller's
             $capabilities = ($capabilities & ~Capabilities::WRITE_THIS_PROPS) | Capabilities::WRITE_PROPS;
+        }
+
+        if (($capabilities & Capabilities::WRITE_PROPS) !== 0 && $receiver_from_global_state) {
+            // mutating an object reached from global state mutates global state
+            $capabilities |= Capabilities::WRITE_GLOBALS;
         }
 
         return $capabilities;
     }
 
+    public static function isFromGlobalState(StatementsAnalyzer $statements_analyzer, Expr $var): bool
+    {
+        $receiver_type = $statements_analyzer->node_data->getType($var);
+
+        return $receiver_type !== null && $receiver_type->from_global_state;
+    }
+
     /** @psalm-capabilities read-props */
-    private static function isThis(Expr $var): bool
+    public static function isThis(Expr $var): bool
     {
         return $var instanceof Expr\Variable && $var->name === 'this';
     }
@@ -126,6 +156,8 @@ final class MethodCallPurityAnalyzer
             $method_capabilities,
             $template_result,
             $class_template_params,
+            self::isThis($stmt->var),
+            self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
 
         // whether the result may come from global state depends on what this call reads,

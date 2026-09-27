@@ -545,8 +545,10 @@ A method writes the properties of its own `$this`, which is not always the calle
 method that needs `write-this-props` needs `write-this-props` when the receiver is the caller's
 `$this`, `write-props` when it is any other object, and nothing when it is an object the caller
 created itself from a class whose methods need at most `read-props|write-this-props|write-refs`, which
-nobody else can see change. So a pure function may create such an object and call its mutating
-methods:
+nobody else can see change. The `write-this-props` that a class purity template of the receiver is
+bound to (`Doer[write-this-props]`, see [`@psalm-purity-template`](#psalm-purity-template)) costs
+the same, except that it is never free. So a pure function may create such an object and call its
+mutating methods:
 
 ```php
 <?php

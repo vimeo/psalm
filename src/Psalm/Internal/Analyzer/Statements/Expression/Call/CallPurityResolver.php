@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -107,6 +108,12 @@ final class CallPurityResolver
      * of the closures its purity templates are bound to at this call (through the method-level
      * template bindings, or the class-level template params of the receiver).
      *
+     * A class template bound on the type of a method call's receiver says what the method does, so
+     * its writes to `$this` cost the caller what the method's own would (write-props when the
+     * receiver is not the caller's `$this`); $receiver_is_this is null for a call without a
+     * receiver. They are not waived for a fresh receiver: the `TPurity` of a generator is what its
+     * body does to the `$this` of whoever created it, not to the generator.
+     *
      * @param array<string, array<string, Union>> $class_template_params
      * @psalm-external-mutation-free
      */
@@ -117,6 +124,8 @@ final class CallPurityResolver
         int $capabilities,
         ?TemplateResult $template_result,
         array $class_template_params = [],
+        ?bool $receiver_is_this = null,
+        bool $receiver_from_global_state = false,
     ): int {
         if ($storage->purity_from_templates === []) {
             return $capabilities;
@@ -125,12 +134,28 @@ final class CallPurityResolver
         $exempt = self::getEnclosingPurityTemplates($statements_analyzer);
 
         foreach ($storage->purity_from_templates as $template_name) {
-            $bound = self::resolveTemplateType($template_name, $template_result, $class_template_params, $codebase);
+            $bound = self::resolveMethodTemplateType($template_name, $template_result, $codebase);
+            $on_receiver = false;
+
+            if ($bound === null) {
+                $bound = self::resolveClassTemplateType($template_name, $class_template_params, $codebase);
+                $on_receiver = $receiver_is_this !== null;
+            }
 
             // an unbound template (e.g. the closure was omitted or null) requires nothing
-            if ($bound !== null) {
-                $capabilities |= self::resolveWithExemptions($bound, $exempt);
+            if ($bound === null) {
+                continue;
             }
+
+            $required = self::resolveWithExemptions($bound, $exempt);
+
+            $capabilities |= $on_receiver
+                ? MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
+                    $required,
+                    $receiver_is_this === true,
+                    $receiver_from_global_state,
+                )
+                : $required;
         }
 
         return $capabilities;
@@ -165,13 +190,11 @@ final class CallPurityResolver
     }
 
     /**
-     * @param array<string, array<string, Union>> $class_template_params
      * @psalm-external-mutation-free
      */
-    private static function resolveTemplateType(
+    private static function resolveMethodTemplateType(
         string $template_name,
         ?TemplateResult $template_result,
-        array $class_template_params,
         Codebase $codebase,
     ): ?Union {
         if ($template_result !== null && isset($template_result->lower_bounds[$template_name])) {
@@ -192,6 +215,18 @@ final class CallPurityResolver
             }
         }
 
+        return null;
+    }
+
+    /**
+     * @param array<string, array<string, Union>> $class_template_params
+     * @psalm-external-mutation-free
+     */
+    private static function resolveClassTemplateType(
+        string $template_name,
+        array $class_template_params,
+        Codebase $codebase,
+    ): ?Union {
         if (isset($class_template_params[$template_name])) {
             $type = null;
 

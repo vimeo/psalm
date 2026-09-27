@@ -1240,6 +1240,8 @@ final class ForeachAnalyzer
             $capabilities,
             null,
             self::collectClassTemplateParams($codebase, $iterator_atomic_type, $expr, $declaring_method_id),
+            MethodCallPurityAnalyzer::isThis($expr),
+            MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $expr),
         );
     }
 

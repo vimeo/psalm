@@ -421,9 +421,49 @@ final class PurityTemplateTest extends TestCase
                         return $d->run();
                     }
 
-                    /** @psalm-capabilities write-this-props|write-props */
+                    /** @psalm-capabilities write-props */
                     function useMutating(MutatingDoer $d): int {
                         return $d->run();
+                    }',
+            ],
+            'classPurityTemplateWritingThisCostsTheReceiver' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    abstract class Doer {
+                        /** @psalm-purity-from-template C */
+                        abstract public function run(): void;
+                    }
+
+                    /** @extends Doer[write-this-props] */
+                    final class MutatingDoer extends Doer {
+                        public int $runs = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function run(): void {
+                            $this->runs++;
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function again(): void {
+                            $this->run();
+                        }
+                    }
+
+                    final class Registry {
+                        public static ?MutatingDoer $doer = null;
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function other(MutatingDoer $d): void {
+                        $d->run();
+                    }
+
+                    /** @psalm-capabilities write-props|read-globals|write-globals */
+                    function global_(): void {
+                        $d = Registry::$doer;
+                        if ($d !== null) {
+                            $d->run();
+                        }
                     }',
             ],
             'wildcardPurity' => [
@@ -528,6 +568,61 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    abstract class Doer {
+                        /** @psalm-purity-from-template C */
+                        abstract public function run(): void;
+                    }
+
+                    /** @extends Doer[write-this-props] */
+                    final class MutatingDoer extends Doer {
+                        public int $runs = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function run(): void {
+                            $this->runs++;
+                        }
+                    }
+
+                    final class Registry {
+                        public static ?MutatingDoer $doer = null;
+                    }
+
+                    /** @psalm-capabilities write-props|read-globals */
+                    function global_(): void {
+                        $d = Registry::$doer;
+                        if ($d !== null) {
+                            $d->run();
+                        }
+                    }',
+                'error_message' => 'requires write-props|write-globals',
+            ],
+            'classPurityTemplateWritingThisOfAnotherReceiverNeedsWriteProps' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    abstract class Doer {
+                        /** @psalm-purity-from-template C */
+                        abstract public function run(): void;
+                    }
+
+                    /** @extends Doer[write-this-props] */
+                    final class MutatingDoer extends Doer {
+                        public int $runs = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function run(): void {
+                            $this->runs++;
+                        }
+                    }
+
+                    /** @psalm-capabilities write-this-props */
+                    function other(MutatingDoer $d): void {
+                        $d->run();
+                    }',
+                'error_message' => 'requires write-props',
+            ],
             'impureClosureMakesCallImpure' => [
                 'code' => '<?php
                     /**
