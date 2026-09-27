@@ -1141,6 +1141,83 @@ final class IntRangeTest extends TestCase
                         return $min;
                     }',
             ],
+            'intRangeBoundComparisonNarrowsBothOperands' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $a
+                     * @param int<min, 20> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($b >= $a) {
+                            /** @psalm-check-type-exact $a = int<5, 20> */;
+                            /** @psalm-check-type-exact $b = int<5, 20> */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIsNotAppliedToElseBranch' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $min
+                     */
+                    function f(int $min, int $max): void {
+                        if ($max >= $min) {
+                            return;
+                        }
+                        // $max = 100, $min = 200 ends up here
+                        if ($max > 10) {
+                            echo "possible";
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonUsesLowestBoundOfUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max>|int<-10, -1> $min
+                     */
+                    function f(int $min, int $max): void {
+                        if ($max >= $min) {
+                            /** @psalm-check-type-exact $max = int<-10, max> */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIgnoresNonIntOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max>|null $min
+                     */
+                    function f(?int $min, int $max): void {
+                        if ($max >= $min) {
+                            // $max >= null is true for any int
+                            if ($max < 0) {
+                                echo "possible";
+                            }
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonImpliedAssertionIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $a
+                     * @param int<1, max> $b
+                     */
+                    function f(int $a, int $b): void {
+                        // implies $b > 0, which is always true, but the condition itself is not
+                        if ($a < $b) {
+                            echo "possible";
+                        }
+                    }',
+            ],
+            'literalLeftOperandNarrowsIntRangeRightOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $x
+                     */
+                    function f(int $x): void {
+                        if (5 >= $x) {
+                            /** @psalm-check-type-exact $x = int<0, 5> */;
+                        }
+                    }',
+            ],
             'intRangeComparisonNearIntMinKeepsNull' => [
                 'code' => '<?php
                     function f(?int $value): void {
@@ -1157,6 +1234,19 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeBoundComparisonImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $a
+                     * @param int<min, 3> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($b >= $a) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'intRangeComparisonNearIntMaxRemovesNull' => [
                 'code' => '<?php
                     function f(?int $value): void {

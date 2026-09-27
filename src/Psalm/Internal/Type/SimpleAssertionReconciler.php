@@ -2032,7 +2032,8 @@ final class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$inside_loop && $redundant && $var_id && $code_location) {
+        // a non-negatable assertion is only implied by the condition, so it being redundant says nothing
+        if (!$inside_loop && $redundant && $assertion->is_negatable && $var_id && $code_location) {
             self::triggerIssueForImpossible(
                 $existing_var_type,
                 $old_var_type_string,
@@ -2146,7 +2147,8 @@ final class SimpleAssertionReconciler extends Reconciler
             }
         }
 
-        if (!$inside_loop && $redundant && $var_id && $code_location) {
+        // a non-negatable assertion is only implied by the condition, so it being redundant says nothing
+        if (!$inside_loop && $redundant && $assertion->is_negatable && $var_id && $code_location) {
             self::triggerIssueForImpossible(
                 $existing_var_type,
                 $old_var_type_string,
