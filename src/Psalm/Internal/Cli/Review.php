@@ -49,6 +49,7 @@ require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
+require_once __DIR__ . '/IdeDetector.php';
 
 /**
  * @internal
@@ -82,7 +83,13 @@ final class Review
 
         // Peek at the next argument: if it's a known IDE name consume it, otherwise
         // leave it in $args as a filter and fall back to auto-detection.
-        $knownIdes = [IdeDetector::IDE_PHPSTORM, IdeDetector::IDE_VS_CODE, IdeDetector::IDE_VS_CODE_SERVER];
+        // 'vscode' is a legacy alias of IdeDetector::IDE_VS_CODE.
+        $knownIdes = [
+            IdeDetector::IDE_PHPSTORM,
+            IdeDetector::IDE_VS_CODE,
+            IdeDetector::IDE_VS_CODE_SERVER,
+            'vscode',
+        ];
         $peeked = $args[0] ?? null;
         if ($peeked !== null && in_array($peeked, $knownIdes, true)) {
             array_shift($args);
@@ -90,7 +97,7 @@ final class Review
         } else {
             $modeKey = IdeDetector::detect() ?? throw new AssertionError(
                 'No IDE was specified and none could be auto-detected. ' .
-                "Pass 'code', 'phpstorm', or 'code-server' as the second argument.",
+                "Pass 'code' (or 'vscode'), 'phpstorm', or 'code-server' as the second argument.",
             );
         }
 
@@ -112,8 +119,8 @@ final class Review
                  => 'code --goto ' . escapeshellarg($file) . ':' .
                  escapeshellarg((string) $line) . ':' .
                  escapeshellarg((string) $column),
-
-            default => throw new AssertionError("The only allowed IDEs are code, phpstorm, code-server, got $modeKey"),
+            // No default arm: $modeKey is narrowed to the known IDE identifiers above,
+            // and unrecognised tokens are left in $args as issue-type filters.
         };
 
         if (!file_exists($issues)) {
