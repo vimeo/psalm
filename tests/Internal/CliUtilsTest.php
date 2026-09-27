@@ -11,6 +11,7 @@ use PhpParser\ParserFactory;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Fork\PhpSerializer;
 
+use function function_exists;
 use function ini_get;
 use function ini_set;
 use function realpath;
@@ -154,6 +155,12 @@ final class CliUtilsTest extends TestCase
             CliUtils::ensureFiberStackSize();
             self::assertSame('64M', ini_get('fiber.stack_size'));
 
+            if (function_exists('ini_parse_quantity')) {
+                ini_set('fiber.stack_size', '0x4000000');
+                CliUtils::ensureFiberStackSize();
+                self::assertSame('0x4000000', ini_get('fiber.stack_size'));
+            }
+
             ini_set('fiber.stack_size', '1M');
             CliUtils::ensureFiberStackSize();
             self::assertSame((string) CliUtils::MINIMUM_FIBER_STACK_SIZE, ini_get('fiber.stack_size'));
@@ -171,9 +178,11 @@ final class CliUtilsTest extends TestCase
     public function testDeeplyNestedAstSurvivesACacheRoundTripInsideAFiber(): void
     {
         $previous = (string) ini_get('fiber.stack_size');
+        $previous_max_depth = (string) ini_get('unserialize_max_depth');
 
         try {
             CliUtils::ensureFiberStackSize();
+            ini_set('unserialize_max_depth', '4096');
 
             // deep enough to exceed both the default fiber stack and the default unserialize_max_depth
             $code = '<?php return ' . str_repeat('array(', 1500) . '1' . str_repeat(')', 1500) . ';';
@@ -189,6 +198,7 @@ final class CliUtilsTest extends TestCase
             self::assertCount(1, $result);
         } finally {
             ini_set('fiber.stack_size', $previous);
+            ini_set('unserialize_max_depth', $previous_max_depth);
         }
     }
 }
