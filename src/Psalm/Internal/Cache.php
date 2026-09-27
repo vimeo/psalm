@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
 use AssertionError;
 use DirectoryIterator;
@@ -111,8 +112,20 @@ final class Cache
         $this->lock = $lock;
 
         if (file_exists($this->dir.'consolidated') && $this->arrayCache) {
-            /** @var array<string, list{string, T}> */
-            $this->cache = $this->serializer->unserialize(Providers::safeFileGetContents($this->dir.'consolidated'));
+            try {
+                /** @var array<string, list{string, T}> */
+                $this->cache = $this->serializer->unserialize(
+                    Providers::safeFileGetContents($this->dir.'consolidated'),
+                );
+            } catch (Throwable $e) {
+                throw new RuntimeException(
+                    "Could not unserialize the consolidated cache {$this->dir}consolidated."
+                    . ' The cache may be corrupt, run Psalm with --clear-cache to rebuild it. Cause: '
+                    . self::describeError($e),
+                    0,
+                    $e,
+                );
+            }
         }
     }
 
@@ -231,8 +244,12 @@ final class Cache
         fclose($fp);
 
         try {
-            /** @var T */
+            /** @var T|false|null */
             $content = $this->serializer->unserialize($content);
+            // igbinary reports invalid data by returning false or null instead of throwing
+            if ($content === false || $content === null) {
+                throw new SerializationException('Invalid data provided to unserialize');
+            }
         } catch (Throwable $e) {
             throw new RuntimeException(
                 'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path."

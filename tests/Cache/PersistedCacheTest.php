@@ -87,15 +87,14 @@ final class PersistedCacheTest extends TestCase
 
 
     /** @return Cache<array> */
-    private function createCache(?string $serializer = null): Cache
+    private function createCache(string $attributes = ''): Cache
     {
-        $serializer_attribute = $serializer === null ? '' : " serializer=\"$serializer\"";
 
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
             <<<XML
                 <?xml version="1.0"?>
-                <psalm cacheDirectory="{$this->cache_directory}"{$serializer_attribute}>
+                <psalm cacheDirectory="{$this->cache_directory}" {$attributes}>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -123,6 +122,11 @@ final class PersistedCacheTest extends TestCase
         self::assertSame(['serializable'], $this->createCache()->getItem('key', 'hash1'));
     }
 
+    /**
+     * Stack overflows only became catchable in PHP 8.3, earlier versions crash instead.
+     *
+     * @requires PHP >= 8.3
+     */
     public function testTooDeeplyNestedItemThrowsWithAHint(): void
     {
         $previous = (string) ini_get('fiber.stack_size');
@@ -135,7 +139,7 @@ final class PersistedCacheTest extends TestCase
             }
 
             // igbinary does not guard against stack overflows, the process would crash instead
-            $cache = $this->createCache('php');
+            $cache = $this->createCache('serializer="php"');
             $fiber = new Fiber(static fn() => $cache->saveItem("src/deep.php\0deep", $item, 'hash'));
 
             $this->expectException(RuntimeException::class);
@@ -149,13 +153,22 @@ final class PersistedCacheTest extends TestCase
         }
     }
 
-    public function testUnreadableItemThrows(): void
+    /** @return iterable<string, array{string, string}> */
+    public static function providerUnreadableItem(): iterable
     {
-        $this->createCache()->saveItem('key', ['serializable'], 'hash1');
+        yield 'garbage' => ['', 'not a serialized value'];
+        yield 'empty, php serializer' => ['serializer="php" compressor="off"', ''];
+        yield 'empty, igbinary serializer' => ['serializer="igbinary" compressor="off"', ''];
+    }
+
+    /** @dataProvider providerUnreadableItem */
+    public function testUnreadableItemThrows(string $attributes, string $contents): void
+    {
+        $this->createCache($attributes)->saveItem('key', ['serializable'], 'hash1');
 
         foreach ($this->cacheFiles() as $file) {
             if (!str_ends_with($file, '.hash') && basename($file) !== 'lock') {
-                file_put_contents($file, 'not a serialized value');
+                file_put_contents($file, $contents);
             }
         }
 
@@ -164,6 +177,26 @@ final class PersistedCacheTest extends TestCase
             "/^Could not unserialize the cache entry for 'key' from .+\\. .+--clear-cache.+ Cause: ./",
         );
 
-        $this->createCache()->getItem('key', 'hash1');
+        $this->createCache($attributes)->getItem('key', 'hash1');
+    }
+
+    public function testUnreadableConsolidatedCacheThrows(): void
+    {
+        $cache = $this->createCache();
+        $cache->saveItem('key', ['serializable'], 'hash1');
+        $cache->consolidate();
+
+        foreach ($this->cacheFiles() as $file) {
+            if (basename($file) === 'consolidated') {
+                file_put_contents($file, 'not a serialized value');
+            }
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches(
+            '/^Could not unserialize the consolidated cache .+consolidated\\. .+--clear-cache.+ Cause: ./',
+        );
+
+        $this->createCache();
     }
 }
