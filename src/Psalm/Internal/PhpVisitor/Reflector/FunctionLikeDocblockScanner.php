@@ -301,7 +301,7 @@ final class FunctionLikeDocblockScanner
         }
 
         foreach ($docblock_info->params_out as $docblock_param_out) {
-            self::handleParamOut(
+            self::handleParamTag(
                 $docblock_param_out,
                 $aliases,
                 $function_template_types,
@@ -313,6 +313,25 @@ final class FunctionLikeDocblockScanner
                 $storage,
                 $codebase,
                 $file_storage,
+                null,
+            );
+        }
+
+        foreach ($docblock_info->params_closure_this as $docblock_param_closure_this) {
+            self::handleParamTag(
+                $docblock_param_closure_this,
+                $aliases,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $cased_function_id,
+                $file_scanner,
+                $stmt,
+                $storage,
+                $codebase,
+                $file_storage,
+                $classlike_storage,
+                true,
             );
         }
 
@@ -1389,10 +1408,10 @@ final class FunctionLikeDocblockScanner
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
-     * @param  array{name:string, type:string, line_number: int} $docblock_param_out
+     * @param array{name:string, type:string, line_number: int} $docblock_param
      */
-    private static function handleParamOut(
-        array $docblock_param_out,
+    private static function handleParamTag(
+        array $docblock_param,
         Aliases $aliases,
         array $function_template_types,
         array $class_template_types,
@@ -1403,19 +1422,23 @@ final class FunctionLikeDocblockScanner
         FunctionLikeStorage $storage,
         Codebase $codebase,
         FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
+        bool $is_closure_this = false,
     ): void {
-        $param_name = substr($docblock_param_out['name'], 1);
+        $template_types = $function_template_types + $class_template_types;
 
         try {
-            $out_type = TypeParser::parseTokens(
+            $param_type = TypeParser::parseTokens(
                 TypeTokenizer::getFullyQualifiedTokens(
-                    $docblock_param_out['type'],
+                    $docblock_param['type'],
                     $aliases,
-                    $function_template_types + $class_template_types,
+                    $template_types,
                     $type_aliases,
+                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
+                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->parent_class : null,
                 ),
                 null,
-                $function_template_types + $class_template_types,
+                $template_types,
                 $type_aliases,
             );
         } catch (TypeParseTreeException $e) {
@@ -1428,18 +1451,27 @@ final class FunctionLikeDocblockScanner
         }
 
         /** @psalm-suppress UnusedMethodCall */
-        $out_type->queueClassLikesForScanning(
+        $param_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
-            $storage->template_types ?: [],
+            $storage->template_types ?? [],
         );
 
+        $param_name = substr($docblock_param['name'], 1);
+
         foreach ($storage->params as $param_storage) {
-            if ($param_storage->name === $param_name) {
-                $param_storage->out_type = $out_type;
+            if ($param_storage->name !== $param_name) {
+                continue;
+            }
+
+            if ($is_closure_this) {
+                $param_storage->closure_this_type = $param_type;
+            } else {
+                $param_storage->out_type = $param_type;
             }
         }
     }
+
 
     /**
      * @param ?array<string, non-empty-array<string, Union>> $template_types

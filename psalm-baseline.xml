@@ -230,7 +230,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
@@ -1937,7 +1936,6 @@
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$template_types]]></code>
@@ -2511,6 +2509,7 @@
   </file>
   <file src="src/Psalm/Storage/FunctionLikeParameter.php">
     <ImpureMethodCall>
+      <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
