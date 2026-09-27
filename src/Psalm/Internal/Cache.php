@@ -284,8 +284,9 @@ final class Cache
                 $cause = self::describeError($e);
                 $message = 'Could not serialize the cache entry for ' . self::describeKey($key) . '.';
                 if (str_contains($cause, 'Maximum call stack size')) {
-                    $message .= ' The value is nested too deeply for the available call stack, raise the'
-                        . ' fiber.stack_size ini setting (or the process stack limit, ulimit -s) to allow it.';
+                    $message .= ' The value is nested too deeply for the available call stack. Raise the'
+                        . ' fiber.stack_size ini setting, or outside of fibers the process stack limit'
+                        . ' (ulimit -s) and any explicit zend.max_allowed_stack_size, to allow it.';
                 }
                 throw new RuntimeException("$message Cause: $cause", 0, $e);
             }
