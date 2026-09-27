@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Amp\Serialization\NativeSerializer;
+use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
@@ -77,9 +78,9 @@ final class StatementsProvider
 
     /**
      * Statements of vendor files, which the parser cache provider refuses to store, kept serialized so that
-     * repeated requests unserialize instead of re-parsing.
+     * repeated requests unserialize instead of re-parsing. Null marks a file whose statements could not be restored.
      *
-     * @var array<string, array{string, string}> file path => [content hash, serialized statements]
+     * @var array<string, array{string, ?string}> file path => [content hash, serialized statements]
      */
     private array $vendor_statements = [];
 
@@ -130,8 +131,18 @@ final class StatementsProvider
             $memoised = $this->vendor_statements[$file_path] ?? null;
 
             if ($memoised !== null && $memoised[0] === $vendor_hash) {
-                /** @var list<Stmt> */
-                return self::getSerializer()->unserialize($memoised[1]);
+                if ($memoised[1] !== null) {
+                    try {
+                        /** @var list<Stmt> */
+                        return self::getSerializer()->unserialize($memoised[1]);
+                    } catch (SerializationException) {
+                        // The native serializer cannot rebuild statements nested deeper than unserialize_max_depth.
+                        // Parse such a file from source, as before, rather than failing on every repeat request.
+                        $this->vendor_statements[$file_path] = [$vendor_hash, null];
+                    }
+                }
+
+                $vendor_hash = null;
             }
 
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
