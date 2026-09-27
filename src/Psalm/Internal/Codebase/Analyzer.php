@@ -713,7 +713,7 @@ final class Analyzer
      * Builds the function-like node of a (lowercase) function or method id string,
      * in the format used by the incremental analysis maps (`foo::bar` or `foo`).
      *
-     * @psalm-external-mutation-free
+     * @psalm-pure
      */
     private static function getFunctionLikeNodeFromString(string $function_id): string
     {

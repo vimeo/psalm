@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Type\Union;
 
 /**
@@ -28,9 +29,35 @@ final class AtomicMethodCallAnalysisResult
     public array $invalid_method_call_types = [];
 
     /**
-     * @var list<MethodIdentifier>
+     * lowercase class name id => lowercase method name id => method id
+     *
+     * @var array<int, array<int, MethodIdentifier>>
      */
     public array $existent_method_ids = [];
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addExistentMethodId(MethodIdentifier $method_id): void
+    {
+        $this->existent_method_ids[Interner::lower($method_id->fq_class_name)][$method_id->method_name] = $method_id;
+    }
+
+    /**
+     * @param array<int, array<int, MethodIdentifier>> $a
+     * @param array<int, array<int, MethodIdentifier>> $b
+     * @return array<int, array<int, MethodIdentifier>>
+     * @psalm-pure
+     */
+    public static function mergeMethodIds(array $a, array $b): array
+    {
+        foreach ($b as $class_lc => $method_ids) {
+            foreach ($method_ids as $method_name_lc => $method_id) {
+                $a[$class_lc][$method_name_lc] = $method_id;
+            }
+        }
+        return $a;
+    }
 
     /**
      * @var list<array{MethodIdentifier, string}> method id, cased method id (for messages)

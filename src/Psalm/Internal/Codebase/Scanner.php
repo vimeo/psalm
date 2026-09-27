@@ -620,7 +620,6 @@ final class Scanner
         }
 
         foreach ($this->config->eventDispatcher->file_path_provider_interface as $provider) {
-            /** @psalm-suppress ArgumentTypeCoercion */
             $file_path = $provider::getClassFilePath($fq_class_name);
 
             if ($file_path !== null && file_exists($file_path)) {

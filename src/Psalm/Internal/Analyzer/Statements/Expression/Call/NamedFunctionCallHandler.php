@@ -81,10 +81,7 @@ final class NamedFunctionCallHandler
         int $function_id,
         Context $context,
     ): void {
-        if ($function_id === StrId::get_class
-            || $function_id === StrId::gettype
-            || $function_id === StrId::get_debug_type
-        ) {
+        if (in_array($function_id, [StrId::get_class, StrId::gettype, StrId::get_debug_type], true)) {
             self::handleDependentTypeFunction(
                 $statements_analyzer,
                 $stmt,
@@ -453,9 +450,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === StrId::var_dump
-            || $function_id === StrId::shell_exec
-        ) {
+        if (in_array($function_id, [StrId::var_dump, StrId::shell_exec], true)) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Unsafe ' . Interner::str($function_id),
@@ -573,7 +568,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($first_arg && ($function_id === StrId::array_values || $function_id === StrId::ksort)) {
+        if ($first_arg && in_array($function_id, [StrId::array_values, StrId::ksort], true)) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
@@ -635,9 +630,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($first_arg
-            && ($function_id === StrId::array_walk
-                || $function_id === StrId::array_walk_recursive
-            )
+            && in_array($function_id, [StrId::array_walk, StrId::array_walk_recursive], true)
         ) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
@@ -737,9 +730,7 @@ final class NamedFunctionCallHandler
             }
 
             if (($var_type = $statements_analyzer->node_data->getType($var))
-                && ($function_id === StrId::get_class
-                    || $function_id === StrId::get_debug_type
-                )
+                && in_array($function_id, [StrId::get_class, StrId::get_debug_type], true)
             ) {
                 $class_string_types = [];
 

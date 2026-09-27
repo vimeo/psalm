@@ -10,9 +10,11 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Interner;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
@@ -190,7 +192,7 @@ final class UnusedCodeTest extends TestCase
         self::assertSame(
             [],
             $this->project_analyzer->getCodebase()->code_use_graph->getUsedReferencingNodes(
-                CodeUseGraph::functionLikeNode('a::value'),
+                CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('A'), Interner::intern('value'))),
                 CodeUseGraph::EDGE_USE,
             ),
         );

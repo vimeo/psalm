@@ -78,6 +78,7 @@ use function is_array;
 use function is_numeric;
 use function str_starts_with;
 use function strpos;
+use function substr;
 
 /**
  * @psalm-immutable
@@ -462,7 +463,7 @@ abstract class Atomic implements TypeNode, Stringable
             throw new TypeParseTreeException('Invalid type alias ' . $value . ' provided');
         }
 
-        return new TNamedObject($value_id);
+        return new TNamedObject($value[0] === '\\' ? Interner::intern(substr($value, 1)) : $value_id);
     }
 
     /**

@@ -7,10 +7,12 @@ use PhpParser;
 use Psalm;
 use Psalm\Codebase;
 use Psalm\DocComment;
+use Psalm\Interner;
 use Psalm\Progress\Progress;
 use Psalm\Storage\FileStorage;
 
 use function explode;
+use function ltrim;
 use function preg_match;
 use function trim;
 
@@ -50,13 +52,13 @@ final class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
                 [$fq_class_name] = explode('::', $matches[1]);
 
                 $codebase->scanner->queueClassLikeForScanning(
-                    $fq_class_name,
+                    Interner::intern(ltrim($fq_class_name, '\\')),
                     true,
                 );
             }
         }
 
-        $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS);
+        $codebase->scanner->queueClassLikeForScanning(Interner::intern(self::VIEW_CLASS));
 
         parent::scan($codebase, $file_storage, $storage_from_cache, $progress);
     }

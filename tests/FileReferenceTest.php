@@ -8,9 +8,11 @@ use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Interner;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -94,18 +96,18 @@ final class FileReferenceTest extends TestCase
         $codebase->reloadFiles($this->project_analyzer, [$file_path]);
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        self::assertNotSame([], $codebase->findReferencesToClassLike('A'));
-        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode('b::usea'));
-        self::assertSame([], $codebase->findReferencesToClassLike('A'));
+        self::assertNotSame([], $codebase->findReferencesToClassLike(Interner::intern('A')));
+        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('b'), Interner::intern('usea'))));
+        self::assertSame([], $codebase->findReferencesToClassLike(Interner::intern('A')));
     }
 
     public function testRemovedSourceNodeCanBeReassignedToAnotherFile(): void
     {
         $graph = new CodeUseGraph();
-        $source_node = CodeUseGraph::functionLikeNode('a::foo');
-        $target_node = CodeUseGraph::classNode('b');
+        $source_node = CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('a'), Interner::intern('foo')));
+        $target_node = CodeUseGraph::classNode(Interner::intern('b'));
         $context = new Context();
-        $context->calling_method_id = 'a::foo';
+        $context->calling_method_id = new MethodIdentifier(Interner::intern('a'), Interner::intern('foo'));
 
         $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/old.php');
         self::assertSame('/old.php', $graph->getNodeFile($source_node));
@@ -120,9 +122,9 @@ final class FileReferenceTest extends TestCase
     public function testUsedReferencesExcludeDeadSources(): void
     {
         $graph = new CodeUseGraph();
-        $used_source = CodeUseGraph::functionLikeNode('a::used');
-        $dead_source = CodeUseGraph::functionLikeNode('a::dead');
-        $target = CodeUseGraph::functionLikeNode('a::target');
+        $used_source = CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('a'), Interner::intern('used')));
+        $dead_source = CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('a'), Interner::intern('dead')));
+        $target = CodeUseGraph::functionLikeNode(new MethodIdentifier(Interner::intern('a'), Interner::intern('target')));
 
         $graph->markAsPublicApi($used_source);
         $graph->addEdge($used_source, $target);

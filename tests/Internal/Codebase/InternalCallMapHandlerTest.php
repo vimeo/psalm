@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -268,22 +269,22 @@ final class InternalCallMapHandlerTest extends TestCase
 
     public function testGetCallablesFromCallmapRemovesRwPrefixFromParameterNames(): void
     {
-        $entries = InternalCallMapHandler::getCallablesFromCallMap('collator_sort'); // has &rw_array parameter as second parameter
+        $entries = InternalCallMapHandler::getCallablesFromCallMap(Interner::intern('collator_sort')); // has &rw_array parameter as second parameter
         $this->assertNotNull($entries);
         $collator_sort_entry = $entries[0];
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
-        $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
+        $this->assertEquals('arr', Interner::str($collator_sort_entry->params[1]->name));
     }
 
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
     {
-        $entries = InternalCallMapHandler::getCallablesFromCallMap('curl_multi_exec'); // has &w_still_running parameter as second parameter
+        $entries = InternalCallMapHandler::getCallablesFromCallMap(Interner::intern('curl_multi_exec')); // has &w_still_running parameter as second parameter
         $this->assertNotNull($entries);
         $curl_multi_exec_entry = $entries[0];
         $this->assertIsArray($curl_multi_exec_entry->params);
         $this->assertArrayHasKey(1, $curl_multi_exec_entry->params);
-        $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
+        $this->assertEquals('still_running', Interner::str($curl_multi_exec_entry->params[1]->name));
     }
 
     /**

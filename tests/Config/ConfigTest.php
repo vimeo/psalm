@@ -16,12 +16,16 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Interner;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\StrId;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
@@ -509,7 +513,7 @@ final class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
         $this->assertSame(
             Config::REPORT_SUPPRESS,
-            $config->getReportingLevelForFunction('UndefinedFunction', 'Some\Namespace\zzz'),
+            $config->getReportingLevelForFunction('UndefinedFunction', Interner::internLower('Some\Namespace\zzz')),
         );
     }
 
@@ -649,7 +653,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Badger',
+                Interner::intern('Psalm\Badger'),
             ),
         );
 
@@ -657,7 +661,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\BadActor',
+                Interner::intern('Psalm\BadActor'),
             ),
         );
 
@@ -665,7 +669,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\GoodActor',
+                Interner::intern('Psalm\GoodActor'),
             ),
         );
 
@@ -673,14 +677,14 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\MagicFactory',
+                Interner::intern('Psalm\MagicFactory'),
             ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Bodger',
+                Interner::intern('Psalm\Bodger'),
             ),
         );
 
@@ -688,7 +692,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find1',
+                MethodIdentifier::fromMethodIdReference('Psalm\Bodger::find1'),
             ),
         );
 
@@ -696,7 +700,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find2',
+                MethodIdentifier::fromMethodIdReference('Psalm\Bodger::find2'),
             ),
         );
 
@@ -704,37 +708,37 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Badger::find2',
-            ),
-        );
-
-        $this->assertNull(
-            $config->getReportingLevelForProperty(
-                'UndefinedMethod',
-                'Psalm\Bodger::$find3',
+                MethodIdentifier::fromMethodIdReference('Psalm\Badger::find2'),
             ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
-                'Psalm\Bodger::$find4',
+                new PropertyIdentifier(Interner::intern('Psalm\Bodger'), Interner::intern('find3')),
+            ),
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                new PropertyIdentifier(Interner::intern('Psalm\Bodger'), Interner::intern('find4')),
             ),
         );
 
         $this->assertSame(
             'suppress',
-            $config->getReportingLevelForMethod(
+            $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                'fooBar',
+                Interner::internLower('fooBar'),
             ),
         );
 
         $this->assertSame(
             'suppress',
-            $config->getReportingLevelForMethod(
+            $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                'foobar',
+                Interner::internLower('foobar'),
             ),
         );
 
@@ -757,7 +761,8 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClassConstant(
                 'InvalidConstantAssignmentValue',
-                'Psalm\Bodger::FOO',
+                Interner::intern('Psalm\Bodger'),
+                Interner::intern('FOO'),
             ),
         );
     }
@@ -882,7 +887,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Badger',
+                Interner::intern('Psalm\Badger'),
             ),
         );
 
@@ -890,7 +895,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\BadActor',
+                Interner::intern('Psalm\BadActor'),
             ),
         );
 
@@ -898,7 +903,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\GoodActor',
+                Interner::intern('Psalm\GoodActor'),
             ),
         );
 
@@ -906,14 +911,14 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\MagicFactory',
+                Interner::intern('Psalm\MagicFactory'),
             ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForClass(
                 'UndefinedClass',
-                'Psalm\Bodger',
+                Interner::intern('Psalm\Bodger'),
             ),
         );
 
@@ -921,7 +926,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find1',
+                MethodIdentifier::fromMethodIdReference('Psalm\Bodger::find1'),
             ),
         );
 
@@ -929,7 +934,7 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Bodger::find2',
+                MethodIdentifier::fromMethodIdReference('Psalm\Bodger::find2'),
             ),
         );
 
@@ -937,37 +942,37 @@ final class ConfigTest extends TestCase
             'suppress',
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
-                'Psalm\Badger::find2',
-            ),
-        );
-
-        $this->assertNull(
-            $config->getReportingLevelForProperty(
-                'UndefinedMethod',
-                'Psalm\Bodger::$find3',
+                MethodIdentifier::fromMethodIdReference('Psalm\Badger::find2'),
             ),
         );
 
         $this->assertNull(
             $config->getReportingLevelForProperty(
                 'UndefinedMethod',
-                'Psalm\Bodger::$find4',
+                new PropertyIdentifier(Interner::intern('Psalm\Bodger'), Interner::intern('find3')),
+            ),
+        );
+
+        $this->assertNull(
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                new PropertyIdentifier(Interner::intern('Psalm\Bodger'), Interner::intern('find4')),
             ),
         );
 
         $this->assertSame(
             'suppress',
-            $config->getReportingLevelForMethod(
+            $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                'fooBar',
+                Interner::internLower('fooBar'),
             ),
         );
 
         $this->assertSame(
             'suppress',
-            $config->getReportingLevelForMethod(
+            $config->getReportingLevelForFunction(
                 'UndefinedFunction',
-                'foobar',
+                Interner::internLower('foobar'),
             ),
         );
 
@@ -1606,12 +1611,12 @@ final class ConfigTest extends TestCase
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Psalm' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike('Psalm\\Foo'),
+            $config->getPotentialComposerFilePathForClassLike(Interner::intern('Psalm\\Foo')),
         );
 
         $this->assertSame(
             dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'Foo.php',
-            $config->getPotentialComposerFilePathForClassLike('Psalm\\Tests\\Foo'),
+            $config->getPotentialComposerFilePathForClassLike(Interner::intern('Psalm\\Tests\\Foo')),
         );
     }
 
@@ -1663,7 +1668,7 @@ final class ConfigTest extends TestCase
             ),
         );
 
-        $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+        $this->assertContains(StrId::datetime, $this->project_analyzer->getConfig()->getUniversalObjectCrates());
     }
 
     public function testInferPropertyTypesFromConstructorIsRead(): void
@@ -1983,7 +1988,7 @@ final class ConfigTest extends TestCase
                 new TooManyArguments(
                     'too many',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
-                    'Foo\Bar::baZ',
+                    MethodIdentifier::fromMethodIdReference('Foo\Bar::baZ'),
                 ),
             ),
         );
@@ -2013,7 +2018,7 @@ final class ConfigTest extends TestCase
                 new UndefinedFunction(
                     'Function Foo\Bar\baz does not exist',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
-                    'foo\bar\baz',
+                    Interner::intern('foo\bar\baz'),
                 ),
             ),
         );

@@ -15,7 +15,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 
 use function array_map;
+use function assert;
 use function implode;
+use function str_starts_with;
 use function strrpos;
 use function substr;
 
@@ -48,6 +50,10 @@ class TNamedObject extends Atomic
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
+        assert(
+            !str_starts_with(Interner::str($value), '\\'),
+            'Class names must be interned without a leading backslash',
+        );
         $this->value = $value;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);

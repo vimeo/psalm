@@ -8,6 +8,7 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
 use Psalm\Internal\PhpVisitor\Reflector\ClassLikeDocblockParser;
+use Psalm\Interner;
 
 use function array_values;
 
@@ -37,7 +38,7 @@ final class ClassLikeDocblockParserTest extends TestCase
         $node = new Class_(null);
         $php_parser_doc = new Doc($doc);
         $class_docblock = ClassLikeDocblockParser::parse($node, $php_parser_doc, new Aliases());
-        $this->assertSame([['T', 'of', 'string', true, 33]], $class_docblock->templates);
+        $this->assertSame([[Interner::intern('T'), 'of', 'string', true, 33]], $class_docblock->templates);
     }
 
     /**
@@ -263,20 +264,20 @@ final class ClassLikeDocblockParserTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->scanFiles();
 
-        $class_storage = $codebase->classlike_storage_provider->get('MyClass');
+        $class_storage = $codebase->classlike_storage_provider->get(Interner::intern('MyClass'));
         $methods = $expected['is_static']
             ? $class_storage->pseudo_static_methods
             : $class_storage->pseudo_methods;
         $method = array_values($methods)[0];
 
         $actual = [
-            'name' => $method->cased_name,
+            'name' => $method->cased_name === null ? null : Interner::str($method->cased_name),
             'returnType' => (string) $method->return_type,
             'is_static' => $method->is_static,
             'params' => [],
         ];
         foreach ($method->params as $param) {
-            $actual['params'][$param->name] = [
+            $actual['params'][Interner::str($param->name)] = [
                 'type' => (string) $param->type,
             ];
         }

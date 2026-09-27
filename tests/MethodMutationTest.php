@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 
 final class MethodMutationTest extends TestCase
 {
@@ -95,7 +96,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier('FooController', 'barbar'),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barbar')),
             $method_context,
             'somefile.php',
             'somefile.php',
@@ -139,7 +140,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier('FooController', 'barbar'),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('barbar')),
             $method_context,
             'somefile.php',
             'somefile.php',
@@ -176,7 +177,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier('FooController', '__construct'),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('__construct')),
             $method_context,
             'somefile.php',
             'somefile.php',
@@ -215,7 +216,7 @@ final class MethodMutationTest extends TestCase
         $method_context = new Context();
         $method_context->collect_mutations = true;
         $this->project_analyzer->getMethodMutations(
-            new MethodIdentifier('FooController', '__construct'),
+            new MethodIdentifier(Interner::intern('FooController'), Interner::intern('__construct')),
             $method_context,
             'somefile.php',
             'somefile.php',

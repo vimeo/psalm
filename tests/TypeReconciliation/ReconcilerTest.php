@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\Falsy;
@@ -67,7 +68,7 @@ final class ReconcilerTest extends TestCase
             class B {}
             interface SomeInterface {}
         ');
-        $this->project_analyzer->getCodebase()->queueClassLikeForScanning(Countable::class);
+        $this->project_analyzer->getCodebase()->queueClassLikeForScanning(Interner::intern(Countable::class));
         $this->project_analyzer->getCodebase()->scanFiles();
     }
 
@@ -140,14 +141,14 @@ final class ReconcilerTest extends TestCase
             'notTrueWithBool' => ['false', new IsNotIdentical(new TTrue()), 'bool'],
             'notFalseWithBool' => ['true', new IsNotIdentical(new TFalse()), 'bool'],
 
-            'notSomeClassWithSomeClassPipeBool' => ['bool', new IsNotType(new TNamedObject('SomeClass')), 'SomeClass|bool'],
-            'notSomeClassWithSomeClassPipeNull' => ['null', new IsNotType(new TNamedObject('SomeClass')), 'SomeClass|null'],
-            'notSomeClassWithAPipeB' => ['B', new IsNotType(new TNamedObject('A')), 'A|B'],
-            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', new IsNotType(new TNamedObject('DateTime')), 'DateTimeInterface'],
-            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', new IsNotType(new TNamedObject('DateTimeImmutable')), 'DateTimeInterface'],
+            'notSomeClassWithSomeClassPipeBool' => ['bool', new IsNotType(new TNamedObject(Interner::intern('SomeClass'))), 'SomeClass|bool'],
+            'notSomeClassWithSomeClassPipeNull' => ['null', new IsNotType(new TNamedObject(Interner::intern('SomeClass'))), 'SomeClass|null'],
+            'notSomeClassWithAPipeB' => ['B', new IsNotType(new TNamedObject(Interner::intern('A'))), 'A|B'],
+            'notDateTimeWithDateTimeInterface' => ['DateTimeImmutable', new IsNotType(new TNamedObject(Interner::intern('DateTime'))), 'DateTimeInterface'],
+            'notDateTimeImmutableWithDateTimeInterface' => ['DateTime', new IsNotType(new TNamedObject(Interner::intern('DateTimeImmutable'))), 'DateTimeInterface'],
 
-            'myObjectWithSomeClassPipeBool' => ['SomeClass', new IsType(new TNamedObject('SomeClass')), 'SomeClass|bool'],
-            'myObjectWithAPipeB' => ['A', new IsType(new TNamedObject('A')), 'A|B'],
+            'myObjectWithSomeClassPipeBool' => ['SomeClass', new IsType(new TNamedObject(Interner::intern('SomeClass'))), 'SomeClass|bool'],
+            'myObjectWithAPipeB' => ['A', new IsType(new TNamedObject(Interner::intern('A'))), 'A|B'],
 
             'array' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'array|null'],
 
@@ -162,19 +163,19 @@ final class ReconcilerTest extends TestCase
             'nullableClassStringEqualsNull' => ['null', new IsIdentical(new TNull()), 'class-string<SomeClass>|null'],
             'nullableClassStringTruthy' => ['class-string<SomeClass>', new Truthy(), 'class-string<SomeClass>|null'],
             'iterableToArray' => ['array<int, int>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, int>'],
-            'iterableToTraversable' => ['Traversable<int, int>', new IsType(new TNamedObject('Traversable')), 'iterable<int, int>'],
+            'iterableToTraversable' => ['Traversable<int, int>', new IsType(new TNamedObject(Interner::intern('Traversable'))), 'iterable<int, int>'],
             'callableToCallableArray' => ['callable-array{0: class-string|object, 1: non-empty-string}', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable'],
             'SmallKeyedArrayAndCallable' => ['array{test: string}', new IsType(TKeyedArray::make(['test' => Type::getString()])), 'callable'],
             'BigKeyedArrayAndCallable' => ['array{foo: string, test: string, thing: string}', new IsType(TKeyedArray::make(['foo' => Type::getString(), 'test' => Type::getString(), 'thing' => Type::getString()])), 'callable'],
             'callableOrArrayToCallableArray' => ['array<array-key, mixed>', new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'callable|array'],
-            'traversableToIntersection' => ['Countable&Traversable', new IsType(new TNamedObject('Traversable')), 'Countable'],
+            'traversableToIntersection' => ['Countable&Traversable', new IsType(new TNamedObject(Interner::intern('Traversable'))), 'Countable'],
             'iterableWithoutParamsToTraversableWithoutParams' => ['Traversable', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable'],
             'iterableWithParamsToTraversableWithParams' => ['Traversable<int, string>', new IsNotType(new TArray([Type::getArrayKey(), Type::getMixed()])), 'iterable<int, string>'],
             'iterableAndObject' => ['Traversable<int, string>', new IsType(new TObject()), 'iterable<int, string>'],
             'iterableAndNotObject' => ['array<int, string>', new IsNotType(new TObject()), 'iterable<int, string>'],
             'boolNotEmptyIsTrue' => ['true', new NonEmpty(), 'bool'],
-            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', new IsType(new TNamedObject('SomeInterface')), 'SomeClass|SomeInterface'],
-            'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject('SomeClass')), 'SomeClass|SomeInterface'],
+            'interfaceAssertionOnClassInterfaceUnion' => ['SomeInterface|SomeInterface&SomeClass', new IsType(new TNamedObject(Interner::intern('SomeInterface'))), 'SomeClass|SomeInterface'],
+            'classAssertionOnClassInterfaceUnion' => ['SomeClass|SomeClass&SomeInterface', new IsType(new TNamedObject(Interner::intern('SomeClass'))), 'SomeClass|SomeInterface'],
             'stringToNumericStringWithInt' => ['numeric-string', new IsLooselyEqual(new TInt()), 'string'],
             'stringToNumericStringWithFloat' => ['numeric-string', new IsLooselyEqual(new TFloat()), 'string'],
             'filterKeyedArrayWithIterable' => ['array{some: string}',new IsType(new TIterable([Type::getMixed(), Type::getString()])), 'array{some: mixed}'],
@@ -183,7 +184,7 @@ final class ReconcilerTest extends TestCase
             'SimpleXMLIteratorNotAlwaysTruthy' => ['SimpleXMLIterator', new Truthy(), 'SimpleXMLIterator'],
             'SimpleXMLIteratorNotAlwaysTruthy2' => ['SimpleXMLIterator', new Falsy(), 'SimpleXMLIterator'],
             'stringWithAny' => ['string', new Any(), 'string'],
-            'IsNotAClassReconciliation' => ['int', new Assertion\IsNotAClass(new TNamedObject('IDObject'), true), 'int|IDObject'],
+            'IsNotAClassReconciliation' => ['int', new Assertion\IsNotAClass(new TNamedObject(Interner::intern('IDObject')), true), 'int|IDObject'],
             'nonEmptyArray' => ['non-empty-array<array-key, mixed>', new IsType(Atomic::create('non-empty-array')), 'array'],
             'nonEmptyList' => ['non-empty-list<mixed>', new IsType(Atomic::create('non-empty-list')), 'array'],
             'ListOfInts' => ['list<int>', new IsType(new TIterable([Type::getMixed(), Type::getInt()])), 'list<mixed>'],
@@ -270,23 +271,23 @@ final class ReconcilerTest extends TestCase
     {
         return [
             'constant-with-prefix' => [
-                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_*')),
+                new IsType(new TClassConstant(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('PREFIX_*'))),
                 "'bar'|'baz'",
             ],
             'single-class-constant' => [
-                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_BAR')),
+                new IsType(new TClassConstant(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('PREFIX_BAR'))),
                 "'bar'",
             ],
             'referencing-another-class-constant' => [
-                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_QOO')),
+                new IsType(new TClassConstant(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('PREFIX_QOO'))),
                 "'bar'",
             ],
             'referencing-all-class-constants' => [
-                new IsType(new TClassConstant('ReconciliationTest\\Foo', '*')),
+                new IsType(new TClassConstant(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('*'))),
                 "'bar'|'baz'",
             ],
             'referencing-some-class-constants-with-wildcard' => [
-                new IsType(new TClassConstant('ReconciliationTest\\Foo', 'PREFIX_B*')),
+                new IsType(new TClassConstant(Interner::intern('ReconciliationTest\\Foo'), Interner::intern('PREFIX_B*'))),
                 "'bar'|'baz'",
             ],
         ];

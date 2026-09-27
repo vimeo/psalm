@@ -271,7 +271,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
         $byref_uses = [];
-        if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
+        if ($this->function instanceof Closure) {
             foreach ($this->function->uses as $use) {
                 if (!is_string($use->var->name)) {
                     continue;

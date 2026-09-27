@@ -538,7 +538,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 // checkFunctionExists() lowercases the id, and may resolve it to a root function
                 if ($checked_function_id !== $function_id) {
-                    $function_id = $function_call_info->function_id = $checked_function_id;
+                    $function_call_info->function_id = $checked_function_id;
                     $cased_function_id = $function_call_info->cased_function_id = $checked_function_id;
                 }
 

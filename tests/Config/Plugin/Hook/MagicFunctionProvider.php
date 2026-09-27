@@ -12,6 +12,7 @@ use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Union;
 
@@ -24,13 +25,13 @@ final class MagicFunctionProvider implements
     FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['magicfunction'];
+        return [StrId::magicfunction];
     }
 
     /**
@@ -40,7 +41,7 @@ final class MagicFunctionProvider implements
     public static function doesFunctionExist(FunctionExistenceProviderEvent $event): ?bool
     {
         $function_id = $event->getFunctionId();
-        return $function_id === 'magicfunction';
+        return $function_id === StrId::magicfunction;
     }
 
     /**
@@ -49,7 +50,7 @@ final class MagicFunctionProvider implements
     #[Override]
     public static function getFunctionParams(FunctionParamsProviderEvent $event): ?array
     {
-        return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
+        return [new FunctionLikeParameter(StrId::first, false, Type::getString(), Type::getString())];
     }
 
     #[Override]

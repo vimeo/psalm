@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_keys;
-use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_values;
@@ -531,7 +530,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
-     * @return  array{?Union, list<MethodIdentifier>}
+     * @return  array{?Union, array<int, array<int, MethodIdentifier>>}
      */
     private static function getIntersectionReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -574,7 +573,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result->check_visibility = $intersection_result->check_visibility;
             $result->too_many_arguments = $intersection_result->too_many_arguments;
 
-            $all_intersection_existent_method_ids = array_merge(
+            $all_intersection_existent_method_ids = AtomicMethodCallAnalysisResult::mergeMethodIds(
                 $all_intersection_existent_method_ids,
                 $intersection_result->existent_method_ids,
             );
@@ -652,10 +651,10 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     && $stmt->name instanceof PhpParser\Node\Identifier
                     && isset($lhs_type_part->methods[Interner::internLower($stmt->name->name)])
                 ) {
-                    $result->existent_method_ids[] = new MethodIdentifier(
+                    $result->addExistentMethodId(new MethodIdentifier(
                         StrId::object,
                         Interner::internLower($stmt->name->name),
-                    );
+                    ));
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
@@ -928,7 +927,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     ): void {
         // treated as a function id, there's no actual class to look the method up in
         $method_id = Interner::intern('object::__invoke');
-        $result->existent_method_ids[] = new MethodIdentifier(StrId::object, StrId::__invoke);
+        $result->addExistentMethodId(new MethodIdentifier(StrId::object, StrId::__invoke));
         $callable_object_method_id = new MethodIdentifier(Interner::intern('callable-object'), StrId::__invoke);
         $result->has_valid_method_call_type = true;
 

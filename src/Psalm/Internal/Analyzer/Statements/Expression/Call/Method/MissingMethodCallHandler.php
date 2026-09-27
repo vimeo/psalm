@@ -31,7 +31,6 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
 use function array_map;
-use function array_merge;
 
 /**
  * @internal
@@ -56,7 +55,7 @@ final class MissingMethodCallHandler
         if ($stmt->isFirstClassCallable()) {
             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
                 $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[] = $method_id;
+                $result->addExistentMethodId($method_id);
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $class_storage->pseudo_methods[$method_name_lc],
                 );
@@ -114,7 +113,7 @@ final class MissingMethodCallHandler
 
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->addExistentMethodId($method_id);
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -202,7 +201,7 @@ final class MissingMethodCallHandler
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id;
+        $result->addExistentMethodId($method_id);
 
         $array_values = array_map(
             static fn(PhpParser\Node\Arg $arg): PhpParser\Node\ArrayItem => new VirtualArrayItem(
@@ -239,7 +238,7 @@ final class MissingMethodCallHandler
     }
 
     /**
-     * @param list<MethodIdentifier> $all_intersection_existent_method_ids
+     * @param array<int, array<int, MethodIdentifier>> $all_intersection_existent_method_ids
      * @param array{MethodIdentifier, string} $reported_method_id method id and cased method id to report
      *                                                           if the method doesn't exist
      */
@@ -272,7 +271,7 @@ final class MissingMethodCallHandler
             && $found_method_and_class_storage
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id;
+            $result->addExistentMethodId($method_id);
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -374,7 +373,7 @@ final class MissingMethodCallHandler
         }
 
         if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
-            $result->existent_method_ids = array_merge(
+            $result->existent_method_ids = AtomicMethodCallAnalysisResult::mergeMethodIds(
                 $result->existent_method_ids,
                 $all_intersection_existent_method_ids,
             );

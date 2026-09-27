@@ -117,7 +117,6 @@ final class Interner
      * @param array<string> $strs
      * @return list<int>
      * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty interning is semantically pure
      */
     public static function internAll(array $strs): array
     {
@@ -132,7 +131,6 @@ final class Interner
      * Interns the lowercase version of a string, returning its id.
      *
      * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty interning is semantically pure
      */
     public static function internLower(string $str): int
     {
@@ -176,7 +174,6 @@ final class Interner
      * Case-insensitive comparison of two interned strings.
      *
      * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty interning is semantically pure
      */
     public static function equalsLower(int $a, int $b): bool
     {
@@ -189,7 +186,6 @@ final class Interner
      * @param array<int> $ids
      * @return list<string>
      * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty interning is semantically pure
      */
     public static function strAll(array $ids): array
     {
@@ -233,7 +229,6 @@ final class Interner
      * @internal
      * @param list<string> $strings
      * @psalm-mutation-free
-     * @psalm-suppress ImpureMethodCall interning is semantically pure
      */
     public static function import(array $strings): void
     {

@@ -91,7 +91,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $cased_method_id = Interner::str($fq_class_name) . '::' . $stmt_name->name;
 
 
-        $result->existent_method_ids[] = $method_id;
+        $result->addExistentMethodId($method_id);
 
         if ($context->collect_initializations && $context->calling_method_id) {
             $initialization_context = clone $context;

@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Interner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Tests\TestCase;
@@ -58,7 +59,7 @@ final class FileScannerTest extends TestCase
         $config->globals['$global'] = 'GlobalClass';
 
         $function_storage_some_function = new FunctionStorage();
-        $function_storage_some_function->cased_name = 'some_function';
+        $function_storage_some_function->cased_name = Interner::intern('some_function');
         $function_storage_some_function->required_param_count = 0;
         $function_storage_some_function->global_variables = [
             '$global' => true,
@@ -68,13 +69,13 @@ final class FileScannerTest extends TestCase
         $file_storage->deep_scan = true;
         $file_storage->aliases = new Aliases();
         $file_storage->functions = [
-            'some_function' => $function_storage_some_function,
+            Interner::intern('some_function') => $function_storage_some_function,
         ];
         $file_storage->declaring_function_ids = [
-            'some_function' => '/dir/file.php',
+            Interner::intern('some_function') => '/dir/file.php',
         ];
         $file_storage->referenced_classlikes = [
-            'globalclass' => 'GlobalClass',
+            Interner::intern('globalclass') => Interner::intern('GlobalClass'),
         ];
         yield 'referenceConfiguredGlobalClass' => [
             $config,

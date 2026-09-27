@@ -23,6 +23,7 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use Psalm\StrId;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -885,10 +886,10 @@ final class PluginTest extends TestCase
         $mock->expects($this->exactly(4))
             ->method('check')
             ->withConsecutive(
-                [$this->equalTo('b')],
-                [$this->equalTo('array_map')],
-                [$this->equalTo('fopen')],
-                [$this->equalTo('a')],
+                [$this->equalTo(StrId::b)],
+                [$this->equalTo(StrId::array_map)],
+                [$this->equalTo(StrId::fopen)],
+                [$this->equalTo(StrId::a)],
             );
         $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
             private static MockObject $m;
