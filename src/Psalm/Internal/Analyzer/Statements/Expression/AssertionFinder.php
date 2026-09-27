@@ -4148,8 +4148,8 @@ final class AssertionFinder
             $lesser_expr = $conditional->left;
         }
 
-        // an operand that writes a variable could change what the other operand's bound refers to,
-        // e.g. `($a = $hi) > ($a = $lo)`
+        // an operand that may write a variable could change what the other operand's bound refers to,
+        // e.g. `($a = $hi) > ($a = $lo)` or `$x > takesByRef($x)`
         $writes_variable = (new NodeFinder())->findFirst(
             [$greater_expr, $lesser_expr],
             static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
@@ -4158,7 +4158,15 @@ final class AssertionFinder
                 || $node instanceof PhpParser\Node\Expr\PreInc
                 || $node instanceof PhpParser\Node\Expr\PreDec
                 || $node instanceof PhpParser\Node\Expr\PostInc
-                || $node instanceof PhpParser\Node\Expr\PostDec,
+                || $node instanceof PhpParser\Node\Expr\PostDec
+                || $node instanceof PhpParser\Node\Expr\Include_
+                || $node instanceof PhpParser\Node\Expr\Eval_
+                || $node instanceof PhpParser\Node\Expr\Yield_
+                || $node instanceof PhpParser\Node\Expr\YieldFrom
+                || ($node instanceof PhpParser\Node\Expr\CallLike
+                    && !($node instanceof PhpParser\Node\Expr\FuncCall
+                        && $node->name instanceof PhpParser\Node\Name
+                        && in_array(strtolower($node->name->getLast()), ['count', 'sizeof', 'strlen'], true))),
         );
         if ($writes_variable !== null) {
             return [];

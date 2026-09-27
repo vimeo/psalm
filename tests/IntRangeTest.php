@@ -1264,6 +1264,24 @@ final class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'intRangeBoundComparisonIgnoresOperandsWithByRefCalls' => [
+                'code' => '<?php
+                    /** @return int<5, 10> */
+                    function change(int &$n): int {
+                        $n = -100;
+                        return 5;
+                    }
+
+                    function f(int $a): void {
+                        $xs = [$a];
+                        // f(20) ends up here with $xs[0] = -100
+                        if ($xs[0] > change($xs[0])) {
+                            if ($xs[0] < 0) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
             'literalLeftOperandNarrowsIntRangeRightOperand' => [
                 'code' => '<?php
                     /**
@@ -1291,6 +1309,57 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeInGenericIsNotWidenedForFixedInheritedParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @extends Box<int<0, 5>> */
+                    final class SmallBox extends Box {}
+
+                    /** @param Box<int> $box */
+                    function takesBox(Box $box): void {}
+
+                    function f(SmallBox $box): void {
+                        takesBox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'intRangeInGenericKeepsInvarianceThroughInheritance' => [
+                'code' => '<?php
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class Pair {
+                        /**
+                         * @param X $x
+                         * @param Y $y
+                         */
+                        public function __construct(public mixed $x, public mixed $y) {}
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Pair<Y, X>
+                     */
+                    final class Flipped extends Pair {}
+
+                    /** @param Pair<int, string> $pair */
+                    function takesPair(Pair $pair): void {}
+
+                    /** @param Flipped<string, int<0, 5>> $flipped */
+                    function f(Flipped $flipped): void {
+                        takesPair($flipped);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'intRangeInGenericWidensArgumentAfterCall' => [
                 'code' => '<?php
                     /**
