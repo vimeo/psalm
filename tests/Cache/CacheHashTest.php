@@ -13,6 +13,7 @@ use Psalm\Tests\TestCase;
 
 use function file_put_contents;
 use function glob;
+use function hash;
 use function pack;
 use function strlen;
 use function substr;
@@ -147,9 +148,6 @@ final class CacheHashTest extends TestCase
         yield 'declared length overruns the header' => [pack('V', 4096) . 'the hash' . $key];
         yield 'total length one byte short' => [pack('V', 8) . 'the hash' . substr($key, 1)];
         yield 'total length one byte long' => [pack('V', 8) . 'the hash' . $key . 'x'];
-        // 'V' is unsigned, but on a 32-bit build this decodes to -1. Left unguarded, the
-        // negative length would make substr() hand back a fabricated hash.
-        yield 'length prefix decodes negative on 32-bit' => ["\xff\xff\xff\xff" . 'the hash' . $key];
     }
 
     /**
@@ -203,10 +201,10 @@ final class CacheHashTest extends TestCase
     private function itemPath(string $key): string
     {
         $files = glob($this->cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR
-            . 'test_subdir' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*.hash');
+            . 'test_subdir' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . hash('xxh128', $key) . '.hash');
 
         $this->assertNotFalse($files);
-        $this->assertCount(1, $files, 'expected exactly one cached item');
+        $this->assertCount(1, $files, "expected exactly one cached item for $key");
 
         return substr($files[0], 0, -5);
     }

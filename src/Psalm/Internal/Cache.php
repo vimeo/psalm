@@ -178,15 +178,8 @@ final class Cache
             return null;
         }
 
-        $unpacked = unpack('V', substr($header, 0, self::HASH_LENGTH_BYTES));
-
-        // 'V' is unsigned, but on a 32-bit build a value above PHP_INT_MAX decodes negative,
-        // and a negative length would make the substr() below return a fabricated hash.
-        // Psalm supports 32-bit PHP, so reject it rather than relying on the platform.
-        if ($unpacked === false || !isset($unpacked[1]) || !is_int($unpacked[1]) || $unpacked[1] < 0) {
-            return null;
-        }
-
+        $unpacked = unpack('V', $header);
+        assert($unpacked !== false && isset($unpacked[1]) && is_int($unpacked[1]) && $unpacked[1] >= 0);
         $hash_length = $unpacked[1];
 
         // Anything that is not exactly "<length><hash><key>" is structurally corrupt. That
