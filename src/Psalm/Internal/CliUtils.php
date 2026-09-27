@@ -71,7 +71,7 @@ final class CliUtils
 {
     /**
      * Fibers get their own C stack, sized by the `fiber.stack_size` ini setting, whose default
-     * (~2 MiB) is a fraction of the ~8 MiB the main thread usually gets.
+     * (2 MiB on 64-bit systems) is a fraction of the ~8 MiB the main thread typically gets.
      */
     public const MINIMUM_FIBER_STACK_SIZE = 16 * 1024 * 1024;
 
@@ -494,13 +494,13 @@ final class CliUtils
     /**
      * Psalm runs recursive workloads (parsing, serializing ASTs into the cache, type resolution)
      * inside Revolt event loop fibers: every parallel worker executes its task in one, and so does
-     * the language server. A fiber's C stack is capped by `fiber.stack_size`, which defaults to
-     * roughly a quarter of the main thread stack, so deeply nested code aborts the process with
+     * the language server. A fiber's C stack is capped by `fiber.stack_size`, which on a typical
+     * 64-bit setup is 2 MiB against a main thread stack of about 8 MiB, so deeply nested code aborts with
      * "Maximum call stack size of 2031616 bytes ... reached. Infinite recursion?" even though the
      * very same file analyses fine in-process (#11967).
      *
-     * Give fibers at least as much stack as the main thread has. Fiber stacks are mapped lazily,
-     * so the larger size costs address space rather than resident memory.
+     * Give fibers at least as much stack as the main thread typically has. On demand-paged systems
+     * the larger size reserves virtual address space, and only the pages actually used become resident.
      *
      * Must run before the first fiber is started, as that is when its stack is allocated.
      * Unlike the opcache settings, `fiber.stack_size` can be changed at runtime, so this does not
