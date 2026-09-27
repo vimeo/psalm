@@ -91,6 +91,9 @@ echo $b->b;
 echo $b->a; // works
 ```
 
+Mixins are followed transitively: if `B` mixes in `A` and `C` mixes in `B`, members of `A` are also available on `C`.
+Chains are only followed through non-generic mixins; a generic hop such as `@mixin Collection<T>` is not traversed.
+
 
 ## Psalm-specific tags
 

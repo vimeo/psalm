@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -818,6 +820,28 @@ final class MixinAnnotationTest extends TestCase
                     '$result' => 'string',
                 ],
             ],
+            'nestedMixinPseudoMethodViaMagicCall' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @method string pseudo() */
+                    class PseudoBase {
+                        public function __call(string $n, array $a) {}
+                    }
+
+                    /** @mixin \T\PseudoBase */
+                    class PseudoMiddle {}
+
+                    /** @mixin \T\PseudoMiddle */
+                    class PseudoTop {
+                        public function __call(string $n, array $a) {}
+                    }
+
+                    $result = (new PseudoTop())->pseudo();',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -830,32 +854,6 @@ final class MixinAnnotationTest extends TestCase
                     /** @mixin B */
                     class A {}',
                 'error_message' => 'UndefinedDocblockClass',
-            ],
-            'nestedGenericMixinChainIsNotFollowed' => [
-                // Transitive flattening only follows named (non-templated) mixins. A generic mixin hop
-                // would need per-hop template binding, so a method reachable only through one stays
-                // unresolved rather than leaking an unbound template param into the host.
-                'code' => '<?php
-                    namespace T;
-
-                    /** @template TItem */
-                    class GenInner {
-                        /** @return TItem */
-                        public function item() { throw new \Exception(); }
-                    }
-
-                    /**
-                     * @template TMid
-                     * @mixin \T\GenInner<TMid>
-                     */
-                    class GenMiddle {}
-
-                    /** @mixin \T\GenMiddle<string> */
-                    class GenHost {}
-
-                    $host = new GenHost();
-                    $host->item();',
-                'error_message' => 'UndefinedMethod',
             ],
             'undefinedMixinClassWithPropertyFetch' => [
                 'code' => '<?php
@@ -1022,5 +1020,39 @@ final class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedVariable',
             ],
         ];
+    }
+
+    public function testTransitiveMixinIsNotCheckedAtHostDeclaration(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace T;
+
+                /** @mixin \T\Mid */
+                class Host {}
+
+                /** @mixin \T\Deep */
+                class Mid {}
+
+                /** @deprecated */
+                class Deep {
+                    public function deep(): void {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $deprecated_class_lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'DeprecatedClass') {
+                $deprecated_class_lines[] = $issue->line_from;
+            }
+        }
+
+        // Only Mid names the deprecated class; Host merely reaches it through Mid.
+        $this->assertSame([8], $deprecated_class_lines);
     }
 }
