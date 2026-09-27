@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -434,11 +433,7 @@ final class CallableTypeComparator
                             new Union([$container_type_part]),
                         );
 
-                        $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                        )->getSingleAtomic();
+                        $callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                     }
 
                     return $callable;
@@ -512,14 +507,9 @@ final class CallableTypeComparator
                     );
 
                     if ($template_result) {
-                        $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                        )->getSingleAtomic();
+                        $callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                     }
 
-                    /** @psalm-suppress LessSpecificReturnStatement */
                     return $callable;
                 }
             }
