@@ -1305,6 +1305,36 @@ final class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'intRangeBoundComparisonUsesHighestBoundOfUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, -5>|int<1, 10> $b
+                     */
+                    function f(int $a, int $b): void {
+                        if ($a <= $b) {
+                            /** @psalm-check-type-exact $a = int<min, 10> */;
+                        }
+                    }',
+            ],
+            'intRangeUnionInGenericWidensToDeclaredParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int|bool> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<int<0, 5>|int<10, 20>|bool> $box */
+                    function f(Box $box): void {
+                        takesBox($box);
+                        /** @psalm-check-type-exact $box = Box<bool|int> */;
+                    }',
+            ],
             'literalLeftOperandNarrowsIntRangeRightOperand' => [
                 'code' => '<?php
                     /**
