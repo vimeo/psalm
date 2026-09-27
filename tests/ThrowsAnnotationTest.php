@@ -10,6 +10,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\IssueBuffer;
 use RuntimeException;
+use Throwable;
 
 final class ThrowsAnnotationTest extends TestCase
 {
@@ -704,6 +705,11 @@ final class ThrowsAnnotationTest extends TestCase
 
     /**
      * @see https://github.com/vimeo/psalm/issues/11842
+     *
+     * `@method` has no `@throws` slot, so the fixture cannot declare the exception itself.
+     * analyzeWithPluginInjectedThrows() adds it to the pseudo-method's MethodStorage::$throws
+     * after scanning, the way a plugin that synthesises methods does. Caller::trigger() does not
+     * document RuntimeException, so MissingThrowsDocblock is expected, exactly as for a real method.
      */
     public function testPseudoMethodThrowsPropagatedViaMagicCall(): void
     {
@@ -723,12 +729,12 @@ final class ThrowsAnnotationTest extends TestCase
 
                 class Caller {
                     public function trigger(): void {
-                        (new Foo())->doIt();
+                        (new Foo())->doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -751,12 +757,12 @@ final class ThrowsAnnotationTest extends TestCase
 
                 class Caller {
                     public function trigger(): void {
-                        (new Foo())->doIt();
+                        (new Foo())->doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -780,12 +786,12 @@ final class ThrowsAnnotationTest extends TestCase
 
                 class Caller {
                     public function trigger(): void {
-                        Foo::doIt();
+                        Foo::doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', true);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', true, RuntimeException::class);
     }
 
     /**
@@ -808,12 +814,12 @@ final class ThrowsAnnotationTest extends TestCase
 
                 class Caller {
                     public function trigger(): void {
-                        Foo::doIt();
+                        Foo::doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', true);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', true, RuntimeException::class);
     }
 
     /**
@@ -836,12 +842,12 @@ final class ThrowsAnnotationTest extends TestCase
                 class Caller {
                     public function trigger(): void {
                         /** @psalm-suppress MissingThrowsDocblock */
-                        (new Foo())->doIt();
+                        (new Foo())->doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -866,12 +872,12 @@ final class ThrowsAnnotationTest extends TestCase
                      * @throws \RuntimeException
                      */
                     public function trigger(): void {
-                        (new Foo())->doIt();
+                        (new Foo())->doIt(); // throws RuntimeException, injected into the storage below
                     }
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -902,7 +908,7 @@ final class ThrowsAnnotationTest extends TestCase
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -931,7 +937,7 @@ final class ThrowsAnnotationTest extends TestCase
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
@@ -961,18 +967,23 @@ final class ThrowsAnnotationTest extends TestCase
                 }',
         );
 
-        $this->analyzeWithInjectedPseudoMethodThrows('somefile.php', 'foo', 'doit', false);
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
     }
 
     /**
+     * Simulates a plugin that declares throws on a synthesised pseudo-method: scans the file,
+     * adds $exception_class to the pseudo-method's MethodStorage::$throws, then analyzes.
+     *
      * @param lowercase-string $fq_class_name_lc
      * @param lowercase-string $method_name_lc
+     * @param class-string<Throwable> $exception_class
      */
-    private function analyzeWithInjectedPseudoMethodThrows(
+    private function analyzeWithPluginInjectedThrows(
         string $file_path,
         string $fq_class_name_lc,
         string $method_name_lc,
         bool $is_static,
+        string $exception_class,
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -982,7 +993,7 @@ final class ThrowsAnnotationTest extends TestCase
         $method_storage = $is_static
             ? $class_storage->pseudo_static_methods[$method_name_lc]
             : $class_storage->pseudo_methods[$method_name_lc];
-        $method_storage->throws[RuntimeException::class] = true;
+        $method_storage->throws[$exception_class] = true;
 
         $codebase->config->visitStubFiles($codebase);
 
