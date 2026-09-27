@@ -119,9 +119,8 @@ final class Cache
                 );
             } catch (Throwable $e) {
                 throw new RuntimeException(
-                    "Could not unserialize the consolidated cache {$this->dir}consolidated."
-                    . ' The cache may be corrupt, run Psalm with --clear-cache to rebuild it. Cause: '
-                    . self::describeError($e),
+                    "Could not unserialize the consolidated cache {$this->dir}consolidated. "
+                    . self::describeUnserializeError($e),
                     0,
                     $e,
                 );
@@ -251,13 +250,9 @@ final class Cache
                 throw new SerializationException('Invalid data provided to unserialize');
             }
         } catch (Throwable $e) {
-            $cause = self::describeError($e);
-            $hint = str_contains($cause, 'Maximum depth')
-                ? 'The value is nested too deeply, raise the unserialize_max_depth ini setting to allow it.'
-                : 'The cache may be corrupt, run Psalm with --clear-cache to rebuild it.';
             throw new RuntimeException(
-                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path. $hint"
-                . " Cause: $cause",
+                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path. "
+                . self::describeUnserializeError($e),
                 0,
                 $e,
             );
@@ -316,6 +311,16 @@ final class Cache
     private static function describeKey(string $key): string
     {
         return "'" . str_replace("\0", "', '", $key) . "'";
+    }
+
+    private static function describeUnserializeError(Throwable $e): string
+    {
+        $cause = self::describeError($e);
+        $hint = str_contains($cause, 'Maximum depth')
+            ? 'The value is nested too deeply, raise the unserialize_max_depth ini setting to allow it.'
+            : 'The cache may be corrupt, run Psalm with --clear-cache to rebuild it.';
+
+        return "$hint Cause: $cause";
     }
 
     /**
