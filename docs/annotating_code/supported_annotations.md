@@ -517,7 +517,7 @@ function sum(array $xs): int {
     return $total;
 }
 
-/** @param Closure<pure>(int): void $f */
+/** @param Closure[pure](int): void $f */
 function each(Closure $f): void {}
 
 /** @psalm-pure */
@@ -642,9 +642,16 @@ Used to annotate a class where at least one property is mutable: this is the def
 ### `@psalm-purity-template`
 
 Declares a **purity template**: a template parameter whose values are capability sets rather
-than types. It is used as the purity of a closure type (`Closure<P>(int): int`,
-`callable<P>(): void`) and as a class template argument (`Doer<pure>`, `Doer<P>`). Purity
-templates are covariant: a `Doer<pure>` can be used where a `Doer<io>` is expected.
+than types. It is used as the purity of a closure type (`Closure[P](int): int`,
+`callable[P](): void`) and as a class template argument (`Doer[pure]`, `Doer[P]`). Purity
+templates are covariant: a `Doer[pure]` can be used where a `Doer[io]` is expected.
+
+As in Hack, the arguments of purity templates are written in square brackets, before the type
+arguments in angle brackets: a class with `@template T` and `@psalm-purity-template P` is used as
+`Box[pure]<int>` (or `Box<int>` for its default purity, or `Box[pure]` for its default type
+arguments), whatever the order of the tags. Several purity arguments are separated by commas
+(`Pair[pure, io]<int>`), and each is a capability set (`write-props|io`) or a purity template.
+An empty capability set is written `pure`: `Box[]` is always an array of `Box`.
 
 Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
 closures it is given, like Hack's `[ctx $f]` contexts.
@@ -682,24 +689,24 @@ abstract class Doer {
     }
 }
 
-/** @extends Doer<write-globals> */
+/** @extends Doer[write-globals] */
 final class GlobalDoer extends Doer {} // InvalidTemplateParam: beyond the upper bound
 
-/** @extends Doer<pure> */
+/** @extends Doer[pure] */
 final class PureDoer extends Doer {} // InvalidTemplateParam: below the lower bound
 
 final class DefaultDoer extends Doer {} // C is write-this-props
 ```
 
 The common case, a function whose purity depends on one closure parameter, needs no template
-of its own: `Closure<_>(...)` (or `callable<_>(...)`) in a parameter's type declares one and makes
+of its own: `Closure[_](...)` (or `callable[_](...)`) in a parameter's type declares one and makes
 the function inherit its purity from that parameter, like Hack's `(function()[_]: T) $f`:
 
 ```php
 <?php
 /**
  * @psalm-pure
- * @param Closure<_>(int): int $callback
+ * @param Closure[_](int): int $callback
  */
 function apply(Closure $callback): int {
     return $callback(1);
@@ -708,27 +715,34 @@ function apply(Closure $callback): int {
 
 ### Iterators and generators
 
-`Traversable`, `Iterator`, `IteratorAggregate` and `Generator` carry a purity template after
+`Traversable`, `Iterator`, `IteratorAggregate` and `Generator` carry a purity template besides
 their key and value templates, `TPurity`, which says what iterating over the object may do:
-`Iterator<int, string, pure>` can be iterated by a pure function, `Generator<int, int, mixed, void, io>`
+`Iterator[pure]<int, string>` can be iterated by a pure function, `Generator[io]<int, int, mixed, void>`
 prints when consumed. It defaults to `impure`, so `Iterator<int, string>` still means an iterator
 about which nothing is known. Iterating a value known only by one of these types costs its
-`TPurity` and nothing else: a pure function may consume any `Iterator<int, string, pure>` or
-`Generator<int, int, mixed, mixed, pure>`, including one it was given (where a generator is paused
+`TPurity` and nothing else: a pure function may consume any `Iterator[pure]<int, string>` or
+`Generator[pure]<int, int, mixed, mixed>`, including one it was given (where a generator is paused
 is internal engine state). Iterating a value of an iterator class calls that class's own methods,
 so it costs what they do like any other method call: writing the iterator's properties costs
 nothing when it was just created, `write-this-props` when it is `$this` and `write-props`
 otherwise.
 
+`iterable` has a purity too, written the same way: `iterable[pure]<int, string>` accepts arrays
+(iterating over an array does nothing) and `Traversable[pure]<int, string>`, and a pure function may
+iterate over it. A plain `iterable<int, string>` is `iterable[impure]<int, string>`, since it may be
+any `Traversable`. The purity of an `iterable` parameter may be a purity template
+(`iterable[P]<int, string>`), bound by each call to what iterating over the argument may do.
+
 A generator function-like with a purity annotation binds the `TPurity` of the `Generator`
-(or `Iterator`, `Traversable`) it returns to its own capabilities, and to its purity templates,
-which every call resolves: consuming the generator costs what running its body costs.
+(or `Iterator`, `Traversable`) it returns, or the purity of the `iterable` it returns, to its own
+capabilities, and to its purity templates, which every call resolves: consuming the generator
+costs what running its body costs.
 
 ```php
 <?php
 /**
  * @psalm-pure
- * @param Closure<_>(): int $f
+ * @param Closure[_](): int $f
  * @return Generator<int, int>
  */
 function map(Closure $f): Generator { yield $f(); return 0; }
@@ -736,7 +750,7 @@ function map(Closure $f): Generator { yield $f(); return 0; }
 /** @psalm-pure */
 function sum(): int {
     $total = 0;
-    foreach (map(fn(): int => 1) as $x) { // Generator<int, int, mixed, mixed, pure>
+    foreach (map(fn(): int => 1) as $x) { // Generator[pure]<int, int, mixed, mixed>
         $total += $x;
     }
     return $total;
@@ -744,17 +758,17 @@ function sum(): int {
 
 /** @psalm-pure */
 function print(): int {
-    $g = map(function (): int { echo "x"; return 1; }); // Generator<int, int, mixed, mixed, io>
+    $g = map(function (): int { echo "x"; return 1; }); // Generator[io]<int, int, mixed, mixed>
     foreach ($g as $x) {} // error: iterating over the generator requires io
     return 0;
 }
 ```
 
 A class implementing `Iterator` or `IteratorAggregate` may bind `TPurity` in its `@implements`
-(`@implements Iterator<int, string, pure>`), in which case its iteration methods (or its
+(`@implements Iterator[pure]<int, string>`), in which case its iteration methods (or its
 `getIterator()` and what that returns) must fit the binding. A class that does not bind it gets
 it from those methods, as whoever iterates it sees them: a method writing the iterator's own
-properties makes it `write-props`. So `MyIterator` is accepted where `Iterator<int, string, pure>`
+properties makes it `write-props`. So `MyIterator` is accepted where `Iterator[pure]<int, string>`
 is expected exactly when its iteration methods are pure.
 
 ### `@psalm-purity-from-template`
@@ -771,7 +785,7 @@ of the function-like or of its class, or type templates bound to a closure or ca
 /**
  * @psalm-pure
  * @psalm-purity-template P
- * @param Closure<P>(int): int $callback
+ * @param Closure[P](int): int $callback
  * @psalm-purity-from-template P
  */
 function apply(Closure $callback): int {
@@ -809,13 +823,13 @@ abstract class Task {
     abstract public function run(): int;
 }
 
-/** @extends Task<pure> */
+/** @extends Task[pure] */
 final class Sum extends Task {
     /** @psalm-pure */
     public function run(): int { return 1; }
 }
 
-/** @extends Task<io> */
+/** @extends Task[io] */
 final class Printer extends Task {
     /** @psalm-capabilities io */
     public function run(): int { echo "x"; return 1; }
@@ -830,7 +844,7 @@ function runAny(Task $t): int { return $t->run(); } // ImpureMethodCall: an unbo
 /**
  * @psalm-pure
  * @psalm-purity-template P
- * @param Task<P> $t
+ * @param Task[P] $t
  * @psalm-purity-from-template P
  */
 function runDependent(Task $t): int { return $t->run(); } // ok: pure when given a Sum, io when given a Printer

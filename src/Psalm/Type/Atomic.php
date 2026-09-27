@@ -529,39 +529,47 @@ abstract class Atomic implements TypeNode, Stringable
         if ($this instanceof TIterable) {
             return $this;
         }
+        // iterating over an array does nothing
         if ($this instanceof TArray) {
-            return new TIterable($this->type_params);
+            return new TIterable($this->type_params, [], false, Type::getPure());
         }
         if ($this instanceof TKeyedArray) {
-            return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
+            return new TIterable(
+                [$this->getGenericKeyType(), $this->getGenericValueType()],
+                [],
+                false,
+                Type::getPure(),
+            );
         }
         if ($this->hasTraversableInterface($codebase)) {
-            if (strtolower($this->value) === "traversable") {
-                if ($this instanceof TGenericObject) {
-                    // the key and value types: what iterating it may do (TPurity) is not part of
-                    // an iterable
-                    if (count($this->type_params) > 3 || !isset($this->type_params[1])) {
-                        throw new InvalidArgumentException('Wrong number of templates!');
-                    }
-                    return new TIterable([$this->type_params[0], $this->type_params[1]]);
-                }
-                return new TIterable([Type::getMixed(), Type::getMixed()]);
+            // the key and value types, and what iterating it may do (TPurity)
+            $traversable_params = strtolower($this->value) === 'traversable'
+                ? ($this instanceof TGenericObject ? $this->type_params : [])
+                : TemplateStandinTypeReplacer::getMappedGenericTypeParams(
+                    $codebase,
+                    $this,
+                    new TGenericObject(
+                        'Traversable',
+                        [Type::getMixed(), Type::getMixed(), Type::getImpure()],
+                    ),
+                );
+
+            if ($traversable_params === []) {
+                return new TIterable();
             }
 
-            $implemented_traversable_templates = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
-                $codebase,
-                $this,
-                new TGenericObject(
-                    "Traversable",
-                    [Type::getMixed(), Type::getMixed(), new Union([new TCapabilities(Capabilities::ALL)])],
-                ),
-            );
-            if (count($implemented_traversable_templates) > 3
-                || !isset($implemented_traversable_templates[0], $implemented_traversable_templates[1])
+            if (count($traversable_params) > 3
+                || !isset($traversable_params[0], $traversable_params[1])
             ) {
                 throw new InvalidArgumentException('Wrong number of templates!');
             }
-            return new TIterable([$implemented_traversable_templates[0], $implemented_traversable_templates[1]]);
+
+            return new TIterable(
+                [$traversable_params[0], $traversable_params[1]],
+                [],
+                false,
+                $traversable_params[2] ?? null,
+            );
         }
         throw new InvalidArgumentException("{$this->getId()} is not an iterable");
     }

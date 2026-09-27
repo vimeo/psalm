@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -14,21 +15,26 @@ use function count;
 use function strtolower;
 
 /**
- * The purity template of the iterator types (`TPurity`, the last template of Traversable, Iterator,
- * IteratorAggregate and Generator): what iterating over a value of the type may do.
+ * The purity template of the iterator types (`TPurity`, the purity template of Traversable, Iterator,
+ * IteratorAggregate and Generator) and the purity of iterable: what iterating over a value of the
+ * type may do.
  *
  * @internal
  */
 final class IterationPurity
 {
     /**
-     * A Generator, Iterator or Traversable type with its purity template bound to $purity, unless
+     * A Generator, Iterator, Traversable or iterable type with its purity bound to $purity, unless
      * the type binds it already; null for any other type.
      *
      * @psalm-pure
      */
     public static function bindGenerator(Atomic $atomic_type, Union $purity): ?Atomic
     {
+        if ($atomic_type instanceof TIterable) {
+            return $atomic_type->hasDefaultPurity() ? $atomic_type->setPurity($purity) : null;
+        }
+
         if (!$atomic_type instanceof TNamedObject) {
             return null;
         }
@@ -68,13 +74,17 @@ final class IterationPurity
     }
 
     /**
-     * The purity a Generator, Iterator or Traversable type in $type binds, if any.
+     * The purity a Generator, Iterator, Traversable or iterable type in $type binds, if any.
      *
      * @psalm-pure
      */
     public static function getBoundPurity(Union $type): ?Union
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TIterable && !$atomic_type->hasDefaultPurity()) {
+                return $atomic_type->purity;
+            }
+
             if (!$atomic_type instanceof TGenericObject) {
                 continue;
             }
@@ -94,7 +104,7 @@ final class IterationPurity
     }
 
     /**
-     * $type with the purity template of every Generator, Iterator or Traversable in it that does
+     * $type with the purity of every Generator, Iterator, Traversable or iterable in it that does
      * not bind one bound to $purity.
      *
      * @psalm-pure

@@ -12,7 +12,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 /**
- * The `_` purity of a closure type in a parameter (`Closure<_>(): int $f`): shorthand for a
+ * The `_` purity of a closure type in a parameter (`Closure[_](): int $f`): shorthand for a
  * purity template of the function-like, which inherits its purity from that parameter, like
  * Hack's `(function()[_]: int) $f` with `[ctx $f]`.
  *

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -216,7 +217,9 @@ final class TypeChecker extends TypeVisitor
                 ),
                 $this->suppressed_issues,
             );
-        } elseif ($template_type_count < $template_param_count) {
+        } elseif ($template_type_count < $template_param_count
+            || !PurityArguments::fit($atomic->type_params, $class_storage)
+        ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $atomic->getId(). ' has too many template params, expecting '

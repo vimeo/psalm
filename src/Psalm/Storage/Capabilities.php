@@ -74,7 +74,7 @@ final class Capabilities
     public const RECEIVER_LOCAL = self::READ_PROPS | self::WRITE_THIS_PROPS | self::WRITE_REFS;
 
     /**
-     * The names usable in `@psalm-capabilities`, in `Closure<...>`/`callable<...>` types and as
+     * The names usable in `@psalm-capabilities`, in `Closure[...]`/`callable[...]` types and as
      * class template arguments, with the capability set each one denotes.
      *
      * @var array<non-empty-string, int>
@@ -326,6 +326,30 @@ final class Capabilities
             }
 
             if ($atomic instanceof TTemplateParam && self::isPurityType($atomic->as)) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a type is a purity argument: capability sets and purity templates only, no type alias.
+     * Purity arguments are the trailing type parameters of a generic object, and are written apart
+     * from the others (`Traversable[pure]<int, string>`).
+     *
+     * @psalm-pure
+     */
+    public static function isPurityArgument(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TCapabilities) {
+                continue;
+            }
+
+            if ($atomic instanceof TTemplateParam && self::isPurityArgument($atomic->as)) {
                 continue;
             }
 

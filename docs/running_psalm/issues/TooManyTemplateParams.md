@@ -7,7 +7,7 @@ many types.
 <?php
 
 /**
- * @template-implements IteratorAggregate<int, string, impure, int>
+ * @template-implements IteratorAggregate<int, string, int>
  */
 class SomeIterator implements IteratorAggregate
 {

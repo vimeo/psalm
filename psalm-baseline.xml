@@ -2020,10 +2020,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$l[4]]]></code>
-      <code><![CDATA[$r[4]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
     <RedundantCondition>
       <code><![CDATA[$fq_classlike_name !== ""]]></code>
     </RedundantCondition>
@@ -2705,8 +2701,6 @@
       <code><![CDATA[handleTemplateParamStandin]]></code>
     </ComplexMethod>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$bracket_pos = strpos($input_key, '<')]]></code>
-      <code><![CDATA[$bracket_pos = strpos($key, '<')]]></code>
       <code><![CDATA[$input_template_types]]></code>
       <code><![CDATA[empty($class_storage->template_extended_params[$container_class])]]></code>
       <code><![CDATA[empty($classlike_storage->template_extended_params[$base_type->as_type->value])]]></code>
@@ -3343,13 +3337,13 @@
       <code><![CDATA[$visitor->traverse($value)]]></code>
       <code><![CDATA[$visitor->traverse($value)]]></code>
       <code><![CDATA[TemplateStandinTypeReplacer::getMappedGenericTypeParams(
-                $codebase,
-                $this,
-                new TGenericObject(
-                    "Traversable",
-                    [Type::getMixed(), Type::getMixed(), new Union([new TCapabilities(Capabilities::ALL)])],
-                ),
-            )]]></code>
+                    $codebase,
+                    $this,
+                    new TGenericObject(
+                        'Traversable',
+                        [Type::getMixed(), Type::getMixed(), Type::getImpure()],
+                    ),
+                )]]></code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
       <code><![CDATA[$node->{$key}]]></code>
@@ -3628,6 +3622,27 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
+    <ImpureMethodCall>
+      <code><![CDATA[TemplateInferredTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+        )]]></code>
+      <code><![CDATA[TemplateStandinTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type !== null && $input_type->isIterable($codebase)
+                ? $input_type->getIterable($codebase)->purity
+                : null,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+        )]]></code>
+    </ImpureMethodCall>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
     </RiskyTruthyFalsyComparison>

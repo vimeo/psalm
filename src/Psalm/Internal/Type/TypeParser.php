@@ -18,7 +18,6 @@ use Psalm\Internal\Type\ParseTree\ConditionalTree;
 use Psalm\Internal\Type\ParseTree\EncapsulationTree;
 use Psalm\Internal\Type\ParseTree\FieldEllipsis;
 use Psalm\Internal\Type\ParseTree\GenericTree;
-use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
 use Psalm\Internal\Type\ParseTree\IntersectionTree;
 use Psalm\Internal\Type\ParseTree\KeyedArrayPropertyTree;
 use Psalm\Internal\Type\ParseTree\KeyedArrayTree;
@@ -322,10 +321,6 @@ final class TypeParser
             throw new TypeParseTreeException('Misplaced brackets');
         }
 
-        if ($parse_tree instanceof IndexedAccessTree) {
-            return self::getTypeFromIndexAccessTree($parse_tree, $template_type_map, $from_docblock);
-        }
-
         if ($parse_tree instanceof TemplateAsTree) {
             $result = new TTemplateParam(
                 $parse_tree->param_name,
@@ -588,6 +583,76 @@ final class TypeParser
     ): Atomic|Union {
         $generic_type = $parse_tree->value;
 
+        $purity_trees = $parse_tree->purity->children ?? [];
+
+        // `T[K]`, with templates T and K: an indexed access
+        if ($parse_tree->children === []
+            && count($purity_trees) === 1
+            && $purity_trees[0] instanceof Value
+            && isset($template_type_map[$generic_type])
+        ) {
+            return self::getTypeFromIndexedAccess(
+                $generic_type,
+                $purity_trees[0]->value,
+                $template_type_map,
+                $from_docblock,
+            );
+        }
+
+        if (in_array($generic_type, ['Closure', '\\Closure', 'pure-Closure', 'impure-Closure'], true)
+            || in_array($generic_type, ['callable', 'pure-callable', 'impure-callable'], true)
+        ) {
+            // `Closure[purity]` / `callable[purity]` without a parameter list
+            if ($parse_tree->children !== [] || count($purity_trees) !== 1) {
+                throw new TypeParseTreeException(
+                    $generic_type . ' takes no type parameters, and its purity is given in brackets'
+                    . ' (e.g. ' . $generic_type . '[pure] or ' . $generic_type . '[io](int): void)',
+                );
+            }
+
+            [$n, $purity] = self::getCallablePurity(
+                $generic_type,
+                $purity_trees[0],
+                $codebase,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
+
+            if (in_array(strtolower($n), ['closure', '\\closure'], true)) {
+                return new TClosure(null, null, $purity, [], [], $from_docblock);
+            }
+
+            return new TCallable(null, null, $purity, $from_docblock);
+        }
+
+        $purity_params = [];
+
+        foreach ($purity_trees as $purity_tree) {
+            $purity_type = self::getTypeFromTree(
+                $purity_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
+
+            $purity_type = $purity_type instanceof Union
+                ? $purity_type
+                : new Union([$purity_type], ['from_docblock' => $from_docblock]);
+
+            if (!Capabilities::isPurityType($purity_type)) {
+                throw new TypeParseTreeException(
+                    $generic_type . '[' . $purity_type->getId() . '] is not valid: the arguments in brackets'
+                    . ' must be capability sets (e.g. pure, write-props|io) or templates declared with'
+                    . ' @psalm-purity-template',
+                );
+            }
+
+            $purity_params[] = $purity_type;
+        }
+
         $generic_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
@@ -610,13 +675,31 @@ final class TypeParser
                 }
             }
 
-            $generic_params[] = $tree_type instanceof Union
+            $tree_type = $tree_type instanceof Union
                 ? $tree_type
-                : new Union([$tree_type], ['from_docblock' => $from_docblock])
-            ;
+                : new Union([$tree_type], ['from_docblock' => $from_docblock]);
+
+            if (Capabilities::isPurityArgument($tree_type)) {
+                throw new TypeParseTreeException(
+                    'Purity arguments are given in brackets, before the type parameters: '
+                    . $generic_type . '[' . $tree_type->getId() . ']<...> instead of '
+                    . $generic_type . '<..., ' . $tree_type->getId() . '>',
+                );
+            }
+
+            $generic_params[] = $tree_type;
         }
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);
+
+        if ($purity_params !== []) {
+            return self::getTypeWithPurityArguments(
+                $generic_type_value,
+                $generic_params,
+                $purity_params,
+                $from_docblock,
+            );
+        }
 
         if (($generic_type_value === 'array'
                 || $generic_type_value === 'non-empty-array'
@@ -1067,30 +1150,6 @@ final class TypeParser
             return new TIntRange($min_bound, $max_bound, $from_docblock);
         }
 
-        if (in_array($generic_type_value, ['Closure', '\\Closure', 'pure-Closure', 'impure-Closure'], true)
-            || in_array($generic_type_value, ['callable', 'pure-callable', 'impure-callable'], true)
-        ) {
-            // `Closure<purity>` / `callable<purity>` without a parameter list
-            if (count($parse_tree->children) !== 1) {
-                throw new TypeParseTreeException($generic_type_value . '<...> must be given exactly one purity');
-            }
-
-            [$n, $purity] = self::getCallablePurity(
-                $generic_type_value,
-                $parse_tree->children[0],
-                $codebase,
-                $template_type_map,
-                $type_aliases,
-                $from_docblock,
-            );
-
-            if (in_array(strtolower($n), ['closure', '\\closure'], true)) {
-                return new TClosure(null, null, $purity, [], [], $from_docblock);
-            }
-
-            return new TCallable(null, null, $purity, $from_docblock);
-        }
-
         if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
             && $generic_type_value !== 'self'
             && $generic_type_value !== 'static'
@@ -1099,6 +1158,76 @@ final class TypeParser
         }
 
         return new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock);
+    }
+
+    /**
+     * An iterable or generic object given purity arguments in brackets (`iterable[pure]<int>`,
+     * `Traversable[pure]<int, string>`, `Foo[io]`).
+     *
+     * @param list<Union> $generic_params
+     * @param non-empty-list<Union> $purity_params
+     * @throws TypeParseTreeException
+     * @psalm-pure
+     */
+    private static function getTypeWithPurityArguments(
+        string $generic_type_value,
+        array $generic_params,
+        array $purity_params,
+        bool $from_docblock,
+    ): TIterable|TGenericObject {
+        if (isset(TypeTokenizer::PSALM_RESERVED_WORDS[$generic_type_value])
+            && !in_array($generic_type_value, ['iterable', 'self', 'static'], true)
+        ) {
+            throw new TypeParseTreeException(
+                $generic_type_value . ' takes no purity arguments: only iterable, Closure, callable and'
+                . ' classes with purity templates do',
+            );
+        }
+
+        $generic_type_value_lc = strtolower($generic_type_value);
+
+        if ($generic_type_value_lc === 'iterable') {
+            if (count($purity_params) > 1) {
+                throw new TypeParseTreeException('Too many purity arguments for iterable');
+            }
+
+            if (count($generic_params) > 2) {
+                throw new TypeParseTreeException('Too many template parameters for iterable');
+            }
+
+            // the key type may be left out, and both
+            $value_type = array_pop($generic_params) ?? new Union([new TMixed(false, $from_docblock)]);
+            $key_type = array_pop($generic_params) ?? new Union([new TMixed(false, $from_docblock)]);
+
+            return new TIterable([$key_type, $value_type], [], $from_docblock, $purity_params[0]);
+        }
+
+        // the key type of the iterators, and the send and return types of a generator, may be left
+        // out as when there are no purity arguments, and the key and value types too
+        if (in_array($generic_type_value_lc, ['traversable', 'iterator', 'iteratoraggregate'], true)
+            || ($generic_type_value_lc === 'generator' && count($generic_params) < 2)
+        ) {
+            while (count($generic_params) < 2) {
+                array_unshift($generic_params, new Union([new TMixed(false, $from_docblock)]));
+            }
+        }
+
+        if ($generic_type_value_lc === 'generator') {
+            while (count($generic_params) < 4) {
+                $generic_params[] = new Union([new TMixed(false, $from_docblock)]);
+            }
+        }
+
+        // the purity templates of a class come after its type templates; the type parameters of a
+        // class left out are filled in once the class is known (see TypeExpander)
+        return new TGenericObject(
+            $generic_type_value,
+            [...$generic_params, ...$purity_params],
+            false,
+            false,
+            [],
+            $from_docblock,
+        );
     }
 
     /**
@@ -1371,7 +1500,7 @@ final class TypeParser
 
     /**
      * Resolves the purity of a `Closure`/`callable` keyword: from its `pure-`/`impure-` prefix or from
-     * the `<...>` purity given after it, which must be a capability set or a purity template.
+     * the `[...]` purity given after it, which must be a capability set or a purity template.
      *
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
@@ -1399,7 +1528,7 @@ final class TypeParser
             return [$keyword, $purity];
         }
 
-        // `Closure<_>`: a purity template of the enclosing function-like, bound when the
+        // `Closure[_]`: a purity template of the enclosing function-like, bound when the
         // parameter the closure belongs to is known
         if ($purity_tree instanceof Value && $purity_tree->value === PurityWildcard::NAME) {
             return [$keyword, PurityWildcard::placeholder($from_docblock)];
@@ -1420,7 +1549,7 @@ final class TypeParser
 
         if (!Capabilities::isPurityType($purity_type)) {
             throw new TypeParseTreeException(
-                $keyword . '<' . $purity_type->getId() . '> is not valid: the purity of a callable must be'
+                $keyword . '[' . $purity_type->getId() . '] is not valid: the purity of a callable must be'
                 . ' a capability set (e.g. pure, write-props|io) or a template declared with @psalm-purity-template',
             );
         }
@@ -1433,24 +1562,14 @@ final class TypeParser
      * @throws TypeParseTreeException
      * @psalm-mutation-free
      */
-    private static function getTypeFromIndexAccessTree(
-        IndexedAccessTree $parse_tree,
+    private static function getTypeFromIndexedAccess(
+        string $array_param_name,
+        string $offset_param_name,
         array $template_type_map,
         bool $from_docblock,
     ): TTemplateIndexedAccess {
-        if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof Value) {
-            throw new TypeParseTreeException('Unrecognised indexed access');
-        }
-
-        $offset_param_name = $parse_tree->value;
-        $array_param_name = $parse_tree->children[0]->value;
-
         if (!isset($template_type_map[$offset_param_name])) {
             throw new TypeParseTreeException('Unrecognised template param ' . $offset_param_name);
-        }
-
-        if (!isset($template_type_map[$array_param_name])) {
-            throw new TypeParseTreeException('Unrecognised template param ' . $array_param_name);
         }
 
         $offset_template_data = $template_type_map[$offset_param_name];

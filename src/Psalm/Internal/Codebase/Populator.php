@@ -13,6 +13,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -44,6 +45,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function array_splice;
+use function array_values;
 use function count;
 use function in_array;
 use function key;
@@ -181,7 +183,7 @@ final class Populator
      * Binds the purity template of Traversable for a class implementing Iterator or IteratorAggregate
      * that does not bind it itself, to what iterating it may do: the capabilities of its Iterator
      * methods, or of getIterator() and of the iterator that returns. The subtyping
-     * `MyIterator <: Iterator<K, V, pure>` and the override check of the Iterator methods rely on it.
+     * `MyIterator <: Iterator[pure]<K, V>` and the override check of the Iterator methods rely on it.
      */
     private function bindIterationPurity(ClassLikeStorage $storage, int $depth = 0): void
     {
@@ -920,6 +922,12 @@ final class Populator
             $storage->template_extended_params[$parent_storage->name] = [];
 
             if (isset($storage->template_extended_offsets[$parent_storage->name])) {
+                // `@extends Foo[pure]` for a class with type templates
+                $storage->template_extended_offsets[$parent_storage->name] = PurityArguments::align(
+                    array_values($storage->template_extended_offsets[$parent_storage->name]),
+                    $parent_storage,
+                );
+
                 foreach ($storage->template_extended_offsets[$parent_storage->name] as $i => $type) {
                     $parent_template_type_names = array_keys($parent_storage->template_types);
 

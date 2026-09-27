@@ -14,6 +14,7 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\InaccessibleProperty;
@@ -706,7 +707,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
-        } elseif ($expected_param_count < $given_param_count) {
+        } elseif ($expected_param_count < $given_param_count
+            || (isset($storage->template_extended_offsets[$parent_storage->name])
+                && !PurityArguments::fit($storage->template_extended_offsets[$parent_storage->name], $parent_storage))
+        ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $storage->name . ' has too many template params when extending ' . $parent_storage->name

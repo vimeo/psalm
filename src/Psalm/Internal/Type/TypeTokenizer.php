@@ -484,6 +484,15 @@ final class TypeTokenizer
                 continue;
             }
 
+            // `Closure[purity]`, like `Closure(...)`, is the built-in type
+            if (($string_type_token[0] === 'Closure' || $string_type_token[0] === '\\Closure')
+                && isset($type_tokens[$i + 2])
+                && $type_tokens[$i + 1][0] === '['
+                && $type_tokens[$i + 2][0] !== ']'
+            ) {
+                continue;
+            }
+
             if ($allow_assertions && $string_type_token[0] === 'falsy') {
                 $type_tokens[$i][0] = 'false-y';
                 continue;

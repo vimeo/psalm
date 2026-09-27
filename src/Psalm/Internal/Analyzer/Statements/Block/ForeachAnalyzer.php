@@ -553,6 +553,8 @@ final class ForeachAnalyzer
 
                 $intersection_value_type = null;
                 $intersection_key_type = null;
+                // each part of an intersection bounds what iterating over the value may do
+                $iteration_capabilities = Capabilities::ALL;
 
                 foreach ($iterator_atomic_types as $iat) {
                     if (!$iat instanceof TIterable) {
@@ -560,6 +562,8 @@ final class ForeachAnalyzer
                     }
 
                     [$key_type_part, $value_type_part] = $iat->type_params;
+
+                    $iteration_capabilities &= CallPurityResolver::resolvePurity($iat->purity, $statements_analyzer);
 
                     if (!$intersection_value_type) {
                         $intersection_value_type = $value_type_part;
@@ -599,10 +603,11 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
 
+                // what iterating over the iterable may do is its purity
                 $statements_analyzer->signalMutation(
-                    Capabilities::ALL,
+                    $iteration_capabilities,
                     $context,
-                    'iterating over an unknown Traversable',
+                    'iterating over ' . $iterator_atomic_type->getId(),
                     ImpureMethodCall::class,
                     $expr,
                 );
@@ -1127,7 +1132,7 @@ final class ForeachAnalyzer
                 return Capabilities::ALL;
             }
 
-            // `Traversable<TKey, TValue, TPurity>` as bound by the aggregate
+            // `Traversable[TPurity]<TKey, TValue>` as bound by the aggregate
             $iterator_type = TemplateInferredTypeReplacer::replace(
                 $iterator_type,
                 new TemplateResult([], self::collectClassTemplateParams(
@@ -1208,7 +1213,7 @@ final class ForeachAnalyzer
     /**
      * What one of the methods foreach calls implicitly costs, given the iterator: its own
      * capabilities, less mutating the iterator itself when that is fresh, plus the iterator's
-     * purity template (`Iterator<int, int, pure>`, `Generator<int, int, mixed, void, io>`) when
+     * purity template (`Iterator[pure]<int, int>`, `Generator[io]<int, int, mixed, void>`) when
      * the method depends on it.
      */
     private static function getImplicitMethodCapabilities(
@@ -1239,7 +1244,7 @@ final class ForeachAnalyzer
     }
 
     /**
-     * The templates of the iterated class as bound by its type (`Iterator<int, int, pure>`).
+     * The templates of the iterated class as bound by its type (`Iterator[pure]<int, int>`).
      *
      * @return array<string, array<string, Union>>
      */

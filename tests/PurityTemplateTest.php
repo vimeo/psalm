@@ -30,7 +30,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(int): int $f
+                     * @param Closure[P](int): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -47,7 +47,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(string): int $f
+                     * @param Closure[P](string): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -64,7 +64,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -82,7 +82,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         public static function run(Closure $f): int {
@@ -93,7 +93,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         public function __construct(Closure $f) {
@@ -112,7 +112,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): int $f
+                     * @param Closure[P](): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -134,7 +134,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param ?Closure<P>(): void $f
+                     * @param ?Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(?Closure $f = null): int {
@@ -154,7 +154,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -170,7 +170,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-capabilities write-props
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -189,8 +189,8 @@ final class PurityTemplateTest extends TestCase
                      * @psalm-pure
                      * @psalm-purity-template P
                      * @psalm-purity-template Q
-                     * @param Closure<P>(): void $f
-                     * @param Closure<Q>(): void $g
+                     * @param Closure[P](): void $f
+                     * @param Closure[Q](): void $g
                      * @psalm-purity-from-template P, Q
                      */
                     function both(Closure $f, Closure $g): int {
@@ -223,7 +223,7 @@ final class PurityTemplateTest extends TestCase
                         }
                     }
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {
                         /** @psalm-pure */
                         public function doWork(): int {
@@ -231,7 +231,7 @@ final class PurityTemplateTest extends TestCase
                         }
                     }
 
-                    /** @extends Doer<io> */
+                    /** @extends Doer[io] */
                     final class IoDoer extends Doer {
                         /** @psalm-capabilities io */
                         public function doWork(): int {
@@ -261,7 +261,7 @@ final class PurityTemplateTest extends TestCase
                         abstract public function doWork(): int;
                     }
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {
                         /** @psalm-pure */
                         public function doWork(): int {
@@ -272,7 +272,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Doer<P> $d
+                     * @param Doer[P] $d
                      * @psalm-purity-from-template P
                      */
                     function useAny(Doer $d): int {
@@ -289,10 +289,10 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-purity-template C */
                     abstract class Doer {}
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {}
 
-                    /** @param Doer<io> $d */
+                    /** @param Doer[io] $d */
                     function takesIoDoer(Doer $d): void {}
 
                     function test(PureDoer $d): void {
@@ -304,7 +304,7 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-purity-template C */
                     final class Box {
                         /**
-                         * @param Closure<C>(): void $cb
+                         * @param Closure[C](): void $cb
                          * @psalm-pure
                          */
                         public function __construct(private Closure $cb) {}
@@ -364,7 +364,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P> $f
+                     * @param Closure[P] $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -382,7 +382,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P <= read-globals
-                     * @param Closure<P>(): int $f
+                     * @param Closure[P](): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -413,7 +413,7 @@ final class PurityTemplateTest extends TestCase
 
                     final class DefaultDoer extends Doer {}
 
-                    /** @extends Doer<write-this-props> */
+                    /** @extends Doer[write-this-props] */
                     final class MutatingDoer extends Doer {}
 
                     /** @psalm-mutation-free */
@@ -430,7 +430,7 @@ final class PurityTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param Closure<_>(): int $f
+                     * @param Closure[_](): int $f
                      */
                     function apply(Closure $f): int {
                         return $f();
@@ -438,8 +438,8 @@ final class PurityTemplateTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @param Closure<_>(): int $f
-                     * @param callable<_>(): int $g
+                     * @param Closure[_](): int $f
+                     * @param callable[_](): int $g
                      */
                     function applyBoth(Closure $f, callable $g): int {
                         return $f() + $g();
@@ -448,7 +448,7 @@ final class PurityTemplateTest extends TestCase
                     final class Runner {
                         /**
                          * @psalm-mutation-free
-                         * @param Closure<_>(): int $f
+                         * @param Closure[_](): int $f
                          */
                         public function run(Closure $f): int {
                             return $f();
@@ -474,7 +474,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         abstract public function run(Closure $f): int;
@@ -483,7 +483,7 @@ final class PurityTemplateTest extends TestCase
                     final class Ignoring extends Base {
                         /**
                          * @psalm-pure
-                         * @param Closure<impure>(): void $f
+                         * @param Closure[impure](): void $f
                          */
                         public function run(Closure $f): int {
                             return 1;
@@ -508,7 +508,7 @@ final class PurityTemplateTest extends TestCase
                         }
                     }
 
-                    /** @extends Doer<write-props|io> */
+                    /** @extends Doer[write-props|io] */
                     final class IoDoer extends Doer {}
 
                     final class DefaultDoer extends Doer {}
@@ -533,7 +533,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): void {
@@ -551,7 +551,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): void {
@@ -573,7 +573,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         public static function run(Closure $f): void {
@@ -593,7 +593,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         public function __construct(Closure $f) {
@@ -613,7 +613,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         public function run(Closure $f): void {
@@ -632,7 +632,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): void {
@@ -654,7 +654,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): void {
@@ -668,7 +668,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      */
                     function apply(Closure $f): void {
                         $f();
@@ -680,7 +680,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @param Closure(): void $g
                      * @psalm-purity-from-template P
                      */
@@ -695,7 +695,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-capabilities write-props
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -714,7 +714,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-capabilities write-props
                      * @psalm-purity-template P
-                     * @param Closure<P>(): void $f
+                     * @param Closure[P](): void $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -739,7 +739,7 @@ final class PurityTemplateTest extends TestCase
                         abstract public function doWork(): int;
                     }
 
-                    /** @extends Doer<io> */
+                    /** @extends Doer[io] */
                     final class IoDoer extends Doer {
                         /** @psalm-capabilities io */
                         public function doWork(): int {
@@ -776,10 +776,10 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-purity-template C */
                     abstract class Doer {}
 
-                    /** @extends Doer<io> */
+                    /** @extends Doer[io] */
                     final class IoDoer extends Doer {}
 
-                    /** @param Doer<pure> $d */
+                    /** @param Doer[pure] $d */
                     function takesPureDoer(Doer $d): void {}
 
                     function test(IoDoer $d): void {
@@ -792,7 +792,7 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-purity-template C */
                     final class Box {
                         /**
-                         * @param Closure<C>(): void $cb
+                         * @param Closure[C](): void $cb
                          * @psalm-pure
                          */
                         public function __construct(private Closure $cb) {}
@@ -875,7 +875,7 @@ final class PurityTemplateTest extends TestCase
             'closurePurityMustBeAPurityType' => [
                 'code' => '<?php
                     /**
-                     * @param Closure<int>(): void $f
+                     * @param Closure[int](): void $f
                      */
                     function apply(Closure $f): void {
                         $f();
@@ -893,7 +893,7 @@ final class PurityTemplateTest extends TestCase
                         abstract public function doWork(): int;
                     }
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {
                         /** @psalm-pure */
                         public function doWork(): int {
@@ -904,7 +904,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P
-                     * @param Closure<P>(): int $f
+                     * @param Closure[P](): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -928,7 +928,7 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @psalm-purity-template P <= read-globals
-                     * @param Closure<P>(): int $f
+                     * @param Closure[P](): int $f
                      * @psalm-purity-from-template P
                      */
                     function apply(Closure $f): int {
@@ -956,7 +956,7 @@ final class PurityTemplateTest extends TestCase
                         }
                     }
 
-                    /** @extends Doer<write-globals> */
+                    /** @extends Doer[write-globals] */
                     final class GlobalDoer extends Doer {}',
                 'error_message' => 'InvalidTemplateParam',
             ],
@@ -988,7 +988,7 @@ final class PurityTemplateTest extends TestCase
                         /**
                          * @psalm-pure
                          * @psalm-purity-template P
-                         * @param Closure<P>(): void $f
+                         * @param Closure[P](): void $f
                          * @psalm-purity-from-template P
                          */
                         abstract public function run(Closure $f): int;
@@ -1001,7 +1001,7 @@ final class PurityTemplateTest extends TestCase
                     final class Mutating extends Base {
                         /**
                          * @psalm-capabilities write-props
-                         * @param Closure<impure>(): void $f
+                         * @param Closure[impure](): void $f
                          */
                         public function run(Closure $f): int {
                             $b = new Box();
@@ -1015,7 +1015,7 @@ final class PurityTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param Closure<_>(): int $f
+                     * @param Closure[_](): int $f
                      */
                     function apply(Closure $f): int {
                         return $f();
@@ -1034,7 +1034,7 @@ final class PurityTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @return Closure<_>(): int
+                     * @return Closure[_](): int
                      */
                     function make(): Closure {
                         return fn(): int => 1;
@@ -1052,7 +1052,7 @@ final class PurityTemplateTest extends TestCase
                         abstract public function run(): int;
                     }
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {
                         /** @psalm-pure */
                         public function run(): int {
@@ -1110,7 +1110,7 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-purity-template io <= C */
                     abstract class Doer {}
 
-                    /** @extends Doer<pure> */
+                    /** @extends Doer[pure] */
                     final class PureDoer extends Doer {}',
                 'error_message' => 'InvalidTemplateParam',
             ],

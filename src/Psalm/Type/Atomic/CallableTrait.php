@@ -108,7 +108,7 @@ trait CallableTrait
     }
 
     /**
-     * The `pure-`/`impure-` prefix or `<...>` purity suffix of the callable keyword.
+     * The `pure-`/`impure-` prefix or `[...]` purity suffix of the callable keyword.
      *
      * @psalm-mutation-free
      */
@@ -126,7 +126,7 @@ trait CallableTrait
             }
         }
 
-        return $this->value . '<' . $this->purity->getId() . '>';
+        return $this->value . '[' . $this->purity->getId() . ']';
     }
 
     public function getParamString(): string

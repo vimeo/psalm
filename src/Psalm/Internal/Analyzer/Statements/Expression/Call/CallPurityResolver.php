@@ -211,7 +211,7 @@ final class CallPurityResolver
 
     /**
      * A class implementing a templated interface has the interface's template bound to its own
-     * (`Iterator<TKey, TValue, TPurity>` on `Generator`): the collected params then map the
+     * (`Iterator[TPurity]<TKey, TValue>` on `Generator`): the collected params then map the
      * interface's template to a standin for the class's, which this resolves to what the class
      * binds it to.
      *

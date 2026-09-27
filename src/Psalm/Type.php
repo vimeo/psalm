@@ -13,11 +13,13 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -362,6 +364,26 @@ abstract class Type
         $type = new TMixed($from_loop_isset, $from_docblock);
 
         return new Union([$type]);
+    }
+
+    /**
+     * The empty capability set, as a purity (`iterable[pure]`).
+     *
+     * @psalm-pure
+     */
+    public static function getPure(bool $from_docblock = false): Union
+    {
+        return new Union([new TCapabilities(Capabilities::NONE, $from_docblock)]);
+    }
+
+    /**
+     * The set of all capabilities, as a purity (`iterable[impure]`).
+     *
+     * @psalm-pure
+     */
+    public static function getImpure(bool $from_docblock = false): Union
+    {
+        return new Union([new TCapabilities(Capabilities::ALL, $from_docblock)]);
     }
 
     /**

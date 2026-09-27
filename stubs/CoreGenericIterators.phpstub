@@ -5,14 +5,14 @@
  * @template-covariant TValue
  * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Traversable<TKey, TValue, TPurity>
+ * @template-extends Traversable[TPurity]<TKey, TValue>
  */
 interface IteratorAggregate extends Traversable {
 
     /**
      * @psalm-capabilities read-props
      * @psalm-purity-from-template TPurity
-     * @return Traversable<TKey, TValue, TPurity> An instance of an object implementing Iterator or Traversable
+     * @return Traversable[TPurity]<TKey, TValue> An instance of an object implementing Iterator or Traversable
      */
     public function getIterator();
 }
@@ -22,7 +22,7 @@ interface IteratorAggregate extends Traversable {
  * @template-covariant TValue
  * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Traversable<TKey, TValue, TPurity>
+ * @template-extends Traversable[TPurity]<TKey, TValue>
  */
 interface Iterator extends Traversable {
 
@@ -70,7 +70,7 @@ interface Iterator extends Traversable {
  * @template-covariant TValue
  * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Iterator<TKey, TValue, TPurity>
+ * @template-extends Iterator[TPurity]<TKey, TValue>
  */
 interface OuterIterator extends Iterator {
     /**
@@ -84,7 +84,7 @@ interface OuterIterator extends Iterator {
  * @template-covariant TValue
  * @psalm-purity-template TPurity(impure)
  *
- * @template-extends Iterator<TKey, TValue, TPurity>
+ * @template-extends Iterator[TPurity]<TKey, TValue>
  */
 interface RecursiveIterator extends Iterator {
 
@@ -103,7 +103,7 @@ interface RecursiveIterator extends Iterator {
  * @template-covariant TKey
  * @template-covariant TValue
  * @psalm-purity-template TPurity(impure)
- * @template-extends Iterator<TKey, TValue, TPurity>
+ * @template-extends Iterator[TPurity]<TKey, TValue>
  */
 interface SeekableIterator extends Iterator {
     /**

@@ -10,8 +10,8 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
- * A set of capabilities used as a type: the purity of a closure type (`Closure<pure>(): void`),
- * the argument of a purity template (`Deferred<write-props>`) or the bound of one.
+ * A set of capabilities used as a type: the purity of a closure type (`Closure[pure](): void`),
+ * the argument of a purity template (`Deferred[write-props]`) or the bound of one.
  *
  * `pure` (no capabilities) is a subtype of every other capability set, and `impure` is the top.
  *

@@ -81,6 +81,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function in_array;
 use function ltrim;
 use function preg_match;
 use function preg_split;
@@ -411,9 +412,18 @@ final class ClassLikeNodeScanner
             if ($docblock_info->templates) {
                 $storage->template_types = [];
 
+                // purity templates come after the type templates, whatever their order in the
+                // docblock: their arguments are written apart (`Foo[pure]<int>`) and appended
+                $purity_templates = $docblock_info->purity_templates;
                 usort(
                     $docblock_info->templates,
-                    static fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1,
+                    /**
+                     * @param array{string, ?string, ?string, bool, int} $l
+                     * @param array{string, ?string, ?string, bool, int} $r
+                     */
+                    static fn(array $l, array $r): int
+                        => [in_array($l[0], $purity_templates, true), $l[4]]
+                            <=> [in_array($r[0], $purity_templates, true), $r[4]],
                 );
 
                 foreach ($docblock_info->templates as $i => $template_map) {

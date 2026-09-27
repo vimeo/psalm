@@ -36,9 +36,10 @@ final class GenericTypeComparator
             && !$container_type_part->extra_types
             && !$input_type_part instanceof TIterable
         ) {
+            // the purity of the iterable is the last template of Traversable
             $container_type_part = new TGenericObject(
                 'Traversable',
-                $container_type_part->type_params,
+                [...$container_type_part->type_params, $container_type_part->purity],
             );
 
             $container_was_iterable = true;
@@ -207,6 +208,18 @@ final class GenericTypeComparator
                     $param_comparison_result->type_variable_upper_bounds,
                 );
             }
+        }
+
+        // what iterating over the input may do must be allowed by the container
+        if ($input_type_part instanceof TIterable
+            && $container_type_part instanceof TIterable
+            && !UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->purity,
+                $container_type_part->purity,
+            )
+        ) {
+            $all_types_contain = false;
         }
 
         if ($atomic_comparison_result

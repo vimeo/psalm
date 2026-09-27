@@ -5,7 +5,7 @@
  * @link http://php.net/manual/en/class.traversable.php
  *
  * TPurity is what iterating over the object may do (the capabilities of the Iterator methods
- * foreach calls, or of getIterator() and of the iterator it returns): `Iterator<int, string, pure>`
+ * foreach calls, or of getIterator() and of the iterator it returns): `Iterator[pure]<int, string>`
  * can be iterated by a pure function. Classes implementing Iterator or IteratorAggregate that do not
  * bind it get it from their own methods.
  *
@@ -23,7 +23,7 @@ interface Traversable {
  * @template-covariant TReturn
  * @psalm-purity-template TPurity(impure)
  *
- * @template-implements Iterator<TKey, TValue, TPurity>
+ * @template-implements Iterator[TPurity]<TKey, TValue>
  *
  * TPurity is what running the generator body may do: a generator function binds it to its own
  * capabilities (and purity templates) in its return type, so consuming the generator costs what

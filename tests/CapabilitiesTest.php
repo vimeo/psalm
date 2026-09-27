@@ -32,7 +32,7 @@ final class CapabilitiesTest extends TestCase
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**
-                     * @param Traversable<int, int, pure> $b
+                     * @param Traversable[pure]<int, int> $b
                      * @param iterable<int, int> $a
                      */
                     function g(bool $c, iterable $a, Traversable $b): iterable {
@@ -153,7 +153,7 @@ final class CapabilitiesTest extends TestCase
             'closureTypeWithCapabilities' => [
                 'code' => '<?php
                     /**
-                     * @param Closure<io>(): void $f
+                     * @param Closure[io](): void $f
                      * @psalm-capabilities io
                      */
                     function run(Closure $f): int {
@@ -169,8 +169,8 @@ final class CapabilitiesTest extends TestCase
             'closureTypeWithoutParamsAndCallable' => [
                 'code' => '<?php
                     /**
-                     * @param Closure<pure> $f
-                     * @param callable<read-globals>(): int $g
+                     * @param Closure[pure] $f
+                     * @param callable[read-globals](): int $g
                      * @psalm-capabilities read-globals
                      */
                     function run(Closure $f, callable $g): int {
@@ -351,7 +351,7 @@ final class CapabilitiesTest extends TestCase
 
                         /**
                          * @psalm-capabilities Storage
-                         * @param Closure<Storage>(): void $f
+                         * @param Closure[Storage](): void $f
                          */
                         public function call(Closure $f): void {
                             $f();
@@ -439,7 +439,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @param Closure<pure>(): int $f
+                     * @param Closure[pure](): int $f
                      */
                     function takesPure(Closure $f): int {
                         return $f();
@@ -701,7 +701,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-external-mutation-free
-                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     * @param Generator[pure]<int, int, mixed, mixed> $g
                      */
                     function sumGiven(Generator $g): int {
                         $s = 0;
@@ -713,7 +713,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-capabilities write-this-props|io
-                     * @param Traversable<int, int, io> $t
+                     * @param Traversable[io]<int, int> $t
                      */
                     function sumAny(Traversable $t): int {
                         $s = 0;
@@ -732,14 +732,14 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param Closure<_>(): int $f
+                     * @param Closure[_](): int $f
                      * @return Generator<int, int>
                      */
                     function polyGen(Closure $f): Generator { yield $f(); return 0; }
 
                     /**
                      * @psalm-external-mutation-free
-                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     * @param Generator[pure]<int, int, mixed, mixed> $g
                      */
                     function sumGiven(Generator $g): int {
                         $s = 0;
@@ -792,7 +792,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-capabilities write-props
-                     * @param Iterator<int, int, write-props> $it
+                     * @param Iterator[write-props]<int, int> $it
                      */
                     function sumCounter(Iterator $it): int {
                         $s = 0;
@@ -804,7 +804,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-external-mutation-free
-                     * @param IteratorAggregate<int, int, pure> $bag
+                     * @param IteratorAggregate[pure]<int, int> $bag
                      */
                     function sumBag(IteratorAggregate $bag): int {
                         $s = 0;
@@ -817,6 +817,135 @@ final class CapabilitiesTest extends TestCase
                     /** @psalm-capabilities write-props */
                     function pass(Counter $c, Bag $b): int {
                         return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
+                    }',
+            ],
+            'iteratingAPureIterableIsPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param iterable[pure]<int, int> $xs
+                     */
+                    function sum(iterable $xs): int {
+                        $s = 0;
+                        foreach ($xs as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function numbers(): Generator {
+                        yield 1;
+                        return 0;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Traversable[pure]<int, int> $t
+                     */
+                    function pass(Traversable $t): int {
+                        return sum([1, 2]) + sum([3 => 3]) + sum($t) + sum(numbers());
+                    }',
+            ],
+            'iterablePurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @psalm-purity-from-template P
+                     * @param iterable[P]<int, int> $xs
+                     */
+                    function sum(iterable $xs): int {
+                        $s = 0;
+                        foreach ($xs as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Iterator[pure]<int, int> $it
+                     */
+                    function pass(Iterator $it): int {
+                        return sum([1, 2]) + sum($it);
+                    }',
+            ],
+            'aGeneratorFunctionBindsTheIterablePurity' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-capabilities read-props
+                     * @return iterable<int, int>
+                     */
+                    function numbers(): iterable {
+                        yield 1;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function sum(): int {
+                        $s = 0;
+                        foreach (numbers() as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    $n = numbers();',
+                'assertions' => [
+                    '$n' => 'iterable[pure]<int, int>',
+                ],
+            ],
+            'iterablePurityIsCombined' => [
+                'code' => '<?php
+                    /**
+                     * @param iterable[pure]<int, int> $a
+                     * @param iterable[io]<int, int> $b
+                     * @param Traversable[read-props]<int, int> $c
+                     * @return list{iterable[io]<int, int>, iterable[pure]<int, int>}
+                     */
+                    function combine(iterable $a, iterable $b, Traversable $c, bool $flag): array {
+                        return [$flag ? $a : $b, $flag ? $a : [1]];
+                    }
+
+                    /**
+                     * @param iterable[pure]<int, int> $a
+                     * @param Traversable[read-props]<int, int> $c
+                     * @return iterable[read-props]<int, int>
+                     */
+                    function withTraversable(iterable $a, Traversable $c, bool $flag): iterable {
+                        return $flag ? $a : $c;
+                    }',
+            ],
+            'purityTemplatesComeAfterTypeTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P(impure)
+                     * @template T
+                     */
+                    final class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param Box[pure]<int> $b */
+                    function take(Box $b): int {
+                        return $b->value;
+                    }
+
+                    /**
+                     * @param Box[io] $b
+                     * @return Box[io]<mixed>
+                     */
+                    function takeAny(Box $b): Box {
+                        return $b;
                     }',
             ],
         ];
@@ -942,7 +1071,7 @@ final class CapabilitiesTest extends TestCase
             ],
             'closureWithCapabilitiesPassedWhereFewerExpected' => [
                 'code' => '<?php
-                    /** @param Closure<read-globals>(): void $f */
+                    /** @param Closure[read-globals](): void $f */
                     function run(Closure $f): void {}
 
                     function test(): void {
@@ -1441,7 +1570,7 @@ final class CapabilitiesTest extends TestCase
             ],
             'closureWritingCapturedVariableIsNotPure' => [
                 'code' => '<?php
-                    /** @param Closure<pure>(int): void $f */
+                    /** @param Closure[pure](int): void $f */
                     function takesPure(Closure $f): void {}
 
                     /** @psalm-pure */
@@ -1456,7 +1585,7 @@ final class CapabilitiesTest extends TestCase
             ],
             'closureReadingCapturedVariableIsNotPure' => [
                 'code' => '<?php
-                    /** @param Closure<pure>(): int $f */
+                    /** @param Closure[pure](): int $f */
                     function takesPure(Closure $f): void {}
 
                     /** @psalm-pure */
@@ -1677,7 +1806,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-external-mutation-free
-                     * @param Generator<int, int, mixed, mixed, io> $g
+                     * @param Generator[io]<int, int, mixed, mixed> $g
                      */
                     function sum(Generator $g): int {
                         $s = 0;
@@ -1686,13 +1815,13 @@ final class CapabilitiesTest extends TestCase
                         }
                         return $s;
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-this-props|write-refs but iterating over Generator<int, int, mixed, mixed, io> requires io',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-this-props|write-refs but iterating over Generator[io]<int, int, mixed, mixed> requires io',
             ],
             'resumingAnIoGeneratorNeedsIo' => [
                 'code' => '<?php
                     /**
                      * @psalm-external-mutation-free
-                     * @param Generator<int, int, mixed, mixed, io> $g
+                     * @param Generator[io]<int, int, mixed, mixed> $g
                      */
                     function step(Generator $g): void {
                         $g->next();
@@ -1703,14 +1832,14 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-pure
-                     * @param Closure<_>(): int $f
+                     * @param Closure[_](): int $f
                      * @return Generator<int, int>
                      */
                     function polyGen(Closure $f): Generator { yield $f(); return 0; }
 
                     /**
                      * @psalm-external-mutation-free
-                     * @param Generator<int, int, mixed, mixed, pure> $g
+                     * @param Generator[pure]<int, int, mixed, mixed> $g
                      */
                     function sumGiven(Generator $g): int {
                         $s = 0;
@@ -1724,11 +1853,11 @@ final class CapabilitiesTest extends TestCase
                     function pass(): int {
                         return sumGiven(polyGen(function (): int { echo "y"; return 1; }));
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:41 - Argument 1 of sumGiven expects Generator<int, int, mixed, mixed, pure>, but Generator<int, int, mixed, mixed, io> provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:23:41 - Argument 1 of sumGiven expects Generator[pure]<int, int, mixed, mixed>, but Generator[io]<int, int, mixed, mixed> provided',
             ],
             'iteratorMethodsMustFitTheBoundPurityTemplate' => [
                 'code' => '<?php
-                    /** @implements Iterator<int, int, pure> */
+                    /** @implements Iterator[pure]<int, int> */
                     final class Reader implements Iterator {
                         /** @psalm-mutation-free */
                         public function current(): int { return 1; }
@@ -1759,7 +1888,7 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-external-mutation-free
-                     * @param Iterator<int, int, pure> $it
+                     * @param Iterator[pure]<int, int> $it
                      */
                     function sum(Iterator $it): int {
                         $s = 0;
@@ -1773,7 +1902,7 @@ final class CapabilitiesTest extends TestCase
                     function pass(Counter $c): int {
                         return sum($c);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - Argument 1 of sum expects Iterator<int, int, pure>, but Counter provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - Argument 1 of sum expects Iterator[pure]<int, int>, but Counter provided',
             ],
             'aDiscardedNewObjectRunsItsDestructor' => [
                 'code' => '<?php
@@ -1789,6 +1918,87 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25 - The context is pure but destroying the discarded new object (Guard::__destruct) requires',
+            ],
+            'iteratingAnIterableIsImpureByDefault' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function count_them(iterable $xs): int {
+                        $n = 0;
+                        foreach ($xs as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34 - The context is pure but iterating over iterable<mixed, mixed> requires impure',
+            ],
+            'iteratingAnIoIterableNeedsIo' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-capabilities write-props
+                     * @param iterable[read-props|io]<int, int> $xs
+                     */
+                    function sum(iterable $xs): int {
+                        $s = 0;
+                        foreach ($xs as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-props but iterating over iterable[io|read-props]<int, int> requires io|read-props',
+            ],
+            'anImpureIteratorIsNotAPureIterable' => [
+                'code' => '<?php
+                    /** @param iterable[pure]<int, int> $xs */
+                    function sum(iterable $xs): int {
+                        return 0;
+                    }
+
+                    /** @param Iterator[io]<int, int> $it */
+                    function pass(Iterator $it): int {
+                        return sum($it);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Argument 1 of sum expects iterable[pure]<int, int>, but Iterator[io]<int, int> provided',
+            ],
+            'anImpureIterableIsNotAPureIterable' => [
+                'code' => '<?php
+                    /** @param iterable[pure]<int, int> $xs */
+                    function sum(iterable $xs): int {
+                        return 0;
+                    }
+
+                    /** @param iterable<int, int> $xs */
+                    function pass(iterable $xs): int {
+                        return sum($xs);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Argument 1 of sum expects iterable[pure]<int, int>, but iterable<int, int> provided',
+            ],
+            'purityArgumentsGoInBrackets' => [
+                'code' => '<?php
+                    /** @param Traversable<int, int, pure> $t */
+                    function f(Traversable $t): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Purity arguments are given in brackets, before the type parameters: Traversable[pure]<...> instead of Traversable<..., pure',
+            ],
+            'emptyPurityBracketsAreNotPure' => [
+                'code' => '<?php
+                    /** @param Traversable[]<int, int> $t */
+                    function f(Traversable $t): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'tooManyPurityArguments' => [
+                'code' => '<?php
+                    /** @param Traversable[pure, io]<int, int> $t */
+                    function f(Traversable $t): void {}',
+                'error_message' => 'TooManyTemplateParams',
+            ],
+            'aTypeArgumentInThePurityPosition' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string, int> */
+                    final class Bag implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+                    }',
+                'error_message' => 'TooManyTemplateParams',
             ],
         ];
     }

@@ -906,7 +906,7 @@ final class FunctionLikeDocblockScanner
             }
 
             if (PurityWildcard::contains($new_param_type)) {
-                // `Closure<_>`: the function-like inherits its purity from this parameter,
+                // `Closure[_]`: the function-like inherits its purity from this parameter,
                 // through a purity template of its own
                 $wildcard_template = PurityWildcard::templateName($param_name);
                 $defining_id = 'fn-' . strtolower($cased_method_id);

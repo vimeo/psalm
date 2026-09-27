@@ -67,7 +67,7 @@ use function count;
 use function is_int;
 use function is_numeric;
 use function min;
-use function strpos;
+use function strcspn;
 use function strtolower;
 use function substr;
 
@@ -190,6 +190,10 @@ final class TypeCombiner
             assert(count($combined_param_types) <= 2);
 
             $combination->value_types['iterable'] = new TIterable($combined_param_types);
+            self::addIterablePurity(
+                $combination,
+                $combination->builtin_type_params['Traversable'][2] ?? Type::getImpure(),
+            );
 
             $combination->array_type_params = [];
 
@@ -265,7 +269,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
-            $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
+            $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
             $generic_object = new TGenericObject(
@@ -366,6 +370,8 @@ final class TypeCombiner
             $new_types[] = $type->setFromDocblock($from_docblock);
         }
 
+        $new_types = self::setIterablePurity($new_types, $combination);
+
         if (!$new_types) {
             if (!$has_never) {
                 throw new UnexpectedValueException('There should be types here');
@@ -390,6 +396,37 @@ final class TypeCombiner
         }
 
         return $union_type;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
+     */
+    private static function addIterablePurity(TypeCombination $combination, Union $purity): void
+    {
+        $combination->iterable_purity = Type::combineUnionTypes($combination->iterable_purity, $purity);
+    }
+
+    /**
+     * Gives every iterable combined the purity of all the iterables combined.
+     *
+     * @param list<Atomic> $new_types
+     * @return list<Atomic>
+     * @psalm-mutation-free
+     */
+    private static function setIterablePurity(array $new_types, TypeCombination $combination): array
+    {
+        if ($combination->iterable_purity === null) {
+            return $new_types;
+        }
+
+        foreach ($new_types as $i => $new_type) {
+            if ($new_type instanceof TIterable) {
+                $new_types[$i] = $new_type->setPurity($combination->iterable_purity);
+            }
+        }
+
+        return $new_types;
     }
 
     /**
@@ -476,6 +513,13 @@ final class TypeCombiner
             $type_key = $type->getKey();
         }
 
+        if ($type instanceof TIterable) {
+            self::addIterablePurity($combination, $type->purity);
+        } elseif ($type_key === 'iterable' && $type instanceof TGenericObject) {
+            // a Traversable combined into an iterable
+            self::addIterablePurity($combination, $type->type_params[2] ?? Type::getImpure());
+        }
+
         if ($type instanceof TIterable
             && $combination->array_type_params
             && ($type->has_docblock_params || $combination->array_type_params[1]->isMixed())
@@ -500,8 +544,9 @@ final class TypeCombiner
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->builtin_type_params['Traversable']))
         ) {
-            // an iterable has a key and a value, not what iterating it may do (TPurity)
+            // the purity of an iterable is not one of its type parameters
             $traversable_params = $combination->builtin_type_params['Traversable'] ?? null;
+            self::addIterablePurity($combination, $traversable_params[2] ?? Type::getImpure());
             $traversable_params = isset($traversable_params[1])
                 ? [$traversable_params[0], $traversable_params[1]]
                 : null;
@@ -633,7 +678,7 @@ final class TypeCombiner
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
             foreach ($type->type_params as $i => $type_param) {
-                // an iterable has a key and a value, not what iterating it may do (TPurity)
+                // the purity of an iterable is not one of its type parameters, see addIterablePurity()
                 if ($type_key === 'iterable' && $i > 1) {
                     break;
                 }
