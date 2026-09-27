@@ -6,6 +6,7 @@ namespace Psalm\Internal\PhpVisitor;
 
 use Override;
 use PhpParser;
+use Psalm\Interner;
 use ReflectionClass;
 use Throwable;
 
@@ -26,12 +27,16 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private array $matching_trait_nodes = [];
 
+    private readonly string $fq_trait_name;
+
     /**
+     * @param int $fq_trait_name interned trait name
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_trait_name,
+        int $fq_trait_name,
     ) {
+        $this->fq_trait_name = Interner::str($fq_trait_name);
     }
 
     #[Override]

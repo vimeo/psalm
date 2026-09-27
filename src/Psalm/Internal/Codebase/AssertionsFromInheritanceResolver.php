@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
+use Psalm\Interner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 
 use function array_filter;
 use function array_values;
-use function strtolower;
 
 /**
  * @internal
@@ -35,13 +35,18 @@ final class AssertionsFromInheritanceResolver
         MethodStorage $method_storage,
         ClassLikeStorage $called_class,
     ): array {
-        $method_name_lc = strtolower($method_storage->cased_name ?? '');
-
         $assertions = $method_storage->assertions;
+
+        if ($method_storage->cased_name === null) {
+            return $assertions;
+        }
+
+        $method_name_lc = Interner::lower($method_storage->cased_name);
+
         $inherited_classes_and_interfaces = array_values(array_filter([
-            ...$called_class->parent_classes,
-            ...$called_class->class_implements,
-        ], fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
+            ...array_values($called_class->parent_classes),
+            ...array_values($called_class->class_implements),
+        ], fn(int $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
 
         foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(

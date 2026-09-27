@@ -9,6 +9,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -29,7 +31,7 @@ final class FileReferenceProvider
     private bool $loaded_from_cache = false;
 
     /**
-     * @var array<string, array<string, true>>
+     * @var array<int, array<string, true>> lowercase class name id => file path => true
      */
     private static array $files_inheriting_classes = [];
 
@@ -48,6 +50,9 @@ final class FileReferenceProvider
     private static array $file_references = [];
 
     /**
+     * Member id strings (lowercase `foo::bar`, the same format used by CodeUseGraph member ids and by the
+     * incremental analysis machinery) => referencing function-like id string => true
+     *
      * @var array<string, array<string, bool>>
      */
     private static array $method_dependencies = [];
@@ -58,7 +63,7 @@ final class FileReferenceProvider
     private static array $references_to_mixed_member_names = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, string> lowercase class name id => file path
      */
     private static array $classlike_files = [];
 
@@ -83,6 +88,8 @@ final class FileReferenceProvider
     private static array $mixed_counts = [];
 
     /**
+     * Lowercase method id string (`foo::bar`) => param offset => referencing lowercase method id string => true
+     *
      * @var array<string, array<int, array<string, bool>>>
      */
     private static array $method_param_uses = [];
@@ -118,7 +125,7 @@ final class FileReferenceProvider
     }
 
     /**
-     * @param array<string, string> $map
+     * @param array<int, string> $map lowercase class name id => file path
      * @psalm-external-mutation-free
      */
     public function addClassLikeFiles(array $map): void
@@ -127,19 +134,35 @@ final class FileReferenceProvider
     }
 
     /**
+     * @param int $fq_class_name_lc lowercase class name id
      * @psalm-external-mutation-free
      */
-    public function addFileInheritanceToClass(string $source_file, string $fq_class_name_lc): void
+    public function addFileInheritanceToClass(string $source_file, int $fq_class_name_lc): void
     {
-        self::$files_inheriting_classes[$fq_class_name_lc][$source_file] = true;
+        self::$files_inheriting_classes[Interner::lower($fq_class_name_lc)][$source_file] = true;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function addMethodParamUse(string $method_id, int $offset, string $referencing_method_id): void
+    public function addMethodParamUse(
+        MethodIdentifier $method_id,
+        int $offset,
+        MethodIdentifier $referencing_method_id,
+    ): void {
+        self::$method_param_uses[self::getMemberKey($method_id)][$offset][self::getMemberKey($referencing_method_id)]
+            = true;
+    }
+
+    /**
+     * Returns the lowercase `foo::bar` member id string used as key by the incremental analysis maps.
+     *
+     * @return lowercase-string
+     * @psalm-pure
+     */
+    public static function getMemberKey(MethodIdentifier $method_id): string
     {
-        self::$method_param_uses[$method_id][$offset][$referencing_method_id] = true;
+        return strtolower((string) $method_id);
     }
 
     /**
@@ -157,7 +180,8 @@ final class FileReferenceProvider
         $referenced_files = [];
 
         foreach ($file_classes as $fq_class_name_lc => $_) {
-            foreach ($this->code_use_graph->getNodesReferencingClass(strtolower($fq_class_name_lc)) as $node_id => $_) {
+            $nodes = $this->code_use_graph->getNodesReferencingClass(Interner::lower($fq_class_name_lc));
+            foreach ($nodes as $node_id => $_) {
                 $node_file = $this->code_use_graph->getNodeFile($node_id);
 
                 if ($node_file === null) {
@@ -401,9 +425,12 @@ final class FileReferenceProvider
      * @psalm-external-mutation-free
      */
     public function addMethodDependencyToClassMember(
-        string $calling_function_id,
-        string $referenced_member_id,
+        MethodIdentifier $calling_method_id,
+        MethodIdentifier $referenced_method_id,
     ): void {
+        $calling_function_id = self::getMemberKey($calling_method_id);
+        $referenced_member_id = self::getMemberKey($referenced_method_id);
+
         if (!isset(self::$method_dependencies[$referenced_member_id])) {
             self::$method_dependencies[$referenced_member_id] = [$calling_function_id => true];
         } else {
@@ -414,9 +441,9 @@ final class FileReferenceProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function isMethodParamUsed(string $method_id, int $offset): bool
+    public function isMethodParamUsed(MethodIdentifier $method_id, int $offset): bool
     {
-        return !empty(self::$method_param_uses[$method_id][$offset]);
+        return (self::$method_param_uses[self::getMemberKey($method_id)][$offset] ?? []) !== [];
     }
 
     /**

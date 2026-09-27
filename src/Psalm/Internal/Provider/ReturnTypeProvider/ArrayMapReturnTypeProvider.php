@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\ArrayType;
+use Psalm\Interner;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -25,6 +26,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\Assertion;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -53,13 +55,13 @@ use function substr;
 final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_map'];
+        return [StrId::array_map];
     }
 
     #[Override]
@@ -467,7 +469,8 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_method_call_var__"] =
-                            $lhs_instance_type ?: new Union([new TNamedObject($callable_fq_class_name)]);
+                            $lhs_instance_type
+                                ?: new Union([new TNamedObject(Interner::intern($callable_fq_class_name))]);
                     } else {
                         $fake_method_call = new VirtualStaticCall(
                             new VirtualFullyQualified(

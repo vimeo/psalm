@@ -6,11 +6,10 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Interner;
 use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
-
-use function strtolower;
 
 /**
  * @internal
@@ -20,12 +19,12 @@ final class ClassLikeStorageProvider
     /**
      * Storing this statically is much faster (at least in PHP 7.2.1)
      *
-     * @var array<string, ClassLikeStorage>
+     * @var array<int, ClassLikeStorage> lowercase class name id => storage
      */
     private static array $storage = [];
 
     /**
-     * @var array<string, ClassLikeStorage>
+     * @var array<int, ClassLikeStorage> lowercase class name id => storage
      */
     private static array $new_storage = [];
 
@@ -40,12 +39,14 @@ final class ClassLikeStorageProvider
      * @psalm-mutation-free
      * @throws InvalidArgumentException when class does not exist
      */
-    public function get(string $fq_classlike_name): ClassLikeStorage
+    public function get(int $fq_classlike_name): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = Interner::lower($fq_classlike_name);
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
-            throw new InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
+            throw new InvalidArgumentException(
+                'Could not get class storage for ' . Interner::str($fq_classlike_name_lc),
+            );
         }
 
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
@@ -55,17 +56,17 @@ final class ClassLikeStorageProvider
     /**
      * @psalm-mutation-free
      */
-    public function has(string $fq_classlike_name): bool
+    public function has(int $fq_classlike_name): bool
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = Interner::lower($fq_classlike_name);
 
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
+    public function exhume(int $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = Interner::lower($fq_classlike_name);
 
         if (isset(self::$storage[$fq_classlike_name_lc])) {
             return self::$storage[$fq_classlike_name_lc];
@@ -84,7 +85,7 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @return array<string, ClassLikeStorage>
+     * @return array<int, ClassLikeStorage> lowercase class name id => storage
      * @psalm-external-mutation-free
      */
     public static function getAll(): array
@@ -93,7 +94,7 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @return array<string, ClassLikeStorage>
+     * @return array<int, ClassLikeStorage> lowercase class name id => storage
      * @psalm-external-mutation-free
      */
     public function getNew(): array
@@ -102,7 +103,7 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @param array<string, ClassLikeStorage> $more
+     * @param array<int, ClassLikeStorage> $more lowercase class name id => storage
      */
     public function addMore(array $more): void
     {
@@ -117,7 +118,7 @@ final class ClassLikeStorageProvider
                 ) {
                     IssueBuffer::maybeAdd(
                         new DuplicateClass(
-                            'Class ' . $k . ' has already been defined'
+                            'Class ' . Interner::str($storage->name) . ' has already been defined'
                             . ' in ' . $location->file_path,
                             $location,
                         ),
@@ -138,7 +139,7 @@ final class ClassLikeStorageProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function makeNew(string $fq_classlike_name_lc): void
+    public function makeNew(int $fq_classlike_name_lc): void
     {
         self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
     }
@@ -146,9 +147,9 @@ final class ClassLikeStorageProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function create(string $fq_classlike_name): ClassLikeStorage
+    public function create(int $fq_classlike_name): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = Interner::lower($fq_classlike_name);
 
         $storage = new ClassLikeStorage($fq_classlike_name);
         self::$storage[$fq_classlike_name_lc] = $storage;
@@ -160,9 +161,9 @@ final class ClassLikeStorageProvider
     /**
      * @psalm-external-mutation-free
      */
-    public function remove(string $fq_classlike_name): void
+    public function remove(int $fq_classlike_name): void
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = Interner::lower($fq_classlike_name);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }

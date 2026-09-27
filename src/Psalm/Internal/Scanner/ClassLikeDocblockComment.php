@@ -30,7 +30,7 @@ final class ClassLikeDocblockComment
     /**
      * If set, the class is internal to the given namespace.
      *
-     * @var list<non-empty-string>
+     * @var list<int> interned namespaces
      */
     public array $psalm_internal = [];
 
@@ -40,7 +40,7 @@ final class ClassLikeDocblockComment
     public array $mixins = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool, int}>
+     * @var array<int, array{int, ?string, ?string, bool, int}> interned template name, ...
      */
     public array $templates = [];
 
@@ -57,7 +57,8 @@ final class ClassLikeDocblockComment
     public ?string $yield = null;
 
     /**
-     * @var array<int, array{end?: int, line_number: int, name: string, start?: int, tag: string, type: string}>
+     * @var array<int, array{end?: int, line_number: int, name: int, start?: int, tag: string, type: string}>
+     *      name is the interned property name, without the leading $
      */
     public array $properties = [];
 

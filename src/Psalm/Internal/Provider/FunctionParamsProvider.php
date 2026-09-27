@@ -11,12 +11,11 @@ use Psalm\Context;
 use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayUArrayParamsProvider;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeParameter;
-
-use function strtolower;
 
 /**
  * @internal
@@ -25,7 +24,7 @@ final class FunctionParamsProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter>>
      * >
      */
@@ -56,17 +55,17 @@ final class FunctionParamsProvider
      * @param Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter> $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $fq_classlike_name, Closure $c): void
+    public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_classlike_name)][] = $c;
+        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $fq_classlike_name): bool
+    public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_classlike_name)]);
+        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
     }
 
     /**
@@ -75,12 +74,12 @@ final class FunctionParamsProvider
      */
     public function getFunctionParams(
         StatementsSource $statements_source,
-        string $function_id,
+        int $function_id,
         array $call_args,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): ?array {
-        foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
+        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $class_handler) {
             $event = new FunctionParamsProviderEvent(
                 $statements_source,
                 $function_id,

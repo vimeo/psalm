@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
@@ -26,6 +27,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -475,7 +477,7 @@ final class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                '__tostring',
+                                StrId::__tostring,
                             ),
                         );
                     } catch (UnexpectedValueException) {
@@ -491,7 +493,7 @@ final class BinaryOpAnalyzer
                         $storage->allowed_mutations,
                         $context,
                         'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
+                                    . Interner::str($atomic_type->value) . '::__toString',
                         ImpureMethodCall::class,
                         $stmt,
                         null,
@@ -507,7 +509,7 @@ final class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                '__tostring',
+                                StrId::__tostring,
                             ),
                         );
                     } catch (UnexpectedValueException) {
@@ -524,7 +526,7 @@ final class BinaryOpAnalyzer
                         $storage->allowed_mutations,
                         $context,
                         'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
+                                    . Interner::str($atomic_type->value) . '::__toString',
                         ImpureMethodCall::class,
                         $stmt,
                         null,

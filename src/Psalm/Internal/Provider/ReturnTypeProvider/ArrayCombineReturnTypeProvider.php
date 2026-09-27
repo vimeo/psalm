@@ -10,6 +10,7 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -24,13 +25,13 @@ use function count;
 final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_combine'];
+        return [StrId::array_combine];
     }
 
     #[Override]
@@ -112,7 +113,7 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
                     . 'number of elements as the values array '
                             . $values_type->getId(),
                     $event->getCodeLocation(),
-                    'array_combine',
+                    StrId::array_combine,
                 ),
                 $statements_source->getSuppressedIssues(),
             );

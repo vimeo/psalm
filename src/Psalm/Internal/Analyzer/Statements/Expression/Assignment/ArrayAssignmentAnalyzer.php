@@ -19,8 +19,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -230,7 +232,7 @@ final class ArrayAssignmentAnalyzer
                 InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
-                    $root_array_expr->name->name,
+                    Interner::intern($root_array_expr->name->name),
                     null,
                     $root_type,
                     $context,
@@ -525,7 +527,7 @@ final class ArrayAssignmentAnalyzer
                                         $offset_type_part->as_type
                                             ? new Union([$offset_type_part->as_type])
                                             : Type::getObject(),
-                                        'class-string-map',
+                                        StrId::class_string_map,
                                     ),
                                 ]),
                             ],
@@ -1120,7 +1122,7 @@ final class ArrayAssignmentAnalyzer
                 $child_stmt->dim->class,
                 $statements_analyzer->getAliases(),
             );
-            $var_id_addition = '[' . $object_name . '::' . $child_stmt->dim->name->name . ']';
+            $var_id_addition = '[' . Interner::str($object_name) . '::' . $child_stmt->dim->name->name . ']';
 
             return [null, $var_id_addition, true];
         }

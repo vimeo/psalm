@@ -13,9 +13,10 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 final class Constant extends UnresolvedConstantComponent
 {
     /**
+     * @param int $name interned constant name
      * @psalm-mutation-free
      */
-    public function __construct(public readonly string $name, public readonly bool $is_fully_qualified)
+    public function __construct(public readonly int $name, public readonly bool $is_fully_qualified)
     {
     }
 }

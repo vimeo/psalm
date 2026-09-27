@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -27,7 +28,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['imagickpixel'];
+        return [StrId::imagickpixel];
     }
 
     #[Override]
@@ -37,7 +38,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();
 
-        if ($method_name_lowercase !== 'getcolor') {
+        if ($method_name_lowercase !== StrId::getcolor) {
             return null;
         }
 

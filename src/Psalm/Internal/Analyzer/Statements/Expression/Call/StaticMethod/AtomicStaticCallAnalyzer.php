@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InternalClass;
@@ -38,6 +39,7 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
@@ -59,6 +61,7 @@ use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -120,7 +123,7 @@ final class AtomicStaticCallAnalyzer
         } elseif ($lhs_type_part instanceof TDependentGetClass
             && !$lhs_type_part->as_type->hasObject()
         ) {
-            $fq_class_name = 'object';
+            $fq_class_name = null;
 
             if ($lhs_type_part->as_type->hasObjectType()
                 && $lhs_type_part->as_type->isSingle()
@@ -132,11 +135,11 @@ final class AtomicStaticCallAnalyzer
                 }
             }
 
-            if ($fq_class_name === 'object') {
+            if ($fq_class_name === null) {
                 return;
             }
         } elseif ($lhs_type_part instanceof TLiteralClassString) {
-            $fq_class_name = $lhs_type_part->value;
+            $fq_class_name = Interner::intern(ltrim($lhs_type_part->value, '\\'));
 
             if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $statements_analyzer,
@@ -167,7 +170,7 @@ final class AtomicStaticCallAnalyzer
                     new UndefinedClass(
                         'Type ' . $lhs_type_part->as . ' cannot be called as a class',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        (string) $lhs_type_part,
+                        Interner::intern((string) $lhs_type_part),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -219,8 +222,10 @@ final class AtomicStaticCallAnalyzer
 
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower($fq_class_name) . '::',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                    strtolower(Interner::str($fq_class_name)) . '::',
+                    $context->calling_method_id
+                        ? strtolower((string) $context->calling_method_id)
+                        : $statements_analyzer->getFileName(),
                 );
             }
 
@@ -231,7 +236,7 @@ final class AtomicStaticCallAnalyzer
                     if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
                         $method_identifier = new MethodIdentifier(
                             $fq_class_name,
-                            strtolower($method_name_type->getSingleStringLiteral()->value),
+                            Interner::internLower($method_name_type->getSingleStringLiteral()->value),
                         );
                         //the call to methodExists will register that the method was called from somewhere
                         if ($codebase->methodExists(
@@ -299,17 +304,17 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         Atomic $lhs_type_part,
         array $intersection_types,
-        string $fq_class_name,
+        int $fq_class_name,
         bool &$moved_call,
         bool &$has_existing_method,
         ?TemplateResult $inferred_template_result = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $method_name_lc = strtolower($stmt_name->name);
+        $method_name_lc = Interner::internLower($stmt_name->name);
         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
-        $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
+        $cased_method_id = Interner::str($fq_class_name) . '::' . $stmt_name->name;
 
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
@@ -339,7 +344,7 @@ final class AtomicStaticCallAnalyzer
 
                 if ($codebase->methodExists($intersection_method_id)) {
                     $method_id = $intersection_method_id;
-                    $cased_method_id = $intersection_type->value . '::' . $stmt_name->name;
+                    $cased_method_id = Interner::str($intersection_type->value) . '::' . $stmt_name->name;
                     $fq_class_name = $intersection_type->value;
                     break;
                 }
@@ -505,7 +510,7 @@ final class AtomicStaticCallAnalyzer
                         $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
                     )]);
                 } elseif ($codebase->methodExists(
-                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, StrId::__callstatic),
                     null,
                     new CodeLocation($statements_analyzer, $stmt),
                     is_used: false,
@@ -520,7 +525,7 @@ final class AtomicStaticCallAnalyzer
                         new UndefinedMethod(
                             'Method ' . $method_id . ' does not exist',
                             new CodeLocation($statements_analyzer, $stmt),
-                            (string) $method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     )) {
@@ -549,7 +554,7 @@ final class AtomicStaticCallAnalyzer
 
         $callstatic_id = new MethodIdentifier(
             $fq_class_name,
-            '__callstatic',
+            StrId::__callstatic,
         );
 
         $callstatic_method_exists = $codebase->methodExists($callstatic_id);
@@ -617,7 +622,7 @@ final class AtomicStaticCallAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                         null,
                         null,
-                        strtolower($stmt_name->name),
+                        $method_name_lc,
                     );
 
                     if ($return_type_candidate) {
@@ -800,7 +805,7 @@ final class AtomicStaticCallAnalyzer
         if ($class_storage->deprecated && $fq_class_name !== $context->self) {
             IssueBuffer::maybeAdd(
                 new DeprecatedClass(
-                    $fq_class_name . ' is marked deprecated',
+                    Interner::str($fq_class_name) . ' is marked deprecated',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -808,11 +813,14 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
-        if ($context->self && ! NamespaceAnalyzer::isWithinAny($context->self, $class_storage->internal)) {
+        if ($context->self
+            && !NamespaceAnalyzer::isWithinAny(Interner::str($context->self), $class_storage->internal)
+        ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
-                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
-                        . ' but called from ' . $context->self,
+                    Interner::str($fq_class_name) . ' is internal to '
+                        . InternalClass::listToPhrase($class_storage->internal)
+                        . ' but called from ' . Interner::str($context->self),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -857,7 +865,7 @@ final class AtomicStaticCallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         MethodIdentifier $method_id,
-        string $static_fq_class_name,
+        int $static_fq_class_name,
         array $args,
         ClassLikeStorage $class_storage,
         MethodStorage $pseudo_method_storage,
@@ -867,7 +875,7 @@ final class AtomicStaticCallAnalyzer
             $statements_analyzer,
             $args,
             $pseudo_method_storage->params,
-            (string) $method_id,
+            $method_id,
             true,
             $context,
         ) === false) {
@@ -900,7 +908,7 @@ final class AtomicStaticCallAnalyzer
                     $statements_analyzer,
                     $args,
                     $method_storage->params,
-                    (string) $method_id,
+                    $method_id,
                     true,
                     $context,
                 );
@@ -977,7 +985,9 @@ final class AtomicStaticCallAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($stmt->name->name),
-                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                    $context->calling_method_id
+                        ? strtolower((string) $context->calling_method_id)
+                        : $statements_analyzer->getFileName(),
                 );
             }
 
@@ -1020,7 +1030,7 @@ final class AtomicStaticCallAnalyzer
             new UndefinedClass(
                 'Type ' . $lhs_type_part . ' cannot be called as a class',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                (string) $lhs_type_part,
+                Interner::intern((string) $lhs_type_part),
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
@@ -1033,14 +1043,14 @@ final class AtomicStaticCallAnalyzer
      * If the method is not declared, null is returned.
      *
      * @param ClassLikeStorage $static_class_storage The called class
-     * @param lowercase-string $method_name_lc
+     * @param int $method_name_lc lowercase method name id
      * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
-        string $method_name_lc,
+        int $method_name_lc,
     ): ?array {
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];

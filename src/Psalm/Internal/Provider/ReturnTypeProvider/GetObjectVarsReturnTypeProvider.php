@@ -11,8 +11,11 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PropertyIdentifier;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -21,11 +24,8 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
-use UnitEnum;
-use stdClass;
 
 use function reset;
-use function strtolower;
 
 /**
  * @internal
@@ -38,7 +38,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['get_object_vars'];
+        return [StrId::get_object_vars];
     }
 
     private static ?TArray $fallback = null;
@@ -59,7 +59,9 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
             $object_type = reset($atomics);
 
             if ($object_type instanceof Atomic\TEnumCase) {
-                $properties = ['name' => new Union([Type::getAtomicStringFromLiteral($object_type->case_name)])];
+                $properties = [
+                    'name' => new Union([Type::getAtomicStringFromLiteral(Interner::str($object_type->case_name))]),
+                ];
                 $codebase = $statements_source->getCodebase();
                 $enum_classlike_storage = $codebase->classlike_storage_provider->get($object_type->value);
                 if ($enum_classlike_storage->enum_type === null) {
@@ -83,7 +85,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
             }
 
             if ($object_type instanceof TNamedObject) {
-                if (strtolower($object_type->value) === strtolower(stdClass::class)) {
+                if (Interner::lower($object_type->value) === StrId::stdclass) {
                     return self::$fallback;
                 }
                 $codebase = $statements_source->getCodebase();
@@ -102,7 +104,8 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                 }
 
                 $properties = [];
-                foreach ($class_storage->appearing_property_ids as $name => $property_id) {
+                foreach ($class_storage->appearing_property_ids as $name => $appearing_class) {
+                    $property_id = new PropertyIdentifier($appearing_class, $name);
                     if (ClassAnalyzer::checkPropertyVisibility(
                         $property_id,
                         $context,
@@ -131,7 +134,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                             )
                             : $property_type
                         ;
-                        $properties[$name] = $property_type;
+                        $properties[Interner::str($name)] = $property_type;
                     }
                 }
 
@@ -147,8 +150,8 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                     $properties,
                     null,
                     $class_storage->final
-                        || $class_storage->name === UnitEnum::class
-                        || $codebase->interfaceExtends($class_storage->name, UnitEnum::class)
+                        || $class_storage->name === StrId::UnitEnum
+                        || $codebase->interfaceExtends($class_storage->name, StrId::UnitEnum)
                             ? null
                             : [Type::getString(), Type::getMixed()],
                 );

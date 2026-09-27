@@ -13,7 +13,9 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ImpureStaticProperty;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedPropertyAssignment;
@@ -68,10 +70,10 @@ final class StaticPropertyFetchAnalyzer
                     );
                 }
             } else {
-                $fq_class_name = (string)$context->self;
+                $fq_class_name = $context->self;
             }
 
-            if ($context->isPhantomClass($fq_class_name)) {
+            if ($fq_class_name !== null && $context->isPhantomClass($fq_class_name)) {
                 return true;
             }
         } else {
@@ -86,7 +88,7 @@ final class StaticPropertyFetchAnalyzer
                 && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
             ) {
                 $codebase->addReferenceToUseAlias(
-                    $stmt->class->getFirst(),
+                    Interner::intern($stmt->class->getFirst()),
                     $statements_analyzer->getFilePath(),
                     $context,
                 );
@@ -109,23 +111,27 @@ final class StaticPropertyFetchAnalyzer
             }
         }
 
-        if ($fq_class_name
+        if ($fq_class_name !== null
             && $codebase->methods_to_move
-            && $context->calling_method_id
-            && isset($codebase->methods_to_move[$context->calling_method_id])
+            && $context->calling_method_id !== null
+            && isset($codebase->methods_to_move
+                [Interner::lower($context->calling_method_id->fq_class_name)]
+                [$context->calling_method_id->method_name])
         ) {
-            $destination_method_id = $codebase->methods_to_move[$context->calling_method_id];
+            [$destination_class] = $codebase->methods_to_move
+                [Interner::lower($context->calling_method_id->fq_class_name)]
+                [$context->calling_method_id->method_name];
 
             $codebase->classlikes->airliftClassLikeReference(
                 $fq_class_name,
-                explode('::', $destination_method_id)[0],
+                $destination_class,
                 $statements_analyzer->getFilePath(),
                 (int) $stmt->class->getAttribute('startFilePos'),
                 (int) $stmt->class->getAttribute('endFilePos') + 1,
             );
         }
 
-        if ($fq_class_name) {
+        if ($fq_class_name !== null) {
             $statements_analyzer->node_data->setType(
                 $stmt->class,
                 new Union([new TNamedObject($fq_class_name)]),
@@ -133,7 +139,7 @@ final class StaticPropertyFetchAnalyzer
         }
 
         if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
-            $prop_name = $stmt->name->name;
+            $prop_name = Interner::intern($stmt->name->name);
         } else {
             $was_inside_general_use = $context->inside_general_use;
 
@@ -149,25 +155,28 @@ final class StaticPropertyFetchAnalyzer
 
             if (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
                 && $stmt_name_type->isSingleStringLiteral()
+                && $stmt_name_type->getSingleStringLiteral()->value !== ''
             ) {
-                $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
+                $prop_name = Interner::intern($stmt_name_type->getSingleStringLiteral()->value);
             } else {
                 $prop_name = null;
             }
         }
 
-        if (!$prop_name) {
-            if ($fq_class_name) {
+        if ($prop_name === null) {
+            if ($fq_class_name !== null) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower($fq_class_name) . '::$',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                    strtolower(Interner::str($fq_class_name)) . '::$',
+                    $context->calling_method_id !== null
+                        ? strtolower((string) $context->calling_method_id)
+                        : $statements_analyzer->getFileName(),
                 );
             }
 
             return true;
         }
 
-        if (!$fq_class_name
+        if ($fq_class_name === null
             || !$context->check_variables
             || ExpressionAnalyzer::isMock($fq_class_name)
         ) {
@@ -176,11 +185,11 @@ final class StaticPropertyFetchAnalyzer
 
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
-            $context->self ?: $statements_analyzer->getFQCLN(),
+            $context->self ?? $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
 
-        $property_id = $fq_class_name . '::$' . $prop_name;
+        $property_id = new PropertyIdentifier($fq_class_name, $prop_name);
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
@@ -189,7 +198,7 @@ final class StaticPropertyFetchAnalyzer
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $property_id,
+                (string) $property_id,
             );
         }
 
@@ -260,7 +269,7 @@ final class StaticPropertyFetchAnalyzer
 
             IssueBuffer::maybeAdd(
                 new UndefinedPropertyFetch(
-                    'Static property ' . $property_id . ' is not defined',
+                    'Static property ' . (string) $property_id . ' is not defined',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $property_id,
                 ),
@@ -271,7 +280,7 @@ final class StaticPropertyFetchAnalyzer
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-            $fq_class_name . '::$' . $prop_name,
+            $property_id,
             true,
             $statements_analyzer,
         );
@@ -298,7 +307,7 @@ final class StaticPropertyFetchAnalyzer
             if ($context->inside_assignment) {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
+                        'Static property ' . (string) $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -307,7 +316,7 @@ final class StaticPropertyFetchAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyFetch(
-                        'Static property ' . $property_id . ' is not defined',
+                        'Static property ' . (string) $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -328,7 +337,8 @@ final class StaticPropertyFetchAnalyzer
             return false;
         }
 
-        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+        $declaring_property_id = strtolower(Interner::str($declaring_property_class))
+            . '::$' . Interner::str($prop_name);
 
         if ($codebase->alter_code) {
             $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -352,7 +362,7 @@ final class StaticPropertyFetchAnalyzer
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
                                 Type::getStringFromFQCLN(
-                                    $new_fq_class_name,
+                                    Interner::intern($new_fq_class_name),
                                     $statements_analyzer->getNamespace(),
                                     $statements_analyzer->getAliasedClassesFlipped(),
                                     null,
@@ -450,7 +460,7 @@ final class StaticPropertyFetchAnalyzer
 
             $string_type = ($class_atomic_type instanceof TClassString
                     && $class_atomic_type->as_type !== null)
-                ? $class_atomic_type->as_type->value
+                ? Interner::str($class_atomic_type->as_type->value)
                 : ($class_atomic_type instanceof TLiteralString
                     ? $class_atomic_type->value
                     : null);

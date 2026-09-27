@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\StrId;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -30,7 +31,7 @@ final class ClassLikeStringComparator
         if ($container_type_part instanceof TLiteralClassString
             && $input_type_part instanceof TLiteralClassString
         ) {
-            return $container_type_part->value === $input_type_part->value;
+            return $container_type_part->class_name === $input_type_part->class_name;
         }
 
         if ($container_type_part instanceof TTemplateParamClass
@@ -44,14 +45,14 @@ final class ClassLikeStringComparator
         }
 
         if ($container_type_part instanceof TClassString
-            && $container_type_part->as === 'object'
+            && $container_type_part->as === StrId::object
             && !$container_type_part->as_type
         ) {
             return true;
         }
 
         if ($input_type_part instanceof TClassString
-            && $input_type_part->as === 'object'
+            && $input_type_part->as === StrId::object
             && !$input_type_part->as_type
         ) {
             if ($atomic_comparison_result) {
@@ -68,7 +69,7 @@ final class ClassLikeStringComparator
             : new TNamedObject(
                 $container_type_part instanceof TClassString
                     ? $container_type_part->as
-                    : $container_type_part->value,
+                    : $container_type_part->class_name,
             );
 
         $fake_input_object = $input_type_part instanceof TClassString
@@ -77,7 +78,7 @@ final class ClassLikeStringComparator
             : new TNamedObject(
                 $input_type_part instanceof TClassString
                     ? $input_type_part->as
-                    : $input_type_part->value,
+                    : $input_type_part->class_name,
             );
 
         $isContainedBy = AtomicTypeComparator::isContainedBy(
@@ -93,7 +94,7 @@ final class ClassLikeStringComparator
             && $atomic_comparison_result->replacement_atomic_type instanceof TNamedObject
         ) {
             $atomic_comparison_result->replacement_atomic_type = new TClassString(
-                'object',
+                StrId::object,
                 $atomic_comparison_result->replacement_atomic_type,
             );
         }

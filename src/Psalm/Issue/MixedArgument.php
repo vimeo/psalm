@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-
-use function strtolower;
+use Psalm\Internal\MethodIdentifier;
 
 /**
  * @api
@@ -24,11 +23,11 @@ final class MixedArgument extends ArgumentIssue implements MixedIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        ?string $function_id = null,
+        int|MethodIdentifier|null $function_id = null,
         ?CodeLocation $origin_location = null,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = $function_id ? strtolower($function_id) : null;
+        $this->function_id = self::normalizeFunctionId($function_id);
         $this->origin_location = $origin_location;
     }
 }

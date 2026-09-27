@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Interner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
@@ -49,7 +50,7 @@ use const PHP_INT_MAX;
 final class SimpleTypeInferer
 {
     /**
-     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
+     * @param   ?array<int, ClassConstantStorage> $existing_class_constants constant name id => storage
      */
     public static function infer(
         Codebase $codebase,
@@ -58,7 +59,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null,
+        ?int $fq_classlike_name = null,
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -149,7 +150,7 @@ final class SimpleTypeInferer
                 && $stmt->left instanceof PhpParser\Node\Expr\ConstFetch) {
                 $stmt_left_type = ConstFetchAnalyzer::getConstType(
                     $file_source,
-                    $stmt->left->name->toString(),
+                    Interner::intern($stmt->left->name->toString()),
                     true,
                     null,
                 );
@@ -170,7 +171,7 @@ final class SimpleTypeInferer
                 && $stmt->right instanceof PhpParser\Node\Expr\ConstFetch) {
                 $stmt_right_type = ConstFetchAnalyzer::getConstType(
                     $file_source,
-                    $stmt->right->name->toString(),
+                    Interner::intern($stmt->right->name->toString()),
                     true,
                     null,
                 );
@@ -298,10 +299,11 @@ final class SimpleTypeInferer
             }
 
             if ($name === '__NAMESPACE__') {
-                return Type::getString($aliases->namespace);
+                return Type::getString($aliases->namespace === null ? null : Interner::str($aliases->namespace));
             }
 
-            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+            $name_id = Interner::intern($name);
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name_id, $name_id)) {
                 return $type;
             }
 
@@ -327,7 +329,7 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
-            return Type::getString($aliases->namespace);
+            return Type::getString($aliases->namespace === null ? null : Interner::str($aliases->namespace));
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
@@ -337,11 +339,13 @@ final class SimpleTypeInferer
                 && $stmt->class->getParts() !== ['static']
                 && $stmt->class->getParts() !== ['parent']
             ) {
-                if (isset($existing_class_constants[$stmt->name->name])
-                    && $existing_class_constants[$stmt->name->name]->type
+                $const_name = Interner::intern($stmt->name->name);
+
+                if (isset($existing_class_constants[$const_name])
+                    && $existing_class_constants[$const_name]->type
                 ) {
                     if ($stmt->class->getParts() === ['self']) {
-                        return $existing_class_constants[$stmt->name->name]->type;
+                        return $existing_class_constants[$const_name]->type;
                     }
                 }
 
@@ -354,11 +358,11 @@ final class SimpleTypeInferer
                     );
                 }
 
-                if (strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
-                    && isset($existing_class_constants[$stmt->name->name])
-                    && $existing_class_constants[$stmt->name->name]->type
+                if (Interner::equalsLower($const_fq_class_name, $fq_classlike_name)
+                    && isset($existing_class_constants[$const_name])
+                    && $existing_class_constants[$const_name]->type
                 ) {
-                    return $existing_class_constants[$stmt->name->name]->type;
+                    return $existing_class_constants[$const_name]->type;
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
@@ -372,7 +376,7 @@ final class SimpleTypeInferer
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
-                            $stmt->name->name,
+                            $const_name,
                             ReflectionProperty::IS_PRIVATE,
                             $file_source instanceof StatementsAnalyzer ? $file_source : null,
                         );
@@ -525,7 +529,7 @@ final class SimpleTypeInferer
             }
 
             return new Union([
-                new Type\Atomic\TNamedObject($resolved_class_name),
+                new Type\Atomic\TNamedObject(Interner::intern($resolved_class_name)),
             ]);
         }
 
@@ -533,7 +537,7 @@ final class SimpleTypeInferer
     }
 
     /**
-     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
+     * @param   ?array<int, ClassConstantStorage> $existing_class_constants constant name id => storage
      */
     private static function inferArrayType(
         Codebase $codebase,
@@ -542,7 +546,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null,
+        ?int $fq_classlike_name = null,
     ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
@@ -616,7 +620,7 @@ final class SimpleTypeInferer
     }
 
     /**
-     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
+     * @param   ?array<int, ClassConstantStorage> $existing_class_constants constant name id => storage
      */
     private static function handleArrayItem(
         Codebase $codebase,
@@ -626,7 +630,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null,
+        ?int $fq_classlike_name = null,
     ): bool {
         if ($item->unpack) {
             $unpacked_array_type = self::infer(

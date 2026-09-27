@@ -14,7 +14,15 @@ use Psalm\Type\Union;
  */
 final class FunctionCallInfo
 {
-    public ?string $function_id = null;
+    /**
+     * Interned lowercase function id
+     */
+    public ?int $function_id = null;
+
+    /**
+     * Interned function name, as written/resolved (for messages)
+     */
+    public ?int $cased_function_id = null;
 
     public ?bool $function_exists = null;
 
@@ -23,7 +31,7 @@ final class FunctionCallInfo
     public bool $in_call_map = false;
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> constant name id => type
      */
     public array $defined_constants = [];
 
@@ -50,7 +58,7 @@ final class FunctionCallInfo
      *
      * Used as a set (id => true) to deduplicate repeated ids.
      *
-     * @var array<non-empty-lowercase-string, true>
+     * @var array<int, true> lowercase function id => true
      */
     public array $callable_ids = [];
 

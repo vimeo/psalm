@@ -22,21 +22,19 @@ final class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param non-empty-list<Union>|null $template_type_parameters
-     * @param lowercase-string $method_name_lowercase
-     * @param lowercase-string $called_method_name_lowercase
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $source,
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
+        private readonly int $fq_classlike_name,
+        private readonly int $method_name_lowercase,
         private readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
         private readonly Context $context,
         private readonly CodeLocation $code_location,
         private readonly ?array $template_type_parameters = null,
-        private readonly ?string $called_fq_classlike_name = null,
-        private readonly ?string $called_method_name_lowercase = null,
+        private readonly ?int $called_fq_classlike_name = null,
+        private readonly ?int $called_method_name_lowercase = null,
     ) {
     }
 
@@ -45,15 +43,12 @@ final class MethodReturnTypeProviderEvent
         return $this->source;
     }
 
-    public function getFqClasslikeName(): string
+    public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
-    /**
-     * @return lowercase-string
-     */
-    public function getMethodNameLowercase(): string
+    public function getMethodNameLowercase(): int
     {
         return $this->method_name_lowercase;
     }
@@ -85,15 +80,12 @@ final class MethodReturnTypeProviderEvent
         return $this->template_type_parameters;
     }
 
-    public function getCalledFqClasslikeName(): ?string
+    public function getCalledFqClasslikeName(): ?int
     {
         return $this->called_fq_classlike_name;
     }
 
-    /**
-     * @return lowercase-string|null
-     */
-    public function getCalledMethodNameLowercase(): ?string
+    public function getCalledMethodNameLowercase(): ?int
     {
         return $this->called_method_name_lowercase;
     }

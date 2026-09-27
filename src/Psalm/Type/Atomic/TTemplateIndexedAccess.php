@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
@@ -16,9 +17,9 @@ final class TTemplateIndexedAccess extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(
-        public string $array_param_name,
-        public string $offset_param_name,
-        public string $defining_class,
+        public int $array_param_name,
+        public int $offset_param_name,
+        public int $defining_class,
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
@@ -27,18 +28,18 @@ final class TTemplateIndexedAccess extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return $this->array_param_name . '[' . $this->offset_param_name . ']';
+        return Interner::str($this->array_param_name) . '[' . Interner::str($this->offset_param_name) . ']';
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;

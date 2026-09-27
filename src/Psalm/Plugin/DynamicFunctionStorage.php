@@ -54,9 +54,10 @@ final class DynamicFunctionStorage
     public bool $variadic = false;
 
     /**
+     * @param int $function_cased_name interned function name
      * @internal
      */
-    public function toFunctionStorage(string $function_cased_name): FunctionStorage
+    public function toFunctionStorage(int $function_cased_name): FunctionStorage
     {
         $storage = new FunctionStorage();
         $storage->cased_name = $function_cased_name;

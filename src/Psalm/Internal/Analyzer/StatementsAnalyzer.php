@@ -51,6 +51,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Interner;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -68,12 +69,12 @@ use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_change_key_case;
 use function array_column;
 use function array_combine;
 use function array_keys;
@@ -91,7 +92,6 @@ use function round;
 use function str_starts_with;
 use function strlen;
 use function strrpos;
-use function strtolower;
 use function substr;
 use function trim;
 
@@ -125,7 +125,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private ?array $vars_to_initialize = null;
 
     /**
-     * @var array<string, FunctionAnalyzer>
+     * @var array<int, FunctionAnalyzer> lowercase function id => analyzer
      */
     private array $function_analyzers = [];
 
@@ -141,7 +141,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private ?ParsedDocblock $parsed_docblock = null;
 
-    private ?string $fake_this_class = null;
+    private ?int $fake_this_class = null;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
     public ?VariableUseGraph $variable_use_graph = null;
@@ -300,13 +300,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
     {
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_name = strtolower($stmt->name->name);
-
-                if ($ns = $this->getNamespace()) {
-                    $fq_function_name = strtolower($ns) . '\\' . $function_name;
-                } else {
-                    $fq_function_name = $function_name;
-                }
+                $ns = $this->getNamespace();
+                $ns = $ns !== null ? Interner::str($ns) : '';
+                $fq_function_name = Interner::internLower(($ns !== '' ? $ns . '\\' : '') . $stmt->name->name);
 
                 if ($this->data_flow_graph
                     && $this->codebase->find_unused_variables
@@ -355,7 +351,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 foreach ($stmt->consts as $const) {
                     ConstFetchAnalyzer::setConstType(
                         $statements_analyzer,
-                        $const->name->name,
+                        Interner::intern($const->name->name),
                         SimpleTypeInferer::infer(
                             $codebase,
                             $statements_analyzer->node_data,
@@ -549,9 +545,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                     if ($var_comment->var_id === '$this'
                         && $var_comment->type
-                        && $codebase->classExists((string)$var_comment->type, null, $context)
+                        && $codebase->classExists(Interner::intern((string)$var_comment->type), null, $context)
                     ) {
-                        $statements_analyzer->setFQCLN((string)$var_comment->type);
+                        $statements_analyzer->setFQCLN(Interner::intern((string)$var_comment->type));
                     }
                 }
             }
@@ -651,7 +647,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name->name ?? null,
+                    isset($stmt->name) ? Interner::intern($stmt->name->name) : null,
                 );
 
                 $class_analyzer->analyze(null, $global_context);
@@ -893,13 +889,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if (!$codebase->classExists($scope_fqcn, null, $context)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedDocblockClass(
-                        'Scope class ' . $scope_fqcn . ' does not exist',
+                        'Scope class ' . Interner::str($scope_fqcn) . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
                         $scope_fqcn,
                     ),
                 );
             } else {
-                $this_type = Type::parseString($scope_fqcn);
+                $this_type = new Union([new TNamedObject($scope_fqcn)]);
                 $context->self = $scope_fqcn;
                 $context->vars_in_scope['$this'] = $this_type;
                 $this->setFQCLN($scope_fqcn);
@@ -965,7 +961,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup), true);
+                $param_name = Interner::find(substr($var_id, 1));
+                $param_index = $param_name === null
+                    ? false
+                    : array_search($param_name, array_keys($function_storage->param_lookup), true);
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 
@@ -1052,7 +1051,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
             $class_storage = $codebase->classlikes->getStorageFor($atomic_type->value);
             while ($class_storage !== null) {
-                $destructor = $class_storage->methods['__destruct'] ?? null;
+                $destructor = $class_storage->methods[StrId::__destruct] ?? null;
                 if ($destructor !== null) {
                     if ($destructor->has_mutations_annotation
                         && $destructor->allowed_mutations >= Mutations::LEVEL_EXTERNAL) {
@@ -1197,7 +1196,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, FunctionAnalyzer>
+     * @return array<int, FunctionAnalyzer> lowercase function id => analyzer
      */
     public function getFunctionAnalyzers(): array
     {
@@ -1214,7 +1213,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<string, array<array-key, CodeLocation>>
+     * @return array<int, array<array-key, CodeLocation>> exception class name id => locations
      * @psalm-mutation-free
      */
     public function getUncaughtThrows(Context $context): array
@@ -1224,19 +1223,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
         if ($context->collect_exceptions) {
             if ($context->possibly_thrown_exceptions) {
                 $config = $this->codebase->config;
-                $ignored_exceptions = array_change_key_case(
-                    $context->is_global ?
-                        $config->ignored_exceptions_in_global_scope :
-                        $config->ignored_exceptions,
-                );
-                $ignored_exceptions_and_descendants = array_change_key_case(
-                    $context->is_global ?
-                        $config->ignored_exceptions_and_descendants_in_global_scope :
-                        $config->ignored_exceptions_and_descendants,
-                );
+                $ignored_exceptions = [];
+                foreach ($context->is_global
+                    ? $config->ignored_exceptions_in_global_scope
+                    : $config->ignored_exceptions as $ignored_exception => $_
+                ) {
+                    $ignored_exceptions[Interner::lower($ignored_exception)] = true;
+                }
+                $ignored_exceptions_and_descendants = [];
+                foreach ($context->is_global
+                    ? $config->ignored_exceptions_and_descendants_in_global_scope
+                    : $config->ignored_exceptions_and_descendants as $ignored_exception => $_
+                ) {
+                    $ignored_exceptions_and_descendants[Interner::lower($ignored_exception)] = true;
+                }
 
                 foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
-                    if (isset($ignored_exceptions[strtolower($possibly_thrown_exception)])) {
+                    if (isset($ignored_exceptions[Interner::lower($possibly_thrown_exception)])) {
                         continue;
                     }
 
@@ -1244,7 +1247,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                     foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
                         try {
-                            if ($expected_exception === strtolower($possibly_thrown_exception)
+                            if ($expected_exception === Interner::lower($possibly_thrown_exception)
                                 || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
                                 || $this->codebase->interfaceExtends($possibly_thrown_exception, $expected_exception)
                             ) {
@@ -1270,7 +1273,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @psalm-mutation-free
      */
-    public function getFunctionAnalyzer(string $function_id): ?FunctionAnalyzer
+    public function getFunctionAnalyzer(int $function_id): ?FunctionAnalyzer
     {
         return $this->function_analyzers[$function_id] ?? null;
     }
@@ -1282,9 +1285,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /** @psalm-mutation-free */
     #[Override]
-    public function getFQCLN(): ?string
+    public function getFQCLN(): ?int
     {
-        if ($this->fake_this_class) {
+        if ($this->fake_this_class !== null) {
             return $this->fake_this_class;
         }
 
@@ -1294,7 +1297,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     /**
      * @psalm-external-mutation-free
      */
-    public function setFQCLN(string $fake_this_class): void
+    public function setFQCLN(int $fake_this_class): void
     {
         $this->fake_this_class = $fake_this_class;
     }
@@ -1315,18 +1318,20 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $method_name = $this->source->getFunctionLikeStorage($this)->cased_name;
             assert($fqcn !== null && $method_name !== null);
 
-            return "$fqcn::$method_name";
+            return Interner::str($fqcn) . '::' . Interner::str($method_name);
         }
 
+        $namespace_id = $this->getNamespace();
+        $namespace = $namespace_id === null ? '' : Interner::str($namespace_id);
+
         if ($this->source instanceof FunctionAnalyzer) {
-            $namespace = $this->getNamespace();
-            $namespace = $namespace === "" ? "" : "$namespace\\";
+            $namespace = $namespace === '' ? '' : $namespace . '\\';
             $function_name = $this->source->getFunctionLikeStorage($this)->cased_name;
             assert($function_name !== null);
 
-            return "{$namespace}{$function_name}";
+            return $namespace . Interner::str($function_name);
         }
 
-        return $this->getNamespace();
+        return $namespace_id === null ? null : $namespace;
     }
 }

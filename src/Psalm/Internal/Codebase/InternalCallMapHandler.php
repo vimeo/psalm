@@ -7,17 +7,21 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
 
+use function array_key_exists;
 use function array_shift;
 use function assert;
 use function count;
@@ -49,9 +53,18 @@ final class InternalCallMapHandler
     private static ?array $call_map = null;
 
     /**
-     * @var array<string, non-empty-list<TCallable>>|null
+     * Callables of functions, by lowercase function id
+     *
+     * @var array<int, non-empty-list<TCallable>|null>
      */
-    private static ?array $call_map_callables = [];
+    private static array $function_callables = [];
+
+    /**
+     * Callables of methods, by lowercase class name id and lowercase method name id
+     *
+     * @var array<int, array<int, non-empty-list<TCallable>|null>>
+     */
+    private static array $method_callables = [];
 
     /**
      * @var non-empty-array<string, non-empty-list<int>>|null
@@ -59,11 +72,17 @@ final class InternalCallMapHandler
     private static ?array $taint_sink_map = null;
 
     /**
+     * @var array<int, bool> function id => whether it's in the call map
+     */
+    private static array $in_call_map = [];
+
+    /**
+     * @param  int|MethodIdentifier $method_id a method id, or a function id (any casing)
      * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function getCallableFromCallMapById(
         Codebase $codebase,
-        string $method_id,
+        int|MethodIdentifier $method_id,
         array $args,
         ?NodeDataProvider $nodes,
     ): TCallable {
@@ -71,7 +90,7 @@ final class InternalCallMapHandler
 
         if ($possible_callables === null) {
             throw new UnexpectedValueException(
-                'Not expecting $function_param_options to be null for ' . $method_id,
+                'Not expecting $function_param_options to be null for ' . self::getCallMapKey($method_id),
             );
         }
 
@@ -87,14 +106,18 @@ final class InternalCallMapHandler
     /**
      * @param  non-empty-list<TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
+     * @param  int|MethodIdentifier $method_id a method id, or a function id (any casing)
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,
         array $callables,
         array $args,
         ?NodeTypeProvider $nodes,
-        string $method_id,
+        int|MethodIdentifier $method_id,
     ): TCallable {
+        $is_min_max = !$method_id instanceof MethodIdentifier
+            && (Interner::lower($method_id) === StrId::max || Interner::lower($method_id) === StrId::min);
+
         if (count($callables) === 1) {
             return $callables[0];
         }
@@ -195,7 +218,7 @@ final class InternalCallMapHandler
                 $matching_param_count_callable = $possible_callable;
             }
 
-            if ($all_args_match && (!$type_coerced || $method_id === 'max' || $method_id === 'min')) {
+            if ($all_args_match && (!$type_coerced || $is_min_max)) {
                 return $possible_callable;
             }
 
@@ -217,16 +240,59 @@ final class InternalCallMapHandler
     }
 
     /**
-     * @return non-empty-list<TCallable>|null
+     * Returns the lowercase key of a function or method in the call map
+     *
+     * @return lowercase-string
+     * @psalm-pure
      */
-    public static function getCallablesFromCallMap(string $function_id): ?array
+    private static function getCallMapKey(int|MethodIdentifier $function_id): string
     {
-        $call_map_key = strtolower($function_id);
-
-        if (isset(self::$call_map_callables[$call_map_key])) {
-            return self::$call_map_callables[$call_map_key];
+        if ($function_id instanceof MethodIdentifier) {
+            /** @var lowercase-string */
+            return Interner::str(Interner::lower($function_id->fq_class_name))
+                . '::' . Interner::str(Interner::lower($function_id->method_name));
         }
 
+        /** @var lowercase-string */
+        return Interner::str(Interner::lower($function_id));
+    }
+
+    /**
+     * @param int|MethodIdentifier $function_id a method id, or a function id (any casing)
+     * @return non-empty-list<TCallable>|null
+     */
+    public static function getCallablesFromCallMap(int|MethodIdentifier $function_id): ?array
+    {
+        if ($function_id instanceof MethodIdentifier) {
+            $class_lc = Interner::lower($function_id->fq_class_name);
+            $method_lc = Interner::lower($function_id->method_name);
+
+            if (array_key_exists($method_lc, self::$method_callables[$class_lc] ?? [])) {
+                return self::$method_callables[$class_lc][$method_lc];
+            }
+
+            return self::$method_callables[$class_lc][$method_lc] = self::loadCallablesFromCallMap(
+                self::getCallMapKey($function_id),
+            );
+        }
+
+        $function_id = Interner::lower($function_id);
+
+        if (array_key_exists($function_id, self::$function_callables)) {
+            return self::$function_callables[$function_id];
+        }
+
+        return self::$function_callables[$function_id] = self::loadCallablesFromCallMap(
+            self::getCallMapKey($function_id),
+        );
+    }
+
+    /**
+     * @param lowercase-string $call_map_key
+     * @return non-empty-list<TCallable>|null
+     */
+    private static function loadCallablesFromCallMap(string $call_map_key): ?array
+    {
         $call_map = self::getCallMap();
 
         if (!isset($call_map[$call_map_key])) {
@@ -288,7 +354,7 @@ final class InternalCallMapHandler
                 }
 
                 $function_param = new FunctionLikeParameter(
-                    $arg_name,
+                    Interner::intern($arg_name),
                     $by_reference,
                     $param_type,
                     $param_type,
@@ -321,8 +387,6 @@ final class InternalCallMapHandler
             $possible_callables[] = new TCallable($function_params, $return_type);
         }
 
-        self::$call_map_callables[$call_map_key] = $possible_callables;
-
         return $possible_callables;
     }
 
@@ -347,6 +411,10 @@ final class InternalCallMapHandler
         ) {
             return self::$call_map;
         }
+
+        self::$function_callables = [];
+        self::$method_callables = [];
+        self::$in_call_map = [];
 
         $analyzer_version_int = min(
             self::MAX_CALLMAP_VERSION,
@@ -383,11 +451,18 @@ final class InternalCallMapHandler
     }
 
     /**
+     * @param int|MethodIdentifier $key a method id, or a function id (any casing)
      * @psalm-external-mutation-free
      */
-    public static function inCallMap(string $key): bool
+    public static function inCallMap(int|MethodIdentifier $key): bool
     {
-        return isset(self::getCallMap()[strtolower($key)]);
+        $call_map = self::getCallMap();
+
+        if ($key instanceof MethodIdentifier) {
+            return isset($call_map[self::getCallMapKey($key)]);
+        }
+
+        return self::$in_call_map[$key] ??= isset($call_map[self::getCallMapKey($key)]);
     }
 
     /**
@@ -395,6 +470,8 @@ final class InternalCallMapHandler
      */
     public static function clearCache(): void
     {
-        self::$call_map_callables = [];
+        self::$function_callables = [];
+        self::$method_callables = [];
+        self::$in_call_map = [];
     }
 }

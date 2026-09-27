@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Interner;
+
 use function dirname;
 use function strtolower;
 
@@ -41,8 +43,11 @@ final class PropertyMap
     /**
      * @psalm-external-mutation-free
      */
-    public static function inPropertyMap(string $class_name): bool
+    /**
+     * @param int $class_name interned class name (any casing)
+     */
+    public static function inPropertyMap(int $class_name): bool
     {
-        return isset(self::getPropertyMap()[strtolower($class_name)]);
+        return isset(self::getPropertyMap()[strtolower(Interner::str($class_name))]);
     }
 }

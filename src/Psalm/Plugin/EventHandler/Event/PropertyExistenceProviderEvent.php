@@ -23,8 +23,8 @@ final class PropertyExistenceProviderEvent
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_classlike_name,
-        private readonly string $property_name,
+        private readonly int $fq_classlike_name,
+        private readonly int $property_name,
         private readonly bool $read_mode,
         private readonly ?StatementsSource $source = null,
         private readonly ?Context $context = null,
@@ -32,12 +32,12 @@ final class PropertyExistenceProviderEvent
     ) {
     }
 
-    public function getFqClasslikeName(): string
+    public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
-    public function getPropertyName(): string
+    public function getPropertyName(): int
     {
         return $this->property_name;
     }

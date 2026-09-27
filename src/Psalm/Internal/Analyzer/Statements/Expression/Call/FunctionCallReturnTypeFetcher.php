@@ -20,9 +20,11 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -57,14 +59,14 @@ use function trim;
 final class FunctionCallReturnTypeFetcher
 {
     /**
-     * @param non-empty-string $function_id
+     * @param int $function_id interned lowercase function id
      */
     public static function fetch(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Name $function_name,
-        string $function_id,
+        int $function_id,
         bool $in_call_map,
         bool $is_stubbed,
         ?FunctionLikeStorage $function_storage,
@@ -78,7 +80,7 @@ final class FunctionCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
-                Type::getAtomicStringFromLiteral($function_id),
+                Type::getAtomicStringFromLiteral(Interner::str($function_id)),
                 null,
                 $statements_analyzer,
                 $context,
@@ -90,7 +92,7 @@ final class FunctionCallReturnTypeFetcher
                     $candidate_callable->params,
                     $candidate_callable->return_type,
                     $candidate_callable->allowed_mutations,
-                    callable_id: strtolower($function_id),
+                    callable_id: $function_id,
                 )]);
             } else {
                 $stmt_type = Type::getClosure();
@@ -108,27 +110,29 @@ final class FunctionCallReturnTypeFetcher
         if (!$stmt_type) {
             if (!$in_call_map || $is_stubbed) {
                 if ($function_storage && $function_storage->template_types) {
+                    $fn_defining_id = Interner::intern('fn-' . Interner::str($function_id));
+
                     foreach ($function_storage->template_types as $template_name => $_) {
                         if (!isset($template_result->lower_bounds[$template_name])) {
-                            if ($template_name === 'TFunctionArgCount') {
+                            if ($template_name === StrId::TFunctionArgCount) {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    $fn_defining_id => [
                                         new TemplateBound(
                                             Type::getInt(false, count($stmt->getArgs())),
                                         ),
                                     ],
                                 ];
-                            } elseif ($template_name === 'TPhpMajorVersion') {
+                            } elseif ($template_name === StrId::TPhpMajorVersion) {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    $fn_defining_id => [
                                         new TemplateBound(
                                             Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                         ),
                                     ],
                                 ];
-                            } elseif ($template_name === 'TPhpVersionId') {
+                            } elseif ($template_name === StrId::TPhpVersionId) {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    $fn_defining_id => [
                                         new TemplateBound(
                                             Type::getInt(
                                                 false,
@@ -139,7 +143,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } else {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    $fn_defining_id => [
                                         new TemplateBound(
                                             Type::getNever(),
                                         ),
@@ -283,7 +287,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
-            $function_storage->cased_name ?? $function_id,
+            Interner::str($function_storage->cased_name ?? $function_id),
             $function_storage,
             $stmt_type,
             $template_result,
@@ -332,33 +336,33 @@ final class FunctionCallReturnTypeFetcher
      */
     private static function getReturnTypeFromCallMapWithArgs(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id,
+        int $function_id,
         array $call_args,
         TCallable $callmap_callable,
         Context $context,
     ): Union {
-        $call_map_key = strtolower($function_id);
+        $call_map_key = $function_id;
 
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$call_args) {
             switch ($call_map_key) {
-                case 'hrtime':
+                case StrId::hrtime:
                     $keyed_array = TKeyedArray::make([
                         Type::getInt(),
                         Type::getInt(),
                     ], null, null, true);
                     return new Union([$keyed_array]);
 
-                case 'get_called_class':
+                case StrId::get_called_class:
                     return new Union([
                         new TClassString(
-                            $context->self ?: 'object',
+                            $context->self ?? StrId::object,
                             $context->self ? new TNamedObject($context->self, true) : null,
                         ),
                     ]);
 
-                case 'get_parent_class':
+                case StrId::get_parent_class:
                     if ($context->self && $codebase->classExists($context->self, null, $context)) {
                         $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
 
@@ -373,8 +377,8 @@ final class FunctionCallReturnTypeFetcher
             }
         } else {
             switch ($call_map_key) {
-                case 'count':
-                case 'sizeof':
+                case StrId::count:
+                case StrId::sizeof:
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 
@@ -416,7 +420,7 @@ final class FunctionCallReturnTypeFetcher
 
                     break;
 
-                case 'hrtime':
+                case StrId::hrtime:
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         if ((string) $first_arg_type === 'true') {
                             return Type::getInt(true);
@@ -439,8 +443,8 @@ final class FunctionCallReturnTypeFetcher
 
                     return Type::getInt(true);
 
-                case 'min':
-                case 'max':
+                case StrId::min:
+                case StrId::max:
                     if (isset($call_args[0])) {
                         $first_arg = $call_args[0]->value;
 
@@ -466,7 +470,7 @@ final class FunctionCallReturnTypeFetcher
 
                     break;
 
-                case 'get_parent_class':
+                case StrId::get_parent_class:
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
                     // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
                     // but caused problems where it didn’t know exactly what level of child we
@@ -476,7 +480,7 @@ final class FunctionCallReturnTypeFetcher
                     // but that requires more work
                     break;
 
-                case 'fgetcsv':
+                case StrId::fgetcsv:
                     $string_type = new Union([
                         new TString,
                         new TNull,
@@ -496,7 +500,7 @@ final class FunctionCallReturnTypeFetcher
                     ]);
 
                     return $call_map_return_type;
-                case 'mb_strtolower':
+                case StrId::mb_strtolower:
                     $string_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
                     if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
                         $returnType = Type::getNonEmptyLowercaseString();
@@ -522,19 +526,19 @@ final class FunctionCallReturnTypeFetcher
         $stmt_type = $callmap_callable->return_type ?: Type::getMixed();
 
         switch ($function_id) {
-            case 'mb_strpos':
-            case 'mb_strrpos':
-            case 'mb_stripos':
-            case 'mb_strripos':
-            case 'strpos':
-            case 'strrpos':
-            case 'stripos':
-            case 'strripos':
-            case 'strstr':
-            case 'stristr':
-            case 'strrchr':
-            case 'strpbrk':
-            case 'array_search':
+            case StrId::mb_strpos:
+            case StrId::mb_strrpos:
+            case StrId::mb_stripos:
+            case StrId::mb_strripos:
+            case StrId::strpos:
+            case StrId::strrpos:
+            case StrId::stripos:
+            case StrId::strripos:
+            case StrId::strstr:
+            case StrId::stristr:
+            case StrId::strrchr:
+            case StrId::strpbrk:
+            case StrId::array_search:
                 break;
 
             default:
@@ -563,13 +567,13 @@ final class FunctionCallReturnTypeFetcher
      *  - each argument is connected to the function's per-parameter node, which feeds an
      *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
      *
-     * @param non-empty-lowercase-string $callable_id
+     * @param int $callable_id lowercase function id
      */
     public static function taintCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr $real_stmt,
-        string $callable_id,
+        int $callable_id,
         Context $context,
     ): void {
         if ($stmt->isFirstClassCallable()) {
@@ -615,7 +619,7 @@ final class FunctionCallReturnTypeFetcher
         // The body links its per-argument entry nodes (getForMethodArgument) to this return
         // node, so wiring the actual arguments to those entry nodes below completes the flow.
         $return_node = DataFlowNode::getForMethodReturn(
-            $callable_id,
+            Interner::str($callable_id),
             $storage,
             $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
         );
@@ -659,7 +663,7 @@ final class FunctionCallReturnTypeFetcher
                 }
 
                 $param_node = DataFlowNode::getForMethodArgument(
-                    $callable_id,
+                    Interner::str($callable_id),
                     $i,
                     $storage,
                     $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
@@ -706,11 +710,11 @@ final class FunctionCallReturnTypeFetcher
      * Resolves the storage for a called function id, or null if it has none
      * (e.g. a callmap-only builtin).
      *
-     * @param non-empty-lowercase-string $function_id
+     * @param int $function_id lowercase function id
      */
     private static function getCallableStorage(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id,
+        int $function_id,
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -730,11 +734,11 @@ final class FunctionCallReturnTypeFetcher
     // function id => offset of the argument holding the stream path.
     // Only functions that *return* the stream contents belong here (readfile()
     // writes to the output buffer and returns a byte count, so it is excluded).
-    /** @var array<string, int> */
+    /** @var array<int, int> */
     private const SOURCE_PATH_ARG = [
-        'fopen' => 0,
-        'file_get_contents' => 0,
-        'file' => 0,
+        StrId::fopen => 0,
+        StrId::file_get_contents => 0,
+        StrId::file => 0,
     ];
 
     /**
@@ -753,15 +757,13 @@ final class FunctionCallReturnTypeFetcher
     private static function taintPhpInputSource(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
-        string $function_id,
+        int $function_id,
         Union &$stmt_type,
         Context $context,
     ): void {
         if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
-
-        $function_id = strtolower($function_id);
 
         if (!isset(self::SOURCE_PATH_ARG[$function_id])) {
             return;
@@ -800,7 +802,7 @@ final class FunctionCallReturnTypeFetcher
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         $source = DataFlowNode::getForTaint(
-            $function_id . '(' . $path . ')',
+            Interner::str($function_id) . '(' . $path . ')',
             $location,
             $taints,
         );
@@ -812,7 +814,7 @@ final class FunctionCallReturnTypeFetcher
     private static function taintReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
-        string $function_id,
+        int $function_id,
         string $cased_function_id,
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
@@ -873,7 +875,7 @@ final class FunctionCallReturnTypeFetcher
 
         if ($conditionally_removed_taints && $function_storage->location) {
             $assignment_node = DataFlowNode::getForAssignment(
-                $function_id . '-escaped',
+                Interner::str($function_id) . '-escaped',
                 $function_storage->signature_return_type_location ?: $function_storage->location,
                 $function_call_node->specialization_key,
             );
@@ -906,7 +908,7 @@ final class FunctionCallReturnTypeFetcher
             $removed_taints = $function_storage->removed_taints;
 
             $args = $stmt->getArgs();
-            if ($function_id === 'preg_replace' && count($args) > 2) {
+            if ($function_id === StrId::preg_replace && count($args) > 2) {
                 $first_stmt_type = $statements_analyzer->node_data->getType($args[0]->value);
                 $second_stmt_type = $statements_analyzer->node_data->getType($args[1]->value);
 
@@ -944,7 +946,7 @@ final class FunctionCallReturnTypeFetcher
             self::taintUsingFlows(
                 $function_storage,
                 $taint_flow_graph,
-                $function_id,
+                Interner::str($function_id),
                 $args,
                 $node_location,
                 $function_call_node,

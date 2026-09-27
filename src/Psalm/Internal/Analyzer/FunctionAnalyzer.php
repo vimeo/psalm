@@ -7,11 +7,11 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -31,13 +31,11 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
 
         $file_storage = $file_storage_provider->get($source->getFilePath());
 
-        $namespace = $source->getNamespace();
-
-        $function_id = ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($function->name->name);
+        $function_id = self::buildFunctionId($source->getNamespace(), $function->name->name);
 
         if (!isset($file_storage->functions[$function_id])) {
             throw new UnexpectedValueException(
-                'Function ' . $function_id . ' should be defined in ' . $source->getFilePath(),
+                'Function ' . Interner::str($function_id) . ' should be defined in ' . $source->getFilePath(),
             );
         }
 
@@ -47,16 +45,23 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @return non-empty-lowercase-string
+     * @return int lowercase function id
+     * @psalm-pure
+     */
+    private static function buildFunctionId(?int $namespace, string $function_name): int
+    {
+        $namespace_str = $namespace !== null ? Interner::str($namespace) : '';
+        return Interner::internLower(($namespace_str !== '' ? $namespace_str . '\\' : '') . $function_name);
+    }
+
+    /**
+     * @return int lowercase function id
      * @throws UnexpectedValueException if function is closure or arrow function.
      * @psalm-mutation-free
      */
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
-        $namespace = $this->source->getNamespace();
-
-        /** @var non-empty-lowercase-string */
-        return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
+        return self::buildFunctionId($this->source->getNamespace(), $this->function->name->name);
     }
 
     public static function analyzeStatement(
@@ -86,13 +91,7 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
         if (!$codebase->register_stub_files
             && !$codebase->register_autoload_files
         ) {
-            $function_name = strtolower($stmt->name->name);
-
-            if ($ns = $statements_analyzer->getNamespace()) {
-                $fq_function_name = strtolower($ns) . '\\' . $function_name;
-            } else {
-                $fq_function_name = $function_name;
-            }
+            $fq_function_name = self::buildFunctionId($statements_analyzer->getNamespace(), $stmt->name->name);
 
             $function_context = new Context($context->self);
             $function_context->strict_types = $context->strict_types;
@@ -107,11 +106,9 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
                 );
 
                 if ($config->reportIssueInFile('InvalidReturnType', $statements_analyzer->getFilePath())) {
-                    $method_id = $function_analyzer->getId();
-
                     $function_storage = $codebase->functions->getStorage(
                         $statements_analyzer,
-                        strtolower($method_id),
+                        $function_analyzer->getFunctionId(),
                     );
 
                     $return_type = $function_storage->return_type;

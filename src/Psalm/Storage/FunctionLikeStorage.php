@@ -7,6 +7,7 @@ namespace Psalm\Storage;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Interner;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 use Stringable;
@@ -37,7 +38,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     /**
      * @psalm-readonly-allow-private-mutation
-     * @var array<string, bool>
+     * @var array<int, bool> param name id => lookup value
      */
     public array $param_lookup = [];
 
@@ -49,7 +50,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?CodeLocation $signature_return_type_location = null;
 
-    public ?string $cased_name = null;
+    /** Interned function/method name, as declared */
+    public ?int $cased_name = null;
 
     /**
      * @var array<int, string>
@@ -59,7 +61,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public ?bool $deprecated = null;
 
     /**
-     * @var list<non-empty-string>
+     * @var list<int> namespace name ids
      */
     public array $internal = [];
 
@@ -70,7 +72,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public ?int $required_param_count = null;
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> constant name id => type
      */
     public array $defined_constants = [];
 
@@ -93,7 +95,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * function identifier. This allows operations with the same-named template defined
      * across multiple classes and/or functions to not run into trouble.
      *
-     * @var array<string, non-empty-array<string, Union>>|null
+     * @var array<int, non-empty-array<int, Union>>|null template name id => defining entity id => type
      */
     public ?array $template_types = null;
 
@@ -120,12 +122,12 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $docblock_issues = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> exception class name id => true
      */
     public array $throws = [];
 
     /**
-     * @var array<string, CodeLocation>
+     * @var array<int, CodeLocation> exception class name id => location
      */
     public array $throw_locations = [];
 
@@ -134,7 +136,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public ?string $return_type_description = null;
 
     /**
-     * @var array<string, CodeLocation>
+     * @var array<int, CodeLocation> param name id => location
      */
     public array $unused_docblock_parameters = [];
 
@@ -231,13 +233,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
             array_map(
                 static function (FunctionLikeParameter $param): string {
                     $realType = $param->type ?: 'mixed';
-                    return "    {$realType} \${$param->name}";
+                    return "    {$realType} \$" . Interner::str($param->name);
                 },
                 $this->params,
             ),
         ) . "\n" : '';
         $return_type = $this->return_type ?: 'mixed';
-        $symbol_text = "function {$this->cased_name}({$params}): {$return_type}";
+        $symbol_text = 'function ' . ($this->cased_name === null ? '' : Interner::str($this->cased_name))
+            . "({$params}): {$return_type}";
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;
@@ -257,13 +260,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public function getCompletionSignature(): string
     {
-        $symbol_text = 'function ' . $this->cased_name . '('   . implode(
-            ',',
-            array_map(
-                static fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
-                $this->params,
-            ),
-        ) .  ') : ' . ($this->return_type ?: 'mixed');
+        $symbol_text = 'function '
+            . ($this->cased_name === null ? '' : Interner::str($this->cased_name)) . '(' . implode(
+                ',',
+                array_map(
+                    static fn(FunctionLikeParameter $param): string =>
+                        ($param->type ?: 'mixed') . ' $' . Interner::str($param->name),
+                    $this->params,
+                ),
+            ) .  ') : ' . ($this->return_type ?: 'mixed');
 
         if (!$this instanceof MethodStorage) {
             return $symbol_text;

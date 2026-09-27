@@ -25,6 +25,7 @@ use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Interner;
 use Psalm\Storage\Mutations;
 
 use function array_key_first;
@@ -91,7 +92,7 @@ final class ClassLikeDocblockParser
                 ) {
                     $template_modifier = strtolower(array_shift($template_type));
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
@@ -99,7 +100,7 @@ final class ClassLikeDocblockParser
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         null,
                         null,
                         false,
@@ -134,7 +135,7 @@ final class ClassLikeDocblockParser
                 ) {
                     $template_modifier = strtolower(array_shift($template_type));
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         $template_modifier,
                         implode(' ', $template_type),
                         true,
@@ -142,7 +143,7 @@ final class ClassLikeDocblockParser
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         null,
                         null,
                         true,
@@ -475,7 +476,12 @@ final class ClassLikeDocblockParser
                             );
                         }
 
-                        $param_type_string = $param_type->toNamespacedString('\\', [], null, false);
+                        $param_type_string = $param_type->toNamespacedString(
+                            Interner::intern('\\'),
+                            [],
+                            null,
+                            false,
+                        );
                         $docblock_lines[] = '@param ' . $param_type_string . ' '
                             . ($method_tree_child->variadic ? '...' : '')
                             . $method_tree_child->name;
@@ -614,7 +620,7 @@ final class ClassLikeDocblockParser
                     }
 
                     $info->properties[] = [
-                        'name' => $name,
+                        'name' => Interner::intern(substr($name, 1)),
                         'type' => $line_parts[0],
                         'line_number' => $comment->getStartLine() + substr_count(
                             $comment->getText(),

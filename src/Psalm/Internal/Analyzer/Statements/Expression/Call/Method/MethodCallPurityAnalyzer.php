@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
@@ -163,7 +164,7 @@ final class MethodCallPurityAnalyzer
                         new UnusedMethodCall(
                             'The call to ' . $cased_method_id . ' is not used',
                             new CodeLocation($statements_analyzer, $stmt->name),
-                            (string) $method_id,
+                            $method_id,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -184,7 +185,7 @@ final class MethodCallPurityAnalyzer
                 new UnusedMethodCall(
                     'The call to ' . $cased_method_id . ' is not used',
                     new CodeLocation($statements_analyzer, $stmt->name),
-                    (string) $method_id,
+                    $method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -200,7 +201,7 @@ final class MethodCallPurityAnalyzer
             }
 
             foreach ($method_storage->this_property_mutations as $name => $_) {
-                $mutation_var_id = $lhs_var_id . '->' . $name;
+                $mutation_var_id = $lhs_var_id . '->' . Interner::str($name);
 
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])

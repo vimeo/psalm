@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
-use Exception;
-use PDOException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -22,7 +20,9 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -30,8 +30,6 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
-use RuntimeException;
-use Throwable;
 use UnexpectedValueException;
 
 use function count;
@@ -96,13 +94,13 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if ($premixin_method_id->method_name === 'getcode'
-            && $premixin_method_id->fq_class_name !== Exception::class
-            && $premixin_method_id->fq_class_name !== RuntimeException::class
-            && $premixin_method_id->fq_class_name !== PDOException::class
+        if ($premixin_method_id->method_name === StrId::getcode
+            && $premixin_method_id->fq_class_name !== StrId::Exception
+            && $premixin_method_id->fq_class_name !== StrId::RuntimeException
+            && $premixin_method_id->fq_class_name !== StrId::PDOException
             && (
-                $codebase->classImplements($premixin_method_id->fq_class_name, Throwable::class)
-                || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
+                $codebase->classImplements($premixin_method_id->fq_class_name, StrId::Throwable)
+                || $codebase->interfaceExtends($premixin_method_id->fq_class_name, StrId::Throwable)
             )
         ) {
             return Type::getInt();
@@ -131,7 +129,9 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
+        $call_map_function_id = Interner::internLower((string) $call_map_id);
+
+        if (InternalCallMapHandler::inCallMap($call_map_function_id)) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
@@ -146,7 +146,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                 );
             } else {
-                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $call_map_id);
+                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($call_map_function_id);
 
                 if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
                     throw new UnexpectedValueException('Shouldn’t get here');
@@ -254,7 +254,7 @@ final class MethodCallReturnTypeFetcher
         }
 
         if (!$return_type_candidate) {
-            $return_type_candidate = $method_name === '__tostring' ? Type::getString() : Type::getMixed();
+            $return_type_candidate = $method_name === StrId::__tostring ? Type::getString() : Type::getMixed();
         }
 
         $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
@@ -309,7 +309,7 @@ final class MethodCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
-        $is_declaring = (string) $declaring_method_id === (string) $method_id;
+        $is_declaring = $declaring_method_id->equals($method_id);
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $var_expr,
@@ -416,7 +416,7 @@ final class MethodCallReturnTypeFetcher
                     $taint_flow_graph->addPath(
                         $method_call_node,
                         $var_node,
-                        'method-call-' . $method_id->method_name,
+                        'method-call-' . Interner::str($method_id->method_name),
                         $added_taints,
                         $removed_taints,
                     );
@@ -548,6 +548,7 @@ final class MethodCallReturnTypeFetcher
     ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
+            $fn_defining_entity = Interner::intern('fn-' . Interner::str($method_id->method_name));
 
             foreach ($bindable_template_types as $template_type) {
                 if ($template_type->defining_class !== $method_id->fq_class_name
@@ -557,25 +558,25 @@ final class MethodCallReturnTypeFetcher
                             [$template_type->defining_class],
                     )
                 ) {
-                    if ($template_type->param_name === 'TFunctionArgCount') {
+                    if ($template_type->param_name === StrId::TFunctionArgCount) {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
+                            $fn_defining_entity => [
                                 new TemplateBound(
                                     Type::getInt(false, $arg_count),
                                 ),
                             ],
                         ];
-                    } elseif ($template_type->param_name === 'TPhpMajorVersion') {
+                    } elseif ($template_type->param_name === StrId::TPhpMajorVersion) {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
+                            $fn_defining_entity => [
                                 new TemplateBound(
                                     Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                 ),
                             ],
                         ];
-                    } elseif ($template_type->param_name === 'TPhpVersionId') {
+                    } elseif ($template_type->param_name === StrId::TPhpVersionId) {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . $method_id->method_name => [
+                            $fn_defining_entity => [
                                 new TemplateBound(
                                     Type::getInt(
                                         false,

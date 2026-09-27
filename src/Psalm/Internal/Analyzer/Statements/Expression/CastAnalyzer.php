@@ -16,6 +16,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Interner;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -23,6 +24,7 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -57,19 +59,18 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function range;
-use function strtolower;
 
 /**
  * @internal
  */
 final class CastAnalyzer
 {
-    /** @var string[] */
+    /** @var list<int> */
     private const PSEUDO_CASTABLE_CLASSES = [
-        'SimpleXMLElement',
-        'DOMNode',
-        'GMP',
-        'Decimal\Decimal',
+        StrId::SimpleXMLElement,
+        StrId::DOMNode,
+        StrId::GMP,
+        StrId::Decimal_Decimal,
     ];
 
     public static function analyze(
@@ -439,7 +440,7 @@ final class CastAnalyzer
                     }
 
                     foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
+                        if (Interner::equalsLower($intersection_type->value, $pseudo_castable_class)
                             || $codebase->classExtends(
                                 $intersection_type->value,
                                 $pseudo_castable_class,
@@ -638,7 +639,7 @@ final class CastAnalyzer
                     }
 
                     foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (strtolower($intersection_type->value) === strtolower($pseudo_castable_class)
+                        if (Interner::equalsLower($intersection_type->value, $pseudo_castable_class)
                             || $codebase->classExtends(
                                 $intersection_type->value,
                                 $pseudo_castable_class,
@@ -828,7 +829,7 @@ final class CastAnalyzer
                     if ($intersection_type instanceof TNamedObject) {
                         $intersection_method_id = new MethodIdentifier(
                             $intersection_type->value,
-                            '__tostring',
+                            StrId::__tostring,
                         );
 
                         if ($codebase->methodExists(
@@ -851,7 +852,7 @@ final class CastAnalyzer
                                 [],
                                 $intersection_method_id,
                                 $declaring_method_id,
-                                $intersection_type->value . '::__toString',
+                                Interner::str($intersection_type->value) . '::__toString',
                                 $context,
                             );
 
@@ -866,7 +867,7 @@ final class CastAnalyzer
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods['__tostring'])
+                        && isset($intersection_type->methods[StrId::__tostring])
                     ) {
                         $castable_types[] = new TString();
 

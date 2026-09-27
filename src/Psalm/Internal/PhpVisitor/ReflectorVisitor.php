@@ -29,11 +29,13 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeParser;
+use Psalm\Interner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\TaintedInput;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use SplObjectStorage;
 use UnexpectedValueException;
@@ -78,7 +80,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     private ?int $skip_if_descendants = null;
 
     /**
-     * @var array<string, TypeAlias>
+     * @var array<int, TypeAlias> alias name id => alias
      */
     private array $type_aliases = [];
 
@@ -159,15 +161,16 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
 
-            $this->type_aliases = [...$this->type_aliases, ...$classlike_node_scanner->type_aliases];
+            $this->type_aliases = $classlike_node_scanner->type_aliases + $this->type_aliases;
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
                     $catch_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($catch_type, $this->aliases);
 
-                    if (!in_array(strtolower($catch_fqcln), ['self', 'static', 'parent'], true)) {
+                    $catch_fqcln_lc = Interner::lower($catch_fqcln);
+                    if (!in_array($catch_fqcln_lc, [StrId::self, StrId::static, StrId::parent], true)) {
                         $this->codebase->scanner->queueClassLikeForScanning($catch_fqcln);
-                        $this->file_storage->referenced_classlikes[strtolower($catch_fqcln)] = $catch_fqcln;
+                        $this->file_storage->referenced_classlikes[$catch_fqcln_lc] = $catch_fqcln;
                     }
                 }
             }
@@ -258,12 +261,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 && strtolower($node->name->name) === '__tostring'
             ) {
                 if ($classlike_storage->is_interface) {
-                    $classlike_storage->parent_interfaces['stringable'] = 'Stringable';
+                    $classlike_storage->parent_interfaces[StrId::stringable] = StrId::Stringable;
                 } else {
-                    $classlike_storage->class_implements['stringable'] = 'Stringable';
+                    $classlike_storage->class_implements[StrId::stringable] = StrId::Stringable;
                 }
 
-                $this->codebase->scanner->queueClassLikeForScanning('Stringable');
+                $this->codebase->scanner->queueClassLikeForScanning(StrId::Stringable);
             }
 
             if (!$this->scan_deep) {
@@ -315,7 +318,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 if (($this->codebase->register_stub_files
                     || $this->codebase->register_autoload_files
                     || $this->codebase->all_constants_global
-                    ) && (!defined($fq_const_name) || !$const_type->isMixed())
+                    ) && (!defined(Interner::str($fq_const_name)) || !$const_type->isMixed())
                 ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
                 }
@@ -425,7 +428,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $functionlike_storage = $functionlike_node_scanner->storage;
 
                     if ($functionlike_storage instanceof MethodStorage) {
-                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
+                        $functionlike_storage->this_property_mutations[Interner::intern($node->var->name->name)]
+                            = true;
                     }
                 }
             }
@@ -441,7 +445,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         $this->namespace_name = $node->name;
 
         $this->aliases = new Aliases(
-            $node->name ? $node->name->toString() : '',
+            $node->name ? Interner::intern($node->name->toString()) : null,
             $this->aliases->uses,
             $this->aliases->functions,
             $this->aliases->constants,
@@ -464,20 +468,23 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
+            $use_path_id = Interner::intern($use_path);
+            $use_alias_id = Interner::intern($use_alias);
+
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[strtolower($use_alias)] = $use_path;
-                    $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
+                    $this->aliases->functions[Interner::lower($use_alias_id)] = $use_path_id;
+                    $this->aliases->functions_flipped[Interner::lower($use_path_id)] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliases->constants[$use_alias] = $use_path;
-                    $this->aliases->constants_flipped[$use_path] = $use_alias;
+                    $this->aliases->constants[$use_alias_id] = $use_path_id;
+                    $this->aliases->constants_flipped[$use_path_id] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[strtolower($use_alias)] = $use_path;
-                    $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
+                    $this->aliases->uses[Interner::lower($use_alias_id)] = $use_path_id;
+                    $this->aliases->uses_flipped[Interner::lower($use_path_id)] = $use_alias_id;
                     break;
             }
         }
@@ -497,20 +504,23 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $use_path = $use_prefix . '\\' . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
+            $use_path_id = Interner::intern($use_path);
+            $use_alias_id = Interner::intern($use_alias);
+
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[strtolower($use_alias)] = $use_path;
-                    $this->aliases->functions_flipped[strtolower($use_path)] = $use_alias;
+                    $this->aliases->functions[Interner::lower($use_alias_id)] = $use_path_id;
+                    $this->aliases->functions_flipped[Interner::lower($use_path_id)] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
-                    $this->aliases->constants[$use_alias] = $use_path;
-                    $this->aliases->constants_flipped[$use_path] = $use_alias;
+                    $this->aliases->constants[$use_alias_id] = $use_path_id;
+                    $this->aliases->constants_flipped[$use_path_id] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[strtolower($use_alias)] = $use_path;
-                    $this->aliases->uses_flipped[strtolower($use_path)] = $use_alias;
+                    $this->aliases->uses[Interner::lower($use_alias_id)] = $use_path_id;
+                    $this->aliases->uses_flipped[Interner::lower($use_path_id)] = $use_alias_id;
                     break;
             }
         }

@@ -23,12 +23,13 @@ use function count;
 final class TypeLocalizer extends MutableTypeVisitor
 {
     /**
-     * @param array<string, array<string, Union>> $extends
+     * @param array<int, array<int, Union>> $extends class name id => template name id => type
+     * @param int $base_fq_class_name class name id
      * @psalm-mutation-free
      */
     public function __construct(
         private array $extends,
-        private readonly string $base_fq_class_name,
+        private readonly int $base_fq_class_name,
     ) {
     }
 

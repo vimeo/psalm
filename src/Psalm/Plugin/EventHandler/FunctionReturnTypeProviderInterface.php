@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 interface FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int> interned function ids (casing is irrelevant, they are lowercased on registration)
      */
     public static function getFunctionIds(): array;
 

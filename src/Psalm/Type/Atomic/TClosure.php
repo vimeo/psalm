@@ -8,8 +8,10 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -37,7 +39,7 @@ final class TClosure extends TNamedObject
      * @param array<string, bool> $byref_uses
      * @param Mutations::LEVEL_* $allowed_mutations
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
-     * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
+     * @param ?int $callable_id The interned lowercase id of the underlying function/method, when
      *                                        known (e.g. for a first-class callable `foo(...)`). Metadata
      *                                        only - it does not affect the structural type - and is
      *                                        used to re-dispatch taint sinks/sources on invocation.
@@ -49,18 +51,31 @@ final class TClosure extends TNamedObject
         public array $byref_uses = [],
         array $extra_types = [],
         bool $from_docblock = false,
-        public ?string $callable_id = null,
+        public ?int $callable_id = null,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
         $this->allowed_mutations = $allowed_mutations;
         parent::__construct(
-            'Closure',
+            StrId::Closure,
             false,
             false,
             $extra_types,
             $from_docblock,
         );
+    }
+
+    /**
+     * @param  array<int, int> $aliased_classes
+     */
+    #[Override]
+    public function toPhpString(
+        ?int $namespace,
+        array $aliased_classes,
+        ?int $this_class,
+        int $analysis_php_version_id,
+    ): string {
+        return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
     }
 
     #[Override]
@@ -106,8 +121,8 @@ final class TClosure extends TNamedObject
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -154,5 +169,14 @@ final class TClosure extends TNamedObject
     protected function getChildNodeKeys(): array
     {
         return [...parent::getChildNodeKeys(), ...$this->getCallableChildNodeKeys()];
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
+    protected function getCallableBaseName(): string
+    {
+        return Interner::str($this->value);
     }
 }

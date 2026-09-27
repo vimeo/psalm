@@ -15,20 +15,22 @@ use Psalm\Type\Union;
 final class DynamicTemplateProvider
 {
     /**
+     * @param int $defining_class interned defining entity (e.g. `fn-foo`)
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $defining_class,
+        private readonly int $defining_class,
     ) {
     }
 
     /**
      * If {@see DynamicFunctionStorage} requires template params this method can create it.
      *
+     * @param int $param_name interned template param name
      * @psalm-mutation-free
      */
-    public function createTemplate(string $param_name, ?Union $as = null): TTemplateParam
+    public function createTemplate(int $param_name, ?Union $as = null): TTemplateParam
     {
         return new TTemplateParam($param_name, $as ?? Type::getMixed(), $this->defining_class);
     }

@@ -10,8 +10,10 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PropertyIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
@@ -38,6 +40,7 @@ use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -78,7 +81,6 @@ use function str_ends_with;
 use function str_split;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -104,7 +106,7 @@ class Reconciler
      *                                                    keys of $existing_types that they are references to.
      * @param  array<string, bool>       $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  array<string, array<string, Union>> $template_type_map
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
      * @return array{array<string, Union>, array<string, string>}
      * @psalm-suppress ComplexMethod
      */
@@ -692,6 +694,8 @@ class Reconciler
         if (!isset($existing_keys[$base_key])) {
             if (strpos($base_key, '::')) {
                 [$fq_class_name, $const_name] = explode('::', $base_key);
+                $fq_class_name = Interner::intern($fq_class_name);
+                $const_name = Interner::intern($const_name);
 
                 if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
                     return null;
@@ -856,7 +860,7 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TMixed
                             || $existing_key_type_part instanceof TObject
                             || ($existing_key_type_part instanceof TNamedObject
-                                && strtolower($existing_key_type_part->value) === 'stdclass')
+                                && Interner::lower($existing_key_type_part->value) === StrId::stdclass)
                         ) {
                             $class_property_type = Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TNamedObject) {
@@ -866,7 +870,7 @@ class Reconciler
                                 if (str_ends_with($property_name, '()')) {
                                     $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
-                                        strtolower(substr($property_name, 0, -2)),
+                                        Interner::internLower(substr($property_name, 0, -2)),
                                     );
 
                                     if (!$codebase->methodExists($method_id)) {
@@ -903,7 +907,7 @@ class Reconciler
                                     $class_property_type = self::getPropertyType(
                                         $codebase,
                                         $existing_key_type_part->value,
-                                        $property_name,
+                                        Interner::intern($property_name),
                                     );
 
                                     if (!$class_property_type) {
@@ -949,17 +953,17 @@ class Reconciler
 
     private static function getPropertyType(
         Codebase $codebase,
-        string $fq_class_name,
-        string $property_name,
+        int $fq_class_name,
+        int $property_name,
     ): ?Union {
-        $property_id = $fq_class_name . '::$' . $property_name;
+        $property_id = new PropertyIdentifier($fq_class_name, $property_name);
 
         if (!$codebase->propertyExists($property_id, true)) {
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,
             );
 
-            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            return $declaring_class_storage->pseudo_property_get_types[$property_name] ?? null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(

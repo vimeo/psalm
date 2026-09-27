@@ -6,8 +6,10 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Union;
 
@@ -20,15 +22,15 @@ use function count;
 final class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
         return [
-            'str_replace',
-            'str_ireplace',
+            StrId::str_replace,
+            StrId::str_ireplace,
         ];
     }
 
@@ -60,7 +62,7 @@ final class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderIn
                  * @var string $replaced_string
                  */
                 $replaced_string = call_user_func(
-                    $function_id,
+                    Interner::str($function_id),
                     $first_arg->getSingleStringLiteral()->value,
                     $second_arg->getSingleStringLiteral()->value,
                     $subject_type->getSingleStringLiteral()->value,

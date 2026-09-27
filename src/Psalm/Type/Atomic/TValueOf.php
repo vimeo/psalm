@@ -30,7 +30,7 @@ final class TValueOf extends Atomic
     }
 
     /**
-     * @param non-empty-array<string,EnumCaseStorage> $cases
+     * @param non-empty-array<int, EnumCaseStorage> $cases case name id => storage
      */
     private static function getValueTypeForNamedObject(
         array $cases,
@@ -73,14 +73,14 @@ final class TValueOf extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;

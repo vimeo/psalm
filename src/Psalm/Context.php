@@ -7,6 +7,7 @@ namespace Psalm;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
@@ -33,7 +34,6 @@ use function preg_quote;
 use function preg_replace;
 use function str_contains;
 use function strpos;
-use function strtolower;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -153,7 +153,10 @@ final class Context
 
     public ?CodeLocation $include_location = null;
 
-    public ?string $parent = null;
+    /**
+     * The interned name of the parent class, if any.
+     */
+    public ?int $parent = null;
 
     public bool $check_classes = true;
 
@@ -168,7 +171,7 @@ final class Context
     /**
      * A list of classes checked with class_exists
      *
-     * @var array<lowercase-string,true>
+     * @var array<int, true> lowercase class name id => true
      */
     public array $phantom_classes = [];
 
@@ -211,12 +214,12 @@ final class Context
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
      *
-     * @var array<string, bool>
+     * @var array<int, array<int, bool>> lowercase class name id => lowercase method name id => true
      */
     public array $initialized_methods = [];
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> constant name id => type
      */
     public array $constants = [];
 
@@ -256,7 +259,7 @@ final class Context
     /**
      * A list of classes or interfaces that may have been thrown
      *
-     * @var array<string, array<array-key, CodeLocation>>
+     * @var array<int, array<array-key, CodeLocation>> class name id => hash => location
      */
     public array $possibly_thrown_exceptions = [];
 
@@ -295,14 +298,11 @@ final class Context
     public bool $strict_types = false;
 
     /**
-     * @var lowercase-string|null
+     * Interned lowercase id of the function being analyzed, if any.
      */
-    public ?string $calling_function_id = null;
+    public ?int $calling_function_id = null;
 
-    /**
-     * @var lowercase-string|null
-     */
-    public ?string $calling_method_id = null;
+    public ?MethodIdentifier $calling_method_id = null;
 
     public bool $inside_negation = false;
 
@@ -330,10 +330,9 @@ final class Context
      */
     public function __construct(
         /**
-         * @var string|null
-         * The name of the current class. Null if outside a class.
+         * The interned name of the current class. Null if outside a class.
          */
-        public ?string $self = null,
+        public ?int $self = null,
     ) {
     }
 
@@ -784,9 +783,9 @@ final class Context
     /**
      * @psalm-mutation-free
      */
-    public function isPhantomClass(string $class_name): bool
+    public function isPhantomClass(int $class_name): bool
     {
-        return isset($this->phantom_classes[strtolower($class_name)]);
+        return isset($this->phantom_classes[Interner::lower($class_name)]);
     }
 
     /**

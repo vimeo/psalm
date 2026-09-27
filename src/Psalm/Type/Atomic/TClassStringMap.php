@@ -10,7 +10,9 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -29,7 +31,7 @@ final class TClassStringMap extends Atomic
      * Constructs a new instance of a list
      */
     public function __construct(
-        public string $param_name,
+        public int $param_name,
         public ?TNamedObject $as_type,
         public Union $value_param,
         bool $from_docblock = false,
@@ -42,7 +44,7 @@ final class TClassStringMap extends Atomic
     {
         return 'class-string-map'
             . '<'
-            . $this->param_name
+            . Interner::str($this->param_name)
             . ' as '
             . ($this->as_type ? $this->as_type->getId($exact) : 'object')
             . ', '
@@ -51,13 +53,13 @@ final class TClassStringMap extends Atomic
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
@@ -72,7 +74,7 @@ final class TClassStringMap extends Atomic
 
         return 'class-string-map'
             . '<'
-            . $this->param_name
+            . Interner::str($this->param_name)
             . ($this->as_type ? ' as ' . $this->as_type : '')
             . ', '
             . $this->value_param->toNamespacedString(
@@ -85,14 +87,14 @@ final class TClassStringMap extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): string {
         return 'array';
@@ -127,8 +129,8 @@ final class TClassStringMap extends Atomic
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -237,9 +239,9 @@ final class TClassStringMap extends Atomic
         return new Union([
             new TTemplateParamClass(
                 $this->param_name,
-                $this->as_type->value ?? 'object',
+                $this->as_type->value ?? StrId::object,
                 $this->as_type,
-                'class-string-map',
+                StrId::class_string_map,
             ),
         ]);
     }

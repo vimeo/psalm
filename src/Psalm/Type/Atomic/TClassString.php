@@ -9,6 +9,8 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -18,7 +20,6 @@ use function preg_quote;
 use function preg_replace;
 use function str_contains;
 use function stripos;
-use function strtolower;
 
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
@@ -29,8 +30,11 @@ use function strtolower;
  */
 class TClassString extends TString
 {
+    /**
+     * @param int $as interned name of the class bound, StrId::object if none
+     */
     public function __construct(
-        public string $as = 'object',
+        public int $as = StrId::object,
         public ?TNamedObject $as_type = null,
         public bool $is_loaded = false,
         public bool $is_interface = false,
@@ -42,7 +46,7 @@ class TClassString extends TString
     /**
      * @return static
      */
-    public function setAs(string $as, ?TNamedObject $as_type): self
+    public function setAs(int $as, ?TNamedObject $as_type): self
     {
         if ($this->as === $as && $this->as_type === $as_type) {
             return $this;
@@ -63,7 +67,7 @@ class TClassString extends TString
             $key = 'class-string';
         }
 
-        return $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        return $key . ($this->as === StrId::object ? '' : '<' . $this->as_type . '>');
     }
 
     #[Override]
@@ -77,7 +81,8 @@ class TClassString extends TString
             $key = 'class-string';
         }
 
-        return ($this->is_loaded ? 'loaded-' : '') . $key . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
+        return ($this->is_loaded ? 'loaded-' : '') . $key
+            . ($this->as === StrId::object ? '' : '<' . $this->as_type . '>');
     }
 
     /**
@@ -90,50 +95,54 @@ class TClassString extends TString
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return 'string';
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        if ($this->as === 'object') {
+        if ($this->as === StrId::object) {
             return 'class-string';
         }
 
-        if ($namespace && stripos($this->as, $namespace . '\\') === 0) {
+        $as = Interner::str($this->as);
+        $namespace = $namespace === null ? '' : Interner::str($namespace);
+
+        if ($namespace !== '' && stripos($as, $namespace . '\\') === 0) {
             return 'class-string<' . preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
-                $this->as,
+                $as,
             ) . '>';
         }
 
-        if (!$namespace && !str_contains($this->as, '\\')) {
-            return 'class-string<' . $this->as . '>';
+        if ($namespace === '' && !str_contains($as, '\\')) {
+            return 'class-string<' . $as . '>';
         }
 
-        if (isset($aliased_classes[strtolower($this->as)])) {
-            return 'class-string<' . $aliased_classes[strtolower($this->as)] . '>';
+        $as_lc = Interner::lower($this->as);
+        if (isset($aliased_classes[$as_lc])) {
+            return 'class-string<' . Interner::str($aliased_classes[$as_lc]) . '>';
         }
 
-        return 'class-string<\\' . $this->as . '>';
+        return 'class-string<\\' . $as . '>';
     }
 
     /**
@@ -161,8 +170,8 @@ class TClassString extends TString
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -172,7 +181,7 @@ class TClassString extends TString
         }
 
         if ($input_type instanceof TLiteralClassString) {
-            $input_object_type = new TNamedObject($input_type->value);
+            $input_object_type = new TNamedObject($input_type->class_name);
         } elseif ($input_type instanceof TClassString && $input_type->as_type) {
             $input_object_type = $input_type->as_type;
         } else {
@@ -207,7 +216,7 @@ class TClassString extends TString
         $cloned = clone $this;
         $cloned->as_type = $as_type;
         if (!$cloned->as_type) {
-            $cloned->as = 'object';
+            $cloned->as = StrId::object;
         }
         return $cloned;
     }

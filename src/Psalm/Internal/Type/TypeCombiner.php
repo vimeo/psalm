@@ -6,6 +6,8 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -248,7 +250,7 @@ final class TypeCombiner
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
                 $generic_object = new TGenericObject(
-                    $generic_type,
+                    Interner::intern($generic_type),
                     $generic_type_params,
                     false,
                     false,
@@ -264,7 +266,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
-            $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
+            $generic_type = Interner::intern(substr($generic_type, 0, (int) strpos($generic_type, '<')));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
             $generic_object = new TGenericObject(
@@ -283,7 +285,7 @@ final class TypeCombiner
             if ($combination->strings) {
                 foreach ($combination->strings as $k => $string) {
                     if ($string instanceof TLiteralClassString) {
-                        $combination->class_string_types[$string->value] = new TNamedObject($string->value);
+                        $combination->class_string_types[$string->class_name] = new TNamedObject($string->class_name);
                         unset($combination->strings[$k]);
                     }
                 }
@@ -340,7 +342,9 @@ final class TypeCombiner
 
         if ($combination->named_object_types !== null) {
             foreach ($combination->value_types as $key => $atomic_type) {
-                if ($atomic_type instanceof TEnumCase && isset($combination->named_object_types[$atomic_type->value])) {
+                if ($atomic_type instanceof TEnumCase
+                    && isset($combination->named_object_types[Interner::str($atomic_type->value)])
+                ) {
                     unset($combination->value_types[$key]);
                 }
             }
@@ -457,7 +461,7 @@ final class TypeCombiner
             $type_key = 'iterable';
             $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
         } elseif ($type instanceof TNamedObject
-            && $type->value === 'Traversable'
+            && $type->value === StrId::Traversable
             && (isset($combination->builtin_type_params['iterable']) || isset($combination->value_types['iterable']))
         ) {
             $type_key = 'iterable';
@@ -469,8 +473,10 @@ final class TypeCombiner
             if (!$type instanceof TGenericObject) {
                 $type = new TGenericObject($type->value, [Type::getMixed(), Type::getMixed()]);
             }
-        } elseif ($type instanceof TNamedObject && ($type->value === 'Traversable' || $type->value === 'Generator')) {
-            $type_key = $type->value;
+        } elseif ($type instanceof TNamedObject
+            && ($type->value === StrId::Traversable || $type->value === StrId::Generator)
+        ) {
+            $type_key = Interner::str($type->value);
         } else {
             $type_key = $type->getKey();
         }
@@ -621,7 +627,8 @@ final class TypeCombiner
             return null;
         }
 
-        if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
+        if (($type instanceof TGenericObject
+                && ($type->value === StrId::Traversable || $type->value === StrId::Generator))
             || ($type instanceof TIterable && $type->has_docblock_params)
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
@@ -844,39 +851,44 @@ final class TypeCombiner
                 return null;
             }
 
-            if (!$codebase->classlikes->classOrInterfaceOrEnumExists($type_key)) {
+            $type_name = $type->value;
+
+            if ($type_key !== Interner::str($type_name)
+                || !$codebase->classlikes->classOrInterfaceOrEnumExists($type_name)
+            ) {
                 // write this to the main list
                 $combination->value_types[$type_key] = $type;
 
                 return null;
             }
 
-            $is_class = $codebase->classExists($type_key);
+            $is_class = $codebase->classExists($type_name);
 
-            foreach ($combination->named_object_types as $key => $_) {
-                if ($codebase->classExists($key)) {
-                    if ($codebase->classExtendsOrImplements($key, $type_key)) {
+            foreach ($combination->named_object_types as $key => $existing_type) {
+                $existing_name = $existing_type->value;
+                if ($codebase->classExists($existing_name)) {
+                    if ($codebase->classExtendsOrImplements($existing_name, $type_name)) {
                         unset($combination->named_object_types[$key]);
                         continue;
                     }
 
                     if ($is_class) {
-                        if ($codebase->classExtends($type_key, $key)) {
+                        if ($codebase->classExtends($type_name, $existing_name)) {
                             return null;
                         }
                     }
                 } else {
-                    if ($codebase->interfaceExtends($key, $type_key)) {
+                    if ($codebase->interfaceExtends($existing_name, $type_name)) {
                         unset($combination->named_object_types[$key]);
                         continue;
                     }
 
                     if ($is_class) {
-                        if ($codebase->classImplements($type_key, $key)) {
+                        if ($codebase->classImplements($type_name, $existing_name)) {
                             return null;
                         }
                     } else {
-                        if ($codebase->interfaceExtends($type_key, $key)) {
+                        if ($codebase->interfaceExtends($type_name, $existing_name)) {
                             return null;
                         }
                     }
@@ -1000,7 +1012,7 @@ final class TypeCombiner
             $combination->value_types[$type_key] = $type;
         } elseif ($type instanceof TClassString) {
             if (!$type->as_type) {
-                $combination->class_string_types['object'] = new TObject();
+                $combination->class_string_types[StrId::object] = new TObject();
             } else {
                 if (isset($combination->class_string_types[$type->as])
                     && $combination->class_string_types[$type->as] instanceof TNamedObject
@@ -1036,7 +1048,7 @@ final class TypeCombiner
                     // do nothing
                 } elseif ($type instanceof TLiteralClassString) {
                     $type_classlikes = $codebase
-                        ? self::getClassLikes($codebase, $type->value)
+                        ? self::getClassLikes($codebase, $type->class_name)
                         : [];
 
                     $mutual = array_intersect_key($type_classlikes, $shared_classlikes);
@@ -1046,7 +1058,7 @@ final class TypeCombiner
 
                         $combination->class_string_types[$first_class] = new TNamedObject($first_class);
                     } else {
-                        $combination->class_string_types['object'] = new TObject();
+                        $combination->class_string_types[StrId::object] = new TObject();
                     }
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonspecificLiteralString
@@ -1351,17 +1363,19 @@ final class TypeCombiner
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<int, bool>
      * @psalm-mutation-free
      */
     private static function getSharedTypes(TypeCombination $combination, Codebase $codebase): array
     {
-        /** @var array<string, bool>|null */
+        /** @var array<int, bool>|null */
         $shared_classlikes = null;
 
         if ($combination->strings) {
             foreach ($combination->strings as $string_type) {
-                $classlikes = self::getClassLikes($codebase, $string_type->value);
+                $classlikes = $string_type instanceof TLiteralClassString
+                    ? self::getClassLikes($codebase, $string_type->class_name)
+                    : self::getClassLikesFromString($codebase, $string_type->value);
 
                 if ($shared_classlikes === null) {
                     $shared_classlikes = $classlikes;
@@ -1389,10 +1403,26 @@ final class TypeCombiner
     }
 
     /**
-     * @return array<string, true>
+     * @return array<int, true> class name id => true
      * @psalm-mutation-free
      */
-    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name): array
+    private static function getClassLikesFromString(Codebase $codebase, string $fq_classlike_name): array
+    {
+        // class storages are keyed by lowercase ids, so the lowercase name of any known class is already interned
+        $fq_classlike_name_lc = Interner::find(strtolower($fq_classlike_name));
+
+        if ($fq_classlike_name_lc === null) {
+            return [];
+        }
+
+        return self::getClassLikes($codebase, $fq_classlike_name_lc);
+    }
+
+    /**
+     * @return array<int, true> class name id => true
+     * @psalm-mutation-free
+     */
+    private static function getClassLikes(Codebase $codebase, int $fq_classlike_name): array
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
@@ -1402,7 +1432,7 @@ final class TypeCombiner
 
         $classlikes = [];
 
-        $classlikes[$fq_classlike_name] = true;
+        $classlikes[$class_storage->name] = true;
 
         foreach ($class_storage->parent_classes as $parent_class) {
             $classlikes[$parent_class] = true;
@@ -1561,7 +1591,10 @@ final class TypeCombiner
                 if (is_int($property_name)) {
                     $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
                 } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
-                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
+                    $objectlike_keys[$property_name] = new TLiteralClassString(
+                        Interner::intern($property_name),
+                        $from_docblock,
+                    );
                 } else {
                     $objectlike_keys[$property_name] = Type::getAtomicStringFromLiteral($property_name, $from_docblock);
                 }

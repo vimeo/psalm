@@ -39,6 +39,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -1057,7 +1058,7 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
     ): void {
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
+            $prop_name = Interner::intern($stmt->name->name);
 
             InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
@@ -1645,6 +1646,8 @@ final class AssignmentAnalyzer
         }
 
         if ($prop_name) {
+            $prop_name = Interner::intern($prop_name);
+
             InstancePropertyAssignmentAnalyzer::analyze(
                 $statements_analyzer,
                 $assign_var,
@@ -1667,8 +1670,10 @@ final class AssignmentAnalyzer
                     foreach ($stmt_var_type->getAtomicTypes() as $type) {
                         if ($type instanceof TNamedObject) {
                             $codebase->analyzer->addMixedMemberName(
-                                strtolower($type->value) . '::$',
-                                $context->calling_method_id ?: $statements_analyzer->getFileName(),
+                                strtolower(Interner::str($type->value)) . '::$',
+                                $context->calling_method_id !== null
+                                    ? strtolower((string) $context->calling_method_id)
+                                    : $statements_analyzer->getFileName(),
                             );
                         }
                     }

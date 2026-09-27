@@ -32,7 +32,7 @@ final class FormulaGenerator
         int $conditional_object_id,
         int $creating_object_id,
         PhpParser\Node\Expr $conditional,
-        ?string $this_class_name,
+        ?int $this_class_name,
         FileSource $source,
         ?Codebase $codebase = null,
         bool $inside_negation = false,

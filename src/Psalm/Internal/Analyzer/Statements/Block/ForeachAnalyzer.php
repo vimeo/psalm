@@ -25,6 +25,7 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
@@ -40,6 +41,7 @@ use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -70,7 +72,6 @@ use function in_array;
 use function is_string;
 use function reset;
 use function stripos;
-use function strtolower;
 
 /**
  * @internal
@@ -603,7 +604,7 @@ final class ForeachAnalyzer
                     $stmt,
                 );
             } elseif ($iterator_atomic_type instanceof TNamedObject) {
-                if ($iterator_atomic_type->value !== 'Traversable' &&
+                if ($iterator_atomic_type->value !== StrId::Traversable &&
                     $iterator_atomic_type->value !== $statements_analyzer->getClassName()
                 ) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -652,7 +653,7 @@ final class ForeachAnalyzer
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
                     new PossibleRawObjectIteration(
-                        'Possibly undesired iteration over regular object ' . reset($raw_object_types),
+                        'Possibly undesired iteration over regular object ' . Interner::str(reset($raw_object_types)),
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -660,7 +661,7 @@ final class ForeachAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new RawObjectIteration(
-                        'Possibly undesired iteration over regular object ' . reset($raw_object_types),
+                        'Possibly undesired iteration over regular object ' . Interner::str(reset($raw_object_types)),
                         new CodeLocation($statements_analyzer->getSource(), $expr),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -725,30 +726,31 @@ final class ForeachAnalyzer
             }
 
             if ($iterator_atomic_type instanceof TIterable
-                || (strtolower($iterator_atomic_type->value) === 'traversable'
+                || (Interner::lower($iterator_atomic_type->value) === StrId::traversable
                     || $codebase->classImplements(
                         $iterator_atomic_type->value,
-                        'Traversable',
+                        StrId::Traversable,
                     ) ||
                     (
                         $codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
-                            'Traversable',
+                            StrId::Traversable,
                         )
                     ))
             ) {
-                if (strtolower($iterator_atomic_type->value) === 'iteratoraggregate'
+                if (!$iterator_atomic_type instanceof TIterable
+                    && (Interner::lower($iterator_atomic_type->value) === StrId::iteratoraggregate
                     || $codebase->classImplements(
                         $iterator_atomic_type->value,
-                        'IteratorAggregate',
+                        StrId::IteratorAggregate,
                     )
                     || ($codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
-                            'IteratorAggregate',
+                            StrId::IteratorAggregate,
                         )
-                    )
+                    ))
                 ) {
                     $has_valid_iterator = true;
 
@@ -813,7 +815,7 @@ final class ForeachAnalyzer
                                     && $codebase->classExists($array_atomic_type->value, null, $context)
                                     && $codebase->classImplements(
                                         $array_atomic_type->value,
-                                        'Traversable',
+                                        StrId::Traversable,
                                     )
                                 ) {
                                     $generic_storage = $codebase->classlike_storage_provider->get(
@@ -822,12 +824,12 @@ final class ForeachAnalyzer
 
                                     // The collection might be an iterator, in which case
                                     // we want to call the iterator function
-                                    /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                                    if (!isset($generic_storage->template_extended_params['Traversable'])
-                                        || ($generic_storage
-                                                ->template_extended_params['Traversable']['TKey']->isMixed()
-                                            && $generic_storage
-                                                ->template_extended_params['Traversable']['TValue']->isMixed())
+                                    $traversable_params = $generic_storage
+                                        ->template_extended_params[StrId::Traversable] ?? null;
+                                    /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+                                    if ($traversable_params === null
+                                        || ($traversable_params[StrId::TKey]->isMixed()
+                                            && $traversable_params[StrId::TValue]->isMixed())
                                     ) {
                                         self::handleIterable(
                                             $statements_analyzer,
@@ -847,7 +849,7 @@ final class ForeachAnalyzer
 
                                 if ($array_atomic_type instanceof TIterable
                                     || ($array_atomic_type instanceof TNamedObject
-                                        && ($array_atomic_type->value === 'Traversable'
+                                        && ($array_atomic_type->value === StrId::Traversable
                                             || ($codebase->classOrInterfaceExists(
                                                 $array_atomic_type->value,
                                                 null,
@@ -855,7 +857,7 @@ final class ForeachAnalyzer
                                             )
                                                 && $codebase->classImplements(
                                                     $array_atomic_type->value,
-                                                    'Traversable',
+                                                    StrId::Traversable,
                                                 ))))
                                 ) {
                                     self::getKeyValueParamsForTraversableObject(
@@ -876,7 +878,7 @@ final class ForeachAnalyzer
                         }
                     }
                 } elseif ($iterator_atomic_type instanceof TGenericObject
-                    && strtolower($iterator_atomic_type->value) === 'generator'
+                    && Interner::lower($iterator_atomic_type->value) === StrId::generator
                 ) {
                     $type_params = $iterator_atomic_type->type_params;
                     if (isset($type_params[2])
@@ -924,17 +926,18 @@ final class ForeachAnalyzer
                         }
                         $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
                     }
-                } elseif ($codebase->classImplements(
-                    $iterator_atomic_type->value,
-                    'Iterator',
-                ) ||
-                    (
+                } elseif (!$iterator_atomic_type instanceof TIterable
+                    && ($codebase->classImplements(
+                        $iterator_atomic_type->value,
+                        StrId::Iterator,
+                    )
+                    || (
                         $codebase->interfaceExists($iterator_atomic_type->value, null, $context)
                         && $codebase->interfaceExtends(
                             $iterator_atomic_type->value,
-                            'Iterator',
+                            StrId::Iterator,
                         )
-                    )
+                    ))
                 ) {
                     $has_valid_iterator = true;
                     $iterator_value_type = self::getFakeMethodCallType(
@@ -986,7 +989,7 @@ final class ForeachAnalyzer
     ): void {
         if ($iterator_atomic_type instanceof TIterable
             || ($iterator_atomic_type instanceof TGenericObject
-                && strtolower($iterator_atomic_type->value) === 'traversable')
+                && Interner::lower($iterator_atomic_type->value) === StrId::traversable)
         ) {
             assert(isset($iterator_atomic_type->type_params[1]));
             $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
@@ -999,11 +1002,11 @@ final class ForeachAnalyzer
             && (
                 $codebase->classImplements(
                     $iterator_atomic_type->value,
-                    'Traversable',
+                    StrId::Traversable,
                 )
                 || $codebase->interfaceExtends(
                     $iterator_atomic_type->value,
-                    'Traversable',
+                    StrId::Traversable,
                 )
             )
         ) {
@@ -1011,7 +1014,7 @@ final class ForeachAnalyzer
                 $iterator_atomic_type->value,
             );
 
-            if (!isset($generic_storage->template_extended_params['Traversable'])) {
+            if (!isset($generic_storage->template_extended_params[StrId::Traversable])) {
                 return;
             }
 
@@ -1024,7 +1027,7 @@ final class ForeachAnalyzer
                     ? $iterator_atomic_type->type_params
                     : array_values(
                         array_map(
-                            /** @param array<string, Union> $arr */
+                            /** @param array<int, Union> $arr */
                             static fn(array $arr): Union => $arr[$iterator_atomic_type->value] ?? Type::getMixed(),
                             $generic_storage->template_types,
                         ),
@@ -1034,8 +1037,8 @@ final class ForeachAnalyzer
             }
 
             $key_type = self::getExtendedType(
-                'TKey',
-                'Traversable',
+                StrId::TKey,
+                StrId::Traversable,
                 $generic_storage->name,
                 $generic_storage->template_extended_params,
                 $generic_storage->template_types,
@@ -1043,8 +1046,8 @@ final class ForeachAnalyzer
             );
 
             $value_type = self::getExtendedType(
-                'TValue',
-                'Traversable',
+                StrId::TValue,
+                StrId::Traversable,
                 $generic_storage->name,
                 $generic_storage->template_extended_params,
                 $generic_storage->template_types,
@@ -1108,15 +1111,15 @@ final class ForeachAnalyzer
     }
 
     /**
-     * @param array<string, array<string, Union>>  $template_extended_params
-     * @param array<string, array<string, Union>>  $class_template_types
+     * @param array<int, array<int, Union>>  $template_extended_params
+     * @param array<int, array<int, Union>>  $class_template_types
      * @param array<int, Union> $calling_type_params
      * @psalm-external-mutation-free
      */
     private static function getExtendedType(
-        string $template_name,
-        string $template_class,
-        string $calling_class,
+        int $template_name,
+        int $template_class,
+        int $calling_class,
         array $template_extended_params,
         ?array $class_template_types = null,
         ?array $calling_type_params = null,

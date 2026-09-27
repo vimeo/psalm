@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
@@ -27,6 +28,7 @@ use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArrayItem;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
@@ -54,10 +56,10 @@ use function extension_loaded;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function ltrim;
 use function preg_match;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
 
 use const EXTR_OVERWRITE;
 use const EXTR_SKIP;
@@ -68,7 +70,7 @@ use const EXTR_SKIP;
 final class NamedFunctionCallHandler
 {
     /**
-     * @param lowercase-string $function_id
+     * @param int $function_id interned lowercase function id
      */
     public static function handle(
         StatementsAnalyzer $statements_analyzer,
@@ -76,12 +78,12 @@ final class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
-        string $function_id,
+        int $function_id,
         Context $context,
     ): void {
-        if ($function_id === 'get_class'
-            || $function_id === 'gettype'
-            || $function_id === 'get_debug_type'
+        if ($function_id === StrId::get_class
+            || $function_id === StrId::gettype
+            || $function_id === StrId::get_debug_type
         ) {
             self::handleDependentTypeFunction(
                 $statements_analyzer,
@@ -100,7 +102,7 @@ final class NamedFunctionCallHandler
 
         $first_arg = $stmt->getArgs()[0] ?? null;
 
-        if ($function_id === 'method_exists') {
+        if ($function_id === StrId::method_exists) {
             $second_arg = $stmt->getArgs()[1] ?? null;
 
             if ($first_arg
@@ -116,21 +118,27 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'class_exists') {
+        if ($function_id === StrId::class_exists) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    $literal_class_name = ltrim($first_arg->value->value, '\\');
+
+                    if ($literal_class_name !== ''
+                        && !$codebase->classlikes->classExists(Interner::intern($literal_class_name), null, $context)
+                    ) {
+                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
                     && $first_arg->value->name->name === 'class'
                 ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+                    $resolved_name = Interner::intern(
+                        (string) $first_arg->value->class->getAttribute('resolvedName'),
+                    );
 
                     if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
                     }
                 }
             }
@@ -138,21 +146,31 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'interface_exists') {
+        if ($function_id === StrId::interface_exists) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    $literal_class_name = ltrim($first_arg->value->value, '\\');
+
+                    if ($literal_class_name !== ''
+                        && !$codebase->classlikes->interfaceExists(
+                            Interner::intern($literal_class_name),
+                            null,
+                            $context,
+                        )
+                    ) {
+                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
                     && $first_arg->value->name->name === 'class'
                 ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+                    $resolved_name = Interner::intern(
+                        (string) $first_arg->value->class->getAttribute('resolvedName'),
+                    );
 
                     if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
                     }
                 }
             }
@@ -160,21 +178,27 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'enum_exists') {
+        if ($function_id === StrId::enum_exists) {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->enumExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                    $literal_class_name = ltrim($first_arg->value->value, '\\');
+
+                    if ($literal_class_name !== ''
+                        && !$codebase->classlikes->enumExists(Interner::intern($literal_class_name), null, $context)
+                    ) {
+                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
                     && $first_arg->value->name instanceof PhpParser\Node\Identifier
                     && $first_arg->value->name->name === 'class'
                 ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+                    $resolved_name = Interner::intern(
+                        (string) $first_arg->value->class->getAttribute('resolvedName'),
+                    );
 
                     if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
                     }
                 }
             }
@@ -182,7 +206,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
+        if (in_array($function_id, [StrId::is_file, StrId::file_exists], true) && $first_arg) {
             $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null);
 
             if ($var_id) {
@@ -208,7 +232,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'extension_loaded') {
+        if ($function_id === StrId::extension_loaded) {
             if ($first_arg
                 && $first_arg->value instanceof PhpParser\Node\Scalar\String_
             ) {
@@ -222,18 +246,18 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'function_exists') {
+        if ($function_id === StrId::function_exists) {
             $context->check_functions = false;
             return;
         }
 
-        if ($function_id === 'is_callable') {
+        if ($function_id === StrId::is_callable) {
             $context->check_methods = false;
             $context->check_functions = false;
             return;
         }
 
-        if ($function_id === 'defined') {
+        if ($function_id === StrId::defined) {
             if ($first_arg && !$context->inside_negation) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
@@ -269,7 +293,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'extract') {
+        if ($function_id === StrId::extract) {
             $flag_value = false;
             if (!isset($stmt->args[1])) {
                 $flag_value = EXTR_OVERWRITE;
@@ -370,7 +394,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'compact') {
+        if ($function_id === StrId::compact) {
             $all_args_string_literals = true;
             $new_items = [];
 
@@ -411,7 +435,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'func_get_args') {
+        if ($function_id === StrId::func_get_args) {
             $source = $statements_analyzer->getSource();
 
             if ($source instanceof FunctionLikeAnalyzer) {
@@ -429,12 +453,12 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'var_dump'
-            || $function_id === 'shell_exec'
+        if ($function_id === StrId::var_dump
+            || $function_id === StrId::shell_exec
         ) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
-                    'Unsafe ' . $function_id,
+                    'Unsafe ' . Interner::str($function_id),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -444,7 +468,7 @@ final class NamedFunctionCallHandler
         if (isset($codebase->config->forbidden_functions[$function_id])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
-                    'You have forbidden the use of ' . $function_id,
+                    'You have forbidden the use of ' . Interner::str($function_id),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -453,7 +477,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'define') {
+        if ($function_id === StrId::define) {
             if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
@@ -483,7 +507,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'constant') {
+        if ($function_id === StrId::constant) {
             if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
@@ -510,9 +534,8 @@ final class NamedFunctionCallHandler
         }
 
         if ($first_arg
-            && $function_id
-            && str_starts_with($function_id, 'is_')
-            && $function_id !== 'is_a'
+            && str_starts_with(Interner::str($function_id), 'is_')
+            && $function_id !== StrId::is_a
             && !$context->inside_negation
         ) {
             $stmt_assertions = $statements_analyzer->node_data->getAssertions($stmt);
@@ -550,7 +573,7 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($first_arg && ($function_id === 'array_values' || $function_id === 'ksort')) {
+        if ($first_arg && ($function_id === StrId::array_values || $function_id === StrId::ksort)) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
@@ -563,7 +586,8 @@ final class NamedFunctionCallHandler
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
-                            "The call to $function_id is unnecessary given the list docblock type $first_arg_type",
+                            "The call to " . Interner::str($function_id)
+                                . " is unnecessary given the list docblock type $first_arg_type",
                             new CodeLocation($statements_analyzer, $function_name),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -571,7 +595,8 @@ final class NamedFunctionCallHandler
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
-                            "The call to $function_id is unnecessary, $first_arg_type is already a list",
+                            "The call to " . Interner::str($function_id)
+                                . " is unnecessary, $first_arg_type is already a list",
                             new CodeLocation($statements_analyzer, $function_name),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -579,7 +604,7 @@ final class NamedFunctionCallHandler
                 }
             }
         }
-        if ($first_arg && $function_id === 'strtolower') {
+        if ($first_arg && $function_id === StrId::strtolower) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
 
             if ($first_arg_type
@@ -610,8 +635,8 @@ final class NamedFunctionCallHandler
         }
 
         if ($first_arg
-            && ($function_id === 'array_walk'
-                || $function_id === 'array_walk_recursive'
+            && ($function_id === StrId::array_walk
+                || $function_id === StrId::array_walk_recursive
             )
         ) {
             $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
@@ -636,7 +661,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($first_arg
-            && $function_id === 'is_a'
+            && $function_id === StrId::is_a
             // assertion reconsiler already emits relevant (but different) issues
             && !$context->inside_conditional
         ) {
@@ -676,7 +701,7 @@ final class NamedFunctionCallHandler
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
-        string $function_id,
+        int $function_id,
         Context $context,
     ): void {
         $first_arg = $stmt->getArgs()[0] ?? null;
@@ -691,14 +716,14 @@ final class NamedFunctionCallHandler
 
                 if (isset($context->vars_in_scope[$var_id])) {
                     if (!$context->vars_in_scope[$var_id]->hasTemplate()) {
-                        if ($function_id === 'get_class') {
+                        if ($function_id === StrId::get_class) {
                             $atomic_type = new TDependentGetClass(
                                 $var_id,
                                 $context->vars_in_scope[$var_id]->hasMixed()
                                     ? Type::getObject()
                                     : $context->vars_in_scope[$var_id],
                             );
-                        } elseif ($function_id === 'gettype') {
+                        } elseif ($function_id === StrId::gettype) {
                             $atomic_type = new TDependentGetType($var_id);
                         } else {
                             $atomic_type = new TDependentGetDebugType($var_id);
@@ -712,8 +737,8 @@ final class NamedFunctionCallHandler
             }
 
             if (($var_type = $statements_analyzer->node_data->getType($var))
-                && ($function_id === 'get_class'
-                    || $function_id === 'get_debug_type'
+                && ($function_id === StrId::get_class
+                    || $function_id === StrId::get_debug_type
                 )
             ) {
                 $class_string_types = [];
@@ -729,7 +754,7 @@ final class NamedFunctionCallHandler
                         if ($as_atomic_type instanceof TObject) {
                             $class_string_types[] = new TTemplateParamClass(
                                 $class_type->param_name,
-                                'object',
+                                StrId::object,
                                 null,
                                 $class_type->defining_class,
                             );
@@ -741,7 +766,7 @@ final class NamedFunctionCallHandler
                                 $class_type->defining_class,
                             );
                         }
-                    } elseif ($function_id === 'get_class') {
+                    } elseif ($function_id === StrId::get_class) {
                         $class_string_types[] = new TClassString();
                     } else {
                         if ($class_type instanceof TInt) {
@@ -766,7 +791,7 @@ final class NamedFunctionCallHandler
                     $statements_analyzer->node_data->setType($real_stmt, new Union($class_string_types));
                 }
             }
-        } elseif ($function_id === 'get_class'
+        } elseif ($function_id === StrId::get_class
             && ($get_class_name = $statements_analyzer->getFQCLN())
         ) {
             $statements_analyzer->node_data->setType(

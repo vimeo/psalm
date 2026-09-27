@@ -23,6 +23,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Interner;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -43,6 +44,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\Mutations;
 use Psalm\Storage\Possibilities;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -69,16 +71,13 @@ use function array_shift;
 use function array_slice;
 use function assert;
 use function count;
-use function explode;
 use function implode;
 use function in_array;
 use function is_string;
 use function max;
-use function preg_replace;
 use function reset;
 use function spl_object_id;
 use function strpos;
-use function strtolower;
 
 /**
  * @internal
@@ -203,7 +202,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if (!$is_first_class_callable
             && $function_name instanceof PhpParser\Node\Name
-            && $function_call_info->function_id
+            && $function_call_info->function_id !== null
         ) {
             if (!$function_call_info->is_stubbed && $function_call_info->in_call_map) {
                 $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
@@ -245,9 +244,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_id,
         );
 
-        $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
+        $template_result->lower_bounds = $already_inferred_lower_bounds + $template_result->lower_bounds;
 
-        if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
+        if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id !== null) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
                 $statements_analyzer,
                 $codebase,
@@ -330,7 +329,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
             $context->constants[$const_name] = $const_type;
-            $context->vars_in_scope[$const_name] = $const_type;
+            $context->vars_in_scope[Interner::str($const_name)] = $const_type;
         }
 
         foreach ($function_call_info->global_variables as $var_id => $_) {
@@ -415,10 +414,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($function_call_info->function_storage->deprecated && $function_call_info->function_id) {
+            if ($function_call_info->function_storage->deprecated && $function_call_info->function_id !== null) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedFunction(
-                        'The function ' . $function_call_info->function_id . ' has been marked as deprecated',
+                        'The function ' . Interner::str(
+                            $function_call_info->cased_function_id ?? $function_call_info->function_id,
+                        ) . ' has been marked as deprecated',
                         $code_location,
                         $function_call_info->function_id,
                     ),
@@ -427,14 +428,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
+        if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id !== null) {
             NamedFunctionCallHandler::handle(
                 $statements_analyzer,
                 $codebase,
                 $stmt,
                 $real_stmt,
                 $function_name,
-                strtolower($function_call_info->function_id),
+                $function_call_info->function_id,
                 $context,
             );
         }
@@ -458,35 +459,43 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $codebase_functions = $codebase->functions;
 
-        $original_function_id = $function_name->toString();
+        $original_function_name = $function_name->toString();
+        $original_function_id = Interner::intern($original_function_name);
+        $original_function_id_lc = Interner::lower($original_function_id);
 
         if (!$function_name instanceof PhpParser\Node\Name\FullyQualified) {
-            $function_call_info->function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
-                $original_function_id,
+            $cased_function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
+                $original_function_name,
                 $statements_analyzer,
             );
         } else {
-            $function_call_info->function_id = $original_function_id;
+            $cased_function_id = $original_function_id;
         }
+
+        $function_id = Interner::lower($cased_function_id);
 
         $namespaced_function_exists = $codebase_functions->functionExists(
             $statements_analyzer,
-            strtolower($function_call_info->function_id),
+            $function_id,
         );
 
         if (!$namespaced_function_exists
             && !$function_name instanceof PhpParser\Node\Name\FullyQualified
         ) {
-            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($original_function_id);
-            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id);
+            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($original_function_id_lc);
+            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id_lc);
 
             if ($function_call_info->is_stubbed || $function_call_info->in_call_map) {
-                $function_call_info->function_id = $original_function_id;
+                $cased_function_id = $original_function_id;
+                $function_id = $original_function_id_lc;
             }
         } else {
-            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($function_call_info->function_id);
-            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($function_call_info->function_id);
+            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($function_id);
+            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($function_id);
         }
+
+        $function_call_info->function_id = $function_id;
+        $function_call_info->cased_function_id = $cased_function_id;
 
         $function_call_info->function_exists
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
@@ -501,7 +510,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $codebase,
-                $function_call_info->function_id,
+                Interner::str($cased_function_id),
             );
         }
 
@@ -514,16 +523,26 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if (!$function_call_info->in_call_map) {
             $predefined_functions = $codebase->config->getPredefinedFunctions();
-            $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
-                || isset($predefined_functions[strtolower($function_call_info->function_id)]);
+            $is_predefined = isset($predefined_functions[$original_function_id_lc])
+                || isset($predefined_functions[$function_id]);
 
             if ($context->check_functions) {
-                if (self::checkFunctionExists(
+                $checked_function_id = $cased_function_id;
+
+                $function_exists = self::checkFunctionExists(
                     $statements_analyzer,
-                    $function_call_info->function_id,
+                    $checked_function_id,
                     $code_location,
                     $is_maybe_root_function,
-                ) === false) {
+                );
+
+                // checkFunctionExists() lowercases the id, and may resolve it to a root function
+                if ($checked_function_id !== $function_id) {
+                    $function_id = $function_call_info->function_id = $checked_function_id;
+                    $cased_function_id = $function_call_info->cased_function_id = $checked_function_id;
+                }
+
+                if ($function_exists === false) {
                     if ($args) {
                         ArgumentsAnalyzer::analyze(
                             $statements_analyzer,
@@ -571,7 +590,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 try {
                     $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                         $statements_analyzer,
-                        strtolower($function_call_info->function_id),
+                        $function_call_info->function_id,
                     );
 
                     $function_call_info->function_params = $function_call_info->function_storage->params;
@@ -586,7 +605,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 } catch (UnexpectedValueException) {
                     $function_call_info->function_params = [
-                        new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
+                        new FunctionLikeParameter(StrId::args, false, null, null, null, null, false, false, true),
                     ];
                 }
             } else {
@@ -617,7 +636,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $function_name,
-                    $function_call_info->function_id . '()',
+                    Interner::str($cased_function_id) . '()',
                 );
             }
         }
@@ -772,8 +791,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $var_type_part,
                     );
                 } elseif ($var_type_part instanceof TCallableString
-                    || ($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')
-                    || ($var_type_part instanceof TObjectWithProperties && isset($var_type_part->methods['__invoke']))
+                    || ($var_type_part instanceof TNamedObject && $var_type_part->value === StrId::Closure)
+                    || ($var_type_part instanceof TObjectWithProperties
+                        && isset($var_type_part->methods[StrId::__invoke]))
                 ) {
                     // this is fine
                     $has_valid_function_call_type = true;
@@ -792,7 +812,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $statements_analyzer->getFilePath(),
                         );
 
-                        if ($potential_method_id === 'not-callable') {
+                        if (!$potential_method_id instanceof MethodIdentifier) {
                             $potential_method_id = null;
                         }
                     } elseif ($var_type_part instanceof TLiteralString) {
@@ -802,10 +822,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         }
 
                         if (strpos($var_type_part->value, '::')) {
-                            $parts = explode('::', strtolower($var_type_part->value));
-                            $fq_class_name = $parts[0];
-                            $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
-                            $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
+                            $potential_method_id = MethodIdentifier::fromMethodIdReference($var_type_part->value);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
@@ -833,7 +850,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     || !$codebase->methodExists(
                         new MethodIdentifier(
                             $var_type_part->value,
-                            '__invoke',
+                            StrId::__invoke,
                         ),
                     )
                 ) {
@@ -1089,7 +1106,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             $must_use = true;
 
-            $mutations = $function_call_info->function_id && $function_call_info->in_call_map
+            $mutations = $function_call_info->function_id !== null && $function_call_info->in_call_map
                 ? $codebase->functions->getCallMapFunctionMutations(
                     $statements_analyzer,
                     $context,
@@ -1107,7 +1124,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->signalMutation(
                     $mutations,
                     $context,
-                    'function call on ' . ($function_call_info->function_id ?? 'unknown function'),
+                    'function call on ' . ($function_call_info->cased_function_id !== null
+                        ? Interner::str($function_call_info->cased_function_id)
+                        : 'unknown function'),
                     ImpureFunctionCall::class,
                     $stmt,
                     null,
@@ -1120,7 +1139,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $context->removeMutableObjectVars();
                 }
             }
-            if ($function_call_info->function_id
+            if ($function_call_info->function_id !== null
                 && $must_use
                 && $mutations === Mutations::LEVEL_NONE
                 && !$function_call_info->function_storage?->assertions
@@ -1142,7 +1161,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedFunctionCall(
-                            'The call to ' . $function_call_info->function_id . ' is not used',
+                            'The call to ' . Interner::str(
+                                $function_call_info->cased_function_id ?? $function_call_info->function_id,
+                            ) . ' is not used',
                             new CodeLocation($statements_analyzer, $function_name),
                             $function_call_info->function_id,
                         ),
@@ -1181,7 +1202,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnusedFunctionCall(
-                'The call to ' . $function_call_info->function_id . ' is not used',
+                'The call to ' . Interner::str(
+                    $function_call_info->cased_function_id ?? $function_call_info->function_id,
+                ) . ' is not used',
                 new CodeLocation($statements_analyzer, $function_name),
                 $function_call_info->function_id,
             ),
@@ -1212,7 +1235,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         foreach ($stmt->getArgs() as $index => $argument) {
             $parameter = null;
             if (null !== $argument->name) {
-                $argument_name = $argument->name->toString();
+                $argument_name = Interner::intern($argument->name->toString());
                 foreach ($parameters as $param) {
                     if ($param->name === $argument_name) {
                         $parameter = $param;

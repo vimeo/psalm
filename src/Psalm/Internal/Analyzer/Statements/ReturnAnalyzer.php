@@ -15,16 +15,17 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
@@ -38,6 +39,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -46,10 +48,8 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Union;
 
 use function count;
-use function explode;
 use function implode;
 use function reset;
-use function strtolower;
 
 /**
  * @internal
@@ -267,19 +267,18 @@ final class ReturnAnalyzer
                     $context,
                 );
 
-                if ($storage instanceof MethodStorage && $context->self) {
+                if ($storage instanceof MethodStorage && $source instanceof MethodAnalyzer && $context->self) {
                     $self_class = $context->self;
 
                     $declared_return_type = $codebase->methods->getMethodReturnType(
                         $codebase,
-                        MethodIdentifier::wrap($cased_method_id),
+                        $source->getMethodId(),
                         $self_class,
                         $statements_analyzer,
                         null,
                     );
 
-                    [, $method_name] = explode('::', $cased_method_id);
-                    if ($method_name === '__construct') {
+                    if ($source->getMethodId()->method_name === StrId::__construct) {
                         IssueBuffer::maybeAdd(
                             new InvalidReturnStatement(
                                 'No return values are expected for ' . $cased_method_id,
@@ -299,8 +298,9 @@ final class ReturnAnalyzer
                         $storage instanceof MethodStorage && $storage->final,
                     );
 
-                    if ($storage instanceof MethodStorage) {
-                        [$fq_class_name, $method_name] = explode('::', $cased_method_id);
+                    if ($storage instanceof MethodStorage && $source instanceof MethodAnalyzer) {
+                        $method_id = $source->getMethodId();
+                        $fq_class_name = $method_id->fq_class_name;
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -308,7 +308,7 @@ final class ReturnAnalyzer
                             $codebase,
                             $class_storage,
                             $class_storage,
-                            strtolower($method_name),
+                            $method_id->method_name,
                             null,
                             true,
                         );
@@ -444,7 +444,8 @@ final class ReturnAnalyzer
                             if ($upper_bound->equality_bound_classlike === null
                                 && !$upper_bound->from_union_alternatives
                             ) {
-                                $upper_bound->equality_bound_classlike = '';
+                                // 0: equality bound not tied to a classlike (falsy, but not null)
+                                $upper_bound->equality_bound_classlike = 0;
                             }
                         }
 
@@ -498,7 +499,7 @@ final class ReturnAnalyzer
                                 ) {
                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                         $statements_analyzer,
-                                        $stmt->expr->value,
+                                        Interner::intern($stmt->expr->value),
                                         new CodeLocation($source, $stmt->expr),
                                         $context,
                                         $statements_analyzer->getSuppressedIssues(),
@@ -518,7 +519,7 @@ final class ReturnAnalyzer
                                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
                                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                                         $statements_analyzer,
-                                                        $item->value->value,
+                                                        Interner::intern($item->value->value),
                                                         new CodeLocation($source, $item->value),
                                                         $context,
                                                         $statements_analyzer->getSuppressedIssues(),
@@ -657,7 +658,8 @@ final class ReturnAnalyzer
         Context $context,
     ): void {
         // if not returning from inside of a function, return
-        if (!$context->calling_method_id && !$context->calling_function_id) {
+        $parent_function_id = $context->calling_function_id ?? $context->calling_method_id;
+        if ($parent_function_id === null) {
             return;
         }
 
@@ -670,7 +672,7 @@ final class ReturnAnalyzer
             ->getCodebase()
             ->getFunctionLikeStorage(
                 $statements_analyzer,
-                $context->calling_function_id ?: $context->calling_method_id,
+                $parent_function_id,
             );
 
         if ($parent_fn_storage->return_type === null) {

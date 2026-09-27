@@ -30,7 +30,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @var array<string, ClassConstantStorage>
+     * @var array<int, ClassConstantStorage> constant name id => storage
      */
     public array $constants = [];
 
@@ -46,7 +46,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $deprecated = false;
 
     /**
-     * @var list<non-empty-string>
+     * @var list<int>
      */
     public array $internal = [];
 
@@ -60,7 +60,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $namedMixins = [];
 
-    public ?string $mixin_declaring_fqcln = null;
+    public ?int $mixin_declaring_fqcln = null;
 
     public ?bool $sealed_properties = null;
 
@@ -83,40 +83,40 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * Interfaces this class implements directly
      *
-     * @var array<lowercase-string, string>
+     * @var array<int, int> lowercase name id => name id
      */
     public array $direct_class_interfaces = [];
 
     /**
      * Interfaces this class implements explicitly and implicitly
      *
-     * @var array<lowercase-string, string>
+     * @var array<int, int> lowercase name id => name id
      */
     public array $class_implements = [];
 
     /**
      * Parent interfaces listed explicitly
      *
-     * @var array<lowercase-string, string>
+     * @var array<int, int> lowercase name id => name id
      */
     public array $direct_interface_parents = [];
 
     /**
      * Parent interfaces
      *
-     * @var  array<lowercase-string, string>
+     * @var  array<int, int> lowercase name id => name id
      */
     public array $parent_interfaces = [];
 
     /**
      * There can only be one direct parent class
      */
-    public ?string $parent_class = null;
+    public ?int $parent_class = null;
 
     /**
      * Parent classes
      *
-     * @var array<lowercase-string, string>
+     * @var array<int, int> lowercase name id => name id
      */
     public array $parent_classes = [];
 
@@ -135,27 +135,27 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $trait_used = false;
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<int, int> lowercase name id => name id
      */
     public array $used_traits = [];
 
     /**
-     * @var array<lowercase-string, lowercase-string>
+     * @var array<int, int> lowercase alias id => lowercase method name id
      */
     public array $trait_alias_map = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> alias id => method name id
      */
     public array $trait_alias_map_cased = [];
 
     /**
-     * @var array<lowercase-string, bool>
+     * @var array<int, bool> lowercase method name id => final
      */
     public array $trait_final_map = [];
 
     /**
-     * @var array<string, ClassLikeAnalyzer::VISIBILITY_*>
+     * @var array<int, ClassLikeAnalyzer::VISIBILITY_*> lowercase method name id => visibility
      */
     public array $trait_visibility_map = [];
 
@@ -173,17 +173,17 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $specialize_instance = false;
 
     /**
-     * @var array<lowercase-string, MethodStorage>
+     * @var array<int, MethodStorage> lowercase method name id => storage
      */
     public array $methods = [];
 
     /**
-     * @var array<lowercase-string, MethodStorage>
+     * @var array<int, MethodStorage> lowercase method name id => storage
      */
     public array $pseudo_methods = [];
 
     /**
-     * @var array<lowercase-string, MethodStorage>
+     * @var array<int, MethodStorage> lowercase method name id => storage
      */
     public array $pseudo_static_methods = [];
 
@@ -195,17 +195,17 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * This property contains all pseudo methods declared on ancestors.
      *
-     * @var array<lowercase-string, MethodIdentifier>
+     * @var array<int, MethodIdentifier> lowercase method name id => method id
      */
     public array $declaring_pseudo_method_ids = [];
 
     /**
-     * @var array<lowercase-string, MethodIdentifier>
+     * @var array<int, MethodIdentifier> lowercase method name id => method id
      */
     public array $declaring_method_ids = [];
 
     /**
-     * @var array<lowercase-string, MethodIdentifier>
+     * @var array<int, MethodIdentifier> lowercase method name id => method id
      */
     public array $appearing_method_ids = [];
 
@@ -214,59 +214,61 @@ final class ClassLikeStorage implements HasAttributesInterface
      * great-grandparent, etc **including traits and interfaces**. Ancestors that don't have their own declaration are
      * skipped.
      *
-     * @var array<lowercase-string, array<string, MethodIdentifier>>
+     * @var array<int, array<int, MethodIdentifier>> lowercase method name id => class name id => method id
      */
     public array $overridden_method_ids = [];
 
     /**
-     * @var array<lowercase-string, MethodIdentifier>
+     * @var array<int, MethodIdentifier> lowercase method name id => method id
      */
     public array $documenting_method_ids = [];
 
     /**
-     * @var array<lowercase-string, MethodIdentifier>
+     * @var array<int, MethodIdentifier> lowercase method name id => method id
      */
     public array $inheritable_method_ids = [];
 
     /**
-     * @var array<lowercase-string, array<string, bool>>
+     * lowercase method name id => lowercase class name id => lowercase method name id => true
+     *
+     * @var array<int, array<int, array<int, bool>>>
      */
     public array $potential_declaring_method_ids = [];
 
     /**
-     * @var array<string, PropertyStorage>
+     * @var array<int, PropertyStorage> property name id => storage
      */
     public array $properties = [];
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> property name id => type
      */
     public array $pseudo_property_set_types = [];
 
     /**
-     * @var array<string, Union>
+     * @var array<int, Union> property name id => type
      */
     public array $pseudo_property_get_types = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> property name id => declaring class name id
      */
     public array $declaring_property_ids = [];
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> property name id => appearing class name id
      */
     public array $appearing_property_ids = [];
 
     public ?Union $inheritors = null;
 
     /**
-     * @var array<string, string>
+     * @var array<int, int> property name id => class name id
      */
     public array $inheritable_property_ids = [];
 
     /**
-     * @var array<string, array<string>>
+     * @var array<int, list<int>> property name id => list of class name ids
      */
     public array $overridden_property_ids = [];
 
@@ -279,7 +281,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * (i.e. the same as the class name). This allows operations with the same-named template defined
      * across multiple classes to not run into trouble.
      *
-     * @var array<string, non-empty-array<string, Union>>|null
+     * @var array<int, non-empty-array<int, Union>>|null template name id => defining entity id => type
      */
     public ?array $template_types = null;
 
@@ -294,7 +296,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * This is only used in the populator, which poulates the $template_extended_params property below.
      *
      * @internal
-     * @var array<string, non-empty-array<int, Union>>|null
+     * @var array<int, non-empty-array<int, Union>>|null class name id => offset => type
      */
     public ?array $template_extended_offsets = null;
 
@@ -310,42 +312,42 @@ final class ClassLikeStorage implements HasAttributesInterface
      *     ]
      * ]
      *
-     * @var array<string, array<string, Union>>|null
+     * @var array<int, array<int, Union>>|null class name id => template name id => type
      */
     public ?array $template_extended_params = null;
 
     /**
-     * @var array<string, int>|null
+     * @var array<int, int>|null class name id => count
      */
     public ?array $template_type_extends_count = null;
 
 
     /**
-     * @var array<string, int>|null
+     * @var array<int, int>|null class name id => count
      */
     public ?array $template_type_implements_count = null;
 
     public ?Union $yield = null;
 
-    public ?string $declaring_yield_fqcn = null;
+    public ?int $declaring_yield_fqcn = null;
 
     /**
-     * @var array<string, int>|null
+     * @var array<int, int>|null class name id => count
      */
     public ?array $template_type_uses_count = null;
 
     /**
-     * @var array<string, bool>
+     * @var array<int, bool> property name id => initialized
      */
     public array $initialized_properties = [];
 
     /**
-     * @var array<string, true>
+     * @var array<int, true> lowercase class name id => true
      */
     public array $invalid_dependencies = [];
 
     /**
-     * @var array<lowercase-string, bool>
+     * @var array<int, bool> lowercase class name id => true
      */
     public array $dependent_classlikes = [];
 
@@ -357,7 +359,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $docblock_issues = [];
 
     /**
-     * @var array<string, ClassTypeAlias>
+     * @var array<int, ClassTypeAlias> alias name id => alias
      */
     public array $type_aliases = [];
 
@@ -365,10 +367,10 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $enforce_template_inheritance = false;
 
-    public ?string $extension_requirement = null;
+    public ?int $extension_requirement = null;
 
     /**
-     * @var array<int, string>
+     * @var list<int>
      */
     public array $implementation_requirements = [];
 
@@ -378,7 +380,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $attributes = [];
 
     /**
-     * @var array<string, EnumCaseStorage>
+     * @var array<int, EnumCaseStorage> case name id => storage
      */
     public array $enum_cases = [];
 
@@ -396,7 +398,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * @psalm-mutation-free
      */
-    public function __construct(public string $name)
+    public function __construct(public int $name)
     {
     }
 
@@ -437,7 +439,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @psalm-mutation-free
      */
     public function hasAttributeIncludingParents(
-        string $fq_class_name,
+        int $fq_class_name,
         Codebase $codebase,
     ): bool {
         if ($this->hasAttribute($fq_class_name)) {
@@ -494,7 +496,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * @psalm-mutation-free
      */
-    private function hasAttribute(string $fq_class_name): bool
+    private function hasAttribute(int $fq_class_name): bool
     {
         foreach ($this->attributes as $attribute) {
             if ($fq_class_name === $attribute->fq_class_name) {

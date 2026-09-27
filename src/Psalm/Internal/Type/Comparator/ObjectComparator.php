@@ -6,6 +6,8 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TIterable;
@@ -41,21 +43,18 @@ final class ObjectComparator
     ): bool {
         if ($container_type_part instanceof TTemplateParam
             && $input_type_part instanceof TTemplateParam
-            && $container_type_part->defining_class != $input_type_part->defining_class
+            && $container_type_part->defining_class !== $input_type_part->defining_class
             && 1 == count($container_type_part->as->getAtomicTypes())
             && 1 == count($input_type_part->as->getAtomicTypes())) {
-            $containerDefinedInFunction = str_starts_with($container_type_part->defining_class, 'fn-');
-            $inputDefinedInFunction = str_starts_with($input_type_part->defining_class, 'fn-');
+            $containerDefinedInFunction = self::isDefinedInFunction($container_type_part->defining_class);
+            $inputDefinedInFunction = self::isDefinedInFunction($input_type_part->defining_class);
+            $inputDefiningClass = Interner::str($input_type_part->defining_class);
             if ($inputDefinedInFunction) {
-                $separatorPos = strpos($input_type_part->defining_class, '::');
-                if ($separatorPos === false) {
-                    // Is that possible ? Falling back to default definition.
-                    $inputDefiningClass = $input_type_part->defining_class;
-                } else {
-                    $inputDefiningClass = substr($input_type_part->defining_class, 3, $separatorPos - 3);
+                $separatorPos = strpos($inputDefiningClass, '::');
+                if ($separatorPos !== false) {
+                    $inputDefiningClass = substr($inputDefiningClass, 3, $separatorPos - 3);
                 }
-            } else {
-                $inputDefiningClass = $input_type_part->defining_class;
+                // else: is that possible ? Falling back to default definition.
             }
 
             // FIXME Missing analysis for additional cases, for example :
@@ -65,7 +64,8 @@ final class ObjectComparator
                  && !$containerDefinedInFunction)
                 || ($inputDefinedInFunction
                     && !$containerDefinedInFunction
-                    && strtolower($inputDefiningClass) != strtolower($container_type_part->defining_class))) {
+                    && strtolower($inputDefiningClass)
+                        !== strtolower(Interner::str($container_type_part->defining_class)))) {
                 $containerAs = current($container_type_part->as->getAtomicTypes());
                 $inputAs = current($input_type_part->as->getAtomicTypes());
                 if ($containerAs instanceof TNamedObject && $inputAs instanceof TNamedObject) {
@@ -89,17 +89,17 @@ final class ObjectComparator
             $container_was_static = false;
 
             if ($intersection_container_type instanceof TIterable) {
-                $intersection_container_type_lower = 'iterable';
+                $intersection_container_type_lower = StrId::iterable;
             } elseif ($intersection_container_type instanceof TObjectWithProperties) {
-                $intersection_container_type_lower = 'object';
+                $intersection_container_type_lower = StrId::object;
             } elseif ($intersection_container_type instanceof TTemplateParam) {
                 $intersection_container_type_lower = null;
             } elseif ($intersection_container_type instanceof TCallableObject) {
-                $intersection_container_type_lower = 'callable-object';
+                $intersection_container_type_lower = Interner::intern('callable-object');
             } else {
                 $container_was_static = $intersection_container_type->is_static;
 
-                $intersection_container_type_lower = strtolower(
+                $intersection_container_type_lower = Interner::lower(
                     $codebase->classlikes->getUnAliasedName(
                         $intersection_container_type->value,
                     ),
@@ -108,7 +108,7 @@ final class ObjectComparator
 
             $any_inputs_contained = false;
 
-            $container_type_is_interface = $intersection_container_type_lower
+            $container_type_is_interface = $intersection_container_type_lower !== null
                 && $codebase->interfaceExists($intersection_container_type_lower);
 
             foreach ($intersection_input_types as $input_type_key => $intersection_input_type) {
@@ -180,7 +180,7 @@ final class ObjectComparator
         Codebase $codebase,
         Atomic $intersection_input_type,
         Atomic $intersection_container_type,
-        ?string $intersection_container_type_lower,
+        ?int $intersection_container_type_lower,
         bool $container_was_static,
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
@@ -189,11 +189,11 @@ final class ObjectComparator
             && $intersection_input_type instanceof TTemplateParam
         ) {
             if (!$allow_interface_equality) {
-                if (str_starts_with($intersection_container_type->defining_class, 'fn-')
-                    || str_starts_with($intersection_input_type->defining_class, 'fn-')
+                if (self::isDefinedInFunction($intersection_container_type->defining_class)
+                    || self::isDefinedInFunction($intersection_input_type->defining_class)
                 ) {
-                    if (str_starts_with($intersection_input_type->defining_class, 'fn-')
-                        && str_starts_with($intersection_container_type->defining_class, 'fn-')
+                    if (self::isDefinedInFunction($intersection_input_type->defining_class)
+                        && self::isDefinedInFunction($intersection_container_type->defining_class)
                         && $intersection_input_type->defining_class
                             !== $intersection_container_type->defining_class
                     ) {
@@ -217,11 +217,11 @@ final class ObjectComparator
             if ($intersection_container_type->param_name !== $intersection_input_type->param_name
                 || ($intersection_container_type->defining_class
                     !== $intersection_input_type->defining_class
-                    && !str_starts_with($intersection_input_type->defining_class, 'fn-')
-                    && !str_starts_with($intersection_container_type->defining_class, 'fn-'))
+                    && !self::isDefinedInFunction($intersection_input_type->defining_class)
+                    && !self::isDefinedInFunction($intersection_container_type->defining_class))
             ) {
-                if (str_starts_with($intersection_input_type->defining_class, 'fn-')
-                    || str_starts_with($intersection_container_type->defining_class, 'fn-')
+                if (self::isDefinedInFunction($intersection_input_type->defining_class)
+                    || self::isDefinedInFunction($intersection_container_type->defining_class)
                 ) {
                     return false;
                 }
@@ -272,15 +272,15 @@ final class ObjectComparator
         $input_was_static = false;
 
         if ($intersection_input_type instanceof TIterable) {
-            $intersection_input_type_lower = 'iterable';
+            $intersection_input_type_lower = StrId::iterable;
         } elseif ($intersection_input_type instanceof TObjectWithProperties) {
-            $intersection_input_type_lower = 'object';
+            $intersection_input_type_lower = StrId::object;
         } elseif ($intersection_input_type instanceof TCallableObject) {
-            $intersection_input_type_lower = 'callable-object';
+            $intersection_input_type_lower = Interner::intern('callable-object');
         } else {
             $input_was_static = $intersection_input_type->is_static;
 
-            $intersection_input_type_lower = strtolower(
+            $intersection_input_type_lower = Interner::lower(
                 $codebase->classlikes->getUnAliasedName(
                     $intersection_input_type->value,
                 ),
@@ -299,31 +299,35 @@ final class ObjectComparator
             return true;
         }
 
-        if ($intersection_input_type_lower === 'generator'
-            && in_array($intersection_container_type_lower, ['iterator', 'traversable', 'iterable'], true)
+        if ($intersection_input_type_lower === StrId::generator
+            && in_array(
+                $intersection_container_type_lower,
+                [StrId::iterator, StrId::traversable, StrId::iterable],
+                true,
+            )
         ) {
             return true;
         }
 
-        if ($intersection_container_type_lower === 'iterable') {
-            if ($intersection_input_type_lower === 'traversable'
+        if ($intersection_container_type_lower === StrId::iterable) {
+            if ($intersection_input_type_lower === StrId::traversable
                 || ($codebase->classlikes->classExists($intersection_input_type_lower)
                     && $codebase->classlikes->classImplements(
                         $intersection_input_type_lower,
-                        'Traversable',
+                        StrId::Traversable,
                     ))
                 || ($codebase->classlikes->interfaceExists($intersection_input_type_lower)
                     && $codebase->classlikes->interfaceExtends(
                         $intersection_input_type_lower,
-                        'Traversable',
+                        StrId::Traversable,
                     ))
             ) {
                 return true;
             }
         }
 
-        if ($intersection_input_type_lower === 'traversable'
-            && $intersection_container_type_lower === 'iterable'
+        if ($intersection_input_type_lower === StrId::traversable
+            && $intersection_container_type_lower === StrId::iterable
         ) {
             return true;
         }
@@ -371,5 +375,15 @@ final class ObjectComparator
         }
 
         return false;
+    }
+
+    /**
+     * Whether a template defining entity is a function (i.e. `fn-foo` or `fn-foo::bar`).
+     *
+     * @psalm-pure
+     */
+    private static function isDefinedInFunction(int $defining_class): bool
+    {
+        return str_starts_with(Interner::str($defining_class), 'fn-');
     }
 }

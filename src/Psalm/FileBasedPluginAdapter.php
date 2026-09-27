@@ -70,6 +70,6 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
 
         assert(count($declared_classes) > 0, 'FileBasedPlugin contains a class');
 
-        return reset($declared_classes);
+        return Interner::str(reset($declared_classes));
     }
 }

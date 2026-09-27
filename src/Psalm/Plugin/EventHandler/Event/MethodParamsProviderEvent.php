@@ -21,8 +21,8 @@ final class MethodParamsProviderEvent
      * @psalm-mutation-free
      */
     public function __construct(
-        private readonly string $fq_classlike_name,
-        private readonly string $method_name_lowercase,
+        private readonly int $fq_classlike_name,
+        private readonly int $method_name_lowercase,
         private readonly ?array $call_args = null,
         private readonly ?StatementsSource $statements_source = null,
         private readonly ?Context $context = null,
@@ -30,12 +30,12 @@ final class MethodParamsProviderEvent
     ) {
     }
 
-    public function getFqClasslikeName(): string
+    public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
-    public function getMethodNameLowercase(): string
+    public function getMethodNameLowercase(): int
     {
         return $this->method_name_lowercase;
     }

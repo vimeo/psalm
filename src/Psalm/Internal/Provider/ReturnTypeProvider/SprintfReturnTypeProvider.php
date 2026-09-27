@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use ArgumentCountError;
 use Override;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\RedundantFunctionCall;
 use Psalm\Issue\TooFewArguments;
@@ -13,6 +14,7 @@ use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TFloat;
@@ -38,15 +40,15 @@ use function strlen;
 final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
     public static function getFunctionIds(): array
     {
         return [
-            'printf',
-            'sprintf',
+            StrId::printf,
+            StrId::sprintf,
         ];
     }
 
@@ -83,8 +85,8 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
         if (count($call_args) === 1 && $has_splat_args === true) {
             IssueBuffer::maybeAdd(
                 new RedundantFunctionCall(
-                    'Using the splat operator is redundant, as v' . $event->getFunctionId()
-                    . ' without splat operator can be used instead of ' . $event->getFunctionId(),
+                    'Using the splat operator is redundant, as v' . Interner::str($event->getFunctionId())
+                    . ' without splat operator can be used instead of ' . Interner::str($event->getFunctionId()),
                     $event->getCodeLocation(),
                 ),
                 $statements_source->getSuppressedIssues(),
@@ -101,7 +103,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
             && ($first_arg_type === null || !$first_arg_type->isSingleStringLiteral())) {
             IssueBuffer::maybeAdd(
                 new RedundantFunctionCall(
-                    'Using ' . $event->getFunctionId()
+                    'Using ' . Interner::str($event->getFunctionId())
                     . ' with a single argument is redundant, since there are no placeholder params to be substituted',
                     $event->getCodeLocation(),
                 ),
@@ -116,7 +118,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
 
-            if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
+            if ($type === null && $index === 0 && $event->getFunctionId() === StrId::printf) {
                 // printf only has the format validated above
                 // don't change the return type
                 break;
@@ -130,13 +132,14 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                 if ($type->getSingleStringLiteral()->value === '') {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
-                            'Calling ' . $event->getFunctionId() . ' with an empty first argument does nothing',
+                            'Calling ' . Interner::str($event->getFunctionId())
+                                . ' with an empty first argument does nothing',
                             $event->getCodeLocation(),
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
 
-                    if ($event->getFunctionId() === 'printf') {
+                    if ($event->getFunctionId() === StrId::printf) {
                         return Type::getInt(false, 0);
                     }
 
@@ -147,7 +150,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                 if (preg_match('/^%(?:\d+\$)?[-+]?0(?:\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
-                            'The pattern of argument 1 of ' . $event->getFunctionId()
+                            'The pattern of argument 1 of ' . Interner::str($event->getFunctionId())
                             . ' will always return an empty string',
                             $event->getCodeLocation(),
                             $event->getFunctionId(),
@@ -155,7 +158,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                         $statements_source->getSuppressedIssues(),
                     );
 
-                    if ($event->getFunctionId() === 'printf') {
+                    if ($event->getFunctionId() === StrId::printf) {
                         return Type::getInt(false, 0);
                     }
 
@@ -196,7 +199,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                                     IssueBuffer::maybeAdd(
                                         new TooManyArguments(
                                             'Too many arguments for the number of placeholders in '
-                                            . $event->getFunctionId(),
+                                            . Interner::str($event->getFunctionId()),
                                             $event->getCodeLocation(),
                                             $event->getFunctionId(),
                                         ),
@@ -208,7 +211,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                                 if (count($call_args) === 1) {
                                     IssueBuffer::maybeAdd(
                                         new RedundantFunctionCall(
-                                            'Using ' . $event->getFunctionId()
+                                            'Using ' . Interner::str($event->getFunctionId())
                                             . ' with a single argument is redundant,'
                                             . ' since there are no placeholder params to be substituted',
                                             $event->getCodeLocation(),
@@ -218,7 +221,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                                 } else {
                                     IssueBuffer::maybeAdd(
                                         new RedundantFunctionCall(
-                                            'Argument 1 of ' . $event->getFunctionId()
+                                            'Argument 1 of ' . Interner::str($event->getFunctionId())
                                             . ' does not contain any placeholders',
                                             $event->getCodeLocation(),
                                         ),
@@ -226,7 +229,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                                     );
                                 }
 
-                                if ($event->getFunctionId() === 'printf') {
+                                if ($event->getFunctionId() === StrId::printf) {
                                     return Type::getInt(false, strlen($type->getSingleStringLiteral()->value));
                                 }
 
@@ -238,7 +241,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                         // the format is invalid
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
-                                'Argument 1 of ' . $event->getFunctionId() . ' is invalid - '
+                                'Argument 1 of ' . Interner::str($event->getFunctionId()) . ' is invalid - '
                                 . $value_error->getMessage(),
                                 $event->getCodeLocation(),
                                 $event->getFunctionId(),
@@ -252,7 +255,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                         if (count($dummy) === $provided_placeholders_count) {
                             IssueBuffer::maybeAdd(
                                 new TooFewArguments(
-                                    'Too few arguments for ' . $event->getFunctionId(),
+                                    'Too few arguments for ' . Interner::str($event->getFunctionId()),
                                     $event->getCodeLocation(),
                                     $event->getFunctionId(),
                                 ),
@@ -271,7 +274,8 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                     if (is_string($result) && count($dummy) + 1 <= $provided_placeholders_count) {
                         IssueBuffer::maybeAdd(
                             new TooManyArguments(
-                                'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
+                                'Too many arguments for the number of placeholders in '
+                                    . Interner::str($event->getFunctionId()),
                                 $event->getCodeLocation(),
                                 $event->getFunctionId(),
                             ),
@@ -295,7 +299,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return null;
                 }
 
-                if ($event->getFunctionId() === 'printf') {
+                if ($event->getFunctionId() === StrId::printf) {
                     // printf only has the format validated above
                     // don't change the return type
                     return null;
@@ -316,7 +320,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                 $is_falsable = false;
             }
 
-            if ($index === 0 && $event->getFunctionId() === 'printf') {
+            if ($index === 0 && $event->getFunctionId() === StrId::printf) {
                 // printf only has the format validated above
                 // don't change the return type
                 break;

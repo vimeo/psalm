@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use Psalm\Codebase;
+use Psalm\Interner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
@@ -63,7 +64,9 @@ final class StubsGenerator
         $psalm_base = dirname(__DIR__, 5);
 
         foreach ($class_provider->getAll() as $storage) {
-            if (str_starts_with($storage->name, 'Psalm\\')) {
+            $storage_name = Interner::str($storage->name);
+
+            if (str_starts_with($storage_name, 'Psalm\\')) {
                 continue;
             }
 
@@ -77,7 +80,7 @@ final class StubsGenerator
                 continue;
             }
 
-            $name_parts = explode('\\', $storage->name);
+            $name_parts = explode('\\', $storage_name);
 
             $classlike_name = array_pop($name_parts);
             $namespace_name = implode('\\', $name_parts);
@@ -106,7 +109,7 @@ final class StubsGenerator
                 throw new UnexpectedValueException('very bad');
             }
 
-            $fq_name = $function_storage->cased_name;
+            $fq_name = Interner::str($function_storage->cased_name);
 
             $all_function_names[$fq_name] = true;
 
@@ -122,10 +125,12 @@ final class StubsGenerator
             );
         }
 
-        foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
+        foreach ($codebase->getAllStubbedConstants() as $fq_name_id => $type) {
             if ($type->isMixed()) {
                 continue;
             }
+
+            $fq_name = Interner::str($fq_name_id);
 
             $name_parts = explode('\\', $fq_name);
             $constant_name = array_pop($name_parts);
@@ -152,7 +157,7 @@ final class StubsGenerator
                     continue;
                 }
 
-                $fq_name = $function_storage->cased_name;
+                $fq_name = Interner::str($function_storage->cased_name);
 
                 if (isset($all_function_names[$fq_name])) {
                     continue;
@@ -172,10 +177,12 @@ final class StubsGenerator
                 );
             }
 
-            foreach ($file_storage->constants as $fq_name => $type) {
+            foreach ($file_storage->constants as $fq_name_id => $type) {
                 if ($type->isMixed()) {
                     continue;
                 }
+
+                $fq_name = Interner::str($fq_name_id);
 
                 $name_parts = explode('\\', $fq_name);
                 $constant_name = array_pop($name_parts);
@@ -218,11 +225,13 @@ final class StubsGenerator
     ) : PhpParser\Node\Stmt\Function_ {
         $docblock = new ParsedDocblock('', []);
 
+        $namespace_id = $namespace_name === '' ? null : Interner::intern($namespace_name);
+
         foreach ($function_storage->template_types ?: [] as $template_name => $map) {
             $type = array_values($map)[0];
 
-            $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
-                $namespace_name,
+            $docblock->tags['template'][] = Interner::str($template_name) . ' as ' . $type->toNamespacedString(
+                $namespace_id,
                 [],
                 null,
                 false
@@ -232,11 +241,11 @@ final class StubsGenerator
         foreach ($function_storage->params as $param) {
             if ($param->type && $param->type !== $param->signature_type) {
                 $docblock->tags['param'][] = $param->type->toNamespacedString(
-                    $namespace_name,
+                    $namespace_id,
                     [],
                     null,
                     false
-                ) . ' $' . $param->name;
+                ) . ' $' . Interner::str($param->name);
             }
         }
 
@@ -244,7 +253,7 @@ final class StubsGenerator
             && $function_storage->signature_return_type !== $function_storage->return_type
         ) {
             $docblock->tags['return'][] = $function_storage->return_type->toNamespacedString(
-                $namespace_name,
+                $namespace_id,
                 [],
                 null,
                 false
@@ -254,7 +263,7 @@ final class StubsGenerator
         foreach ($function_storage->throws ?: [] as $exception_name => $_) {
             $docblock->tags['throws'][] = Type::getStringFromFQCLN(
                 $exception_name,
-                $namespace_name,
+                $namespace_id,
                 [],
                 null,
                 false
@@ -291,7 +300,7 @@ final class StubsGenerator
 
         foreach ($method_storage->params as $param) {
             $param_nodes[] = new VirtualParam(
-                new VirtualVariable($param->name),
+                new VirtualVariable(Interner::str($param->name)),
                 $param->default_type instanceof Union
                     ? self::getExpressionFromType($param->default_type)
                     : null,
@@ -340,7 +349,7 @@ final class StubsGenerator
             }
 
             if ($atomic_type instanceof TNamedObject) {
-                $name_node = new VirtualFullyQualified($atomic_type->value);
+                $name_node = new VirtualFullyQualified(Interner::str($atomic_type->value));
 
                 if ($nullable) {
                     return new VirtualNullableType($name_node);
@@ -357,7 +366,7 @@ final class StubsGenerator
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralClassString) {
-                return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier('class'));
+                return new VirtualClassConstFetch(new VirtualName('\\' . Interner::str($atomic_type->class_name)), new VirtualIdentifier('class'));
             }
 
             if ($atomic_type instanceof TLiteralString) {
@@ -410,7 +419,10 @@ final class StubsGenerator
             }
 
             if ($atomic_type instanceof TEnumCase) {
-                return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier($atomic_type->case_name));
+                return new VirtualClassConstFetch(
+                    new VirtualName('\\' . Interner::str($atomic_type->value)),
+                    new VirtualIdentifier(Interner::str($atomic_type->case_name)),
+                );
             }
         }
 

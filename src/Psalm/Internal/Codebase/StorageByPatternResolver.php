@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Interner;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
@@ -23,30 +24,33 @@ final class StorageByPatternResolver
     public const RESOLVE_ENUMS = 2;
 
     /**
-     * @return array<string,ClassConstantStorage>
+     * @param int $pattern interned constant name, or a constant name pattern containing `*`
+     * @return array<int, ClassConstantStorage> constant name id => storage
      * @psalm-mutation-free
      */
     public function resolveConstants(
         ClassLikeStorage $class_like_storage,
-        string $pattern,
+        int $pattern,
     ): array {
         $constants = $class_like_storage->constants;
 
-        if (!str_contains($pattern, '*')) {
-            if (isset($constants[$pattern])) {
-                return [$pattern => $constants[$pattern]];
-            }
+        if (isset($constants[$pattern])) {
+            return [$pattern => $constants[$pattern]];
+        }
 
+        $pattern_str = Interner::str($pattern);
+
+        if (!str_contains($pattern_str, '*')) {
             return [];
-        } elseif ($pattern === '*') {
+        } elseif ($pattern_str === '*') {
             return $constants;
         }
 
-        $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern));
+        $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern_str));
         $matched_constants = [];
 
         foreach ($constants as $constant => $class_constant_storage) {
-            if (preg_match($regex_pattern, $constant) === 0) {
+            if (preg_match($regex_pattern, Interner::str($constant)) === 0) {
                 continue;
             }
 
@@ -57,28 +61,32 @@ final class StorageByPatternResolver
     }
 
     /**
-     * @return array<string,EnumCaseStorage>
+     * @param int $pattern interned enum case name, or a case name pattern containing `*`
+     * @return array<int, EnumCaseStorage> case name id => storage
      * @psalm-mutation-free
      */
     public function resolveEnums(
         ClassLikeStorage $class_like_storage,
-        string $pattern,
+        int $pattern,
     ): array {
         $enum_cases = $class_like_storage->enum_cases;
-        if (!str_contains($pattern, '*')) {
-            if (isset($enum_cases[$pattern])) {
-                return [$pattern => $enum_cases[$pattern]];
-            }
 
+        if (isset($enum_cases[$pattern])) {
+            return [$pattern => $enum_cases[$pattern]];
+        }
+
+        $pattern_str = Interner::str($pattern);
+
+        if (!str_contains($pattern_str, '*')) {
             return [];
-        } elseif ($pattern === '*') {
+        } elseif ($pattern_str === '*') {
             return $enum_cases;
         }
 
-        $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern));
+        $regex_pattern = sprintf('#^%s$#', str_replace('*', '.*?', $pattern_str));
         $matched_enums = [];
         foreach ($enum_cases as $enum_case_name => $enum_case_storage) {
-            if (preg_match($regex_pattern, $enum_case_name) === 0) {
+            if (preg_match($regex_pattern, Interner::str($enum_case_name)) === 0) {
                 continue;
             }
 

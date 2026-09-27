@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Type\Atomic;
 
 use Override;
+use Psalm\Interner;
 
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
@@ -15,13 +16,14 @@ use Override;
 final class TAnonymousClassInstance extends TNamedObject
 {
     /**
-     * @param string $value the name of the object
+     * @param int $value the interned name of the object
+     * @param ?int $extends interned name of the parent class
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
-        string $value,
+        int $value,
         bool $is_static = false,
-        public ?string $extends = null,
+        public ?int $extends = null,
         array $extra_types = [],
     ) {
         parent::__construct($value, $is_static, false, $extra_types);
@@ -29,24 +31,27 @@ final class TAnonymousClassInstance extends TNamedObject
 
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
-        return $analysis_php_version_id >= 7_02_00 ? ($this->extends ?? 'object') : null;
+        if ($analysis_php_version_id < 7_02_00) {
+            return null;
+        }
+        return $this->extends === null ? 'object' : Interner::str($this->extends);
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        return $this->extends ?? 'object';
+        return $this->extends === null ? 'object' : Interner::str($this->extends);
     }
 }

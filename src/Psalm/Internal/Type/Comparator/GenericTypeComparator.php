@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -37,7 +38,7 @@ final class GenericTypeComparator
             && !$input_type_part instanceof TIterable
         ) {
             $container_type_part = new TGenericObject(
-                'Traversable',
+                StrId::Traversable,
                 $container_type_part->type_params,
             );
 
@@ -98,7 +99,7 @@ final class GenericTypeComparator
                 $param_comparison_result,
                 $allow_interface_equality,
             )) {
-                if ($input_type_part->value === 'Generator'
+                if ($input_type_part->value === StrId::Generator
                     && $i === 2
                     && $param_comparison_result->type_coerced_from_mixed
                 ) {

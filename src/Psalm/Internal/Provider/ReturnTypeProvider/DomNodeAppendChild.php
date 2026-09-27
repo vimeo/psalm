@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Union;
 
@@ -22,7 +23,7 @@ final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['DomNode'];
+        return [StrId::DomNode];
     }
 
     #[Override]
@@ -32,7 +33,7 @@ final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
         $call_args = $event->getCallArgs();
         $method_name_lowercase = $event->getMethodNameLowercase();
 
-        if ($method_name_lowercase !== 'appendchild') {
+        if ($method_name_lowercase !== StrId::appendchild) {
             return null;
         }
 

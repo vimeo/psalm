@@ -40,7 +40,7 @@ final class HighOrderFunctionArgInfo
     public function getTemplates(): TemplateResult
     {
         $templates = $this->class_storage
-            ? [...$this->function_storage->template_types ?? [], ...$this->class_storage->template_types ?? []]
+            ? ($this->class_storage->template_types ?? []) + ($this->function_storage->template_types ?? [])
             : $this->function_storage->template_types ?? [];
 
         return new TemplateResult($templates, []);

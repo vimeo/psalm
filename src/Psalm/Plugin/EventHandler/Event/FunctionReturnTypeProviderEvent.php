@@ -21,13 +21,12 @@ final class FunctionReturnTypeProviderEvent
      * return but another plugin may be able to determine the type, return null. Otherwise return a mixed union type
      * if something should be returned, but can't be more specific.
      *
-     * @param non-empty-string $function_id
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly StatementsSource $statements_source,
-        private readonly string $function_id,
+        private readonly int $function_id,
         private readonly FuncCall $stmt,
         private readonly Context $context,
         private readonly CodeLocation $code_location,
@@ -39,10 +38,7 @@ final class FunctionReturnTypeProviderEvent
         return $this->statements_source;
     }
 
-    /**
-     * @return non-empty-string
-     */
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
         return $this->function_id;
     }

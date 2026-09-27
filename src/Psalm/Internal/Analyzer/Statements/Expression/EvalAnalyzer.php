@@ -13,6 +13,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\StrId;
 use Psalm\Type\TaintKind;
 
 use function in_array;
@@ -77,7 +78,7 @@ final class EvalAnalyzer
             }
         }
 
-        if (isset($codebase->config->forbidden_functions['eval'])) {
+        if (isset($codebase->config->forbidden_functions[StrId::eval])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of eval',

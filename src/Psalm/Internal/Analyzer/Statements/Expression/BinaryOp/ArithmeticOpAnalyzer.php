@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Interner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
@@ -28,6 +29,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\StatementsSource;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -57,7 +59,6 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
-use function strtolower;
 
 /**
  * @internal
@@ -666,22 +667,22 @@ final class ArithmeticOpAnalyzer
          * // Todo remove this hint reset after fixing #10267
          */
 
-        if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
-            || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
+        if (($left_type_part instanceof TNamedObject && Interner::lower($left_type_part->value) === StrId::gmp)
+            || ($right_type_part instanceof TNamedObject && Interner::lower($right_type_part->value) === StrId::gmp)
         ) {
             if ((($left_type_part instanceof TNamedObject
-                        && strtolower($left_type_part->value) === 'gmp')
+                        && Interner::lower($left_type_part->value) === StrId::gmp)
                     && (($right_type_part instanceof TNamedObject
-                            && strtolower($right_type_part->value) === 'gmp')
+                            && Interner::lower($right_type_part->value) === StrId::gmp)
                         || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
                 || (($right_type_part instanceof TNamedObject
-                        && strtolower($right_type_part->value) === 'gmp')
+                        && Interner::lower($right_type_part->value) === StrId::gmp)
                     && (($left_type_part instanceof TNamedObject
-                            && strtolower($left_type_part->value) === 'gmp')
+                            && Interner::lower($left_type_part->value) === StrId::gmp)
                         || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
             ) {
                 $result_type = Type::combineUnionTypes(
-                    new Union([new TNamedObject('GMP')]),
+                    new Union([new TNamedObject(StrId::GMP)]),
                     $result_type,
                 );
             } else {
@@ -708,11 +709,11 @@ final class ArithmeticOpAnalyzer
         ) {
             $non_decimal_type = null;
             if ($left_type_part instanceof TNamedObject
-                && strtolower($left_type_part->value) === "decimal\\decimal"
+                && Interner::lower($left_type_part->value) === StrId::decimal_decimal
             ) {
                 $non_decimal_type = $right_type_part;
             } elseif ($right_type_part instanceof TNamedObject
-                && strtolower($right_type_part->value) === "decimal\\decimal"
+                && Interner::lower($right_type_part->value) === StrId::decimal_decimal
             ) {
                 $non_decimal_type = $left_type_part;
             }
@@ -720,10 +721,10 @@ final class ArithmeticOpAnalyzer
                 if ($non_decimal_type instanceof TInt
                     || $non_decimal_type instanceof TNumericString
                     || $non_decimal_type instanceof TNamedObject
-                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+                        && Interner::lower($non_decimal_type->value) === StrId::decimal_decimal
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject(StrId::Decimal_Decimal)]),
                         $result_type,
                     );
                 } else {

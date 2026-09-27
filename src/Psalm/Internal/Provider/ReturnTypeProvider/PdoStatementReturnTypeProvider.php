@@ -6,8 +6,10 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\Config;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -16,6 +18,8 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Union;
+
+use function ltrim;
 
 /**
  * @internal
@@ -28,7 +32,7 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['PDOStatement'];
+        return [StrId::PDOStatement];
     }
 
     #[Override]
@@ -41,11 +45,11 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
             return null;
         }
 
-        if ($method_name_lowercase === 'fetch') {
+        if ($method_name_lowercase === StrId::fetch) {
             return self::handleFetch($event);
         }
 
-        if ($method_name_lowercase === 'fetchall') {
+        if ($method_name_lowercase === StrId::fetchall) {
             return self::handleFetchAll($event);
         }
 
@@ -138,7 +142,7 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
                 new TFalse(),
             ]),
             5 => new Union([
-                new TNamedObject('stdClass'),
+                new TNamedObject(StrId::stdClass),
                 new TFalse(),
             ]),
             default => null,
@@ -209,7 +213,9 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
             8 => new Union([
                 Type::getListAtomic(
                     new Union([
-                        $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
+                        $fetch_class_name !== null && $fetch_class_name !== ''
+                            ? new TNamedObject(Interner::intern(ltrim($fetch_class_name, '\\')))
+                            : new TObject(),
                     ]),
                 ),
             ]),
@@ -256,7 +262,7 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
             5 => new Union([
                 Type::getListAtomic(
                     new Union([
-                        new TNamedObject('stdClass'),
+                        new TNamedObject(StrId::stdClass),
                     ]),
                 ),
             ]),

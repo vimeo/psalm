@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Interner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -42,6 +43,13 @@ trait GenericTrait
         return $cloned;
     }
 
+    /**
+     * The base name of the generic type (e.g. `array`, `iterable`, or the class name)
+     *
+     * @psalm-mutation-free
+     */
+    abstract protected function getGenericName(): string;
+
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
@@ -68,22 +76,23 @@ trait GenericTrait
             }
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        return $this->getGenericName() . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
-        $base_value = $this instanceof TNamedObject
-            ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
-            : $this->value;
+        $base_value = $this->getGenericName();
+        if ($this instanceof TNamedObject) {
+            $base_value = parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+        }
 
         if ($base_value === 'non-empty-array') {
             $base_value = 'array';
@@ -170,8 +179,8 @@ trait GenericTrait
         ?StatementsAnalyzer $statements_analyzer = null,
         ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
-        ?string $calling_class = null,
-        ?string $calling_function = null,
+        ?int $calling_class = null,
+        ?int $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
         int $depth = 0,
@@ -216,6 +225,7 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
+            /** @psalm-suppress ImpureMethodCall */
             $type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -229,7 +239,7 @@ trait GenericTrait
                 $add_lower_bound,
                 !($container_type_params_covariant[$offset] ?? true)
                     && $this instanceof TGenericObject
-                    ? $this->value
+                    ? Interner::intern($this->getGenericName())
                     : null,
                 $depth + 1,
             );

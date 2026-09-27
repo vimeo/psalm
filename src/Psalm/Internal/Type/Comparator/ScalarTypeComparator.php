@@ -6,6 +6,8 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Interner;
+use Psalm\StrId;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -193,7 +195,7 @@ final class ScalarTypeComparator
             $first_type = $container_type_part->as_type->getSingleAtomic();
 
             $container_type_part = new TClassString(
-                'object',
+                StrId::object,
                 $first_type instanceof TNamedObject ? $first_type : null,
             );
         }
@@ -206,13 +208,13 @@ final class ScalarTypeComparator
 
                 $input_type_part = new TTemplateParamClass(
                     $first_type->param_name,
-                    $first_type->as->getId(),
+                    Interner::intern($first_type->as->getId()),
                     $object_type instanceof TNamedObject ? $object_type : null,
                     $first_type->defining_class,
                 );
             } else {
                 $input_type_part = new TClassString(
-                    'object',
+                    StrId::object,
                     $first_type instanceof TNamedObject ? $first_type : null,
                 );
             }

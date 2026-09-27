@@ -274,7 +274,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             if ($context->check_methods) {
                 IssueBuffer::maybeAdd(
                     new UndefinedMagicMethod(
-                        'Magic method ' . $result->non_existent_magic_method_ids[0] . ' does not exist',
+                        'Magic method ' . (string) $result->non_existent_magic_method_ids[0] . ' does not exist',
                         new CodeLocation($source, $stmt->name),
                         $result->non_existent_magic_method_ids[0],
                     ),
@@ -288,18 +288,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
-                            'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_class_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0],
+                            $result->non_existent_class_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedMethod(
-                            'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_class_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0],
+                            $result->non_existent_class_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -314,18 +314,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 if ($result->existent_method_ids || $result->has_mixed_method_call) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedMethod(
-                            'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_interface_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0],
+                            $result->non_existent_interface_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedInterfaceMethod(
-                            'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
+                            'Method ' . $result->non_existent_interface_method_ids[0][1] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0],
+                            $result->non_existent_interface_method_ids[0][0],
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
@@ -342,7 +342,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 new TooManyArguments(
                     'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id,
+                    $error_method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -355,7 +355,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 new TooFewArguments(
                     'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id,
+                    $error_method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );

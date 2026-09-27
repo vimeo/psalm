@@ -18,6 +18,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
@@ -242,13 +243,13 @@ trait UnionTrait
     }
 
     /**
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      * @psalm-mutation-free
      */
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         $other_types = [];
@@ -293,12 +294,12 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @param  array<lowercase-string, string> $aliased_classes
+     * @param  array<int, int> $aliased_classes
      */
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array   $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int     $analysis_php_version_id,
     ): ?string {
         if (!$this->isSingleAndMaybeNullable()) {
@@ -970,7 +971,7 @@ trait UnionTrait
     {
         return count($this->types) === 1
             && (($single_type = reset($this->types)) instanceof TNamedObject)
-            && ($single_type->value === 'Generator');
+            && ($single_type->value === StrId::Generator);
     }
 
     /**
@@ -1341,7 +1342,7 @@ trait UnionTrait
 
     /**
      * @param  array<string>    $suppressed_issues
-     * @param  array<string, bool> $phantom_classes
+     * @param  array<int, bool> $phantom_classes class name id (cased or lowercase) => true
      */
     public function check(
         StatementsSource $source,
@@ -1377,7 +1378,7 @@ trait UnionTrait
     }
 
     /**
-     * @param  array<string, mixed> $phantom_classes
+     * @param  array<int, mixed> $phantom_classes class name id (cased or lowercase) => true
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
@@ -1395,10 +1396,10 @@ trait UnionTrait
     }
 
     /**
-     * @param  lowercase-string $fq_class_like_name
+     * @param  int $fq_class_like_name interned lowercase class name
      * @psalm-mutation-free
      */
-    public function containsClassLike(string $fq_class_like_name): bool
+    public function containsClassLike(int $fq_class_like_name): bool
     {
         $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
@@ -1411,7 +1412,7 @@ trait UnionTrait
     /**
      * @return static
      */
-    public function replaceClassLike(string $old, string $new): self
+    public function replaceClassLike(int $old, int $new): self
     {
         $type = $this;
         (new ClasslikeReplacer(

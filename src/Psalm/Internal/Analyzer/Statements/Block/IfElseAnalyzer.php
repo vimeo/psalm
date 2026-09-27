@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Interner;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
@@ -334,9 +335,11 @@ final class IfElseAnalyzer
                             ? $parent_source->getFunctionLikeStorage($statements_analyzer)
                             : null;
 
+                        $param_name = Interner::intern(substr($var_id, 1));
+
                         if (!$functionlike_storage
                                 || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                    && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                                    && !isset($functionlike_storage->param_lookup[$param_name]))
                         ) {
                             $codebase = $statements_analyzer->getCodebase();
                             $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());

@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Interner;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -23,6 +24,7 @@ use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -431,7 +433,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $existing_var_type = $existing_var_type->getBuilder();
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof TLiteralString
-                && InternalCallMapHandler::inCallMap($type->value)
+                && InternalCallMapHandler::inCallMap(Interner::internLower($type->value))
             ) {
                 $existing_var_type->removeType($atomic_key);
                 continue;
@@ -1701,9 +1703,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TIterable) {
                 if (!$type->type_params[0]->isMixed() || !$type->type_params[1]->isMixed()) {
-                    $non_array_types[] = new TGenericObject('Traversable', $type->type_params);
+                    $non_array_types[] = new TGenericObject(StrId::Traversable, $type->type_params);
                 } else {
-                    $non_array_types[] = new TNamedObject('Traversable');
+                    $non_array_types[] = new TNamedObject(StrId::Traversable);
                 }
 
                 $redundant = false;

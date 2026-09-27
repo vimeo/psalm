@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Interner;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Mutations;
@@ -507,13 +508,13 @@ final class FunctionLikeDocblockParser
                 ) {
                     $template_modifier = strtolower(array_shift($template_type));
                     $templates[$template_name][$source_prefix] = [
-                        $template_name,
+                        Interner::intern($template_name),
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
+                    $templates[$template_name][$source_prefix] = [Interner::intern($template_name), null, null, false];
                 }
             }
         }

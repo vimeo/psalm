@@ -7,13 +7,14 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
+use Psalm\StrId;
 use Psalm\Type\TaintKind;
 
 use function count;
-use function strtolower;
 
 use const ENT_QUOTES;
 
@@ -41,10 +42,10 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             return 0;
         }
 
-        $function_id = strtolower($item->name->getFirst());
+        $function_id = Interner::internLower($item->name->getFirst());
 
-        if ($function_id === 'html_entity_decode'
-            || $function_id === 'htmlspecialchars_decode'
+        if ($function_id === StrId::html_entity_decode
+            || $function_id === StrId::htmlspecialchars_decode
         ) {
             $second_arg = $item->getArgs()[1]->value ?? null;
 
@@ -92,10 +93,10 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             return 0;
         }
 
-        $function_id = strtolower($item->name->getFirst());
+        $function_id = Interner::internLower($item->name->getFirst());
 
-        if ($function_id === 'htmlentities'
-            || $function_id === 'htmlspecialchars'
+        if ($function_id === StrId::htmlentities
+            || $function_id === StrId::htmlspecialchars
         ) {
             $second_arg = $item->getArgs()[1]->value ?? null;
 

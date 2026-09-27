@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-
-use function strtolower;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 
 /**
  * @api
  */
 abstract class ArgumentIssue extends CodeIssue
 {
-    public ?string $function_id = null;
+    /**
+     * Interned lowercase function id, or method id with a lowercase class name
+     */
+    public int|MethodIdentifier|null $function_id = null;
 
     /**
      * @psalm-mutation-free
@@ -21,9 +24,25 @@ abstract class ArgumentIssue extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        ?string $function_id = null,
+        int|MethodIdentifier|null $function_id = null,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = $function_id ? strtolower($function_id) : null;
+        $this->function_id = self::normalizeFunctionId($function_id);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    protected static function normalizeFunctionId(int|MethodIdentifier|null $function_id): int|MethodIdentifier|null
+    {
+        if ($function_id === null) {
+            return null;
+        }
+
+        if ($function_id instanceof MethodIdentifier) {
+            return new MethodIdentifier(Interner::lower($function_id->fq_class_name), $function_id->method_name);
+        }
+
+        return Interner::lower($function_id);
     }
 }

@@ -15,15 +15,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Interner;
 use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedInterface;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
-use UnexpectedValueException;
-
-use function strtolower;
 
 /**
  * @internal
@@ -36,7 +35,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
     public function __construct(
         PhpParser\Node\Stmt\Interface_ $interface,
         SourceAnalyzer $source,
-        string $fq_interface_name,
+        int $fq_interface_name,
     ) {
         parent::__construct($interface, $source, $fq_interface_name);
     }
@@ -54,10 +53,6 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         self::registerDocblockSuppressions($this->storage, $this->getFilePath(), $codebase);
 
         $fq_interface_name = $this->getFQCLN();
-
-        if (!$fq_interface_name) {
-            throw new UnexpectedValueException('bad');
-        }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
 
@@ -95,7 +90,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 if (!$extended_interface_storage->is_interface) {
                     IssueBuffer::maybeAdd(
                         new UndefinedInterface(
-                            $extended_interface_name . ' is not an interface',
+                            Interner::str($extended_interface_name) . ' is not an interface',
                             $code_location,
                             $extended_interface_name,
                         ),
@@ -103,14 +98,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
 
-                if ($codebase->store_node_types && $extended_interface_name) {
+                if ($codebase->store_node_types) {
                     $bounds = $parent_reference_location->getSelectionBounds();
 
                     $codebase->analyzer->addOffsetReference(
                         $this->getFilePath(),
                         $bounds[0],
                         $bounds[1],
-                        $extended_interface_name,
+                        Interner::str($extended_interface_name),
                     );
                 }
 
@@ -131,20 +126,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 if (!UnionTypeComparator::isContainedBy($codebase, $class_union, $parent_storage->inheritors)) {
                     IssueBuffer::maybeAdd(
                         new InheritorViolation(
-                            'Interface ' . $fq_interface_name . '
-                             is not an allowed inheritor of parent interface ' . $parent_interface,
+                            'Interface ' . Interner::str($fq_interface_name) . '
+                             is not an allowed inheritor of parent interface ' . Interner::str($parent_interface),
                             new CodeLocation($this, $this->class),
                         ),
                         $this->getSuppressedIssues(),
                     );
                 }
             }
-        }
-
-        $fq_interface_name = $this->getFQCLN();
-
-        if (!$fq_interface_name) {
-            throw new UnexpectedValueException('bad');
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_interface_name);
@@ -166,7 +155,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_name_lc = strtolower($stmt->name->name);
+                $method_name_lc = Interner::internLower($stmt->name->name);
                 if (!isset($class_storage->methods[$method_name_lc])) {
                     // Storage was overwritten by a different class-like with the same FQCN
                     // (e.g., project declares interface X while vendor has class X).
@@ -182,8 +171,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $actual_method_id = $method_analyzer->getMethodId();
 
-                if ($stmt->name->name !== '__construct'
-                    && $stmt->name->name !== '__destruct'
+                if ($method_name_lc !== StrId::__construct
+                    && $method_name_lc !== StrId::__destruct
                     && $config->reportIssueInFile('InvalidReturnType', $this->getFilePath())
                 ) {
                     ClassAnalyzer::analyzeClassMethodReturnType(
@@ -217,23 +206,22 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $member_stmts[] = $stmt;
 
                 foreach ($stmt->consts as $const) {
-                    $const_id = strtolower($this->fq_class_name) . '::' . $const->name;
+                    $new_const_name = $codebase->class_constants_to_rename[Interner::lower($this->fq_class_name)]
+                        [Interner::intern($const->name->name)] ?? null;
 
-                    foreach ($codebase->class_constants_to_rename as $original_const_id => $new_const_name) {
-                        if ($const_id === $original_const_id) {
-                            $file_manipulations = [
-                                new FileManipulation(
-                                    (int) $const->name->getAttribute('startFilePos'),
-                                    (int) $const->name->getAttribute('endFilePos') + 1,
-                                    $new_const_name,
-                                ),
-                            ];
+                    if ($new_const_name !== null) {
+                        $file_manipulations = [
+                            new FileManipulation(
+                                (int) $const->name->getAttribute('startFilePos'),
+                                (int) $const->name->getAttribute('endFilePos') + 1,
+                                Interner::str($new_const_name),
+                            ),
+                        ];
 
-                            FileManipulationBuffer::add(
-                                $this->getFilePath(),
-                                $file_manipulations,
-                            );
-                        }
+                        FileManipulationBuffer::add(
+                            $this->getFilePath(),
+                            $file_manipulations,
+                        );
                     }
                 }
             }

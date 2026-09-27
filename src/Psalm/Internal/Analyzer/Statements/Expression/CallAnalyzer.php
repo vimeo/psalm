@@ -15,6 +15,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -26,6 +27,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Interner;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidDocblock;
@@ -78,13 +80,20 @@ use function strtolower;
  */
 abstract class CallAnalyzer
 {
+    /**
+     * @param int $method_name interned method name, as written
+     */
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
-        string $method_name,
+        int $method_name,
         Context $context,
     ): void {
-        $method_name_lc = strtolower($method_name);
-        $fq_class_name = (string)$source->getFQCLN();
+        $method_name_lc = Interner::lower($method_name);
+        $fq_class_name = $source->getFQCLN();
+
+        if ($fq_class_name === null) {
+            return;
+        }
 
         $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
@@ -104,13 +113,15 @@ abstract class CallAnalyzer
                 $method_name_lc,
             );
 
-            if ((string) $method_id !== $source->getId()) {
+            if (!$source instanceof MethodAnalyzer || !$source->getMethodId()->equals($method_id)) {
                 if ($context->collect_initializations) {
-                    if (isset($context->initialized_methods[(string) $method_id])) {
+                    $method_class_lc = Interner::lower($method_id->fq_class_name);
+
+                    if (isset($context->initialized_methods[$method_class_lc][$method_id->method_name])) {
                         return;
                     }
 
-                    $context->initialized_methods[(string) $method_id] = true;
+                    $context->initialized_methods[$method_class_lc][$method_id->method_name] = true;
                 }
 
                 $project_analyzer->getMethodMutations(
@@ -185,11 +196,13 @@ abstract class CallAnalyzer
                 return;
             }
 
-            if (isset($context->initialized_methods[(string) $declaring_method_id])) {
+            $declaring_class_lc = Interner::lower($declaring_method_id->fq_class_name);
+
+            if (isset($context->initialized_methods[$declaring_class_lc][$declaring_method_id->method_name])) {
                 return;
             }
 
-            $context->initialized_methods[(string) $declaring_method_id] = true;
+            $context->initialized_methods[$declaring_class_lc][$declaring_method_id->method_name] = true;
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
@@ -294,7 +307,7 @@ abstract class CallAnalyzer
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        $fq_class_name = strtolower($codebase->classlikes->getUnAliasedName($fq_class_name));
+        $fq_class_name = Interner::lower($codebase->classlikes->getUnAliasedName($fq_class_name));
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -335,7 +348,7 @@ abstract class CallAnalyzer
             $statements_analyzer,
             $args,
             $method_params,
-            (string) $method_id,
+            $method_id,
             $method_storage->allow_named_arg_calls ?? true,
             $context,
             $template_result,
@@ -362,7 +375,7 @@ abstract class CallAnalyzer
                 $statements_analyzer,
                 $template_result,
                 $code_location,
-                strtolower((string) $method_id),
+                $method_id,
             );
         }
 
@@ -373,14 +386,14 @@ abstract class CallAnalyzer
      * This gets all the template params (and their types) that we think
      * we'll need to know about
      *
-     * @return array<string, array<string, Union>>
-     * @param array<string, non-empty-array<string, Union>> $existing_template_types
-     * @param array<string, array<string, Union>> $class_template_params
+     * @return array<int, array<int, Union>> template name id => defining entity id => type
+     * @param array<int, non-empty-array<int, Union>> $existing_template_types
+     * @param array<int, array<int, Union>> $class_template_params
      */
     public static function getTemplateTypesForCall(
         Codebase $codebase,
         ?ClassLikeStorage $declaring_class_storage,
-        ?string $appearing_class_name,
+        ?int $appearing_class_name,
         ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = [],
         array $class_template_params = [],
@@ -448,13 +461,13 @@ abstract class CallAnalyzer
     }
 
     /**
-     * @param array<string, array<string, Union>>  $template_extended_params
-     * @param array<string, array<string, Union>>  $found_generic_params
+     * @param array<int, array<int, Union>>  $template_extended_params class name id => template name id => type
+     * @param array<int, array<int, Union>>  $found_generic_params template name id => defining entity id => type
      * @psalm-mutation-free
      */
     public static function getGenericParamForOffset(
-        string $fq_class_name,
-        string $template_name,
+        int $fq_class_name,
+        int $template_name,
         array $template_extended_params,
         array $found_generic_params,
     ): Union {
@@ -553,7 +566,7 @@ abstract class CallAnalyzer
                 $file_source->getAliases(),
             );
 
-            return [$fq_class_name . '::' . $method_name_arg->value];
+            return [Interner::str($fq_class_name) . '::' . $method_name_arg->value];
         }
 
         if (!$file_source instanceof StatementsAnalyzer
@@ -566,7 +579,7 @@ abstract class CallAnalyzer
 
         foreach ($class_arg_type->getAtomicTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
-                $method_id = $type_part->value . '::' . $method_name_arg->value;
+                $method_id = Interner::str($type_part->value) . '::' . $method_name_arg->value;
 
                 foreach ($type_part->extra_types as $extra_type) {
                     if ($extra_type instanceof TTemplateParam
@@ -576,7 +589,9 @@ abstract class CallAnalyzer
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }
 
-                    $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
+                    $method_id .= '&'
+                        . ($extra_type instanceof TNamedObject ? Interner::str($extra_type->value) : $extra_type->value)
+                        . '::' . $method_name_arg->value;
                 }
 
                 $method_ids[] = '$' . $method_id;
@@ -587,23 +602,25 @@ abstract class CallAnalyzer
     }
 
     /**
-     * @param  non-empty-string     $function_id
-     * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
+     * @param  int  $function_id interned function id, as written; replaced by the interned lowercase function id
+     *                           (possibly resolved to the root version)
+     * @param  bool $can_be_in_root_scope if true, the function can be shortened to the root version
      */
     public static function checkFunctionExists(
         StatementsAnalyzer $statements_analyzer,
-        string &$function_id,
+        int &$function_id,
         CodeLocation $code_location,
         bool $can_be_in_root_scope,
     ): bool {
         $cased_function_id = $function_id;
-        $function_id = strtolower($function_id);
+        $function_id = Interner::lower($function_id);
 
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
-            /** @var non-empty-lowercase-string */
-            $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
+            $root_function_id = Interner::intern(
+                (string) preg_replace('/.*\\\/', '', Interner::str($function_id)),
+            );
 
             if ($can_be_in_root_scope
                 && $function_id !== $root_function_id
@@ -613,7 +630,7 @@ abstract class CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(
-                        'Function ' . $cased_function_id . ' does not exist'
+                        'Function ' . Interner::str($cased_function_id) . ' does not exist'
                             .', consider enabling the allFunctionsGlobal config option if scanning legacy codebases',
                         $code_location,
                         $function_id,
@@ -668,7 +685,8 @@ abstract class CallAnalyzer
             } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
             } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
-                $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
+                $assertion_var_id = Interner::str($context->self)
+                    . str_replace('self::', '::', $var_possibilities->var_id);
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
@@ -965,7 +983,7 @@ abstract class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $template_result,
         CodeLocation $code_location,
-        ?string $function_id,
+        int|MethodIdentifier|null $function_id,
     ): void {
         if ($template_result->lower_bounds && $template_result->upper_bounds) {
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {
@@ -1071,7 +1089,8 @@ abstract class CallAnalyzer
                     if (count($equality_types) > 1) {
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
-                                'Incompatible types found for ' . $template_name . ' (must have only one of ' .
+                                'Incompatible types found for ' . Interner::str($template_name)
+                                . ' (must have only one of ' .
                                 implode(', ', $equality_types) . ')',
                                 $code_location,
                                 $function_id,
@@ -1093,7 +1112,7 @@ abstract class CallAnalyzer
 
                                 IssueBuffer::maybeAdd(
                                     new InvalidArgument(
-                                        'Incompatible types found for ' . $template_name . ' (' .
+                                        'Incompatible types found for ' . Interner::str($template_name) . ' (' .
                                         $lower_bound->type->getId() . ' is not in ' .
                                         implode(', ', $equality_types) . ')',
                                         $code_location,

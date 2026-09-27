@@ -43,7 +43,7 @@ use function max;
  *     location: CodeLocation,
  *     cased_name: string,
  *     suppressed_issues: array<int, string>,
- *     class: ?string,
+ *     class: ?int,
  *     start: int,
  *     fresh: bool,
  *     report: bool

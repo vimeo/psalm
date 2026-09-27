@@ -14,6 +14,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Interner;
 use Psalm\Storage\Mutations;
 
 use function array_key_exists;
@@ -64,23 +65,23 @@ final class FunctionDocblockManipulator
 
     private ?string $new_psalm_return_type = null;
 
-    /** @var array<string, string> */
+    /** @var array<int, string> param name id => type */
     private array $new_php_param_types = [];
 
-    /** @var array<string, string> */
+    /** @var array<int, string> param name id => type */
     private array $new_phpdoc_param_types = [];
 
-    /** @var array<string, string> */
+    /** @var array<int, string> param name id => type */
     private array $new_psalm_param_types = [];
 
     private string $indentation;
 
     private ?string $return_type_description = null;
 
-    /** @var array<string, int> */
+    /** @var array<int, int> param name id => offset */
     private array $param_offsets = [];
 
-    /** @var array<string, array{int, int}> */
+    /** @var array<int, array{int, int}> param name id => offsets */
     private array $param_typehint_offsets = [];
 
     /** @var ?Mutations::LEVEL_* */
@@ -132,10 +133,11 @@ final class FunctionDocblockManipulator
             if ($param->var instanceof PhpParser\Node\Expr\Variable
                 && is_string($param->var->name)
             ) {
-                $this->param_offsets[$param->var->name] = (int) $param->getAttribute('startFilePos');
+                $param_name = Interner::intern($param->var->name);
+                $this->param_offsets[$param_name] = (int) $param->getAttribute('startFilePos');
 
                 if ($param->type) {
-                    $this->param_typehint_offsets[$param->var->name] = [
+                    $this->param_typehint_offsets[$param_name] = [
                         (int) $param->type->getAttribute('startFilePos'),
                         (int) $param->type->getAttribute('endFilePos') + 1,
                     ];
@@ -292,7 +294,7 @@ final class FunctionDocblockManipulator
      * @psalm-external-mutation-free
      */
     public function setParamType(
-        string $param_name,
+        int $param_name,
         ?string $php_type,
         string $new_type,
         string $phpdoc_type,
@@ -330,8 +332,9 @@ final class FunctionDocblockManipulator
 
         $modified_docblock = false;
 
-        foreach ($this->new_phpdoc_param_types as $param_name => $phpdoc_type) {
+        foreach ($this->new_phpdoc_param_types as $param_name_id => $phpdoc_type) {
             $found_in_params = false;
+            $param_name = Interner::str($param_name_id);
             $new_param_block = $phpdoc_type . ' ' . '$' . $param_name;
 
             if (isset($parsed_docblock->tags['param'])) {
@@ -379,8 +382,9 @@ final class FunctionDocblockManipulator
             }
         }
 
-        foreach ($this->new_psalm_param_types as $param_name => $psalm_type) {
+        foreach ($this->new_psalm_param_types as $param_name_id => $psalm_type) {
             $found_in_params = false;
+            $param_name = Interner::str($param_name_id);
             $new_param_block = $psalm_type . ' ' . '$' . $param_name;
 
             if (isset($parsed_docblock->tags['psalm-param'])) {

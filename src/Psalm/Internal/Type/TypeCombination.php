@@ -41,7 +41,7 @@ final class TypeCombination
     /** @var array<string, non-empty-list<Union>> */
     public array $object_type_params = [];
 
-    /** @var array<string, bool> */
+    /** @var array<int, bool> class name id => is static */
     public array $object_static = [];
 
     /** @var array<int, bool>|null */
@@ -81,7 +81,7 @@ final class TypeCombination
     /** @var array<string, TLiteralFloat>|null */
     public ?array $floats = [];
 
-    /** @var array<string, TNamedObject|TObject>|null */
+    /** @var array<int, TNamedObject|TObject>|null class name id => type */
     public ?array $class_string_types = [];
 
     /**
@@ -95,7 +95,7 @@ final class TypeCombination
 
     public ?bool $all_arrays_class_string_maps = null;
 
-    /** @var array<string, bool> */
+    /** @var array<int, bool> template param name id => true */
     public array $class_string_map_names = [];
 
     /** @var array<string, ?TNamedObject> */

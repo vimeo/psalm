@@ -83,7 +83,9 @@ final class Pool
                             $script,
                             $cancellation,
                             $this->childConnectTimeout,
-                            extension_loaded('igbinary') ? new IgbinarySerializer() : new NativeSerializer(),
+                            new InterningSerializer(
+                                extension_loaded('igbinary') ? new IgbinarySerializer() : new NativeSerializer(),
+                            ),
                         );
 
                         return new SignalDiagnosticContext($context);

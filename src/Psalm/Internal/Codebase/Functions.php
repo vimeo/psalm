@@ -18,9 +18,11 @@ use Psalm\Internal\Provider\FunctionExistenceProvider;
 use Psalm\Internal\Provider\FunctionParamsProvider;
 use Psalm\Internal\Provider\FunctionReturnTypeProvider;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Interner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -44,7 +46,7 @@ use function substr;
 final class Functions
 {
     /**
-     * @var array<lowercase-string, FunctionStorage>
+     * @var array<int, FunctionStorage> lowercase function id => storage
      */
     private static array $stubbed_functions;
 
@@ -69,19 +71,15 @@ final class Functions
     }
 
     /**
-     * @param non-empty-lowercase-string $function_id
+     * @param int $function_id lowercase function id
      * @psalm-external-mutation-free
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
-        string $function_id,
+        int $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null,
     ): FunctionStorage {
-        if ($function_id[0] === '\\') {
-            $function_id = substr($function_id, 1);
-        }
-
         if (isset(self::$stubbed_functions[$function_id])) {
             return self::$stubbed_functions[$function_id];
         }
@@ -134,7 +132,7 @@ final class Functions
             }
 
             throw new UnexpectedValueException(
-                'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path,
+                'Expecting ' . Interner::str($function_id) . ' to have storage in ' . $checked_file_path,
             );
         }
 
@@ -144,7 +142,7 @@ final class Functions
 
         if (!isset($declaring_file_storage->functions[$function_id])) {
             throw new UnexpectedValueException(
-                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path,
+                'Not expecting ' . Interner::str($function_id) . ' to not have storage in ' . $declaring_file_path,
             );
         }
 
@@ -152,15 +150,16 @@ final class Functions
     }
 
     /**
+     * @param int $function_id function id (any casing)
      * @psalm-external-mutation-free
      */
-    public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
+    public function addGlobalFunction(int $function_id, FunctionStorage $storage): void
     {
-        self::$stubbed_functions[strtolower($function_id)] = $storage;
+        self::$stubbed_functions[Interner::lower($function_id)] = $storage;
     }
 
     /**
-     * @param array<lowercase-string, FunctionStorage> $stubs
+     * @param array<int, FunctionStorage> $stubs lowercase function id => storage
      * @psalm-external-mutation-free
      */
     public function addGlobalFunctions(array $stubs): void
@@ -169,15 +168,16 @@ final class Functions
     }
 
     /**
+     * @param int $function_id function id (any casing)
      * @psalm-external-mutation-free
      */
-    public function hasStubbedFunction(string $function_id): bool
+    public function hasStubbedFunction(int $function_id): bool
     {
-        return isset(self::$stubbed_functions[strtolower($function_id)]);
+        return isset(self::$stubbed_functions[Interner::lower($function_id)]);
     }
 
     /**
-     * @return array<lowercase-string, FunctionStorage>
+     * @return array<int, FunctionStorage> lowercase function id => storage
      * @psalm-external-mutation-free
      */
     public function getAllStubbedFunctions(): array
@@ -186,11 +186,11 @@ final class Functions
     }
 
     /**
-     * @param lowercase-string $function_id
+     * @param int $function_id lowercase function id
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id,
+        int $function_id,
     ): bool {
         if ($this->existence_provider->has($function_id)) {
             $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
@@ -221,7 +221,6 @@ final class Functions
         $predefined_functions = $statements_analyzer->getCodebase()->config->getPredefinedFunctions();
 
         if (isset($predefined_functions[$function_id])) {
-            /** @psalm-suppress ArgumentTypeCoercion */
             if ($this->reflection->registerFunction($function_id) === false) {
                 return false;
             }
@@ -233,10 +232,11 @@ final class Functions
     }
 
     /**
-     * @param  non-empty-string         $function_name
-     * @return non-empty-string
+     * Resolves a function name as written in the source to the (cased) fully qualified function name id
+     *
+     * @param  non-empty-string $function_name
      */
-    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string
+    public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): int
     {
         if ($function_name[0] === '\\') {
             $function_name = substr($function_name, 1);
@@ -245,10 +245,8 @@ final class Functions
                 throw new UnexpectedValueException('Malformed function name');
             }
 
-            return $function_name;
+            return Interner::intern($function_name);
         }
-
-        $function_name_lcase = strtolower($function_name);
 
         $aliases = $source->getAliases();
 
@@ -258,27 +256,36 @@ final class Functions
         if (str_contains($function_name, '\\')) {
             $function_name_parts = explode('\\', $function_name);
             $first_namespace = array_shift($function_name_parts);
-            $first_namespace_lcase = strtolower($first_namespace);
+            $first_namespace_lcase = Interner::internLower($first_namespace);
 
             if (isset($imported_namespaces[$first_namespace_lcase])) {
-                return $imported_namespaces[$first_namespace_lcase] . '\\' . implode('\\', $function_name_parts);
+                return Interner::intern(
+                    Interner::str($imported_namespaces[$first_namespace_lcase])
+                        . '\\' . implode('\\', $function_name_parts),
+                );
             }
 
             if (isset($imported_function_namespaces[$first_namespace_lcase])) {
-                return $imported_function_namespaces[$first_namespace_lcase] . '\\' .
-                    implode('\\', $function_name_parts);
+                return Interner::intern(
+                    Interner::str($imported_function_namespaces[$first_namespace_lcase])
+                        . '\\' . implode('\\', $function_name_parts),
+                );
             }
-        } elseif (isset($imported_function_namespaces[$function_name_lcase])) {
-            return $imported_function_namespaces[$function_name_lcase];
+        } else {
+            $function_name_lcase = Interner::internLower($function_name);
+
+            if (isset($imported_function_namespaces[$function_name_lcase])) {
+                return $imported_function_namespaces[$function_name_lcase];
+            }
         }
 
         $namespace = $source->getNamespace();
 
-        return ($namespace ? $namespace . '\\' : '') . $function_name;
+        return Interner::intern(($namespace !== null ? Interner::str($namespace) . '\\' : '') . $function_name);
     }
 
     /**
-     * @return array<lowercase-string,FunctionStorage>
+     * @return array<int, FunctionStorage> lowercase function id => storage
      */
     public function getMatchingFunctionNames(
         string $stub,
@@ -302,7 +309,7 @@ final class Functions
             [$stub_namespace, $stub] = explode('-', $stub);
         }
 
-        /** @var array<lowercase-string, FunctionStorage> */
+        /** @var array<int, FunctionStorage> */
         $matching_functions = [];
 
         $file_storage = $this->file_storage_provider->get($file_path);
@@ -328,17 +335,14 @@ final class Functions
 
         if ($current_namespace_aliases) {
             foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
-                if (str_starts_with($alias_name, $stub)) {
-                    try {
-                        $match_function_patterns[] = $function_name;
-                    } catch (Exception) {
-                    }
+                if (str_starts_with(Interner::str($alias_name), $stub)) {
+                    $match_function_patterns[] = Interner::str($function_name);
                 }
             }
 
             if (!$fully_qualified) {
                 foreach ($current_namespace_aliases->uses as $namespace_name) {
-                    $match_function_patterns[] = $namespace_name . '\\' . $stub . '*';
+                    $match_function_patterns[] = Interner::str($namespace_name) . '\\' . $stub . '*';
                 }
             }
         }
@@ -348,7 +352,9 @@ final class Functions
             + $this->reflection->getFunctions()
             + $codebase->config->getPredefinedFunctions();
 
-        foreach ($function_map as $function_name => $function) {
+        foreach ($function_map as $function_id => $function) {
+            $function_name = Interner::str($function_id);
+
             foreach ($match_function_patterns as $pattern) {
                 $pattern_lc = strtolower($pattern);
 
@@ -360,15 +366,14 @@ final class Functions
                     continue;
                 }
                 if (is_bool($function)) {
-                    /** @var callable-string $function_name */
-                    if ($this->reflection->registerFunction($function_name) === false) {
+                    if ($this->reflection->registerFunction($function_id) === false) {
                         continue;
                     }
-                    $function = $this->reflection->getFunctionStorage($function_name);
+                    $function = $this->reflection->getFunctionStorage($function_id);
                 }
 
-                if ($function->cased_name) {
-                    $cased_name_parts = explode('\\', $function->cased_name);
+                if ($function->cased_name !== null) {
+                    $cased_name_parts = explode('\\', Interner::str($function->cased_name));
                     $pattern_parts = explode('\\', $pattern);
 
                     if (end($cased_name_parts)[0] !== end($pattern_parts)[0]) {
@@ -376,8 +381,7 @@ final class Functions
                     }
                 }
 
-                /** @var lowercase-string $function_name */
-                $matching_functions[$function_name] = $function;
+                $matching_functions[$function_id] = $function;
             }
         }
 
@@ -385,9 +389,10 @@ final class Functions
     }
 
     /**
+     * @param int $function_id lowercase function id
      * @psalm-external-mutation-free
      */
-    public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
+    public static function isVariadic(Codebase $codebase, int $function_id, string $file_path): bool
     {
         $file_storage = $codebase->file_storage_provider->get($file_path);
 
@@ -405,6 +410,7 @@ final class Functions
     }
 
     /**
+     * @param int $function_id lowercase function id
      * @param ?list<Arg> $args
      * @return Mutations::LEVEL_*
      */
@@ -412,7 +418,7 @@ final class Functions
         ?StatementsAnalyzer $statements_analyzer,
         ?Context $context,
         Codebase $codebase,
-        string $function_id,
+        int $function_id,
         ?array $args,
         bool &$must_use = true,
     ): int {
@@ -421,7 +427,7 @@ final class Functions
         }
 
         $type_provider = $statements_analyzer?->node_data;
-        if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
+        if ($function_id === StrId::serialize && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
@@ -429,30 +435,32 @@ final class Functions
             }
         }
 
-        if (str_starts_with($function_id, 'image')) {
+        $function_id_str = Interner::str($function_id);
+
+        if (str_starts_with($function_id_str, 'image')) {
             return Mutations::LEVEL_ALL;
         }
 
-        if (str_starts_with($function_id, 'readline')) {
+        if (str_starts_with($function_id_str, 'readline')) {
             return Mutations::LEVEL_ALL;
         }
 
-        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+        if (($function_id === StrId::var_export || $function_id === StrId::print_r) && !isset($args[1])) {
             return Mutations::LEVEL_ALL;
         }
 
-        if ($function_id === 'assert') {
+        if ($function_id === StrId::assert) {
             $must_use = false;
             return Mutations::LEVEL_NONE;
         }
 
-        if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
+        if ($function_id === StrId::func_num_args || $function_id === StrId::func_get_args) {
             return Mutations::LEVEL_NONE;
         }
 
         if ((
-                $function_id === 'count'
-                || $function_id === 'sizeof'
+                $function_id === StrId::count
+                || $function_id === StrId::sizeof
             )
             && isset($args[0]) && $type_provider
             && $statements_analyzer
@@ -467,7 +475,7 @@ final class Functions
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
                             $atomic_count_type->value,
-                            'count',
+                            StrId::count,
                         );
 
                         try {
@@ -513,7 +521,7 @@ final class Functions
             return Mutations::LEVEL_ALL;
         }
 
-        $must_use = $function_id !== 'array_map'
+        $must_use = $function_id !== StrId::array_map
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
         $mutations = Mutations::LEVEL_NONE;

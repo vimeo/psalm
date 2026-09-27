@@ -25,7 +25,7 @@ final class DynamicFunctionStorageProviderEvent
         private readonly ArgTypeInferer $arg_type_inferer,
         private readonly DynamicTemplateProvider $template_provider,
         private readonly StatementsSource $statement_source,
-        private readonly string $function_id,
+        private readonly int $function_id,
         private readonly PhpParser\Node\Expr\FuncCall $func_call,
         private readonly Context $context,
         private readonly CodeLocation $code_location,
@@ -52,7 +52,7 @@ final class DynamicFunctionStorageProviderEvent
         return $this->statement_source;
     }
 
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
         return $this->function_id;
     }

@@ -18,6 +18,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Interner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -28,6 +29,7 @@ use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -437,7 +439,7 @@ final class ConcatAnalyzer
                 if ($atomic_type instanceof TNamedObject) {
                     $to_string_method_id = new MethodIdentifier(
                         $atomic_type->value,
-                        '__tostring',
+                        StrId::__tostring,
                     );
 
                     if ($codebase->methodExists(
@@ -467,7 +469,7 @@ final class ConcatAnalyzer
                             $storage->allowed_mutations,
                             $context,
                             'possibly-mutating method '
-                                        . $atomic_type->value . '::__toString',
+                                        . Interner::str($atomic_type->value) . '::__toString',
                             ImpureMethodCall::class,
                             $operand,
                             null,

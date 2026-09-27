@@ -10,6 +10,7 @@ use PhpParser\Node\Expr\StaticCall;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 
@@ -26,9 +27,9 @@ final class AfterMethodCallAnalysisEvent
      */
     public function __construct(
         private readonly MethodCall|StaticCall $expr,
-        private readonly string $method_id,
-        private readonly string $appearing_method_id,
-        private readonly string $declaring_method_id,
+        private readonly MethodIdentifier $method_id,
+        private readonly MethodIdentifier $appearing_method_id,
+        private readonly MethodIdentifier $declaring_method_id,
         private readonly Context $context,
         private readonly StatementsSource $statements_source,
         private readonly Codebase $codebase,
@@ -49,7 +50,7 @@ final class AfterMethodCallAnalysisEvent
     /**
      * @psalm-mutation-free
      */
-    public function getMethodId(): string
+    public function getMethodId(): MethodIdentifier
     {
         return $this->method_id;
     }
@@ -57,7 +58,7 @@ final class AfterMethodCallAnalysisEvent
     /**
      * @psalm-mutation-free
      */
-    public function getAppearingMethodId(): string
+    public function getAppearingMethodId(): MethodIdentifier
     {
         return $this->appearing_method_id;
     }
@@ -65,7 +66,7 @@ final class AfterMethodCallAnalysisEvent
     /**
      * @psalm-mutation-free
      */
-    public function getDeclaringMethodId(): string
+    public function getDeclaringMethodId(): MethodIdentifier
     {
         return $this->declaring_method_id;
     }

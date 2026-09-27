@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
+use Psalm\Internal\MethodIdentifier;
 
 use function strtolower;
 
@@ -22,9 +23,9 @@ final class PossiblyUnusedMethod extends MethodIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        string $method_id,
+        MethodIdentifier $method_id,
     ) {
         parent::__construct($message, $code_location, $method_id);
-        $this->dupe_key = strtolower($method_id);
+        $this->dupe_key = strtolower((string) $method_id);
     }
 }

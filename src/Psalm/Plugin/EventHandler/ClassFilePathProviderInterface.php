@@ -10,7 +10,7 @@ namespace Psalm\Plugin\EventHandler;
 interface ClassFilePathProviderInterface
 {
     /**
-     * @param class-string $class
+     * @param int $class interned class name, use {@see \Psalm\Interner::str()} to get the string
      */
-    public static function getClassFilePath(string $class): ?string;
+    public static function getClassFilePath(int $class): ?string;
 }

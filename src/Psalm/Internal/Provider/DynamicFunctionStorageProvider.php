@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Plugin\ArgTypeInferer;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\DynamicTemplateProvider;
@@ -26,10 +27,10 @@ use function strtolower;
  */
 final class DynamicFunctionStorageProvider
 {
-    /** @var array<lowercase-string, array<Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage>> */
+    /** @var array<int, array<Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage>> */
     private static array $handlers = [];
 
-    /** @var array<lowercase-string, ?FunctionStorage> */
+    /** @var array<string, ?FunctionStorage> */
     private static array $dynamic_storages = [];
 
     /**
@@ -48,23 +49,23 @@ final class DynamicFunctionStorageProvider
      * @param Closure(DynamicFunctionStorageProviderEvent): ?DynamicFunctionStorage $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $fq_function_name, Closure $c): void
+    public function registerClosure(int $fq_function_name, Closure $c): void
     {
-        self::$handlers[strtolower($fq_function_name)][] = $c;
+        self::$handlers[Interner::lower($fq_function_name)][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $fq_function_name): bool
+    public function has(int $fq_function_name): bool
     {
-        return isset(self::$handlers[strtolower($fq_function_name)]);
+        return isset(self::$handlers[Interner::lower($fq_function_name)]);
     }
 
     public function getFunctionStorage(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $statements_analyzer,
-        string $function_id,
+        int $function_id,
         Context $context,
         CodeLocation $code_location,
     ): ?FunctionStorage {
@@ -76,16 +77,16 @@ final class DynamicFunctionStorageProvider
             . ':' . $stmt->getLine()
             . ':' . (int)$stmt->getAttribute('startFilePos')
             . ':dynamic-storage'
-            . ':-:' . strtolower($function_id);
+            . ':-:' . Interner::str(Interner::lower($function_id));
 
         if (isset(self::$dynamic_storages[$dynamic_storage_id])) {
             return self::$dynamic_storages[$dynamic_storage_id];
         }
 
-        foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
+        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $class_handler) {
             $event = new DynamicFunctionStorageProviderEvent(
                 new ArgTypeInferer($context, $statements_analyzer),
-                new DynamicTemplateProvider('fn-' . strtolower($function_id)),
+                new DynamicTemplateProvider(Interner::intern('fn-' . Interner::str(Interner::lower($function_id)))),
                 $statements_analyzer,
                 $function_id,
                 $stmt,

@@ -14,6 +14,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Interner;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -135,8 +136,9 @@ final class TypeHintResolver
         } elseif ($hint instanceof PhpParser\Node\Name\FullyQualified) {
             $fq_type_string = (string)$hint;
 
-            $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-            $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
+            $fq_type_id = Interner::intern($fq_type_string);
+            $codebase->scanner->queueClassLikeForScanning($fq_type_id);
+            $file_storage->referenced_classlikes[Interner::lower($fq_type_id)] = $fq_type_id;
         } else {
             $lower_hint = strtolower($hint->getFirst());
 
@@ -144,17 +146,18 @@ final class TypeHintResolver
                 && ($lower_hint === 'self' || $lower_hint === 'static')
                 && !$classlike_storage->is_trait
             ) {
-                $fq_type_string = $classlike_storage->name;
+                $fq_type_string = Interner::str($classlike_storage->name);
 
                 if ($lower_hint === 'static') {
                     $fq_type_string .= '&static';
                 }
             } else {
                 $type_string = $hint->toString();
-                $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $aliases);
+                $fq_type_id = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $aliases);
+                $fq_type_string = Interner::str($fq_type_id);
 
-                $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-                $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
+                $codebase->scanner->queueClassLikeForScanning($fq_type_id);
+                $file_storage->referenced_classlikes[Interner::lower($fq_type_id)] = $fq_type_id;
             }
         }
 

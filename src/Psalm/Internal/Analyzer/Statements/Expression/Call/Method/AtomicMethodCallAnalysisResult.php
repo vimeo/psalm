@@ -28,22 +28,22 @@ final class AtomicMethodCallAnalysisResult
     public array $invalid_method_call_types = [];
 
     /**
-     * @var array<string, bool>
+     * @var list<MethodIdentifier>
      */
     public array $existent_method_ids = [];
 
     /**
-     * @var array<string>
+     * @var list<array{MethodIdentifier, string}> method id, cased method id (for messages)
      */
     public array $non_existent_class_method_ids = [];
 
     /**
-     * @var array<string>
+     * @var list<array{MethodIdentifier, string}> method id, cased method id (for messages)
      */
     public array $non_existent_interface_method_ids = [];
 
     /**
-     * @var array<string>
+     * @var list<MethodIdentifier>
      */
     public array $non_existent_magic_method_ids = [];
 

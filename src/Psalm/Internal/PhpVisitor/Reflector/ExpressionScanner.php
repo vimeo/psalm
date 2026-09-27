@@ -20,8 +20,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Interner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\StrId;
 use Psalm\Type;
 use Symfony\Component\Filesystem\Path;
 
@@ -30,6 +32,7 @@ use function defined;
 use function dirname;
 use function explode;
 use function in_array;
+use function ltrim;
 use function str_contains;
 use function strtolower;
 use function substr;
@@ -62,8 +65,8 @@ final class ExpressionScanner
                 $functionlike_storage->has_yield = true;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Cast\Object_) {
-            $codebase->scanner->queueClassLikeForScanning('stdClass', false, false);
-            $file_storage->referenced_classlikes['stdclass'] = 'stdClass';
+            $codebase->scanner->queueClassLikeForScanning(StrId::stdClass, false, false);
+            $file_storage->referenced_classlikes[StrId::stdclass] = StrId::stdClass;
         } elseif (($node instanceof PhpParser\Node\Expr\New_
                 || $node instanceof PhpParser\Node\Expr\Instanceof_
                 || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -73,7 +76,7 @@ final class ExpressionScanner
         ) {
             $fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $aliases);
 
-            if (!in_array(strtolower($fq_classlike_name), ['self', 'static', 'parent'], true)) {
+            if (!in_array(Interner::lower($fq_classlike_name), [StrId::self, StrId::static, StrId::parent], true)) {
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_classlike_name,
                     false,
@@ -81,10 +84,10 @@ final class ExpressionScanner
                         || !($node->name instanceof PhpParser\Node\Identifier)
                         || strtolower($node->name->name) !== 'class',
                 );
-                $file_storage->referenced_classlikes[strtolower($fq_classlike_name)] = $fq_classlike_name;
+                $file_storage->referenced_classlikes[Interner::lower($fq_classlike_name)] = $fq_classlike_name;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
-            $function_id = $node->name->toString();
+            $function_id = Interner::internLower($node->name->toString());
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 self::registerClassMapFunctionCall(
@@ -106,7 +109,7 @@ final class ExpressionScanner
         FileStorage $file_storage,
         FileScanner $file_scanner,
         Aliases $aliases,
-        string $function_id,
+        int $function_id,
         PhpParser\Node\Expr\FuncCall $node,
         ?FunctionLikeStorage $functionlike_storage,
         ?int $skip_if_descendants,
@@ -138,7 +141,7 @@ final class ExpressionScanner
             return;
         }
 
-        if ($function_id === 'define') {
+        if ($function_id === StrId::define) {
             $first_arg_value = isset($node->getArgs()[0]) ? $node->getArgs()[0]->value : null;
             $second_arg_value = isset($node->getArgs()[1]) ? $node->getArgs()[1]->value : null;
             if ($first_arg_value && $second_arg_value) {
@@ -197,7 +200,7 @@ final class ExpressionScanner
                     if (($codebase->register_stub_files
                         || $codebase->register_autoload_files
                         || $codebase->all_constants_global
-                        ) && (!defined($const_name) || !$const_type->isMixed())
+                        ) && (!defined(Interner::str($const_name)) || !$const_type->isMixed())
                     ) {
                         $codebase->addGlobalConstantType($const_name, $const_type);
                     }
@@ -207,10 +210,12 @@ final class ExpressionScanner
 
         $mapping_function_ids = [];
 
-        if (($function_id === 'array_map' && isset($node->getArgs()[0]))
+        if (($function_id === StrId::array_map && isset($node->getArgs()[0]))
             || (in_array($function_id, ArgumentsAnalyzer::ARRAY_FILTERLIKE, true) && isset($node->getArgs()[1]))
         ) {
-            $node_arg_value = $function_id === 'array_map' ? $node->getArgs()[0]->value : $node->getArgs()[1]->value;
+            $node_arg_value = $function_id === StrId::array_map
+                ? $node->getArgs()[0]->value
+                : $node->getArgs()[1]->value;
 
             if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
                 || $node_arg_value instanceof PhpParser\Node\Expr\Array_
@@ -231,32 +236,32 @@ final class ExpressionScanner
 
                 if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
                     $codebase->scanner->queueClassLikeForScanning(
-                        $callable_fqcln,
+                        Interner::intern(ltrim($callable_fqcln, '\\')),
                     );
                 }
             }
         }
 
-        if ($function_id === 'func_get_arg'
-            || $function_id === 'func_get_args'
-            || $function_id === 'func_num_args'
+        if ($function_id === StrId::func_get_arg
+            || $function_id === StrId::func_get_args
+            || $function_id === StrId::func_num_args
         ) {
             if ($functionlike_storage) {
                 $functionlike_storage->variadic = true;
             }
         }
 
-        if ($function_id === 'is_a' || $function_id === 'is_subclass_of') {
+        if ($function_id === StrId::is_a || $function_id === StrId::is_subclass_of) {
             $second_arg = $node->getArgs()[1]->value ?? null;
 
-            if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+            if ($second_arg instanceof PhpParser\Node\Scalar\String_ && $second_arg->value !== '') {
                 $codebase->scanner->queueClassLikeForScanning(
-                    $second_arg->value,
+                    Interner::intern(ltrim($second_arg->value, '\\')),
                 );
             }
         }
 
-        if ($function_id === 'class_alias' && !$skip_if_descendants) {
+        if ($function_id === StrId::class_alias && !$skip_if_descendants) {
             $first_arg = $node->getArgs()[0]->value ?? null;
             $second_arg = $node->getArgs()[1]->value ?? null;
 
@@ -295,12 +300,15 @@ final class ExpressionScanner
                     $second_arg_value = substr($second_arg_value, 1);
                 }
 
+                $first_arg_id = Interner::intern($first_arg_value);
+                $second_arg_id = Interner::intern($second_arg_value);
+
                 $codebase->classlikes->addClassAlias(
-                    $first_arg_value,
-                    $second_arg_value,
+                    $first_arg_id,
+                    $second_arg_id,
                 );
 
-                $file_storage->classlike_aliases[$second_arg_value] = $first_arg_value;
+                $file_storage->classlike_aliases[$second_arg_id] = $first_arg_id;
             }
         }
     }

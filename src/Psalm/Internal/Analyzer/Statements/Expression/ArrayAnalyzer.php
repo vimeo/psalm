@@ -21,6 +21,7 @@ use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -185,7 +186,7 @@ final class ArrayAnalyzer
                     && !$atomic_key_type instanceof TTemplateParam
                     && !(
                         $atomic_key_type instanceof TObjectWithProperties
-                        && isset($atomic_key_type->methods['__tostring'])
+                        && isset($atomic_key_type->methods[StrId::__tostring])
                     )
                 ) {
                     IssueBuffer::maybeAdd(

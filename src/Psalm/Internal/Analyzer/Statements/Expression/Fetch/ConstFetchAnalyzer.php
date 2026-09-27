@@ -16,10 +16,12 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Interner;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -41,9 +43,10 @@ final class ConstFetchAnalyzer
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context,
     ): void {
-        $const_name = $stmt->name->toString();
+        $const_name_str = $stmt->name->toString();
+        $const_name = Interner::intern($const_name_str);
 
-        switch (strtolower($const_name)) {
+        switch (strtolower($const_name_str)) {
             case 'null':
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
                 break;
@@ -68,7 +71,7 @@ final class ConstFetchAnalyzer
                 if (isset($statements_analyzer->getCodebase()->config->forbidden_constants[$const_name])) {
                     IssueBuffer::maybeAdd(
                         new ForbiddenCode(
-                            'You have forbidden the use of ' . $const_name,
+                            'You have forbidden the use of ' . $const_name_str,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -92,19 +95,21 @@ final class ConstFetchAnalyzer
                 } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
                     $fq_const_name = $const_name;
                 } else {
-                    $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+                    $fq_const_name = Type::getFQCLNFromString($const_name_str, $statements_analyzer->getAliases());
                 }
+
+                $namespace = $statements_analyzer->getNamespace();
 
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt,
                     $const_type
-                        ? $fq_const_name
+                        ? Interner::str($fq_const_name)
                         : '*'
                             . ($stmt->name instanceof PhpParser\Node\Name\FullyQualified
                                 ? '\\'
-                                : $statements_analyzer->getNamespace() . '-')
-                            . $const_name,
+                                : ($namespace === null ? '' : Interner::str($namespace)) . '-')
+                            . $const_name_str,
                 );
 
                 if ($const_type) {
@@ -112,7 +117,7 @@ final class ConstFetchAnalyzer
                 } elseif ($context->check_consts) {
                     IssueBuffer::maybeAdd(
                         new UndefinedConstant(
-                            'Const ' . $const_name . ' is not defined'.
+                            'Const ' . $const_name_str . ' is not defined'.
                                 ', consider enabling the allConstantsGlobal config option if scanning legacy codebases',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
@@ -157,17 +162,17 @@ final class ConstFetchAnalyzer
 
     public static function getGlobalConstType(
         Codebase $codebase,
-        string $fq_const_name,
-        string $const_name,
+        ?int $fq_const_name,
+        int $const_name,
     ): ?Union {
-        if ($const_name === 'STDERR'
-            || $const_name === 'STDOUT'
-            || $const_name === 'STDIN'
+        if ($const_name === StrId::STDERR
+            || $const_name === StrId::STDOUT
+            || $const_name === StrId::STDIN
         ) {
             return Type::getResource();
         }
 
-        if ($fq_const_name) {
+        if ($fq_const_name !== null) {
             $stubbed_const_type = $codebase->getStubbedConstantType(
                 $fq_const_name,
             );
@@ -187,10 +192,10 @@ final class ConstFetchAnalyzer
 
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
-        if (($fq_const_name && array_key_exists($fq_const_name, $predefined_constants))
+        if (($fq_const_name !== null && array_key_exists($fq_const_name, $predefined_constants))
             || array_key_exists($const_name, $predefined_constants)
         ) {
-            switch ($const_name) {
+            switch (Interner::str($const_name)) {
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
                 case 'PHP_EOL':
@@ -239,7 +244,7 @@ final class ConstFetchAnalyzer
                     return Type::getFloat();
             }
 
-            if ($fq_const_name && array_key_exists($fq_const_name, $predefined_constants)) {
+            if ($fq_const_name !== null && array_key_exists($fq_const_name, $predefined_constants)) {
                 return ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$fq_const_name]);
             }
 
@@ -251,7 +256,7 @@ final class ConstFetchAnalyzer
 
     public static function getConstType(
         StatementsAnalyzer $statements_analyzer,
-        string $const_name,
+        int $const_name,
         bool $is_fully_qualified,
         ?Context $context,
     ): ?Union {
@@ -262,25 +267,25 @@ final class ConstFetchAnalyzer
         } elseif ($is_fully_qualified) {
             $fq_const_name = $const_name;
         } else {
-            $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+            $fq_const_name = Type::getFQCLNFromString(Interner::str($const_name), $statements_analyzer->getAliases());
         }
 
-        if ($fq_const_name) {
-            $const_name_parts = explode('\\', $fq_const_name);
-            $const_name = array_pop($const_name_parts);
-            $namespace_name = implode('\\', $const_name_parts);
-            $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
-                $namespace_name,
-                ReflectionProperty::IS_PUBLIC,
-            );
+        $fq_const_name_str = Interner::str($fq_const_name);
 
-            if (isset($namespace_constants[$const_name])) {
-                return $namespace_constants[$const_name];
-            }
+        $const_name_parts = explode('\\', $fq_const_name_str);
+        $const_name = Interner::intern(array_pop($const_name_parts));
+        $namespace_name = Interner::intern(implode('\\', $const_name_parts));
+        $namespace_constants = NamespaceAnalyzer::getConstantsForNamespace(
+            $namespace_name,
+            ReflectionProperty::IS_PUBLIC,
+        );
+
+        if (isset($namespace_constants[$const_name])) {
+            return $namespace_constants[$const_name];
         }
 
-        if ($context && $context->hasVariable($fq_const_name)) {
-            return $context->vars_in_scope[$fq_const_name];
+        if ($context && $context->hasVariable($fq_const_name_str)) {
+            return $context->vars_in_scope[$fq_const_name_str];
         }
 
         $file_path = $statements_analyzer->getRootFilePath();
@@ -308,11 +313,11 @@ final class ConstFetchAnalyzer
 
     public static function setConstType(
         StatementsAnalyzer $statements_analyzer,
-        string $const_name,
+        int $const_name,
         Union $const_type,
         Context $context,
     ): void {
-        $context->vars_in_scope[$const_name] = $const_type;
+        $context->vars_in_scope[Interner::str($const_name)] = $const_type;
         $context->constants[$const_name] = $const_type;
 
         $source = $statements_analyzer->getSource();
@@ -327,7 +332,7 @@ final class ConstFetchAnalyzer
         NodeDataProvider $type_provider,
         Codebase $codebase,
         Aliases $aliases,
-    ): ?string {
+    ): ?int {
         $const_name = null;
 
         if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
@@ -344,7 +349,7 @@ final class ConstFetchAnalyzer
             }
         }
 
-        return $const_name;
+        return $const_name === null ? null : Interner::intern($const_name);
     }
 
     public static function analyzeConstAssignment(
@@ -357,7 +362,7 @@ final class ConstFetchAnalyzer
 
             self::setConstType(
                 $statements_analyzer,
-                $const->name->name,
+                Interner::intern($const->name->name),
                 $statements_analyzer->node_data->getType($const->value) ?? Type::getMixed(),
                 $context,
             );

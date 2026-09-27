@@ -22,7 +22,7 @@ final class FunctionExistenceProviderEvent
      */
     public function __construct(
         private readonly StatementsSource $statements_source,
-        private readonly string $function_id,
+        private readonly int $function_id,
     ) {
     }
 
@@ -31,7 +31,7 @@ final class FunctionExistenceProviderEvent
         return $this->statements_source;
     }
 
-    public function getFunctionId(): string
+    public function getFunctionId(): int
     {
         return $this->function_id;
     }

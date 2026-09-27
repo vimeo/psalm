@@ -11,12 +11,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Interner;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -34,7 +36,7 @@ use const ARRAY_FILTER_USE_KEY;
 final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 {
     /**
-     * @return array<lowercase-string>
+     * @return array<int>
      * @psalm-pure
      */
     #[Override]
@@ -65,11 +67,11 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
         if (isset($call_args[2])) {
-            if ($function_id !== 'array_filter') {
+            if ($function_id !== StrId::array_filter) {
                 if ($code_location) {
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
-                            "$function_id only takes two arguments",
+                            Interner::str($function_id) . ' only takes two arguments',
                             $code_location,
                             $function_id,
                         ),
@@ -88,7 +90,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                         new InvalidArgument(
                             'The 3rd argument of array_filter is not used, when the 2nd argument is null',
                             $code_location,
-                            'array_filter',
+                            StrId::array_filter,
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
@@ -150,7 +152,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             if (!$mode_type && $call_args[2]->value instanceof ConstFetch) {
                 $mode_type = ConstFetchAnalyzer::getConstType(
                     $statements_source,
-                    $call_args[2]->value->name->toString(),
+                    Interner::intern($call_args[2]->value->name->toString()),
                     true,
                     $event->getContext(),
                 );
@@ -209,7 +211,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                             'The provided 3rd argument of array_filter contains a value of ' . $mode
                             . ', which will behave like 0 and filter on values only',
                             $code_location,
-                            'array_filter',
+                            StrId::array_filter,
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
@@ -218,11 +220,11 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                 $mode = 0;
             }
         } else {
-            $mode = $function_id === 'array_filter' ? 0 : ARRAY_FILTER_USE_BOTH;
+            $mode = $function_id === StrId::array_filter ? 0 : ARRAY_FILTER_USE_BOTH;
         }
 
         $callback_arg_value = new FunctionLikeParameter(
-            'value',
+            StrId::value,
             false,
             $inner_type,
             null,
@@ -232,7 +234,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
         );
 
         $callback_arg_key = new FunctionLikeParameter(
-            'key',
+            StrId::key,
             false,
             $key_type,
             null,
@@ -270,7 +272,7 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 
         return [
             new FunctionLikeParameter(
-                'array',
+                StrId::array,
                 false,
                 Type::getArray(),
                 Type::getArray(),
@@ -278,8 +280,8 @@ final class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                 null,
                 false,
             ),
-            new FunctionLikeParameter('callback', false, new Union([$callable])),
-            new FunctionLikeParameter('mode', false, Type::getInt(), Type::getInt()),
+            new FunctionLikeParameter(StrId::callback, false, new Union([$callable])),
+            new FunctionLikeParameter(StrId::mode, false, Type::getInt(), Type::getInt()),
         ];
     }
 }

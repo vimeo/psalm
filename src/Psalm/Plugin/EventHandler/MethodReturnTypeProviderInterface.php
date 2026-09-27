@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 interface MethodReturnTypeProviderInterface
 {
     /**
-     * @return array<string>
+     * @return array<int> interned class names (casing is irrelevant, they are lowercased on registration)
      */
     public static function getClassLikeNames(): array;
 

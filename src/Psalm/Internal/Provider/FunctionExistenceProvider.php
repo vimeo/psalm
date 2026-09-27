@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Closure;
+use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
 
 use function is_subclass_of;
-use function strtolower;
 
 /**
  * @internal
@@ -19,7 +19,7 @@ final class FunctionExistenceProvider
 {
     /**
      * @var array<
-     *   lowercase-string,
+     *   int,
      *   array<Closure(FunctionExistenceProviderEvent): ?bool>
      * >
      */
@@ -48,28 +48,27 @@ final class FunctionExistenceProvider
     }
 
     /**
-     * @param lowercase-string $function_id
      * @param Closure(FunctionExistenceProviderEvent): ?bool $c
      * @psalm-external-mutation-free
      */
-    public function registerClosure(string $function_id, Closure $c): void
+    public function registerClosure(int $function_id, Closure $c): void
     {
-        self::$handlers[$function_id][] = $c;
+        self::$handlers[Interner::lower($function_id)][] = $c;
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function has(string $function_id): bool
+    public function has(int $function_id): bool
     {
-        return isset(self::$handlers[strtolower($function_id)]);
+        return isset(self::$handlers[Interner::lower($function_id)]);
     }
 
     public function doesFunctionExist(
         StatementsSource $statements_source,
-        string $function_id,
+        int $function_id,
     ): ?bool {
-        foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
+        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionExistenceProviderEvent(
                 $statements_source,
                 $function_id,

@@ -9,7 +9,9 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Interner;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\ArrayKeyExists;
@@ -30,6 +32,7 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -86,7 +89,6 @@ use function is_int;
 use function min;
 use function strlen;
 use function strpos;
-use function strtolower;
 
 /**
  * This class receives a known type and an assertion (probably coming from AssertionFinder). The goal is to refine
@@ -385,7 +387,7 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion_type instanceof TNamedObject
-            && $assertion_type->value === 'Traversable'
+            && $assertion_type->value === StrId::Traversable
         ) {
             return self::reconcileTraversable(
                 $assertion,
@@ -879,6 +881,7 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
     ): Union {
         $method_name = $assertion->method;
+        $method_name_lc = Interner::lower($method_name);
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -889,24 +892,26 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TNamedObject
                 && $codebase->classOrInterfaceExists($type->value)
             ) {
-                if (!$codebase->methodExists($type->value . '::' . $method_name)) {
+                if (!$codebase->methodExists(new MethodIdentifier($type->value, $method_name_lc))) {
                     $match_found = false;
 
                     $extra_types = $type->extra_types;
                     foreach ($type->extra_types as $k => $extra_type) {
                         if ($extra_type instanceof TNamedObject
                             && $codebase->classOrInterfaceExists($extra_type->value)
-                            && $codebase->methodExists($extra_type->value . '::' . $method_name)
+                            && $codebase->methodExists(new MethodIdentifier($extra_type->value, $method_name_lc))
                         ) {
                             $match_found = true;
                         } elseif ($extra_type instanceof TObjectWithProperties) {
                             $match_found = true;
 
-                            if (!isset($extra_type->methods[strtolower($method_name)])) {
+                            if (!isset($extra_type->methods[$method_name_lc])) {
                                 unset($extra_types[$k]);
-                                $extra_type = $extra_type->setMethods(array_merge($extra_type->methods, [
-                                    strtolower($method_name) => 'object::' . $method_name,
-                                ]));
+                                $extra_type = $extra_type->setMethods(
+                                    $extra_type->methods + [
+                                        $method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc),
+                                    ],
+                                );
                                 $extra_types[$extra_type->getKey()] = $extra_type;
                                 $redundant = false;
                             }
@@ -916,7 +921,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     if (!$match_found) {
                         $extra_type = new TObjectWithProperties(
                             [],
-                            [strtolower($method_name) => $type->value . '::' . $method_name],
+                            [$method_name_lc => new MethodIdentifier($type->value, $method_name_lc)],
                         );
                         $extra_types[$extra_type->getKey()] = $extra_type;
                         $redundant = false;
@@ -926,17 +931,17 @@ final class SimpleAssertionReconciler extends Reconciler
                 }
                 $object_types[] = $type;
             } elseif ($type instanceof TObjectWithProperties) {
-                if (!isset($type->methods[strtolower($method_name)])) {
-                    $type = $type->setMethods(array_merge($type->methods, [
-                        strtolower($method_name) => 'object::' . $method_name,
-                    ]));
+                if (!isset($type->methods[$method_name_lc])) {
+                    $type = $type->setMethods(
+                        $type->methods + [$method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc)],
+                    );
                     $redundant = false;
                 }
                 $object_types[] = $type;
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new TObjectWithProperties(
                     [],
-                    [strtolower($method_name) =>  'object::' . $method_name],
+                    [$method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc)],
                 );
                 $redundant = false;
             } elseif ($type instanceof TString) {
@@ -1651,7 +1656,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $params[0] = self::refineArrayKey($params[0]);
 
                 $object_types[] = new TGenericObject(
-                    'Traversable',
+                    StrId::Traversable,
                     $params,
                 );
 
@@ -1764,7 +1769,7 @@ final class SimpleAssertionReconciler extends Reconciler
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Union([
                 Type::getArrayAtomic(),
-                new TNamedObject('Countable'),
+                new TNamedObject(StrId::Countable),
             ]);
         }
 
@@ -1775,10 +1780,10 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isCountable($codebase)) {
                 $iterable_types[] = $type;
             } elseif ($type instanceof TObject) {
-                $iterable_types[] = new TNamedObject('Countable');
+                $iterable_types[] = new TNamedObject(StrId::Countable);
                 $redundant = false;
             } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
-                $countable = new TNamedObject('Countable');
+                $countable = new TNamedObject(StrId::Countable);
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
                 $redundant = false;
@@ -1841,7 +1846,7 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->isIterable($codebase)) {
                 $iterable_types[] = $type;
             } elseif ($type instanceof TObject) {
-                $iterable_types[] = new TNamedObject('Traversable');
+                $iterable_types[] = new TNamedObject(StrId::Traversable);
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -2181,7 +2186,7 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Union([new TNamedObject('Traversable')]);
+            return new Union([new TNamedObject(StrId::Traversable)]);
         }
 
         $traversable_types = [];
@@ -2191,13 +2196,13 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->hasTraversableInterface($codebase)) {
                 $traversable_types[] = $type;
             } elseif ($type instanceof TIterable) {
-                $traversable_types[] = new TGenericObject('Traversable', $type->type_params);
+                $traversable_types[] = new TGenericObject(StrId::Traversable, $type->type_params);
                 $redundant = false;
             } elseif ($type instanceof TObject) {
-                $traversable_types[] = new TNamedObject('Traversable');
+                $traversable_types[] = new TNamedObject(StrId::Traversable);
                 $redundant = false;
             } elseif ($type instanceof TNamedObject) {
-                $traversable = new TNamedObject('Traversable');
+                $traversable = new TNamedObject(StrId::Traversable);
                 $type = $type->addIntersectionType($traversable);
                 $traversable_types[] = $type;
                 $redundant = false;
@@ -2467,7 +2472,7 @@ final class SimpleAssertionReconciler extends Reconciler
         if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
             return new Union([
                 new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
-                new TNamedObject('ArrayAccess'),
+                new TNamedObject(StrId::ArrayAccess),
             ]);
         }
 
@@ -2608,7 +2613,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TNamedObject
                 && $codebase->classExists($type->value)
-                && $codebase->methodExists($type->value . '::__invoke')
+                && $codebase->methodExists(new MethodIdentifier($type->value, StrId::__invoke))
             ) {
                 $callable_types[] = $type;
             } elseif ($type::class === TString::class
@@ -2618,7 +2623,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = new TCallableString();
                 $redundant = false;
             } elseif ($type::class === TLiteralString::class
-                && InternalCallMapHandler::inCallMap($type->value)
+                && InternalCallMapHandler::inCallMap(Interner::internLower($type->value))
             ) {
                 $callable_types[] = $type;
                 $redundant = false;

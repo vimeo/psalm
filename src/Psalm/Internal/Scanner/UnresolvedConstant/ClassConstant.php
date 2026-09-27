@@ -13,9 +13,11 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 final class ClassConstant extends UnresolvedConstantComponent
 {
     /**
+     * @param int $fqcln interned class name
+     * @param int $name interned constant name
      * @psalm-mutation-free
      */
-    public function __construct(public readonly string $fqcln, public readonly string $name)
+    public function __construct(public readonly int $fqcln, public readonly int $name)
     {
     }
 }

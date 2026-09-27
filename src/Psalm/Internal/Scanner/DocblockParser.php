@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner;
 
 use Psalm\Exception\DocblockParseException;
+use Psalm\Interner;
 
 use function array_filter;
 use function array_map;
-use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -282,7 +282,7 @@ final class DocblockParser
     }
 
     /**
-     * @return list<non-empty-string>
+     * @return list<int> interned namespaces
      * @throws DocblockParseException when a @psalm-internal tag doesn't include a namespace
      * @psalm-mutation-free
      */
@@ -297,7 +297,7 @@ final class DocblockParser
             // assert($psalm_internal === array_filter($psalm_internal)); // TODO get this to work
             assert(self::assertArrayOfNonEmptyString($psalm_internal));
 
-            return array_values($psalm_internal);
+            return Interner::internAll($psalm_internal);
         }
 
         return [];

@@ -20,17 +20,18 @@ final class Aliases
     public ?int $uses_end = null;
 
     /**
-     * @param array<lowercase-string, string> $uses
-     * @param array<lowercase-string, non-empty-string> $functions
-     * @param array<string, string> $constants
-     * @param array<lowercase-string, string> $uses_flipped
-     * @param array<lowercase-string, string> $functions_flipped
-     * @param array<string, string> $constants_flipped
+     * @param ?int $namespace interned namespace name
+     * @param array<int, int> $uses lowercase alias id => class/namespace name id
+     * @param array<int, int> $functions lowercase alias id => function name id
+     * @param array<int, int> $constants alias id => constant name id
+     * @param array<int, int> $uses_flipped lowercase class/namespace name id => alias id
+     * @param array<int, int> $functions_flipped lowercase function name id => alias id
+     * @param array<int, int> $constants_flipped constant name id => alias id
      * @internal
      * @psalm-mutation-free
      */
     public function __construct(
-        public ?string $namespace = null,
+        public ?int $namespace = null,
         public array $uses = [],
         public array $functions = [],
         public array $constants = [],

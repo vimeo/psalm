@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Interner;
+
 use function dirname;
-use function strtolower;
 
 /**
  * @internal
@@ -15,6 +16,9 @@ final class ImpureFunctionsList
 {
     /** @var null|array<string, true> */
     private static ?array $impure_functions_list = null;
+
+    /** @var array<int, bool> function id => impure */
+    private static array $cache = [];
 
     /**
      * @psalm-assert !null self::$impure_functions_list
@@ -33,10 +37,15 @@ final class ImpureFunctionsList
     /**
      * @psalm-external-mutation-free
      */
-    public static function isImpure(string $function_id): bool
+    public static function isImpure(int $function_id): bool
     {
+        if (isset(self::$cache[$function_id])) {
+            return self::$cache[$function_id];
+        }
+
         self::load();
 
-        return isset(self::$impure_functions_list[strtolower($function_id)]);
+        return self::$cache[$function_id]
+            = isset(self::$impure_functions_list[Interner::str(Interner::lower($function_id))]);
     }
 }

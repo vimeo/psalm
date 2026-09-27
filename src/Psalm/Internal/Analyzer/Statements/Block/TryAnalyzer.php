@@ -13,8 +13,10 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Scope\FinallyScope;
+use Psalm\Interner;
 use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
@@ -25,7 +27,6 @@ use function array_map;
 use function array_merge;
 use function in_array;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -58,7 +59,7 @@ final class TryAnalyzer
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
 
         /**
-         * @var array<string, array<array-key, CodeLocation>> $context->possibly_thrown_exceptions
+         * @var array<int, array<array-key, CodeLocation>> $context->possibly_thrown_exceptions
          */
         $context->possibly_thrown_exceptions = [];
 
@@ -209,16 +210,16 @@ final class TryAnalyzer
                 }
 
                 if (($codebase->classExists($fq_catch_class, null, $context)
-                        && strtolower($fq_catch_class) !== 'exception'
-                        && !($codebase->classExtends($fq_catch_class, 'Exception')
-                            || $codebase->classImplements($fq_catch_class, 'Throwable')))
+                        && Interner::lower($fq_catch_class) !== StrId::exception
+                        && !($codebase->classExtends($fq_catch_class, StrId::Exception)
+                            || $codebase->classImplements($fq_catch_class, StrId::Throwable)))
                     || ($codebase->interfaceExists($fq_catch_class, null, $context)
-                        && strtolower($fq_catch_class) !== 'throwable'
-                        && !$codebase->interfaceExtends($fq_catch_class, 'Throwable'))
+                        && Interner::lower($fq_catch_class) !== StrId::throwable
+                        && !$codebase->interfaceExtends($fq_catch_class, StrId::Throwable))
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidCatch(
-                            'Class/interface ' . $fq_catch_class . ' cannot be caught',
+                            'Class/interface ' . Interner::str($fq_catch_class) . ' cannot be caught',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_catch_class,
                         ),
@@ -231,10 +232,10 @@ final class TryAnalyzer
 
             if ($catch_context->collect_exceptions) {
                 foreach ($fq_catch_classes as $fq_catch_class) {
-                    $fq_catch_class_lower = strtolower($fq_catch_class);
+                    $fq_catch_class_lower = Interner::lower($fq_catch_class);
 
                     foreach ($catch_context->possibly_thrown_exceptions as $exception_fqcln => $_) {
-                        $exception_fqcln_lower = strtolower($exception_fqcln);
+                        $exception_fqcln_lower = Interner::lower($exception_fqcln);
 
                         if ($exception_fqcln_lower === $fq_catch_class_lower
                             || ($codebase->classExists($exception_fqcln, null, $context)
@@ -260,14 +261,14 @@ final class TryAnalyzer
 
                 $catch_context->vars_in_scope[$catch_var_id] = new Union(
                     array_map(
-                        static fn(string $fq_catch_class): TNamedObject => new TNamedObject(
+                        static fn(int $fq_catch_class): TNamedObject => new TNamedObject(
                             $fq_catch_class,
                             false,
                             false,
-                            strtolower($fq_catch_class) !== 'throwable'
+                            Interner::lower($fq_catch_class) !== StrId::throwable
                                 && $codebase->interfaceExists($fq_catch_class, null, $context)
-                                && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
-                                    ? ['Throwable' => new TNamedObject('Throwable')]
+                                && !$codebase->interfaceExtends($fq_catch_class, StrId::Throwable)
+                                    ? ['Throwable' => new TNamedObject(StrId::Throwable)]
                                     : [],
                         ),
                         $fq_catch_classes,

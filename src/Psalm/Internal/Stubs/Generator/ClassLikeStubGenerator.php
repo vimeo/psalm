@@ -4,6 +4,7 @@ namespace Psalm\Internal\Stubs\Generator;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Interner;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualClass;
@@ -51,7 +52,7 @@ final class ClassLikeStubGenerator
 
             $key = isset($storage->template_covariants[$template_offset]) ? 'template-covariant' : 'template';
 
-            $docblock->tags[$key][] = $template_name . ' as ' . $type->toNamespacedString(
+            $docblock->tags[$key][] = Interner::str($template_name) . ' as ' . $type->toNamespacedString(
                 null,
                 [],
                 null,
@@ -76,7 +77,7 @@ final class ClassLikeStubGenerator
                 $subnodes['extends'] = [];
 
                 foreach ($storage->direct_interface_parents as $direct_interface_parent) {
-                    $subnodes['extends'][] = new VirtualFullyQualified($direct_interface_parent);
+                    $subnodes['extends'][] = new VirtualFullyQualified(Interner::str($direct_interface_parent));
                 }
             }
 
@@ -96,13 +97,13 @@ final class ClassLikeStubGenerator
         }
 
         if ($storage->parent_class) {
-            $subnodes['extends'] = new VirtualFullyQualified($storage->parent_class);
+            $subnodes['extends'] = new VirtualFullyQualified(Interner::str($storage->parent_class));
         } else
 
         if ($storage->direct_class_interfaces) {
             $subnodes['implements'] = [];
             foreach ($storage->direct_class_interfaces as $direct_class_interface) {
-                $subnodes['implements'][] = new VirtualFullyQualified($direct_class_interface);
+                $subnodes['implements'][] = new VirtualFullyQualified(Interner::str($direct_class_interface));
             }
         }
 
@@ -137,7 +138,7 @@ final class ClassLikeStubGenerator
             $constant_nodes[] = new VirtualClassConst(
                 [
                     new VirtualConst(
-                        $constant_name,
+                        Interner::str($constant_name),
                         StubsGenerator::getExpressionFromType($type)
                     )
                 ],
@@ -157,7 +158,8 @@ final class ClassLikeStubGenerator
      */
     private static function getPropertyNodes(ClassLikeStorage $storage): array
     {
-        $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
+        $namespace_name = implode('\\', array_slice(explode('\\', Interner::str($storage->name)), 0, -1));
+        $namespace_name = $namespace_name === '' ? null : Interner::intern($namespace_name);
 
         $property_nodes = [];
 
@@ -185,7 +187,7 @@ final class ClassLikeStubGenerator
                 $flag | ($property_storage->is_static ? PhpParser\Modifiers::STATIC : 0),
                 [
                     new VirtualPropertyItem(
-                        $property_name,
+                        Interner::str($property_name),
                         $property_storage->suggested_type
                             ? StubsGenerator::getExpressionFromType($property_storage->suggested_type)
                             : null
@@ -213,7 +215,8 @@ final class ClassLikeStubGenerator
      * @return list<PhpParser\Node\Stmt\ClassMethod>
      */
     private static function getMethodNodes(ClassLikeStorage $storage): array {
-        $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
+        $namespace_name = implode('\\', array_slice(explode('\\', Interner::str($storage->name)), 0, -1));
+        $namespace_name = $namespace_name === '' ? null : Interner::intern($namespace_name);
         $method_nodes = [];
 
         foreach ($storage->methods as $method_storage) {
@@ -232,7 +235,7 @@ final class ClassLikeStubGenerator
             foreach ($method_storage->template_types ?: [] as $template_name => $map) {
                 $type = array_values($map)[0];
 
-                $docblock->tags['template'][] = $template_name . ' as ' . $type->toNamespacedString(
+                $docblock->tags['template'][] = Interner::str($template_name) . ' as ' . $type->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -247,7 +250,7 @@ final class ClassLikeStubGenerator
                         [],
                         null,
                         false
-                    ) . ' $' . $param->name;
+                    ) . ' $' . Interner::str($param->name);
                 }
             }
 
@@ -273,7 +276,7 @@ final class ClassLikeStubGenerator
             }
 
             $method_nodes[] = new VirtualClassMethod(
-                $method_storage->cased_name,
+                Interner::str($method_storage->cased_name),
                 [
                     'flags' => $flag
                         | ($method_storage->is_static ? PhpParser\Modifiers::STATIC : 0)

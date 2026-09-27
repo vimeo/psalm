@@ -10,14 +10,15 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Interner;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\StrId;
 use UnexpectedValueException;
 
 use function array_pop;
 use function end;
-use function strtolower;
 
 /**
  * @internal
@@ -57,7 +58,7 @@ final class MethodVisibilityAnalyzer
                 if (IssueBuffer::accepts(
                     new InaccessibleMethod(
                         'Cannot access method ' . $codebase_methods->getCasedMethodId($method_id) .
-                            ' from context ' . $context->self,
+                            ' from context ' . ($context->self === null ? '' : Interner::str($context->self)),
                         $code_location,
                     ),
                     $suppressed_issues,
@@ -72,15 +73,15 @@ final class MethodVisibilityAnalyzer
         $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id, $with_pseudo);
 
         if (!$declaring_method_id) {
-            if ($method_name === '__construct'
-                || ($method_id->fq_class_name === 'Closure'
-                    && ($method_id->method_name === 'fromcallable'
-                        || $method_id->method_name === '__invoke'))
+            if ($method_name === StrId::__construct
+                || ($method_id->fq_class_name === StrId::Closure
+                    && ($method_id->method_name === StrId::fromcallable
+                        || $method_id->method_name === StrId::__invoke))
             ) {
                 return null;
             }
 
-            if (InternalCallMapHandler::inCallMap((string) $method_id)) {
+            if (InternalCallMapHandler::inCallMap(Interner::internLower((string) $method_id))) {
                 return null;
             }
 
@@ -107,8 +108,11 @@ final class MethodVisibilityAnalyzer
 
         $declaring_method_class = $declaring_method_id->fq_class_name;
 
+        $source_fqcln = $source->getFQCLN();
+
         if ($source->getSource() instanceof TraitAnalyzer
-            && strtolower($declaring_method_class) === strtolower((string) $source->getFQCLN())
+            && $source_fqcln !== null
+            && Interner::equalsLower($declaring_method_class, $source_fqcln)
         ) {
             return null;
         }
@@ -152,7 +156,7 @@ final class MethodVisibilityAnalyzer
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . $codebase_methods->getCasedMethodId($method_id) .
-                                ' from context ' . $context->self,
+                                ' from context ' . ($context->self === null ? '' : Interner::str($context->self)),
                             $code_location,
                         ),
                         $suppressed_issues,
@@ -191,7 +195,7 @@ final class MethodVisibilityAnalyzer
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $codebase_methods->getCasedMethodId($method_id) .
-                                ' from context ' . $context->self,
+                                ' from context ' . Interner::str($context->self),
                             $code_location,
                         ),
                         $suppressed_issues,

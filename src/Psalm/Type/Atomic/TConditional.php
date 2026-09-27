@@ -8,6 +8,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Interner;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -21,9 +22,13 @@ use Psalm\Type\Union;
 final class TConditional extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
+    /**
+     * @param int $param_name interned template name
+     * @param int $defining_class interned defining entity
+     */
     public function __construct(
-        public string $param_name,
-        public string $defining_class,
+        public int $param_name,
+        public int $defining_class,
         public Union $as_type,
         public Union $conditional_type,
         public Union $if_type,
@@ -62,7 +67,7 @@ final class TConditional extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'TConditional<' . $this->param_name . '>';
+        return 'TConditional<' . Interner::str($this->param_name) . '>';
     }
 
     /**
@@ -78,7 +83,7 @@ final class TConditional extends Atomic
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return '('
-            . $this->param_name
+            . Interner::str($this->param_name)
             . ' is ' . $this->conditional_type->getId($exact)
             . ' ? ' . $this->if_type->getId($exact)
             . ' : ' . $this->else_type->getId($exact)
@@ -86,29 +91,29 @@ final class TConditional extends Atomic
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @return null
      * @psalm-pure
      */
     #[Override]
     public function toPhpString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         int $analysis_php_version_id,
     ): ?string {
         return null;
     }
 
     /**
-     * @param array<lowercase-string, string> $aliased_classes
+     * @param array<int, int> $aliased_classes
      * @psalm-pure
      */
     #[Override]
     public function toNamespacedString(
-        ?string $namespace,
+        ?int $namespace,
         array $aliased_classes,
-        ?string $this_class,
+        ?int $this_class,
         bool $use_phpdoc_format,
     ): string {
         return '';

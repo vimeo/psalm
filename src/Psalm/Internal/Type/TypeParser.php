@@ -27,8 +27,10 @@ use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
+use Psalm\Interner;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\Mutations;
+use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -114,8 +116,8 @@ final class TypeParser
      * Parses a string type representation
      *
      * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      */
     public static function parseTokens(
         array $type_tokens,
@@ -172,8 +174,8 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias>            $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias>            $type_aliases alias name id => alias
      * @return  Atomic|Union
      */
     public static function getTypeFromTree(
@@ -326,9 +328,9 @@ final class TypeParser
 
         if ($parse_tree instanceof TemplateAsTree) {
             $result = new TTemplateParam(
-                $parse_tree->param_name,
-                new Union([new TNamedObject($parse_tree->as)]),
-                'class-string-map',
+                Interner::intern($parse_tree->param_name),
+                new Union([new TNamedObject(self::internClass($parse_tree->as))]),
+                StrId::class_string_map,
                 [],
                 $from_docblock,
             );
@@ -336,10 +338,11 @@ final class TypeParser
         }
 
         if ($parse_tree instanceof ConditionalTree) {
-            $template_param_name = $parse_tree->condition->param_name;
+            $template_param_name_str = $parse_tree->condition->param_name;
+            $template_param_name = Interner::intern($template_param_name_str);
 
             if (!isset($template_type_map[$template_param_name])) {
-                throw new TypeParseTreeException('Unrecognized template \'' . $template_param_name . '\'');
+                throw new TypeParseTreeException('Unrecognized template \'' . $template_param_name_str . '\'');
             }
 
             if (count($parse_tree->children) !== 2) {
@@ -408,23 +411,29 @@ final class TypeParser
 
         if (strpos($parse_tree->value, '::')) {
             [$fq_classlike_name, $const_name] = explode('::', $parse_tree->value);
+            $fq_classlike_name_id = Interner::intern($fq_classlike_name);
 
-            if (isset($template_type_map[$fq_classlike_name]) && $const_name === 'class') {
-                $first_class = array_keys($template_type_map[$fq_classlike_name])[0];
-
+            if (isset($template_type_map[$fq_classlike_name_id])
+                && $const_name === 'class'
+                && ($first_class = array_key_first($template_type_map[$fq_classlike_name_id])) !== null
+            ) {
                 return self::getGenericParamClass(
-                    $fq_classlike_name,
-                    $template_type_map[$fq_classlike_name][$first_class],
+                    $fq_classlike_name_id,
+                    $template_type_map[$fq_classlike_name_id][$first_class],
                     $first_class,
                     $from_docblock,
                 );
             }
 
             if ($const_name === 'class') {
-                return new TLiteralClassString($fq_classlike_name, false, $from_docblock);
+                return new TLiteralClassString(self::internClass($fq_classlike_name), false, $from_docblock);
             }
 
-            return new TClassConstant($fq_classlike_name, $const_name, $from_docblock);
+            return new TClassConstant(
+                self::internClass($fq_classlike_name),
+                Interner::intern($const_name),
+                $from_docblock,
+            );
         }
 
         if (preg_match('/^\-?(0|[1-9][0-9]*)(\.[0-9]{1,})$/', $parse_tree->value)) {
@@ -453,16 +462,26 @@ final class TypeParser
         );
     }
 
+    /**
+     * Interns a class name as written in a type token, stripping any leading backslash.
+     *
+     * @psalm-pure
+     */
+    private static function internClass(string $class): int
+    {
+        return Interner::intern($class !== '' && $class[0] === '\\' ? substr($class, 1) : $class);
+    }
+
     private static function getGenericParamClass(
-        string $param_name,
+        int $param_name,
         Union &$as,
-        string $defining_class,
+        int $defining_class,
         bool $from_docblock = false,
     ): TTemplateParamClass {
         if ($as->hasMixed()) {
             return new TTemplateParamClass(
                 $param_name,
-                'object',
+                StrId::object,
                 null,
                 $defining_class,
                 $from_docblock,
@@ -473,7 +492,7 @@ final class TypeParser
             if ($t instanceof TObject) {
                 return new TTemplateParamClass(
                     $param_name,
-                    'object',
+                    StrId::object,
                     null,
                     $defining_class,
                     $from_docblock,
@@ -482,7 +501,7 @@ final class TypeParser
 
             if ($t instanceof TIterable) {
                 $traversable = new TGenericObject(
-                    'Traversable',
+                    StrId::Traversable,
                     $t->type_params,
                     false,
                     false,
@@ -510,7 +529,7 @@ final class TypeParser
 
                 return new TTemplateParamClass(
                     $t->param_name,
-                    $t_atomic_type->value ?? 'object',
+                    $t_atomic_type->value ?? StrId::object,
                     $t_atomic_type,
                     $t->defining_class,
                     $from_docblock,
@@ -569,8 +588,8 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      * @throws TypeParseTreeException
      * @psalm-suppress ComplexMethod to be refactored
      */
@@ -599,9 +618,9 @@ final class TypeParser
                 && $i === 0
             ) {
                 if ($tree_type instanceof TTemplateParam) {
-                    $template_type_map[$tree_type->param_name] = ['class-string-map' => $tree_type->as];
+                    $template_type_map[$tree_type->param_name] = [StrId::class_string_map => $tree_type->as];
                 } elseif ($tree_type instanceof TNamedObject) {
-                    $template_type_map[$tree_type->value] = ['class-string-map' => Type::getObject()];
+                    $template_type_map[$tree_type->value] = [StrId::class_string_map => Type::getObject()];
                 }
             }
 
@@ -720,10 +739,17 @@ final class TypeParser
         }
 
         if ($generic_type_value === 'arraylike-object') {
-            $array_access = new TGenericObject('ArrayAccess', $generic_params, false, false, [], $from_docblock);
-            $countable = new TNamedObject('Countable', false, false, [], $from_docblock);
+            $array_access = new TGenericObject(
+                StrId::ArrayAccess,
+                $generic_params,
+                false,
+                false,
+                [],
+                $from_docblock,
+            );
+            $countable = new TNamedObject(StrId::Countable, false, false, [], $from_docblock);
             return new TGenericObject(
-                'Traversable',
+                StrId::Traversable,
                 $generic_params,
                 false,
                 false,
@@ -757,7 +783,7 @@ final class TypeParser
             || $generic_type_value === 'interface-string'
             || $generic_type_value === 'enum-string'
         ) {
-            $class_name = $generic_params[0]->getId(false);
+            $class_name = Interner::intern($generic_params[0]->getId(false));
 
             if (isset($template_type_map[$class_name])) {
                 $first_class = array_keys($template_type_map[$class_name])[0];
@@ -838,7 +864,8 @@ final class TypeParser
                 throw new TypeParseTreeException($generic_type_value . ' requires exactly one parameter.');
             }
 
-            $param_name = (string) $generic_params[0];
+            $param_name_str = (string) $generic_params[0];
+            $param_name = Interner::intern($param_name_str);
 
             if (isset($template_type_map[$param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
@@ -846,12 +873,12 @@ final class TypeParser
                 $template_param = $generic_params[0]->getSingleAtomic();
                 if (!$template_param instanceof TTemplateParam) {
                     throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam.',
+                        $generic_type_value . '<' . $param_name_str . '> must be a TTemplateParam.',
                     );
                 }
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
-                        $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
+                        $generic_type_value . '<' . $param_name_str . '> must be a TTemplateParam'
                         . ' with no intersection types.',
                     );
                 }
@@ -883,7 +910,8 @@ final class TypeParser
         }
 
         if ($generic_type_value === 'key-of') {
-            $param_name = $generic_params[0]->getId(false);
+            $param_name_str = $generic_params[0]->getId(false);
+            $param_name = Interner::intern($param_name_str);
 
             if (isset($template_type_map[$param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
@@ -898,7 +926,7 @@ final class TypeParser
 
             if (!TKeyOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be an array',
+                    'Untemplated key-of param ' . $param_name_str . ' should be an array',
                 );
             }
 
@@ -906,7 +934,8 @@ final class TypeParser
         }
 
         if ($generic_type_value === 'value-of') {
-            $param_name = $generic_params[0]->getId(false);
+            $param_name_str = $generic_params[0]->getId(false);
+            $param_name = Interner::intern($param_name_str);
 
             if (isset($template_type_map[$param_name])
                 && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
@@ -921,7 +950,7 @@ final class TypeParser
 
             if (!TValueOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be an array',
+                    'Untemplated value-of param ' . $param_name_str . ' should be an array',
                 );
             }
 
@@ -943,9 +972,9 @@ final class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (defined($atomic_type->value)) {
+                    if (defined(Interner::str($atomic_type->value))) {
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = constant(Interner::str($atomic_type->value));
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -963,7 +992,7 @@ final class TypeParser
 
                 if (!$atomic_type instanceof TLiteralInt
                     && !($atomic_type instanceof TClassConstant
-                        && !str_contains($atomic_type->const_name, '*'))
+                        && !str_contains(Interner::str($atomic_type->const_name), '*'))
                 ) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be integer values or scalar class constants',
@@ -1003,7 +1032,7 @@ final class TypeParser
                     'Invalid reference passed to int-mask-of',
                 );
             } elseif ($param_type instanceof TClassConstant
-                && !str_contains($param_type->const_name, '*')
+                && !str_contains(Interner::str($param_type->const_name), '*')
             ) {
                 throw new TypeParseTreeException(
                     'Class constant passed to int-mask-of must be a wildcard type',
@@ -1069,12 +1098,19 @@ final class TypeParser
             throw new TypeParseTreeException('Cannot create generic object with reserved word');
         }
 
-        return new TGenericObject($generic_type_value, $generic_params, false, false, [], $from_docblock);
+        return new TGenericObject(
+            self::internClass($generic_type_value),
+            $generic_params,
+            false,
+            false,
+            [],
+            $from_docblock,
+        );
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      * @throws TypeParseTreeException
      */
     private static function getTypeFromUnionTree(
@@ -1139,8 +1175,8 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      * @throws TypeParseTreeException
      */
     private static function getTypeFromIntersectionTree(
@@ -1221,7 +1257,7 @@ final class TypeParser
         }
 
         if ($keyed_intersection_types === [] && $intersect_static) {
-            return new TNamedObject('static', false, false, [], $from_docblock);
+            return new TNamedObject(StrId::static, false, false, [], $from_docblock);
         }
 
         $first_type = array_shift($keyed_intersection_types);
@@ -1259,8 +1295,8 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      * @throws TypeParseTreeException
      */
     private static function getTypeFromCallableTree(
@@ -1310,7 +1346,7 @@ final class TypeParser
             }
 
             $param = new FunctionLikeParameter(
-                $param_name,
+                Interner::intern($param_name),
                 false,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
                 null,
@@ -1349,7 +1385,7 @@ final class TypeParser
     }
 
     /**
-     * @param array<string, array<string, Union>> $template_type_map
+     * @param array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
      * @throws TypeParseTreeException
      * @psalm-mutation-free
      */
@@ -1362,26 +1398,28 @@ final class TypeParser
             throw new TypeParseTreeException('Unrecognised indexed access');
         }
 
-        $offset_param_name = $parse_tree->value;
-        $array_param_name = $parse_tree->children[0]->value;
+        $offset_param_name = Interner::intern($parse_tree->value);
+        $array_param_name = Interner::intern($parse_tree->children[0]->value);
 
         if (!isset($template_type_map[$offset_param_name])) {
-            throw new TypeParseTreeException('Unrecognised template param ' . $offset_param_name);
+            throw new TypeParseTreeException('Unrecognised template param ' . $parse_tree->value);
         }
 
         if (!isset($template_type_map[$array_param_name])) {
-            throw new TypeParseTreeException('Unrecognised template param ' . $array_param_name);
+            throw new TypeParseTreeException('Unrecognised template param ' . $parse_tree->children[0]->value);
         }
 
         $offset_template_data = $template_type_map[$offset_param_name];
 
         $offset_defining_class = array_keys($offset_template_data)[0];
 
-        if (!$offset_defining_class
-            && isset($offset_template_data[''])
-            && $offset_template_data['']->isSingle()
+        $empty_id = Interner::intern('');
+
+        if ($offset_defining_class === $empty_id
+            && isset($offset_template_data[$empty_id])
+            && $offset_template_data[$empty_id]->isSingle()
         ) {
-            $offset_template_type = $offset_template_data['']->getSingleAtomic();
+            $offset_template_type = $offset_template_data[$empty_id]->getSingleAtomic();
 
             if ($offset_template_type instanceof TTemplateKeyOf) {
                 $offset_defining_class = $offset_template_type->defining_class;
@@ -1391,7 +1429,7 @@ final class TypeParser
         $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
         if ($offset_defining_class !== $array_defining_class
-            && !str_starts_with($offset_defining_class, 'fn-')
+            && !str_starts_with(Interner::str($offset_defining_class), 'fn-')
         ) {
             throw new TypeParseTreeException('Template params are defined in different locations');
         }
@@ -1405,8 +1443,8 @@ final class TypeParser
     }
 
     /**
-     * @param  array<string, array<string, Union>> $template_type_map
-     * @param  array<string, TypeAlias> $type_aliases
+     * @param  array<int, array<int, Union>> $template_type_map template name id => defining entity id => type
+     * @param  array<int, TypeAlias> $type_aliases alias name id => alias
      * @throws TypeParseTreeException
      */
     private static function getTypeFromKeyedArrayTree(
