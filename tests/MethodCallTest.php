@@ -1160,6 +1160,27 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'finalMethodOnNonFinalClassKeepsStatic' => [
+                'code' => '<?php
+                    class P {
+                        /** @return static */
+                        final public function returnThis(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C extends P {}
+                    final class D extends P {}
+
+                    $nonFinal = (new C())->returnThis();
+                    $final = (new D())->returnThis();',
+                'assertions' => [
+                    '$nonFinal===' => 'C&static',
+                    '$final===' => 'D',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'resolveFinalInParentCall' => [
                 'code' => '<?php
                     abstract class A {

@@ -972,6 +972,10 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        $implementer_class_is_final = $codebase->classlike_storage_provider
+            ->get($implementer_called_class_name)
+            ->final;
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
@@ -979,15 +983,15 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
-                || $guide_classlike_storage->final
-                ? $implementer_classlike_storage->name
+                || $implementer_class_is_final
+                ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                 ? $implementer_classlike_storage->parent_class
                 : $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_class_is_final,
         );
 
         $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -1001,6 +1005,9 @@ final class MethodComparator
                     ? $implementer_called_class_name
                     : $implementer_classlike_storage->name,
                 $implementer_classlike_storage->parent_class,
+                true,
+                false,
+                $implementer_class_is_final,
             ) : null;
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
@@ -1065,6 +1072,10 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        $implementer_class_is_final = $codebase->classlike_storage_provider
+            ->get($implementer_called_class_name)
+            ->final;
+
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
             $implementer_return_type,
@@ -1073,6 +1084,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_class_is_final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1082,13 +1096,13 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait
-                || $implementer_method_storage->final
+                || $implementer_class_is_final
                 ? $implementer_called_class_name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_class_is_final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;

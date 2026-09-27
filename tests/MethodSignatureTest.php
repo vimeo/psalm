@@ -698,6 +698,94 @@ final class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
+            'finalClassOverridingMethodReturningTemplatedStatic' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var T */
+                        public object $value;
+                        /** @param T $value */
+                        public function __construct(object $value) { $this->value = $value; }
+                    }
+
+                    class Base {
+                        /** @return Box<static> */
+                        public function box(): Box {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base {
+                        /** @return Box<static> */
+                        public function box(): Box {
+                            return parent::box();
+                        }
+                    }',
+            ],
+            'finalClassOverridingMethodReturningTemplatedThis' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var T */
+                        public object $value;
+                        /** @param T $value */
+                        public function __construct(object $value) { $this->value = $value; }
+                    }
+
+                    class Base {
+                        /** @return Box<static> */
+                        public function box(): Box {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base {
+                        /** @return Box<$this> */
+                        public function box(): Box {
+                            return parent::box();
+                        }
+                    }',
+            ],
+            'finalMethodOnNonFinalClassOverridingMethodReturningTemplatedStatic' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @var T */
+                        public object $value;
+                        /** @param T $value */
+                        public function __construct(object $value) { $this->value = $value; }
+                    }
+
+                    class Base {
+                        /** @return Box<static> */
+                        public function box(): Box {
+                            return new Box($this);
+                        }
+                    }
+
+                    class NonFinal extends Base {
+                        /** @return Box<static> */
+                        final public function box(): Box {
+                            return parent::box();
+                        }
+                    }',
+            ],
+            'finalClassOverridingMethodReturningStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @return static */
+                        public function instance(): object {
+                            return $this;
+                        }
+                    }
+
+                    final class Leaf extends Base {
+                        /** @return static */
+                        public function instance(): object {
+                            return parent::instance();
+                        }
+                    }',
+            ],
             'selfInTraitAbstractIsFine' => [
                 'code' => '<?php
                     trait SomeTrait {
@@ -910,7 +998,7 @@ final class MethodSignatureTest extends TestCase
                         }
                     }
 
-                    class MyChildClass extends MyParentClass
+                    final class MyChildClass extends MyParentClass
                     {
                         use MyTrait;
                     }',
