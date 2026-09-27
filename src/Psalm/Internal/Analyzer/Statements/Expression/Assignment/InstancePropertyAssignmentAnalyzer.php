@@ -1065,6 +1065,7 @@ final class InstancePropertyAssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer->getSuppressedIssues(),
                         false,
+                        true,
                     ) !== true)
             )
             && $codebase->methods->methodExists(
@@ -1266,6 +1267,8 @@ final class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
                 ) === false) {
                     return null;
                 }
@@ -1277,6 +1280,7 @@ final class InstancePropertyAssignmentAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues(),
                     false,
+                    true,
                 ) !== true) {
                     return null;
                 }
