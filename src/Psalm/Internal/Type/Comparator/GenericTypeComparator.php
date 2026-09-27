@@ -157,10 +157,11 @@ final class GenericTypeComparator
 
                         // Make sure types are basically the same.
                         // Int ranges are compared as int, the same way literals widen above
+                        $widened_input_param = self::widenIntRanges($input_param);
                         $reverse_contained = UnionTypeComparator::isContainedBy(
                             $codebase,
                             $container_param,
-                            self::widenIntRanges($input_param),
+                            $widened_input_param,
                             $container_param->ignore_nullable_issues,
                             $container_param->ignore_falsable_issues,
                             $param_comparison_result,
@@ -188,6 +189,11 @@ final class GenericTypeComparator
                                     $atomic_comparison_result->type_coerced = false;
                                 }
                             }
+                        } elseif ($widened_input_param !== $input_param
+                            && $atomic_comparison_result_type_params !== null
+                        ) {
+                            // the range was widened, so the argument now holds the container's type
+                            $atomic_comparison_result_type_params[$i] = $container_param;
                         }
                     }
                 }

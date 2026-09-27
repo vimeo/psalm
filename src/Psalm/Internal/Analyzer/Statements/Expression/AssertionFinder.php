@@ -17,6 +17,7 @@ use PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Scalar\Int_;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -4145,6 +4146,22 @@ final class AssertionFinder
         } else {
             $greater_expr = $conditional->right;
             $lesser_expr = $conditional->left;
+        }
+
+        // an operand that writes a variable could change what the other operand's bound refers to,
+        // e.g. `($a = $hi) > ($a = $lo)`
+        $writes_variable = (new NodeFinder())->findFirst(
+            [$greater_expr, $lesser_expr],
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\PreInc
+                || $node instanceof PhpParser\Node\Expr\PreDec
+                || $node instanceof PhpParser\Node\Expr\PostInc
+                || $node instanceof PhpParser\Node\Expr\PostDec,
+        );
+        if ($writes_variable !== null) {
+            return [];
         }
 
         $strict = $conditional instanceof Greater || $conditional instanceof Smaller;
