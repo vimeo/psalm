@@ -17,7 +17,6 @@ use PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Scalar\Int_;
-use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -4148,27 +4147,11 @@ final class AssertionFinder
             $lesser_expr = $conditional->left;
         }
 
-        // an operand that may write a variable could change what the other operand's bound refers to,
-        // e.g. `($a = $hi) > ($a = $lo)` or `$x > takesByRef($x)`
-        $writes_variable = (new NodeFinder())->findFirst(
-            [$greater_expr, $lesser_expr],
-            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
-                || $node instanceof PhpParser\Node\Expr\AssignOp
-                || $node instanceof PhpParser\Node\Expr\AssignRef
-                || $node instanceof PhpParser\Node\Expr\PreInc
-                || $node instanceof PhpParser\Node\Expr\PreDec
-                || $node instanceof PhpParser\Node\Expr\PostInc
-                || $node instanceof PhpParser\Node\Expr\PostDec
-                || $node instanceof PhpParser\Node\Expr\Include_
-                || $node instanceof PhpParser\Node\Expr\Eval_
-                || $node instanceof PhpParser\Node\Expr\Yield_
-                || $node instanceof PhpParser\Node\Expr\YieldFrom
-                || ($node instanceof PhpParser\Node\Expr\CallLike
-                    && !($node instanceof PhpParser\Node\Expr\FuncCall
-                        && $node->name instanceof PhpParser\Node\Name
-                        && in_array(strtolower($node->name->getLast()), ['count', 'sizeof', 'strlen'], true))),
-        );
-        if ($writes_variable !== null) {
+        // only plain variables: evaluating anything else (assignments, calls, magic getters, ArrayAccess)
+        // may change the other operand after its value was read, e.g. `($a = $hi) > ($a = $lo)`
+        if (!$greater_expr instanceof PhpParser\Node\Expr\Variable
+            || !$lesser_expr instanceof PhpParser\Node\Expr\Variable
+        ) {
             return [];
         }
 
