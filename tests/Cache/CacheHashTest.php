@@ -96,6 +96,15 @@ final class CacheHashTest extends TestCase
         $this->assertFalse($cache->hasItem('never/written.php'));
     }
 
+    public function testHasItemSeesEntriesHeldInMemory(): void
+    {
+        $cache = $this->newCache();
+        $cache->saveItem('in/memory.php', ['payload'], 'the hash');
+
+        $this->assertTrue($cache->hasItem('in/memory.php'));
+        $this->assertFalse($cache->hasItem('never/written.php'));
+    }
+
     public function testGetHashRoundTripsAnEmptyHash(): void
     {
         $key = 'empty/hash.php';
