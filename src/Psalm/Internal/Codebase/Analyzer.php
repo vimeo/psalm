@@ -644,7 +644,7 @@ final class Analyzer
      * (re-)analysed, except the references of methods whose cached analysis
      * is still valid and which will therefore be skipped.
      *
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function removeCodeUseReferencesForFile(Codebase $codebase, string $file_path): void
     {
@@ -1063,7 +1063,7 @@ final class Analyzer
 
     /**
      * @return array{int, int}
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getTotalTypeCoverage(Codebase $codebase): array
     {
@@ -1087,7 +1087,7 @@ final class Analyzer
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getTypeInferenceSummary(Codebase $codebase): string
     {

@@ -87,7 +87,7 @@ final class PsalmRestarter extends XdebugHandler
      *
      * @param bool $default
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     * @psalm-capabilities write-this-props|read-globals|write-refs
+     * @psalm-capabilities read-props|write-this-props|read-globals|write-refs
      */
     #[Override]
     protected function requiresRestart($default): bool

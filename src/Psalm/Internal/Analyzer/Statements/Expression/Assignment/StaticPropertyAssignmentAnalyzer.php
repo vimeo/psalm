@@ -56,7 +56,7 @@ final class StaticPropertyAssignmentAnalyzer
         );
 
         $statements_analyzer->signalMutation(
-            Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+            Capabilities::WRITE_GLOBALS,
             $context,
             'writing a static property',
             ImpureStaticProperty::class,

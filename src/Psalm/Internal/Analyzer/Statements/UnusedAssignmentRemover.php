@@ -121,7 +121,7 @@ final class UnusedAssignmentRemover
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function getPartialRemovalBounds(
         Codebase $codebase,

@@ -536,7 +536,7 @@ final class CallableTypeComparator
 
     /**
      * @return null|'not-callable'|MethodIdentifier
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,

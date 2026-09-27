@@ -88,7 +88,6 @@
       <code><![CDATA[self::$instance]]></code>
       <code><![CDATA[self::$instance]]></code>
       <code><![CDATA[self::$instance]]></code>
-      <code><![CDATA[self::$instance]]></code>
     </ImpureStaticProperty>
     <PossiblyNullArgument>
       <code><![CDATA[$deprecated_element_xml]]></code>
@@ -323,7 +322,6 @@
       <code><![CDATA[$this->function->name]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
-      <code><![CDATA[self::$no_effects_hashes]]></code>
       <code><![CDATA[self::$no_effects_hashes]]></code>
     </ImpureStaticProperty>
     <InvalidOperand>
@@ -1609,7 +1607,6 @@
       <code><![CDATA[self::$stubbed_functions]]></code>
       <code><![CDATA[self::$stubbed_functions]]></code>
       <code><![CDATA[self::$stubbed_functions]]></code>
-      <code><![CDATA[self::$stubbed_functions]]></code>
     </ImpureStaticProperty>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$stub]]></code>
@@ -1627,7 +1624,6 @@
       <code><![CDATA[self::$capabilities]]></code>
       <code><![CDATA[self::$capabilities]]></code>
       <code><![CDATA[self::$capabilities]]></code>
-      <code><![CDATA[self::$capabilities]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
@@ -1637,16 +1633,11 @@
       <code><![CDATA[self::$call_map]]></code>
       <code><![CDATA[self::$call_map]]></code>
       <code><![CDATA[self::$call_map]]></code>
-      <code><![CDATA[self::$call_map]]></code>
-      <code><![CDATA[self::$call_map_callables]]></code>
       <code><![CDATA[self::$call_map_callables]]></code>
       <code><![CDATA[self::$loaded_php_major_version]]></code>
       <code><![CDATA[self::$loaded_php_major_version]]></code>
-      <code><![CDATA[self::$loaded_php_major_version]]></code>
       <code><![CDATA[self::$loaded_php_minor_version]]></code>
       <code><![CDATA[self::$loaded_php_minor_version]]></code>
-      <code><![CDATA[self::$loaded_php_minor_version]]></code>
-      <code><![CDATA[self::$taint_sink_map]]></code>
       <code><![CDATA[self::$taint_sink_map]]></code>
     </ImpureStaticProperty>
     <PossiblyNullArgument>
@@ -1697,13 +1688,10 @@
       <code><![CDATA[self::$property_map]]></code>
       <code><![CDATA[self::$property_map]]></code>
       <code><![CDATA[self::$property_map]]></code>
-      <code><![CDATA[self::$property_map]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Codebase/Reflection.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$builtin_functions]]></code>
-      <code><![CDATA[self::$builtin_functions]]></code>
       <code><![CDATA[self::$builtin_functions]]></code>
       <code><![CDATA[self::$builtin_functions]]></code>
       <code><![CDATA[self::$builtin_functions]]></code>
@@ -1811,7 +1799,6 @@
   <file src="src/Psalm/Internal/FileManipulation/ClassDocblockManipulator.php">
     <ImpureStaticProperty>
       <code><![CDATA[self::$manipulators]]></code>
-      <code><![CDATA[self::$manipulators]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/FileManipulation/FileManipulationBuffer.php">
@@ -1820,9 +1807,6 @@
       <code><![CDATA[self::$code_migrations]]></code>
       <code><![CDATA[self::$code_migrations]]></code>
       <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
@@ -1842,8 +1826,6 @@
   </file>
   <file src="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$manipulators]]></code>
-      <code><![CDATA[self::$manipulators]]></code>
       <code><![CDATA[self::$manipulators]]></code>
       <code><![CDATA[self::$manipulators]]></code>
       <code><![CDATA[self::$manipulators]]></code>
@@ -1868,7 +1850,6 @@
   </file>
   <file src="src/Psalm/Internal/FileManipulation/PropertyDocblockManipulator.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$manipulators]]></code>
       <code><![CDATA[self::$manipulators]]></code>
     </ImpureStaticProperty>
     <PossiblyUndefinedIntArrayOffset>
@@ -2192,9 +2173,6 @@
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
@@ -2230,22 +2208,15 @@
       <code><![CDATA[self::$analyzed_methods]]></code>
       <code><![CDATA[self::$analyzed_methods]]></code>
       <code><![CDATA[self::$analyzed_methods]]></code>
-      <code><![CDATA[self::$analyzed_methods]]></code>
-      <code><![CDATA[self::$analyzed_methods]]></code>
-      <code><![CDATA[self::$classlike_files]]></code>
       <code><![CDATA[self::$classlike_files]]></code>
       <code><![CDATA[self::$classlike_files]]></code>
       <code><![CDATA[self::$classlike_files]]></code>
       <code><![CDATA[self::$classlike_files]]></code>
       <code><![CDATA[self::$deleted_files]]></code>
-      <code><![CDATA[self::$deleted_files]]></code>
       <code><![CDATA[self::$file_maps]]></code>
       <code><![CDATA[self::$file_maps]]></code>
       <code><![CDATA[self::$file_maps]]></code>
       <code><![CDATA[self::$file_maps]]></code>
-      <code><![CDATA[self::$file_maps]]></code>
-      <code><![CDATA[self::$file_maps]]></code>
-      <code><![CDATA[self::$file_references]]></code>
       <code><![CDATA[self::$file_references]]></code>
       <code><![CDATA[self::$file_references]]></code>
       <code><![CDATA[self::$file_references]]></code>
@@ -2254,7 +2225,6 @@
       <code><![CDATA[self::$files_inheriting_classes]]></code>
       <code><![CDATA[self::$files_inheriting_classes]]></code>
       <code><![CDATA[self::$files_inheriting_classes]]></code>
-      <code><![CDATA[self::$files_inheriting_classes]]></code>
       <code><![CDATA[self::$issues]]></code>
       <code><![CDATA[self::$issues]]></code>
       <code><![CDATA[self::$issues]]></code>
@@ -2263,7 +2233,6 @@
       <code><![CDATA[self::$issues]]></code>
       <code><![CDATA[self::$issues]]></code>
       <code><![CDATA[self::$issues]]></code>
-      <code><![CDATA[self::$issues]]></code>
       <code><![CDATA[self::$method_dependencies]]></code>
       <code><![CDATA[self::$method_dependencies]]></code>
       <code><![CDATA[self::$method_dependencies]]></code>
@@ -2278,10 +2247,6 @@
       <code><![CDATA[self::$method_dependencies]]></code>
       <code><![CDATA[self::$method_dependencies]]></code>
       <code><![CDATA[self::$method_dependencies]]></code>
-      <code><![CDATA[self::$method_dependencies]]></code>
-      <code><![CDATA[self::$method_dependencies]]></code>
-      <code><![CDATA[self::$method_param_uses]]></code>
-      <code><![CDATA[self::$method_param_uses]]></code>
       <code><![CDATA[self::$method_param_uses]]></code>
       <code><![CDATA[self::$method_param_uses]]></code>
       <code><![CDATA[self::$method_param_uses]]></code>
@@ -2301,10 +2266,6 @@
       <code><![CDATA[self::$mixed_counts]]></code>
       <code><![CDATA[self::$mixed_counts]]></code>
       <code><![CDATA[self::$mixed_counts]]></code>
-      <code><![CDATA[self::$mixed_counts]]></code>
-      <code><![CDATA[self::$mixed_counts]]></code>
-      <code><![CDATA[self::$references_to_mixed_member_names]]></code>
-      <code><![CDATA[self::$references_to_mixed_member_names]]></code>
       <code><![CDATA[self::$references_to_mixed_member_names]]></code>
       <code><![CDATA[self::$references_to_mixed_member_names]]></code>
       <code><![CDATA[self::$references_to_mixed_member_names]]></code>
@@ -2330,10 +2291,6 @@
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
@@ -2347,7 +2304,6 @@
   </file>
   <file src="src/Psalm/Internal/Provider/FunctionExistenceProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
@@ -2377,7 +2333,6 @@
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/MethodParamsProvider.php">
@@ -2403,7 +2358,6 @@
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
-      <code><![CDATA[self::$handlers]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/ParamsProvider/ArrayMultisortParamsProvider.php">
@@ -2413,7 +2367,6 @@
   </file>
   <file src="src/Psalm/Internal/Provider/PropertyExistenceProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
@@ -2436,7 +2389,6 @@
   </file>
   <file src="src/Psalm/Internal/Provider/PropertyVisibilityProvider.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
       <code><![CDATA[self::$handlers]]></code>
@@ -2502,7 +2454,6 @@
   <file src="src/Psalm/Internal/Provider/StatementsProvider.php">
     <ImpureStaticProperty>
       <code><![CDATA[self::$parser]]></code>
-      <code><![CDATA[self::$parser]]></code>
     </ImpureStaticProperty>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$existing_file_contents]]></code>
@@ -2522,8 +2473,6 @@
   </file>
   <file src="src/Psalm/Internal/Scanner/ParsedDocblock.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
-      <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
       <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
       <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
       <code><![CDATA[self::$shouldAddNewLineBetweenAnnotations]]></code>
@@ -2806,7 +2755,6 @@
       <code><![CDATA[self::$memoized_tokens]]></code>
       <code><![CDATA[self::$memoized_tokens]]></code>
       <code><![CDATA[self::$memoized_tokens]]></code>
-      <code><![CDATA[self::$memoized_tokens]]></code>
     </ImpureStaticProperty>
     <PossiblyInvalidArrayOffset>
       <code><![CDATA[$type_tokens[$i - 1]]]></code>
@@ -2862,9 +2810,6 @@
       <code><![CDATA[self::$emitted]]></code>
       <code><![CDATA[self::$emitted]]></code>
       <code><![CDATA[self::$emitted]]></code>
-      <code><![CDATA[self::$emitted]]></code>
-      <code><![CDATA[self::$emitted]]></code>
-      <code><![CDATA[self::$error_count]]></code>
       <code><![CDATA[self::$error_count]]></code>
       <code><![CDATA[self::$error_count]]></code>
       <code><![CDATA[self::$fixable_issue_counts]]></code>
@@ -2890,8 +2835,6 @@
       <code><![CDATA[self::$issues_data]]></code>
       <code><![CDATA[self::$issues_data]]></code>
       <code><![CDATA[self::$issues_data]]></code>
-      <code><![CDATA[self::$issues_data]]></code>
-      <code><![CDATA[self::$issues_data]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
@@ -2901,8 +2844,6 @@
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
-      <code><![CDATA[self::$recorded_issues]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>
@@ -2919,7 +2860,6 @@
       <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$server]]></code>
       <code><![CDATA[self::$server]]></code>
-      <code><![CDATA[self::$server]]></code>
       <code><![CDATA[self::$unused_suppressions]]></code>
       <code><![CDATA[self::$unused_suppressions]]></code>
       <code><![CDATA[self::$unused_suppressions]]></code>
@@ -2929,8 +2869,6 @@
       <code><![CDATA[self::$unused_suppressions]]></code>
       <code><![CDATA[self::$unused_suppressions]]></code>
       <code><![CDATA[self::$unused_suppressions]]></code>
-      <code><![CDATA[self::$unused_suppressions]]></code>
-      <code><![CDATA[self::$used_suppressions]]></code>
       <code><![CDATA[self::$used_suppressions]]></code>
       <code><![CDATA[self::$used_suppressions]]></code>
       <code><![CDATA[self::$used_suppressions]]></code>
@@ -3994,7 +3932,6 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$m]]></code>
       <code><![CDATA[self::$m]]></code>
-      <code><![CDATA[self::$m]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="tests/DocumentationTest.php">
@@ -4113,7 +4050,6 @@
   </file>
   <file src="tests/ProjectCheckerTest.php">
     <ImpureStaticProperty>
-      <code><![CDATA[self::$called]]></code>
       <code><![CDATA[self::$called]]></code>
     </ImpureStaticProperty>
   </file>

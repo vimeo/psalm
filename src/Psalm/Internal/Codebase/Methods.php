@@ -872,7 +872,7 @@ final class Methods
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,

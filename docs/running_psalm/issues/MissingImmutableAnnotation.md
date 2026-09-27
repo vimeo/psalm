@@ -13,7 +13,7 @@ This issue is emitted to aid [security analysis](https://psalm.dev/docs/security
 final class CouldBeExternallyMutationFree {
     private int $counter = 0;
 
-    /** @psalm-capabilities write-this-props */
+    /** @psalm-capabilities read-props|write-this-props */
     public function someInteger() : int {
         return ++$this->counter;
     }

@@ -348,12 +348,18 @@ a `@psalm-capabilities` annotation has every capability.
 | Capability         | Allows                                                                                                 |
 |--------------------|--------------------------------------------------------------------------------------------------------|
 | `read-props`       | reading instance properties of mutable objects, including `$this` (immutable objects never need it)    |
-| `write-this-props` | writing or unsetting properties of `$this` (implies `read-props`)                                      |
-| `write-props`      | writing or unsetting properties of any object (implies `write-this-props`)                             |
+| `write-this-props` | writing or unsetting properties of `$this`                                                             |
+| `write-props`      | writing or unsetting properties of objects other than `$this`                                          |
 | `read-globals`     | reading static properties, superglobals and binding `global` variables (the values reached this way can only be mutated with `write-globals`) |
-| `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables (implies `read-globals`) |
+| `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables               |
 | `write-refs`       | writing through by-reference parameters and other references into another scope                        |
 | `io`               | `echo`, `print`, `exit` with a message, and the builtin functions with side effects (`time`, `random_int`, `file_put_contents`, …); the builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need `write-globals` instead |
+
+Each name stands for that capability alone: writing does not include reading, so code that
+updates a property (`$this->n++`) needs `read-props|write-this-props`, and code that writes both
+`$this` and other objects needs `write-this-props|write-props`. A plain assignment only needs the
+write capability (`$this->n = 0` needs `write-this-props`, `Counter::$count = 0` needs
+`write-globals`), and using `$this` needs `read-props` or `write-this-props`.
 
 Two names stand for the extremes: `pure` is the empty set, a
 [pure function](https://en.wikipedia.org/wiki/Pure_function) whose result depends only on its
@@ -411,8 +417,14 @@ function currentCount(): int {
 
 /** @psalm-capabilities write-globals */
 function increment(): int {
+    Counter::$count++; // error: reading Counter::$count needs read-globals too
+    return currentCount(); // error: write-globals does not include read-globals
+}
+
+/** @psalm-capabilities read-globals|write-globals */
+function incrementAndGet(): int {
     Counter::$count++;
-    return currentCount(); // ok: write-globals includes read-globals
+    return currentCount(); // ok
 }
 
 /** @psalm-capabilities write-props */
@@ -523,7 +535,7 @@ function each(Closure $f): void {}
 /** @psalm-pure */
 function leak(): void {
     $total = 0;
-    each(function (int $v) use (&$total): void { $total += $v; }); // error: the closure is write-this-props
+    each(function (int $v) use (&$total): void { $total += $v; }); // error: the closure is read-props|write-this-props
 }
 ```
 
@@ -532,13 +544,13 @@ A caller normally needs every capability of the functions it calls, with two dif
 A method writes the properties of its own `$this`, which is not always the caller's. Calling a
 method that needs `write-this-props` needs `write-this-props` when the receiver is the caller's
 `$this`, `write-props` when it is any other object, and nothing when it is an object the caller
-created itself from a class whose methods need at most `write-this-props|write-refs`, which
+created itself from a class whose methods need at most `read-props|write-this-props|write-refs`, which
 nobody else can see change. So a pure function may create such an object and call its mutating
 methods:
 
 ```php
 <?php
-/** @psalm-capabilities write-this-props */
+/** @psalm-capabilities read-props|write-this-props */
 final class Counter {
     private int $n = 0;
 
@@ -768,7 +780,7 @@ A class implementing `Iterator` or `IteratorAggregate` may bind `TPurity` in its
 (`@implements Iterator[pure]<int, string>`), in which case its iteration methods (or its
 `getIterator()` and what that returns) must fit the binding. A class that does not bind it gets
 it from those methods, as whoever iterates it sees them: a method writing the iterator's own
-properties makes it `write-props`. So `MyIterator` is accepted where `Iterator[pure]<int, string>`
+properties makes it `write-this-props|write-props`. So `MyIterator` is accepted where `Iterator[pure]<int, string>`
 is expected exactly when its iteration methods are pure.
 
 ### `@psalm-purity-from-template`

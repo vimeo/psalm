@@ -118,7 +118,7 @@ final class ByRefArgumentAnalyzer
         }
 
         if ($root instanceof Expr\StaticPropertyFetch) {
-            return Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS;
+            return Capabilities::WRITE_GLOBALS;
         }
 
         if ($root instanceof Expr\PropertyFetch) {

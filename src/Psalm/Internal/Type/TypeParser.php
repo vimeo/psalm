@@ -451,7 +451,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getGenericParamClass(
         string $param_name,

@@ -333,7 +333,7 @@ final class Algebra
      * @param array<string, bool> $cond_referenced_var_ids
      * @param array<string, array<int, array<int, Assertion>>> $active_truths
      * @return array<string, list<list<Assertion>>>
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public static function getTruthsFromFormula(
         array $clauses,

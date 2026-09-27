@@ -71,7 +71,7 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getStorage(
         ?StatementsAnalyzer $statements_analyzer,
@@ -386,7 +386,7 @@ final class Functions
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function isVariadic(Codebase $codebase, string $function_id, string $file_path): bool
     {

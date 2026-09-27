@@ -120,12 +120,16 @@ final class VariableFetchAnalyzer
                 );
             }
 
+            // using `$this` needs a capability over its properties: reading or writing them
             $statements_analyzer->signalMutation(
-                Capabilities::READ_PROPS,
+                ($context->capabilities & Capabilities::WRITE_THIS_PROPS) !== 0
+                    ? Capabilities::NONE
+                    : Capabilities::READ_PROPS,
                 $context,
                 '$this',
                 ImpureVariable::class,
                 $stmt,
+                Capabilities::READ_PROPS,
             );
 
             return true;

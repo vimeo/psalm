@@ -1037,7 +1037,7 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {

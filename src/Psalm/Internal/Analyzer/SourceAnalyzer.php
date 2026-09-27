@@ -112,7 +112,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function setRootFilePath(string $file_path, string $file_name): void
@@ -164,7 +164,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<array-key, string> $new_issues
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function addSuppressedIssues(array $new_issues): void
@@ -174,7 +174,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * @param array<array-key, string> $new_issues
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function removeSuppressedIssues(array $new_issues): void

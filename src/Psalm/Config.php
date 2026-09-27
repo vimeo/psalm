@@ -1527,7 +1527,7 @@ final class Config
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
@@ -1536,7 +1536,7 @@ final class Config
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
     {

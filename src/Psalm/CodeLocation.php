@@ -181,7 +181,7 @@ class CodeLocation
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @psalm-suppress InaccessibleProperty Mainly used for caching
      */
     private function calculateRealLocation(): void

@@ -591,7 +591,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         /**
                          * @internal
                          *
-                         * @psalm-capabilities write-this-props|write-refs
+                         * @psalm-capabilities read-props|write-this-props|write-refs
                          */
                         public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
                         {

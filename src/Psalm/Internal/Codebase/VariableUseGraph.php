@@ -100,7 +100,7 @@ final class VariableUseGraph extends DataFlowGraph
 
     /**
      * @return list<CodeLocation>
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function getOriginLocations(DataFlowNode $assignment_node): array
     {

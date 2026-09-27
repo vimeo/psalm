@@ -29,7 +29,7 @@ final class CallableTree extends ParseTree
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function cleanParents(): void

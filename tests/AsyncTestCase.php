@@ -97,7 +97,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
 
     /**
      * @psalm-suppress PossiblyUnusedMethod general async-test helper, called from reflection-invoked test methods
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFile(string $file_path, string $contents): void
     {

@@ -16,7 +16,7 @@ final class ClassTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-capabilities write-props
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function testExtendsMysqli(): void
     {

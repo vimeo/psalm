@@ -1487,7 +1487,7 @@ final class FilterUtils
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function addReturnTaint(
         StatementsAnalyzer $statements_analyzer,

@@ -75,24 +75,26 @@ final class Capabilities
 
     /**
      * The names usable in `@psalm-capabilities`, in `Closure[...]`/`callable[...]` types and as
-     * class template arguments, with the capability set each one denotes.
+     * class template arguments, with the capability set each one denotes. Each capability name
+     * denotes that capability alone: `write-props` does not allow reading properties, which
+     * needs `read-props` as well.
      *
      * @var array<non-empty-string, int>
      */
     public const NAMES = [
         'pure' => self::NONE,
         'read-props' => self::READ_PROPS,
-        'write-this-props' => self::READ_PROPS | self::WRITE_THIS_PROPS,
-        'write-props' => self::READ_PROPS | self::WRITE_THIS_PROPS | self::WRITE_PROPS,
+        'write-this-props' => self::WRITE_THIS_PROPS,
+        'write-props' => self::WRITE_PROPS,
         'read-globals' => self::READ_GLOBALS,
-        'write-globals' => self::READ_GLOBALS | self::WRITE_GLOBALS,
+        'write-globals' => self::WRITE_GLOBALS,
         'write-refs' => self::WRITE_REFS,
         'io' => self::IO,
         'impure' => self::ALL,
     ];
 
     /**
-     * The name describing each single capability, for messages.
+     * The name of each single capability, in the order they are printed.
      *
      * @var array<int, non-empty-string>
      */
@@ -164,18 +166,14 @@ final class Capabilities
     }
 
     /**
-     * The canonical name of a capability set, e.g. `pure`, `impure` or `write-props|io`; with
-     * $besides, of what the set has beyond those capabilities (`write-props|io` beyond `read-props`).
+     * The canonical name of a capability set, e.g. `pure`, `impure` or `read-props|write-props|io`;
+     * with $besides, of what the set has beyond those capabilities (`write-props|io` for
+     * `read-props|write-props|io` beyond `read-props`).
      *
      * @psalm-pure
      */
     public static function toString(int $capabilities, int $besides = self::NONE): string
     {
-        // a set may lack the bits its widest capability implies (write-props without read-props,
-        // as in the type of a closure): named by the capabilities it has, which imply those
-        $capabilities = self::withImplied($capabilities);
-        $besides = self::withImplied($besides);
-
         if ($besides === self::NONE) {
             if ($capabilities === self::NONE) {
                 return 'pure';
@@ -187,63 +185,14 @@ final class Capabilities
         }
 
         $names = [];
-        $covered = self::NONE;
 
-        // the widest names first, so that e.g. write-props is not spelt out as three names
-        $ordered_names = [
-            'write-props',
-            'write-this-props',
-            'write-globals',
-            'read-globals',
-            'write-refs',
-            'io',
-        ];
-
-        foreach ($ordered_names as $name) {
-            $bits = self::NAMES[$name];
-
-            if (($bits & ~$capabilities) === 0
-                && ($bits & ~$covered) !== 0
-                && ($bits & ~$besides) !== 0
-            ) {
-                $names[] = $name;
-                $covered |= $bits;
-            }
-        }
-
-        // bits no name covers on its own (read-props)
         foreach (self::BIT_NAMES as $bit => $name) {
-            if (($capabilities & $bit) !== 0 && (($covered | $besides) & $bit) === 0) {
+            if (($capabilities & $bit) !== 0 && ($besides & $bit) === 0) {
                 $names[] = $name;
-                $covered |= $bit;
             }
         }
 
         return implode('|', $names);
-    }
-
-    /**
-     * A capability set with the capabilities its capabilities imply: writing properties implies
-     * writing those of `$this`, which implies reading properties; writing globals implies
-     * reading them.
-     *
-     * @psalm-pure
-     */
-    private static function withImplied(int $capabilities): int
-    {
-        if (($capabilities & self::WRITE_PROPS) !== 0) {
-            $capabilities |= self::WRITE_THIS_PROPS;
-        }
-
-        if (($capabilities & self::WRITE_THIS_PROPS) !== 0) {
-            $capabilities |= self::READ_PROPS;
-        }
-
-        if (($capabilities & self::WRITE_GLOBALS) !== 0) {
-            $capabilities |= self::READ_GLOBALS;
-        }
-
-        return $capabilities;
     }
 
     /**

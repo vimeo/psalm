@@ -656,7 +656,7 @@ final class ExistingAtomicStaticCallAnalyzer
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      *
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {

@@ -81,7 +81,7 @@ final class MethodCallPurityAnalyzer
             $capabilities &= ~Capabilities::RECEIVER_LOCAL;
         } elseif (($capabilities & Capabilities::WRITE_THIS_PROPS) !== 0 && !self::isThis($var)) {
             // the callee's `$this` is not the caller's
-            $capabilities |= Capabilities::WRITE_PROPS;
+            $capabilities = ($capabilities & ~Capabilities::WRITE_THIS_PROPS) | Capabilities::WRITE_PROPS;
         }
 
         return $capabilities;

@@ -21,7 +21,7 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {

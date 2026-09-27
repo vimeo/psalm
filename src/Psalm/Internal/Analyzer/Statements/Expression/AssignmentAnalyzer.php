@@ -116,7 +116,7 @@ final class AssignmentAnalyzer
     public static function getExternalWriteCapabilities(Context $context, string $var_id): int
     {
         if (VariableFetchAnalyzer::isSuperGlobal($var_id) || isset($context->referenced_globals[$var_id])) {
-            return Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS;
+            return Capabilities::WRITE_GLOBALS;
         }
 
         if (isset($context->captured_by_ref[$var_id])) {
@@ -130,7 +130,7 @@ final class AssignmentAnalyzer
         if (isset($context->references_to_external_scope[$var_id])) {
             // `global $x`, or a reference into another scope
             return isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->from_global_state
-                ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
+                ? Capabilities::WRITE_GLOBALS
                 : Capabilities::WRITE_REFS;
         }
 
@@ -223,7 +223,7 @@ final class AssignmentAnalyzer
             if (VariableFetchAnalyzer::isSuperGlobal($root_var_name)) {
                 $root_is_superglobal = true;
                 $statements_analyzer->signalMutation(
-                    Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+                    Capabilities::WRITE_GLOBALS,
                     $context,
                     'superglobal ' . $root_var_name,
                     ImpureGlobalVariable::class,
@@ -247,7 +247,7 @@ final class AssignmentAnalyzer
                 );
             } elseif (isset($context->referenced_globals[$root_var_name])) {
                 $statements_analyzer->signalMutation(
-                    Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+                    Capabilities::WRITE_GLOBALS,
                     $context,
                     'global variable ' . $root_var_name,
                     ImpureGlobalVariable::class,
@@ -262,7 +262,7 @@ final class AssignmentAnalyzer
                 ) {
                     // `global $x`
                     $statements_analyzer->signalMutation(
-                        Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
+                        Capabilities::WRITE_GLOBALS,
                         $context,
                         'global variable ' . $root_var_name,
                         ImpureGlobalVariable::class,
@@ -685,7 +685,13 @@ final class AssignmentAnalyzer
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
             $assign_var->class instanceof PhpParser\Node\Name
         ) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
+            // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write
+            $capabilities = $context->capabilities;
+            $context->capabilities |= Capabilities::READ_GLOBALS;
+            $analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context);
+            $context->capabilities = $capabilities;
+
+            if ($analyzed === false) {
                 return false;
             }
 

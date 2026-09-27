@@ -1166,7 +1166,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
-            ? Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS
+            ? $capabilities & (Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS)
             : Capabilities::NONE;
     }
 

@@ -8,6 +8,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -50,10 +51,35 @@ final class CapabilitiesTest extends TestCase
                         return S::$n;
                     }
 
-                    /** @psalm-capabilities write-globals */
+                    /** @psalm-capabilities read-globals|write-globals */
                     function wg(): int {
                         S::$n = 1;
                         return rg();
+                    }',
+            ],
+            'writeCapabilitiesOnlyWrite' => [
+                'code' => '<?php
+                    final class S { public static int $n = 0; }
+
+                    final class Obj {
+                        public int $x = 0;
+
+                        /** @psalm-capabilities write-this-props */
+                        public function set(int $x): self {
+                            $this->x = $x;
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function wg(): void {
+                        S::$n = 1;
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function wp(Obj $o): void {
+                        $o->x = 1;
+                        $o->set(2);
                     }',
             ],
             'ioAllowsBuiltinsWithSideEffects' => [
@@ -69,7 +95,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     final class Obj { public int $x = 0; }
 
-                    /** @psalm-capabilities write-props */
+                    /** @psalm-capabilities read-props|write-props */
                     function wp(Obj $o): int {
                         $o->x = 1;
                         return $o->x;
@@ -78,7 +104,7 @@ final class CapabilitiesTest extends TestCase
                     final class Self_ {
                         public int $x = 0;
 
-                        /** @psalm-capabilities write-this-props */
+                        /** @psalm-capabilities read-props|write-this-props */
                         public function wtp(): int {
                             $this->x = 1;
                             return $this->x;
@@ -264,7 +290,7 @@ final class CapabilitiesTest extends TestCase
                         public static ?Box $g = null;
                     }
 
-                    /** @psalm-capabilities read-globals|write-props */
+                    /** @psalm-capabilities read-props|read-globals|write-props */
                     function f(): int {
                         $b = Box::$g;
                         $fresh = new Box();
@@ -272,7 +298,7 @@ final class CapabilitiesTest extends TestCase
                         return $b !== null ? $b->x + $fresh->x : 0;
                     }
 
-                    /** @psalm-capabilities write-globals|write-props */
+                    /** @psalm-capabilities write-props|read-globals|write-globals */
                     function g(): void {
                         $b = Box::$g;
                         if ($b !== null) {
@@ -282,7 +308,7 @@ final class CapabilitiesTest extends TestCase
             ],
             'builtinFirstClassCallableCarriesItsCapabilities' => [
                 'code' => '<?php
-                    /** @psalm-capabilities write-globals */
+                    /** @psalm-capabilities read-globals|write-globals */
                     function roll(): int {
                         $r = mt_rand(...);
                         return $r();
@@ -468,7 +494,7 @@ final class CapabilitiesTest extends TestCase
                         $x = 1;
                     }
 
-                    /** @psalm-capabilities write-globals */
+                    /** @psalm-capabilities read-globals|write-globals */
                     function setGlobal(): void {
                         global $g;
                         $g = 1;
@@ -497,7 +523,7 @@ final class CapabilitiesTest extends TestCase
                         $c->bump();
                     }
 
-                    /** @psalm-capabilities write-props */
+                    /** @psalm-capabilities read-props|write-props */
                     function sortProperty(Counter $c): void {
                         sort($c->items);
                     }
@@ -537,7 +563,7 @@ final class CapabilitiesTest extends TestCase
                         return is_int($g) ? $g : 0;
                     }
 
-                    /** @psalm-capabilities write-globals */
+                    /** @psalm-capabilities read-globals|write-globals */
                     function writesGlobal(): void {
                         global $g;
                         $g = 1;
@@ -620,7 +646,7 @@ final class CapabilitiesTest extends TestCase
                         public function __construct() {}
                     }
 
-                    /** @psalm-capabilities write-globals */
+                    /** @psalm-capabilities read-globals|write-globals */
                     function make(Box $b = new Box()): Box {
                         return $b;
                     }',
@@ -712,7 +738,7 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /**
-                     * @psalm-capabilities write-this-props|io
+                     * @psalm-capabilities read-props|write-this-props|io
                      * @param Traversable[io]<int, int> $t
                      */
                     function sumAny(Traversable $t): int {
@@ -723,7 +749,7 @@ final class CapabilitiesTest extends TestCase
                         return $s;
                     }
 
-                    /** @psalm-capabilities write-this-props|io */
+                    /** @psalm-capabilities read-props|write-this-props|io */
                     function pass(): int {
                         return sumGiven(pureGen()) + sumAny(pureGen()) + sumAny(ioGen());
                     }',
@@ -770,7 +796,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @implements Iterator<int, int>
-                     * @psalm-capabilities write-this-props
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     final class Counter implements Iterator {
                         private int $i = 0;
@@ -791,8 +817,8 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /**
-                     * @psalm-capabilities write-props
-                     * @param Iterator[write-props]<int, int> $it
+                     * @psalm-capabilities write-this-props|write-props
+                     * @param Iterator[write-this-props|write-props]<int, int> $it
                      */
                     function sumCounter(Iterator $it): int {
                         $s = 0;
@@ -814,7 +840,7 @@ final class CapabilitiesTest extends TestCase
                         return $s;
                     }
 
-                    /** @psalm-capabilities write-props */
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
                     function pass(Counter $c, Bag $b): int {
                         return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
                     }',
@@ -958,6 +984,50 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'writeThisPropsDoesNotIncludeReadProps' => [
+                'code' => '<?php
+                    final class Obj {
+                        public int $x = 0;
+
+                        /** @psalm-capabilities write-this-props */
+                        public function inc(): void {
+                            $this->x++;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - The context is write-this-props but accessing a property on a mutable object requires read-props',
+            ],
+            'writePropsDoesNotIncludeWriteThisProps' => [
+                'code' => '<?php
+                    final class Obj {
+                        public int $x = 0;
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function set(): void {
+                            $this->x = 1;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - The context is read-props|write-props but property assignment to Obj::$x requires write-this-props',
+            ],
+            'writeGlobalsDoesNotIncludeReadGlobals' => [
+                'code' => '<?php
+                    final class S { public static int $n = 0; }
+
+                    /** @psalm-capabilities write-globals */
+                    function inc(): void {
+                        S::$n++;
+                    }',
+                'error_message' => 'ImpureStaticProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - The context is write-globals but reading a static property requires read-globals',
+            ],
+            'pureMethodCannotUseThis' => [
+                'code' => '<?php
+                    final class Obj {
+                        /** @psalm-pure */
+                        public function self(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ImpureVariable',
+            ],
             'writingAnElementOfAByReferenceParameterNeedsWriteRefs' => [
                 'code' => '<?php
                     /**
@@ -1392,7 +1462,7 @@ final class CapabilitiesTest extends TestCase
                         public static ?Box $g = null;
                     }
 
-                    /** @psalm-capabilities read-globals|write-props */
+                    /** @psalm-capabilities read-props|write-props|read-globals */
                     function leak(): void {
                         $b = Box::$g;
                         if ($b !== null && $b->child !== null) {
@@ -1815,7 +1885,7 @@ final class CapabilitiesTest extends TestCase
                         }
                         return $s;
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-this-props|write-refs but iterating over Generator[io]<int, int, mixed, mixed> requires io',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is read-props|write-this-props|write-refs but iterating over Generator[io]<int, int, mixed, mixed> requires io',
             ],
             'resumingAnIoGeneratorNeedsIo' => [
                 'code' => '<?php
@@ -1826,7 +1896,7 @@ final class CapabilitiesTest extends TestCase
                     function step(Generator $g): void {
                         $g->next();
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is write-this-props|write-refs but method Generator::next requires io',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props|write-this-props|write-refs but method Generator::next requires io',
             ],
             'generatorPurityTemplateIsCovariant' => [
                 'code' => '<?php
@@ -1869,7 +1939,7 @@ final class CapabilitiesTest extends TestCase
                         /** @psalm-mutation-free */
                         public function valid(): bool { return false; }
                     }',
-                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-props|write-globals|write-refs|io',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-this-props|write-props|read-globals|write-globals|write-refs|io',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php
@@ -1944,7 +2014,7 @@ final class CapabilitiesTest extends TestCase
                         }
                         return $s;
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-props but iterating over iterable[io|read-props]<int, int> requires io|read-props',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:34 - The context is write-props but iterating over iterable[read-props|io]<int, int> requires read-props|io',
             ],
             'anImpureIteratorIsNotAPureIterable' => [
                 'code' => '<?php
@@ -2074,6 +2144,33 @@ final class CapabilitiesTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCapabilityNamesDenoteOneCapabilityEach(): void
+    {
+        $this->assertSame(Capabilities::WRITE_PROPS, Capabilities::fromList('write-props'));
+        $this->assertSame(Capabilities::WRITE_THIS_PROPS, Capabilities::fromList('write-this-props'));
+        $this->assertSame(Capabilities::WRITE_GLOBALS, Capabilities::fromList('write-globals'));
+        $this->assertSame(
+            Capabilities::READ_PROPS | Capabilities::WRITE_PROPS | Capabilities::IO,
+            Capabilities::fromList('read-props, write-props|io'),
+        );
+
+        $this->assertSame('pure', Capabilities::toString(Capabilities::NONE));
+        $this->assertSame('impure', Capabilities::toString(Capabilities::ALL));
+        $this->assertSame('write-props', Capabilities::toString(Capabilities::WRITE_PROPS));
+        $this->assertSame('write-globals', Capabilities::toString(Capabilities::WRITE_GLOBALS));
+        $this->assertSame(
+            'read-props|write-this-props|write-refs',
+            Capabilities::toString(Capabilities::EXTERNAL_MUTATION_FREE),
+        );
+        $this->assertSame(
+            'write-props|io',
+            Capabilities::toString(
+                Capabilities::READ_PROPS | Capabilities::WRITE_PROPS | Capabilities::IO,
+                Capabilities::READ_PROPS,
+            ),
+        );
     }
 
     public function testWritePropsStaticCallForgetsPropertyRefinements(): void

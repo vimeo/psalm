@@ -1036,7 +1036,7 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeOperandsBetweenIntRange(
         PhpParser\Node $parent,
@@ -1139,7 +1139,7 @@ final class ArithmeticOpAnalyzer
     /**
      * @param TIntRange|TInt $left_type_part
      * @param TIntRange|TInt $right_type_part
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeOperandsBetweenIntRangeAndInt(
         PhpParser\Node $parent,
@@ -1158,7 +1158,7 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeMulBetweenIntRange(
         PhpParser\Node\Expr\BinaryOp\Mul $parent,
@@ -1338,7 +1338,7 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzePowBetweenIntRange(
         ?Union &$result_type,
@@ -1414,7 +1414,7 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-capabilities write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function analyzeModBetweenIntRange(
         ?Union &$result_type,

@@ -400,7 +400,7 @@ final class PurityTemplateTest extends TestCase
             ],
             'classPurityTemplateDefault' => [
                 'code' => '<?php
-                    /** @psalm-purity-template C(pure) <= write-props */
+                    /** @psalm-purity-template C(pure) <= write-this-props|write-props */
                     abstract class Doer {
                         /**
                          * @psalm-mutation-free
@@ -421,7 +421,7 @@ final class PurityTemplateTest extends TestCase
                         return $d->run();
                     }
 
-                    /** @psalm-capabilities write-props */
+                    /** @psalm-capabilities write-this-props|write-props */
                     function useMutating(MutatingDoer $d): int {
                         return $d->run();
                     }',

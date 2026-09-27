@@ -13,7 +13,7 @@ use function is_string;
 use function str_replace;
 
 /**
- * @psalm-capabilities write-props|write-refs
+ * @psalm-capabilities read-props|write-this-props|write-props|write-refs
  * @api
  */
 final class Possibilities
@@ -35,7 +35,7 @@ final class Possibilities
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getUntemplatedCopy(
         TemplateResult $template_result,

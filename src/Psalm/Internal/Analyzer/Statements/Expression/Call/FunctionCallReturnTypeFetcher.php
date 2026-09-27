@@ -960,7 +960,7 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param array<PhpParser\Node\Arg>   $args
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingFlows(
         FunctionLikeStorage $function_storage,
@@ -1008,7 +1008,7 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,

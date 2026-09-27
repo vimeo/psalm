@@ -1228,7 +1228,7 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
-     * @psalm-capabilities write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,
