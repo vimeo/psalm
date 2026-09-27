@@ -78,6 +78,7 @@ use function preg_quote;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -1011,6 +1012,11 @@ class Reconciler
         $not = $assertion_string[0] === '!';
 
         if ($not) {
+            $assertion_string = substr($assertion_string, 1);
+        }
+
+        // non-negatable int comparisons are prefixed with "=", e.g. "=>5"
+        if (str_starts_with($assertion_string, '=>') || str_starts_with($assertion_string, '=<')) {
             $assertion_string = substr($assertion_string, 1);
         }
 

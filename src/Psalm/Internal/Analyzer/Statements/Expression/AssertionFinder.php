@@ -110,6 +110,8 @@ use function in_array;
 use function is_int;
 use function is_numeric;
 use function is_string;
+use function max;
+use function min;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
@@ -1710,21 +1712,6 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        // If the right operand is a variable with an int range type,
-        // extract its min_bound to narrow the left operand.
-        // e.g. $max >= $min where $min: int<5, max> → $max >= 5
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->right))
-        ) {
-            foreach ($type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TIntRange && $atomic_type->min_bound !== null) {
-                    $literal_value_comparison = $atomic_type->min_bound;
-
-                    return self::ASSIGNMENT_TO_RIGHT;
-                }
-            }
-        }
-
         $left_assignment = false;
         $value_left = null;
         if ($source instanceof StatementsAnalyzer
@@ -1747,21 +1734,6 @@ final class AssertionFinder
             $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
-        }
-
-        // If the left operand is a variable with an int range type,
-        // extract its max_bound to narrow the right operand.
-        // e.g. $min <= $max where $min: int<min, 5> → $max <= 5
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->left))
-        ) {
-            foreach ($type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TIntRange && $atomic_type->max_bound !== null) {
-                    $literal_value_comparison = $atomic_type->max_bound;
-
-                    return self::ASSIGNMENT_TO_LEFT;
-                }
-            }
         }
 
         return false;
@@ -1822,36 +1794,6 @@ final class AssertionFinder
             $literal_value_comparison = $value_left;
 
             return self::ASSIGNMENT_TO_LEFT;
-        }
-
-        // If the right operand is a variable with an int range type,
-        // extract its max_bound to narrow the left operand.
-        // e.g. $a < $b where $b: int<min, 5> → $a < 5
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->right))
-        ) {
-            foreach ($type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TIntRange && $atomic_type->max_bound !== null) {
-                    $literal_value_comparison = $atomic_type->max_bound;
-
-                    return self::ASSIGNMENT_TO_RIGHT;
-                }
-            }
-        }
-
-        // If the left operand is a variable with an int range type,
-        // extract its min_bound to narrow the right operand.
-        // e.g. $a < $b where $a: int<5, max> → $b > 5
-        if ($source instanceof StatementsAnalyzer
-            && ($type = $source->node_data->getType($conditional->left))
-        ) {
-            foreach ($type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TIntRange && $atomic_type->min_bound !== null) {
-                    $literal_value_comparison = $atomic_type->min_bound;
-
-                    return self::ASSIGNMENT_TO_LEFT;
-                }
-            }
         }
 
         return false;
@@ -4066,7 +4008,7 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        return [];
+        return self::getIntBoundComparisonAssertions($conditional, $source, $this_class_name);
     }
 
     /**
@@ -4175,7 +4117,94 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        return [];
+        return self::getIntBoundComparisonAssertions($conditional, $source, $this_class_name);
+    }
+
+    /**
+     * Narrows the operands of a comparison using the bounds of the other operand's int type,
+     * e.g. `$a >= $b` where `$b` is `int<5, max>` implies `$a >= 5`.
+     *
+     * These assertions are implied by the condition but not equivalent to it, so they are not negatable:
+     * `$a < $b` does not imply `$a < 5`.
+     *
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getIntBoundComparisonAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source,
+        ?string $this_class_name,
+    ): array {
+        if (!$source instanceof StatementsAnalyzer) {
+            return [];
+        }
+
+        if ($conditional instanceof Greater || $conditional instanceof GreaterOrEqual) {
+            $greater_expr = $conditional->left;
+            $lesser_expr = $conditional->right;
+        } else {
+            $greater_expr = $conditional->right;
+            $lesser_expr = $conditional->left;
+        }
+
+        $strict = $conditional instanceof Greater || $conditional instanceof Smaller;
+
+        $if_types = [];
+
+        $lesser_min = self::getIntBound($source, $lesser_expr, true);
+        if ($lesser_min !== null
+            && ($var_name = ExpressionIdentifier::getExtendedVarId($greater_expr, $this_class_name, $source)) !== null
+        ) {
+            $if_types[$var_name][] = [
+                $strict ? new IsGreaterThan($lesser_min, false) : new IsGreaterThanOrEqualTo($lesser_min, false),
+            ];
+        }
+
+        $greater_max = self::getIntBound($source, $greater_expr, false);
+        if ($greater_max !== null
+            && ($var_name = ExpressionIdentifier::getExtendedVarId($lesser_expr, $this_class_name, $source)) !== null
+        ) {
+            $if_types[$var_name][] = [
+                $strict ? new IsLessThan($greater_max, false) : new IsLessThanOrEqualTo($greater_max, false),
+            ];
+        }
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * Returns the lowest (or highest) value of an expression whose type only contains ints,
+     * or null if the expression is not an int or is unbounded in that direction
+     */
+    private static function getIntBound(StatementsAnalyzer $source, PhpParser\Node\Expr $expr, bool $lowest): ?int
+    {
+        $type = $source->node_data->getType($expr);
+        if ($type === null) {
+            return null;
+        }
+
+        $bound = null;
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralInt) {
+                $atomic_bound = $atomic_type->value;
+            } elseif ($atomic_type instanceof TIntRange) {
+                $atomic_bound = $lowest ? $atomic_type->min_bound : $atomic_type->max_bound;
+            } else {
+                return null;
+            }
+
+            if ($atomic_bound === null) {
+                return null;
+            }
+
+            if ($bound === null) {
+                $bound = $atomic_bound;
+            } else {
+                $bound = $lowest ? min($bound, $atomic_bound) : max($bound, $atomic_bound);
+            }
+        }
+
+        return $bound;
     }
 
     /**
