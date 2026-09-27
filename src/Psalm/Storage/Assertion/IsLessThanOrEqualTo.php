@@ -49,7 +49,10 @@ final class IsLessThanOrEqualTo extends Assertion
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsGreaterThan && $this->value === $assertion->value;
+        return $assertion instanceof IsGreaterThan
+            && $this->is_negatable
+            && $assertion->is_negatable
+            && $this->value === $assertion->value;
     }
 
     public function doesFilterNullOrFalse(): bool

@@ -1207,6 +1207,33 @@ final class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'intRangeBoundComparisonKeepsNullOfOtherOperand' => [
+                'code' => '<?php
+                    /**
+                     * @param int<min, 0> $b
+                     */
+                    function f(?int $a, int $b): void {
+                        // null < -1 is true
+                        if ($a < $b) {
+                            /** @psalm-check-type-exact $a = int<min, -1>|null */;
+                        }
+                    }',
+            ],
+            'intRangeBoundComparisonIsNotATautologyWithComplement' => [
+                'code' => '<?php
+                    /**
+                     * @param int<5, max> $b
+                     */
+                    function f(int $a, int $b, bool $flag): void {
+                        if (($a >= $b || $a < 5) && $flag) {
+                            return;
+                        }
+                        // $a = 10, $b = 20, $flag = true ends up here
+                        if ($flag) {
+                            echo "reachable";
+                        }
+                    }',
+            ],
             'literalLeftOperandNarrowsIntRangeRightOperand' => [
                 'code' => '<?php
                     /**
