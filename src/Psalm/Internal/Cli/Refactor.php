@@ -19,6 +19,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
@@ -321,18 +322,30 @@ final class Refactor
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        $progress = $debug
-            ? new DebugProgress()
-            : new DefaultProgress();
+        // CI takes precedence over AI detection, matching Psalm.php / Psalter.php.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci && CliUtils::runningUnderAiAgent());
+        if ($debug) {
+            $progress = new DebugProgress();
+        } elseif ($no_progress) {
+            $progress = new VoidProgress();
+        } else {
+            $progress = new DefaultProgress();
+        }
 
         if (array_key_exists('debug-emitted-issues', $options)) {
             $config->debug_emitted_issues = true;
         }
 
+        $report_options = new ReportOptions();
+        $report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
+
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
-            new ReportOptions(),
+            $report_options,
             [],
             $threads,
             $scanThreads,
