@@ -1249,6 +1249,21 @@ final class IntRangeTest extends TestCase
                         }
                     }',
             ],
+            'intRangeBoundComparisonIgnoresOperandsThatWriteVariables' => [
+                'code' => '<?php
+                    /**
+                     * @param int<10, 20> $hi
+                     * @param int<5, 10> $lo
+                     */
+                    function f(int $hi, int $lo): void {
+                        // $hi = 10, $lo = 5 ends up here with $a = 5
+                        if (($a = $hi) > ($a = $lo)) {
+                            if ($a === 5) {
+                                echo "reachable";
+                            }
+                        }
+                    }',
+            ],
             'literalLeftOperandNarrowsIntRangeRightOperand' => [
                 'code' => '<?php
                     /**
@@ -1276,6 +1291,31 @@ final class IntRangeTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeInGenericWidensArgumentAfterCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function setNegative(Box $box): void {
+                        $box->value = -100;
+                    }
+
+                    /**
+                     * @param Box<int<0, 5>> $box
+                     * @return int<0, 5>
+                     */
+                    function f(Box $box): int {
+                        setNegative($box);
+                        return $box->value;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'intRangeComparisonBelowIntMinIsContradiction' => [
                 'code' => '<?php
                     /**
