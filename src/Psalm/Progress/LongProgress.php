@@ -16,6 +16,9 @@ use function strlen;
 
 use const PHP_EOL;
 
+/**
+ * @api
+ */
 class LongProgress extends Progress
 {
     final public const NUMBER_OF_COLUMNS = 60;
@@ -25,6 +28,13 @@ class LongProgress extends Progress
     protected int $progress = 0;
 
     protected bool $fixed_size = false;
+
+    /**
+     * True when the current phase runs an unknown number of tasks (e.g. taint
+     * graph resolution, which loops to a fixed point). A percentage bar is
+     * meaningless in that case, so we only emit a tick per task.
+     */
+    protected bool $indeterminate = false;
 
     protected ?Phase $prevPhase = null;
     protected float $started = 0.0;
@@ -65,8 +75,8 @@ class LongProgress extends Progress
             || $phase === Phase::ALTERING
             || $phase === Phase::JIT_COMPILATION
             || $phase === Phase::PRELOADING
-            || $phase === Phase::MERGING_THREAD_RESULTS
-            || $phase === Phase::TAINT_GRAPH_RESOLUTION;
+            || $phase === Phase::MERGING_THREAD_RESULTS;
+        $this->indeterminate = $phase === Phase::TAINT_GRAPH_RESOLUTION;
     }
 
     protected function reportPhaseDuration(?Phase $newPhase = null): void
@@ -115,6 +125,16 @@ class LongProgress extends Progress
         }
 
         ++$this->progress;
+
+        if ($this->indeterminate) {
+            // The total number of tasks is unknown, so a percentage would be
+            // misleading. Emit one tick per task, wrapping into rows.
+            $this->write(self::doesTerminalSupportUtf8() ? '░' : '_');
+            if (($this->progress % self::NUMBER_OF_COLUMNS) === 0) {
+                $this->write(PHP_EOL);
+            }
+            return;
+        }
 
         if (!$this->fixed_size) {
             if ($this->in_ci) {

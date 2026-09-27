@@ -14,6 +14,7 @@ use function str_replace;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class Possibilities
 {

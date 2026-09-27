@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer;
 
 use Override;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -176,6 +177,14 @@ class FileAnalyzer extends SourceAnalyzer
         if ($leftover_stmts) {
             $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context);
 
+            if ($statements_analyzer->owns_type_variable_tracker) {
+                $statements_analyzer->type_variable_tracker->reconcile(
+                    $this->codebase,
+                    new CodeLocation($this, $leftover_stmts[0]),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             foreach ($leftover_stmts as $leftover_stmt) {
                 if ($leftover_stmt instanceof PhpParser\Node\Stmt\Return_) {
                     if ($leftover_stmt->expr) {
@@ -231,7 +240,7 @@ class FileAnalyzer extends SourceAnalyzer
                         $this->getSource(),
                         $fq_source_classlike,
                         $location,
-                        null,
+                        $file_context,
                         $this->suppressed_issues,
                         new ClassLikeNameOptions(
                             true,
@@ -602,7 +611,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -616,7 +625,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]

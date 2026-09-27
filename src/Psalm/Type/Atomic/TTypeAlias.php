@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class TTypeAlias extends Atomic
 {

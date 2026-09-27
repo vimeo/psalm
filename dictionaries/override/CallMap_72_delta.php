@@ -186,7 +186,7 @@ return array (
     array (
       0 => 'bool',
       'connection' => 'resource',
-      'callback=' => 'callable',
+      'callback=' => 'impure-callable',
     ),
     'oci_unregister_taf_callback' => 
     array (
@@ -3171,12 +3171,12 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'callable=' => 'callable',
+        'callable=' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'mixed',
-        'fn=' => 'callable',
+        'fn=' => 'impure-callable',
       ),
     ),
     'redisarray::del' => 
@@ -4733,14 +4733,14 @@ return array (
         0 => 'mixed',
         'data' => 'string',
         'worker_id=' => 'int',
-        'finish_callback=' => 'callable|null',
+        'finish_callback=' => 'impure-callable|null',
       ),
       'new' => 
       array (
         0 => 'mixed',
         'data' => 'string',
         'task_worker_index=' => 'int',
-        'finish_callback=' => 'callable|null',
+        'finish_callback=' => 'impure-callable|null',
       ),
     ),
     'swoole\\server::taskwait' => 

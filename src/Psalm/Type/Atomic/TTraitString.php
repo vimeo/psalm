@@ -10,6 +10,7 @@ use Override;
  * Denotes the `trait-string` type, used to describe a string representing a valid PHP trait.
  *
  * @psalm-immutable
+ * @api
  */
 final class TTraitString extends TString
 {

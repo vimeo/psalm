@@ -81,6 +81,9 @@ use function strpos;
 use function strtolower;
 use function substr;
 
+/**
+ * @api
+ */
 class Reconciler
 {
     public const RECONCILIATION_OK = 0;
@@ -951,7 +954,7 @@ class Reconciler
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
-        if (!$codebase->properties->propertyExists($property_id, true)) {
+        if (!$codebase->propertyExists($property_id, true)) {
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $fq_class_name,
             );

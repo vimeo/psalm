@@ -12,6 +12,7 @@ use Psalm\Storage\FileStorage;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class AfterFileAnalysisEvent
 {

@@ -12,6 +12,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\ImpureMethodCall;
@@ -28,6 +29,23 @@ use Psalm\Type;
 final class MethodCallPurityAnalyzer
 {
     /**
+     * Whether mutations of the receiver's own state are fine for the caller:
+     * the receiver is pure, free from references or external mutations, or $this.
+     */
+    public static function receiverAllowsInternalMutations(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $var,
+        MethodIdentifier $method_id,
+        Context $context,
+    ): bool {
+        // Already checked in isPureCompatible below
+        // $stmt->var->getAttribute('pure', false)
+        return $statements_analyzer->node_data->isPureCompatible($var)
+            || $var->getAttribute('external_mutation_free', false)
+            || $method_id->fq_class_name === $context->self;
+    }
+
+    /**
      * @return Mutations::LEVEL_*
      */
     public static function getMethodAllowedMutations(
@@ -40,16 +58,7 @@ final class MethodCallPurityAnalyzer
         $method_allowed_mutations = $method_storage->allowed_mutations;
         
         if ($method_allowed_mutations === Mutations::LEVEL_INTERNAL_READ_WRITE
-            && (
-                // Already checked in isPureCompatible below
-                // $stmt->var->getAttribute('pure', false)
-
-                $statements_analyzer->node_data->isPureCompatible($var)
-
-                || $var->getAttribute('external_mutation_free', false)
-
-                || $method_id->fq_class_name === $context->self
-            )
+            && self::receiverAllowsInternalMutations($statements_analyzer, $var, $method_id, $context)
         ) {
             // If the method allows internal mutations,
             // and either:
@@ -100,7 +109,15 @@ final class MethodCallPurityAnalyzer
             $stmt,
             $method_storage->allowed_mutations,
             false,
-            $lhs_var_id === '$this' ? $method_storage : null,
+            // the level of an unannotated method is inferred from its body, which only
+            // describes the method actually called if it can't be overridden elsewhere
+            $lhs_var_id === '$this'
+                || $method_storage->final
+                || $class_storage->final
+                || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                ? $method_storage
+                : null,
+            self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var, $method_id, $context),
         );
         
         if (!$context->inside_unset
@@ -154,6 +171,23 @@ final class MethodCallPurityAnalyzer
                     $stmt->setAttribute('pure', true);
                 }
             }
+        }
+
+        if (NoDiscardAnalyzer::isDiscardReported(
+            $codebase,
+            $context,
+            $method_storage,
+            $stmt->isFirstClassCallable(),
+            $class_storage,
+        )) {
+            IssueBuffer::maybeAdd(
+                new UnusedMethodCall(
+                    'The call to ' . $cased_method_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                    (string) $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if (!$config->remember_property_assignments_after_call

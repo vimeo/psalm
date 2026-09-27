@@ -9,6 +9,7 @@ use Psalm\Issue\CodeIssue;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class BeforeAddIssueEvent
 {

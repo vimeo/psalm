@@ -43,7 +43,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function mt_rand;
 use function reset;
 use function str_contains;
 use function substr;
@@ -398,7 +397,12 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             $mapping_function_id_parts = explode('&', $mapping_function_id);
 
             if ($fake_var_discriminator === null) {
-                $fake_var_discriminator = mt_rand();
+                // Derive the discriminator deterministically from the call's position instead of mt_rand(),
+                // so the synthetic variable names (and therefore the taint-graph node ids built from them)
+                // are identical across runs and threads. A random value here made the taint graph — and thus
+                // the set of reported taint issues — non-deterministic, especially once analysis is reused
+                // from cache or split across worker processes.
+                $fake_var_discriminator = $function_call_arg->getStartFilePos();
                 $clean_context = true;
             }
 

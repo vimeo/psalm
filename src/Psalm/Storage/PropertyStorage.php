@@ -9,6 +9,9 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class PropertyStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;

@@ -9,6 +9,8 @@ use Psalm\Node\VirtualNode;
 
 /**
  * Nop/empty statement (;).
+ *
+ * @api
  */
 final class VirtualNop extends Nop implements VirtualNode
 {

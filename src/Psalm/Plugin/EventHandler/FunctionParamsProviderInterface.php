@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Storage\FunctionLikeParameter;
 
+/**
+ * @api
+ */
 interface FunctionParamsProviderInterface
 {
     /**

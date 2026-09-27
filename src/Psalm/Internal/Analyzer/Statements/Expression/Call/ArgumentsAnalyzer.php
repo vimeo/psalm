@@ -23,11 +23,13 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -487,6 +489,9 @@ final class ArgumentsAnalyzer
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
+                            $type_variable_resolver = new TypeVariableResolver($codebase);
+                            $type_variable_resolver->traverse($replaced_param_type);
+
                             if ($replaced_param_type->hasTemplate()) {
                                 $replaced_param_type = TypeExpander::expandUnion(
                                     $codebase,
@@ -503,13 +508,26 @@ final class ArgumentsAnalyzer
                             }
 
                             if ($param_storage->type && !$param_type_inferred) {
+                                $param_comparison_result = new TypeComparisonResult();
+
                                 $type_match_found = UnionTypeComparator::isContainedBy(
                                     $codebase,
                                     $replaced_param_type,
                                     $param_storage->type,
+                                    false,
+                                    false,
+                                    $param_comparison_result,
                                 );
 
                                 if (!$type_match_found) {
+                                    continue;
+                                }
+
+                                if ($param_comparison_result->type_variable_lower_bounds
+                                    || $param_comparison_result->type_variable_upper_bounds
+                                ) {
+                                    // a containment that recorded type-variable bounds is
+                                    // provisional, not definitive: keep the declared type
                                     continue;
                                 }
                             }
@@ -688,6 +706,7 @@ final class ArgumentsAnalyzer
                             $self_fq_class_name,
                             $static_fq_class_name,
                             $code_location,
+                            $function_storage,
                             $function_params[$i],
                             $i,
                             $i,
@@ -870,6 +889,7 @@ final class ArgumentsAnalyzer
                     $self_fq_class_name,
                     $static_fq_class_name,
                     $code_location,
+                    $function_storage,
                     $function_param,
                     $argument_offset + $i,
                     $i,
@@ -897,23 +917,52 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     if ($function_param->sinks) {
-                        if (!$function_storage || $function_storage->specialize_call) {
+                        if (!$function_storage) {
+                            // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
+                            // when the caller has no storage, resolve it from the cased method id so
+                            // the sink is keyed by the declared parameter index (via $function_param),
+                            // and only a genuinely storage-less callable falls back to the call offset.
+                            $sink = ($in_call_map
+                                ? null
+                                : DataFlowNode::getForMethodArgumentById(
+                                    $codebase->methods,
+                                    $cased_method_id,
+                                    $argument_offset,
+                                    $code_location,
+                                    $function_param,
+                                ))
+                                ?? DataFlowNode::getForCallableArg(
+                                    $in_call_map
+                                        ? 'builtin'
+                                        : ($method_id instanceof MethodIdentifier
+                                            ? 'magic-method'
+                                            : 'callable-object'),
+                                    $cased_method_id,
+                                    $argument_offset,
+                                    $code_location,
+                                    $function_param->sinks,
+                                );
+                        } elseif ($function_storage->specialize_call) {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $cased_method_id,
-                                $argument_offset,
-                                $function_param->location,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
+                                $function_storage,
                                 $code_location,
-                                $function_param->sinks,
                             );
                         } else {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
-                                $cased_method_id,
-                                $argument_offset,
-                                $function_param->location,
+                                DataFlowNode::getParameterOffset(
+                                    $function_storage,
+                                    $function_param,
+                                    $argument_offset,
+                                ),
+                                $function_storage,
                                 null,
-                                $function_param->sinks,
                             );
                         }
 
@@ -1631,8 +1680,7 @@ final class ArgumentsAnalyzer
                         }
 
                         if ($arg_value_type->isSingle()
-                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic())
-                            && $atomic_arg_type instanceof TKeyedArray
+                            && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
                             //if we have a single shape, we'll check param names

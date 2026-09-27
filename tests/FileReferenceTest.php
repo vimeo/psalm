@@ -7,13 +7,16 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use UnexpectedValueException;
 
+use function array_values;
 use function count;
+use function is_array;
+use function ksort;
 use function strpos;
 
 final class FileReferenceTest extends TestCase
@@ -59,37 +62,83 @@ final class FileReferenceTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
-
-        if (!$found_references) {
-            throw new UnexpectedValueException('No file references found in this file');
-        }
+        $found_references = array_values($found_references);
 
         $this->assertSame(count($found_references), count($expected_locations));
 
-        foreach ($expected_locations as $i => $expected_location) {
-            $actual_location = $found_references[$i];
+        foreach ($found_references as &$loc) {
+            $loc = $loc->getLineNumber() . ':' . $loc->getColumn()
+                    . ':' . $loc->getSelectedText();
+        } unset($loc);
 
-            $this->assertSame(
-                $expected_location,
-                $actual_location->getLineNumber() . ':' . $actual_location->getColumn()
-                    . ':' . $actual_location->getSelectedText(),
-            );
-        }
+        $this->assertEquals($expected_locations, $found_references);
+    }
+
+    public function testReferenceLocationsAreRemovedWithTheirSourceNode(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+
+        $this->file_provider->registerFile(
+            $file_path,
+            '<?php
+                class A {}
+                final class B {
+                    public function useA(): void {
+                        new A();
+                    }
+                }
+                (new B())->useA();',
+        );
+        $codebase->reloadFiles($this->project_analyzer, [$file_path]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        self::assertNotSame([], $codebase->findReferencesToClassLike('A'));
+        $codebase->code_use_graph->removeReferencesFrom(CodeUseGraph::functionLikeNode('b::usea'));
+        self::assertSame([], $codebase->findReferencesToClassLike('A'));
+    }
+
+    public function testRemovedSourceNodeCanBeReassignedToAnotherFile(): void
+    {
+        $graph = new CodeUseGraph();
+        $source_node = CodeUseGraph::functionLikeNode('a::foo');
+        $target_node = CodeUseGraph::classNode('b');
+        $context = new Context();
+        $context->calling_method_id = 'a::foo';
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/old.php');
+        self::assertSame('/old.php', $graph->getNodeFile($source_node));
+
+        $graph->removeReferencesFrom($source_node);
+        self::assertNull($graph->getNodeFile($source_node));
+
+        $graph->addReference($target_node, $context, null, CodeUseGraph::EDGE_USE, '/new.php');
+        self::assertSame('/new.php', $graph->getNodeFile($source_node));
+    }
+
+    public function testUsedReferencesExcludeDeadSources(): void
+    {
+        $graph = new CodeUseGraph();
+        $used_source = CodeUseGraph::functionLikeNode('a::used');
+        $dead_source = CodeUseGraph::functionLikeNode('a::dead');
+        $target = CodeUseGraph::functionLikeNode('a::target');
+
+        $graph->markAsPublicApi($used_source);
+        $graph->addEdge($used_source, $target);
+        $graph->addEdge($dead_source, $target);
+        $graph->resolve(static fn(string $_): bool => false);
+
+        self::assertSame([$used_source => true], $graph->getUsedReferencingNodes($target));
     }
 
     /**
      * @dataProvider providerReferencedMethods
-     * @param array<string,array<string,bool>> $expected_method_references_to_members
-     * @param array<string,array<string,bool>> $expected_file_references_to_members
-     * @param array<string,array<string,bool>> $expected_method_references_to_missing_members
-     * @param array<string,array<string,bool>> $expected_file_references_to_missing_members
+     * @param array<string,array<string,bool>> $expected_references
      */
     public function testReferencedMethods(
         string $input_code,
-        array $expected_method_references_to_members,
-        array $expected_method_references_to_missing_members,
-        array $expected_file_references_to_members,
-        array $expected_file_references_to_missing_members,
+        array $expected_references,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -104,21 +153,24 @@ final class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_members = $this->project_analyzer->getCodebase()->file_reference_provider->getAllMethodReferencesToClassMembers();
+        $graph = $this->project_analyzer->getCodebase()->code_use_graph;
 
-        $this->assertSame($expected_method_references_to_members, $referenced_members);
+        /**
+         * @psalm-suppress MixedAssignment
+         * @psalm-pure
+         */
+        $ksort_recursive = function (array &$arr) use (&$ksort_recursive): void {
+            ksort($arr);
+            foreach ($arr as &$value) {
+                if (is_array($value)) {
+                    $ksort_recursive($value);
+                }
+            }
+        };
 
-        $referenced_missing_members = $this->project_analyzer->getCodebase()->file_reference_provider->getAllMethodReferencesToMissingClassMembers();
-
-        $this->assertSame($expected_method_references_to_missing_members, $referenced_missing_members);
-
-        $referenced_files = $this->project_analyzer->getCodebase()->file_reference_provider->getAllFileReferencesToClassMembers();
-
-        $this->assertSame($expected_file_references_to_members, $referenced_files);
-
-        $referenced_missing_files = $this->project_analyzer->getCodebase()->file_reference_provider->getAllFileReferencesToMissingClassMembers();
-
-        $this->assertSame($expected_file_references_to_missing_members, $referenced_missing_files);
+        $all = $graph->getAllReferences();
+        $ksort_recursive($all);
+        $this->assertSame($expected_references, $all);
     }
 
     /**
@@ -134,7 +186,10 @@ final class FileReferenceTest extends TestCase
 
                     new A();',
                 'A',
-                ['4:25:A'],
+                [
+                    '4:25:A',
+                    '4:21:new A()',
+                ],
             ],
             'getMethodLocation' => [
                 '<?php
@@ -147,16 +202,24 @@ final class FileReferenceTest extends TestCase
                 'A::foo',
                 ['7:32:foo'],
             ],
+            'getPropertyLocation' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $foo = 1;
+                    }
+
+                    echo (new A())->foo;',
+                'A::$foo',
+                ['7:26:(new A())->foo'],
+            ],
         ];
     }
 
     /**
      * @return array<string, array{
      *              0: string,
-     *              1: array<string,array<string,bool>>,
-     *              2: array<string,array<string,bool>>,
-     *              3: array<string,array<string,bool>>,
-     *              4: array<string,array<string,bool>>
+     *              1: array<string,array<string,bool>>
      * }>
      * @psalm-pure
      */
@@ -205,40 +268,50 @@ final class FileReferenceTest extends TestCase
 
                     $a = new A();',
                 [
-                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'file /var/www/somefile.php' => true,
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'foo\a::bat' => [
-                        'foo\b::__construct' => true,
+                    'class foo\\c' => [
+                        'func foo\\b::bar' => true,
                     ],
-                    'use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\b::bar' => true,
+                    'class foo\\d' => [
+                        'file /var/www/somefile.php' => true,
                     ],
-                    'foo\c::foo' => [
-                        'foo\b::bar' => true,
+                    'func foo\\a::bat' => [
+                        'func foo\\b::__construct' => true,
+                        'return foo\\a::bat' => true,
                     ],
-                ],
-                [
-                    'foo\a::__construct' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'func foo\\c::foo' => [
+                        'func foo\\b::bar' => true,
                     ],
-                    'foo\c::__construct' => [
-                        'foo\b::bar' => true,
+                    'func foo\\d::__construct' => [
+                        'return foo\\d::__construct' => true,
                     ],
-                ],
-                [
-                    'foo\d::__construct' => [
-                        '/var/www/somefile.php' => true,
+                    'missing-method foo\\a::__construct' => [
+                        'file /var/www/somefile.php' => true,
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'foo\d::$foo' => [
-                        '/var/www/somefile.php' => true,
+                    'missing-method foo\\c::__construct' => [
+                        'func foo\\b::bar' => true,
                     ],
-                ],
-                [
-                    'foo\a::__construct' => [
-                        '/var/www/somefile.php' => true,
+                    'property foo\\d::$foo' => [
+                        'file /var/www/somefile.php' => true,
+                    ],
+                    'return foo\\a::bat' => [
+                        'func foo\\b::__construct' => true,
+                    ],
+                    'return foo\\d::__construct' => [
+                        'file /var/www/somefile.php' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::bar' => true,
                     ],
                 ],
             ],
@@ -265,31 +338,47 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\d::bat' => true,
+                    'class foo\\a' => [
+                        'class foo\\b' => true,
+                        'func foo\\d::bat' => true,
                     ],
-                    'foo\b::__construct' => [
-                        'foo\d::bat' => true,
+                    'class foo\\b' => [
+                        'class foo\\c' => true,
                     ],
-                    'foo\a::__construct' => [
-                        'foo\d::bat' => true,
+                    'class foo\\c' => [
+                        'func foo\\d::bat' => true,
                     ],
-                    'foo\c::__construct' => [
-                        'foo\d::bat' => true,
+                    'func foo\\a::__construct' => [
+                        'return foo\\a::__construct' => true,
                     ],
-                    'foo\b::bar' => [
-                        'foo\d::bat' => true,
+                    'func foo\\a::bar' => [
+                        'func foo\\d::bat' => true,
                     ],
-                    'foo\a::bar' => [
-                        'foo\d::bat' => true,
+                    'func foo\\b::__construct' => [
+                        'return foo\\b::__construct' => true,
                     ],
-                    'foo\c::bar' => [
-                        'foo\d::bat' => true,
+                    'func foo\\b::bar' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'func foo\\c::__construct' => [
+                        'return foo\\c::__construct' => true,
+                    ],
+                    'func foo\\c::bar' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\a::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\b::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'return foo\\c::__construct' => [
+                        'func foo\\d::bat' => true,
+                    ],
+                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\d::bat' => true,
                     ],
                 ],
-                [],
-                [],
-                [],
             ],
             'constantRefs' => [
                 '<?php
@@ -311,14 +400,15 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'foo\a::C' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'const foo\\a::C' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
                 ],
-                [],
-                [],
-                [],
             ],
             'staticPropertyRefs' => [
                 '<?php
@@ -341,18 +431,19 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'foo\a::$fooBar' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'property foo\\a::$fooBar' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
                 ],
-                [],
-                [],
-                [],
             ],
             'instancePropertyRefs' => [
                 '<?php
@@ -375,24 +466,23 @@ final class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'class foo\\a' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-                    'foo\a::$fooBar' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
+                    'missing-method foo\\a::__construct' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
                     ],
-
+                    'property foo\\a::$fooBar' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func foo\\b::__construct' => true,
+                        'func foo\\c::foo' => true,
+                    ],
                 ],
-                [
-                    'foo\a::__construct' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
-                    ],
-                ],
-                [],
-                [],
             ],
             'traitAbstractRefs' => [
                 '<?php
@@ -414,16 +504,19 @@ final class FileReferenceTest extends TestCase
                         use T;
                     }',
                 [
-                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'ns\c::bar' => true,
+                    'class ns\\a' => [
+                        'func ns\\c::bar' => true,
                     ],
-                    'ns\a::foo' => [
-                        'ns\c::bar' => true,
+                    'class ns\\t' => [
+                        'class ns\\c' => true,
+                    ],
+                    'func ns\\a::foo' => [
+                        'func ns\\c::bar' => true,
+                    ],
+                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                        'func ns\\c::bar' => true,
                     ],
                 ],
-                [],
-                [],
-                [],
             ],
         ];
     }

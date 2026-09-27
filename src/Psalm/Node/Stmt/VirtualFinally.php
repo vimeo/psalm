@@ -7,6 +7,9 @@ namespace Psalm\Node\Stmt;
 use PhpParser\Node\Stmt\Finally_;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualFinally extends Finally_ implements VirtualNode
 {
 

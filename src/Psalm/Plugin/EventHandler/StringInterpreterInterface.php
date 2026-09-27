@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Type\Atomic\TLiteralString;
 
+/**
+ * @api
+ */
 interface StringInterpreterInterface
 {
     /**

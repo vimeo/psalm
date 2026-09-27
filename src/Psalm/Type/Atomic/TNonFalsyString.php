@@ -10,6 +10,7 @@ use Override;
  * Denotes a string, that is also non-falsy (every string except '' and '0')
  *
  * @psalm-immutable
+ * @api
  */
 class TNonFalsyString extends TNonEmptyString
 {

@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface FunctionReturnTypeProviderInterface
 {
     /**

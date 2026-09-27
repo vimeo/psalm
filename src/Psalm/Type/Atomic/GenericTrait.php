@@ -24,6 +24,7 @@ use function substr;
 /**
  * @template TTypeParams as array<Union>
  * @psalm-immutable
+ * @api
  */
 trait GenericTrait
 {

@@ -15,6 +15,9 @@ use const PHP_EOL;
 use const PHP_OS;
 use const STDERR;
 
+/**
+ * @api
+ */
 abstract class Progress
 {
     public function setErrorReporting(): void

@@ -11,6 +11,7 @@ use function sprintf;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class CheckstyleReport extends Report
 {

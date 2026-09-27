@@ -7,6 +7,9 @@ namespace Psalm\Plugin\EventHandler;
 use Psalm\Plugin\DynamicFunctionStorage;
 use Psalm\Plugin\EventHandler\Event\DynamicFunctionStorageProviderEvent;
 
+/**
+ * @api
+ */
 interface DynamicFunctionStorageProviderInterface
 {
     /**

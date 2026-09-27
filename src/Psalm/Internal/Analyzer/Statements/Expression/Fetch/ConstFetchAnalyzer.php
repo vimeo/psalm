@@ -14,11 +14,14 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -55,7 +58,10 @@ final class ConstFetchAnalyzer
                 break;
 
             case 'stdin':
-                $statements_analyzer->node_data->setType($stmt, Type::getResource());
+                // the STDIN stream (php://stdin) carries user-controlled input
+                $stdin_type = Type::getResource();
+                self::taintStdin($statements_analyzer, $stmt, $context, $stdin_type);
+                $statements_analyzer->node_data->setType($stmt, $stdin_type);
                 break;
 
             default:
@@ -114,6 +120,39 @@ final class ConstFetchAnalyzer
                     );
                 }
         }
+    }
+
+    /**
+     * The STDIN stream (php://stdin) yields user-controlled data, so reading from it
+     * is treated as a taint source.
+     */
+    private static function taintStdin(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ConstFetch $stmt,
+        Context $context,
+        Union &$type,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $taints = TaintKind::ALL_INPUT;
+        $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        if ($taints === 0) {
+            return;
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $source = DataFlowNode::getForTaint('STDIN', $location, $taints);
+        $graph->addSource($source);
+
+        $type = $type->setParentNodes([$source->id => $source]);
     }
 
     public static function getGlobalConstType(

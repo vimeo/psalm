@@ -37,6 +37,9 @@ use function strtolower;
 
 use const JSON_THROW_ON_ERROR;
 
+/**
+ * @api
+ */
 final class Context
 {
     /**
@@ -291,6 +294,9 @@ final class Context
 
     public bool $strict_types = false;
 
+    /**
+     * @var lowercase-string|null
+     */
     public ?string $calling_function_id = null;
 
     /**

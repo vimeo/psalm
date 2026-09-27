@@ -11,6 +11,7 @@ use Override;
  * we know that the int is not from user input
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonspecificLiteralInt extends TInt
 {

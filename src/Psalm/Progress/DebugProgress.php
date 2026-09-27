@@ -10,6 +10,9 @@ use function error_reporting;
 
 use const E_ALL;
 
+/**
+ * @api
+ */
 final class DebugProgress extends Progress
 {
     #[Override]

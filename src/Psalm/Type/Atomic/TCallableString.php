@@ -10,6 +10,7 @@ use Override;
  * Denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallableString extends TNonFalsyString
 {

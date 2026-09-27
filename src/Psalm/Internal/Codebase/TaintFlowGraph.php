@@ -21,6 +21,7 @@ use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
+use Psalm\Issue\TaintedNosql;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -36,11 +37,14 @@ use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 use Webmozart\Assert\Assert;
 
+use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
 use function json_encode;
 use function ksort;
+use function strpos;
+use function substr;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -49,6 +53,12 @@ use const JSON_THROW_ON_ERROR;
  */
 final class TaintFlowGraph extends DataFlowGraph
 {
+    /**
+     * The separator DataFlowNode uses to build a specialized node id from its
+     * unspecialized base id and specialization key (see DataFlowNode::make()).
+     */
+    private const SPECIALIZATION_SEPARATOR = ' specialized in ';
+
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
 
@@ -258,11 +268,28 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
-        // reprocess resolved descendants up to a maximum nesting level of 40
-        $depth = 40;
+        // Restrict resolution to the sub-graph that can actually reach a sink.
+        // A node from which no sink is reachable can never produce an issue, so
+        // propagating taint into it is wasted work. On real codebases the full
+        // taint graph is huge but this relevant sub-graph is tiny, which is what
+        // makes resolution converge quickly.
+        $sink_reachable = $this->getSinkReachableNodes($sources, $sinks);
 
-        $progress->expand($depth);
-        for ($i = 0; count($sinks) && count($sources) && $i < $depth; $i++) {
+        foreach ($sources as $id => $_) {
+            if (!isset($sink_reachable[$id])) {
+                unset($sources[$id]);
+            }
+        }
+
+        // Resolution runs to a fixed point (rather than for a fixed number of
+        // rounds): the (id, taints) visited guard below makes the state space
+        // finite, so the loop is guaranteed to terminate on its own. Combined
+        // with the sink-reachability pruning above, this converges quickly enough
+        // that no artificial nesting limit is needed.
+        //
+        // The number of rounds is not known ahead of time, so the progress bar
+        // renders this phase as indeterminate (a tick per round, no percentage).
+        while (count($sinks) && count($sources)) {
             $new_sources = [];
 
             ksort($sources);
@@ -281,6 +308,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $sink_reachable,
                         $config,
                         $project_analyzer,
                         $codebase,
@@ -300,15 +328,10 @@ final class TaintFlowGraph extends DataFlowGraph
                     }
                     $specialized_calls = $source->specialized_calls;
                     $specialized_calls[$source->specialization_key][$source->unspecialized_id] = $source->id;
-                    $generated_source = new DataFlowNode(
+                    $generated_source = $source->withSpecialization(
                         $source->unspecialized_id,
                         null,
                         null,
-                        $source->label,
-                        $source->code_location,
-                        $source->taints,
-                        $source->taintSource,
-                        $source->path_types,
                         $specialized_calls,
                     );
 
@@ -318,6 +341,7 @@ final class TaintFlowGraph extends DataFlowGraph
                         $source_taints,
                         $sinks,
                         $visited_source_ids,
+                        $sink_reachable,
                         $config,
                         $project_analyzer,
                         $codebase,
@@ -338,16 +362,11 @@ final class TaintFlowGraph extends DataFlowGraph
                             }
                             $copy = $specialized_calls;
                             unset($copy[$specialization]);
-            
-                            $new_source = new DataFlowNode(
+
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $copy,
                             );
 
@@ -357,6 +376,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $sink_reachable,
                                 $config,
                                 $project_analyzer,
                                 $codebase,
@@ -365,15 +385,10 @@ final class TaintFlowGraph extends DataFlowGraph
                     } else {
                         // If not processing descendants, accept all specializations.
                         foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                            $new_source = new DataFlowNode(
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $specialized_calls,
                             );
 
@@ -383,6 +398,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $sink_reachable,
                                 $config,
                                 $project_analyzer,
                                 $codebase,
@@ -397,15 +413,10 @@ final class TaintFlowGraph extends DataFlowGraph
                             if (!isset($this->forward_edges[$specialized_id])) {
                                 continue;
                             }
-                            $new_source = new DataFlowNode(
+                            $new_source = $source->withSpecialization(
                                 $specialized_id,
                                 $source->id,
                                 $specialization,
-                                $source->label,
-                                $source->code_location,
-                                $source->taints,
-                                $source->taintSource,
-                                $source->path_types,
                                 $source->specialized_calls,
                             );
 
@@ -415,6 +426,7 @@ final class TaintFlowGraph extends DataFlowGraph
                                 $source_taints,
                                 $sinks,
                                 $visited_source_ids,
+                                $sink_reachable,
                                 $config,
                                 $project_analyzer,
                                 $codebase,
@@ -429,14 +441,121 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $progress->taskDone(0);
         }
-        for (; $i < $depth; $i++) {
-            $progress->taskDone(0);
+
+        $progress->taskDone(0);
+    }
+
+    /**
+     * Computes the set of node ids from which at least one sink is reachable.
+     *
+     * The search runs backwards from the sinks over the forward edges, treating
+     * specialization links as bidirectional so that a node whose specialized or
+     * de-specialized form can reach a sink is itself kept (the resolution walk
+     * maps freely between the two).
+     *
+     * @param array<string, DataFlowNode> $sources
+     * @param array<string, DataFlowNode> $sinks
+     * @return array<string, true>
+     */
+    private function getSinkReachableNodes(array $sources, array $sinks): array
+    {
+        $reverse = [];
+
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            $this->linkSpecialization($reverse, $from_id);
+
+            foreach ($destinations as $to_id => $_) {
+                $reverse[$to_id][$from_id] = true;
+                $this->linkSpecialization($reverse, $to_id);
+            }
         }
+
+        // Complementary, authoritative specialization links taken from the node
+        // objects' unspecialized_id field rather than from parsing the id string.
+        // linkSpecialization() above only recognises a specialized node while its
+        // id carries the ' specialized in ' separator (which DataFlowNode::make()
+        // is the sole producer of); linking via the field as well keeps pruning
+        // sound even if a future factory were to set unspecialized_id without
+        // going through make(). Sinks are registered in $this->nodes too, but
+        // sources are not, so they must be iterated separately.
+        foreach ($this->nodes as $node) {
+            $this->linkSpecializationByField($reverse, $node);
+        }
+
+        foreach ($sources as $node) {
+            $this->linkSpecializationByField($reverse, $node);
+        }
+
+        $reachable = [];
+        $queue = [];
+
+        foreach ($sinks as $id => $_) {
+            $reachable[$id] = true;
+            $queue[] = $id;
+        }
+
+        while ($queue) {
+            $id = array_pop($queue);
+
+            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                if (!isset($reachable[$from_id])) {
+                    $reachable[$from_id] = true;
+                    $queue[] = $from_id;
+                }
+            }
+        }
+
+        return $reachable;
+    }
+
+    /**
+     * If $id is a specialized node id, records a bidirectional link between it
+     * and its unspecialized base in the reverse adjacency map: during resolution
+     * the walk maps freely between a node's specialized and de-specialized forms,
+     * so both must share reachability. The link is derived from the id string
+     * because specialized nodes are not always registered in $this->specializations
+     * (e.g. specialized source and sink nodes).
+     *
+     * @param array<string, array<string, true>> $reverse
+     * @param-out array<string, array<string, true>> $reverse
+     */
+    private function linkSpecialization(array &$reverse, string $id): void
+    {
+        $pos = strpos($id, self::SPECIALIZATION_SEPARATOR);
+
+        if ($pos === false) {
+            return;
+        }
+
+        $unspecialized_id = substr($id, 0, $pos);
+
+        $reverse[$id][$unspecialized_id] = true;
+        $reverse[$unspecialized_id][$id] = true;
+    }
+
+    /**
+     * Like linkSpecialization(), but derives the unspecialized form from the
+     * node's authoritative unspecialized_id field instead of its id string, so
+     * the link is recorded even for a specialized node whose id was not built
+     * with the ' specialized in ' separator.
+     *
+     * @param array<string, array<string, true>> $reverse
+     * @param-out array<string, array<string, true>> $reverse
+     */
+    private function linkSpecializationByField(array &$reverse, DataFlowNode $node): void
+    {
+        if ($node->unspecialized_id === null) {
+            return;
+        }
+
+        $reverse[$node->id][$node->unspecialized_id] = true;
+        $reverse[$node->unspecialized_id][$node->id] = true;
     }
 
     /**
      * @param array<DataFlowNode> $sinks
      * @param array<string, DataFlowNode> $new_sources
+     * @param array<string, true> $sink_reachable
      * @param-out array<string, DataFlowNode> $new_sources
      */
     private function getChildNodes(
@@ -445,12 +564,24 @@ final class TaintFlowGraph extends DataFlowGraph
         int $source_taints,
         array $sinks,
         array $visited_source_ids,
+        array $sink_reachable,
         Config $config,
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
     ): void {
+        // $generated_source->specialized_calls is constant across all of this node's outgoing
+        // edges, so encode it once here rather than re-serialising it for every edge in the
+        // frontier-dedup key below (this is the hottest loop in taint resolution).
+        $specialized_calls_key = json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR);
+
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             if (!isset($this->nodes[$to_id])) {
+                continue;
+            }
+
+            // Skip nodes from which no sink is reachable: they cannot contribute
+            // to any issue, so there is no point propagating taint through them.
+            if (!isset($sink_reachable[$to_id])) {
                 continue;
             }
 
@@ -531,6 +662,12 @@ final class TaintFlowGraph extends DataFlowGraph
                             ),
                             TaintKind::INPUT_SQL => new TaintedSql(
                                 'Detected tainted SQL',
+                                $issue_location,
+                                $issue_trace,
+                                $path,
+                            ),
+                            TaintKind::INPUT_NOSQL => new TaintedNosql(
+                                'Detected tainted NoSQL query',
                                 $issue_location,
                                 $issue_trace,
                                 $path,
@@ -632,9 +769,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
 
-            $key = $to_id .
-                ' ' . json_encode($generated_source->specialized_calls, JSON_THROW_ON_ERROR) .
-                ' ' . $new_taints;
+            $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;
 
             if (isset($new_sources[$key])) {
                 continue;
@@ -643,12 +778,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $old = $this->nodes[$to_id];
             $path_types = $generated_source->path_types;
             $path_types []= $path_type;
-            $new_destination = new DataFlowNode(
-                $old->id,
-                $old->unspecialized_id,
-                $old->specialization_key,
-                $old->label,
-                $old->code_location,
+            $new_destination = $old->withFlow(
                 $new_taints,
                 $generated_source,
                 $path_types,

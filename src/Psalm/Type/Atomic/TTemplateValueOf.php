@@ -16,6 +16,7 @@ use Psalm\Type\Union;
  * Represents the type used when using TValueOf when the type of the array or enum is a template
  *
  * @psalm-immutable
+ * @api
  */
 final class TTemplateValueOf extends Atomic
 {

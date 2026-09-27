@@ -15,6 +15,9 @@ use function in_array;
 use function is_a;
 use function sprintf;
 
+/**
+ * @api
+ */
 final class PluginFileExtensionsSocket implements FileExtensionsInterface
 {
     /**

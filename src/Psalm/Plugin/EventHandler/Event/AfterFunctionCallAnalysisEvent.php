@@ -13,6 +13,7 @@ use Psalm\Type\Union;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class AfterFunctionCallAnalysisEvent
 {

@@ -11,6 +11,7 @@ namespace Psalm\Type;
  * and extracting it with ->value every time is a pain.
  *
  * @psalm-immutable
+ * @api
  */
 final class TaintKind
 {
@@ -31,8 +32,9 @@ final class TaintKind
     public const INPUT_SLEEP = (1 << 14);
     public const INPUT_EXTRACT = (1 << 15);
     public const INPUT_LLM_PROMPT = (1 << 16);
-    public const USER_SECRET = (1 << 17);
-    public const SYSTEM_SECRET = (1 << 18);
+    public const INPUT_NOSQL = (1 << 17);
+    public const USER_SECRET = (1 << 18);
+    public const SYSTEM_SECRET = (1 << 19);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -41,15 +43,21 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 17) - 1;
+    public const ALL_INPUT = (1 << 18) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
     /** @internal */
     public const BOOL_ONLY = self::INPUT_SLEEP;
+    /**
+     * @internal Taints that can only apply to values able to hold an array/object
+     * (e.g. a NoSQL query document). A plain string can never carry these taints,
+     * so casting user input to string acts as an escape.
+     */
+    public const ARRAY_ONLY = self::INPUT_NOSQL;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 19;
+    public const BUILTIN_TAINT_COUNT = 20;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -60,6 +68,7 @@ final class TaintKind
         'eval' => self::INPUT_EVAL,
         'ldap' => self::INPUT_LDAP,
         'sql' => self::INPUT_SQL,
+        'nosql' => self::INPUT_NOSQL,
         'html' => self::INPUT_HTML,
         'has_quotes' => self::INPUT_HAS_QUOTES,
         'shell' => self::INPUT_SHELL,

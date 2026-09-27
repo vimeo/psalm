@@ -32,6 +32,9 @@ use function usort;
 use const LIBXML_NOBLANKS;
 use const PHP_VERSION;
 
+/**
+ * @api
+ */
 final class ErrorBaseline
 {
     /**

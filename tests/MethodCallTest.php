@@ -209,6 +209,16 @@ final class MethodCallTest extends TestCase
                 'code' => '<?php
                     new DOMImplementation();',
             ],
+            'mongoManagerCursorYieldsDocuments' => [
+                'code' => '<?php
+                    $manager = new MongoDB\Driver\Manager("mongodb://localhost");
+                    $items = $manager->executeQuery("db.coll", new MongoDB\Driver\Query([]))->toArray();
+                    $docs = $manager->executeCommand("admin", new MongoDB\Driver\Command(["ping" => 1]))->toArray();',
+                'assertions' => [
+                    '$items' => 'array<array-key, array<array-key, mixed>|object>',
+                    '$docs' => 'array<array-key, array<array-key, mixed>|object>',
+                ],
+            ],
             'parentStaticCall' => [
                 'code' => '<?php
                     class A {
@@ -1131,6 +1141,37 @@ final class MethodCallTest extends TestCase
                     $it = buildIterator(2);
 
                     if ($it->current() === null) {}',
+            ],
+            'inheritedStaticReturnType' => [
+                'code' => '<?php
+                    class P {
+                        public function returnThis(): static {
+                            return $this;
+                        }
+
+                        /** @return static */
+                        public function docReturnThis(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C extends P {}
+                    final class D extends P {}
+
+                    $z = (new C())->returnThis();
+                    $y = (new C())->docReturnThis();
+                    $chained = $z->returnThis();
+                    $finalNative = (new D())->returnThis();
+                    $finalDocblock = (new D())->docReturnThis();',
+                'assertions' => [
+                    '$z===' => 'C&static',
+                    '$y===' => 'C&static',
+                    '$chained===' => 'C&static',
+                    '$finalNative===' => 'D',
+                    '$finalDocblock===' => 'D',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'resolveFinalInParentCall' => [
                 'code' => '<?php

@@ -7,6 +7,9 @@ namespace Psalm\Node;
 use PhpParser\Node\ArrayItem;
 use Psalm\Node\VirtualNode;
 
+/**
+ * @api
+ */
 final class VirtualArrayItem extends ArrayItem implements VirtualNode
 {
 

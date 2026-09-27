@@ -11,6 +11,9 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class ArgTypeInferer
 {
     /**

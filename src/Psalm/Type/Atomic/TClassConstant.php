@@ -13,6 +13,7 @@ use Psalm\Type\Atomic;
  * Denotes a class constant whose value might not yet be known.
  *
  * @psalm-immutable
+ * @api
  */
 final class TClassConstant extends Atomic
 {

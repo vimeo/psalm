@@ -12,6 +12,8 @@ use PhpParser\Node\VarLikeIdentifier;
  *
  * Examples: Names in property declarations are formatted as variables. Names in static property
  * lookups are also formatted as variables.
+ *
+ * @api
  */
 final class VirtualVarLikeIdentifier extends VarLikeIdentifier implements VirtualNode
 {

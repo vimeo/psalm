@@ -11,9 +11,11 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -48,6 +50,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -143,13 +146,16 @@ final class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->variable_use_graph
-            ) {
-                $type = new Union([new TBool()], [
-                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
-                ]);
-            } else {
-                $type = Type::getBool();
+            $type = new Union([new TBool()]);
+
+            if ($statements_analyzer->data_flow_graph) {
+                $type = self::stripCastTaints(
+                    $statements_analyzer,
+                    $type,
+                    $stmt,
+                    $maybe_type->parent_nodes ?? [],
+                    'bool',
+                );
             }
 
             $statements_analyzer->node_data->setType($stmt, $type);
@@ -297,6 +303,31 @@ final class CastAnalyzer
             return true;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            // PHP 8.5's (void) cast evaluates its operand and explicitly discards the result.
+            // It is only valid as a statement; consuming its result is a compile error in PHP
+            // (the parser nikic/php-parser accepts more leniently), so reject it in any
+            // value-consuming position. Otherwise it is the documented escape hatch for
+            // #[\NoDiscard]: analysing the operand under inside_general_use marks it as used, so
+            // no discarded-return-value issue is raised. The parser only produces this node when
+            // targeting PHP 8.5+, so no version guard is needed here.
+            if ($context->insideUse()) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast can only be used as a statement, not as an expression',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getVoid());
+
+            return $expression_result;
+        }
+
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand the cast ' . $stmt::class,
@@ -325,7 +356,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->variable_use_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -487,11 +518,13 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $int_type = $int_type->setParentNodes($parent_nodes);
-        }
-
-        return $int_type;
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $int_type,
+            $stmt,
+            $parent_nodes,
+            'int',
+        );
     }
 
     public static function castFloatAttempt(
@@ -511,7 +544,7 @@ final class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->variable_use_graph) {
+        if ($statements_analyzer->data_flow_graph) {
             $parent_nodes = $stmt_type->parent_nodes;
         }
 
@@ -684,11 +717,13 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $float_type = $float_type->setParentNodes($parent_nodes);
-        }
-
-        return $float_type;
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $float_type,
+            $stmt,
+            $parent_nodes,
+            'float',
+        );
     }
 
     public static function castStringAttempt(
@@ -846,6 +881,20 @@ final class CastAnalyzer
                 continue;
             }
 
+            if ($atomic_type instanceof TTypeVariable) {
+                // A class-template type variable is castable through the bound
+                // its construction inferred — as the TTemplateParam branch reads
+                // through `as`. Resolve it so `(string) $var` sees that bound
+                // instead of rejecting the bare variable as uncastable.
+                $resolved = TypeVariableTracker::resolveTypeVariables(new Union([$atomic_type]), $codebase);
+
+                if ($resolved->getId() !== $atomic_type->getId()) {
+                    $atomic_types = array_merge($atomic_types, $resolved->getAtomicTypes());
+
+                    continue;
+                }
+            }
+
             $invalid_casts[] = $atomic_type->getId();
         }
 
@@ -882,11 +931,61 @@ final class CastAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph) {
-            $str_type = $str_type->setParentNodes($parent_nodes);
+        return self::stripCastTaints(
+            $statements_analyzer,
+            $str_type,
+            $stmt,
+            $parent_nodes,
+            'string',
+        );
+    }
+
+    /**
+     * Route the parent nodes of a scalar cast through a pass-through node that strips the
+     * taints which cannot survive the target scalar type (see Union::getTaintsToRemove()):
+     * casting to int/float removes every non-numeric taint, casting to bool every
+     * non-bool taint, and casting to string the array/object-only taints (e.g. nosql).
+     *
+     * The pass-through node is added to the active data-flow graph so variable-use tracking
+     * stays intact in every mode; the removed_taints on the edge is ignored by the
+     * variable-use graph and only takes effect for taint analysis.
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     */
+    private static function stripCastTaints(
+        StatementsAnalyzer $statements_analyzer,
+        Union $result_type,
+        PhpParser\Node\Expr $stmt,
+        array $parent_nodes,
+        string $cast_type,
+    ): Union {
+        if (!$graph = $statements_analyzer->data_flow_graph) {
+            return $result_type;
         }
 
-        return $str_type;
+        $removed_taints = $result_type->getTaintsToRemove();
+
+        if ($removed_taints !== 0 && $parent_nodes) {
+            $cast_node = DataFlowNode::getForAssignment(
+                $cast_type . '-cast',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+            $graph->addNode($cast_node);
+
+            foreach ($parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $cast_node,
+                    $cast_type . '-cast',
+                    0,
+                    $removed_taints,
+                );
+            }
+
+            $parent_nodes = [$cast_node->id => $cast_node];
+        }
+
+        return $result_type->setParentNodes($parent_nodes);
     }
 
     private static function checkExprGeneralUse(

@@ -10,6 +10,7 @@ use Override;
  * Denotes an enum with a specific value
  *
  * @psalm-immutable
+ * @api
  */
 final class TEnumCase extends TNamedObject
 {

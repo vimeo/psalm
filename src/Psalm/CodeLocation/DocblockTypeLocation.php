@@ -9,6 +9,7 @@ use Psalm\FileSource;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class DocblockTypeLocation extends CodeLocation
 {

@@ -655,6 +655,16 @@ final class TypeExpander
                     $return_type = $static_class_type;
                 }
             }
+        } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && $return_type::class === TNamedObject::class
+            && $static_class_type instanceof TNamedObject
+            && $codebase->classExtends($static_class_type->value, $return_type->value)
+        ) {
+            // The called class already includes the declaring class's constraints.
+            $return_type = $static_class_type->setIntersectionTypes(
+                array_merge($return_type->extra_types, $static_class_type->extra_types),
+            )->setIsStatic(!$final, true);
         } elseif ($return_type->is_static && !$return_type->is_static_resolved
             && ($static_class_type instanceof TNamedObject
                 || $static_class_type instanceof TTemplateParam)

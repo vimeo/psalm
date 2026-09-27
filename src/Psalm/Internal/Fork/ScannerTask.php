@@ -12,7 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 /**
  * @internal
- * @implements Task<null, void, void>
+ * @implements Task<null, array{id: int|null, count: int}, string>
  */
 final class ScannerTask implements Task
 {
@@ -25,6 +25,16 @@ final class ScannerTask implements Task
     #[Override]
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        return ProjectAnalyzer::getInstance()->getCodebase()->scanner->scanAPath($this->file);
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+
+        // Register any new custom taints discovered while scanning this file through the parent's single
+        // registry, so every worker agrees on the bit assigned to a given taint name.
+        $codebase->setTaintRegistrationChannel($channel);
+
+        try {
+            return $codebase->scanner->scanAPath($this->file);
+        } finally {
+            $codebase->setTaintRegistrationChannel(null);
+        }
     }
 }

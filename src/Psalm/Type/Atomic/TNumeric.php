@@ -10,6 +10,7 @@ use Override;
  * Denotes the `numeric` type (which can also result from an `is_numeric` check).
  *
  * @psalm-immutable
+ * @api
  */
 class TNumeric extends Scalar
 {

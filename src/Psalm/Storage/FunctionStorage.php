@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+/**
+ * @api
+ */
 final class FunctionStorage extends FunctionLikeStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;

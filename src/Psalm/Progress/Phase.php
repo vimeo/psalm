@@ -9,6 +9,7 @@ namespace Psalm\Progress;
  * when implementing progress make sure to always include a fallback based on the name of the case.
  *
  * @psalm-immutable
+ * @api
  */
 enum Phase
 {

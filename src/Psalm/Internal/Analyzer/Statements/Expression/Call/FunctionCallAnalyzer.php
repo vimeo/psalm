@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -71,6 +72,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function max;
 use function preg_replace;
 use function reset;
@@ -83,6 +85,9 @@ use function strtolower;
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @psalm-suppress ComplexMethod
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -313,6 +318,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return true;
         }
 
+        foreach ($function_call_info->callable_ids as $callable_id => $_) {
+            FunctionCallReturnTypeFetcher::taintCallableReturnType(
+                $statements_analyzer,
+                $stmt,
+                $real_stmt,
+                $callable_id,
+                $context,
+            );
+        }
+
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
             $context->constants[$const_name] = $const_type;
             $context->vars_in_scope[$const_name] = $const_type;
@@ -351,6 +366,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         self::checkFunctionCallPurity(
             $statements_analyzer,
             $codebase,
+            $stmt,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
+        self::checkFunctionNoDiscard(
+            $statements_analyzer,
             $stmt,
             $function_name,
             $function_call_info,
@@ -665,7 +688,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
 
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    if ($statements_analyzer->signalMutation(
+                    $source = $statements_analyzer->getSource();
+
+                    if ($function_name instanceof PhpParser\Node\Expr\Variable
+                        && is_string($function_name->name)
+                        && $source instanceof ClosureAnalyzer
+                        && $source->getRecursiveVarId() === '$' . $function_name->name
+                    ) {
+                        // a recursive call of the closure being analysed: not a mutation of its own
+                    } elseif ($statements_analyzer->signalMutation(
                         $var_type_part->allowed_mutations,
                         $context,
                         'function call on ' . $var_type_part->getId(),
@@ -707,6 +738,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     if ($var_type_part instanceof TClosure) {
                         $function_call_info->byref_uses += $var_type_part->byref_uses;
+                    }
+
+                    if ($var_type_part->callable_id !== null) {
+                        // Collect every known underlying id. When the call target is a union of
+                        // distinct callables, any of them may run, so the taint behavior of all
+                        // of them is re-dispatched on invocation (an over-approximation, which is
+                        // the sound direction for taint). Callables with no known id contribute
+                        // nothing to re-dispatch and are simply skipped.
+                        $function_call_info->callable_ids[$var_type_part->callable_id] = true;
                     }
 
                     $function_call_info->function_exists = true;
@@ -841,11 +881,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
 
-                $custom_call_sink = DataFlowNode::getForMethodArgument(
-                    'variable-call',
+                $custom_call_sink = DataFlowNode::getForCallableArg(
+                    'dynamic-function-call',
                     'variable-call',
                     0,
-                    $arg_location,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
@@ -1114,6 +1153,40 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Reports the return value of a `#[\NoDiscard]` function being discarded at a call site.
+     *
+     * @see NoDiscardAnalyzer::isDiscardReported() for when this applies.
+     */
+    private static function checkFunctionNoDiscard(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($function_call_info->function_id === null
+            || $function_call_info->function_storage === null
+            || !NoDiscardAnalyzer::isDiscardReported(
+                $statements_analyzer->getCodebase(),
+                $context,
+                $function_call_info->function_storage,
+                $stmt->isFirstClassCallable(),
+            )
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UnusedFunctionCall(
+                'The call to ' . $function_call_info->function_id . ' is not used',
+                new CodeLocation($statements_analyzer, $function_name),
+                $function_call_info->function_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     /**

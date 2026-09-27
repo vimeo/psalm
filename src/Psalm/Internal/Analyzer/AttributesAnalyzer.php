@@ -22,13 +22,13 @@ use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\HasAttributesInterface;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
-use function array_values;
 use function assert;
 use function count;
 use function strtolower;
@@ -119,6 +119,25 @@ final class AttributesAnalyzer
                     $suppressed_issues,
                 );
             }
+
+            // PHP 8.5 rejects #[\NoDiscard] at declaration time when there is no return value
+            // to discard (a fatal error for void/never native return types). Below 8.5 the
+            // attribute class does not exist, and Psalm already reports it as unknown.
+            if ($fq_attribute_name === 'NoDiscard'
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && $storage instanceof FunctionLikeStorage
+                && $storage->signature_return_type !== null
+                && ($storage->signature_return_type->isVoid() || $storage->signature_return_type->isNever())
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidAttribute(
+                        "Attribute {$attribute_name} cannot be used on a function or method with a "
+                            . 'void or never return type',
+                        $attribute_name_location,
+                    ),
+                    $suppressed_issues,
+                );
+            }
         }
     }
 
@@ -139,7 +158,7 @@ final class AttributesAnalyzer
             $source,
             $fq_attribute_name,
             $attribute_name_location,
-            null,
+            $context,
             $suppressed_issues,
             new ClassLikeNameOptions(
                 false,
@@ -204,7 +223,10 @@ final class AttributesAnalyzer
             new NodeDataProvider(),
             false,
         );
-        $statements_analyzer->addSuppressedIssues(array_values($suppressed_issues));
+        // keep the char-offset keys so --find-unused-psalm-suppress can mark
+        // these suppressions as used (array_values would turn them into a list,
+        // which addSuppressedIssues re-keys by issue name, defeating the check)
+        $statements_analyzer->addSuppressedIssues($suppressed_issues);
 
         $had_returned = $context->has_returned;
         $context->has_returned = false;

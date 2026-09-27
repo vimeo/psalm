@@ -7,7 +7,6 @@ namespace Psalm\Internal\FileManipulation;
 use PhpParser;
 use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\DocComment;
@@ -39,7 +38,7 @@ use function substr;
 final class FunctionDocblockManipulator
 {
     /**
-     * Manipulators ordered by line number
+     * Manipulators keyed by function-like start offset
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
@@ -90,20 +89,19 @@ final class FunctionDocblockManipulator
     /** @var list<string> */
     private array $throwsExceptions = [];
 
-    /**
-     * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
-     */
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        FunctionLike $stmt,
+        Closure|Function_|ClassMethod|ArrowFunction $stmt,
     ): FunctionDocblockManipulator {
-        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
-            return self::$manipulators[$file_path][$stmt->getLine()];
+        $function_start = (int) $stmt->getAttribute('startFilePos');
+
+        if (isset(self::$manipulators[$file_path][$function_start])) {
+            return self::$manipulators[$file_path][$function_start];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$function_start]
             = new self($file_path, $stmt, $project_analyzer);
 
         return $manipulator;
@@ -115,8 +113,11 @@ final class FunctionDocblockManipulator
         ProjectAnalyzer $project_analyzer,
     ) {
         $docblock = $stmt->getDocComment();
-        $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
-        $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
+        $this->docblock_start = $docblock
+            ? $docblock->getStartFilePos()
+            : (int)$stmt->getAttribute('startFilePos');
+        $this->docblock_end = (int)$stmt->getAttribute('startFilePos');
+        $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
         $attributes = $stmt->getAttrGroups();

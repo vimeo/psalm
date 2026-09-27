@@ -9,6 +9,7 @@ namespace Psalm\SourceControl\Git;
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @psalm-external-mutation-free
+ * @api
  */
 final class RemoteInfo
 {

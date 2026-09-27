@@ -13,6 +13,7 @@ namespace Psalm\Storage;
  *
  * @see https://github.com/php/php-src/issues/10126
  * @psalm-immutable
+ * @api
  */
 trait UnserializeMemoryUsageSuppressionTrait
 {

@@ -14,6 +14,7 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class NotNestedAssertions extends Assertion
 {

@@ -6,6 +6,9 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 
+/**
+ * @api
+ */
 final class RedundantConditionGivenDocblockType extends CodeIssue
 {
     public const ERROR_LEVEL = 2;

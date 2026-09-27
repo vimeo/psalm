@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
  * Denotes the `object` type
  *
  * @psalm-immutable
+ * @api
  */
 class TObject extends Atomic
 {

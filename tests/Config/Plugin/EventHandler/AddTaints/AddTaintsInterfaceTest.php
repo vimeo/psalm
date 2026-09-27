@@ -27,12 +27,10 @@ use const DIRECTORY_SEPARATOR;
 
 final class AddTaintsInterfaceTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
-        self::$config = new TestConfig();
+        new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
             define('PSALM_VERSION', '4.0.0');
@@ -46,7 +44,7 @@ final class AddTaintsInterfaceTest extends TestCase
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
     {
         $config->setIncludeCollector(new IncludeCollector());
-        return new ProjectAnalyzer(
+        $p = new ProjectAnalyzer(
             $config,
             new Providers(
                 $this->file_provider,
@@ -54,6 +52,9 @@ final class AddTaintsInterfaceTest extends TestCase
             ),
             new ReportOptions(),
         );
+        $p->initExtraFiles();
+        $p->initProjectFiles();
+        return $p;
     }
 
     private function setupProjectAnalyzerWithTaintBadDataPlugin(): void

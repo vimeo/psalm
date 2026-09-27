@@ -10,6 +10,7 @@ use Override;
  * Denotes a string that's also a numeric value e.g. `"5"`. It can result from `is_string($s) && is_numeric($s)`.
  *
  * @psalm-immutable
+ * @api
  */
 final class TNumericString extends TNonEmptyString
 {

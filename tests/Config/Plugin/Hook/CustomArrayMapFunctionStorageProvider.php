@@ -20,6 +20,9 @@ use function array_keys;
 use function array_map;
 use function count;
 
+/**
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
+ */
 final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStorageProviderInterface
 {
     /**

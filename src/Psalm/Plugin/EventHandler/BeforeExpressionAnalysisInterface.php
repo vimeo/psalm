@@ -6,6 +6,9 @@ namespace Psalm\Plugin\EventHandler;
 
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 
+/**
+ * @api
+ */
 interface BeforeExpressionAnalysisInterface
 {
     /**

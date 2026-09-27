@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Amp\Sync\Channel;
 use AssertionError;
 use Exception;
 use InvalidArgumentException;
@@ -31,6 +32,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -74,6 +76,7 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_diff_key;
 use function array_key_exists;
 use function array_pop;
 use function array_reverse;
@@ -89,6 +92,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -111,7 +115,10 @@ final class Codebase
 {
     /**
      * A map of fully-qualified use declarations to the files
-     * that reference them (keyed by filename)
+     * that reference them (keyed by filename).
+     *
+     * Separated from the CodeUseGraph because a use import does not
+     * automatically mean a class is actually used.
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
@@ -172,6 +179,8 @@ final class Codebase
     public Properties $properties;
 
     public Populator $populator;
+
+    public CodeUseGraph $code_use_graph;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
 
@@ -273,6 +282,15 @@ final class Codebase
      */
     public array $custom_taints = [];
 
+    /**
+     * Set (only) while scanning inside a forked worker process: the channel back to the parent, used to
+     * register new custom taints in the parent's single authoritative registry so all workers agree on the
+     * bit assigned to a given taint name. Null in the parent and when scanning single-threaded.
+     *
+     * @var Channel<array{id: int|null, count: int}, string>|null
+     */
+    private ?Channel $taint_registration_channel = null;
+
     /** @internal */
     public function __construct(
         public Config $config,
@@ -288,6 +306,7 @@ final class Codebase
         $this->file_provider = $providers->file_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
+        $this->code_use_graph = $providers->file_reference_provider->code_use_graph;
 
         self::$stubbed_constants = [];
 
@@ -316,7 +335,6 @@ final class Codebase
 
         $this->properties = new Properties(
             $providers->classlike_storage_provider,
-            $providers->file_reference_provider,
             $this->classlikes,
         );
 
@@ -338,6 +356,185 @@ final class Codebase
     }
 
     /**
+     * Records a reference to a class from the code described by $context
+     * (or the top-level code of the file of $location).
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClass(
+        string $fq_class_name_lc,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classNode($fq_class_name_lc),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property. Only reads make the property used,
+     * but writes are still recorded for reference lookups and cache invalidation.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        bool $reading,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::propertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            $reading ? CodeUseGraph::EDGE_USE : CodeUseGraph::EDGE_WRITE,
+            $file_path,
+        );
+
+        if (!$reading) {
+            // writing to a property of a class still uses the class
+            $this->code_use_graph->addReference(
+                CodeUseGraph::classNode($fq_class_name_lc),
+                $context,
+                $location,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a function or method, optionally marking its
+     * return value as used too.
+     *
+     * @param lowercase-string $function_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToFunctionLike(
+        string $function_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        bool $is_return_value_used = false,
+        ?string $file_path = null,
+    ): void {
+        $function_node = CodeUseGraph::functionLikeNode($function_id);
+
+        if ($is_return_value_used) {
+            $return_node = CodeUseGraph::functionLikeReturnNode($function_id);
+            // using the return value implies calling the function
+            $this->code_use_graph->addEdge($return_node, $function_node, CodeUseGraph::EDGE_RETURN);
+            $this->code_use_graph->addReference(
+                $return_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        } else {
+            $this->code_use_graph->addReference(
+                $function_node,
+                $context,
+                $location,
+                CodeUseGraph::EDGE_USE,
+                $file_path,
+            );
+        }
+    }
+
+    /**
+     * Records a reference to a method that does not exist (yet), so that the
+     * referencing code is re-analysed if the method gets added.
+     *
+     * @param lowercase-string $method_id
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingMethod(
+        string $method_id,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingMethodNode($method_id),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records a reference to a property that does not exist (yet), so that the
+     * referencing code is re-analysed if the property gets added.
+     *
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $property_name without the leading `$`
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToMissingProperty(
+        string $fq_class_name_lc,
+        string $property_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::missingPropertyNode($fq_class_name_lc, $property_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @param string $const_name case-sensitive constant name
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToClassConstant(
+        string $fq_class_name_lc,
+        string $const_name,
+        ?CodeLocation $location = null,
+        ?Context $context = null,
+        ?string $file_path = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::classConstantNode($fq_class_name_lc, $const_name),
+            $context,
+            $location,
+            CodeUseGraph::EDGE_USE,
+            $file_path,
+        );
+    }
+
+    /**
+     * Records that the code described by $context resolves a class name
+     * through a `use` import alias of the given file, so that it gets
+     * re-analysed when the import changes.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addReferenceToUseAlias(
+        string $alias,
+        string $file_path,
+        ?Context $context = null,
+    ): void {
+        $this->code_use_graph->addReference(
+            CodeUseGraph::useAliasNode($alias, $file_path),
+            $context,
+        );
+    }
+
+    /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
      *
      * Returns null and emits an issue if a code location is passed and there are no more taint slots.
@@ -350,33 +547,108 @@ final class Codebase
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
         }
+
+        // When scanning runs in forked worker processes, register new taints in the parent's single
+        // authoritative registry so that every worker resolves a given taint name to the same bit. Workers
+        // assign bits from independent counters, so without this two brand-new taints first seen by
+        // different workers could be given the same bit -- or one taint two different bits -- silently
+        // corrupting the merged storage and the taint findings built from it.
+        if ($this->taint_registration_channel !== null) {
+            return $this->registerTaintViaParent($this->taint_registration_channel, $taint_type, $location);
+        }
+
         if ($this->taint_count+1 === (PHP_INT_SIZE * 8)) {
-            $taints = implode(',', $this->custom_taints);
-            $err = "No more taint slots left (using $taints), ";
-            if (PHP_INT_SIZE === 8) {
-                $err .= "please use fewer custom taints and use some of the built-in taints!";
-            } else {
-                $err .= "please switch to a 64-bit build of PHP to get 32 more taint slots,".
-                    " or use fewer custom taints and use some of the built-in taints!";
-            }
-            if ($location !== null) {
-                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
-                return null;
-            }
-            throw new RuntimeException($err);
+            return $this->reportTaintSlotsExhausted($location);
         }
         if ($taint_type[0] === '(') {
-            $err = "Conditional taints cannot be used in this context";
-            if ($location !== null) {
-                IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
-                return null;
-            }
-            throw new RuntimeException($err);
+            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
         }
         $id = 1 << ($this->taint_count++);
         $this->custom_taints[$id] = $taint_type;
         $this->taint_map[$taint_type] = $id;
         return $id;
+    }
+
+    /**
+     * Set (or clear) the channel used to register taints in the parent process while scanning inside a
+     * forked worker. See {@see self::$taint_registration_channel}.
+     *
+     * @param Channel<array{id: int|null, count: int}, string>|null $channel
+     * @internal
+     * @psalm-external-mutation-free
+     */
+    public function setTaintRegistrationChannel(?Channel $channel): void
+    {
+        $this->taint_registration_channel = $channel;
+    }
+
+    /**
+     * Handle a taint-registration request coming from a forked scanning worker (see {@see
+     * self::registerTaintViaParent()}): register the taint in this parent process's single registry and
+     * return the assigned bit together with the resulting taint count so the worker can mirror it locally.
+     * `id` is null when no taint slots remain.
+     *
+     * @return array{id: int|null, count: int}
+     * @internal
+     */
+    public function registerTaintFromWorker(string $taint_type): array
+    {
+        try {
+            $id = $this->getOrRegisterTaint($taint_type);
+        } catch (RuntimeException) {
+            // No taint slots left (getOrRegisterTaint throws when no location is available); the worker
+            // re-emits the diagnostic against the offending code location.
+            $id = null;
+        }
+
+        return ['id' => $id, 'count' => $this->taint_count];
+    }
+
+    /**
+     * @param Channel<array{id: int|null, count: int}, string> $channel
+     */
+    private function registerTaintViaParent(Channel $channel, string $taint_type, ?CodeLocation $location): ?int
+    {
+        if ($taint_type[0] === '(') {
+            return $this->reportTaintRegistrationError('Conditional taints cannot be used in this context', $location);
+        }
+
+        $channel->send($taint_type);
+        $response = $channel->receive();
+        $this->taint_count = $response['count'];
+
+        if ($response['id'] === null) {
+            return $this->reportTaintSlotsExhausted($location);
+        }
+
+        $this->taint_map[$taint_type] = $response['id'];
+        $this->custom_taints[$response['id']] = $taint_type;
+
+        return $response['id'];
+    }
+
+    private function reportTaintSlotsExhausted(?CodeLocation $location): ?int
+    {
+        $taints = implode(',', $this->custom_taints);
+        $err = "No more taint slots left (using $taints), ";
+        if (PHP_INT_SIZE === 8) {
+            $err .= 'please use fewer custom taints and use some of the built-in taints!';
+        } else {
+            $err .= 'please switch to a 64-bit build of PHP to get 32 more taint slots,'.
+                ' or use fewer custom taints and use some of the built-in taints!';
+        }
+
+        return $this->reportTaintRegistrationError($err, $location);
+    }
+
+    private function reportTaintRegistrationError(string $err, ?CodeLocation $location): ?int
+    {
+        if ($location !== null) {
+            IssueBuffer::maybeAdd(new InvalidDocblock($err, $location));
+            return null;
+        }
+
+        throw new RuntimeException($err);
     }
 
     /**
@@ -401,6 +673,51 @@ final class Codebase
         $this->taint_map[$taint_type] = $alias;
 
         return $alias;
+    }
+
+    /**
+     * Export the custom (non-builtin) taints registered so far, so they can be persisted across runs.
+     *
+     * Custom taint bits are assigned lazily, in the order taints are first encountered while scanning
+     * docblocks/plugins. Those bits are baked into the cached file/classlike storage. When a subsequent
+     * run reuses that cache, the defining docblocks are not re-parsed, so without restoring this mapping
+     * the same taint name would be assigned a different bit (or none at all), silently breaking the
+     * matching of cached sinks and sources. See {@see self::importCustomTaints()}.
+     *
+     * @return array{count: int, custom: array<int, string>, map: array<string, int>}
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function exportCustomTaints(): array
+    {
+        return [
+            'count' => $this->taint_count,
+            'custom' => $this->custom_taints,
+            'map' => array_diff_key($this->taint_map, TaintKind::TAINT_NAMES),
+        ];
+    }
+
+    /**
+     * Restore the custom taint mapping persisted by a previous run (see {@see self::exportCustomTaints()}),
+     * so that taint bits baked into cached storage keep pointing at the same taint names.
+     *
+     * Must be called before any custom taint is registered in this run (i.e. before scanning), so it is a
+     * no-op if anything custom has already been registered.
+     *
+     * @param array{count: int, custom: array<int, string>, map: array<string, int>} $data
+     * @internal
+     * @psalm-external-mutation-free
+     */
+    public function importCustomTaints(array $data): void
+    {
+        if ($this->custom_taints !== []) {
+            return;
+        }
+
+        $this->taint_count = $data['count'];
+        $this->custom_taints = $data['custom'];
+        // Keep the builtin taints (and any already-registered alias) and add the persisted ones on top.
+        $this->taint_map += $data['map'];
     }
 
     /**
@@ -494,18 +811,16 @@ final class Codebase
     public function collectLocations(): void
     {
         $this->collect_locations = true;
-        $this->classlikes->collect_locations = true;
-        $this->methods->collect_locations = true;
-        $this->properties->collect_locations = true;
+        $this->code_use_graph->collect_locations = true;
     }
 
     /**
      * @param 'always'|'auto' $find_unused_code
+     * @psalm-external-mutation-free
      */
     public function reportUnusedCode(string $find_unused_code = 'auto'): void
     {
         $this->collect_references = true;
-        $this->classlikes->collect_references = true;
         $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
     }
@@ -617,8 +932,8 @@ final class Codebase
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToSymbol(string $symbol): array
     {
@@ -631,50 +946,69 @@ final class Codebase
         }
 
         if (str_contains($symbol, '::')) {
-            return $this->findReferencesToMethod($symbol);
+            return $this->findReferencesToMethod($symbol)
+                + $this->findReferencesToClassConstant($symbol);
         }
 
         return $this->findReferencesToClassLike($symbol);
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->file_reference_provider->getClassMethodLocations(strtolower($method_id));
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        );
     }
 
     /**
-     * @return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToProperty(string $property_id): array
     {
         /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
         [$fq_class_name, $property_name] = explode('::', $property_id);
 
-        return $this->file_reference_provider->getClassPropertyLocations(
-            strtolower($fq_class_name) . '::' . $property_name,
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::propertyNode(strtolower($fq_class_name), ltrim($property_name, '$')),
         );
     }
 
     /**
      * @return CodeLocation[]
-     * @psalm-return array<int, CodeLocation>
-     * @psalm-external-mutation-free
+     * @psalm-return array<string, CodeLocation>
+     * @psalm-mutation-free
      */
     public function findReferencesToClassLike(string $fq_class_name): array
     {
         $fq_class_name_lc = strtolower($fq_class_name);
-        $locations = $this->file_reference_provider->getClassLocations($fq_class_name_lc);
+        $refs = $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classNode($fq_class_name_lc),
+        );
 
-        if (isset($this->use_referencing_locations[$fq_class_name_lc])) {
-            $locations = [...$locations, ...$this->use_referencing_locations[$fq_class_name_lc]];
+        foreach ($this->use_referencing_locations[$fq_class_name_lc] ?? [] as $location) {
+            $refs[$location->getHash()] = $location;
         }
 
-        return $locations;
+        return $refs;
+    }
+
+    /**
+     * @return array<string, CodeLocation>
+     * @psalm-mutation-free
+     */
+    public function findReferencesToClassConstant(string $const_id): array
+    {
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        [$fq_class_name, $const_name] = explode('::', $const_id);
+
+        return $this->code_use_graph->getReferenceLocations(
+            CodeUseGraph::classConstantNode(strtolower($fq_class_name), $const_name),
+        );
     }
 
     /**
@@ -905,6 +1239,26 @@ final class Codebase
     }
 
     /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        bool $read_mode,
+        ?StatementsSource $source = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): bool {
+        return $this->properties->propertyExists(
+            $this,
+            $property_id,
+            $read_mode,
+            $source,
+            $context,
+            $code_location,
+        );
+    }
+
+    /**
      * Whether or not a given method exists
      */
     public function methodExists(
@@ -914,7 +1268,7 @@ final class Codebase
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false,
+        bool $is_used = true,
         bool $with_pseudo = false,
     ): bool {
         return $this->methods->methodExists(
@@ -1492,9 +1846,6 @@ final class Codebase
             return null;
         }
 
-        $start_pos = null;
-        $end_pos = null;
-
         ksort($argument_map);
 
         foreach ($argument_map as $start_pos => [$end_pos, $possible_reference, $possible_argument_number]) {
@@ -1510,7 +1861,7 @@ final class Codebase
             $argument_number = $possible_argument_number;
         }
 
-        if ($reference === null || $start_pos === null || $end_pos === null || $argument_number === null) {
+        if ($reference === null || $argument_number === null) {
             return null;
         }
 
@@ -2325,18 +2676,16 @@ final class Codebase
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
         }
 
-        $source = DataFlowNode::make(
-            $taint_id,
+        $source = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 
@@ -2350,18 +2699,16 @@ final class Codebase
      */
     public function addTaintSink(
         string $taint_id,
+        CodeLocation $code_location,
         int $taints = TaintKind::ALL_INPUT,
-        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
         }
 
-        $sink = DataFlowNode::make(
-            $taint_id,
+        $sink = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            null,
             $taints,
         );
 

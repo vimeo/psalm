@@ -10,6 +10,7 @@ use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
 /**
  * @psalm-immutable
+ * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
  */
 final class AfterAnalysis implements AfterAnalysisInterface
 {

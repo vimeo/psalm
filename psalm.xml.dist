@@ -94,11 +94,6 @@
 
         <MissingThrowsDocblock errorLevel="info"/>
 
-        <PossiblyUnusedProperty>
-            <errorLevel type="suppress">
-                <file name="src/Psalm/Report.php"/>
-            </errorLevel>
-        </PossiblyUnusedProperty>
 
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">

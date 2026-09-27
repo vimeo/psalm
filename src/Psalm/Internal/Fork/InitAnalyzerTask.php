@@ -29,13 +29,9 @@ final class InitAnalyzerTask implements Task
             $codebase->taint_flow_graph = new TaintFlowGraph();
         }
 
-        $file_reference_provider->setNonMethodReferencesToClasses([]);
-        $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
-        $file_reference_provider->setCallingMethodReferencesToClassProperties([]);
-        $file_reference_provider->setFileReferencesToClassMembers([]);
-        $file_reference_provider->setFileReferencesToClassProperties([]);
-        $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
-        $file_reference_provider->setFileReferencesToMissingClassMembers([]);
+        // workers only report the references they found themselves
+        $codebase->code_use_graph->clear();
+
         $file_reference_provider->setReferencesToMixedMemberNames([]);
         $file_reference_provider->setMethodParamUses([]);
         return null;

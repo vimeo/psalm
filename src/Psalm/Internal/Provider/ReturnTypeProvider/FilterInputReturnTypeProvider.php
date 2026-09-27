@@ -240,8 +240,7 @@ final class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderI
                 $input_type = $input_type->setPossiblyUndefined(true);
             }
         } elseif ($global_type->isArray()
-            && ($array_atomic = $global_type->getArray())
-            && $array_atomic instanceof TArray) {
+            && ($array_atomic = $global_type->getArray()) instanceof TArray) {
             [$_, $input_type] = $array_atomic->type_params;
             $input_type = $input_type->setPossiblyUndefined(true);
         } else {

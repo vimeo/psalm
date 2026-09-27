@@ -10,6 +10,9 @@ use Psalm\Internal\Analyzer\IssueData;
 use function array_pop;
 use function explode;
 
+/**
+ * @api
+ */
 abstract class CodeIssue
 {
     /** @var int */

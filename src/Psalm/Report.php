@@ -15,6 +15,7 @@ use const ENT_XML1;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 abstract class Report
 {

@@ -28,6 +28,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -184,7 +185,7 @@ final class AtomicPropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)
-            && !$codebase->classlikes->enumExists($lhs_type_part->value)
+            && !$codebase->classlikes->enumExists($lhs_type_part->value, null, $context)
         ) {
             $interface_exists = false;
 
@@ -252,7 +253,7 @@ final class AtomicPropertyFetchAnalyzer
             return;
         }
 
-        $naive_property_exists = $codebase->properties->propertyExists(
+        $naive_property_exists = $codebase->propertyExists(
             $property_id,
             !$in_assignment,
             $statements_analyzer,
@@ -275,7 +276,7 @@ final class AtomicPropertyFetchAnalyzer
                     }
 
                     if ($new_class_storage
-                        && ($codebase->properties->propertyExists(
+                        && ($codebase->propertyExists(
                             $new_property_id,
                             !$in_assignment,
                             $statements_analyzer,
@@ -364,7 +365,7 @@ final class AtomicPropertyFetchAnalyzer
             && $fq_class_name !== $context->self
             && $context->self
             && $codebase->classlikes->classExtends($fq_class_name, $context->self)
-            && $codebase->properties->propertyExists(
+            && $codebase->propertyExists(
                 $context->self . '::$' . $prop_name,
                 true,
                 $statements_analyzer,
@@ -496,6 +497,13 @@ final class AtomicPropertyFetchAnalyzer
             $prop_name,
             $lhs_type_part,
         );
+
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
 
         if (!($class_storage->isExternalMutationFree()
             && $class_property_type->allow_mutations)
@@ -647,6 +655,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -954,10 +967,8 @@ final class AtomicPropertyFetchAnalyzer
 
         $data_flow_graph->addNode($localized_property_node);
 
-        $property_node = DataFlowNode::make(
+        $property_node = DataFlowNode::getForPropertyFetch(
             $property_id,
-            $property_id,
-            null,
             null,
         );
 
@@ -1249,6 +1260,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(

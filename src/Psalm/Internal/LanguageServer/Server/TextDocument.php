@@ -35,6 +35,7 @@ use function substr_count;
  * Provides method handlers for all textDocument/* methods
  *
  * @internal
+ * @psalm-suppress PossiblyUnusedProperty deps read only from reflection-invoked JSON-RPC handlers
  */
 final class TextDocument
 {

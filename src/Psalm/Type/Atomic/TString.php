@@ -10,6 +10,7 @@ use Override;
  * Denotes the `string` type, where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TString extends Scalar
 {

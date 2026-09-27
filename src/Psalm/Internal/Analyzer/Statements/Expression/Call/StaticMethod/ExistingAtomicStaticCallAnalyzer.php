@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -27,6 +28,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
@@ -296,6 +298,23 @@ final class ExistingAtomicStaticCallAnalyzer
                     null,
                     false,
                     $method_storage,
+                );
+            }
+
+            if (NoDiscardAnalyzer::isDiscardReported(
+                $codebase,
+                $context,
+                $method_storage,
+                $stmt->isFirstClassCallable(),
+                $class_storage,
+            )) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -579,7 +598,7 @@ final class ExistingAtomicStaticCallAnalyzer
                     true,
                     false,
                     false,
-                    $context->calling_method_id,
+                    $context,
                 );
             }
         }

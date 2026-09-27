@@ -10,6 +10,7 @@ use Override;
  * Denotes the `float` type, where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TFloat extends Scalar
 {

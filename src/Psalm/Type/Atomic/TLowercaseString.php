@@ -8,6 +8,7 @@ use Override;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class TLowercaseString extends TString
 {

@@ -10,6 +10,7 @@ use Override;
  * Denotes a `scalar` type that is also non-empty.
  *
  * @psalm-immutable
+ * @api
  */
 final class TNonEmptyScalar extends TScalar
 {

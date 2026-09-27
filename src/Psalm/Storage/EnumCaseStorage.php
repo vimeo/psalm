@@ -14,6 +14,7 @@ use UnexpectedValueException;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class EnumCaseStorage
 {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<roave-bc-check xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor-bin/bcc/vendor/roave/backward-compatibility-check/Resources/schema.xsd">
+    <baseline>
+        <!-- Correct the duplicate issue code; 362 remains assigned to ImpureGlobalVariable. -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\IncompatibleTypeParameters::SHORTCODE changed from 362 to 368$#</ignored-regex>
+    </baseline>
+</roave-bc-check>

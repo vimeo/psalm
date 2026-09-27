@@ -33,6 +33,24 @@ final class PureAnnotationTest extends TestCase
                         return null;
                     }',
             ],
+            'purityAnnotationOnClosureVariableAppliesToClosure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    $double = function (int $a): int {
+                        return $a * 2;
+                    };
+                    echo $double(2);',
+            ],
+            'purityAnnotationOnClosureVariableMergesWithClosureOwnDocblock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    $double =
+                        /** @param int $a */
+                        function ($a): int {
+                            return $a * 2;
+                        };
+                    echo $double(2);',
+            ],
             'propertyMutationIsExternalMutationFree' => [
                 'code' => '<?php
                     class A {
@@ -652,6 +670,15 @@ final class PureAnnotationTest extends TestCase
                         return null;
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'conflictingParamTagsBetweenClosureVariableAndClosureAreReported' => [
+                'code' => '<?php
+                    /** @param string $a */
+                    $f =
+                        /** @param int $a */
+                        function ($a): void {};
+                    $f(1);',
+                'error_message' => 'InvalidDocblock',
             ],
             'impureMethodCall' => [
                 'code' => '<?php

@@ -16,6 +16,7 @@ use function implode;
 
 /**
  * @psalm-immutable
+ * @api
  */
 trait HasIntersectionTrait
 {

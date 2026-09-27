@@ -7,6 +7,9 @@ namespace Psalm;
 use PhpParser;
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 interface NodeTypeProvider
 {
     /**

@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -59,6 +60,7 @@ use function strpos;
 /**
  * @psalm-immutable
  * @psalm-import-type TProperties from Union
+ * @api
  */
 trait UnionTrait
 {
@@ -1340,7 +1342,6 @@ trait UnionTrait
     /**
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
-     * @param  ?lowercase-string $calling_method_id
      */
     public function check(
         StatementsSource $source,
@@ -1350,7 +1351,7 @@ trait UnionTrait
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null,
+        ?Context $context = null,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1364,7 +1365,7 @@ trait UnionTrait
             $inferred,
             $inherited,
             $prevent_template_covariance,
-            $calling_method_id,
+            $context,
         );
 
         $checker->traverseArray($this->types);
@@ -1621,15 +1622,20 @@ trait UnionTrait
 
     public function getTaintsToRemove(): int
     {
-        if (!$this->isSingle()) {
-            return 0;
-        }
-        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool.
+        // isInt()/isString() already require every atomic member to match, so unions of
+        // literals such as int(0)|int(1) or ''|'1' (e.g. produced by casting a bool) are
+        // handled too; isFloat()/isBool() carry their own single-type checks.
         if ($this->isInt() || $this->isFloat()) {
             return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
         }
         if ($this->isBool()) {
             return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
+        }
+        // a plain string can't carry a NoSQL query (only arrays/objects can),
+        // so casting user input to string escapes the nosql taint
+        if ($this->isString()) {
+            return TaintKind::ARRAY_ONLY;
         }
         return 0;
     }

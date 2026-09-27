@@ -15,6 +15,9 @@ use function str_split;
 use function strlen;
 use function strtoupper;
 
+/**
+ * @api
+ */
 final class TableReport extends Report
 {
     /**

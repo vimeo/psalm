@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
  * Denotes the `resource` type that has been closed (e.g. a file handle through `fclose()`).
  *
  * @psalm-immutable
+ * @api
  */
 final class TClosedResource extends Atomic
 {

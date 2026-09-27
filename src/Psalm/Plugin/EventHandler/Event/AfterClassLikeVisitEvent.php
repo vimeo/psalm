@@ -12,6 +12,7 @@ use Psalm\Storage\ClassLikeStorage;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class AfterClassLikeVisitEvent
 {

@@ -246,4 +246,95 @@ namespace MongoDB\Driver
         {
         }
     }
+
+    final class Manager
+    {
+        final public function __construct(?string $uri = null, array $uriOptions = [], array $driverOptions = [])
+        {
+        }
+
+        /**
+         * @return Cursor<array|object>
+         */
+        final public function executeQuery(string $namespace, Query $query, $options = null): Cursor
+        {
+        }
+
+        /**
+         * @return Cursor<array|object>
+         */
+        final public function executeCommand(string $db, Command $command, $options = null): Cursor
+        {
+        }
+    }
+
+    final class Query
+    {
+        /**
+         * @param array|object $filter
+         * @param array $queryOptions
+         *
+         * @psalm-taint-sink nosql $filter
+         */
+        final public function __construct($filter, array $queryOptions = [])
+        {
+        }
+    }
+
+    final class Command
+    {
+        /**
+         * @param array|object $document
+         * @param array $commandOptions
+         *
+         * @psalm-taint-sink nosql $document
+         */
+        final public function __construct($document, array $commandOptions = [])
+        {
+        }
+    }
+
+    final class BulkWrite implements \Countable
+    {
+        final public function __construct(array $options = [])
+        {
+        }
+
+        /**
+         * @param array|object $document
+         *
+         * @psalm-taint-sink nosql $document
+         *
+         * @return \MongoDB\BSON\ObjectId|null
+         */
+        final public function insert($document)
+        {
+        }
+
+        /**
+         * @param array|object $filter
+         * @param array|object $newObj
+         * @param array $updateOptions
+         *
+         * @psalm-taint-sink nosql $filter
+         * @psalm-taint-sink nosql $newObj
+         */
+        final public function update($filter, $newObj, array $updateOptions = []): void
+        {
+        }
+
+        /**
+         * @param array|object $filter
+         * @param array $deleteOptions
+         *
+         * @psalm-taint-sink nosql $filter
+         */
+        final public function delete($filter, array $deleteOptions = []): void
+        {
+        }
+
+        final public function count(): int
+        {
+        }
+    }
 }

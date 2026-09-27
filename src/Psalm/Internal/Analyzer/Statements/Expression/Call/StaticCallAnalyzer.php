@@ -30,7 +30,6 @@ use Psalm\Type\Union;
 
 use function count;
 use function in_array;
-use function md5;
 use function strtolower;
 
 /**
@@ -126,20 +125,20 @@ final class StaticCallAnalyzer extends CallAnalyzer
             } else {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_method_id
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                ) {
-                    $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
-                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                        false,
-                    );
-                }
-
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
                     $aliases,
                 );
+
+                if ($context->calling_method_id
+                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                ) {
+                    $codebase->addReferenceToUseAlias(
+                        $stmt->class->getFirst(),
+                        $statements_analyzer->getFilePath(),
+                        $context,
+                    );
+                }
 
                 if ($context->isPhantomClass($fq_class_name)) {
                     return true;
@@ -278,18 +277,21 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 : ($method_storage->signature_return_type_location ?: $method_storage->location))
             : null;
 
-        if ($method_storage && $method_storage->specialize_call) {
-            $method_source = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
+        if (!$method_storage) {
+            $method_source = DataFlowNode::getForCallableReturn(
+                'builtin',
                 $cased_method_id,
-                $method_location,
+            );
+        } elseif ($method_storage->specialize_call) {
+            $method_source = DataFlowNode::getForMethodReturn(
+                $cased_method_id,
+                $method_storage,
                 $node_location,
             );
         } else {
             $method_source = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
                 $cased_method_id,
-                $method_location,
+                $method_storage,
             );
         }
 
@@ -365,9 +367,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
             && $method_storage->taint_source_types
         ) {
             $method_node = DataFlowNode::getForMethodReturn(
-                (string) $method_id,
                 $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location,
+                $method_storage,
                 null,
                 $method_storage->taint_source_types,
             );
@@ -377,7 +378,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($method_storage) {
             FunctionCallReturnTypeFetcher::taintUsingFlows(
-                $statements_analyzer,
                 $method_storage,
                 $taint_flow_graph,
                 (string) $method_id,

@@ -188,16 +188,7 @@ final class VariableUseGraph extends DataFlowGraph
 
             $path_types = $generated_source->path_types;
             $path_types []= $path_type;
-            $new_destination = new DataFlowNode(
-                $to_id,
-                null,
-                null,
-                $to_id,
-                null,
-                0,
-                null,
-                $path_types,
-            );
+            $new_destination = DataFlowNode::getForVariableUseDestination($to_id, $path_types);
 
             $child_nodes[$to_id] = $new_destination;
         }

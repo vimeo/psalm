@@ -88,11 +88,13 @@ final class Review
                     escapeshellarg((string)$column),
 
             'phpstorm' => static fn(string $file, int $line, int $column) => (PHP_OS_FAMILY === 'Darwin'
-                ? 'open -na \'/Applications/PhpStorm.app\' --args'
+                ? (($phpstormPath = getenv('PHPSTORM'))
+                    ? 'open -na ' . escapeshellarg($phpstormPath) . ' --args'
+                    : 'open -nb com.jetbrains.PhpStorm --args')
                 : escapeshellarg(getenv('PHPSTORM') ?: 'phpstorm')
                 ). ' --line ' . escapeshellarg((string) $line) . " --column {$column} " . escapeshellarg($file),
 
-            'code' => static fn(string $file, int $line, int $column)
+            'code', 'vscode' => static fn(string $file, int $line, int $column)
                  => 'code --goto ' . escapeshellarg($file) . ':' .
                  escapeshellarg((string) $line) . ':' .
                  escapeshellarg((string) $column),

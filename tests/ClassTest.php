@@ -15,6 +15,9 @@ final class ClassTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    /**
+     * @psalm-mutation-free
+     */
     public function testExtendsMysqli(): void
     {
         $this->addFile(

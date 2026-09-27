@@ -50,6 +50,7 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -66,7 +67,10 @@ use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
+use Psalm\Storage\Mutations;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_change_key_case;
@@ -156,6 +160,20 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private int $depth = 0;
 
     /**
+     * Tracks bounds for the type variables minted while these statements are
+     * analyzed. Shared with the enclosing function-like's statements analyzer
+     * (when there is one) so that constraints recorded in nested
+     * function-likes reconcile with the outermost function-like's variables.
+     */
+    public TypeVariableTracker $type_variable_tracker;
+
+    /**
+     * Whether this analyzer minted its own tracker (and so is responsible for
+     * reconciling it) rather than sharing an enclosing analyzer's.
+     */
+    public readonly bool $owns_type_variable_tracker;
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
@@ -165,6 +183,18 @@ final class StatementsAnalyzer extends SourceAnalyzer
     ) {
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
+
+        $parent_statements_analyzer = $source instanceof FunctionLikeAnalyzer
+            ? $source->getSource()
+            : null;
+
+        if ($parent_statements_analyzer instanceof self) {
+            $this->type_variable_tracker = $parent_statements_analyzer->type_variable_tracker;
+            $this->owns_type_variable_tracker = false;
+        } else {
+            $this->type_variable_tracker = new TypeVariableTracker();
+            $this->owns_type_variable_tracker = true;
+        }
 
         if ($this->codebase->taint_flow_graph
             && $root_scope
@@ -456,6 +486,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                                 $statements_analyzer->getFilePath(),
                                 $offset,
                                 $issue_type,
+                                $codebase->taint_flow_graph !== null,
                             );
                         }
                     }
@@ -972,6 +1003,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $original_location,
                     );
                 } else {
+                    if ($this->hasImpureDestructor($context->vars_in_scope[$var_id] ?? null, $codebase)) {
+                        continue;
+                    }
                     $issue = new UnusedVariable(
                         $var_id . ' is never referenced or the value is not used',
                         $original_location,
@@ -1000,6 +1034,41 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasImpureDestructor(?Union $type, Codebase $codebase): bool
+    {
+        if ($type === null) {
+            return false;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $class_storage = $codebase->classlikes->getStorageFor($atomic_type->value);
+            while ($class_storage !== null) {
+                $destructor = $class_storage->methods['__destruct'] ?? null;
+                if ($destructor !== null) {
+                    if ($destructor->has_mutations_annotation
+                        && $destructor->allowed_mutations >= Mutations::LEVEL_EXTERNAL) {
+                        return true;
+                    }
+
+                    break;
+                }
+
+                $class_storage = $class_storage->parent_class === null
+                    ? null
+                    : $codebase->classlikes->getStorageFor($class_storage->parent_class);
+            }
+        }
+
+        return false;
     }
 
     /**

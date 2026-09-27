@@ -73,6 +73,17 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumCanHaveImpureMethods' => [
+                'code' => '<?php
+                    enum a {
+                        public function test(): void {
+                            echo "test";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumCases' => [
                 'code' => '<?php
                     enum Suit {

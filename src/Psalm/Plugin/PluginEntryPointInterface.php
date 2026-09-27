@@ -7,6 +7,9 @@ namespace Psalm\Plugin;
 use Psalm\PluginRegistrationSocket;
 use SimpleXMLElement;
 
+/**
+ * @api
+ */
 interface PluginEntryPointInterface extends PluginInterface
 {
     public function __invoke(PluginRegistrationSocket $registration, ?SimpleXMLElement $config = null): void;

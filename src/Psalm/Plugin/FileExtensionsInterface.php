@@ -7,6 +7,9 @@ namespace Psalm\Plugin;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 
+/**
+ * @api
+ */
 interface FileExtensionsInterface
 {
     /**

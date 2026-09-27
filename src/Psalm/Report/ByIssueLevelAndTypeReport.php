@@ -20,6 +20,7 @@ use function usort;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class ByIssueLevelAndTypeReport extends Report
 {

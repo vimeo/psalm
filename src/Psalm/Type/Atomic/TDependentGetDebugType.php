@@ -10,6 +10,7 @@ use Override;
  * Represents a string whose value is that of a type found by get_debug_type($var)
  *
  * @psalm-immutable
+ * @api
  */
 final class TDependentGetDebugType extends TString implements DependentType
 {

@@ -24,6 +24,24 @@ final class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'errorGetLastHasBacktraceSincePhp85' => [
+                'code' => '<?php
+                    $error = error_get_last();',
+                'assertions' => [
+                    '$error===' => 'array{file: string, line: int, message: string, trace?: list<array{args?: list<mixed>, class?: class-string, file?: string, function: string, line?: int, object?: object, type?: string}>, type: int}|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'errorGetLastHasNoBacktraceBeforePhp85' => [
+                'code' => '<?php
+                    $error = error_get_last();',
+                'assertions' => [
+                    '$error===' => 'array{file: string, line: int, message: string, type: int}|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
                     /** @template T */
@@ -3211,7 +3229,7 @@ final class FunctionCallTest extends TestCase
                         return;
                     }
                     ',
-                'error_message' => 'ReservedWord',
+                'error_message' => 'ParadoxicalCondition',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

@@ -6,6 +6,9 @@ namespace Psalm\Storage;
 
 use Psalm\Type\Union;
 
+/**
+ * @api
+ */
 final class MethodStorage extends FunctionLikeStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;

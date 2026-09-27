@@ -217,6 +217,8 @@ final class AssignmentAnalyzer
 
         if ($assign_value) {
             if ($var_id && $assign_value instanceof PhpParser\Node\Expr\Closure) {
+                $assign_value->setAttribute('assigned_var_id', $var_id);
+
                 foreach ($assign_value->uses as $closure_use) {
                     if ($closure_use->byRef
                         && is_string($closure_use->var->name)
@@ -224,6 +226,7 @@ final class AssignmentAnalyzer
                     ) {
                         $context->vars_in_scope[$var_id] = Type::getClosure();
                         $context->vars_possibly_in_scope[$var_id] = true;
+                        $assign_value->setAttribute('recursive_var_id', $var_id);
                     }
                 }
             }
@@ -742,7 +745,7 @@ final class AssignmentAnalyzer
                 false,
                 false,
                 false,
-                $context->calling_method_id,
+                $context,
             );
 
             $type_location = null;

@@ -292,8 +292,8 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::getThreads($options, $config, $in_ci, false);
-        $scanThreads = self::getThreads($options, $config, $in_ci, true);
+        $threads = self::getThreads($options, $config, false);
+        $scanThreads = self::getThreads($options, $config, true);
 
         $progress = self::initProgress($options, $config, $in_ci);
 
@@ -444,7 +444,7 @@ final class Psalm
     }
 
     /** @return int<1, max> */
-    public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
+    public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
@@ -457,22 +457,22 @@ final class Psalm
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);
-            } elseif (isset($options['debug']) || $in_ci) {
+            } elseif (isset($options['debug'])) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
                 $threads = $config->scan_threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCount());
+                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
             }
         } else {
             if (isset($options['threads'])) {
                 $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug']) || $in_ci) {
+            } elseif (isset($options['debug'])) {
                 $threads = 1;
             } elseif ($config->threads) {
                 $threads = $config->threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCount());
+                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
             }
         }
         return $threads;
@@ -1483,7 +1483,9 @@ final class Psalm
                 Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
             --find-unused-psalm-suppress
-                Finds all @psalm-suppress annotations that aren’t used
+                Finds all @psalm-suppress annotations that aren’t used, including those on
+                classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
+                only checked under --taint-analysis.
 
             --find-references-to=[class|method|property]
                 Searches the codebase for references to the given fully-qualified class or method,

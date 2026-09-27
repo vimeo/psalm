@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class Php84Test extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -103,7 +105,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->getLazyInitializer(new Bar);',
-                'error_message' => 'Argument 1 of ReflectionClass::getLazyInitializer expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:58 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
@@ -113,7 +116,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->initializeLazyObject(new Bar);',
-                'error_message' => 'Argument 1 of ReflectionClass::initializeLazyObject expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:60 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
@@ -123,7 +127,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->isUninitializedLazyObject(new Bar);',
-                'error_message' => 'Argument 1 of ReflectionClass::isUninitializedLazyObject expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:65 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
@@ -133,7 +138,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->markLazyObjectAsInitialized(new Bar);',
-                'error_message' => 'Argument 1 of ReflectionClass::markLazyObjectAsInitialized expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:67 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
@@ -173,7 +179,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->resetAsLazyGhost(new Bar, function (Foo $foo) {});',
-                'error_message' => 'Argument 1 of ReflectionClass::resetAsLazyGhost expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:56 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
@@ -193,7 +200,8 @@ final class Php84Test extends TestCase
                     class Bar {}
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->resetAsLazyProxy(new Bar, fn(Foo $foo) => new Foo);',
-                'error_message' => 'Argument 1 of ReflectionClass::resetAsLazyProxy expects Foo, but Bar provided',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:56 - Type Bar should be a subtype of Foo',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],

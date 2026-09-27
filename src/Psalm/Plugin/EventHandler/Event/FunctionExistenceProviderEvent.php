@@ -8,6 +8,7 @@ use Psalm\StatementsSource;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class FunctionExistenceProviderEvent
 {

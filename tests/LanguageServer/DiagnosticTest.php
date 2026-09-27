@@ -33,6 +33,7 @@ use function rand;
 final class DiagnosticTest extends AsyncTestCase
 {
     protected Codebase $codebase;
+    /** @psalm-suppress UnusedProperty used only by the parked jestRun helper */
     private int $increment = 0;
 
     #[Override]
@@ -327,6 +328,7 @@ final class DiagnosticTest extends AsyncTestCase
 
      /**
      * @return array<string, list<IssueData>>
+     * @psalm-suppress UnusedMethod used only by the parked jestRun method (itself @psalm-suppress UnusedMethod)
      */
     private function changeFile(string $file_path, string $contents): array
     {

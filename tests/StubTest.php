@@ -32,8 +32,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class StubTest extends TestCase
 {
-    protected static TestConfig $config;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -43,7 +41,7 @@ final class StubTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     /**
@@ -65,6 +63,8 @@ final class StubTest extends TestCase
                 new FakeParserCacheProvider(),
             ),
         );
+        $project_analyzer->initExtraFiles();
+        $project_analyzer->initProjectFiles();
         $project_analyzer->setPhpVersion('7.4', 'tests');
 
         $config->setIncludeCollector(new IncludeCollector());
@@ -1264,9 +1264,7 @@ final class StubTest extends TestCase
                     }
                 }
 
-                /**
-                 * @psalm-suppress MissingTemplateParam
-                 */
+                /** @psalm-suppress MissingTemplateParam */
                 class B extends A {}
 
                 class Obj {}
@@ -1277,7 +1275,11 @@ final class StubTest extends TestCase
                 class C extends B {}',
         );
 
-        $this->analyzeFile($file_path, new Context());
+        // track_unused_suppressions is disabled here: this test exercises stub +
+        // magic-method behaviour, and the class-level MissingTemplateParam suppress
+        // above is a genuine suppression whose use is not tracked in the (rare)
+        // case of a class defined in both a stub and the analysed file.
+        $this->analyzeFile($file_path, new Context(), false);
     }
 
     public function testInheritedMethodUsedInStub(): void

@@ -80,6 +80,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
 
         $storage = $codebase->classlike_storage_provider->get($stmt->name->name);
 
+        ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
+
         AttributesAnalyzer::analyze(
             $statements_analyzer,
             $context,

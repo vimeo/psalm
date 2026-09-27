@@ -13,6 +13,7 @@ use function min;
  * Denotes an interval of integers between two bounds
  *
  * @psalm-immutable
+ * @api
  */
 final class TIntRange extends TInt
 {

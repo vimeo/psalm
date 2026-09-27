@@ -12,6 +12,7 @@ use function trim;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class FileManipulation
 {

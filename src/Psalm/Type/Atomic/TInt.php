@@ -10,6 +10,7 @@ use Override;
  * Denotes the `int` type, where the exact value is unknown.
  *
  * @psalm-immutable
+ * @api
  */
 class TInt extends Scalar
 {

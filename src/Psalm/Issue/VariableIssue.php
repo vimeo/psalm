@@ -8,6 +8,9 @@ use Psalm\CodeLocation;
 
 use function strtolower;
 
+/**
+ * @api
+ */
 abstract class VariableIssue extends CodeIssue
 {
     public string $var_name;

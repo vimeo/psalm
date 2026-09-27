@@ -11,6 +11,7 @@ use Override;
  * This type encompasses `float`, `int`, `bool` and `string`.
  *
  * @psalm-immutable
+ * @api
  */
 class TScalar extends Scalar
 {

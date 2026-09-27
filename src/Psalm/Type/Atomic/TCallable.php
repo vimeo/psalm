@@ -18,6 +18,7 @@ use Psalm\Type\Union;
  * Denotes the `callable` type. Can result from an `is_callable` check.
  *
  * @psalm-immutable
+ * @api
  */
 final class TCallable extends Atomic
 {
@@ -31,12 +32,16 @@ final class TCallable extends Atomic
      *
      * @param list<FunctionLikeParameter> $params
      * @param Mutations::LEVEL_* $allowed_mutations
+     * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
+     *                                        known. Metadata only - it does not affect the structural
+     *                                        type - and is used to re-dispatch taint sinks/sources on invocation.
      */
     public function __construct(
         ?array $params = null,
         ?Union $return_type = null,
         int $allowed_mutations = Mutations::LEVEL_EXTERNAL,
         bool $from_docblock = false,
+        public ?string $callable_id = null,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -78,6 +83,8 @@ final class TCallable extends Atomic
             $replaced[0],
             $replaced[1],
             $this->allowed_mutations,
+            $this->from_docblock,
+            $this->callable_id,
         );
     }
     /**
@@ -115,6 +122,8 @@ final class TCallable extends Atomic
             $replaced[0],
             $replaced[1],
             $this->allowed_mutations,
+            $this->from_docblock,
+            $this->callable_id,
         );
     }
 

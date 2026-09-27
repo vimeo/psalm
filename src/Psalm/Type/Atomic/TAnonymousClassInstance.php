@@ -10,6 +10,7 @@ use Override;
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
  *
  * @psalm-immutable
+ * @api
  */
 final class TAnonymousClassInstance extends TNamedObject
 {

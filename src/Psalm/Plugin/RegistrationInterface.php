@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Plugin;
 
+/**
+ * @api
+ */
 interface RegistrationInterface
 {
     public function addStubFile(string $file_name): void;

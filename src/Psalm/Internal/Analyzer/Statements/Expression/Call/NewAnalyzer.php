@@ -20,9 +20,11 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -38,6 +40,8 @@ use Psalm\Issue\UnsafeGenericInstantiation;
 use Psalm\Issue\UnsafeInstantiation;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
@@ -54,6 +58,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -62,7 +67,6 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
-use function md5;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -99,22 +103,22 @@ final class NewAnalyzer extends CallAnalyzer
             if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
 
-                if ($context->calling_method_id
-                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                ) {
-                    $codebase->file_reference_provider->addMethodReferenceToClassMember(
-                        $context->calling_method_id,
-                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
-                        false,
-                    );
-                }
-
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
                     $aliases,
                 );
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
+                if ($context->calling_method_id
+                    && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
+                ) {
+                    $codebase->addReferenceToUseAlias(
+                        $stmt->class->getFirst(),
+                        $statements_analyzer->getFilePath(),
+                        $context,
+                    );
+                }
             } elseif ($context->self !== null) {
                 switch ($stmt->class->getFirst()) {
                     case 'self':
@@ -284,7 +288,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $context,
                 );
 
-                if ($codebase->classlikes->enumExists($fq_class_name)) {
+                if ($codebase->classlikes->enumExists($fq_class_name, null, $context)) {
                     IssueBuffer::maybeAdd(new UndefinedClass(
                         'Enums cannot be instantiated',
                         new CodeLocation($statements_analyzer, $stmt),
@@ -466,6 +470,8 @@ final class NewAnalyzer extends CallAnalyzer
                         null,
                         false,
                         $method_storage,
+                        // the constructor only mutates the new object
+                        true,
                     );
                 }
 
@@ -508,12 +514,76 @@ final class NewAnalyzer extends CallAnalyzer
             $self_out_candidate = null;
 
             if ($storage->template_types) {
+                $unconstrainable_templates = null;
+
                 foreach ($storage->template_types as $template_name => $base_type) {
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
                             $codebase,
                         );
+
+                        // The constructor arguments bound this template, but PHP has no
+                        // constructor type arguments to pin it: later code may still widen
+                        // it within its declared constraint (Hack's `new Foo<_>(...)` local
+                        // inference). Mint a type variable seeded with the arg-inferred
+                        // bounds as lower bounds and the declared constraint as an upper
+                        // bound; the bounds reconcile when the surrounding function-like
+                        // has been analyzed.
+                        $constraint = array_values($base_type)[0];
+                        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
+
+                        if ($fq_class_name !== 'SplObjectStorage'
+                            && !isset($unconstrainable_templates[$template_name])
+                        ) {
+                            $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                            $lower_bounds = [];
+
+                            foreach ($template_result->lower_bounds[$template_name][$fq_class_name] as $arg_bound) {
+                                // the appearance depth is normalized: the inference is
+                                // lifted onto the variable itself, where it competes with
+                                // the (depth-0) bounds later code records
+                                $lower_bounds[] = new TemplateBound(
+                                    $arg_bound->type,
+                                    0,
+                                    $arg_bound->arg_offset,
+                                    $arg_bound->equality_bound_classlike,
+                                    $new_location,
+                                );
+                            }
+
+                            $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
+
+                            // A constructor argument that binds this template through a
+                            // `class-string<T>` position names the type exactly
+                            // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
+                            // wider): the inferred bounds pin the variable's upper bounds
+                            // too, so a later conflicting use fails reconciliation.
+                            if ($method_storage
+                                && self::templateBoundThroughClassString($method_storage, $template_name)
+                            ) {
+                                foreach ($lower_bounds as $lower_bound) {
+                                    $upper_bounds[] = new TemplateBound(
+                                        $lower_bound->type,
+                                        0,
+                                        $lower_bound->arg_offset,
+                                        null,
+                                        $new_location,
+                                    );
+                                }
+                            }
+
+                            $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+
+                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
+                                $type_variable_bounds,
+                            );
+
+                            $generic_param_type = new Union([
+                                new TTypeVariable($type_variable_name, $type_variable_bounds),
+                            ]);
+                        }
                     } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
@@ -533,9 +603,46 @@ final class NewAnalyzer extends CallAnalyzer
                         );
                     } else {
                         if ($fq_class_name === 'SplObjectStorage') {
+                            // SplObjectStorage's unbound templates resolve to `never` rather
+                            // than their bounds, so a later write on a bare `new SplObjectStorage()`
+                            // reports InvalidArgument. No type variable is minted for it.
                             $generic_param_type = Type::getNever();
                         } else {
                             $generic_param_type = array_values($base_type)[0];
+
+                            // The constructor arguments did not bind this template, but later
+                            // code may still constrain it (Hack's `new Foo<_>(...)` model):
+                            // mint a fresh type variable whose upper bound is the template's
+                            // declared constraint. Constraints recorded while the variable
+                            // flows through the rest of the body are reconciled when the
+                            // surrounding function-like has been analyzed.
+                            //
+                            // A template with no public mutation channel (named only in the
+                            // constructor) can never be constrained later, so no variable is
+                            // minted and the template resolves eagerly to its constraint.
+                            $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
+
+                            if (!isset($unconstrainable_templates[$template_name])) {
+                                $type_variable_bounds = new TypeVariableBounds(
+                                    [],
+                                    [new TemplateBound(
+                                        $generic_param_type,
+                                        0,
+                                        null,
+                                        null,
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    ),
+                                    ],
+                                );
+
+                                $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
+                                    $type_variable_bounds,
+                                );
+
+                                $generic_param_type = new Union([
+                                    new TTypeVariable($type_variable_name, $type_variable_bounds),
+                                ]);
+                            }
                         }
                     }
 
@@ -652,20 +759,22 @@ final class NewAnalyzer extends CallAnalyzer
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            if ($storage->isExternalMutationFree()
-                || ($method_storage && $method_storage->specialize_call)
-            ) {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
+            if (!$method_storage) {
+                $method_source = DataFlowNode::getForCallableReturn(
+                    'builtin',
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $storage->isExternalMutationFree() ? $code_location : null,
+                );
+            } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
+                $method_source = DataFlowNode::getForMethodReturn(
+                    $fq_class_name . '::__construct',
+                    $method_storage,
                     $code_location,
                 );
             } else {
                 $method_source = DataFlowNode::getForMethodReturn(
-                    (string)$method_id,
                     $fq_class_name . '::__construct',
-                    $storage->location,
+                    $method_storage,
                 );
             }
 
@@ -717,11 +826,10 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
-                $custom_call_sink = DataFlowNode::getForMethodArgument(
-                    'variable-call',
+                $custom_call_sink = DataFlowNode::getForCallableArg(
+                    'dynamic-instantiation',
                     'variable-call',
                     0,
-                    $arg_location,
                     $arg_location,
                     TaintKind::INPUT_CALLABLE,
                 );
@@ -998,5 +1106,113 @@ final class NewAnalyzer extends CallAnalyzer
             return Type::combineUnionTypeArray($new_types, $codebase);
         }
         return null;
+    }
+
+    /**
+     * Whether the constructor binds the given template through a `class-string<T>`
+     * (`T::class`) parameter position, which names the template's type exactly
+     * rather than providing a value of it.
+     *
+     * @psalm-mutation-free
+     */
+    private static function templateBoundThroughClassString(
+        MethodStorage $method_storage,
+        string $template_name,
+    ): bool {
+        foreach ($method_storage->params as $constructor_param) {
+            if (!$constructor_param->type) {
+                continue;
+            }
+
+            foreach ($constructor_param->type->getAtomicTypes() as $param_atomic_type) {
+                if ($param_atomic_type instanceof TTemplateParamClass
+                    && $param_atomic_type->param_name === $template_name
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the set of class templates with no public channel that can constrain
+     * them: a template named anywhere in a public non-constructor method parameter
+     * or a public non-readonly property type is one that later code can still
+     * constrain, anything else can only have been fixed at the construction site and
+     * so is pinned eagerly rather than minted as a type variable.
+     *
+     * Any appearance in such a parameter constrains the variable, whichever way the
+     * position points, so `getTemplateTypes()` finding it in *any* nested position is
+     * correct — it is not an over-count. A value position (`set(T $item)`) records a
+     * lower bound that widens the type argument; a callable-parameter position
+     * (`each(callable(T): mixed)`) records an upper bound (`T <: the callback's
+     * parameter`). The upper bound is a real constraint, not a no-op: on an otherwise
+     * unbound construction it is what resolves the variable (to the callback's
+     * parameter type rather than `mixed`, matching Hack — see the
+     * `unboundTemplateSolvesToClosureParam` test), and it conflicts with a lower
+     * bound recorded elsewhere when the two cannot hold together (see
+     * `constructorBoundThenClosureParamConflict`). Pinning such a template eagerly
+     * instead would lose both behaviours, so every appearance must mint a variable.
+     *
+     * The set is only ever over-approximated per construction site: the channel may
+     * never be exercised (the method is not called), in which case the variable
+     * simply reconciles to its construction-site bound — which is why a variable that
+     * survives into an expression must be resolved through its bounds by consumers
+     * (array access, property reads, method returns) rather than assumed pinned.
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    private static function getUnconstrainableTemplates(ClassLikeStorage $storage): array
+    {
+        $unconstrainable = [];
+
+        foreach ($storage->template_types ?? [] as $template_name => $_) {
+            $unconstrainable[$template_name] = true;
+        }
+
+        foreach ($storage->methods as $method_name => $method_storage) {
+            if (!$unconstrainable) {
+                break;
+            }
+
+            if ($method_name === '__construct'
+                || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            ) {
+                continue;
+            }
+
+            foreach ($method_storage->params as $param) {
+                if ($param->type) {
+                    foreach ($param->type->getTemplateTypes() as $template_type) {
+                        unset($unconstrainable[$template_type->param_name]);
+                    }
+                }
+            }
+        }
+
+        foreach ($storage->properties as $property_storage) {
+            if (!$unconstrainable) {
+                break;
+            }
+
+            // A `readonly` property cannot be assigned after construction, so it
+            // is not a channel through which the template can be constrained.
+            if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                || $property_storage->readonly
+            ) {
+                continue;
+            }
+
+            if ($property_storage->type) {
+                foreach ($property_storage->type->getTemplateTypes() as $template_type) {
+                    unset($unconstrainable[$template_type->param_name]);
+                }
+            }
+        }
+
+        return $unconstrainable;
     }
 }

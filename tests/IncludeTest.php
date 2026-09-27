@@ -7,6 +7,9 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Storage\ClassLikeStorage;
+use ReflectionProperty;
 
 use function getcwd;
 use function preg_quote;
@@ -966,5 +969,53 @@ final class IncludeTest extends TestCase
                 'directories' => [(string) getcwd() . DIRECTORY_SEPARATOR],
             ],
         ];
+    }
+
+    /**
+     * Regression test: InterfaceAnalyzer must not crash when storage was
+     * overwritten by a class with the same FQCN (e.g. loaded via reflection
+     * from vendor). The interface's methods are absent from the overwritten
+     * storage, so InterfaceAnalyzer must skip them gracefully.
+     */
+    public function testInterfaceAnalysisDoesNotCrashWhenStorageOverwritten(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+
+        $config->setCustomErrorLevel('DuplicateClass', Config::REPORT_SUPPRESS);
+        $config->throw_exception = false;
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php';
+        $this->addFile($file_path, '<?php
+            namespace Foo;
+            interface Bar {
+                public function someMethod(): void;
+            }
+        ');
+
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        // Simulate reflection overwriting the interface storage with a class
+        // that lacks the interface's methods (this is what happens when a
+        // vendor class with the same FQCN is loaded via reflection).
+        $overwritten = new ClassLikeStorage('Foo\\Bar');
+        $overwritten->is_interface = false;
+        $overwritten->populated = true;
+
+        $ref = new ReflectionProperty(ClassLikeStorageProvider::class, 'storage');
+        /** @var array<string, ClassLikeStorage> $all */
+        $all = $ref->getValue();
+        $all['foo\\bar'] = $overwritten;
+        $ref->setValue(null, $all);
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $file_path,
+            $config->shortenFileName($file_path),
+        );
+        // This must not crash — previously threw UnexpectedValueException
+        // from MethodAnalyzer when the method was missing from storage.
+        $file_analyzer->analyze();
     }
 }

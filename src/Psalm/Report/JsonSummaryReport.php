@@ -10,6 +10,7 @@ use Psalm\Report;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class JsonSummaryReport extends Report
 {

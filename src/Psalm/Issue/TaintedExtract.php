@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Issue;
 
+/**
+ * @api
+ */
 final class TaintedExtract extends TaintedInput
 {
     public const SHORTCODE = 327;

@@ -6,6 +6,9 @@ namespace Psalm\Report;
 
 use Psalm\Report;
 
+/**
+ * @api
+ */
 final class ReportOptions
 {
     public bool $use_color = true;

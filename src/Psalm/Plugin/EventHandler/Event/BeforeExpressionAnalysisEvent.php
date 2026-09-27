@@ -12,6 +12,7 @@ use Psalm\StatementsSource;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class BeforeExpressionAnalysisEvent
 {

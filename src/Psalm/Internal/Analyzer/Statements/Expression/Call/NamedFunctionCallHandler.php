@@ -163,7 +163,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'enum_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->enumExists($first_arg->value->value)) {
+                    if (!$codebase->classlikes->enumExists($first_arg->value->value, null, $context)) {
                         $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -173,7 +173,7 @@ final class NamedFunctionCallHandler
                 ) {
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
-                    if (!$codebase->classlikes->enumExists($resolved_name)) {
+                    if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
                         $context->phantom_classes[strtolower($resolved_name)] = true;
                     }
                 }

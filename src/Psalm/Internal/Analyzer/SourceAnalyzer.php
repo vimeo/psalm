@@ -10,6 +10,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Issue\CodeIssue;
 use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
@@ -164,7 +165,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -174,7 +175,7 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param array<int, string> $new_issues
+     * @param array<array-key, string> $new_issues
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -243,12 +244,15 @@ abstract class SourceAnalyzer implements StatementsSource
     public function signalMutationOnlyInferred(
         int $mutation_level,
         ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
     ): void {
         $src = $this instanceof FunctionLikeAnalyzer
             ? $this
             : $this->getSource();
         if ($src instanceof FunctionLikeAnalyzer && $src->track_mutations) {
             if ($src->storage === $storage) {
+                // direct recursion
                 return;
             }
             if ($mutation_level === Mutations::LEVEL_INTERNAL_READ_WRITE
@@ -263,13 +267,35 @@ abstract class SourceAnalyzer implements StatementsSource
             ) {
                 return;
             }
+
+            // the level known at this point, used for the types of closures
             $src->inferred_mutations = max($src->inferred_mutations, $mutation_level);
+
+            if ($storage !== null
+                && !$storage->has_mutations_annotation
+                && $storage->location !== null
+                && $src->getCodebase()->config->isInProjectDirs($storage->location->file_path)
+            ) {
+                $callee_id ??= CodeUseGraph::functionLikeNodeForStorage($storage);
+
+                if ($callee_id !== null) {
+                    // the callee's own level is only known once it has been analysed:
+                    // resolved after analysis, which also handles (mutual) recursion
+                    $src->deferred_callees[$callee_id]
+                        = ($src->deferred_callees[$callee_id] ?? true) && $callee_internal_mutations_ok;
+
+                    return;
+                }
+            }
+
+            $src->intrinsic_mutations = max($src->intrinsic_mutations, $mutation_level);
+
             if ($src->storage instanceof MethodStorage
                 && $src->storage->defining_fqcln !== null
             ) {
                 $src->getCodebase()->analyzer->addMutableClass(
                     $src->storage->defining_fqcln,
-                    $src->inferred_mutations,
+                    $src->intrinsic_mutations,
                 );
             }
         }
@@ -291,12 +317,19 @@ abstract class SourceAnalyzer implements StatementsSource
         ?int $inferred_mutation_level = null,
         bool $overrideMsg = false,
         ?FunctionLikeStorage $storage = null,
+        bool $callee_internal_mutations_ok = false,
+        ?string $callee_id = null,
     ): void {
         if ($context->inside_attribute) {
             return;
         }
 
-        $this->signalMutationOnlyInferred($inferred_mutation_level ?? $mutation_level, $storage);
+        $this->signalMutationOnlyInferred(
+            $inferred_mutation_level ?? $mutation_level,
+            $storage,
+            $callee_internal_mutations_ok,
+            $callee_id,
+        );
 
         if ($context->allowed_mutations < $mutation_level
 

@@ -6,6 +6,9 @@ namespace Psalm\Plugin;
 
 use SimpleXMLElement;
 
+/**
+ * @api
+ */
 interface PluginFileExtensionsInterface extends PluginInterface
 {
     public function processFileExtensions(

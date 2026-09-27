@@ -84,17 +84,15 @@ use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 
+/**
+ * @api
+ */
 final class IssueBuffer
 {
     /**
      * @var array<string, list<IssueData>>
      */
     private static array $issues_data = [];
-
-    /**
-     * @var array<int, array>
-     */
-    private static array $console_issues = [];
 
     /**
      * @var array<string, int>
@@ -163,9 +161,15 @@ final class IssueBuffer
      *
      * @psalm-external-mutation-free
      */
-    public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
-    {
-        if (str_starts_with($issue_type, 'Tainted')) {
+    public static function addUnusedSuppression(
+        string $file_path,
+        int $offset,
+        string $issue_type,
+        bool $taint_analysis,
+    ): void {
+        // Taint issues are only computed when running taint analysis, so outside
+        // of it their suppressions can never be observed as used - don't report them.
+        if (!$taint_analysis && str_starts_with($issue_type, 'Tainted')) {
             return;
         }
 
@@ -863,6 +867,10 @@ final class IssueBuffer
             $project_analyzer->finish($start_time, PSALM_VERSION);
         }
 
+        // Persist the custom taint name->bit mapping on every run that populated the cache (not just full
+        // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
+        $project_analyzer->persistCustomTaints();
+
         if ($error_count
             && !($codebase->taint_flow_graph
                 && $project_analyzer->generated_report_options
@@ -1053,7 +1061,6 @@ final class IssueBuffer
         self::$error_count = 0;
         self::$recording_level = 0;
         self::$recorded_issues = [];
-        self::$console_issues = [];
         self::$unused_suppressions = [];
         self::$used_suppressions = [];
     }

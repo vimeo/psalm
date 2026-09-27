@@ -12,6 +12,7 @@ use function substr_count;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class ParseErrorLocation extends CodeLocation
 {

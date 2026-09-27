@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -271,6 +272,36 @@ final class TemplateInferredTypeReplacer
             }
 
             if ($atomic_type->extra_types) {
+                // a type variable cannot carry intersection types: resolve it
+                // through its accumulated bounds so the intersection lands on
+                // the concrete types behind it
+                $resolved_template_types = [];
+
+                foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
+                    $resolved = null;
+
+                    if ($atomic_template_type instanceof TTypeVariable && $atomic_template_type->bounds) {
+                        if ($atomic_template_type->bounds->lower_bounds) {
+                            $resolved = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $atomic_template_type->bounds->lower_bounds,
+                                $codebase,
+                            );
+                        } elseif ($atomic_template_type->bounds->upper_bounds) {
+                            $resolved = $atomic_template_type->bounds->upper_bounds[0]->type;
+                        }
+                    }
+
+                    if ($resolved) {
+                        foreach ($resolved->getAtomicTypes() as $resolved_atomic_type) {
+                            $resolved_template_types[] = $resolved_atomic_type;
+                        }
+                    } else {
+                        $resolved_template_types[] = $atomic_template_type;
+                    }
+                }
+
+                $template_type = $template_type->getBuilder()->setTypes($resolved_template_types)->freeze();
+
                 $types = [];
                 foreach ($template_type->getAtomicTypes() as $atomic_template_type) {
                     if ($atomic_template_type instanceof TNamedObject

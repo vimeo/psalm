@@ -41,6 +41,19 @@ final class FunctionCallInfo
 
     public ?PhpParser\Node\Name $new_function_name = null;
 
+    /**
+     * When the call target is a callable value (closure / first-class callable) whose
+     * underlying function id is known, this holds that id so taint sources can be
+     * re-dispatched on invocation. If the target is a union of several distinct
+     * callables (e.g. `rand() ? a(...) : b(...)`), every known id is collected here so
+     * the taint behavior of all of them is re-dispatched, since any of them may run.
+     *
+     * Used as a set (id => true) to deduplicate repeated ids.
+     *
+     * @var array<non-empty-lowercase-string, true>
+     */
+    public array $callable_ids = [];
+
     public bool $allow_named_args = true;
 
     public array $byref_uses = [];

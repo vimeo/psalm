@@ -12,6 +12,7 @@ use function sprintf;
 
 /**
  * @psalm-external-mutation-free
+ * @api
  */
 final class TextReport extends Report
 {
