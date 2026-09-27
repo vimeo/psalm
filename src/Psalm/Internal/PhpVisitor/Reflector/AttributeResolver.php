@@ -38,7 +38,7 @@ final class AttributeResolver
         }
 
         $codebase->scanner->queueClassLikeForScanning($fq_type_string);
-        $file_storage->referenced_classlikes[Interner::lower($fq_type_string)] = $fq_type_string;
+        $file_storage->referenced_classlikes[$fq_type_string] = $fq_type_string;
 
         $args = [];
 

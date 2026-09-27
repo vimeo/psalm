@@ -55,7 +55,6 @@ use ReflectionProperty;
 use function assert;
 use function explode;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -76,13 +75,13 @@ final class ClassConstAnalyzer
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            $first_part_lc = strtolower($stmt->class->getFirst());
+            $first_part = $stmt->class->getFirst();
 
-            if ($first_part_lc === 'self' || $first_part_lc === 'static') {
+            if ($first_part === 'self' || $first_part === 'static') {
                 if (!$context->self) {
                     return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
-                            'Cannot use ' . $first_part_lc . ' outside class context',
+                            'Cannot use ' . $first_part . ' outside class context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -90,7 +89,7 @@ final class ClassConstAnalyzer
                 }
 
                 $fq_class_name = $context->self;
-            } elseif ($first_part_lc === 'parent') {
+            } elseif ($first_part === 'parent') {
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
@@ -110,7 +109,7 @@ final class ClassConstAnalyzer
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
                     if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
-                        && !isset($context->phantom_classes[Interner::lower($fq_class_name)])
+                        && !isset($context->phantom_classes[$fq_class_name])
                     ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $statements_analyzer,
@@ -126,7 +125,7 @@ final class ClassConstAnalyzer
                 }
             }
 
-            $fq_class_name_lc = Interner::lower($fq_class_name);
+            $referenced_fq_class_name = $fq_class_name;
 
             $moved_class = false;
 
@@ -165,7 +164,7 @@ final class ClassConstAnalyzer
                     }
                 }
 
-                if ($first_part_lc === 'static') {
+                if ($first_part === 'static') {
                     $static_named_object = new TNamedObject($fq_class_name, true);
 
                     $statements_analyzer->node_data->setType(
@@ -333,14 +332,14 @@ final class ClassConstAnalyzer
 
             if ($context->calling_method_id) {
                 $codebase->addReferenceToClassConstant(
-                    $fq_class_name_lc,
+                    $referenced_fq_class_name,
                     $const_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $context,
                 );
             }
 
-            $declaring_const_id = Interner::str($fq_class_name_lc) . '::' . $stmt->name->name;
+            $declaring_const_id = Interner::str($referenced_fq_class_name) . '::' . $stmt->name->name;
 
             if ($codebase->alter_code && !$moved_class) {
                 foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
@@ -349,7 +348,7 @@ final class ClassConstAnalyzer
 
                         $file_manipulations = [];
 
-                        if (Interner::internLower($new_fq_class_name) !== $fq_class_name_lc) {
+                        if (Interner::intern($new_fq_class_name) !== $referenced_fq_class_name) {
                             $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,
@@ -411,7 +410,7 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
+            if ($first_part !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
                 || (isset($const_class_storage->constants[$const_name])
                     && $const_class_storage->constants[$const_name]->final
                 )
@@ -639,14 +638,14 @@ final class ClassConstAnalyzer
 
             if ($context->calling_method_id) {
                 $codebase->addReferenceToClassConstant(
-                    Interner::lower($fq_class_name),
+                    $fq_class_name,
                     $const_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $context,
                 );
             }
 
-            $declaring_const_id = Interner::str(Interner::lower($fq_class_name)) . '::' . $stmt->name->name;
+            $declaring_const_id = Interner::str($fq_class_name) . '::' . $stmt->name->name;
 
             if ($codebase->alter_code && !$moved_class) {
                 foreach ($codebase->class_constant_transforms as $original_pattern => $transformation) {
@@ -887,7 +886,7 @@ final class ClassConstAnalyzer
                     && $const_storage !== $parent_const_storage
                     && $codebase->analysis_php_version_id < 8_01_00
                 ) {
-                    $interface_overrides[Interner::lower($interface)] = new OverriddenInterfaceConstant(
+                    $interface_overrides[$interface] = new OverriddenInterfaceConstant(
                         "{$class_name_str}::{$const_name_str} cannot override constant from "
                             . Interner::str($interface),
                         $const_storage->location,
@@ -897,9 +896,9 @@ final class ClassConstAnalyzer
                 }
                 if ($interface_const_storage !== null && $const_storage->location !== null) {
                     assert($parent_classlike_storage !== null);
-                    if (!isset($parent_classlike_storage->parent_interfaces[Interner::lower($interface)])
+                    if (!isset($parent_classlike_storage->parent_interfaces[$interface])
                         && !isset(
-                            $interface_storage->parent_interfaces[Interner::lower($parent_classlike_storage->name)],
+                            $interface_storage->parent_interfaces[$parent_classlike_storage->name],
                         )
                         && $interface_const_storage !== $parent_const_storage
                     ) {
@@ -927,8 +926,7 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
-                    $parent_classlike_name_lc = Interner::lower($parent_classlike_storage->name);
-                    if (!isset($parent_class_storage->class_implements[$parent_classlike_name_lc])) {
+                    if (!isset($parent_class_storage->class_implements[$parent_classlike_storage->name])) {
                         IssueBuffer::maybeAdd(
                             new AmbiguousConstantInheritance(
                                 "Ambiguous inheritance of {$class_name_str}::{$const_name_str} from "
@@ -942,14 +940,14 @@ final class ClassConstAnalyzer
                         );
                     }
                 }
-                foreach ($interface_overrides as $interface_lc => $_) {
+                foreach ($interface_overrides as $interface_name => $_) {
                     // If the parent is the one with the const that's overriding the interface const, and the parent
                     // doesn't implement the interface, it's just an AmbiguousConstantInheritance, not an
                     // OverriddenInterfaceConstant
-                    if (!isset($parent_class_storage->class_implements[$interface_lc])
+                    if (!isset($parent_class_storage->class_implements[$interface_name])
                         && $parent_const_storage === $const_storage
                     ) {
-                        unset($interface_overrides[$interface_lc]);
+                        unset($interface_overrides[$interface_name]);
                     }
                 }
                 $parent_classlike_storage = $parent_class_storage;

@@ -80,7 +80,6 @@ use function reset;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
 use function substr;
 use function substr_count;
 
@@ -137,7 +136,7 @@ final class ArgumentAnalyzer
     /**
      * @param  array<int, array<int, Union>> $class_generic_params
      * @param  ?string $cased_method_id human-readable function/method id, for messages
-     * @param  int|MethodIdentifier|null $method_id lowercase function id or method id
+     * @param  int|MethodIdentifier|null $method_id function id or method id
      * @return false|null
      */
     public static function checkArgumentMatches(
@@ -749,7 +748,7 @@ final class ArgumentAnalyzer
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
-                    $class_lc = Interner::lower($declaring_method_id->fq_class_name);
+                    $class_lc = $declaring_method_id->fq_class_name;
                     $method_lc = $declaring_method_id->method_name;
                     $codebase->analyzer->possible_method_param_types[$class_lc][$method_lc][$argument_offset]
                         = Type::combineUnionTypes(
@@ -1077,7 +1076,7 @@ final class ArgumentAnalyzer
                         [$lhs,] = $input_type_part->properties;
                         if ($lhs->isSingleStringLiteral()
                             && in_array(
-                                strtolower($lhs->getSingleStringLiteral()->value),
+                                $lhs->getSingleStringLiteral()->value,
                                 ['self', 'parent', 'static'],
                                 true,
                             )) {
@@ -1124,7 +1123,7 @@ final class ArgumentAnalyzer
 
                     if ($codebase->analysis_php_version_id >= 8_02_00
                         && in_array(
-                            Interner::lower($potential_method_id->fq_class_name),
+                            $potential_method_id->fq_class_name,
                             [StrId::self, StrId::parent, StrId::static],
                             true,
                         )) {
@@ -1617,7 +1616,7 @@ final class ArgumentAnalyzer
 
                                 $function_id_part = new MethodIdentifier(
                                     $callable_fq_class_name,
-                                    Interner::internLower($method_name),
+                                    Interner::intern($method_name),
                                 );
 
                                 $call_method_id = new MethodIdentifier(

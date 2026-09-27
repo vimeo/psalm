@@ -440,7 +440,7 @@ final class CastAnalyzer
                     }
 
                     foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (Interner::equalsLower($intersection_type->value, $pseudo_castable_class)
+                        if ($intersection_type->value === $pseudo_castable_class
                             || $codebase->classExtends(
                                 $intersection_type->value,
                                 $pseudo_castable_class,
@@ -639,7 +639,7 @@ final class CastAnalyzer
                     }
 
                     foreach (self::PSEUDO_CASTABLE_CLASSES as $pseudo_castable_class) {
-                        if (Interner::equalsLower($intersection_type->value, $pseudo_castable_class)
+                        if ($intersection_type->value === $pseudo_castable_class
                             || $codebase->classExtends(
                                 $intersection_type->value,
                                 $pseudo_castable_class,
@@ -829,7 +829,7 @@ final class CastAnalyzer
                     if ($intersection_type instanceof TNamedObject) {
                         $intersection_method_id = new MethodIdentifier(
                             $intersection_type->value,
-                            StrId::__tostring,
+                            StrId::__toString,
                         );
 
                         if ($codebase->methodExists(
@@ -867,7 +867,7 @@ final class CastAnalyzer
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
-                        && isset($intersection_type->methods[StrId::__tostring])
+                        && isset($intersection_type->methods[StrId::__toString])
                     ) {
                         $castable_types[] = new TString();
 

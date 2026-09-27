@@ -16,7 +16,6 @@ use function fwrite;
 use function hash;
 use function pack;
 use function strlen;
-use function strtolower;
 use function substr;
 use function unpack;
 
@@ -34,8 +33,8 @@ use const LOCK_UN;
  * string without any coordination: only the reverse id => string mapping has to be shipped
  * around, which is done via {@see self::getSince()} and {@see self::import()}.
  *
- * Names are interned with their original casing; use {@see self::lower()} to obtain the id of the
- * lowercased string (e.g. for case-insensitive lookups of classes, functions and methods).
+ * Names are interned with their original casing, and resolved case-sensitively everywhere (like pzoom):
+ * a class, function, method, property or constant name only matches the exact casing it was declared with.
  *
  * Commonly used strings have precomputed ids in {@see StrId}.
  *
@@ -43,14 +42,18 @@ use const LOCK_UN;
  */
 final class Interner
 {
-    /** @var array<int, string> */
-    private static array $strings = StrId::STRINGS;
+    /**
+     * Id => string. Public only so that hot paths can read it directly without the overhead of a method call
+     * (`Interner::$strings[$id]`): never write to it.
+     *
+     * @internal
+     * @var array<int, string>
+     */
+    public static array $strings = StrId::STRINGS;
 
     /** @var array<string, int> */
     private static array $ids = StrId::IDS;
 
-    /** @var array<int, int> */
-    private static array $lower = StrId::LOWER;
 
     /**
      * Strings interned at runtime (i.e. not preloaded), in insertion order.
@@ -127,15 +130,6 @@ final class Interner
         return $result;
     }
 
-    /**
-     * Interns the lowercase version of a string, returning its id.
-     *
-     * @psalm-pure
-     */
-    public static function internLower(string $str): int
-    {
-        return self::intern(strtolower($str));
-    }
 
     /**
      * Returns the id of a string, if it was already interned.
@@ -159,26 +153,7 @@ final class Interner
         return self::$strings[$id] ?? throw new RuntimeException("Unknown interned string id $id");
     }
 
-    /**
-     * Returns the id of the lowercase version of the string corresponding to an id.
-     *
-     * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty interning is semantically pure
-     */
-    public static function lower(int $id): int
-    {
-        return self::$lower[$id] ??= self::intern(strtolower(self::str($id)));
-    }
 
-    /**
-     * Case-insensitive comparison of two interned strings.
-     *
-     * @psalm-pure
-     */
-    public static function equalsLower(int $a, int $b): bool
-    {
-        return $a === $b || self::lower($a) === self::lower($b);
-    }
 
     /**
      * Converts a list of ids to their strings.

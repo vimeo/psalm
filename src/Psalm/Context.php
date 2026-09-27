@@ -171,7 +171,7 @@ final class Context
     /**
      * A list of classes checked with class_exists
      *
-     * @var array<int, true> lowercase class name id => true
+     * @var array<int, true> class name id => true
      */
     public array $phantom_classes = [];
 
@@ -214,7 +214,7 @@ final class Context
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
      *
-     * @var array<int, array<int, bool>> lowercase class name id => lowercase method name id => true
+     * @var array<int, array<int, bool>> class name id => method name id => true
      */
     public array $initialized_methods = [];
 
@@ -298,7 +298,7 @@ final class Context
     public bool $strict_types = false;
 
     /**
-     * Interned lowercase id of the function being analyzed, if any.
+     * Interned id of the function being analyzed, if any.
      */
     public ?int $calling_function_id = null;
 
@@ -785,7 +785,7 @@ final class Context
      */
     public function isPhantomClass(int $class_name): bool
     {
-        return isset($this->phantom_classes[Interner::lower($class_name)]);
+        return isset($this->phantom_classes[$class_name]);
     }
 
     /**

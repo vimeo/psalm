@@ -85,17 +85,12 @@ foreach ([
 
 foreach (get_defined_functions() as $sub) {
     foreach ($sub as $name) {
-        $name = strtolower($name);
-        if ($name === 'paramstoentries') {
-            continue;
-        }
-        if ($name === 'typetostring') {
-            continue;
-        }
-        if ($name === 'namedtypename') {
-            continue;
-        }
         $func = new ReflectionFunction($name);
+        // canonical (declared) casing: names are resolved case-sensitively
+        $name = $func->getName();
+        if ($name === 'paramsToEntries' || $name === 'typeToString' || $name === 'namedTypeName') {
+            continue;
+        }
 
         $args = paramsToEntries($func, 'mixed');
 
@@ -105,11 +100,15 @@ foreach (get_defined_functions() as $sub) {
 
 foreach (get_declared_classes() as $class) {
     $refl = new ReflectionClass($class);
+    // Canonical (declared) casing: names are resolved case-sensitively.
+    // Class aliases are reported by get_declared_classes() under their alias name (lowercased by PHP,
+    // their declared casing is not available): keep them under that name.
+    $class = strcasecmp($refl->getName(), $class) === 0 ? $refl->getName() : $class;
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
-        $callmap[strtolower($class.'::'.$method->getName())] = $args;
+        $callmap[$class.'::'.$method->getName()] = $args;
     }
 }
 

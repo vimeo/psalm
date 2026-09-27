@@ -312,10 +312,10 @@ class FileFilter
         if (isset($config['referencedClass']) && is_iterable($config['referencedClass'])) {
             /** @var array $referenced_class */
             foreach ($config['referencedClass'] as $referenced_class) {
-                $class_name = strtolower((string) ($referenced_class['name'] ?? ''));
+                $class_name = (string) ($referenced_class['name'] ?? '');
 
                 if (str_contains($class_name, '*')) {
-                    $regex = '/' . str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
+                    $regex = '/' . str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/';
                     $filter->fq_classlike_patterns[] = $regex;
                 } else {
                     $filter->fq_classlike_names[] = $class_name;
@@ -338,7 +338,7 @@ class FileFilter
                     continue;
                 }
 
-                $filter->method_ids[] = strtolower($method_id);
+                $filter->method_ids[] = $method_id;
             }
         }
 
@@ -359,21 +359,21 @@ class FileFilter
                     continue;
                 }
 
-                $filter->method_ids[] = strtolower($function_id);
+                $filter->method_ids[] = $function_id;
             }
         }
 
         if (isset($config['referencedProperty']) && is_iterable($config['referencedProperty'])) {
             /** @var array $referenced_property */
             foreach ($config['referencedProperty'] as $referenced_property) {
-                $filter->property_ids[] = strtolower((string) ($referenced_property['name'] ?? ''));
+                $filter->property_ids[] = (string) ($referenced_property['name'] ?? '');
             }
         }
 
         if (isset($config['referencedConstant']) && is_iterable($config['referencedConstant'])) {
             /** @var array $referenced_constant */
             foreach ($config['referencedConstant'] as $referenced_constant) {
-                $filter->class_constant_ids[] = strtolower((string) ($referenced_constant['name'] ?? ''));
+                $filter->class_constant_ids[] = (string) ($referenced_constant['name'] ?? '');
             }
         }
 
@@ -417,7 +417,7 @@ class FileFilter
         if ($e->referencedClass) {
             $config['referencedClass'] = [];
             foreach ($e->referencedClass as $referenced_class) {
-                $config['referencedClass'][]['name'] = strtolower((string)$referenced_class['name']);
+                $config['referencedClass'][]['name'] = (string)$referenced_class['name'];
             }
         }
 
@@ -431,21 +431,21 @@ class FileFilter
         if ($e->referencedFunction) {
             $config['referencedFunction'] = [];
             foreach ($e->referencedFunction as $referenced_function) {
-                $config['referencedFunction'][]['name'] = strtolower((string)$referenced_function['name']);
+                $config['referencedFunction'][]['name'] = (string)$referenced_function['name'];
             }
         }
 
         if ($e->referencedProperty) {
             $config['referencedProperty'] = [];
             foreach ($e->referencedProperty as $referenced_property) {
-                $config['referencedProperty'][]['name'] = strtolower((string)$referenced_property['name']);
+                $config['referencedProperty'][]['name'] = (string)$referenced_property['name'];
             }
         }
 
         if ($e->referencedConstant) {
             $config['referencedConstant'] = [];
             foreach ($e->referencedConstant as $referenced_constant) {
-                $config['referencedConstant'][]['name'] = strtolower((string)$referenced_constant['name']);
+                $config['referencedConstant'][]['name'] = (string)$referenced_constant['name'];
             }
         }
 
@@ -590,7 +590,7 @@ class FileFilter
             }
         }
 
-        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names, true);
+        return in_array($fq_classlike_name, $this->fq_classlike_names, true);
     }
 
     /**
@@ -630,7 +630,7 @@ class FileFilter
      */
     public function allowsProperty(string $property_id): bool
     {
-        return in_array(strtolower($property_id), $this->property_ids, true);
+        return in_array($property_id, $this->property_ids, true);
     }
 
     /**
@@ -638,7 +638,7 @@ class FileFilter
      */
     public function allowsClassConstant(string $constant_id): bool
     {
-        return in_array(strtolower($constant_id), $this->class_constant_ids, true);
+        return in_array($constant_id, $this->class_constant_ids, true);
     }
 
     /**

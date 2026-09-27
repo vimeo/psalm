@@ -100,7 +100,6 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
-use function strtolower;
 use function substr;
 use function substr_count;
 
@@ -119,7 +118,7 @@ final class Codebase
      * Separated from the CodeUseGraph because a use import does not
      * automatically mean a class is actually used.
      *
-     * @var array<int, array<int, CodeLocation>> lowercase class name id => locations
+     * @var array<int, array<int, CodeLocation>> class name id => locations
      */
     public array $use_referencing_locations = [];
 
@@ -202,56 +201,56 @@ final class Codebase
     public bool $language_server = false;
 
     /**
-     * lowercase class name id => lowercase method name id => [destination class name id, destination method name id]
+     * class name id => method name id => [destination class name id, destination method name id]
      *
      * @var array<int, array<int, array{int, int}>>
      */
     public array $methods_to_move = [];
 
     /**
-     * lowercase class name id => lowercase method name id => new method name id
+     * class name id => method name id => new method name id
      *
      * @var array<int, array<int, int>>
      */
     public array $methods_to_rename = [];
 
     /**
-     * lowercase class name id => property name id => [destination class name id, destination property name id]
+     * class name id => property name id => [destination class name id, destination property name id]
      *
      * @var array<int, array<int, array{int, int}>>
      */
     public array $properties_to_move = [];
 
     /**
-     * lowercase class name id => property name id => new property name id
+     * class name id => property name id => new property name id
      *
      * @var array<int, array<int, int>>
      */
     public array $properties_to_rename = [];
 
     /**
-     * lowercase class name id => constant name id => [destination class name id, destination constant name id]
+     * class name id => constant name id => [destination class name id, destination constant name id]
      *
      * @var array<int, array<int, array{int, int}>>
      */
     public array $class_constants_to_move = [];
 
     /**
-     * lowercase class name id => constant name id => new constant name id
+     * class name id => constant name id => new constant name id
      *
      * @var array<int, array<int, int>>
      */
     public array $class_constants_to_rename = [];
 
     /**
-     * lowercase class name id => destination class name id
+     * class name id => destination class name id
      *
      * @var array<int, int>
      */
     public array $classes_to_move = [];
 
     /**
-     * @var array<lowercase-string, string>
+     * @var array<string, string>
      */
     public array $call_transforms = [];
 
@@ -266,7 +265,7 @@ final class Codebase
     public array $class_constant_transforms = [];
 
     /**
-     * lowercase class name id => destination class name id
+     * class name id => destination class name id
      *
      * @var array<int, int>
      */
@@ -374,7 +373,7 @@ final class Codebase
      * Records a reference to a class from the code described by $context
      * (or the top-level code of the file of $location).
      *
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @psalm-external-mutation-free
      */
     public function addReferenceToClass(
@@ -396,7 +395,7 @@ final class Codebase
      * Records a reference to a property. Only reads make the property used,
      * but writes are still recorded for reference lookups and cache invalidation.
      *
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @param int $property_name interned property name, without the leading `$`
      * @psalm-external-mutation-free
      */
@@ -430,7 +429,7 @@ final class Codebase
      * Records a reference to a function or method, optionally marking its
      * return value as used too.
      *
-     * @param int|MethodIdentifier $function_id a method id, or a lowercase function id
+     * @param int|MethodIdentifier $function_id a method id, or a function id
      * @psalm-external-mutation-free
      */
     public function addReferenceToFunctionLike(
@@ -489,7 +488,7 @@ final class Codebase
      * Records a reference to a property that does not exist (yet), so that the
      * referencing code is re-analysed if the property gets added.
      *
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @param int $property_name interned property name, without the leading `$`
      * @psalm-external-mutation-free
      */
@@ -510,7 +509,7 @@ final class Codebase
     }
 
     /**
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @param int $const_name interned case-sensitive constant name
      * @psalm-external-mutation-free
      */
@@ -971,7 +970,7 @@ final class Codebase
             [$fq_class_name, $member_name] = explode('::', $symbol);
 
             return $this->findReferencesToMethod(
-                new MethodIdentifier(Interner::intern($fq_class_name), Interner::internLower($member_name)),
+                new MethodIdentifier(Interner::intern($fq_class_name), Interner::intern($member_name)),
             )
                 + $this->findReferencesToClassConstant(
                     Interner::intern($fq_class_name),
@@ -1015,7 +1014,7 @@ final class Codebase
             CodeUseGraph::classNode($fq_class_name),
         );
 
-        foreach ($this->use_referencing_locations[Interner::lower($fq_class_name)] ?? [] as $location) {
+        foreach ($this->use_referencing_locations[$fq_class_name] ?? [] as $location) {
             $refs[$location->getHash()] = $location;
         }
 
@@ -1193,7 +1192,7 @@ final class Codebase
     }
 
     /**
-     * @return array<int, int> all interfaces extended by $interface_name (lowercase name id => name id)
+     * @return array<int, int> all interfaces extended by $interface_name (interface name id => name id)
      * @psalm-mutation-free
      */
     public function getParentInterfaces(int $fq_interface_name): array
@@ -1204,36 +1203,10 @@ final class Codebase
     }
 
     /**
-     * Determine whether or not a class has the correct casing
-     *
-     * @psalm-mutation-free
-     */
-    public function classHasCorrectCasing(int $fq_class_name): bool
-    {
-        return $this->classlikes->classHasCorrectCasing($fq_class_name);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function interfaceHasCorrectCasing(int $fq_interface_name): bool
-    {
-        return $this->classlikes->interfaceHasCorrectCasing($fq_interface_name);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public function traitHasCorrectCasing(int $fq_trait_name): bool
-    {
-        return $this->classlikes->traitHasCorrectCasing($fq_trait_name);
-    }
-
-    /**
      * Given a function id, return the function like storage for
      * a method, closure, or function.
      *
-     * @param int|MethodIdentifier $function_id a method id, or a lowercase function id
+     * @param int|MethodIdentifier $function_id a method id, or a function id
      * @return FunctionStorage|MethodStorage
      */
     public function getFunctionLikeStorage(
@@ -1253,10 +1226,10 @@ final class Codebase
                 return $this->methods->getStorage($declaring_method_id);
             }
 
-            $function_id = Interner::internLower((string) $function_id);
+            $function_id = Interner::intern((string) $function_id);
         }
 
-        return $this->functions->getStorage($statements_analyzer, Interner::lower($function_id));
+        return $this->functions->getStorage($statements_analyzer, $function_id);
     }
 
     /**
@@ -1436,7 +1409,7 @@ final class Codebase
             return null;
         }
 
-        $function_id = Interner::internLower($function_name);
+        $function_id = Interner::intern($function_name);
         $file_storage = $this->file_storage_provider->get($file_path);
 
         if (isset($file_storage->functions[$function_id])) {
@@ -1569,7 +1542,7 @@ final class Codebase
 
         //Procedural Function
         if (strpos($reference->symbol, '()')) {
-            $function_name = strtolower(substr($reference->symbol, 0, -2));
+            $function_name = substr($reference->symbol, 0, -2);
 
             if ($function_name === '') {
                 return null;
@@ -1762,7 +1735,7 @@ final class Codebase
                     return null;
                 }
 
-                $function_id = Interner::internLower($function_name);
+                $function_id = Interner::intern($function_name);
 
                 if (isset($file_storage->functions[$function_id])) {
                     return $file_storage->functions[$function_id]->location;
@@ -1929,7 +1902,7 @@ final class Codebase
             $signature_label = $method_storage->cased_name !== null ? Interner::str($method_storage->cased_name) : '';
             $signature_documentation = $method_storage->description;
         } else {
-            $function_id = Interner::internLower($function_symbol);
+            $function_id = Interner::intern($function_symbol);
 
             try {
                 if ($file_path) {
@@ -2358,9 +2331,9 @@ final class Codebase
 
         $aliases = null;
 
-        foreach ($file_storage->classlikes_in_file as $fq_class_name_lc => $_) {
+        foreach ($file_storage->classlikes_in_file as $fq_class_name_id => $_) {
             try {
-                $class_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+                $class_storage = $this->classlike_storage_provider->get($fq_class_name_id);
             } catch (Exception) {
                 continue;
             }
@@ -2459,11 +2432,11 @@ final class Codebase
 
         $namespace_map = [];
         if ($aliases) {
-            foreach ($aliases->uses_flipped as $namespace_name_lc => $namespace_alias) {
-                $namespace_map[Interner::str($namespace_name_lc)] = Interner::str($namespace_alias);
+            foreach ($aliases->uses_flipped as $namespace_name => $namespace_alias) {
+                $namespace_map[Interner::str($namespace_name)] = Interner::str($namespace_alias);
             }
             if ($aliases->namespace !== null) {
-                $namespace_map[strtolower(Interner::str($aliases->namespace))] = '';
+                $namespace_map[Interner::str($aliases->namespace)] = '';
             }
         }
 
@@ -2472,16 +2445,16 @@ final class Codebase
         ksort($namespace_map);
         $namespace_map = array_reverse($namespace_map);
 
-        foreach ($functions as $function_lowercase => $function) {
+        foreach ($functions as $function_id => $function) {
             // Transform FQFN relative to all uses namespaces
             if ($function->cased_name === null) {
                 continue;
             }
             $function_name = Interner::str($function->cased_name);
-            $function_lowercase = Interner::str($function_lowercase);
+            $function_id = Interner::str($function_id);
             $in_namespace_map = false;
             foreach ($namespace_map as $namespace_name => $namespace_alias) {
-                if (str_starts_with($function_lowercase, $namespace_name . '\\')) {
+                if (str_starts_with($function_id, $namespace_name . '\\')) {
                     $function_name = $namespace_alias . '\\' . substr($function_name, strlen($namespace_name) + 1);
                     $in_namespace_map = true;
                 }
@@ -2708,7 +2681,7 @@ final class Codebase
     }
 
     /**
-     * @param array<int, mixed> $phantom_classes lowercase class name id => mixed
+     * @param array<int, mixed> $phantom_classes class name id => mixed
      */
     public function queueClassLikeForScanning(
         int $fq_classlike_name,

@@ -73,7 +73,6 @@ use function spl_object_id;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -88,7 +87,6 @@ abstract class CallAnalyzer
         int $method_name,
         Context $context,
     ): void {
-        $method_name_lc = Interner::lower($method_name);
         $fq_class_name = $source->getFQCLN();
 
         if ($fq_class_name === null) {
@@ -110,18 +108,18 @@ abstract class CallAnalyzer
         ) {
             $method_id = new MethodIdentifier(
                 $fq_class_name,
-                $method_name_lc,
+                $method_name,
             );
 
             if (!$source instanceof MethodAnalyzer || !$source->getMethodId()->equals($method_id)) {
                 if ($context->collect_initializations) {
-                    $method_class_lc = Interner::lower($method_id->fq_class_name);
+                    $method_class = $method_id->fq_class_name;
 
-                    if (isset($context->initialized_methods[$method_class_lc][$method_id->method_name])) {
+                    if (isset($context->initialized_methods[$method_class][$method_id->method_name])) {
                         return;
                     }
 
-                    $context->initialized_methods[$method_class_lc][$method_id->method_name] = true;
+                    $context->initialized_methods[$method_class][$method_id->method_name] = true;
                 }
 
                 $project_analyzer->getMethodMutations(
@@ -142,7 +140,7 @@ abstract class CallAnalyzer
             ) &&
             $source->getMethodName() !== $method_name
         ) {
-            $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
+            $method_id = new MethodIdentifier($fq_class_name, $method_name);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -156,7 +154,7 @@ abstract class CallAnalyzer
 
                             $method_id = new MethodIdentifier(
                                 $fq_class_name,
-                                $method_name_lc,
+                                $method_name,
                             );
 
                             $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -176,7 +174,7 @@ abstract class CallAnalyzer
                                 $fq_class_name = $intersection_type->value;
                                 $method_id = new MethodIdentifier(
                                     $fq_class_name,
-                                    $method_name_lc,
+                                    $method_name,
                                 );
 
                                 $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -196,13 +194,13 @@ abstract class CallAnalyzer
                 return;
             }
 
-            $declaring_class_lc = Interner::lower($declaring_method_id->fq_class_name);
+            $declaring_class = $declaring_method_id->fq_class_name;
 
-            if (isset($context->initialized_methods[$declaring_class_lc][$declaring_method_id->method_name])) {
+            if (isset($context->initialized_methods[$declaring_class][$declaring_method_id->method_name])) {
                 return;
             }
 
-            $context->initialized_methods[$declaring_class_lc][$declaring_method_id->method_name] = true;
+            $context->initialized_methods[$declaring_class][$declaring_method_id->method_name] = true;
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
@@ -218,7 +216,7 @@ abstract class CallAnalyzer
                         $appearing_method_id->fq_class_name,
                     );
 
-                    if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
+                    if (isset($appearing_class_storage->trait_final_map[$method_name])) {
                         $is_final = true;
                     }
                 }
@@ -307,7 +305,7 @@ abstract class CallAnalyzer
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        $fq_class_name = Interner::lower($codebase->classlikes->getUnAliasedName($fq_class_name));
+        $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -508,8 +506,8 @@ abstract class CallAnalyzer
             if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $callable_arg->left->class instanceof Name
                 && $callable_arg->left->name instanceof Identifier
-                && strtolower($callable_arg->left->name->name) === 'class'
-                && !in_array(strtolower($callable_arg->left->class->getFirst()), ['self', 'static', 'parent'])
+                && $callable_arg->left->name->name === 'class'
+                && !in_array($callable_arg->left->class->getFirst(), ['self', 'static', 'parent'], true)
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {
@@ -558,7 +556,7 @@ abstract class CallAnalyzer
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
             && $class_arg->name instanceof Identifier
-            && strtolower($class_arg->name->name) === 'class'
+            && $class_arg->name->name === 'class'
             && $class_arg->class instanceof Name
         ) {
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -602,8 +600,7 @@ abstract class CallAnalyzer
     }
 
     /**
-     * @param  int  $function_id interned function id, as written; replaced by the interned lowercase function id
-     *                           (possibly resolved to the root version)
+     * @param  int  $function_id interned function id, as written; possibly replaced by the root version
      * @param  bool $can_be_in_root_scope if true, the function can be shortened to the root version
      */
     public static function checkFunctionExists(
@@ -613,7 +610,6 @@ abstract class CallAnalyzer
         bool $can_be_in_root_scope,
     ): bool {
         $cased_function_id = $function_id;
-        $function_id = Interner::lower($function_id);
 
         $codebase = $statements_analyzer->getCodebase();
 

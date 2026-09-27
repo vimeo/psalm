@@ -46,7 +46,8 @@ final class ConstFetchAnalyzer
         $const_name_str = $stmt->name->toString();
         $const_name = Interner::intern($const_name_str);
 
-        switch (strtolower($const_name_str)) {
+        // true/false/null are case-insensitive keywords, every other constant name is matched exactly
+        switch ($const_name === StrId::STDIN ? 'STDIN' : strtolower($const_name_str)) {
             case 'null':
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
                 break;
@@ -60,7 +61,7 @@ final class ConstFetchAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getTrue());
                 break;
 
-            case 'stdin':
+            case 'STDIN':
                 // the STDIN stream (php://stdin) carries user-controlled input
                 $stdin_type = Type::getResource();
                 self::taintStdin($statements_analyzer, $stmt, $context, $stdin_type);

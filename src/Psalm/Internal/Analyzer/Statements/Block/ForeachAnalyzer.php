@@ -71,7 +71,7 @@ use function assert;
 use function in_array;
 use function is_string;
 use function reset;
-use function stripos;
+use function str_starts_with;
 
 /**
  * @internal
@@ -673,7 +673,7 @@ final class ForeachAnalyzer
             if ($has_valid_iterator) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
+                        str_starts_with($invalid_iterator_types[0], 'Generator<')
                             ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
                             : 'Cannot iterate over ' . $invalid_iterator_types[0],
                         new CodeLocation($statements_analyzer->getSource(), $expr),
@@ -683,7 +683,7 @@ final class ForeachAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidIterator(
-                        stripos($invalid_iterator_types[0], 'generator<') === 0
+                        str_starts_with($invalid_iterator_types[0], 'Generator<')
                             ? 'Cannot iterate over generator with non-null send() type ' . $invalid_iterator_types[0]
                             : 'Cannot iterate over ' . $invalid_iterator_types[0],
                         new CodeLocation($statements_analyzer->getSource(), $expr),
@@ -726,7 +726,7 @@ final class ForeachAnalyzer
             }
 
             if ($iterator_atomic_type instanceof TIterable
-                || (Interner::lower($iterator_atomic_type->value) === StrId::traversable
+                || ($iterator_atomic_type->value === StrId::Traversable
                     || $codebase->classImplements(
                         $iterator_atomic_type->value,
                         StrId::Traversable,
@@ -740,7 +740,7 @@ final class ForeachAnalyzer
                     ))
             ) {
                 if (!$iterator_atomic_type instanceof TIterable
-                    && (Interner::lower($iterator_atomic_type->value) === StrId::iteratoraggregate
+                    && ($iterator_atomic_type->value === StrId::IteratorAggregate
                     || $codebase->classImplements(
                         $iterator_atomic_type->value,
                         StrId::IteratorAggregate,
@@ -878,7 +878,7 @@ final class ForeachAnalyzer
                         }
                     }
                 } elseif ($iterator_atomic_type instanceof TGenericObject
-                    && Interner::lower($iterator_atomic_type->value) === StrId::generator
+                    && $iterator_atomic_type->value === StrId::Generator
                 ) {
                     $type_params = $iterator_atomic_type->type_params;
                     if (isset($type_params[2])
@@ -989,7 +989,7 @@ final class ForeachAnalyzer
     ): void {
         if ($iterator_atomic_type instanceof TIterable
             || ($iterator_atomic_type instanceof TGenericObject
-                && Interner::lower($iterator_atomic_type->value) === StrId::traversable)
+                && $iterator_atomic_type->value === StrId::Traversable)
         ) {
             assert(isset($iterator_atomic_type->type_params[1]));
             $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);

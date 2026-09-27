@@ -62,7 +62,6 @@ use function assert;
 use function count;
 use function in_array;
 use function ltrim;
-use function strtolower;
 
 /**
  * @internal
@@ -97,7 +96,7 @@ final class AtomicStaticCallAnalyzer
                 new ClassLikeNameOptions(
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->getParts()) === 1
-                        && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                        && in_array($stmt->class->getFirst(), ['self', 'static'], true),
                 ),
             )) {
                 return;
@@ -222,9 +221,9 @@ final class AtomicStaticCallAnalyzer
 
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower(Interner::str($fq_class_name)) . '::',
+                    Interner::str($fq_class_name) . '::',
                     $context->calling_method_id
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -236,7 +235,7 @@ final class AtomicStaticCallAnalyzer
                     if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
                         $method_identifier = new MethodIdentifier(
                             $fq_class_name,
-                            Interner::internLower($method_name_type->getSingleStringLiteral()->value),
+                            Interner::intern($method_name_type->getSingleStringLiteral()->value),
                         );
                         //the call to methodExists will register that the method was called from somewhere
                         if ($codebase->methodExists(
@@ -311,7 +310,7 @@ final class AtomicStaticCallAnalyzer
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        $method_name_lc = Interner::internLower($stmt_name->name);
+        $method_name_lc = Interner::intern($stmt_name->name);
         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
         $cased_method_id = Interner::str($fq_class_name) . '::' . $stmt_name->name;
@@ -510,7 +509,7 @@ final class AtomicStaticCallAnalyzer
                         $codebase->methods->getStorage($declaring_method_id)->allowed_mutations,
                     )]);
                 } elseif ($codebase->methodExists(
-                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, StrId::__callstatic),
+                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, StrId::__callStatic),
                     null,
                     new CodeLocation($statements_analyzer, $stmt),
                     is_used: false,
@@ -554,7 +553,7 @@ final class AtomicStaticCallAnalyzer
 
         $callstatic_id = new MethodIdentifier(
             $fq_class_name,
-            StrId::__callstatic,
+            StrId::__callStatic,
         );
 
         $callstatic_method_exists = $codebase->methodExists($callstatic_id);
@@ -575,7 +574,7 @@ final class AtomicStaticCallAnalyzer
                 MethodAnalyzer::checkStatic(
                     $method_id,
                     ($stmt->class instanceof PhpParser\Node\Name
-                        && strtolower($stmt->class->getFirst()) === 'self')
+                        && $stmt->class->getFirst() === 'self')
                     || $context->self === $fq_class_name,
                     !$statements_analyzer->isStatic(),
                     $codebase,
@@ -984,9 +983,9 @@ final class AtomicStaticCallAnalyzer
         ) {
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower($stmt->name->name),
+                    $stmt->name->name,
                     $context->calling_method_id
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -1043,7 +1042,7 @@ final class AtomicStaticCallAnalyzer
      * If the method is not declared, null is returned.
      *
      * @param ClassLikeStorage $static_class_storage The called class
-     * @param int $method_name_lc lowercase method name id
+     * @param int $method_name_lc method name id
      * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */

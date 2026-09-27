@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
 
+use function count;
 use function function_exists;
 use function mb_substr;
 use function print_r;
@@ -1278,60 +1279,32 @@ final class TypeParseTest extends TestCase
 
     public function testValidCallMapType(): void
     {
-        $callmap_types = InternalCallMapHandler::getCallMap();
+        $callmap = InternalCallMapHandler::getCallMap();
 
-        foreach ($callmap_types as $signature) {
-            $return_type = $signature[0] ?? null;
-            $param_type_1 = $signature[1] ?? null;
-            $param_type_2 = $signature[2] ?? null;
-            $param_type_3 = $signature[3] ?? null;
-            $param_type_4 = $signature[4] ?? null;
-
-            if ($return_type && $return_type !== 'void') {
-                if (stripos($return_type, 'oci-') !== false) {
-                    continue;
-                }
-
-                try {
-                    Type::parseString($return_type);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
+        $entries = $callmap['functions'];
+        foreach ($callmap['methods'] as $methods) {
+            foreach ($methods as $signatures) {
+                $entries[] = $signatures;
             }
+        }
 
-            if ($param_type_1 && $param_type_1 !== 'mixed') {
-                if (stripos($param_type_1, 'oci-') !== false) {
-                    continue;
+        foreach ($entries as $signatures) {
+            foreach ($signatures as $signature) {
+                $types = [$signature[0]];
+                for ($i = 1, $count = count($signature); $i < $count; $i++) {
+                    $types[] = $signature[$i][1];
                 }
 
-                try {
-                    Type::parseString($param_type_1);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
+                foreach ($types as $type) {
+                    if ($type === 'void' || $type === 'mixed' || stripos($type, 'oci-') !== false) {
+                        continue;
+                    }
 
-            if ($param_type_2 && $param_type_2 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_2);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
-
-            if ($param_type_3 && $param_type_3 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_3);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
-                }
-            }
-
-            if ($param_type_4 && $param_type_4 !== 'mixed') {
-                try {
-                    Type::parseString($param_type_4);
-                } catch (TypeParseTreeException $e) {
-                    self::assertTrue(false, $e . ' | ' . print_r($signature, true));
+                    try {
+                        Type::parseString($type);
+                    } catch (TypeParseTreeException $e) {
+                        self::assertTrue(false, $e . ' | ' . print_r($signature, true));
+                    }
                 }
             }
         }

@@ -42,7 +42,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             return 0;
         }
 
-        $function_id = Interner::internLower($item->name->getFirst());
+        $function_id = Interner::intern($item->name->getFirst());
 
         if ($function_id === StrId::html_entity_decode
             || $function_id === StrId::htmlspecialchars_decode
@@ -93,7 +93,7 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             return 0;
         }
 
-        $function_id = Interner::internLower($item->name->getFirst());
+        $function_id = Interner::intern($item->name->getFirst());
 
         if ($function_id === StrId::htmlentities
             || $function_id === StrId::htmlspecialchars

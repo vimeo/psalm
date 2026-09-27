@@ -172,7 +172,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'intlbreakiterator::settext' => 
+    'IntlBreakIterator::setText' => 
     array (
       'old' => 
       array (
@@ -255,7 +255,7 @@ return array (
         'lenient' => 'bool',
       ),
     ),
-    'intlchar::enumcharnames' => 
+    'IntlChar::enumCharNames' => 
     array (
       'old' => 
       array (
@@ -274,7 +274,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'intlcodepointbreakiterator::settext' => 
+    'IntlCodePointBreakIterator::setText' => 
     array (
       'old' => 
       array (
@@ -287,7 +287,7 @@ return array (
         'text' => 'string',
       ),
     ),
-    'intldateformatter::settimezone' => 
+    'IntlDateFormatter::setTimeZone' => 
     array (
       'old' => 
       array (
@@ -300,7 +300,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::settext' => 
+    'IntlRuleBasedBreakIterator::setText' => 
     array (
       'old' => 
       array (
@@ -410,7 +410,7 @@ return array (
         'resource=' => 'int|null',
       ),
     ),
-    'reflectionclass::getstaticproperties' => 
+    'ReflectionClass::getStaticProperties' => 
     array (
       'old' => 
       array (
@@ -421,7 +421,7 @@ return array (
         0 => 'array<string, ReflectionProperty>',
       ),
     ),
-    'reflectionobject::getstaticproperties' => 
+    'ReflectionObject::getStaticProperties' => 
     array (
       'old' => 
       array (

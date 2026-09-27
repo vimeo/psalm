@@ -155,8 +155,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_name_lc = Interner::internLower($stmt->name->name);
-                if (!isset($class_storage->methods[$method_name_lc])) {
+                $method_name = Interner::intern($stmt->name->name);
+                if (!isset($class_storage->methods[$method_name])) {
                     // Storage was overwritten by a different class-like with the same FQCN
                     // (e.g., project declares interface X while vendor has class X).
                     // Skip analysis — DuplicateClass was already emitted during scanning.
@@ -171,8 +171,8 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 $actual_method_id = $method_analyzer->getMethodId();
 
-                if ($method_name_lc !== StrId::__construct
-                    && $method_name_lc !== StrId::__destruct
+                if ($method_name !== StrId::__construct
+                    && $method_name !== StrId::__destruct
                     && $config->reportIssueInFile('InvalidReturnType', $this->getFilePath())
                 ) {
                     ClassAnalyzer::analyzeClassMethodReturnType(
@@ -206,7 +206,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                 $member_stmts[] = $stmt;
 
                 foreach ($stmt->consts as $const) {
-                    $new_const_name = $codebase->class_constants_to_rename[Interner::lower($this->fq_class_name)]
+                    $new_const_name = $codebase->class_constants_to_rename[$this->fq_class_name]
                         [Interner::intern($const->name->name)] ?? null;
 
                     if ($new_const_name !== null) {

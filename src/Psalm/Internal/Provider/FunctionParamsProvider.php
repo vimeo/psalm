@@ -11,7 +11,6 @@ use Psalm\Context;
 use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Internal\Provider\ParamsProvider\ArrayUArrayParamsProvider;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\StatementsSource;
@@ -57,7 +56,7 @@ final class FunctionParamsProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -65,7 +64,7 @@ final class FunctionParamsProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     /**
@@ -79,7 +78,7 @@ final class FunctionParamsProvider
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): ?array {
-        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $class_handler) {
+        foreach (self::$handlers[$function_id] ?? [] as $class_handler) {
             $event = new FunctionParamsProviderEvent(
                 $statements_source,
                 $function_id,

@@ -50,7 +50,6 @@ use function preg_match;
 use function reset;
 use function spl_object_id;
 use function strpos;
-use function strtolower;
 
 /**
  * @internal
@@ -167,10 +166,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 foreach ($catch->types as $catch_type) {
                     $catch_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($catch_type, $this->aliases);
 
-                    $catch_fqcln_lc = Interner::lower($catch_fqcln);
-                    if (!in_array($catch_fqcln_lc, [StrId::self, StrId::static, StrId::parent], true)) {
+                    if (!in_array($catch_fqcln, [StrId::self, StrId::static, StrId::parent], true)) {
                         $this->codebase->scanner->queueClassLikeForScanning($catch_fqcln);
-                        $this->file_storage->referenced_classlikes[$catch_fqcln_lc] = $catch_fqcln;
+                        $this->file_storage->referenced_classlikes[$catch_fqcln] = $catch_fqcln;
                     }
                 }
             }
@@ -258,12 +256,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             if ($classlike_storage
                 && $this->codebase->analysis_php_version_id >= 8_00_00
                 && $node instanceof PhpParser\Node\Stmt\ClassMethod
-                && strtolower($node->name->name) === '__tostring'
+                && $node->name->name === '__toString'
             ) {
                 if ($classlike_storage->is_interface) {
-                    $classlike_storage->parent_interfaces[StrId::stringable] = StrId::Stringable;
+                    $classlike_storage->parent_interfaces[StrId::Stringable] = StrId::Stringable;
                 } else {
-                    $classlike_storage->class_implements[StrId::stringable] = StrId::Stringable;
+                    $classlike_storage->class_implements[StrId::Stringable] = StrId::Stringable;
                 }
 
                 $this->codebase->scanner->queueClassLikeForScanning(StrId::Stringable);
@@ -473,8 +471,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[Interner::lower($use_alias_id)] = $use_path_id;
-                    $this->aliases->functions_flipped[Interner::lower($use_path_id)] = $use_alias_id;
+                    $this->aliases->functions[$use_alias_id] = $use_path_id;
+                    $this->aliases->functions_flipped[$use_path_id] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
@@ -483,8 +481,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[Interner::lower($use_alias_id)] = $use_path_id;
-                    $this->aliases->uses_flipped[Interner::lower($use_path_id)] = $use_alias_id;
+                    $this->aliases->uses[$use_alias_id] = $use_path_id;
+                    $this->aliases->uses_flipped[$use_path_id] = $use_alias_id;
                     break;
             }
         }
@@ -509,8 +507,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
                 case PhpParser\Node\Stmt\Use_::TYPE_FUNCTION:
-                    $this->aliases->functions[Interner::lower($use_alias_id)] = $use_path_id;
-                    $this->aliases->functions_flipped[Interner::lower($use_path_id)] = $use_alias_id;
+                    $this->aliases->functions[$use_alias_id] = $use_path_id;
+                    $this->aliases->functions_flipped[$use_path_id] = $use_alias_id;
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_CONSTANT:
@@ -519,8 +517,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    $this->aliases->uses[Interner::lower($use_alias_id)] = $use_path_id;
-                    $this->aliases->uses_flipped[Interner::lower($use_path_id)] = $use_alias_id;
+                    $this->aliases->uses[$use_alias_id] = $use_path_id;
+                    $this->aliases->uses_flipped[$use_path_id] = $use_alias_id;
                     break;
             }
         }

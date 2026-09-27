@@ -8,7 +8,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\Interner;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantPropertyInitializationCheck;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -433,7 +432,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $existing_var_type = $existing_var_type->getBuilder();
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
             if ($type instanceof TLiteralString
-                && InternalCallMapHandler::inCallMap(Interner::internLower($type->value))
+                && InternalCallMapHandler::inCallMap(InternalCallMapHandler::getIdFromCallableString($type->value))
             ) {
                 $existing_var_type->removeType($atomic_key);
                 continue;

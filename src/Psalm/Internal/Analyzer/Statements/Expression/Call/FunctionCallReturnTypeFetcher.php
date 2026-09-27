@@ -59,7 +59,7 @@ use function trim;
 final class FunctionCallReturnTypeFetcher
 {
     /**
-     * @param int $function_id interned lowercase function id
+     * @param int $function_id interned function id
      */
     public static function fetch(
         StatementsAnalyzer $statements_analyzer,
@@ -567,7 +567,7 @@ final class FunctionCallReturnTypeFetcher
      *  - each argument is connected to the function's per-parameter node, which feeds an
      *    analyzed body and registers any @psalm-taint-sink parameters as sinks.
      *
-     * @param int $callable_id lowercase function id
+     * @param int $callable_id function id
      */
     public static function taintCallableReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -710,7 +710,7 @@ final class FunctionCallReturnTypeFetcher
      * Resolves the storage for a called function id, or null if it has none
      * (e.g. a callmap-only builtin).
      *
-     * @param int $function_id lowercase function id
+     * @param int $function_id function id
      */
     private static function getCallableStorage(
         StatementsAnalyzer $statements_analyzer,

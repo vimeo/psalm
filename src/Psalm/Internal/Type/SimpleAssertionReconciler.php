@@ -11,7 +11,6 @@ use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
-use Psalm\Interner;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\ArrayKeyExists;
@@ -881,7 +880,6 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
     ): Union {
         $method_name = $assertion->method;
-        $method_name_lc = Interner::lower($method_name);
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
@@ -892,24 +890,24 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof TNamedObject
                 && $codebase->classOrInterfaceExists($type->value)
             ) {
-                if (!$codebase->methodExists(new MethodIdentifier($type->value, $method_name_lc))) {
+                if (!$codebase->methodExists(new MethodIdentifier($type->value, $method_name))) {
                     $match_found = false;
 
                     $extra_types = $type->extra_types;
                     foreach ($type->extra_types as $k => $extra_type) {
                         if ($extra_type instanceof TNamedObject
                             && $codebase->classOrInterfaceExists($extra_type->value)
-                            && $codebase->methodExists(new MethodIdentifier($extra_type->value, $method_name_lc))
+                            && $codebase->methodExists(new MethodIdentifier($extra_type->value, $method_name))
                         ) {
                             $match_found = true;
                         } elseif ($extra_type instanceof TObjectWithProperties) {
                             $match_found = true;
 
-                            if (!isset($extra_type->methods[$method_name_lc])) {
+                            if (!isset($extra_type->methods[$method_name])) {
                                 unset($extra_types[$k]);
                                 $extra_type = $extra_type->setMethods(
                                     $extra_type->methods + [
-                                        $method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc),
+                                        $method_name => new MethodIdentifier(StrId::object, $method_name),
                                     ],
                                 );
                                 $extra_types[$extra_type->getKey()] = $extra_type;
@@ -921,7 +919,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     if (!$match_found) {
                         $extra_type = new TObjectWithProperties(
                             [],
-                            [$method_name_lc => new MethodIdentifier($type->value, $method_name_lc)],
+                            [$method_name => new MethodIdentifier($type->value, $method_name)],
                         );
                         $extra_types[$extra_type->getKey()] = $extra_type;
                         $redundant = false;
@@ -931,9 +929,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 }
                 $object_types[] = $type;
             } elseif ($type instanceof TObjectWithProperties) {
-                if (!isset($type->methods[$method_name_lc])) {
+                if (!isset($type->methods[$method_name])) {
                     $type = $type->setMethods(
-                        $type->methods + [$method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc)],
+                        $type->methods + [$method_name => new MethodIdentifier(StrId::object, $method_name)],
                     );
                     $redundant = false;
                 }
@@ -941,7 +939,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject || $type instanceof TMixed) {
                 $object_types[] = new TObjectWithProperties(
                     [],
-                    [$method_name_lc => new MethodIdentifier(StrId::object, $method_name_lc)],
+                    [$method_name => new MethodIdentifier(StrId::object, $method_name)],
                 );
                 $redundant = false;
             } elseif ($type instanceof TString) {
@@ -2623,7 +2621,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = new TCallableString();
                 $redundant = false;
             } elseif ($type::class === TLiteralString::class
-                && InternalCallMapHandler::inCallMap(Interner::internLower($type->value))
+                && InternalCallMapHandler::inCallMap(InternalCallMapHandler::getIdFromCallableString($type->value))
             ) {
                 $callable_types[] = $type;
                 $redundant = false;

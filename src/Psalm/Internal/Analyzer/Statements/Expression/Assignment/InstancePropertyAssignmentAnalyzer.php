@@ -87,7 +87,6 @@ use function array_pop;
 use function count;
 use function in_array;
 use function reset;
-use function strtolower;
 
 /**
  * @internal
@@ -770,7 +769,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
                     $context->calling_method_id !== null
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -963,11 +962,11 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type_part instanceof TObject ||
             (
             in_array(
-                Interner::lower($lhs_type_part->value),
+                $lhs_type_part->value,
                 Config::getInstance()->getUniversalObjectCrates() + [
-                    StrId::dateinterval,
-                    StrId::domdocument,
-                    StrId::domnode,
+                    StrId::DateInterval,
+                    StrId::DOMDocument,
+                    StrId::DOMNode,
                 ],
                 true,
             )
@@ -975,7 +974,7 @@ final class InstancePropertyAssignmentAnalyzer
         ) {
             if ($var_id) {
                 if ($lhs_type_part instanceof TNamedObject &&
-                    Interner::lower($lhs_type_part->value) === StrId::stdclass
+                    $lhs_type_part->value === StrId::stdClass
                 ) {
                     $context->vars_in_scope[$var_id] = $assignment_value_type;
                 } else {
@@ -1479,7 +1478,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyFetch $stmt,
         string $file_path,
     ): void {
-        $new_property_name = $codebase->properties_to_rename[Interner::lower($declaring_property_class)][$prop_name]
+        $new_property_name = $codebase->properties_to_rename[$declaring_property_class][$prop_name]
             ?? null;
 
         if ($new_property_name === null) {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-use Psalm\Interner;
 
 /**
  * @api
@@ -13,7 +12,7 @@ use Psalm\Interner;
 abstract class FunctionIssue extends CodeIssue
 {
     /**
-     * Interned lowercase function id
+     * Interned function id, as written (case-sensitive)
      */
     public int $function_id;
 
@@ -26,6 +25,6 @@ abstract class FunctionIssue extends CodeIssue
         int $function_id,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = Interner::lower($function_id);
+        $this->function_id = $function_id;
     }
 }

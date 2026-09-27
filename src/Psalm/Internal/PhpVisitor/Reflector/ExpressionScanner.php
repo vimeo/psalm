@@ -66,7 +66,7 @@ final class ExpressionScanner
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Cast\Object_) {
             $codebase->scanner->queueClassLikeForScanning(StrId::stdClass, false, false);
-            $file_storage->referenced_classlikes[StrId::stdclass] = StrId::stdClass;
+            $file_storage->referenced_classlikes[StrId::stdClass] = StrId::stdClass;
         } elseif (($node instanceof PhpParser\Node\Expr\New_
                 || $node instanceof PhpParser\Node\Expr\Instanceof_
                 || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -76,18 +76,18 @@ final class ExpressionScanner
         ) {
             $fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $aliases);
 
-            if (!in_array(Interner::lower($fq_classlike_name), [StrId::self, StrId::static, StrId::parent], true)) {
+            if (!in_array($fq_classlike_name, [StrId::self, StrId::static, StrId::parent], true)) {
                 $codebase->scanner->queueClassLikeForScanning(
                     $fq_classlike_name,
                     false,
                     !($node instanceof PhpParser\Node\Expr\ClassConstFetch)
                         || !($node->name instanceof PhpParser\Node\Identifier)
-                        || strtolower($node->name->name) !== 'class',
+                        || $node->name->name !== 'class',
                 );
-                $file_storage->referenced_classlikes[Interner::lower($fq_classlike_name)] = $fq_classlike_name;
+                $file_storage->referenced_classlikes[$fq_classlike_name] = $fq_classlike_name;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
-            $function_id = Interner::internLower($node->name->toString());
+            $function_id = Interner::intern($node->name->toString());
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 self::registerClassMapFunctionCall(
@@ -234,7 +234,7 @@ final class ExpressionScanner
 
                 [$callable_fqcln] = explode('::', $potential_method_id);
 
-                if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
+                if (!in_array($callable_fqcln, ['self', 'parent', 'static'], true)) {
                     $codebase->scanner->queueClassLikeForScanning(
                         Interner::intern(ltrim($callable_fqcln, '\\')),
                     );
@@ -270,7 +270,7 @@ final class ExpressionScanner
             } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $first_arg->class instanceof PhpParser\Node\Name
                 && $first_arg->name instanceof PhpParser\Node\Identifier
-                && strtolower($first_arg->name->name) === 'class'
+                && $first_arg->name->name === 'class'
             ) {
                 /** @var string */
                 $first_arg_value = $first_arg->class->getAttribute('resolvedName');
@@ -283,7 +283,7 @@ final class ExpressionScanner
             } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $second_arg->class instanceof PhpParser\Node\Name
                 && $second_arg->name instanceof PhpParser\Node\Identifier
-                && strtolower($second_arg->name->name) === 'class'
+                && $second_arg->name->name === 'class'
             ) {
                 /** @var string */
                 $second_arg_value = $second_arg->class->getAttribute('resolvedName');

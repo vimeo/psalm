@@ -21,11 +21,11 @@ final class Aliases
 
     /**
      * @param ?int $namespace interned namespace name
-     * @param array<int, int> $uses lowercase alias id => class/namespace name id
-     * @param array<int, int> $functions lowercase alias id => function name id
+     * @param array<int, int> $uses alias id (as written) => class/namespace name id
+     * @param array<int, int> $functions alias id (as written) => function name id
      * @param array<int, int> $constants alias id => constant name id
-     * @param array<int, int> $uses_flipped lowercase class/namespace name id => alias id
-     * @param array<int, int> $functions_flipped lowercase function name id => alias id
+     * @param array<int, int> $uses_flipped class/namespace name id => alias id
+     * @param array<int, int> $functions_flipped function name id => alias id
      * @param array<int, int> $constants_flipped constant name id => alias id
      * @internal
      * @psalm-mutation-free

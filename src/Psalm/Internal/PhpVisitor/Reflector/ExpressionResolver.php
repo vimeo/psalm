@@ -438,7 +438,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
@@ -468,7 +468,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
@@ -498,7 +498,7 @@ final class ExpressionResolver
             } elseif ($function->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $function->getArgs()[0]->value->class instanceof PhpParser\Node\Name
                 && $function->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-                && strtolower($function->getArgs()[0]->value->name->name) === 'class'
+                && $function->getArgs()[0]->value->name->name === 'class'
             ) {
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }

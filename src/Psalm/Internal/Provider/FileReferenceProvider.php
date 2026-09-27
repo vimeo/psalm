@@ -10,14 +10,12 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Interner;
 use UnexpectedValueException;
 
 use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_unique;
-use function strtolower;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -31,7 +29,7 @@ final class FileReferenceProvider
     private bool $loaded_from_cache = false;
 
     /**
-     * @var array<int, array<string, true>> lowercase class name id => file path => true
+     * @var array<int, array<string, true>> class name id => file path => true
      */
     private static array $files_inheriting_classes = [];
 
@@ -50,7 +48,7 @@ final class FileReferenceProvider
     private static array $file_references = [];
 
     /**
-     * Member id strings (lowercase `foo::bar`, the same format used by CodeUseGraph member ids and by the
+     * Member id strings (`Foo::bar`, as declared, the same format used by CodeUseGraph member ids and by the
      * incremental analysis machinery) => referencing function-like id string => true
      *
      * @var array<string, array<string, bool>>
@@ -63,7 +61,7 @@ final class FileReferenceProvider
     private static array $references_to_mixed_member_names = [];
 
     /**
-     * @var array<int, string> lowercase class name id => file path
+     * @var array<int, string> class name id => file path
      */
     private static array $classlike_files = [];
 
@@ -88,7 +86,7 @@ final class FileReferenceProvider
     private static array $mixed_counts = [];
 
     /**
-     * Lowercase method id string (`foo::bar`) => param offset => referencing lowercase method id string => true
+     * Method id string (`Foo::bar`) => param offset => referencing method id string => true
      *
      * @var array<string, array<int, array<string, bool>>>
      */
@@ -125,7 +123,7 @@ final class FileReferenceProvider
     }
 
     /**
-     * @param array<int, string> $map lowercase class name id => file path
+     * @param array<int, string> $map class name id => file path
      * @psalm-external-mutation-free
      */
     public function addClassLikeFiles(array $map): void
@@ -134,12 +132,12 @@ final class FileReferenceProvider
     }
 
     /**
-     * @param int $fq_class_name_lc lowercase class name id
+     * @param int $fq_class_name class name id
      * @psalm-external-mutation-free
      */
-    public function addFileInheritanceToClass(string $source_file, int $fq_class_name_lc): void
+    public function addFileInheritanceToClass(string $source_file, int $fq_class_name): void
     {
-        self::$files_inheriting_classes[Interner::lower($fq_class_name_lc)][$source_file] = true;
+        self::$files_inheriting_classes[$fq_class_name][$source_file] = true;
     }
 
     /**
@@ -155,14 +153,14 @@ final class FileReferenceProvider
     }
 
     /**
-     * Returns the lowercase `foo::bar` member id string used as key by the incremental analysis maps.
+     * Returns the `Foo::bar` member id string (as declared, no case folding) used as key by the incremental
+     * analysis maps.
      *
-     * @return lowercase-string
      * @psalm-pure
      */
     public static function getMemberKey(MethodIdentifier $method_id): string
     {
-        return strtolower((string) $method_id);
+        return (string) $method_id;
     }
 
     /**
@@ -179,8 +177,8 @@ final class FileReferenceProvider
 
         $referenced_files = [];
 
-        foreach ($file_classes as $fq_class_name_lc => $_) {
-            $nodes = $this->code_use_graph->getNodesReferencingClass(Interner::lower($fq_class_name_lc));
+        foreach ($file_classes as $fq_class_name => $_) {
+            $nodes = $this->code_use_graph->getNodesReferencingClass($fq_class_name);
             foreach ($nodes as $node_id => $_) {
                 $node_file = $this->code_use_graph->getNodeFile($node_id);
 
@@ -221,11 +219,11 @@ final class FileReferenceProvider
 
         $file_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $file);
 
-        foreach ($file_classes as $file_class_lc => $_) {
-            if (isset(self::$files_inheriting_classes[$file_class_lc])) {
+        foreach ($file_classes as $file_class => $_) {
+            if (isset(self::$files_inheriting_classes[$file_class])) {
                 $referenced_files = [
                     ...$referenced_files,
-                    ...array_keys(self::$files_inheriting_classes[$file_class_lc]),
+                    ...array_keys(self::$files_inheriting_classes[$file_class]),
                 ];
             }
         }

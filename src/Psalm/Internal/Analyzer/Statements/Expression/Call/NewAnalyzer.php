@@ -72,7 +72,6 @@ use function in_array;
 use function ltrim;
 use function preg_match;
 use function reset;
-use function strtolower;
 
 /**
  * @internal
@@ -103,7 +102,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
+            if (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
 
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -259,7 +258,7 @@ final class NewAnalyzer extends CallAnalyzer
                 new Union([$result_atomic_type]),
             );
 
-            if (Interner::lower($fq_class_name) === StrId::stdclass && $stmt->getArgs() !== []) {
+            if ($fq_class_name === StrId::stdClass && $stmt->getArgs() !== []) {
                 IssueBuffer::maybeAdd(
                     new TooManyArguments(
                         'stdClass::__construct() has no parameters',
@@ -270,7 +269,7 @@ final class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            if (Interner::lower($fq_class_name) !== StrId::stdclass &&
+            if ($fq_class_name !== StrId::stdClass &&
                 $codebase->classlikes->classExists($fq_class_name, null, $context)
             ) {
                 self::analyzeNamedConstructor(
@@ -371,7 +370,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         if ($storage->deprecated
-            && ($context->self === null || !Interner::equalsLower($fq_class_name, $context->self))
+            && ($context->self === null || $fq_class_name !== $context->self)
         ) {
             IssueBuffer::maybeAdd(
                 new DeprecatedClass(

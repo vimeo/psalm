@@ -4,9 +4,11 @@ namespace Psalm\Internal;
 /**
  * This file holds manually defined property maps, which are not added to the
  * official PHP docs and therefore can not be automatically updated by
- * bin/update-property-map.php.
+ * bin/stubs/update-property-map.php.
  *
- * If you change this file, please run bin/update-property-map.php to keep
+ * Names are resolved case-sensitively: class and property names must use their canonical (declared) casing.
+ *
+ * If you change this file, please run bin/stubs/update-property-map.php to keep
  * PropertyMap.php in sync.
  */
 
@@ -15,88 +17,88 @@ return [
     // Incorrectly documented classes from here on.
     // Revise these against the current state of the docs from time to time.
     //
-    'dateinterval' => [
+    'DateInterval' => [
         // documented as 'mixed' in doc-en/reference/datetime/dateinterval.xml:90.
         'days' => 'false|int',
     ],
-    'domnode' => [
+    'DOMNode' => [
         // documented as 'DomNodeList' in doc-en/reference/dom/domnode.xml:57.
-        'childnodes' => 'DomNodeList<DomNode>'
+        'childNodes' => 'DOMNodeList<DOMNode>'
     ],
     'tidy' => [
         // documented via <xi:include> in doc-en/reference/tidy/tidy.xml:33
-        'errorbuffer' => 'string',
+        'errorBuffer' => 'string',
     ],
     //
     // Undocumented classes from here on.
     //
-    'phpparser\\node\\expr\\array_' => [
+    'PhpParser\\Node\\Expr\\Array_' => [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
-    'phpparser\\node\\expr\\arrowfunction' => [
+    'PhpParser\\Node\\Expr\\ArrowFunction' => [
         'params' => 'list<PhpParser\\Node\\Param>',
     ],
-    'phpparser\\node\\expr\\closure' => [
+    'PhpParser\\Node\\Expr\\Closure' => [
         'params' => 'list<PhpParser\\Node\\Param>',
     ],
-    'phpparser\\node\\expr\\list_' => [
+    'PhpParser\\Node\\Expr\\List_' => [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
-    'phpparser\\node\\expr\\shellexec' => [
+    'PhpParser\\Node\\Expr\\ShellExec' => [
         'parts' => 'list<PhpParser\\Node>',
     ],
-    'phpparser\\node\\matcharm' => [
+    'PhpParser\\Node\\MatchArm' => [
         'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',
     ],
-    'phpparser\\node\\name' => [
+    'PhpParser\\Node\\Name' => [
         'parts' => 'non-empty-list<non-empty-string>',
     ],
-    'phpparser\\node\\stmt\\case_' => [
+    'PhpParser\\Node\\Stmt\\Case_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\catch_' => [
+    'PhpParser\\Node\\Stmt\\Catch_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\class_' => [
+    'PhpParser\\Node\\Stmt\\Class_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\do_' => [
+    'PhpParser\\Node\\Stmt\\Do_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\else_' => [
+    'PhpParser\\Node\\Stmt\\Else_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\elseif_' => [
+    'PhpParser\\Node\\Stmt\\ElseIf_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\finally_' => [
+    'PhpParser\\Node\\Stmt\\Finally_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\for_' => [
+    'PhpParser\\Node\\Stmt\\For_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\foreach_' => [
+    'PhpParser\\Node\\Stmt\\Foreach_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\if_' => [
+    'PhpParser\\Node\\Stmt\\If_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\interface_' => [
+    'PhpParser\\Node\\Stmt\\Interface_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\namespace_' => [
+    'PhpParser\\Node\\Stmt\\Namespace_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\trait_' => [
+    'PhpParser\\Node\\Stmt\\Trait_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\trycatch' => [
+    'PhpParser\\Node\\Stmt\\TryCatch' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'phpparser\\node\\stmt\\while_' => [
+    'PhpParser\\Node\\Stmt\\While_' => [
         'stmts' => 'list<PhpParser\\Node\\Stmt>',
     ],
-    'rdkafka\\message' => [
+    'RdKafka\\Message' => [
         'err' => 'int',
         'headers' => 'array<string, string>|null',
         'key' => 'string|null',
@@ -110,36 +112,36 @@ return [
     //
     // Legacy extensions that got removed.
     //
-    'mongoclient' => [
+    'MongoClient' => [
         'connected' => 'boolean',
         'status' => 'string',
     ],
-    'mongocollection' => [
+    'MongoCollection' => [
         'db' => 'MongoDB',
         'w' => 'integer',
         'wtimeout' => 'integer',
     ],
-    'mongocursor' => [
-        'slaveokay' => 'boolean',
+    'MongoCursor' => [
+        'slaveOkay' => 'boolean',
         'timeout' => 'integer',
     ],
-    'mongodb' => [
+    'MongoDB' => [
         'w' => 'integer',
         'wtimeout' => 'integer',
     ],
     'mongodb-driver-exception-writeexception' => [
         'writeresult' => 'MongoDBDriverWriteResult',
     ],
-    'mongoid' => [
+    'MongoId' => [
         'id' => 'string',
     ],
-    'mongoint32' => [
+    'MongoInt32' => [
         'value' => 'string',
     ],
-    'mongoint64' => [
+    'MongoInt64' => [
         'value' => 'string',
     ],
-    'tokyotyrantexception' => [
+    'TokyoTyrantException' => [
         'code' => 'int',
     ],
 ];

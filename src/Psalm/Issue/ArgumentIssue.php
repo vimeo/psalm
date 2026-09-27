@@ -6,7 +6,6 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Interner;
 
 /**
  * @api
@@ -14,7 +13,7 @@ use Psalm\Interner;
 abstract class ArgumentIssue extends CodeIssue
 {
     /**
-     * Interned lowercase function id, or method id with a lowercase class name
+     * Interned function id (as written, case-sensitive), or method id
      */
     public int|MethodIdentifier|null $function_id = null;
 
@@ -27,22 +26,6 @@ abstract class ArgumentIssue extends CodeIssue
         int|MethodIdentifier|null $function_id = null,
     ) {
         parent::__construct($message, $code_location);
-        $this->function_id = self::normalizeFunctionId($function_id);
-    }
-
-    /**
-     * @psalm-pure
-     */
-    protected static function normalizeFunctionId(int|MethodIdentifier|null $function_id): int|MethodIdentifier|null
-    {
-        if ($function_id === null) {
-            return null;
-        }
-
-        if ($function_id instanceof MethodIdentifier) {
-            return new MethodIdentifier(Interner::lower($function_id->fq_class_name), $function_id->method_name);
-        }
-
-        return Interner::lower($function_id);
+        $this->function_id = $function_id;
     }
 }

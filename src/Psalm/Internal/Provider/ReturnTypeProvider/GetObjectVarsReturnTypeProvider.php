@@ -85,7 +85,7 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
             }
 
             if ($object_type instanceof TNamedObject) {
-                if (Interner::lower($object_type->value) === StrId::stdclass) {
+                if ($object_type->value === StrId::stdClass) {
                     return self::$fallback;
                 }
                 $codebase = $statements_source->getCodebase();

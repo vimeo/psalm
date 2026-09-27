@@ -75,13 +75,13 @@ final class MethodVisibilityAnalyzer
         if (!$declaring_method_id) {
             if ($method_name === StrId::__construct
                 || ($method_id->fq_class_name === StrId::Closure
-                    && ($method_id->method_name === StrId::fromcallable
+                    && ($method_id->method_name === StrId::fromCallable
                         || $method_id->method_name === StrId::__invoke))
             ) {
                 return null;
             }
 
-            if (InternalCallMapHandler::inCallMap(Interner::internLower((string) $method_id))) {
+            if (InternalCallMapHandler::inCallMap($method_id)) {
                 return null;
             }
 
@@ -112,7 +112,7 @@ final class MethodVisibilityAnalyzer
 
         if ($source->getSource() instanceof TraitAnalyzer
             && $source_fqcln !== null
-            && Interner::equalsLower($declaring_method_class, $source_fqcln)
+            && $declaring_method_class === $source_fqcln
         ) {
             return null;
         }

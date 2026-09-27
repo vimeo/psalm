@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Closure;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -53,7 +52,7 @@ final class FunctionExistenceProvider
      */
     public function registerClosure(int $function_id, Closure $c): void
     {
-        self::$handlers[Interner::lower($function_id)][] = $c;
+        self::$handlers[$function_id][] = $c;
     }
 
     /**
@@ -61,14 +60,14 @@ final class FunctionExistenceProvider
      */
     public function has(int $function_id): bool
     {
-        return isset(self::$handlers[Interner::lower($function_id)]);
+        return isset(self::$handlers[$function_id]);
     }
 
     public function doesFunctionExist(
         StatementsSource $statements_source,
         int $function_id,
     ): ?bool {
-        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $function_handler) {
+        foreach (self::$handlers[$function_id] ?? [] as $function_handler) {
             $event = new FunctionExistenceProviderEvent(
                 $statements_source,
                 $function_id,

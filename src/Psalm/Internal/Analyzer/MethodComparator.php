@@ -46,7 +46,6 @@ use Psalm\Type\Union;
 use function array_any;
 use function in_array;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -71,13 +70,11 @@ final class MethodComparator
         bool $prevent_abstract_override = true,
         bool $prevent_method_signature_mismatch = true,
     ): ?bool {
-        $guide_method_name_lc = $guide_method_storage->cased_name !== null
-            ? Interner::lower($guide_method_storage->cased_name)
-            : Interner::intern('');
+        $guide_method_name = $guide_method_storage->cased_name ?? Interner::intern('');
 
         $implementer_method_id = new MethodIdentifier(
             $implementer_classlike_storage->name,
-            $guide_method_name_lc,
+            $guide_method_name,
         );
 
         $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
@@ -92,7 +89,7 @@ final class MethodComparator
         $cased_guide_method_id = Interner::str($guide_classlike_storage->name) . '::'
             . ($guide_method_storage->cased_name !== null ? Interner::str($guide_method_storage->cased_name) : '');
 
-        $guide_method_id = new MethodIdentifier($guide_classlike_storage->name, $guide_method_name_lc);
+        $guide_method_id = new MethodIdentifier($guide_classlike_storage->name, $guide_method_name);
 
         $codebase->methods->file_reference_provider->addMethodDependencyToClassMember(
             $implementer_declaring_method_id ?? $implementer_method_id,
@@ -253,7 +250,7 @@ final class MethodComparator
     }
 
     /**
-     * @param array<int, MethodStorage> $pseudo_methods lowercase method name id => storage
+     * @param array<int, MethodStorage> $pseudo_methods method name id => storage
      */
     public static function comparePseudoMethods(
         array $pseudo_methods,
@@ -467,11 +464,11 @@ final class MethodComparator
                 ) {
                     if ($implementer_param_type
                         && (!$guide_param_signature_type
-                            || strtolower($implementer_param_type->getId())
-                                !== strtolower($guide_param_signature_type->getId()))
+                            || $implementer_param_type->getId()
+                                !== $guide_param_signature_type->getId())
                         && (!$or_null_guide_param_signature_type
-                            || strtolower($implementer_param_type->getId())
-                                !== strtolower($or_null_guide_param_signature_type->getId()))
+                            || $implementer_param_type->getId()
+                                !== $or_null_guide_param_signature_type->getId())
                     ) {
                         if ($implementer_method_storage->cased_name === StrId::__construct) {
                             IssueBuffer::maybeAdd(
@@ -668,7 +665,7 @@ final class MethodComparator
             && InternalCallMapHandler::inCallMap(
                 new MethodIdentifier(
                     $guide_classlike_storage->name,
-                    Interner::lower($guide_method_storage->cased_name),
+                    $guide_method_storage->cased_name,
                 ),
             )) {
             $guide_method_storage_param_type = TypeExpander::expandUnion(

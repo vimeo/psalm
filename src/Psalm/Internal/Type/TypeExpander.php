@@ -242,7 +242,7 @@ final class TypeExpander
             }
 
             if ($evaluate_class_constants && $codebase->classOrInterfaceOrEnumExists($return_type->fq_classlike_name)) {
-                if (Interner::lower($return_type->const_name) === Interner::intern('class')) {
+                if (Interner::$strings[$return_type->const_name] === 'class') {
                     return [new TLiteralClassString($return_type->fq_classlike_name)];
                 }
 
@@ -281,7 +281,7 @@ final class TypeExpander
             }
 
             if (!($evaluate_class_constants
-                && $codebase->classlikes->doesClassLikeExist(Interner::lower($declaring_fq_classlike_name))
+                && $codebase->classlikes->doesClassLikeExist($declaring_fq_classlike_name)
             )) {
                 return [$return_type];
             }
@@ -623,9 +623,9 @@ final class TypeExpander
             }
         }
 
-        $return_type_lc = Interner::lower($return_type->value);
+        $return_type_name = $return_type->value;
 
-        if ($static_class_type && ($return_type_lc === StrId::static || $return_type_lc === StrId::dollar_this)) {
+        if ($static_class_type && ($return_type_name === StrId::static || $return_type_name === StrId::dollar_this)) {
             $is_static = $return_type->is_static;
             $is_static_resolved = null;
             if (!$final) {
@@ -701,9 +701,9 @@ final class TypeExpander
                 $static_class_type,
                 false,
             );
-        } elseif ($self_class && $return_type_lc === StrId::self) {
+        } elseif ($self_class && $return_type_name === StrId::self) {
             $return_type = $return_type->setValue($self_class);
-        } elseif ($parent_class && $return_type_lc === StrId::parent) {
+        } elseif ($parent_class && $return_type_name === StrId::parent) {
             $return_type = $return_type->setValue($parent_class);
         } else {
             $new_value = $codebase->classlikes->getUnAliasedName($return_type->value);
@@ -808,7 +808,7 @@ final class TypeExpander
                 $else_conditional_return_types = [...$else_conditional_return_types, ...$candidate_types];
             }
 
-            if ($assertion && Interner::str($return_type->param_name) === (string) $return_type->if_type) {
+            if ($assertion && Interner::$strings[$return_type->param_name] === (string) $return_type->if_type) {
                 $if_conditional_return_type = TypeCombiner::combine(
                     $if_conditional_return_types,
                     $codebase,
@@ -826,7 +826,7 @@ final class TypeExpander
                 }
             }
 
-            if ($assertion && Interner::str($return_type->param_name) === (string) $return_type->else_type) {
+            if ($assertion && Interner::$strings[$return_type->param_name] === (string) $return_type->else_type) {
                 $else_conditional_return_type = TypeCombiner::combine(
                     $else_conditional_return_types,
                     $codebase,
@@ -971,7 +971,7 @@ final class TypeExpander
                 $all_sealed = false;
             }
             foreach ($storage->properties as $property_name => $property) {
-                $key = Interner::str($property_name);
+                $key = Interner::$strings[$property_name];
                 if (isset($properties[$key])) {
                     continue;
                 }
@@ -1053,8 +1053,8 @@ final class TypeExpander
                 && !$codebase->classOrInterfaceOrEnumExists($type_param->fq_classlike_name)
             ) {
                 throw new UnresolvableConstantException(
-                    Interner::str($type_param->fq_classlike_name),
-                    Interner::str($type_param->const_name),
+                    Interner::$strings[$type_param->fq_classlike_name],
+                    Interner::$strings[$type_param->const_name],
                 );
             }
 
@@ -1084,8 +1084,8 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException(
-                        Interner::str($type_param->fq_classlike_name),
-                        Interner::str($type_param->const_name),
+                        Interner::$strings[$type_param->fq_classlike_name],
+                        Interner::$strings[$type_param->const_name],
                     );
                 } else {
                     return [$return_type];

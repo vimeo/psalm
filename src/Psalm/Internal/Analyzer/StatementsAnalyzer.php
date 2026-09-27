@@ -125,7 +125,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private ?array $vars_to_initialize = null;
 
     /**
-     * @var array<int, FunctionAnalyzer> lowercase function id => analyzer
+     * @var array<int, FunctionAnalyzer> function id => analyzer
      */
     private array $function_analyzers = [];
 
@@ -302,7 +302,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
                 $ns = $this->getNamespace();
                 $ns = $ns !== null ? Interner::str($ns) : '';
-                $fq_function_name = Interner::internLower(($ns !== '' ? $ns . '\\' : '') . $stmt->name->name);
+                $fq_function_name = Interner::intern(($ns !== '' ? $ns . '\\' : '') . $stmt->name->name);
 
                 if ($this->data_flow_graph
                     && $this->codebase->find_unused_variables
@@ -1196,7 +1196,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<int, FunctionAnalyzer> lowercase function id => analyzer
+     * @return array<int, FunctionAnalyzer> function id => analyzer
      */
     public function getFunctionAnalyzers(): array
     {
@@ -1223,23 +1223,15 @@ final class StatementsAnalyzer extends SourceAnalyzer
         if ($context->collect_exceptions) {
             if ($context->possibly_thrown_exceptions) {
                 $config = $this->codebase->config;
-                $ignored_exceptions = [];
-                foreach ($context->is_global
+                $ignored_exceptions = $context->is_global
                     ? $config->ignored_exceptions_in_global_scope
-                    : $config->ignored_exceptions as $ignored_exception => $_
-                ) {
-                    $ignored_exceptions[Interner::lower($ignored_exception)] = true;
-                }
-                $ignored_exceptions_and_descendants = [];
-                foreach ($context->is_global
+                    : $config->ignored_exceptions;
+                $ignored_exceptions_and_descendants = $context->is_global
                     ? $config->ignored_exceptions_and_descendants_in_global_scope
-                    : $config->ignored_exceptions_and_descendants as $ignored_exception => $_
-                ) {
-                    $ignored_exceptions_and_descendants[Interner::lower($ignored_exception)] = true;
-                }
+                    : $config->ignored_exceptions_and_descendants;
 
                 foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
-                    if (isset($ignored_exceptions[Interner::lower($possibly_thrown_exception)])) {
+                    if (isset($ignored_exceptions[$possibly_thrown_exception])) {
                         continue;
                     }
 
@@ -1247,7 +1239,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                     foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
                         try {
-                            if ($expected_exception === Interner::lower($possibly_thrown_exception)
+                            if ($expected_exception === $possibly_thrown_exception
                                 || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
                                 || $this->codebase->interfaceExtends($possibly_thrown_exception, $expected_exception)
                             ) {

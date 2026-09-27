@@ -52,7 +52,6 @@ use function array_shift;
 use function array_values;
 use function count;
 use function reset;
-use function strtolower;
 
 /**
  * This is a bunch of complex logic to handle the potential for missing methods,
@@ -201,9 +200,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower(Interner::str($fq_class_name)) . '::',
+                    Interner::str($fq_class_name) . '::',
                     $context->calling_method_id
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -214,7 +213,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
                     $method_identifier = new MethodIdentifier(
                         $fq_class_name,
-                        Interner::internLower($method_name_type->getSingleStringLiteral()->value),
+                        Interner::intern($method_name_type->getSingleStringLiteral()->value),
                     );
                     //the call to methodExists will register that the method was called from somewhere
                     if ($codebase->methodExists(
@@ -255,7 +254,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        $method_name_lc = Interner::internLower($stmt->name->name);
+        $method_name_lc = Interner::intern($stmt->name->name);
 
         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
@@ -501,9 +500,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-        $in_call_map = InternalCallMapHandler::inCallMap(
-            Interner::internLower((string) ($declaring_method_id ?? $method_id)),
-        );
+        $in_call_map = InternalCallMapHandler::inCallMap($declaring_method_id ?? $method_id);
 
         if (!$in_call_map) {
             if ($result->check_visibility) {
@@ -649,18 +646,18 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
                 if ($lhs_type_part instanceof TObjectWithProperties
                     && $stmt->name instanceof PhpParser\Node\Identifier
-                    && isset($lhs_type_part->methods[Interner::internLower($stmt->name->name)])
+                    && isset($lhs_type_part->methods[Interner::intern($stmt->name->name)])
                 ) {
                     $result->addExistentMethodId(new MethodIdentifier(
                         StrId::object,
-                        Interner::internLower($stmt->name->name),
+                        Interner::intern($stmt->name->name),
                     ));
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
-                            strtolower($stmt->name->name),
+                            $stmt->name->name,
                             $context->calling_method_id
-                                ? strtolower((string) $context->calling_method_id)
+                                ? (string) $context->calling_method_id
                                 : $statements_analyzer->getFileName(),
                         );
                     }
@@ -732,7 +729,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @param int $method_name_lc lowercase method name id
+     * @param int $method_name_lc method name id
      * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, int}
      */
     private static function handleTemplatedMixins(
@@ -821,7 +818,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * @param int $method_name_lc lowercase method name id
+     * @param int $method_name_lc method name id
      * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, int}
      */
     private static function handleRegularMixins(

@@ -6,7 +6,6 @@ namespace Psalm\Internal\Provider;
 
 use Closure;
 use Psalm\CodeLocation;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\MethodExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -50,7 +49,7 @@ final class MethodExistenceProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -58,19 +57,19 @@ final class MethodExistenceProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function doesMethodExist(
         int $fq_classlike_name,
-        int $method_name_lowercase,
+        int $method_name,
         ?StatementsSource $source = null,
         ?CodeLocation $code_location = null,
     ): ?bool {
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $method_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $method_handler) {
             $event = new MethodExistenceProviderEvent(
                 $fq_classlike_name,
-                $method_name_lowercase,
+                $method_name,
                 $source,
                 $code_location,
             );

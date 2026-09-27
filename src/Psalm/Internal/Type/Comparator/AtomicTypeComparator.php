@@ -6,7 +6,6 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Interner;
 use Psalm\StrId;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -255,7 +254,7 @@ final class AtomicTypeComparator
             if (($input_type_part instanceof TObjectWithProperties
                     && $input_type_part->is_stringable_object_only)
                 || ($input_type_part instanceof TNamedObject
-                    && $codebase->methodExists(new MethodIdentifier($input_type_part->value, StrId::__tostring)))
+                    && $codebase->methodExists(new MethodIdentifier($input_type_part->value, StrId::__toString)))
             ) {
                 return true;
             }
@@ -566,7 +565,7 @@ final class AtomicTypeComparator
         if ($input_type_part instanceof TNamedObject
             && $input_type_part->value === StrId::static
             && $container_type_part instanceof TNamedObject
-            && Interner::lower($container_type_part->value) === StrId::self
+            && $container_type_part->value === StrId::self
         ) {
             return true;
         }
@@ -652,7 +651,7 @@ final class AtomicTypeComparator
                     if ($codebase->methodExists(
                         new MethodIdentifier(
                             $input_type_part->value,
-                            StrId::__tostring,
+                            StrId::__toString,
                         ),
                     )) {
                         if ($atomic_comparison_result) {
@@ -672,7 +671,7 @@ final class AtomicTypeComparator
                     return true;
                 }
             } elseif ($input_type_part instanceof TObjectWithProperties
-                && isset($input_type_part->methods[StrId::__tostring])
+                && isset($input_type_part->methods[StrId::__toString])
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->to_string_cast = true;

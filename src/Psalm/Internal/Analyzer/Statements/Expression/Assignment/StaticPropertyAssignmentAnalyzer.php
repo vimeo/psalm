@@ -32,7 +32,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function explode;
-use function strtolower;
 
 /**
  * @internal
@@ -95,9 +94,9 @@ final class StaticPropertyAssignmentAnalyzer
 
                 if (!$context->ignore_variable_property) {
                     $codebase->analyzer->addMixedMemberName(
-                        strtolower(Interner::str($fq_class_name)) . '::$',
+                        Interner::str($fq_class_name) . '::$',
                         $context->calling_method_id !== null
-                            ? strtolower((string) $context->calling_method_id)
+                            ? (string) $context->calling_method_id
                             : $statements_analyzer->getFileName(),
                     );
                 }
@@ -157,7 +156,7 @@ final class StaticPropertyAssignmentAnalyzer
                 return null;
             }
 
-            $declaring_property_id = strtolower(Interner::str($declaring_property_class)) . '::$' . $prop_name->name;
+            $declaring_property_id = Interner::str($declaring_property_class) . '::$' . $prop_name->name;
 
             if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
@@ -176,7 +175,7 @@ final class StaticPropertyAssignmentAnalyzer
 
                             $file_manipulations = [];
 
-                            if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
+                            if ($new_fq_class_name !== $old_declaring_fq_class_name) {
                                 $file_manipulations[] = new FileManipulation(
                                     (int) $stmt->class->getAttribute('startFilePos'),
                                     (int) $stmt->class->getAttribute('endFilePos') + 1,

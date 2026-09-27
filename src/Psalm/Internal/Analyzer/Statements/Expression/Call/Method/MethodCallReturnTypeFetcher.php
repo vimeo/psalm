@@ -94,7 +94,7 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if ($premixin_method_id->method_name === StrId::getcode
+        if ($premixin_method_id->method_name === StrId::getCode
             && $premixin_method_id->fq_class_name !== StrId::Exception
             && $premixin_method_id->fq_class_name !== StrId::RuntimeException
             && $premixin_method_id->fq_class_name !== StrId::PDOException
@@ -129,9 +129,7 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        $call_map_function_id = Interner::internLower((string) $call_map_id);
-
-        if (InternalCallMapHandler::inCallMap($call_map_function_id)) {
+        if (InternalCallMapHandler::inCallMap($call_map_id)) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
@@ -146,7 +144,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                 );
             } else {
-                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($call_map_function_id);
+                $callmap_callables = InternalCallMapHandler::getCallablesFromCallMap($call_map_id);
 
                 if (!$callmap_callables || $callmap_callables[0]->return_type === null) {
                     throw new UnexpectedValueException('Shouldn’t get here');
@@ -254,7 +252,7 @@ final class MethodCallReturnTypeFetcher
         }
 
         if (!$return_type_candidate) {
-            $return_type_candidate = $method_name === StrId::__tostring ? Type::getString() : Type::getMixed();
+            $return_type_candidate = $method_name === StrId::__toString ? Type::getString() : Type::getMixed();
         }
 
         $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);

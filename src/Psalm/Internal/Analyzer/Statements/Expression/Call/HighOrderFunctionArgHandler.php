@@ -177,7 +177,7 @@ final class HighOrderFunctionArgHandler
                     return null;
                 }
 
-                $function_id = Interner::internLower($function_name);
+                $function_id = Interner::intern($function_name);
 
                 $dynamic_storage = !$input_arg_expr->isFirstClassCallable()
                     ? $codebase->functions->dynamic_storage_provider->getFunctionStorage(
@@ -211,7 +211,7 @@ final class HighOrderFunctionArgHandler
 
                 $method_id = new MethodIdentifier(
                     $lhs_type->value,
-                    Interner::internLower((string)$input_arg_expr->name),
+                    Interner::intern((string)$input_arg_expr->name),
                 );
 
                 return new HighOrderFunctionArgInfo(
@@ -227,7 +227,7 @@ final class HighOrderFunctionArgHandler
             ) {
                 $method_id = new MethodIdentifier(
                     Interner::intern((string)$input_arg_expr->class->getAttribute('resolvedName')),
-                    Interner::internLower($input_arg_expr->name->toString()),
+                    Interner::intern($input_arg_expr->name->toString()),
                 );
 
                 return new HighOrderFunctionArgInfo(
@@ -338,7 +338,7 @@ final class HighOrderFunctionArgHandler
                 ? $codebase->methods->getStorage(MethodIdentifier::fromMethodIdReference($literal->value))
                 : $codebase->functions->getStorage(
                     $statements_analyzer,
-                    Interner::internLower(ltrim($literal->value, '\\')),
+                    Interner::intern(ltrim($literal->value, '\\')),
                 ),
         );
     }

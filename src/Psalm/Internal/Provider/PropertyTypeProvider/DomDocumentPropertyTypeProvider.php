@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\PropertyTypeProvider;
 
 use Override;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\StrId;
@@ -26,7 +25,7 @@ final class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInter
     #[Override]
     public static function getPropertyType(PropertyTypeProviderEvent $event): ?Union
     {
-        if (Interner::lower($event->getPropertyName()) === StrId::documentelement) {
+        if ($event->getPropertyName() === StrId::documentElement) {
             self::$cache ??= new Union([new TNamedObject(StrId::DOMElement), new TNull()], [
                 'ignore_nullable_issues' => true,
             ]);
@@ -43,6 +42,6 @@ final class DomDocumentPropertyTypeProvider implements PropertyTypeProviderInter
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return [StrId::domdocument];
+        return [StrId::DOMDocument];
     }
 }

@@ -67,27 +67,27 @@ class FileAnalyzer extends SourceAnalyzer
     private array $suppressed_issues = [];
 
     /**
-     * @var array<int, array<int, int>> namespace id => lowercase alias id => class name id
+     * @var array<int, array<int, int>> namespace id => alias id => class name id
      */
     private array $namespace_aliased_classes = [];
 
     /**
-     * @var array<int, array<int, int>> namespace id => lowercase class name id => alias id
+     * @var array<int, array<int, int>> namespace id => class name id => alias id
      */
     private array $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<int, array<int, int>> namespace id => lowercase class name id => alias id
+     * @var array<int, array<int, int>> namespace id => class name id => alias id
      */
     private array $namespace_aliased_classes_flipped_replaceable = [];
 
     /**
-     * @var array<int, InterfaceAnalyzer> lowercase interface name id => analyzer
+     * @var array<int, InterfaceAnalyzer> interface name id => analyzer
      */
     public array $interface_analyzers_to_analyze = [];
 
     /**
-     * @var array<int, ClassAnalyzer> lowercase class name id => analyzer
+     * @var array<int, ClassAnalyzer> class name id => analyzer
      */
     public array $class_analyzers_to_analyze = [];
 
@@ -339,7 +339,7 @@ class FileAnalyzer extends SourceAnalyzer
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->class_analyzers_to_analyze[Interner::lower($fq_class_name)] = $class_analyzer;
+            $this->class_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
             if (!$stmt->name) {
                 return;
@@ -355,7 +355,7 @@ class FileAnalyzer extends SourceAnalyzer
 
             $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->interface_analyzers_to_analyze[Interner::lower($fq_class_name)] = $class_analyzer;
+            $this->interface_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
         }
     }
 
@@ -364,7 +364,7 @@ class FileAnalyzer extends SourceAnalyzer
      */
     public function addNamespacedClassAnalyzer(int $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
-        $this->class_analyzers_to_analyze[Interner::lower($fq_class_name)] = $class_analyzer;
+        $this->class_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
     }
 
     /**
@@ -372,7 +372,7 @@ class FileAnalyzer extends SourceAnalyzer
      */
     public function addNamespacedInterfaceAnalyzer(int $fq_class_name, InterfaceAnalyzer $interface_analyzer): void
     {
-        $this->interface_analyzers_to_analyze[Interner::lower($fq_class_name)] = $interface_analyzer;
+        $this->interface_analyzers_to_analyze[$fq_class_name] = $interface_analyzer;
     }
 
     public function getMethodMutations(
@@ -382,10 +382,9 @@ class FileAnalyzer extends SourceAnalyzer
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
-        $fq_class_name_lc = Interner::lower($fq_class_name);
 
-        if (isset($this->class_analyzers_to_analyze[$fq_class_name_lc])) {
-            $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name_lc];
+        if (isset($this->class_analyzers_to_analyze[$fq_class_name])) {
+            $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name];
         } else {
             if (!$from_project_analyzer) {
                 $this->project_analyzer->getMethodMutations(
@@ -444,13 +443,11 @@ class FileAnalyzer extends SourceAnalyzer
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        $fq_class_name_lc = Interner::lower($fq_class_name);
-
-        if (!isset($this->class_analyzers_to_analyze[$fq_class_name_lc])) {
+        if (!isset($this->class_analyzers_to_analyze[$fq_class_name])) {
             return null;
         }
 
-        $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name_lc];
+        $class_analyzer_to_examine = $this->class_analyzers_to_analyze[$fq_class_name];
 
         return $class_analyzer_to_examine->getFunctionLikeAnalyzer($method_name);
     }

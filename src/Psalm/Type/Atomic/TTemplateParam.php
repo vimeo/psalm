@@ -55,10 +55,11 @@ final class TTemplateParam extends Atomic
         return $cloned;
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        $key = Interner::str($this->param_name) . ':' . Interner::str($this->defining_class);
+        $key = Interner::$strings[$this->param_name] . ':' . Interner::$strings[$this->defining_class];
 
         if ($include_extra && $this->extra_types) {
             return $key . '&' . implode('&', $this->extra_types);
@@ -73,22 +74,23 @@ final class TTemplateParam extends Atomic
         return $this->as->getId();
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if (!$exact) {
-            return Interner::str($this->param_name);
+            return Interner::$strings[$this->param_name];
         }
 
         if ($this->extra_types) {
-            return '(' . Interner::str($this->param_name) . ':' . Interner::str($this->defining_class)
+            return '(' . Interner::$strings[$this->param_name] . ':' . Interner::$strings[$this->defining_class]
                 . ' as ' . $this->as->getId($exact)
                 . ')&' . implode('&', array_map(static fn(Atomic $type): string
                     => $type->getId($exact, true), $this->extra_types));
         }
 
-        return ($nested ? '(' : '') . Interner::str($this->param_name)
-            . ':' . Interner::str($this->defining_class)
+        return ($nested ? '(' : '') . Interner::$strings[$this->param_name]
+            . ':' . Interner::$strings[$this->defining_class]
             . ' as ' . $this->as->getId($exact) . ($nested ? ')' : '');
     }
 
@@ -109,6 +111,7 @@ final class TTemplateParam extends Atomic
 
     /**
      * @param  array<int, int> $aliased_classes
+     * @psalm-suppress ImpureStaticProperty read-only access to the interned strings table
      */
     #[Override]
     public function toNamespacedString(
@@ -133,7 +136,7 @@ final class TTemplateParam extends Atomic
             false,
         );
 
-        return Interner::str($this->param_name) . $intersection_types;
+        return Interner::$strings[$this->param_name] . $intersection_types;
     }
 
     /**

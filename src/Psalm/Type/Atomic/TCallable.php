@@ -32,7 +32,7 @@ final class TCallable extends Atomic
      *
      * @param list<FunctionLikeParameter> $params
      * @param Mutations::LEVEL_* $allowed_mutations
-     * @param ?int $callable_id The interned lowercase id of the underlying function/method, when
+     * @param ?int $callable_id The interned id of the underlying function/method, when
      *                                        known. Metadata only - it does not affect the structural
      *                                        type - and is used to re-dispatch taint sinks/sources on invocation.
      */

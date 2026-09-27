@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\TypeVisitor;
 
 use Override;
-use Psalm\Interner;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -20,7 +19,7 @@ final class ContainsClassLikeVisitor extends TypeVisitor
     private bool $contains_classlike = false;
 
     /**
-     * @param int $fq_classlike_name lowercase class name id
+     * @param int $fq_classlike_name class name id
      * @psalm-mutation-free
      */
     public function __construct(
@@ -35,21 +34,21 @@ final class ContainsClassLikeVisitor extends TypeVisitor
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
-            if (Interner::lower($type->value) === $this->fq_classlike_name) {
+            if ($type->value === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TClassConstant) {
-            if (Interner::lower($type->fq_classlike_name) === $this->fq_classlike_name) {
+            if ($type->fq_classlike_name === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }
         }
 
         if ($type instanceof TLiteralClassString) {
-            if (Interner::lower($type->class_name) === $this->fq_classlike_name) {
+            if ($type->class_name === $this->fq_classlike_name) {
                 $this->contains_classlike = true;
                 return self::STOP_TRAVERSAL;
             }

@@ -541,7 +541,7 @@ abstract class Atomic implements TypeNode, Stringable
             return new TIterable([$this->getGenericKeyType(), $this->getGenericValueType()]);
         }
         if ($this->hasTraversableInterface($codebase)) {
-            if (Interner::lower($this->value) === StrId::traversable) {
+            if ($this->value === StrId::Traversable) {
                 if ($this instanceof TGenericObject) {
                     if (count($this->type_params) > 2) {
                         throw new InvalidArgumentException('Too many templates!');
@@ -579,7 +579,7 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                Interner::lower($this->value) === StrId::traversable
+                $this->value === StrId::Traversable
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
@@ -602,7 +602,7 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                Interner::lower($this->value) === StrId::countable
+                $this->value === StrId::Countable
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,
@@ -640,7 +640,7 @@ abstract class Atomic implements TypeNode, Stringable
     {
         return $this instanceof TNamedObject
             && (
-                Interner::lower($this->value) === StrId::arrayaccess
+                $this->value === StrId::ArrayAccess
                 || ($codebase->classOrInterfaceExists($this->value)
                     && ($codebase->classExtendsOrImplements(
                         $this->value,

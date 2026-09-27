@@ -19,7 +19,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Interner;
 use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingDependency;
 use Psalm\Issue\MissingTemplateParam;
@@ -158,13 +157,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         int $method_name,
         Context $context,
     ): void {
-        $method_name = Interner::lower($method_name);
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                Interner::internLower($stmt->name->name) === $method_name
+                Interner::intern($stmt->name->name) === $method_name
             ) {
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
@@ -196,7 +194,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                            Interner::internLower($trait_stmt->name->name) === $method_name
+                            Interner::intern($trait_stmt->name->name) === $method_name
                         ) {
                             $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
@@ -233,10 +231,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      */
     public function getFunctionLikeAnalyzer(int $method_name): ?MethodAnalyzer
     {
-        $method_name = Interner::lower($method_name);
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                Interner::internLower($stmt->name->name) === $method_name
+                Interner::intern($stmt->name->name) === $method_name
             ) {
                 return new MethodAnalyzer($stmt, $this);
             }
@@ -290,7 +287,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         if (preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
             $fq_class_name_str,
-        ) || Interner::lower($fq_class_name) === StrId::resource
+        ) || $fq_class_name === StrId::resource
         ) {
             $class_name_parts = explode('\\', $fq_class_name_str);
             $class_name = array_pop($class_name_parts);
@@ -410,22 +407,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $suppressed_issues,
             )) {
                 return false;
-            }
-        }
-
-        if (!$options->inferred) {
-            if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name))
-                || ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
-                || ($enum_exists && !$codebase->classlikes->enumHasCorrectCasing($fq_class_name))
-            ) {
-                IssueBuffer::maybeAdd(
-                    new InvalidClass(
-                        'Class, interface or enum ' . $fq_class_name_str . ' has wrong casing',
-                        $code_location,
-                        $fq_class_name,
-                    ),
-                    $suppressed_issues,
-                );
             }
         }
 
@@ -633,7 +614,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $source_fqcln = $source->getFQCLN();
         if ($source->getSource() instanceof TraitAnalyzer
             && $source_fqcln !== null
-            && Interner::equalsLower($declaring_property_class, $source_fqcln)
+            && $declaring_property_class === $source_fqcln
         ) {
             return $emit_issues ? null : true;
         }
@@ -876,7 +857,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return array<int, int> lowercase class name id => class name id
+     * @return array<int, int> class name id => class name id
      * @psalm-external-mutation-free
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array

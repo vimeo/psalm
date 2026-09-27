@@ -3,50 +3,50 @@
 return array (
   'added' => 
   array (
-    'argumentcounterror::__clone' => 
+    'ArgumentCountError::__clone' => 
     array (
       0 => 'void',
     ),
-    'argumentcounterror::__construct' => 
+    'ArgumentCountError::__construct' => 
     array (
       0 => 'void',
       'message=' => 'string',
       'code=' => 'int',
       'previous=' => 'Throwable|null',
     ),
-    'argumentcounterror::__tostring' => 
+    'ArgumentCountError::__toString' => 
     array (
       0 => 'string',
     ),
-    'argumentcounterror::__wakeup' => 
+    'ArgumentCountError::__wakeup' => 
     array (
       0 => 'void',
     ),
-    'argumentcounterror::getcode' => 
+    'ArgumentCountError::getCode' => 
     array (
       0 => 'int',
     ),
-    'argumentcounterror::getfile' => 
+    'ArgumentCountError::getFile' => 
     array (
       0 => 'string',
     ),
-    'argumentcounterror::getline' => 
+    'ArgumentCountError::getLine' => 
     array (
       0 => 'int',
     ),
-    'argumentcounterror::getmessage' => 
+    'ArgumentCountError::getMessage' => 
     array (
       0 => 'string',
     ),
-    'argumentcounterror::getprevious' => 
+    'ArgumentCountError::getPrevious' => 
     array (
       0 => 'Throwable|null',
     ),
-    'argumentcounterror::gettrace' => 
+    'ArgumentCountError::getTrace' => 
     array (
       0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
     ),
-    'argumentcounterror::gettraceasstring' => 
+    'ArgumentCountError::getTraceAsString' => 
     array (
       0 => 'string',
     ),
@@ -55,7 +55,7 @@ return array (
       0 => 'bool',
       'directory' => 'string',
     ),
-    'closure::fromcallable' => 
+    'Closure::fromCallable' => 
     array (
       0 => 'impure-Closure',
       'callable' => 'impure-callable',
@@ -88,13 +88,13 @@ return array (
       'string=' => 'string',
       'salt=' => 'string',
     ),
-    'intltimezone::getidforwindowsid' => 
+    'IntlTimeZone::getIDForWindowsID' => 
     array (
       0 => 'false|string',
       'timezone' => 'string',
       'region=' => 'string',
     ),
-    'intltimezone::getwindowsid' => 
+    'IntlTimeZone::getWindowsID' => 
     array (
       0 => 'false|string',
       'timezone' => 'string',
@@ -104,33 +104,33 @@ return array (
       0 => 'bool',
       'var' => 'mixed',
     ),
-    'mongodb\\driver\\manager::addsubscriber' => 
+    'MongoDB\\Driver\\Manager::addSubscriber' => 
     array (
       0 => 'void',
       'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
     ),
-    'mongodb\\driver\\manager::removesubscriber' => 
+    'MongoDB\\Driver\\Manager::removeSubscriber' => 
     array (
       0 => 'void',
       'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
     ),
-    'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
+    'MongoDB\\Driver\\Monitoring\\CommandFailedEvent::getServiceId' => 
     array (
       0 => 'MongoDB\\BSON\\ObjectId|null',
     ),
-    'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
+    'MongoDB\\Driver\\Monitoring\\CommandStartedEvent::getServiceId' => 
     array (
       0 => 'MongoDB\\BSON\\ObjectId|null',
     ),
-    'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
+    'MongoDB\\Driver\\Monitoring\\CommandSucceededEvent::getServiceId' => 
     array (
       0 => 'MongoDB\\BSON\\ObjectId|null',
     ),
-    'mongodb\\driver\\serverapi::bsonserialize' => 
+    'MongoDB\\Driver\\ServerApi::bsonSerialize' => 
     array (
       0 => 'stdClass',
     ),
-    'mongodb\\driver\\serverapi::unserialize' => 
+    'MongoDB\\Driver\\ServerApi::unserialize' => 
     array (
       0 => 'void',
       'serialized' => 'string',
@@ -149,90 +149,90 @@ return array (
       0 => 'int|string',
       'signo' => 'int',
     ),
-    'reflectionclass::getreflectionconstant' => 
+    'ReflectionClass::getReflectionConstant' => 
     array (
       0 => 'ReflectionClassConstant|false',
       'name' => 'string',
     ),
-    'reflectionclass::getreflectionconstants' => 
+    'ReflectionClass::getReflectionConstants' => 
     array (
       0 => 'list<ReflectionClassConstant>',
     ),
-    'reflectionclassconstant::__construct' => 
+    'ReflectionClassConstant::__construct' => 
     array (
       0 => 'void',
       'class' => 'class-string|object',
       'name' => 'string',
     ),
-    'reflectionclassconstant::__tostring' => 
+    'ReflectionClassConstant::__toString' => 
     array (
       0 => 'string',
     ),
-    'reflectionclassconstant::export' => 
+    'ReflectionClassConstant::export' => 
     array (
       0 => 'string',
       'class' => 'mixed',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'reflectionclassconstant::getdeclaringclass' => 
+    'ReflectionClassConstant::getDeclaringClass' => 
     array (
       0 => 'ReflectionClass',
     ),
-    'reflectionclassconstant::getdoccomment' => 
+    'ReflectionClassConstant::getDocComment' => 
     array (
       0 => 'false|string',
     ),
-    'reflectionclassconstant::getmodifiers' => 
+    'ReflectionClassConstant::getModifiers' => 
     array (
       0 => 'int',
     ),
-    'reflectionclassconstant::getname' => 
+    'ReflectionClassConstant::getName' => 
     array (
       0 => 'string',
     ),
-    'reflectionclassconstant::getvalue' => 
+    'ReflectionClassConstant::getValue' => 
     array (
       0 => 'array<array-key, scalar>|null|scalar',
     ),
-    'reflectionclassconstant::isprivate' => 
+    'ReflectionClassConstant::isPrivate' => 
     array (
       0 => 'bool',
     ),
-    'reflectionclassconstant::isprotected' => 
+    'ReflectionClassConstant::isProtected' => 
     array (
       0 => 'bool',
     ),
-    'reflectionclassconstant::ispublic' => 
+    'ReflectionClassConstant::isPublic' => 
     array (
       0 => 'bool',
     ),
-    'reflectionnamedtype::__clone' => 
+    'ReflectionNamedType::__clone' => 
     array (
       0 => 'void',
     ),
-    'reflectionnamedtype::__tostring' => 
+    'ReflectionNamedType::__toString' => 
     array (
       0 => 'string',
     ),
-    'reflectionnamedtype::allowsnull' => 
+    'ReflectionNamedType::allowsNull' => 
     array (
       0 => 'bool',
     ),
-    'reflectionnamedtype::getname' => 
+    'ReflectionNamedType::getName' => 
     array (
       0 => 'string',
     ),
-    'reflectionnamedtype::isbuiltin' => 
+    'ReflectionNamedType::isBuiltin' => 
     array (
       0 => 'bool',
     ),
-    'reflectionobject::getreflectionconstant' => 
+    'ReflectionObject::getReflectionConstant' => 
     array (
       0 => 'ReflectionClassConstant',
       'name' => 'string',
     ),
-    'reflectionobject::getreflectionconstants' => 
+    'ReflectionObject::getReflectionConstants' => 
     array (
       0 => 'list<ReflectionClassConstant>',
     ),
@@ -329,7 +329,7 @@ return array (
         '...arrays=' => 'array<array-key, mixed>',
       ),
     ),
-    'arrayiterator::__construct' => 
+    'ArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -346,7 +346,7 @@ return array (
         'iterator_class=' => 'mixed',
       ),
     ),
-    'arrayobject::__construct' => 
+    'ArrayObject::__construct' => 
     array (
       'old' => 
       array (
@@ -393,7 +393,7 @@ return array (
         'timezone=' => 'DateTimeZone|null',
       ),
     ),
-    'datetime::__construct' => 
+    'DateTime::__construct' => 
     array (
       'old' => 
       array (
@@ -408,7 +408,7 @@ return array (
         'timezone=' => 'mixed',
       ),
     ),
-    'datetime::settime' => 
+    'DateTime::setTime' => 
     array (
       'old' => 
       array (
@@ -426,7 +426,7 @@ return array (
         'microseconds=' => 'int',
       ),
     ),
-    'datetimezone::listidentifiers' => 
+    'DateTimeZone::listIdentifiers' => 
     array (
       'old' => 
       array (
@@ -671,7 +671,7 @@ return array (
         'quality=' => 'int',
       ),
     ),
-    'intldateformatter::format' => 
+    'IntlDateFormatter::format' => 
     array (
       'old' => 
       array (
@@ -686,7 +686,7 @@ return array (
         'array=' => 'mixed',
       ),
     ),
-    'mongodb\\driver\\manager::selectserver' => 
+    'MongoDB\\Driver\\Manager::selectServer' => 
     array (
       'old' => 
       array (
@@ -912,7 +912,7 @@ return array (
         'result_type=' => 'int',
       ),
     ),
-    'recursivearrayiterator::__construct' => 
+    'RecursiveArrayIterator::__construct' => 
     array (
       'old' => 
       array (
@@ -929,7 +929,7 @@ return array (
         'iterator_class=' => 'mixed',
       ),
     ),
-    'sessionhandler::gc' => 
+    'SessionHandler::gc' => 
     array (
       'old' => 
       array (
@@ -942,7 +942,7 @@ return array (
         'maxlifetime' => 'int',
       ),
     ),
-    'sqlite3::createfunction' => 
+    'SQLite3::createFunction' => 
     array (
       'old' => 
       array (
@@ -1004,7 +1004,7 @@ return array (
         'token=' => 'string',
       ),
     ),
-    'swoole\\coroutine\\mysql::connect' => 
+    'Swoole\\Coroutine\\MySQL::connect' => 
     array (
       'old' => 
       array (
@@ -1017,7 +1017,7 @@ return array (
         'server_config=' => 'array<array-key, mixed>',
       ),
     ),
-    'swoole\\http\\response::cookie' => 
+    'Swoole\\Http\\Response::cookie' => 
     array (
       'old' => 
       array (
@@ -1044,7 +1044,7 @@ return array (
         'priority=' => 'mixed',
       ),
     ),
-    'swoole\\http\\response::rawcookie' => 
+    'Swoole\\Http\\Response::rawcookie' => 
     array (
       'old' => 
       array (
@@ -1071,7 +1071,7 @@ return array (
         'priority=' => 'mixed',
       ),
     ),
-    'swoole\\process::daemon' => 
+    'Swoole\\Process::daemon' => 
     array (
       'old' => 
       array (
@@ -1087,7 +1087,7 @@ return array (
         'pipes=' => 'mixed',
       ),
     ),
-    'swoole\\server::after' => 
+    'Swoole\\Server::after' => 
     array (
       'old' => 
       array (
@@ -1103,7 +1103,7 @@ return array (
         'callback' => 'impure-callable',
       ),
     ),
-    'swoole\\websocket\\server::pack' => 
+    'Swoole\\WebSocket\\Server::pack' => 
     array (
       'old' => 
       array (
@@ -1121,7 +1121,7 @@ return array (
         'flags=' => 'string',
       ),
     ),
-    'swoole\\websocket\\server::push' => 
+    'Swoole\\WebSocket\\Server::push' => 
     array (
       'old' => 
       array (
@@ -1221,85 +1221,85 @@ return array (
   ),
   'removed' => 
   array (
-    'swoole\\buffer::__destruct' => 
+    'Swoole\\Buffer::__destruct' => 
     array (
       0 => 'void',
     ),
-    'swoole\\buffer::__tostring' => 
+    'Swoole\\Buffer::__toString' => 
     array (
       0 => 'string',
     ),
-    'swoole\\buffer::append' => 
+    'Swoole\\Buffer::append' => 
     array (
       0 => 'int',
       'data' => 'string',
     ),
-    'swoole\\buffer::clear' => 
+    'Swoole\\Buffer::clear' => 
     array (
       0 => 'void',
     ),
-    'swoole\\buffer::expand' => 
+    'Swoole\\Buffer::expand' => 
     array (
       0 => 'int',
       'size' => 'int',
     ),
-    'swoole\\buffer::read' => 
+    'Swoole\\Buffer::read' => 
     array (
       0 => 'string',
       'offset' => 'int',
       'length' => 'int',
     ),
-    'swoole\\buffer::recycle' => 
+    'Swoole\\Buffer::recycle' => 
     array (
       0 => 'void',
     ),
-    'swoole\\buffer::substr' => 
+    'Swoole\\Buffer::substr' => 
     array (
       0 => 'string',
       'offset' => 'int',
       'length=' => 'int',
       'remove=' => 'bool',
     ),
-    'swoole\\buffer::write' => 
+    'Swoole\\Buffer::write' => 
     array (
       0 => 'void',
       'offset' => 'int',
       'data' => 'string',
     ),
-    'swoole\\client::on' => 
+    'Swoole\\Client::on' => 
     array (
       0 => 'void',
       'event_name' => 'string',
       'callback' => 'impure-callable',
     ),
-    'swoole\\client::pause' => 
+    'Swoole\\Client::pause' => 
     array (
       0 => 'void',
     ),
-    'swoole\\client::pipe' => 
+    'Swoole\\Client::pipe' => 
     array (
       0 => 'void',
       'dst_socket' => 'string',
     ),
-    'swoole\\client::resume' => 
+    'Swoole\\Client::resume' => 
     array (
       0 => 'void',
     ),
-    'swoole\\client::sleep' => 
+    'Swoole\\Client::sleep' => 
     array (
       0 => 'void',
     ),
-    'swoole\\client::wakeup' => 
+    'Swoole\\Client::wakeup' => 
     array (
       0 => 'void',
     ),
-    'swoole\\serialize::pack' => 
+    'Swoole\\Serialize::pack' => 
     array (
       0 => 'ReturnType',
       'data' => 'string',
       'flag=' => 'int',
     ),
-    'swoole\\serialize::unpack' => 
+    'Swoole\\Serialize::unpack' => 
     array (
       0 => 'ReturnType',
       'string' => 'string',

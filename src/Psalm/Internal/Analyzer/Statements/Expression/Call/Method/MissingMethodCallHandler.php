@@ -417,7 +417,7 @@ final class MissingMethodCallHandler
      * If the method is not declared, null is returned.
      *
      * @param ClassLikeStorage $static_class_storage The called class
-     * @param int $method_name_lc lowercase method name id
+     * @param int $method_name_lc method name id
      * @return array{MethodStorage, ClassLikeStorage}
      * @psalm-mutation-free
      */

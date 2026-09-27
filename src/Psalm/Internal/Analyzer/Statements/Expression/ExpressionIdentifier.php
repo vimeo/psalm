@@ -15,7 +15,6 @@ use function count;
 use function implode;
 use function in_array;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -37,7 +36,7 @@ final class ExpressionIdentifier
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
             if (count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if (!$this_class_name) {
                     $fq_class_name = $stmt->class->getFirst();
@@ -228,7 +227,7 @@ final class ExpressionIdentifier
                     return null;
                 }
 
-                return $lhs_var_name . '->' . strtolower($stmt->name->name) . '()';
+                return $lhs_var_name . '->' . $stmt->name->name . '()';
             }
         }
 

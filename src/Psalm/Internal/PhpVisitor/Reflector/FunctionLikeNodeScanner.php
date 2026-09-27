@@ -129,7 +129,7 @@ final class FunctionLikeNodeScanner
             $storage,
             $function_id,
             $fq_classlike_name,
-            $method_name_lc,
+            $method_name,
             $classlike_storage,
             $is_functionlike_override,
             $method_id,
@@ -262,7 +262,7 @@ final class FunctionLikeNodeScanner
                     $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
 
                     $classlike_storage->properties[$property_name]->getter_method
-                        = Interner::internLower($stmt->name->name);
+                        = Interner::intern($stmt->name->name);
                 }
             } elseif (str_starts_with($stmt->name->name, 'assert')
                 && $stmt->stmts
@@ -520,7 +520,7 @@ final class FunctionLikeNodeScanner
 
         // register the functionlike once the @since check has been completed
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
-            && $function_id
+            && $function_id !== null
             && $storage instanceof FunctionStorage
         ) {
             if ($this->codebase->all_functions_global
@@ -536,41 +536,41 @@ final class FunctionLikeNodeScanner
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
             && $classlike_storage
             && $storage instanceof MethodStorage
-            && $method_name_lc
+            && $method_name !== null
             && !$fake_method
             && $method_id
         ) {
-            $classlike_storage->methods[$method_name_lc] = $storage;
+            $classlike_storage->methods[$method_name] = $storage;
 
-            $classlike_storage->declaring_method_ids[$method_name_lc]
-                = $classlike_storage->appearing_method_ids[$method_name_lc]
+            $classlike_storage->declaring_method_ids[$method_name]
+                = $classlike_storage->appearing_method_ids[$method_name]
                 = $method_id;
 
             if (!$stmt->isPrivate()
-                || $method_name_lc === StrId::__construct
-                || $method_name_lc === StrId::__clone
+                || $method_name === StrId::__construct
+                || $method_name === StrId::__clone
                 || $classlike_storage->is_trait
             ) {
-                $classlike_storage->inheritable_method_ids[$method_name_lc] = $method_id;
+                $classlike_storage->inheritable_method_ids[$method_name] = $method_id;
             }
 
-            if (!isset($classlike_storage->overridden_method_ids[$method_name_lc])) {
-                $classlike_storage->overridden_method_ids[$method_name_lc] = [];
+            if (!isset($classlike_storage->overridden_method_ids[$method_name])) {
+                $classlike_storage->overridden_method_ids[$method_name] = [];
             }
 
-            if ($storage->final && $method_name_lc === StrId::__construct) {
+            if ($storage->final && $method_name === StrId::__construct) {
                 // a bit of a hack, but makes sure that `new static` works for these classes
                 $classlike_storage->preserve_constructor_signature = true;
             }
         } elseif (($stmt instanceof PhpParser\Node\Expr\Closure
                 || $stmt instanceof PhpParser\Node\Expr\ArrowFunction)
-            && $function_id
+            && $function_id !== null
             && $storage instanceof FunctionStorage
         ) {
             $this->file_storage->functions[$function_id] = $storage;
         }
 
-        if ($classlike_storage && $method_name_lc === StrId::__construct) {
+        if ($classlike_storage && $method_name === StrId::__construct) {
             foreach ($stmt->getParams() as $param) {
                 if (!$param->flags
                     || !$param->var instanceof PhpParser\Node\Expr\Variable
@@ -997,7 +997,7 @@ final class FunctionLikeNodeScanner
         $is_functionlike_override = false;
 
         $function_id = null;
-        $method_name_lc = null;
+        $method_name = null;
         $method_id = null;
 
         if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -1013,7 +1013,7 @@ final class FunctionLikeNodeScanner
             $cased_function_id =
                 ($this->aliases->namespace !== null ? Interner::str($this->aliases->namespace) . '\\' : '')
                 . $stmt->name->name;
-            $function_id = Interner::internLower($cased_function_id);
+            $function_id = Interner::intern($cased_function_id);
 
             $storage = $this->storage = new FunctionStorage();
 
@@ -1087,7 +1087,7 @@ final class FunctionLikeNodeScanner
 
             $fq_classlike_name = $this->classlike_storage->name;
 
-            $method_name_lc = Interner::internLower($stmt->name->name);
+            $method_name = Interner::intern($stmt->name->name);
 
             $cased_function_id = Interner::str($fq_classlike_name) . '::' . $stmt->name->name;
 
@@ -1095,13 +1095,13 @@ final class FunctionLikeNodeScanner
 
             $storage = null;
 
-            if (isset($classlike_storage->methods[$method_name_lc])) {
+            if (isset($classlike_storage->methods[$method_name])) {
                 if (!$this->codebase->register_stub_files) {
-                    $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
+                    $duplicate_method_storage = $classlike_storage->methods[$method_name];
 
                     IssueBuffer::maybeAdd(
                         new DuplicateMethod(
-                            'Method ' . Interner::str($fq_classlike_name) . '::' . Interner::str($method_name_lc)
+                            'Method ' . Interner::str($fq_classlike_name) . '::' . Interner::str($method_name)
                             . ' has already been defined'
                             . ($duplicate_method_storage->location
                                 ? ' in ' . $duplicate_method_storage->location->file_path
@@ -1150,7 +1150,7 @@ final class FunctionLikeNodeScanner
                 }
 
                 $is_functionlike_override = true;
-                $storage = $this->storage = $classlike_storage->methods[$method_name_lc];
+                $storage = $this->storage = $classlike_storage->methods[$method_name];
             }
 
             if (!$storage) {
@@ -1164,7 +1164,7 @@ final class FunctionLikeNodeScanner
             $class_name_parts = explode('\\', $fq_classlike_name_str);
             $class_name = array_pop($class_name_parts);
 
-            if (Interner::str($method_name_lc) === strtolower($class_name)
+            if (Interner::str($method_name) === $class_name
                 && !isset($classlike_storage->methods[StrId::__construct])
                 && !str_contains($fq_classlike_name_str, '\\')
                 && $this->codebase->analysis_php_version_id <= 7_04_00
@@ -1173,26 +1173,26 @@ final class FunctionLikeNodeScanner
                     $fq_classlike_name,
                     StrId::__construct,
                     $fq_classlike_name,
-                    $method_name_lc,
+                    $method_name,
                 );
 
                 $this->codebase->methods->setAppearingMethodId(
                     $fq_classlike_name,
                     StrId::__construct,
                     $fq_classlike_name,
-                    $method_name_lc,
+                    $method_name,
                 );
             }
 
             $method_id = new MethodIdentifier(
                 $fq_classlike_name,
-                $method_name_lc,
+                $method_name,
             );
 
             $storage->is_static = $stmt->isStatic();
             $storage->abstract = $stmt->isAbstract();
 
-            if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== StrId::__construct) {
+            if ($stmt->isPrivate() && $stmt->isFinal() && $method_name !== StrId::__construct) {
                 IssueBuffer::maybeAdd(
                     new PrivateFinalMethod(
                         'Private methods cannot be final',
@@ -1254,7 +1254,7 @@ final class FunctionLikeNodeScanner
             $storage,
             $function_id,
             $fq_classlike_name,
-            $method_name_lc,
+            $method_name,
             $classlike_storage,
             $is_functionlike_override,
             $method_id,

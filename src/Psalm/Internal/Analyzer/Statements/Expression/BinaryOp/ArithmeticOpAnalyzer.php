@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
-use Psalm\Interner;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
@@ -667,18 +666,18 @@ final class ArithmeticOpAnalyzer
          * // Todo remove this hint reset after fixing #10267
          */
 
-        if (($left_type_part instanceof TNamedObject && Interner::lower($left_type_part->value) === StrId::gmp)
-            || ($right_type_part instanceof TNamedObject && Interner::lower($right_type_part->value) === StrId::gmp)
+        if (($left_type_part instanceof TNamedObject && $left_type_part->value === StrId::GMP)
+            || ($right_type_part instanceof TNamedObject && $right_type_part->value === StrId::GMP)
         ) {
             if ((($left_type_part instanceof TNamedObject
-                        && Interner::lower($left_type_part->value) === StrId::gmp)
+                        && $left_type_part->value === StrId::GMP)
                     && (($right_type_part instanceof TNamedObject
-                            && Interner::lower($right_type_part->value) === StrId::gmp)
+                            && $right_type_part->value === StrId::GMP)
                         || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
                 || (($right_type_part instanceof TNamedObject
-                        && Interner::lower($right_type_part->value) === StrId::gmp)
+                        && $right_type_part->value === StrId::GMP)
                     && (($left_type_part instanceof TNamedObject
-                            && Interner::lower($left_type_part->value) === StrId::gmp)
+                            && $left_type_part->value === StrId::GMP)
                         || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
             ) {
                 $result_type = Type::combineUnionTypes(
@@ -709,11 +708,11 @@ final class ArithmeticOpAnalyzer
         ) {
             $non_decimal_type = null;
             if ($left_type_part instanceof TNamedObject
-                && Interner::lower($left_type_part->value) === StrId::decimal_decimal
+                && $left_type_part->value === StrId::Decimal_Decimal
             ) {
                 $non_decimal_type = $right_type_part;
             } elseif ($right_type_part instanceof TNamedObject
-                && Interner::lower($right_type_part->value) === StrId::decimal_decimal
+                && $right_type_part->value === StrId::Decimal_Decimal
             ) {
                 $non_decimal_type = $left_type_part;
             }
@@ -721,7 +720,7 @@ final class ArithmeticOpAnalyzer
                 if ($non_decimal_type instanceof TInt
                     || $non_decimal_type instanceof TNumericString
                     || $non_decimal_type instanceof TNamedObject
-                        && Interner::lower($non_decimal_type->value) === StrId::decimal_decimal
+                        && $non_decimal_type->value === StrId::Decimal_Decimal
                 ) {
                     $result_type = Type::combineUnionTypes(
                         new Union([new TNamedObject(StrId::Decimal_Decimal)]),

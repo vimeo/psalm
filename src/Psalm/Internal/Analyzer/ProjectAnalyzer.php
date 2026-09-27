@@ -86,7 +86,6 @@ use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 use function usort;
 
@@ -582,7 +581,6 @@ final class ProjectAnalyzer
             $destination_parts = explode('::', $destination);
 
             $source_class = Interner::intern($source_parts[0]);
-            $source_class_lc = Interner::lower($source_class);
             $destination_class = Interner::intern($destination_parts[0]);
 
             if (!$this->codebase->classlikes->hasFullyQualifiedClassName($source_class)) {
@@ -603,7 +601,7 @@ final class ProjectAnalyzer
                 $destination_parts = explode('\\', $destination, -1);
                 $destination_ns = implode('\\', $destination_parts);
 
-                $this->codebase->classes_to_move[$source_class_lc] = $destination_class;
+                $this->codebase->classes_to_move[$source_class] = $destination_class;
 
                 $destination_class_storage = $this->codebase->classlike_storage_provider->create($destination_class);
 
@@ -620,21 +618,21 @@ final class ProjectAnalyzer
                 $destination_class_storage->stmt_location = $source_class_storage->stmt_location;
                 $destination_class_storage->populated = true;
 
-                $this->codebase->class_transforms[$source_class_lc] = $destination_class;
+                $this->codebase->class_transforms[$source_class] = $destination_class;
 
                 continue;
             }
 
             $source_method_id = new MethodIdentifier(
                 $source_class,
-                Interner::internLower($source_parts[1]),
+                Interner::intern($source_parts[1]),
             );
 
             if ($this->codebase->methodExists($source_method_id)) {
                 if ($this->codebase->methodExists(
                     new MethodIdentifier(
                         $destination_class,
-                        Interner::internLower($destination_parts[1]),
+                        Interner::intern($destination_parts[1]),
                     ),
                 )) {
                     throw new RefactorException(
@@ -648,17 +646,14 @@ final class ProjectAnalyzer
                     );
                 }
 
-                $source_lc = strtolower($source);
-                if (!Interner::equalsLower($source_class, $destination_class)) {
+                if ($source_class !== $destination_class) {
                     $source_method_storage = $this->codebase->methods->getStorage($source_method_id);
                     $destination_class_storage
                         = $this->codebase->classlike_storage_provider->get($destination_class);
 
                     if (!$source_method_storage->is_static
                         && !isset(
-                            $destination_class_storage->parent_classes[
-                                Interner::lower($source_method_id->fq_class_name)
-                            ],
+                            $destination_class_storage->parent_classes[$source_method_id->fq_class_name],
                         )
                     ) {
                         throw new RefactorException(
@@ -667,16 +662,16 @@ final class ProjectAnalyzer
                         );
                     }
 
-                    $this->codebase->methods_to_move[$source_class_lc][$source_method_id->method_name] = [
+                    $this->codebase->methods_to_move[$source_class][$source_method_id->method_name] = [
                         $destination_class,
                         Interner::intern($destination_parts[1]),
                     ];
                 } else {
-                    $this->codebase->methods_to_rename[$source_class_lc][$source_method_id->method_name]
+                    $this->codebase->methods_to_rename[$source_class][$source_method_id->method_name]
                         = Interner::intern($destination_parts[1]);
                 }
 
-                $this->codebase->call_transforms[$source_lc . '\((.*\))'] = $destination . '($1)';
+                $this->codebase->call_transforms[$source . '\((.*\))'] = $destination . '($1)';
                 continue;
             }
 
@@ -714,9 +709,9 @@ final class ProjectAnalyzer
                     );
                 }
 
-                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+                $source_id = $source_parts[0] . '::' . $source_parts[1];
 
-                if (!Interner::equalsLower($source_class, $destination_class)) {
+                if ($source_class !== $destination_class) {
                     $source_storage = $this->codebase->properties->getStorage($source_property_id);
 
                     if (!$source_storage->is_static) {
@@ -725,12 +720,12 @@ final class ProjectAnalyzer
                         );
                     }
 
-                    $this->codebase->properties_to_move[$source_class_lc][$source_property_id->property_name] = [
+                    $this->codebase->properties_to_move[$source_class][$source_property_id->property_name] = [
                         $destination_class,
                         $destination_property_name,
                     ];
                 } else {
-                    $this->codebase->properties_to_rename[$source_class_lc][$source_property_id->property_name]
+                    $this->codebase->properties_to_rename[$source_class][$source_property_id->property_name]
                         = $destination_property_name;
                 }
 
@@ -763,15 +758,15 @@ final class ProjectAnalyzer
                     );
                 }
 
-                $source_id = strtolower($source_parts[0]) . '::' . $source_parts[1];
+                $source_id = $source_parts[0] . '::' . $source_parts[1];
 
-                if (!Interner::equalsLower($source_class, $destination_class)) {
-                    $this->codebase->class_constants_to_move[$source_class_lc][$source_const_name] = [
+                if ($source_class !== $destination_class) {
+                    $this->codebase->class_constants_to_move[$source_class][$source_const_name] = [
                         $destination_class,
                         $destination_const_name,
                     ];
                 } else {
-                    $this->codebase->class_constants_to_rename[$source_class_lc][$source_const_name]
+                    $this->codebase->class_constants_to_rename[$source_class][$source_const_name]
                         = $destination_const_name;
                 }
 
@@ -1279,9 +1274,7 @@ final class ProjectAnalyzer
 
     public function getFileAnalyzerForClassLike(int $fq_class_name): FileAnalyzer
     {
-        $fq_class_name_lc = Interner::lower($fq_class_name);
-
-        $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
+        $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name);
 
         return new FileAnalyzer(
             $this,

@@ -174,7 +174,7 @@ final class AttributesAnalyzer
             return;
         }
 
-        if (Interner::lower($fq_attribute_name) === StrId::attribute && $classlike_storage) {
+        if ($fq_attribute_name === StrId::Attribute && $classlike_storage) {
             if ($classlike_storage->is_trait) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
@@ -239,7 +239,7 @@ final class AttributesAnalyzer
         $statements_analyzer->analyze(
             [new Expression(new New_($attribute->name, $attribute->args, $attribute->getAttributes()))],
             // Use a new Context for the Attribute attribute so that it can't access `self`
-            Interner::lower($fq_attribute_name) === StrId::attribute ? new Context() : $context,
+            $fq_attribute_name === StrId::Attribute ? new Context() : $context,
         );
         $context->has_returned = $had_returned;
         $context->inside_attribute = $was_inside_attribute;
@@ -266,7 +266,7 @@ final class AttributesAnalyzer
         ?ClassLikeStorage $attribute_class_storage,
         array $suppressed_issues,
     ): int {
-        if (Interner::lower($fq_attribute_name) === StrId::attribute) {
+        if ($fq_attribute_name === StrId::Attribute) {
             // We override this here because we still want to analyze attributes
             // for PHP 7.4 when the Attribute class doesn't yet exist.
             return GlobalAttribute::TARGET_CLASS;
@@ -345,7 +345,7 @@ final class AttributesAnalyzer
             return;
         }
 
-        if ($method_id->method_name !== StrId::getattributes) {
+        if ($method_id->method_name !== StrId::getAttributes) {
             return;
         }
 

@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\MethodVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\MethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
@@ -56,7 +55,7 @@ final class MethodVisibilityProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -64,7 +63,7 @@ final class MethodVisibilityProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function isMethodVisible(
@@ -74,7 +73,7 @@ final class MethodVisibilityProvider
         Context $context,
         ?CodeLocation $code_location = null,
     ): ?bool {
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $method_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $method_handler) {
             $event = new MethodVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,

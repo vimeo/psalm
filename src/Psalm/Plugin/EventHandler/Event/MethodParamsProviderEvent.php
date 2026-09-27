@@ -22,7 +22,7 @@ final class MethodParamsProviderEvent
      */
     public function __construct(
         private readonly int $fq_classlike_name,
-        private readonly int $method_name_lowercase,
+        private readonly int $method_name,
         private readonly ?array $call_args = null,
         private readonly ?StatementsSource $statements_source = null,
         private readonly ?Context $context = null,
@@ -30,14 +30,20 @@ final class MethodParamsProviderEvent
     ) {
     }
 
+    /**
+     * Interned class name id, as declared (class names are case-sensitive).
+     */
     public function getFqClasslikeName(): int
     {
         return $this->fq_classlike_name;
     }
 
-    public function getMethodNameLowercase(): int
+    /**
+     * Interned method name id, as written (method names are case-sensitive, no case folding is applied).
+     */
+    public function getMethodName(): int
     {
-        return $this->method_name_lowercase;
+        return $this->method_name;
     }
 
     /**

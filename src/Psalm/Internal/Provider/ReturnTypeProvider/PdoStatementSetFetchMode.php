@@ -34,14 +34,14 @@ final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
     public static function getMethodParams(MethodParamsProviderEvent $event): ?array
     {
         $statements_source = $event->getStatementsSource();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
         $context = $event->getContext();
         $call_args = $event->getCallArgs();
         if (!$statements_source instanceof StatementsAnalyzer) {
             return null;
         }
 
-        if ($method_name_lowercase === StrId::setfetchmode) {
+        if ($method_name === StrId::setFetchMode) {
             if (!$context
                 || !$call_args
                 || ExpressionAnalyzer::analyze(

@@ -37,7 +37,7 @@ final class TObjectWithProperties extends TObject
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
-     * @param array<int, MethodIdentifier> $methods lowercase method name id => method id
+     * @param array<int, MethodIdentifier> $methods method name id => method id
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
@@ -60,7 +60,7 @@ final class TObjectWithProperties extends TObject
      */
     public static function makeStringable(): self
     {
-        return new self([], [StrId::__tostring => new MethodIdentifier(StrId::string, StrId::__tostring)]);
+        return new self([], [StrId::__toString => new MethodIdentifier(StrId::string, StrId::__toString)]);
     }
 
     /**
@@ -72,8 +72,8 @@ final class TObjectWithProperties extends TObject
     {
         return $properties === []
             && count($methods) === 1
-            && isset($methods[StrId::__tostring])
-            && $methods[StrId::__tostring]->fq_class_name === StrId::string;
+            && isset($methods[StrId::__toString])
+            && $methods[StrId::__toString]->fq_class_name === StrId::string;
     }
 
     /**
@@ -111,7 +111,7 @@ final class TObjectWithProperties extends TObject
     }
 
     /**
-     * @param array<int, MethodIdentifier> $methods lowercase method name id => method id
+     * @param array<int, MethodIdentifier> $methods method name id => method id
      */
     public function setMethods(array $methods): self
     {

@@ -27,11 +27,12 @@ use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 
+use function array_is_list;
+use function array_keys;
 use function array_shift;
 use function class_exists;
 use function count;
 use function enum_exists;
-use function explode;
 use function function_exists;
 use function in_array;
 use function interface_exists;
@@ -40,8 +41,7 @@ use function is_int;
 use function json_encode;
 use function preg_match;
 use function print_r;
-use function strcmp;
-use function strncmp;
+use function strcasecmp;
 use function strpos;
 use function substr;
 use function version_compare;
@@ -64,13 +64,12 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var list<non-empty-string>
      */
     private static array $skippedPatterns = [
-        '/\'\d$/', // skip alternate signatures
-        '/^redis/', // redis extension
-        '/^imagick/', // imagick extension
-        '/^uopz/', // uopz extension
-        '/^memcache[_:]/', // memcache extension
-        '/^memcachepool/', // memcache extension
-        '/^gnupg/', // gnupg extension
+        '/^redis/i', // redis extension
+        '/^imagick/i', // imagick extension
+        '/^uopz/i', // uopz extension
+        '/^memcache[_:]/i', // memcache extension
+        '/^memcachepool/i', // memcache extension
+        '/^gnupg/i', // gnupg extension
     ];
 
     /**
@@ -92,17 +91,17 @@ final class InternalCallMapHandlerTest extends TestCase
         'mailparse_msg_get_structure',
         'mailparse_msg_parse',
         'mailparse_stream_encode',
-        'memcached::cas', // memcached 3.2.0 has incorrect reflection
-        'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
-        'oauth::fetch',
-        'oauth::getaccesstoken',
-        'oauth::setcapath',
-        'oauth::settimeout',
-        'oauth::settimestamp',
-        'oauthprovider::consumerhandler',
-        'oauthprovider::isrequesttokenendpoint',
-        'oauthprovider::timestampnoncehandler',
-        'oauthprovider::tokenhandler',
+        'Memcached::cas', // memcached 3.2.0 has incorrect reflection
+        'Memcached::casByKey', // memcached 3.2.0 has incorrect reflection
+        'OAuth::fetch',
+        'OAuth::getAccessToken',
+        'OAuth::setCAPath',
+        'OAuth::setTimeout',
+        'OAuth::setTimestamp',
+        'OAuthProvider::consumerHandler',
+        'OAuthProvider::isRequestTokenEndpoint',
+        'OAuthProvider::timestampNonceHandler',
+        'OAuthProvider::tokenHandler',
         'oci_collection_append',
         'oci_collection_assign',
         'oci_collection_element_assign',
@@ -139,6 +138,7 @@ final class InternalCallMapHandlerTest extends TestCase
         'oci_result',
         'ocigetbufferinglob',
         'ocisetbufferinglob',
+        'pg_close_stmt' => ['8.5'], // PHP 8.5 reflection declares the wrongly-cased Pgsql\Connection
         'sqlsrv_fetch_array',
         'sqlsrv_fetch_object',
         'sqlsrv_get_field',
@@ -169,18 +169,18 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'datetime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::createfromimmutable' => ['8.1'],
-        'datetime::createfrominterface',
-        'datetimeimmutable::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::createFromFormat' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::createFromImmutable' => ['8.1'],
+        'DateTime::createFromInterface',
+        'DateTimeImmutable::createFromInterface',
+        'DateTime::setDate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::setISODate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::setTime' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::setTimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::setTimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'DateTime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
     ];
 
     /**
@@ -192,33 +192,33 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredUnreflectableFunctions = [
-        'closure::__invoke',
-        'domimplementation::__construct',
-        'intliterator::__construct',
-        'pdo::cubrid_schema',
-        'pdo::pgsqlcopyfromarray',
-        'pdo::pgsqlcopyfromfile',
-        'pdo::pgsqlcopytoarray',
-        'pdo::pgsqlcopytofile',
-        'pdo::pgsqlgetnotify',
-        'pdo::pgsqlgetpid',
-        'pdo::pgsqllobcreate',
-        'pdo::pgsqllobopen',
-        'pdo::pgsqllobunlink',
-        'pdo::sqlitecreateaggregate',
-        'pdo::sqlitecreatecollation',
-        'pdo::sqlitecreatefunction',
-        'simplexmlelement::__get',
-        'simplexmlelement::offsetexists',
-        'simplexmlelement::offsetget',
-        'simplexmlelement::offsetset',
-        'simplexmlelement::offsetunset',
-        'spldoublylinkedlist::__construct',
-        'splheap::__construct',
-        'splmaxheap::__construct',
-        'splobjectstorage::__construct',
-        'splpriorityqueue::__construct',
-        'splstack::__construct',
+        'Closure::__invoke',
+        'DOMImplementation::__construct',
+        'IntlIterator::__construct',
+        'PDO::cubrid_schema',
+        'PDO::pgsqlCopyFromArray',
+        'PDO::pgsqlCopyFromFile',
+        'PDO::pgsqlCopyToArray',
+        'PDO::pgsqlCopyToFile',
+        'PDO::pgsqlGetNotify',
+        'PDO::pgsqlGetPid',
+        'PDO::pgsqlLOBCreate',
+        'PDO::pgsqlLOBOpen',
+        'PDO::pgsqlLOBUnlink',
+        'PDO::sqliteCreateAggregate',
+        'PDO::sqliteCreateCollation',
+        'PDO::sqliteCreateFunction',
+        'SimpleXMLElement::__get',
+        'SimpleXMLElement::offsetExists',
+        'SimpleXMLElement::offsetGet',
+        'SimpleXMLElement::offsetSet',
+        'SimpleXMLElement::offsetUnset',
+        'SplDoublyLinkedList::__construct',
+        'SplHeap::__construct',
+        'SplMaxHeap::__construct',
+        'SplObjectStorage::__construct',
+        'SplPriorityQueue::__construct',
+        'SplStack::__construct',
     ];
 
     private static Codebase $codebase;
@@ -243,7 +243,7 @@ final class InternalCallMapHandlerTest extends TestCase
             /** @var string */
             $function = is_int($key) ? $value : $key;
 
-            $diff = strcmp($function, $previousFunction);
+            $diff = strcasecmp($function, $previousFunction);
             $this->assertGreaterThan(0, $diff, "'{$function}' should come before '{$previousFunction}' in InternalCallMapHandlerTest::\$ignoredFunctions");
 
             $previousFunction = $function;
@@ -256,13 +256,35 @@ final class InternalCallMapHandlerTest extends TestCase
     public function testGetcallmapReturnsAValidCallmap(): void
     {
         $callMap = InternalCallMapHandler::getCallMap();
-        self::assertArrayKeysAreStrings($callMap, "Returned CallMap has non-string keys");
-        self::assertArrayValuesAreArrays($callMap, "Returned CallMap has non-array values");
-        foreach ($callMap as $function => $signature) {
-            self::assertArrayKeysAreZeroOrString($signature, "Function " . $function . " in returned CallMap has invalid keys");
-            self::assertArrayValuesAreStrings($signature, "Function " . $function . " in returned CallMap has non-string values");
-            foreach ($signature as $type) {
-                self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
+        self::assertSame(['functions', 'methods'], array_keys($callMap));
+        foreach (self::iterateCallMap($callMap) as $function => $signatures) {
+            self::assertTrue(array_is_list($signatures), "Function " . $function . " in returned CallMap has invalid signatures");
+            self::assertNotEmpty($signatures, "Function " . $function . " in returned CallMap has no signatures");
+            foreach ($signatures as $signature) {
+                self::assertIsString($signature[0], "Function " . $function . " in returned CallMap has an invalid return type");
+                self::assertStringIsParsableType($signature[0], "Function " . $function . " in returned CallMap contains invalid type declaration " . $signature[0]);
+                for ($i = 1, $count = count($signature); $i < $count; $i++) {
+                    [$name, $type, $flags] = $signature[$i];
+                    self::assertIsInt($name, "Function " . $function . " in returned CallMap has an invalid param name");
+                    self::assertIsInt($flags, "Function " . $function . " in returned CallMap has invalid param flags");
+                    self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param array{functions: array<int, list<list<mixed>>>, methods: array<int, array<int, list<list<mixed>>>>} $callMap
+     * @return iterable<string, list<list<mixed>>> function or method name => signatures
+     */
+    private static function iterateCallMap(array $callMap): iterable
+    {
+        foreach ($callMap['functions'] as $function => $signatures) {
+            yield Interner::str($function) => $signatures;
+        }
+        foreach ($callMap['methods'] as $class => $methods) {
+            foreach ($methods as $method => $signatures) {
+                yield Interner::str($class) . '::' . Interner::str($method) => $signatures;
             }
         }
     }
@@ -288,7 +310,7 @@ final class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{string, array<int|string, string>}>
+     * @return iterable<string, array{string, list<mixed>}>
      */
     public function callMapEntryProvider(): iterable
     {
@@ -303,7 +325,7 @@ final class InternalCallMapHandlerTest extends TestCase
             ),
         );
         $callMap = InternalCallMapHandler::getCallMap();
-        foreach ($callMap as $function => $entry) {
+        foreach (self::iterateCallMap($callMap) as $function => $signatures) {
             foreach (static::$skippedPatterns as $skipPattern) {
                 if (preg_match($skipPattern, $function)) {
                     continue 2;
@@ -311,9 +333,10 @@ final class InternalCallMapHandlerTest extends TestCase
             }
 
             // Skip functions with alternate signatures
-            if (isset($callMap["$function'1"])) {
+            if (count($signatures) > 1) {
                 continue;
             }
+            $entry = $signatures[0];
 
             $classNameEnd = strpos($function, '::');
             if ($classNameEnd !== false) {
@@ -389,7 +412,7 @@ final class InternalCallMapHandlerTest extends TestCase
      * @dataProvider callMapEntryProvider
      * @coversNothing
      * @psalm-param string $functionName
-     * @param array<int|string, string> $callMapEntry
+     * @param list<mixed> $callMapEntry a signature: [return type, ...[param name id, type, flags]]
      */
     public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
     {
@@ -414,7 +437,7 @@ final class InternalCallMapHandlerTest extends TestCase
 
         if ($functionIgnored) {
             try {
-                /** @var array<string, string> $callMapEntry */
+                /** @var list<array{int, string, int}> $callMapEntry */
                 $this->assertEntryParameters($function, $callMapEntry);
                 $this->assertEntryReturnType($function, $entryReturnType);
             } catch (AssertionFailedError $e) {
@@ -447,7 +470,7 @@ final class InternalCallMapHandlerTest extends TestCase
      * @depends testIgnoresAreSortedAndUnique
      * @dataProvider callMapEntryProvider
      * @psalm-param string $functionName
-     * @param array<int|string, string> $callMapEntry
+     * @param list<mixed> $callMapEntry a signature: [return type, ...[param name id, type, flags]]
      */
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
     {
@@ -466,7 +489,7 @@ final class InternalCallMapHandlerTest extends TestCase
         /** @var string $entryReturnType */
         $entryReturnType = array_shift($callMapEntry);
 
-        /** @var array<string, string> $callMapEntry */
+        /** @var list<array{int, string, int}> $callMapEntry */
         $this->assertEntryParameters($function, $callMapEntry);
 
         if (!$this->isReturnTypeOnlyIgnored($functionName)) {
@@ -496,68 +519,29 @@ final class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $entryParameters
+     * @param list<array{int, string, int}> $entryParameters [param name id, type, InternalCallMapHandler::PARAM_* flags]
      */
     private function assertEntryParameters(ReflectionFunctionAbstract $function, array $entryParameters): void
     {
         /**
-         * Parse the parameter names from the map.
+         * Parse the parameters from the map.
          *
          * @var array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
          */
         $normalizedEntries = [];
 
-        foreach ($entryParameters as $key => $entry) {
-            $normalizedKey = $key;
-            /**
-             * @var array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
-             */
-            $normalizedEntry = [
-                'variadic' => false,
-                'byRef' => false,
-                'optional' => false,
-                'type' => $entry,
+        foreach ($entryParameters as [$name, $type, $flags]) {
+            $name = Interner::str($name);
+            $normalizedEntries[$name] = [
+                'variadic' => ($flags & InternalCallMapHandler::PARAM_VARIADIC) !== 0,
+                'byRef' => ($flags & InternalCallMapHandler::PARAM_BY_REF) !== 0,
+                'refMode' => ($flags & InternalCallMapHandler::PARAM_REF_WRITE) !== 0
+                    ? 'w'
+                    : (($flags & InternalCallMapHandler::PARAM_REF_READ) !== 0 ? 'r' : 'rw'),
+                'optional' => ($flags & InternalCallMapHandler::PARAM_OPTIONAL) !== 0,
+                'type' => $type,
+                'name' => $name,
             ];
-
-            do {
-                if (strncmp($normalizedKey, '...', 3) === 0) {
-                    $normalizedEntry['variadic'] = true;
-                    $normalizedKey = substr($normalizedKey, 3);
-                    continue;
-                }
-
-                if (strncmp($normalizedKey, '&', 1) === 0) {
-                    $normalizedEntry['byRef'] = true;
-                    $normalizedKey = substr($normalizedKey, 1);
-                    continue;
-                }
-                break;
-            } while (true);
-
-            // Read the reference mode
-            if ($normalizedEntry['byRef']) {
-                $parts = explode(' ', $normalizedKey, 2);
-                if (count($parts) === 2) {
-                    if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
-                        throw new InvalidArgumentException('Invalid refMode: '.$parts[0]);
-                    }
-                    $normalizedEntry['refMode'] = $parts[0];
-                    $normalizedKey = $parts[1];
-                } else {
-                    $normalizedEntry['refMode'] = 'rw';
-                }
-            }
-
-            // Strip prefixes.
-            if (substr($normalizedKey, -1, 1) === "=") {
-                $normalizedEntry['optional'] = true;
-                $normalizedKey = substr($normalizedKey, 0, -1);
-            }
-
-            //$this->assertTrue($this->hasParameter($function, $normalizedKey), "Calmap has extra param entry {$normalizedKey}");
-
-            $normalizedEntry['name'] = $normalizedKey;
-            $normalizedEntries[$normalizedKey] = $normalizedEntry;
         }
 
         foreach ($function->getParameters() as $parameter) {

@@ -26,7 +26,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
-use Psalm\Interner;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -882,7 +881,7 @@ final class ArrayFetchAnalyzer
                             && !$atomic_key_type instanceof TTemplateParam
                             && !(
                                 $atomic_key_type instanceof TObjectWithProperties
-                                && isset($atomic_key_type->methods[StrId::__tostring])
+                                && isset($atomic_key_type->methods[StrId::__toString])
                             )
                         ) {
                             $bad_types[] = $atomic_key_type;
@@ -1834,12 +1833,12 @@ final class ArrayFetchAnalyzer
         bool &$has_array_access,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
-        if (Interner::lower($type->value) === StrId::simplexmlelement
+        if ($type->value === StrId::SimpleXMLElement
             || ($codebase->classExists($type->value, null, $context)
                 && $codebase->classExtendsOrImplements($type->value, StrId::SimpleXMLElement))
         ) {
             $call_array_access_type = new Union([new TNull(), new TNamedObject(StrId::SimpleXMLElement)]);
-        } elseif (Interner::lower($type->value) === StrId::domnodelist && $stmt->dim) {
+        } elseif ($type->value === StrId::DOMNodeList && $stmt->dim) {
             $old_data_provider = $statements_analyzer->node_data;
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;

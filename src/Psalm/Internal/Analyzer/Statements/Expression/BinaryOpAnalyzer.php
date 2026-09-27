@@ -477,7 +477,7 @@ final class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                StrId::__tostring,
+                                StrId::__toString,
                             ),
                         );
                     } catch (UnexpectedValueException) {
@@ -509,7 +509,7 @@ final class BinaryOpAnalyzer
                         $storage = $codebase->methods->getStorage(
                             new MethodIdentifier(
                                 $atomic_type->value,
-                                StrId::__tostring,
+                                StrId::__toString,
                             ),
                         );
                     } catch (UnexpectedValueException) {

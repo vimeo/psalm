@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
-use Psalm\Interner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
@@ -41,7 +40,7 @@ final class AssertionsFromInheritanceResolver
             return $assertions;
         }
 
-        $method_name_lc = Interner::lower($method_storage->cased_name);
+        $method_name = $method_storage->cased_name;
 
         $inherited_classes_and_interfaces = array_values(array_filter([
             ...array_values($called_class->parent_classes),
@@ -52,12 +51,12 @@ final class AssertionsFromInheritanceResolver
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(
                 $potential_assertion_providing_class,
             );
-            if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name_lc])) {
+            if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name])) {
                 continue;
             }
 
             $potential_assertion_providing_method_storage = $potential_assertion_providing_classlike_storage
-                ->methods[$method_name_lc];
+                ->methods[$method_name];
 
             /**
              * Since the inheritance does not provide its own assertions, we have to detect those

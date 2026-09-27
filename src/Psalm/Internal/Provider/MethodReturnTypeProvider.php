@@ -13,7 +13,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -65,7 +64,7 @@ final class MethodReturnTypeProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -73,7 +72,7 @@ final class MethodReturnTypeProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     /**
@@ -90,17 +89,17 @@ final class MethodReturnTypeProvider
         ?int $called_fq_classlike_name = null,
         ?int $called_method_name = null,
     ): ?Union {
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $class_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $class_handler) {
             $event = new MethodReturnTypeProviderEvent(
                 $statements_source,
                 $fq_classlike_name,
-                Interner::lower($method_name),
+                $method_name,
                 $stmt,
                 $context,
                 $code_location,
                 $template_type_parameters,
                 $called_fq_classlike_name,
-                $called_method_name !== null ? Interner::lower($called_method_name) : null,
+                $called_method_name ?? null,
             );
             $result = $class_handler($event);
 

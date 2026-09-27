@@ -14,7 +14,6 @@ use function assert;
 use function dirname;
 use function in_array;
 use function scandir;
-use function strtolower;
 use function substr;
 
 use const SCANDIR_SORT_NONE;
@@ -103,7 +102,7 @@ final class IssueHandler
     public function getReportingLevelForMethod(string $method_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
-            if ($custom_level->allowsMethod(strtolower($method_id))) {
+            if ($custom_level->allowsMethod($method_id)) {
                 $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
@@ -118,7 +117,7 @@ final class IssueHandler
     public function getReportingLevelForFunction(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
-            if ($custom_level->allowsMethod(strtolower($function_id))) {
+            if ($custom_level->allowsMethod($function_id)) {
                 return $custom_level->getErrorLevel();
             }
         }
@@ -129,7 +128,7 @@ final class IssueHandler
     public function getReportingLevelForArgument(string $function_id): ?string
     {
         foreach ($this->custom_levels as $custom_level) {
-            if ($custom_level->allowsMethod(strtolower($function_id))) {
+            if ($custom_level->allowsMethod($function_id)) {
                 $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }

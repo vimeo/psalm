@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\PropertyExistenceProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyExistenceProviderInterface;
 use Psalm\StatementsSource;
@@ -56,7 +55,7 @@ final class PropertyExistenceProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -64,7 +63,7 @@ final class PropertyExistenceProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function doesPropertyExist(
@@ -75,7 +74,7 @@ final class PropertyExistenceProvider
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): ?bool {
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $property_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $property_handler) {
             $event = new PropertyExistenceProviderEvent(
                 $fq_classlike_name,
                 $property_name,

@@ -21,12 +21,12 @@ interface StatementsSource extends FileSource
     public function getNamespace(): ?int;
 
     /**
-     * @return array<int, int> lowercase class name id => alias name id
+     * @return array<int, int> class name id => alias name id
      */
     public function getAliasedClassesFlipped(): array;
 
     /**
-     * @return array<int, int> lowercase class name id => alias name id
+     * @return array<int, int> class name id => alias name id
      */
     public function getAliasedClassesFlippedReplaceable(): array;
 

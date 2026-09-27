@@ -54,7 +54,7 @@ final class PropertyStorage implements HasAttributesInterface
      */
     public array $internal = [];
 
-    /** Interned lowercase getter method name */
+    /** Interned getter method name (as declared) */
     public ?int $getter_method = null;
 
     public bool $is_promoted = false;

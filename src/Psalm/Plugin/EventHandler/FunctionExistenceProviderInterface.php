@@ -12,7 +12,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionExistenceProviderEvent;
 interface FunctionExistenceProviderInterface
 {
     /**
-     * @return array<int> interned function ids (casing is irrelevant, they are lowercased on registration)
+     * @return array<int> interned function ids, with their exact declared casing (names are case-sensitive)
      */
     public static function getFunctionIds(): array;
 

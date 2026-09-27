@@ -20,6 +20,10 @@ use function is_string;
 final class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
+    /** function id as declared */
+    private readonly int $function_id;
+
     /**
      * @psalm-mutation-free
      */
@@ -31,7 +35,7 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
 
         $file_storage = $file_storage_provider->get($source->getFilePath());
 
-        $function_id = self::buildFunctionId($source->getNamespace(), $function->name->name);
+        $function_id = $this->function_id = self::buildFunctionId($source->getNamespace(), $function->name->name);
 
         if (!isset($file_storage->functions[$function_id])) {
             throw new UnexpectedValueException(
@@ -45,23 +49,22 @@ final class FunctionAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * @return int lowercase function id
+     * @return int function id as declared
      * @psalm-pure
      */
     private static function buildFunctionId(?int $namespace, string $function_name): int
     {
         $namespace_str = $namespace !== null ? Interner::str($namespace) : '';
-        return Interner::internLower(($namespace_str !== '' ? $namespace_str . '\\' : '') . $function_name);
+        return Interner::intern(($namespace_str !== '' ? $namespace_str . '\\' : '') . $function_name);
     }
 
     /**
-     * @return int lowercase function id
-     * @throws UnexpectedValueException if function is closure or arrow function.
+     * @return int function id as declared
      * @psalm-mutation-free
      */
     public function getFunctionId(): int
     {
-        return self::buildFunctionId($this->source->getNamespace(), $this->function->name->name);
+        return $this->function_id;
     }
 
     public static function analyzeStatement(

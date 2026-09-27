@@ -6,7 +6,6 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Internal\Codebase\Scanner;
-use Psalm\Interner;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -20,7 +19,7 @@ use Psalm\Type\TypeVisitor;
 final class TypeScanner extends TypeVisitor
 {
     /**
-     * @param array<int, mixed> $phantom_classes class name id (cased or lowercase) => mixed
+     * @param array<int, mixed> $phantom_classes class name id => mixed
      * @psalm-mutation-free
      */
     public function __construct(
@@ -34,11 +33,7 @@ final class TypeScanner extends TypeVisitor
     protected function enterNode(TypeNode $type): ?int
     {
         if ($type instanceof TNamedObject) {
-            $fq_classlike_name_lc = Interner::lower($type->value);
-
-            if (!isset($this->phantom_classes[$type->value])
-                && !isset($this->phantom_classes[$fq_classlike_name_lc])
-            ) {
+            if (!isset($this->phantom_classes[$type->value])) {
                 $this->scanner->queueClassLikeForScanning(
                     $type->value,
                     false,
@@ -47,7 +42,7 @@ final class TypeScanner extends TypeVisitor
                 );
 
                 if ($this->file_storage) {
-                    $this->file_storage->referenced_classlikes[$fq_classlike_name_lc] = $type->value;
+                    $this->file_storage->referenced_classlikes[$type->value] = $type->value;
                 }
             }
         }
@@ -61,9 +56,7 @@ final class TypeScanner extends TypeVisitor
             );
 
             if ($this->file_storage) {
-                $fq_classlike_name_lc = Interner::lower($type->fq_classlike_name);
-
-                $this->file_storage->referenced_classlikes[$fq_classlike_name_lc] = $type->fq_classlike_name;
+                $this->file_storage->referenced_classlikes[$type->fq_classlike_name] = $type->fq_classlike_name;
             }
         }
 
@@ -76,9 +69,7 @@ final class TypeScanner extends TypeVisitor
             );
 
             if ($this->file_storage) {
-                $fq_classlike_name_lc = Interner::lower($type->class_name);
-
-                $this->file_storage->referenced_classlikes[$fq_classlike_name_lc] = $type->class_name;
+                $this->file_storage->referenced_classlikes[$type->class_name] = $type->class_name;
             }
         }
 

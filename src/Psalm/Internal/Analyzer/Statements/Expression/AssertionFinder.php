@@ -842,7 +842,7 @@ final class AssertionFinder
                 $if_types[$first_var_name] = [[new IsType(new TCallableString())]];
             }
         } elseif ($expr->name instanceof PhpParser\Node\Name
-            && strtolower($expr->name->getFirst()) === 'method_exists'
+            && $expr->name->getFirst() === 'method_exists'
             && isset($expr->getArgs()[1])
             && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
         ) {
@@ -1248,7 +1248,7 @@ final class AssertionFinder
         FileSource $source,
     ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
+            if (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
                     $source->getAliases(),
@@ -1263,7 +1263,7 @@ final class AssertionFinder
             }
 
             if ($this_class_name !== null
-                && (in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true))) {
+                && (in_array($stmt->class->getFirst(), ['self', 'static'], true))) {
                 $is_static = $stmt->class->getFirst() === 'static';
                 $named_object = new TNamedObject($this_class_name, $is_static);
 
@@ -1412,7 +1412,7 @@ final class AssertionFinder
     ): bool|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'gettype'
+            && $conditional->right->name->getFirst() === 'gettype'
             && $conditional->right->getArgs()
             && $conditional->left instanceof PhpParser\Node\Scalar\String_
         ) {
@@ -1421,7 +1421,7 @@ final class AssertionFinder
 
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'gettype'
+            && $conditional->left->name->getFirst() === 'gettype'
             && $conditional->left->getArgs()
             && $conditional->right instanceof PhpParser\Node\Scalar\String_
         ) {
@@ -1440,7 +1440,7 @@ final class AssertionFinder
     ): bool|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_debug_type'
+            && $conditional->right->name->getFirst() === 'get_debug_type'
             && $conditional->right->getArgs()
             && ($conditional->left instanceof PhpParser\Node\Scalar\String_
                 || $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch)
@@ -1450,7 +1450,7 @@ final class AssertionFinder
 
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_debug_type'
+            && $conditional->left->name->getFirst() === 'get_debug_type'
             && $conditional->left->getArgs()
             && ($conditional->right instanceof PhpParser\Node\Scalar\String_
                 || $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch)
@@ -1475,28 +1475,28 @@ final class AssertionFinder
 
         $right_get_class = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_class';
+            && $conditional->right->name->getFirst() === 'get_class';
 
         $right_static_class = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->right->class instanceof PhpParser\Node\Name
             && $conditional->right->class->getParts() === ['static']
             && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
+            && $conditional->right->name->name === 'class';
 
         $right_variable_class_const = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
             && !$conditional->right->class instanceof PhpParser\Node\Name
             && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
+            && $conditional->right->name->name === 'class';
 
         $left_class_string = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->left->class instanceof PhpParser\Node\Name
             && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
+            && $conditional->left->name->name === 'class';
 
         $left_variable_class_const = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
             && !$conditional->left->class instanceof PhpParser\Node\Name
             && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
+            && $conditional->left->name->name === 'class';
 
         $left_class_string_t = false;
 
@@ -1521,18 +1521,18 @@ final class AssertionFinder
 
         $left_get_class = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_class';
+            && $conditional->left->name->getFirst() === 'get_class';
 
         $left_static_class = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->left->class instanceof PhpParser\Node\Name
             && $conditional->left->class->getParts() === ['static']
             && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
+            && $conditional->left->name->name === 'class';
 
         $right_class_string = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->right->class instanceof PhpParser\Node\Name
             && $conditional->right->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->right->name->name) === 'class';
+            && $conditional->right->name->name === 'class';
 
         $right_class_string_t = false;
 
@@ -1568,7 +1568,7 @@ final class AssertionFinder
     ): bool|int {
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->left->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->left->getArgs()
             && ($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
         ) {
@@ -1577,7 +1577,7 @@ final class AssertionFinder
             $comparison_adjustment = $conditional instanceof BinaryOp\Greater ? 1 : 0;
         } elseif ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->right->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->right->getArgs()
             && ($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
         ) {
@@ -1610,7 +1610,7 @@ final class AssertionFinder
     ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->left->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->left->getArgs();
 
         $operator_less_than_or_equal =
@@ -1629,7 +1629,7 @@ final class AssertionFinder
 
         $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->right->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->right->getArgs();
 
         $operator_greater_than_or_equal =
@@ -1659,7 +1659,7 @@ final class AssertionFinder
     ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->left->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->left->getArgs();
 
         if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
@@ -1670,7 +1670,7 @@ final class AssertionFinder
 
         $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
+            && in_array($conditional->right->name->getFirst(), ['count', 'sizeof'], true)
             && $conditional->right->getArgs();
 
         if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
@@ -1811,7 +1811,7 @@ final class AssertionFinder
     ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof']);
+            && in_array($conditional->left->name->getFirst(), ['count', 'sizeof'], true);
 
         $right_number = $conditional->right instanceof PhpParser\Node\Scalar\Int_
             && $conditional->right->value === (
@@ -1867,8 +1867,8 @@ final class AssertionFinder
         StatementsAnalyzer $source,
     ): bool {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && (strtolower($stmt->name->getFirst()) === 'is_a'
-                || strtolower($stmt->name->getFirst()) === 'is_subclass_of')
+            && ($stmt->name->getFirst() === 'is_a'
+                || $stmt->name->getFirst() === 'is_subclass_of')
             && isset($stmt->getArgs()[1])
         ) {
             $second_arg = $stmt->getArgs()[1]->value;
@@ -1878,7 +1878,7 @@ final class AssertionFinder
                     $second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $second_arg->class instanceof PhpParser\Node\Name
                     && $second_arg->name instanceof PhpParser\Node\Identifier
-                    && strtolower($second_arg->name->name) === 'class'
+                    && $second_arg->name->name === 'class'
                 )
                 || (($second_arg_type = $source->node_data->getType($second_arg))
                     && $second_arg_type->hasString())
@@ -1929,7 +1929,7 @@ final class AssertionFinder
     ): array {
         $if_types = [];
         if ($stmt->name instanceof PhpParser\Node\Name
-            && ($function_name = strtolower($stmt->name->getFirst()))
+            && ($function_name = $stmt->name->getFirst())
             && ($assertion_type = self::getIsAssertion($function_name))
             && $source instanceof StatementsAnalyzer
             && (($namespace = $source->getNamespace()) === null //either the namespace is null
@@ -1937,7 +1937,7 @@ final class AssertionFinder
                 || isset($source->getAliases()->functions[Interner::intern($function_name)]) //or it is imported
                 || ($codebase && !$codebase->functions->functionExists(
                     $source,
-                    Interner::internLower(Interner::str($namespace) . "\\" . $function_name),
+                    Interner::intern(Interner::str($namespace) . "\\" . $function_name),
                 )) //or this function name does not exist in current namespace
             )
         ) {
@@ -1963,7 +1963,7 @@ final class AssertionFinder
 
     private static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_callable';
+        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->getFirst() === 'is_callable';
     }
 
     /**
@@ -1972,7 +1972,7 @@ final class AssertionFinder
     private static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'class_exists'
+            && $stmt->name->getFirst() === 'class_exists'
         ) {
             if (!isset($stmt->getArgs()[1])) {
                 return 2;
@@ -1998,7 +1998,7 @@ final class AssertionFinder
     private static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'trait_exists'
+            && $stmt->name->getFirst() === 'trait_exists'
         ) {
             if (!isset($stmt->getArgs()[1])) {
                 return 2;
@@ -2020,23 +2020,23 @@ final class AssertionFinder
 
     private static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'enum_exists';
+        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->getFirst() === 'enum_exists';
     }
 
     private static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'interface_exists';
+        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->getFirst() === 'interface_exists';
     }
 
     private static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'function_exists';
+        return $stmt->name instanceof PhpParser\Node\Name && $stmt->name->getFirst() === 'function_exists';
     }
 
     private static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'in_array'
+            && $stmt->name->getFirst() === 'in_array'
             && isset($stmt->getArgs()[2])
         ) {
             $second_arg = $stmt->getArgs()[2]->value;
@@ -2054,14 +2054,14 @@ final class AssertionFinder
     private static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name &&
-            in_array(strtolower($stmt->name->getFirst()), ['count', 'sizeof']);
+            in_array($stmt->name->getFirst(), ['count', 'sizeof'], true);
     }
 
     private static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name
-            && (strtolower($stmt->name->getFirst()) === 'array_key_exists'
-                || strtolower($stmt->name->getFirst()) === 'key_exists');
+            && ($stmt->name->getFirst() === 'array_key_exists'
+                || $stmt->name->getFirst() === 'key_exists');
     }
 
     /**
@@ -3558,10 +3558,10 @@ final class AssertionFinder
 
         if ($expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
             && $expr->getArgs()[0]->value->name instanceof PhpParser\Node\Identifier
-            && strtolower($expr->getArgs()[0]->value->name->name) === 'class'
+            && $expr->getArgs()[0]->value->name->name === 'class'
             && $expr->getArgs()[0]->value->class instanceof PhpParser\Node\Name
             && count($expr->getArgs()[0]->value->class->getParts()) === 1
-            && strtolower($expr->getArgs()[0]->value->class->getFirst()) === 'static'
+            && $expr->getArgs()[0]->value->class->getFirst() === 'static'
         ) {
             $first_var_name = '$this';
         }
@@ -3579,7 +3579,7 @@ final class AssertionFinder
                 $third_arg_value = strtolower($third_arg->name->getFirst());
             } else {
                 $third_arg_value = $expr->name instanceof PhpParser\Node\Name
-                && strtolower($expr->name->getFirst()) === 'is_subclass_of'
+                && $expr->name->getFirst() === 'is_subclass_of'
                     ? 'true'
                     : 'false';
             }
@@ -3603,7 +3603,7 @@ final class AssertionFinder
                 } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $second_arg->class instanceof PhpParser\Node\Name
                     && $second_arg->name instanceof PhpParser\Node\Identifier
-                    && strtolower($second_arg->name->name) === 'class'
+                    && $second_arg->name->name === 'class'
                 ) {
                     $class_node = $second_arg->class;
 

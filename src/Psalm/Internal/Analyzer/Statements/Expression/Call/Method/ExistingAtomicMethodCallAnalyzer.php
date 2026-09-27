@@ -53,7 +53,6 @@ use function array_map;
 use function count;
 use function is_string;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -289,9 +288,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             return $return_type_candidate;
         }
 
-        $in_call_map = InternalCallMapHandler::inCallMap(
-            Interner::internLower((string) ($declaring_method_id ?? $method_id)),
-        );
+        $in_call_map = InternalCallMapHandler::inCallMap($declaring_method_id ?? $method_id);
 
         if (!$in_call_map) {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
@@ -495,7 +492,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             $new_method_name = $declaring_method_id
                 ? $codebase->methods_to_rename
-                    [Interner::lower($declaring_method_id->fq_class_name)]
+                    [$declaring_method_id->fq_class_name]
                     [$declaring_method_id->method_name] ?? null
                 : null;
 
@@ -560,7 +557,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         Context $context,
         int $fq_class_name,
     ): ?Union {
-        $method_name = strtolower($stmt_name->name);
+        $method_name = $stmt_name->name;
         if ($method_name !== '__get' && $method_name !== '__set') {
             return null;
         }

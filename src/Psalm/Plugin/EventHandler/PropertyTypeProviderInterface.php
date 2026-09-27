@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 interface PropertyTypeProviderInterface
 {
     /**
-     * @return array<int> interned class names (casing is irrelevant, they are lowercased on registration)
+     * @return array<int> interned class names, with their exact declared casing (names are case-sensitive)
      */
     public static function getClassLikeNames(): array;
 

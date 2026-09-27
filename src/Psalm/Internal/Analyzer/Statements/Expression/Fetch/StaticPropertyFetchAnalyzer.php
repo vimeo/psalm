@@ -35,7 +35,6 @@ use Psalm\Type\Union;
 use function count;
 use function explode;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -55,7 +54,7 @@ final class StaticPropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (count($stmt->class->getParts()) === 1
-            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
         ) {
             if ($stmt->class->getFirst() === 'parent') {
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
@@ -115,11 +114,11 @@ final class StaticPropertyFetchAnalyzer
             && $codebase->methods_to_move
             && $context->calling_method_id !== null
             && isset($codebase->methods_to_move
-                [Interner::lower($context->calling_method_id->fq_class_name)]
+                [$context->calling_method_id->fq_class_name]
                 [$context->calling_method_id->method_name])
         ) {
             [$destination_class] = $codebase->methods_to_move
-                [Interner::lower($context->calling_method_id->fq_class_name)]
+                [$context->calling_method_id->fq_class_name]
                 [$context->calling_method_id->method_name];
 
             $codebase->classlikes->airliftClassLikeReference(
@@ -166,9 +165,9 @@ final class StaticPropertyFetchAnalyzer
         if ($prop_name === null) {
             if ($fq_class_name !== null) {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower(Interner::str($fq_class_name)) . '::$',
+                    Interner::str($fq_class_name) . '::$',
                     $context->calling_method_id !== null
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -337,7 +336,7 @@ final class StaticPropertyFetchAnalyzer
             return false;
         }
 
-        $declaring_property_id = strtolower(Interner::str($declaring_property_class))
+        $declaring_property_id = Interner::str($declaring_property_class)
             . '::$' . Interner::str($prop_name);
 
         if ($codebase->alter_code) {
@@ -357,7 +356,7 @@ final class StaticPropertyFetchAnalyzer
 
                         $file_manipulations = [];
 
-                        if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
+                        if ($new_fq_class_name !== $old_declaring_fq_class_name) {
                             $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->class->getAttribute('startFilePos'),
                                 (int) $stmt->class->getAttribute('endFilePos') + 1,

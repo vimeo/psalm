@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\PropertyVisibilityProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
@@ -51,7 +50,7 @@ final class PropertyVisibilityProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -59,7 +58,7 @@ final class PropertyVisibilityProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function isPropertyVisible(
@@ -70,7 +69,7 @@ final class PropertyVisibilityProvider
         Context $context,
         CodeLocation $code_location,
     ): ?bool {
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $property_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $property_handler) {
             $event = new PropertyVisibilityProviderEvent(
                 $source,
                 $fq_classlike_name,

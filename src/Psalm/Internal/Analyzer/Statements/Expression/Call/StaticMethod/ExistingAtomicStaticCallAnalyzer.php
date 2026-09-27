@@ -51,7 +51,6 @@ use function ltrim;
 use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -129,7 +128,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         }
                     }
 
-                    $appearing_class_lc = Interner::lower($appearing_method_id->fq_class_name);
+                    $appearing_class_lc = $appearing_method_id->fq_class_name;
                     $appearing_method_name = $appearing_method_id->method_name;
                     if (!isset($context->initialized_methods[$appearing_class_lc][$appearing_method_name])) {
                         $context->initialized_methods[$appearing_class_lc][$appearing_method_name] = true;
@@ -367,7 +366,7 @@ final class ExistingAtomicStaticCallAnalyzer
         if ($codebase->alter_code) {
             foreach ($codebase->call_transforms as $original_pattern => $transformation) {
                 if ($declaring_method_id
-                    && strtolower((string) $declaring_method_id) . '\((.*\))' === $original_pattern
+                    && (string) $declaring_method_id . '\((.*\))' === $original_pattern
                 ) {
                     if (strpos($transformation, '($1)') === strlen($transformation) - 4
                         && $stmt->class instanceof PhpParser\Node\Name
@@ -383,7 +382,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $stmt->class,
                             $new_fq_class_name,
                             $context,
-                            !Interner::equalsLower($old_declaring_fq_class_name, $new_fq_class_name),
+                            $old_declaring_fq_class_name !== $new_fq_class_name,
                             $stmt->class->getFirst() === 'self',
                         )) {
                             $moved_call = true;
@@ -534,7 +533,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             } elseif ($stmt->class instanceof PhpParser\Node\Name
                 && count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
                 && $lhs_type_part instanceof TNamedObject
                 && $context->self
             ) {

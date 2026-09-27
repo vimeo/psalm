@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use function array_merge;
 use function array_shift;
 use function rtrim;
-use function strtolower;
 
 /**
  * @internal
@@ -159,7 +158,7 @@ final class InstancePropertyFetchAnalyzer
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
                     $context->calling_method_id !== null
-                        ? strtolower((string) $context->calling_method_id)
+                        ? (string) $context->calling_method_id
                         : $statements_analyzer->getFileName(),
                 );
             }
@@ -220,9 +219,9 @@ final class InstancePropertyFetchAnalyzer
                 foreach ($stmt_var_type->getAtomicTypes() as $type) {
                     if ($type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
-                            strtolower(Interner::str($type->value)) . '::$',
+                            Interner::str($type->value) . '::$',
                             $context->calling_method_id !== null
-                            ? strtolower((string) $context->calling_method_id)
+                            ? (string) $context->calling_method_id
                             : $statements_analyzer->getFileName(),
                         );
                     }

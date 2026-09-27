@@ -51,7 +51,7 @@ final class DynamicFunctionStorageProvider
      */
     public function registerClosure(int $fq_function_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_function_name)][] = $c;
+        self::$handlers[$fq_function_name][] = $c;
     }
 
     /**
@@ -59,7 +59,7 @@ final class DynamicFunctionStorageProvider
      */
     public function has(int $fq_function_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_function_name)]);
+        return isset(self::$handlers[$fq_function_name]);
     }
 
     public function getFunctionStorage(
@@ -77,16 +77,16 @@ final class DynamicFunctionStorageProvider
             . ':' . $stmt->getLine()
             . ':' . (int)$stmt->getAttribute('startFilePos')
             . ':dynamic-storage'
-            . ':-:' . Interner::str(Interner::lower($function_id));
+            . ':-:' . Interner::str($function_id);
 
         if (isset(self::$dynamic_storages[$dynamic_storage_id])) {
             return self::$dynamic_storages[$dynamic_storage_id];
         }
 
-        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $class_handler) {
+        foreach (self::$handlers[$function_id] ?? [] as $class_handler) {
             $event = new DynamicFunctionStorageProviderEvent(
                 new ArgTypeInferer($context, $statements_analyzer),
-                new DynamicTemplateProvider(Interner::intern('fn-' . Interner::str(Interner::lower($function_id)))),
+                new DynamicTemplateProvider(Interner::intern('fn-' . Interner::str($function_id))),
                 $statements_analyzer,
                 $function_id,
                 $stmt,

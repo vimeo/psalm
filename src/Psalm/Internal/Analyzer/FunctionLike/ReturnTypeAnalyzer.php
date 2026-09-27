@@ -61,7 +61,6 @@ use function count;
 use function implode;
 use function in_array;
 use function str_starts_with;
-use function strtolower;
 
 /**
  * @internal
@@ -124,7 +123,7 @@ final class ReturnTypeAnalyzer
             return null;
         }
 
-        $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
+        $is_to_string = $function instanceof ClassMethod && $function->name->name === '__toString';
 
         if ($function instanceof ClassMethod
             && str_starts_with($function->name->name, '__')
@@ -936,7 +935,7 @@ final class ReturnTypeAnalyzer
                 $codebase,
                 $classlike_storage,
                 $codebase->classlike_storage_provider->get($context->self),
-                Interner::internLower($function->name->name),
+                Interner::intern($function->name->name),
                 new TNamedObject($context->self),
                 true,
             );

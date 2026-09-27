@@ -168,7 +168,7 @@ final class CodeUseGraph
 
     /**
      * Cached index of the nodes referencing any member of a class
-     * (lowercase class name id => node ids), rebuilt on demand.
+     * (class name id => node ids), rebuilt on demand.
      *
      * @var array<int, array<string, true>>|null
      */
@@ -191,66 +191,91 @@ final class CodeUseGraph
     }
 
     // Node ids
+    //
+    // Node ids are built at every reference, so they're memoized per interned id: the common case is a single
+    // array lookup, without any string building.
+
+    /** @var array<int, string> class name id => class node id */
+    private static array $class_nodes = [];
+
+    /** @var array<int, array<int, string>> class name id => method name id => method key */
+    private static array $method_keys = [];
+
+    /** @var array<int, array<int, string>> class name id => method name id => function-like node id */
+    private static array $method_nodes = [];
+
+    /** @var array<int, string> function id => function-like node id */
+    private static array $function_nodes = [];
 
     /**
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty memoization only
      */
     public static function classNode(int $fq_class_name): string
     {
-        return self::KIND_CLASS . ' ' . Interner::str(Interner::lower($fq_class_name));
+        return self::$class_nodes[$fq_class_name] ??= self::KIND_CLASS . ' ' . Interner::$strings[$fq_class_name];
     }
 
     /**
-     * @param int|MethodIdentifier $function_id a method id, or a lowercase function (or closure) id
+     * @param int|MethodIdentifier $function_id a method id, or a function (or closure) id
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty memoization only
      */
     public static function functionLikeNode(int|MethodIdentifier $function_id): string
     {
-        return self::KIND_FUNCTION_LIKE . ' ' . self::getFunctionLikeKey($function_id);
+        if ($function_id instanceof MethodIdentifier) {
+            return self::$method_nodes[$function_id->fq_class_name][$function_id->method_name]
+                ??= self::KIND_FUNCTION_LIKE . ' ' . self::getMethodKey($function_id);
+        }
+
+        return self::$function_nodes[$function_id]
+            ??= self::KIND_FUNCTION_LIKE . ' ' . Interner::$strings[$function_id];
     }
 
     /**
-     * @param int|MethodIdentifier $function_id a method id, or a lowercase function (or closure) id
+     * @param int|MethodIdentifier $function_id a method id, or a function (or closure) id
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty reading the interner table is semantically pure
      */
     public static function functionLikeReturnNode(int|MethodIdentifier $function_id): string
     {
-        return self::KIND_RETURN . ' ' . self::getFunctionLikeKey($function_id);
+        return self::KIND_RETURN . ' ' . ($function_id instanceof MethodIdentifier
+            ? self::getMethodKey($function_id)
+            : Interner::$strings[$function_id]);
     }
 
     /**
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty memoization only
      */
-    private static function getFunctionLikeKey(int|MethodIdentifier $function_id): string
+    private static function getMethodKey(MethodIdentifier $method_id): string
     {
-        if ($function_id instanceof MethodIdentifier) {
-            return Interner::str(Interner::lower($function_id->fq_class_name))
-                . '::' . Interner::str(Interner::lower($function_id->method_name));
-        }
-
-        return Interner::str(Interner::lower($function_id));
+        return self::$method_keys[$method_id->fq_class_name][$method_id->method_name]
+            ??= Interner::$strings[$method_id->fq_class_name] . '::' . Interner::$strings[$method_id->method_name];
     }
 
     /**
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @param int $property_name the property name, without the leading `$`
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty reading the interner table is semantically pure
      */
     public static function propertyNode(int $fq_class_name, int $property_name): string
     {
-        return self::KIND_PROPERTY . ' ' . Interner::str(Interner::lower($fq_class_name))
-            . '::$' . Interner::str($property_name);
+        return self::KIND_PROPERTY . ' ' . Interner::$strings[$fq_class_name]
+            . '::$' . Interner::$strings[$property_name];
     }
 
     /**
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty reading the interner table is semantically pure
      */
     public static function classConstantNode(int $fq_class_name, int $const_name): string
     {
-        return self::KIND_CONSTANT . ' ' . Interner::str(Interner::lower($fq_class_name))
-            . '::' . Interner::str($const_name);
+        return self::KIND_CONSTANT . ' ' . Interner::$strings[$fq_class_name]
+            . '::' . Interner::$strings[$const_name];
     }
 
     /**
@@ -258,18 +283,19 @@ final class CodeUseGraph
      */
     public static function missingMethodNode(MethodIdentifier $method_id): string
     {
-        return self::KIND_MISSING_METHOD . ' ' . self::getFunctionLikeKey($method_id);
+        return self::KIND_MISSING_METHOD . ' ' . self::getMethodKey($method_id);
     }
 
     /**
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @param int $property_name the property name, without the leading `$`
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty reading the interner table is semantically pure
      */
     public static function missingPropertyNode(int $fq_class_name, int $property_name): string
     {
-        return self::KIND_MISSING_PROPERTY . ' ' . Interner::str(Interner::lower($fq_class_name))
-            . '::$' . Interner::str($property_name);
+        return self::KIND_MISSING_PROPERTY . ' ' . Interner::$strings[$fq_class_name]
+            . '::$' . Interner::$strings[$property_name];
     }
 
     /**
@@ -287,7 +313,7 @@ final class CodeUseGraph
 
             return self::functionLikeNode(new MethodIdentifier(
                 $storage->defining_fqcln,
-                Interner::lower($storage->cased_name),
+                $storage->cased_name,
             ));
         }
 
@@ -295,7 +321,7 @@ final class CodeUseGraph
             return null;
         }
 
-        return self::functionLikeNode(Interner::lower($storage->cased_name));
+        return self::functionLikeNode($storage->cased_name);
     }
 
     /**
@@ -303,11 +329,12 @@ final class CodeUseGraph
      * referencing the alias get invalidated when the import changes.
      *
      * @psalm-pure
+     * @psalm-suppress ImpureStaticProperty reading the interner table is semantically pure
      */
     public static function useAliasNode(int $alias, string $file_path): string
     {
         // do NOT change this to hash, it will fail on Windows for whatever reason
-        return self::KIND_USE_ALIAS . ' use:' . Interner::str($alias) . ':' . md5($file_path);
+        return self::KIND_USE_ALIAS . ' use:' . Interner::$strings[$alias] . ':' . md5($file_path);
     }
 
     /**
@@ -352,10 +379,10 @@ final class CodeUseGraph
     }
 
     /**
-     * Returns the lowercase name of the class a node belongs to, or null for
+     * Returns the name id of the class a node belongs to, or null for
      * nodes that don't belong to a class (files, free functions, roots).
      *
-     * @return int|null lowercase class name id
+     * @return int|null class name id
      * @psalm-pure
      */
     public static function getOwnerClass(string $node_id): ?int
@@ -806,7 +833,7 @@ final class CodeUseGraph
      * The file of a node is given by getNodeFile(); when unknown, it is the
      * file of the node's owner class, if any (see getOwnerClass()).
      *
-     * @param int $fq_class_name interned class name (any casing)
+     * @param int $fq_class_name class name id
      * @return array<string, true>
      * @psalm-external-mutation-free
      */
@@ -828,7 +855,7 @@ final class CodeUseGraph
             }
         }
 
-        return $this->class_referencing_nodes[Interner::lower($fq_class_name)] ?? [];
+        return $this->class_referencing_nodes[$fq_class_name] ?? [];
     }
 
     /**

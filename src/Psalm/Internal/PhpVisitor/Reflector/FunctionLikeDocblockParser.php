@@ -34,7 +34,6 @@ use function preg_replace;
 use function preg_split;
 use function reset;
 use function str_contains;
-use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function stripos;
@@ -620,18 +619,6 @@ final class FunctionLikeDocblockParser
         }
 
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
-
-        if ($line_parts[1][0] === '$') {
-            $param_name_parts = explode('->', $line_parts[1]);
-
-            foreach ($param_name_parts as $i => $param_name_part) {
-                if (str_ends_with($param_name_part, '()')) {
-                    $param_name_parts[$i] = strtolower($param_name_part);
-                }
-            }
-
-            $line_parts[1] = implode('->', $param_name_parts);
-        }
 
         return $line_parts;
     }

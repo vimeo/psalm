@@ -209,7 +209,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                     $callmap_callables = $mapping_function_id_part !== ''
                         && !str_contains($mapping_function_id_part, '::')
                         ? InternalCallMapHandler::getCallablesFromCallMap(
-                            Interner::internLower($mapping_function_id_part),
+                            Interner::intern($mapping_function_id_part),
                         )
                         : null;
                     if ($callmap_callables) {
@@ -244,7 +244,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $method_id = new MethodIdentifier(
                                 $callable_fq_class_id,
-                                Interner::internLower($method_name),
+                                Interner::intern($method_name),
                             );
 
                             if (!$codebase->methodExists(
@@ -275,7 +275,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                         } else {
                             if (!$codebase->functions->functionExists(
                                 $statements_source,
-                                Interner::internLower($mapping_function_id_part),
+                                Interner::intern($mapping_function_id_part),
                             )
                             ) {
                                 return Type::getMixed();
@@ -285,7 +285,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
 
                             $function_storage = $codebase->functions->getStorage(
                                 $statements_source,
-                                Interner::internLower($mapping_function_id_part),
+                                Interner::intern($mapping_function_id_part),
                             );
 
                             $return_type = $function_storage->return_type ?: Type::getMixed();

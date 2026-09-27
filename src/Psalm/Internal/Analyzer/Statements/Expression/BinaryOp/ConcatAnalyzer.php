@@ -439,7 +439,7 @@ final class ConcatAnalyzer
                 if ($atomic_type instanceof TNamedObject) {
                     $to_string_method_id = new MethodIdentifier(
                         $atomic_type->value,
-                        StrId::__tostring,
+                        StrId::__toString,
                     );
 
                     if ($codebase->methodExists(

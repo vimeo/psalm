@@ -51,7 +51,7 @@ class TNamedObject extends Atomic
         bool $from_docblock = false,
     ) {
         assert(
-            !str_starts_with(Interner::str($value), '\\'),
+            !str_starts_with(Interner::$strings[$value], '\\'),
             'Class names must be interned without a leading backslash',
         );
         $this->value = $value;
@@ -104,21 +104,23 @@ class TNamedObject extends Atomic
         $cloned->is_static_resolved = $is_static;
         return $cloned;
     }
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
         if ($include_extra && $this->extra_types) {
-            return Interner::str($this->value) . '&' . implode('&', $this->extra_types);
+            return Interner::$strings[$this->value] . '&' . implode('&', $this->extra_types);
         }
 
-        return Interner::str($this->value);
+        return Interner::$strings[$this->value];
     }
 
+    /** @psalm-suppress ImpureStaticProperty read-only access to the interned strings table */
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
         if ($this->extra_types) {
-            return Interner::str($this->value) . '&' . implode(
+            return Interner::$strings[$this->value] . '&' . implode(
                 '&',
                 array_map(
                     static fn(Atomic $type): string => $type->getId($exact, true),
@@ -127,7 +129,9 @@ class TNamedObject extends Atomic
             );
         }
 
-        return $this->is_static && $exact ? Interner::str($this->value) . '&static' : Interner::str($this->value);
+        return $this->is_static && $exact
+            ? Interner::$strings[$this->value] . '&static'
+            : Interner::$strings[$this->value];
     }
 
     /**

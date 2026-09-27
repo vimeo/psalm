@@ -23,7 +23,7 @@ final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return [StrId::DomNode];
+        return [StrId::DOMNode];
     }
 
     #[Override]
@@ -31,9 +31,9 @@ final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
 
-        if ($method_name_lowercase !== StrId::appendchild) {
+        if ($method_name !== StrId::appendChild) {
             return null;
         }
 

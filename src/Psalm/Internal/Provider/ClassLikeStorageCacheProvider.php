@@ -61,25 +61,23 @@ final class ClassLikeStorageCacheProvider
 
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void
     {
-        $fq_classlike_name_lc = Interner::lower($storage->name);
-
         $this->cache->saveItem(
-            $file_path."\0".Interner::str($fq_classlike_name_lc),
+            $file_path."\0".Interner::str($storage->name),
             $storage,
             hash('xxh128', $file_contents),
         );
     }
 
     /**
-     * @param int $fq_classlike_name_lc lowercase class name id
+     * @param int $fq_classlike_name class name id
      */
     public function getLatestFromCache(
-        int $fq_classlike_name_lc,
+        int $fq_classlike_name,
         ?string $file_path,
         string $file_contents,
     ): ClassLikeStorage {
         return $this->cache->getItem(
-            $file_path."\0".Interner::str($fq_classlike_name_lc),
+            $file_path."\0".Interner::str($fq_classlike_name),
             hash('xxh128', $file_contents),
         );
     }

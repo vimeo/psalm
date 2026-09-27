@@ -589,7 +589,7 @@ final class TemplateStandinTypeReplacer
                         continue;
                     }
 
-                    if (isset($classlike_storage->class_implements[StrId::traversable])
+                    if (isset($classlike_storage->class_implements[StrId::Traversable])
                         && $base_type->value === StrId::Iterator
                     ) {
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
@@ -1289,7 +1289,7 @@ final class TemplateStandinTypeReplacer
         } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
             $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
 
-            if ($container_class !== null && Interner::equalsLower($input_type_part->value, $container_class)) {
+            if ($container_class !== null && $input_type_part->value === $container_class) {
                 $input_type_params = $class_storage->getClassTemplateTypes();
             } elseif ($container_class !== null
                 && !empty($class_storage->template_extended_params[$container_class])

@@ -461,7 +461,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $original_function_name = $function_name->toString();
         $original_function_id = Interner::intern($original_function_name);
-        $original_function_id_lc = Interner::lower($original_function_id);
 
         if (!$function_name instanceof PhpParser\Node\Name\FullyQualified) {
             $cased_function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
@@ -472,7 +471,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $cased_function_id = $original_function_id;
         }
 
-        $function_id = Interner::lower($cased_function_id);
+        $function_id = $cased_function_id;
 
         $namespaced_function_exists = $codebase_functions->functionExists(
             $statements_analyzer,
@@ -482,12 +481,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if (!$namespaced_function_exists
             && !$function_name instanceof PhpParser\Node\Name\FullyQualified
         ) {
-            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($original_function_id_lc);
-            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id_lc);
+            $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($original_function_id);
+            $function_call_info->is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id);
 
             if ($function_call_info->is_stubbed || $function_call_info->in_call_map) {
                 $cased_function_id = $original_function_id;
-                $function_id = $original_function_id_lc;
+                $function_id = $original_function_id;
             }
         } else {
             $function_call_info->in_call_map = InternalCallMapHandler::inCallMap($function_id);
@@ -523,7 +522,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if (!$function_call_info->in_call_map) {
             $predefined_functions = $codebase->config->getPredefinedFunctions();
-            $is_predefined = isset($predefined_functions[$original_function_id_lc])
+            $is_predefined = isset($predefined_functions[$original_function_id])
                 || isset($predefined_functions[$function_id]);
 
             if ($context->check_functions) {
@@ -536,7 +535,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $is_maybe_root_function,
                 );
 
-                // checkFunctionExists() lowercases the id, and may resolve it to a root function
+                // checkFunctionExists() may resolve it to a root function
                 if ($checked_function_id !== $function_id) {
                     $function_call_info->function_id = $checked_function_id;
                     $cased_function_id = $function_call_info->cased_function_id = $checked_function_id;

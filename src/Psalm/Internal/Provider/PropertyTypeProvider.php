@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider;
 use Closure;
 use Psalm\Context;
 use Psalm\Internal\Provider\PropertyTypeProvider\DomDocumentPropertyTypeProvider;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Plugin\EventHandler\PropertyTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -55,7 +54,7 @@ final class PropertyTypeProvider
      */
     public function registerClosure(int $fq_classlike_name, Closure $c): void
     {
-        self::$handlers[Interner::lower($fq_classlike_name)][] = $c;
+        self::$handlers[$fq_classlike_name][] = $c;
     }
 
     /**
@@ -63,7 +62,7 @@ final class PropertyTypeProvider
      */
     public function has(int $fq_classlike_name): bool
     {
-        return isset(self::$handlers[Interner::lower($fq_classlike_name)]);
+        return isset(self::$handlers[$fq_classlike_name]);
     }
 
     public function getPropertyType(
@@ -78,7 +77,7 @@ final class PropertyTypeProvider
             $source->addSuppressedIssues(['NonInvariantDocblockPropertyType']);
         }
 
-        foreach (self::$handlers[Interner::lower($fq_classlike_name)] ?? [] as $property_handler) {
+        foreach (self::$handlers[$fq_classlike_name] ?? [] as $property_handler) {
             $event = new PropertyTypeProviderEvent(
                 $fq_classlike_name,
                 $property_name,

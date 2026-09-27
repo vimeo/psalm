@@ -55,7 +55,6 @@ use function in_array;
 use function is_numeric;
 use function ltrim;
 use function str_contains;
-use function strtolower;
 use function substr;
 
 /**
@@ -765,8 +764,6 @@ final class ArrayFunctionArgumentsAnalyzer
             $closure_types = [];
 
             foreach ($function_ids as $function_id_str) {
-                $function_id_str = strtolower($function_id_str);
-
                 if (str_contains($function_id_str, '::')) {
                     $function_id = $function_id_str;
 

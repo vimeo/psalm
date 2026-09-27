@@ -343,7 +343,7 @@ final class TypeCombiner
         if ($combination->named_object_types !== null) {
             foreach ($combination->value_types as $key => $atomic_type) {
                 if ($atomic_type instanceof TEnumCase
-                    && isset($combination->named_object_types[Interner::str($atomic_type->value)])
+                    && isset($combination->named_object_types[Interner::$strings[$atomic_type->value]])
                 ) {
                     unset($combination->value_types[$key]);
                 }
@@ -476,7 +476,7 @@ final class TypeCombiner
         } elseif ($type instanceof TNamedObject
             && ($type->value === StrId::Traversable || $type->value === StrId::Generator)
         ) {
-            $type_key = Interner::str($type->value);
+            $type_key = $type->value === StrId::Traversable ? 'Traversable' : 'Generator';
         } else {
             $type_key = $type->getKey();
         }
@@ -853,7 +853,7 @@ final class TypeCombiner
 
             $type_name = $type->value;
 
-            if ($type_key !== Interner::str($type_name)
+            if ($type_key !== Interner::$strings[$type_name]
                 || !$codebase->classlikes->classOrInterfaceOrEnumExists($type_name)
             ) {
                 // write this to the main list
@@ -1408,14 +1408,14 @@ final class TypeCombiner
      */
     private static function getClassLikesFromString(Codebase $codebase, string $fq_classlike_name): array
     {
-        // class storages are keyed by lowercase ids, so the lowercase name of any known class is already interned
-        $fq_classlike_name_lc = Interner::find(strtolower($fq_classlike_name));
+        // the name of any known class is already interned
+        $fq_classlike_name_id = Interner::find($fq_classlike_name);
 
-        if ($fq_classlike_name_lc === null) {
+        if ($fq_classlike_name_id === null) {
             return [];
         }
 
-        return self::getClassLikes($codebase, $fq_classlike_name_lc);
+        return self::getClassLikes($codebase, $fq_classlike_name_id);
     }
 
     /**

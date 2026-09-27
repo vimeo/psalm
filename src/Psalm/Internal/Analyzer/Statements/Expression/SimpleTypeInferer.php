@@ -358,14 +358,14 @@ final class SimpleTypeInferer
                     );
                 }
 
-                if (Interner::equalsLower($const_fq_class_name, $fq_classlike_name)
+                if ($const_fq_class_name === $fq_classlike_name
                     && isset($existing_class_constants[$const_name])
                     && $existing_class_constants[$const_name]->type
                 ) {
                     return $existing_class_constants[$const_name]->type;
                 }
 
-                if (strtolower($stmt->name->name) === 'class') {
+                if ($stmt->name->name === 'class') {
                     return Type::getLiteralClassString($const_fq_class_name, true);
                 }
 
@@ -392,7 +392,7 @@ final class SimpleTypeInferer
                 }
             }
 
-            if ($stmt->name instanceof PhpParser\Node\Identifier && strtolower($stmt->name->name) === 'class') {
+            if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 return Type::getClassString();
             }
 

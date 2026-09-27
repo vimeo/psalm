@@ -35,6 +35,9 @@ use function in_array;
 final class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     use UnserializeMemoryUsageSuppressionTrait;
+
+    private readonly MethodIdentifier $method_id;
+
     // https://github.com/php/php-src/blob/a83923044c48982c80804ae1b45e761c271966d3/Zend/zend_enum.c#L77-L95
     private const FORBIDDEN_ENUM_METHODS = [
         StrId::__construct,
@@ -44,8 +47,8 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         StrId::__set,
         StrId::__unset,
         StrId::__isset,
-        StrId::__tostring,
-        StrId::__debuginfo,
+        StrId::__toString,
+        StrId::__debugInfo,
         StrId::__serialize,
         StrId::__unserialize,
         StrId::__sleep,
@@ -63,7 +66,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     ) {
         $codebase = $source->getCodebase();
 
-        $method_name_lc = Interner::internLower((string) $function->name);
+        $method_name = Interner::intern((string) $function->name);
 
         $source_fqcln = $source->getFQCLN();
 
@@ -71,15 +74,13 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             throw new UnexpectedValueException('Methods must be declared inside a class-like');
         }
 
-        $source_fqcln_lc = Interner::lower($source_fqcln);
-
-        $method_id = new MethodIdentifier($source_fqcln, $method_name_lc);
+        $method_id = $this->method_id = new MethodIdentifier($source_fqcln, $method_name);
 
         if (!$storage) {
             try {
                 $storage = $codebase->methods->getStorage($method_id);
             } catch (UnexpectedValueException $e) {
-                $class_storage = $codebase->classlike_storage_provider->get($source_fqcln_lc);
+                $class_storage = $codebase->classlike_storage_provider->get($source_fqcln);
 
                 if (!$class_storage->parent_classes) {
                     throw $e;
@@ -116,7 +117,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         $codebase_methods = $codebase->methods;
 
         if ($method_id->fq_class_name === StrId::Closure
-            && $method_id->method_name === StrId::fromcallable
+            && $method_id->method_name === StrId::fromCallable
         ) {
             return;
         }
@@ -265,7 +266,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         $source_fqcln = $source->getFQCLN();
         if ($source->getSource() instanceof TraitAnalyzer
             && $source_fqcln !== null
-            && Interner::equalsLower($declaring_method_class, $source_fqcln)
+            && $declaring_method_class === $source_fqcln
         ) {
             return true;
         }
@@ -316,11 +317,11 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             return;
         }
 
-        $method_name_lc = Interner::lower($method_storage->cased_name);
+        $method_name = $method_storage->cased_name;
 
-        if ($method_name_lc === StrId::__clone
-            || $method_name_lc === StrId::__construct
-            || $method_name_lc === StrId::__destruct
+        if ($method_name === StrId::__clone
+            || $method_name === StrId::__construct
+            || $method_name === StrId::__destruct
         ) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustOmitReturnType(
@@ -336,17 +337,11 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public function getMethodId(?int $context_self = null): MethodIdentifier
     {
-        $function_name = (string)$this->function->name;
-
-        $fq_class_name = $context_self ?? $this->source->getFQCLN();
-        if ($fq_class_name === null) {
-            throw new UnexpectedValueException('Methods must be declared inside a class-like');
+        if ($context_self === null || $context_self === $this->method_id->fq_class_name) {
+            return $this->method_id;
         }
 
-        return new MethodIdentifier(
-            $fq_class_name,
-            Interner::internLower($function_name),
-        );
+        return new MethodIdentifier($context_self, $this->method_id->method_name);
     }
 
     public static function checkForbiddenEnumMethod(MethodStorage $method_storage, ClassLikeStorage $enum_storage): void
@@ -355,13 +350,13 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             return;
         }
 
-        $method_name_lc = Interner::lower($method_storage->cased_name);
+        $method_name = $method_storage->cased_name;
         $method_id = new MethodIdentifier(
             $method_storage->defining_fqcln ?? $enum_storage->name,
-            $method_name_lc,
+            $method_name,
         );
         $message = 'Enums cannot define ' . Interner::str($method_storage->cased_name);
-        if (in_array($method_name_lc, self::FORBIDDEN_ENUM_METHODS, true)) {
+        if (in_array($method_name, self::FORBIDDEN_ENUM_METHODS, true)) {
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 $message,
                 $method_storage->location,
@@ -369,7 +364,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             ));
         }
 
-        if ($method_name_lc === StrId::cases) {
+        if ($method_name === StrId::cases) {
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 $message,
                 $method_storage->location,
@@ -378,7 +373,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         }
 
         if ($enum_storage->enum_type
-            && ($method_name_lc === StrId::from || $method_name_lc === StrId::tryfrom)
+            && ($method_name === StrId::from || $method_name === StrId::tryFrom)
         ) {
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 $message,

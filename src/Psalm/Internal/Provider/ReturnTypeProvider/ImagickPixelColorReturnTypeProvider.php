@@ -28,7 +28,7 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return [StrId::imagickpixel];
+        return [StrId::ImagickPixel];
     }
 
     #[Override]
@@ -36,9 +36,9 @@ final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProvi
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
 
-        if ($method_name_lowercase !== StrId::getcolor) {
+        if ($method_name !== StrId::getColor) {
             return null;
         }
 

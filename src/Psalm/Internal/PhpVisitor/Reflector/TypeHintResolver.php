@@ -24,8 +24,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function strtolower;
-
 /**
  * @internal
  */
@@ -138,17 +136,17 @@ final class TypeHintResolver
 
             $fq_type_id = Interner::intern($fq_type_string);
             $codebase->scanner->queueClassLikeForScanning($fq_type_id);
-            $file_storage->referenced_classlikes[Interner::lower($fq_type_id)] = $fq_type_id;
+            $file_storage->referenced_classlikes[$fq_type_id] = $fq_type_id;
         } else {
-            $lower_hint = strtolower($hint->getFirst());
+            $first_part = $hint->getFirst();
 
             if ($classlike_storage
-                && ($lower_hint === 'self' || $lower_hint === 'static')
+                && ($first_part === 'self' || $first_part === 'static')
                 && !$classlike_storage->is_trait
             ) {
                 $fq_type_string = Interner::str($classlike_storage->name);
 
-                if ($lower_hint === 'static') {
+                if ($first_part === 'static') {
                     $fq_type_string .= '&static';
                 }
             } else {
@@ -157,7 +155,7 @@ final class TypeHintResolver
                 $fq_type_string = Interner::str($fq_type_id);
 
                 $codebase->scanner->queueClassLikeForScanning($fq_type_id);
-                $file_storage->referenced_classlikes[Interner::lower($fq_type_id)] = $fq_type_id;
+                $file_storage->referenced_classlikes[$fq_type_id] = $fq_type_id;
             }
         }
 

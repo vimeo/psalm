@@ -36,7 +36,6 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
-use function strtolower;
 use function substr;
 
 /**
@@ -312,7 +311,7 @@ final class CallableTypeComparator
         }
 
         if ($input_type_part instanceof TLiteralString && $input_type_part->value) {
-            $function_id = Interner::internLower($input_type_part->value);
+            $function_id = Interner::intern($input_type_part->value);
             try {
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
@@ -370,6 +369,9 @@ final class CallableTypeComparator
                     $function_storage->allowed_mutations,
                 );
             } catch (UnexpectedValueException) {
+                // may also be a method (e.g. `DateTime::format`)
+                $function_id = InternalCallMapHandler::getIdFromCallableString($input_type_part->value);
+
                 if (InternalCallMapHandler::inCallMap($function_id)) {
                     $args = [];
 
@@ -530,7 +532,7 @@ final class CallableTypeComparator
         ?MethodIdentifier $calling_method_id = null,
         ?string $file_name = null,
     ): string|MethodIdentifier|null {
-        $reference = $calling_method_id !== null ? strtolower((string) $calling_method_id) : $file_name;
+        $reference = $calling_method_id !== null ? (string) $calling_method_id : $file_name;
 
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
@@ -552,7 +554,7 @@ final class CallableTypeComparator
                 foreach ($lhs->getAtomicTypes() as $lhs_atomic_type) {
                     if ($lhs_atomic_type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
-                            Interner::str(Interner::lower($lhs_atomic_type->value)) . '::',
+                            Interner::str($lhs_atomic_type->value) . '::',
                             $reference,
                         );
                     } elseif ($lhs_atomic_type instanceof TTemplateParam) {
@@ -568,7 +570,7 @@ final class CallableTypeComparator
 
                             if ($member_id !== null) {
                                 $codebase->analyzer->addMixedMemberName(
-                                    Interner::str(Interner::lower($member_id)) . '::',
+                                    Interner::str($member_id) . '::',
                                     $reference,
                                 );
                             }
@@ -624,7 +626,7 @@ final class CallableTypeComparator
         if ($class_name === null) {
             if ($codebase && $reference !== null && $reference !== '') {
                 $codebase->analyzer->addMixedMemberName(
-                    strtolower($method_name),
+                    $method_name,
                     $reference,
                 );
             }
@@ -634,7 +636,7 @@ final class CallableTypeComparator
 
         return new MethodIdentifier(
             $class_name,
-            Interner::internLower($method_name),
+            Interner::intern($method_name),
         );
     }
 }

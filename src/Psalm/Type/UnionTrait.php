@@ -1238,7 +1238,7 @@ trait UnionTrait
      * @psalm-mutation-free
      * @psalm-assert-if-true array<
      *     array-key,
-     *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonSpecificLiteralInt|TFalse|TTrue
+     *     TLiteralString|TLiteralInt|TLiteralFloat|TNonspecificLiteralString|TNonspecificLiteralInt|TFalse|TTrue
      * > $this->getAtomicTypes()
      */
     public function allLiterals(): bool
@@ -1342,7 +1342,7 @@ trait UnionTrait
 
     /**
      * @param  array<string>    $suppressed_issues
-     * @param  array<int, bool> $phantom_classes class name id (cased or lowercase) => true
+     * @param  array<int, bool> $phantom_classes class name id => true
      */
     public function check(
         StatementsSource $source,
@@ -1378,7 +1378,7 @@ trait UnionTrait
     }
 
     /**
-     * @param  array<int, mixed> $phantom_classes class name id (cased or lowercase) => true
+     * @param  array<int, mixed> $phantom_classes class name id => true
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
@@ -1396,7 +1396,7 @@ trait UnionTrait
     }
 
     /**
-     * @param  int $fq_class_like_name interned lowercase class name
+     * @param  int $fq_class_like_name interned class name
      * @psalm-mutation-free
      */
     public function containsClassLike(int $fq_class_like_name): bool

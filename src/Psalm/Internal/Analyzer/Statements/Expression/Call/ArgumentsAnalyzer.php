@@ -75,7 +75,7 @@ use function strtolower;
  */
 final class ArgumentsAnalyzer
 {
-    /** lowercase function ids */
+    /** function ids */
     public const ARRAY_FILTERLIKE = [
         StrId::array_filter,
         StrId::array_find,
@@ -87,7 +87,7 @@ final class ArgumentsAnalyzer
     /**
      * @param   list<PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
-     * @param   int|MethodIdentifier|null $method_id lowercase function id or method id
+     * @param   int|MethodIdentifier|null $method_id function id or method id
      * @return  false|null
      */
     public static function analyze(
@@ -321,7 +321,7 @@ final class ArgumentsAnalyzer
         }
 
         if ($method_id instanceof MethodIdentifier
-            && $method_id->method_name === StrId::getattributes
+            && $method_id->method_name === StrId::getAttributes
             && in_array(
                 $method_id->fq_class_name,
                 [
@@ -341,16 +341,22 @@ final class ArgumentsAnalyzer
         return null;
     }
 
+    /** @var array<int, array<int, int>> class id => method name id => "Foo::bar" method id string id */
+    private static array $calling_method_function_ids = [];
+
     /**
      * Returns the id of the template defining entity of the calling function or method, if any
-     * (the lowercase function id or the lowercase "foo::bar" method id)
+     * (the function id or the "Foo::bar" method id)
      *
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
+     * @psalm-suppress ImpureStaticProperty memoization only
      */
     public static function getCallingFunctionId(Context $context): ?int
     {
-        if ($context->calling_method_id) {
-            return Interner::internLower((string) $context->calling_method_id);
+        $method_id = $context->calling_method_id;
+        if ($method_id) {
+            return self::$calling_method_function_ids[$method_id->fq_class_name][$method_id->method_name]
+                ??= Interner::intern((string) $method_id);
         }
 
         return $context->calling_function_id;
@@ -617,9 +623,7 @@ final class ArgumentsAnalyzer
         Context $context,
     ): ?bool {
         $in_call_map = $method_id !== null
-            ? InternalCallMapHandler::inCallMap(
-                $method_id instanceof MethodIdentifier ? Interner::internLower((string) $method_id) : $method_id,
-            )
+            ? InternalCallMapHandler::inCallMap($method_id)
             : false;
 
         $cased_method_id = $method_id instanceof MethodIdentifier

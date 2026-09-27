@@ -69,7 +69,6 @@ use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function strtolower;
 use function substr;
 use function substr_replace;
 use function trim;
@@ -206,7 +205,7 @@ final class FunctionLikeDocblockScanner
                 }
 
                 $codebase->scanner->queueClassLikeForScanning($exception_fqcln);
-                $file_storage->referenced_classlikes[Interner::lower($exception_fqcln)] = $exception_fqcln;
+                $file_storage->referenced_classlikes[$exception_fqcln] = $exception_fqcln;
                 $storage->throws[$exception_fqcln] = true;
                 $storage->throw_locations[$exception_fqcln] = $throw_location;
             }
@@ -460,9 +459,9 @@ final class FunctionLikeDocblockScanner
         );
 
         $param_type_mapping = [];
-        $template_function_id = Interner::intern('fn-' . strtolower($cased_function_id));
+        $template_function_id = Interner::intern('fn-' . $cased_function_id);
         $cased_name_template_id = Interner::intern(
-            'fn-' . ($storage->cased_name !== null ? strtolower(Interner::str($storage->cased_name)) : ''),
+            'fn-' . ($storage->cased_name !== null ? Interner::str($storage->cased_name) : ''),
         );
 
         // This checks for param references in the return type tokens
@@ -1502,7 +1501,7 @@ final class FunctionLikeDocblockScanner
                 );
             } else {
                 $storage->template_types[$template_name] = [
-                    Interner::intern('fn-' . strtolower($cased_function_id)) => $template_type,
+                    Interner::intern('fn-' . $cased_function_id) => $template_type,
                 ];
             }
         }

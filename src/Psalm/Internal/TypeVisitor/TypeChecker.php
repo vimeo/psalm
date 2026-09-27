@@ -57,7 +57,7 @@ final class TypeChecker extends TypeVisitor
 
     /**
      * @param array<string>    $suppressed_issues
-     * @param array<int, bool> $phantom_classes lowercase class name id => true
+     * @param array<int, bool> $phantom_classes class name id => true
      * @psalm-mutation-free
      */
     public function __construct(
@@ -128,7 +128,7 @@ final class TypeChecker extends TypeVisitor
             && $atomic->text !== null
         ) {
             $codebase->addReferenceToClass(
-                Interner::lower($atomic->value),
+                $atomic->value,
                 $this->code_location,
                 $this->context,
             );
@@ -140,7 +140,7 @@ final class TypeChecker extends TypeVisitor
             );
         }
 
-        if (!isset($this->phantom_classes[Interner::lower($atomic->value)])) {
+        if (!isset($this->phantom_classes[$atomic->value])) {
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $this->source,
                 $atomic->value,
@@ -154,13 +154,11 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
-        $fq_class_name_lc = Interner::lower($atomic->value);
-
         if (!$this->inherited
-            && $codebase->classlike_storage_provider->has($fq_class_name_lc)
+            && $codebase->classlike_storage_provider->has($atomic->value)
             && $this->source->getFQCLN() !== $atomic->value
         ) {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
+            $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
 
             if ($class_storage->deprecated) {
                 if ($class_storage->is_interface) {

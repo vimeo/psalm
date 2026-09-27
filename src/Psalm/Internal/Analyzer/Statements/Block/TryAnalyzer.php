@@ -210,11 +210,11 @@ final class TryAnalyzer
                 }
 
                 if (($codebase->classExists($fq_catch_class, null, $context)
-                        && Interner::lower($fq_catch_class) !== StrId::exception
+                        && $fq_catch_class !== StrId::Exception
                         && !($codebase->classExtends($fq_catch_class, StrId::Exception)
                             || $codebase->classImplements($fq_catch_class, StrId::Throwable)))
                     || ($codebase->interfaceExists($fq_catch_class, null, $context)
-                        && Interner::lower($fq_catch_class) !== StrId::throwable
+                        && $fq_catch_class !== StrId::Throwable
                         && !$codebase->interfaceExtends($fq_catch_class, StrId::Throwable))
                 ) {
                     IssueBuffer::maybeAdd(
@@ -232,12 +232,8 @@ final class TryAnalyzer
 
             if ($catch_context->collect_exceptions) {
                 foreach ($fq_catch_classes as $fq_catch_class) {
-                    $fq_catch_class_lower = Interner::lower($fq_catch_class);
-
                     foreach ($catch_context->possibly_thrown_exceptions as $exception_fqcln => $_) {
-                        $exception_fqcln_lower = Interner::lower($exception_fqcln);
-
-                        if ($exception_fqcln_lower === $fq_catch_class_lower
+                        if ($exception_fqcln === $fq_catch_class
                             || ($codebase->classExists($exception_fqcln, null, $context)
                                 && $codebase->classExtendsOrImplements($exception_fqcln, $fq_catch_class))
                             || ($codebase->interfaceExists($exception_fqcln, null, $context)
@@ -265,7 +261,7 @@ final class TryAnalyzer
                             $fq_catch_class,
                             false,
                             false,
-                            Interner::lower($fq_catch_class) !== StrId::throwable
+                            $fq_catch_class !== StrId::Throwable
                                 && $codebase->interfaceExists($fq_catch_class, null, $context)
                                 && !$codebase->interfaceExtends($fq_catch_class, StrId::Throwable)
                                     ? ['Throwable' => new TNamedObject(StrId::Throwable)]

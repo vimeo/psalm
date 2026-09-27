@@ -16,7 +16,7 @@ return array (
   ),
   'changed' => 
   array (
-    'collator::setstrength' => 
+    'Collator::setStrength' => 
     array (
       'old' => 
       array (
@@ -34,17 +34,17 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'object' => 'collator',
+        'object' => 'Collator',
         'strength' => 'int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'object' => 'collator',
+        'object' => 'Collator',
         'strength' => 'int',
       ),
     ),
-    'dateinterval::createfromdatestring' => 
+    'DateInterval::createFromDateString' => 
     array (
       'old' => 
       array (
@@ -57,7 +57,7 @@ return array (
         'datetime' => 'string',
       ),
     ),
-    'domdocument::registernodeclass' => 
+    'DOMDocument::registerNodeClass' => 
     array (
       'old' => 
       array (
@@ -72,7 +72,7 @@ return array (
         'extendedClass' => 'null|string',
       ),
     ),
-    'domimplementation::createdocument' => 
+    'DOMImplementation::createDocument' => 
     array (
       'old' => 
       array (
@@ -185,7 +185,7 @@ return array (
         '&w idna_info=' => 'array<array-key, mixed>',
       ),
     ),
-    'imagick::getregistry' => 
+    'Imagick::getRegistry' => 
     array (
       'old' => 
       array (
@@ -198,7 +198,7 @@ return array (
         'key' => 'string',
       ),
     ),
-    'imagick::similarityimage' => 
+    'Imagick::similarityImage' => 
     array (
       'old' => 
       array (
@@ -219,7 +219,7 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagick::subimagematch' => 
+    'Imagick::subimageMatch' => 
     array (
       'old' => 
       array (
@@ -240,7 +240,7 @@ return array (
         'metric=' => 'int',
       ),
     ),
-    'imagickdraw::getclippath' => 
+    'ImagickDraw::getClipPath' => 
     array (
       'old' => 
       array (
@@ -251,7 +251,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'intlcalendar::clear' => 
+    'IntlCalendar::clear' => 
     array (
       'old' => 
       array (
@@ -264,7 +264,7 @@ return array (
         'field=' => 'int|null',
       ),
     ),
-    'intlcalendar::set' => 
+    'IntlCalendar::set' => 
     array (
       'old' => 
       array (
@@ -287,7 +287,7 @@ return array (
         'second=' => 'int',
       ),
     ),
-    'intlcalendar::setfirstdayofweek' => 
+    'IntlCalendar::setFirstDayOfWeek' => 
     array (
       'old' => 
       array (
@@ -300,7 +300,7 @@ return array (
         'dayOfWeek' => 'int',
       ),
     ),
-    'intlcalendar::setminimaldaysinfirstweek' => 
+    'IntlCalendar::setMinimalDaysInFirstWeek' => 
     array (
       'old' => 
       array (
@@ -313,7 +313,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'intlgregoriancalendar::clear' => 
+    'IntlGregorianCalendar::clear' => 
     array (
       'old' => 
       array (
@@ -326,7 +326,7 @@ return array (
         'field=' => 'int|null',
       ),
     ),
-    'intlgregoriancalendar::set' => 
+    'IntlGregorianCalendar::set' => 
     array (
       'old' => 
       array (
@@ -349,7 +349,7 @@ return array (
         'second=' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setfirstdayofweek' => 
+    'IntlGregorianCalendar::setFirstDayOfWeek' => 
     array (
       'old' => 
       array (
@@ -362,7 +362,7 @@ return array (
         'dayOfWeek' => 'int',
       ),
     ),
-    'intlgregoriancalendar::setminimaldaysinfirstweek' => 
+    'IntlGregorianCalendar::setMinimalDaysInFirstWeek' => 
     array (
       'old' => 
       array (
@@ -375,7 +375,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'locale::setdefault' => 
+    'Locale::setDefault' => 
     array (
       'old' => 
       array (
@@ -425,7 +425,7 @@ return array (
         'serial_hex=' => 'null|string',
       ),
     ),
-    'pdostatement::setfetchmode' => 
+    'PDOStatement::setFetchMode' => 
     array (
       'old' => 
       array (
@@ -461,7 +461,7 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'phar::copy' => 
+    'Phar::copy' => 
     array (
       'old' => 
       array (
@@ -476,7 +476,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'phar::decompressfiles' => 
+    'Phar::decompressFiles' => 
     array (
       'old' => 
       array (
@@ -487,7 +487,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'phar::delete' => 
+    'Phar::delete' => 
     array (
       'old' => 
       array (
@@ -500,7 +500,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phar::delmetadata' => 
+    'Phar::delMetadata' => 
     array (
       'old' => 
       array (
@@ -511,7 +511,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'phar::setalias' => 
+    'Phar::setAlias' => 
     array (
       'old' => 
       array (
@@ -524,7 +524,7 @@ return array (
         'alias' => 'string',
       ),
     ),
-    'phar::setdefaultstub' => 
+    'Phar::setDefaultStub' => 
     array (
       'old' => 
       array (
@@ -539,7 +539,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'phar::setstub' => 
+    'Phar::setStub' => 
     array (
       'old' => 
       array (
@@ -554,7 +554,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'phar::unlinkarchive' => 
+    'Phar::unlinkArchive' => 
     array (
       'old' => 
       array (
@@ -567,7 +567,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'phardata::copy' => 
+    'PharData::copy' => 
     array (
       'old' => 
       array (
@@ -582,7 +582,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'phardata::decompressfiles' => 
+    'PharData::decompressFiles' => 
     array (
       'old' => 
       array (
@@ -593,7 +593,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'phardata::delete' => 
+    'PharData::delete' => 
     array (
       'old' => 
       array (
@@ -606,7 +606,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'phardata::delmetadata' => 
+    'PharData::delMetadata' => 
     array (
       'old' => 
       array (
@@ -617,7 +617,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'phardata::setstub' => 
+    'PharData::setStub' => 
     array (
       'old' => 
       array (
@@ -632,7 +632,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'pharfileinfo::compress' => 
+    'PharFileInfo::compress' => 
     array (
       'old' => 
       array (
@@ -645,7 +645,7 @@ return array (
         'compression' => 'int',
       ),
     ),
-    'pharfileinfo::decompress' => 
+    'PharFileInfo::decompress' => 
     array (
       'old' => 
       array (
@@ -656,7 +656,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'pharfileinfo::delmetadata' => 
+    'PharFileInfo::delMetadata' => 
     array (
       'old' => 
       array (
@@ -667,7 +667,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'resourcebundle::get' => 
+    'ResourceBundle::get' => 
     array (
       'old' => 
       array (
@@ -716,7 +716,7 @@ return array (
         'mode=' => 'RoundingMode|int<0, max>',
       ),
     ),
-    'splfixedarray::setsize' => 
+    'SplFixedArray::setSize' => 
     array (
       'old' => 
       array (
@@ -729,7 +729,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'splheap::insert' => 
+    'SplHeap::insert' => 
     array (
       'old' => 
       array (
@@ -742,7 +742,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'splpriorityqueue::insert' => 
+    'SplPriorityQueue::insert' => 
     array (
       'old' => 
       array (
@@ -757,7 +757,7 @@ return array (
         'priority' => 'mixed',
       ),
     ),
-    'splpriorityqueue::recoverfromcorruption' => 
+    'SplPriorityQueue::recoverFromCorruption' => 
     array (
       'old' => 
       array (
@@ -768,7 +768,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'sqlite3result::finalize' => 
+    'SQLite3Result::finalize' => 
     array (
       'old' => 
       array (
@@ -779,7 +779,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'sqlite3stmt::close' => 
+    'SQLite3Stmt::close' => 
     array (
       'old' => 
       array (
@@ -1049,7 +1049,7 @@ return array (
         'handler' => 'impure-callable|null',
       ),
     ),
-    'xmlreader::close' => 
+    'XMLReader::close' => 
     array (
       'old' => 
       array (

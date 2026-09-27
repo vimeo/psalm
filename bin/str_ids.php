@@ -18,4 +18,5 @@ return [
     'Psalm_ExternalMutationFree' => 'Psalm\\ExternalMutationFree',
     'Psalm_Readonly' => 'Psalm\\Readonly',
     'ds_collection' => 'ds\\collection',
+    'Ds_Collection' => 'Ds\\Collection',
 ];

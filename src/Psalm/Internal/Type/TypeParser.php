@@ -102,7 +102,6 @@ use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function strtr;
 use function substr;
 
@@ -1377,7 +1376,7 @@ final class TypeParser
             $n = substr($n, strlen('pure-'));
         }
 
-        if (in_array(strtolower($n), ['closure', '\closure'], true)) {
+        if ($n === 'Closure' || $n === '\Closure') {
             return new TClosure($params, null, $allowed_mutations, [], [], $from_docblock);
         }
 

@@ -42,7 +42,6 @@ use function array_merge;
 use function array_reduce;
 use function count;
 use function is_string;
-use function strtolower;
 
 /**
  * @internal
@@ -100,7 +99,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier
-                && strtolower($stmt->name->name) === '__construct'
+                && $stmt->name->name === '__construct'
             ) {
                 IssueBuffer::maybeAdd(
                     new DirectConstructorCall(
@@ -225,7 +224,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
             if ($codebase->config->memoize_method_calls || $result->can_memoize) {
-                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
+                $method_var_id = $lhs_var_id . '->' . $stmt->name->name . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];

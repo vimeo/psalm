@@ -6,7 +6,6 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Interner;
 
 /**
  * @api
@@ -14,7 +13,7 @@ use Psalm\Interner;
 abstract class MethodIssue extends CodeIssue
 {
     /**
-     * The method id, with a lowercase class name
+     * The method id
      */
     public MethodIdentifier $method_id;
 
@@ -27,6 +26,6 @@ abstract class MethodIssue extends CodeIssue
         MethodIdentifier $method_id,
     ) {
         parent::__construct($message, $code_location);
-        $this->method_id = new MethodIdentifier(Interner::lower($method_id->fq_class_name), $method_id->method_name);
+        $this->method_id = $method_id;
     }
 }

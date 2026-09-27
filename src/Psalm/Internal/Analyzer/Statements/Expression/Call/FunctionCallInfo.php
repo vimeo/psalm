@@ -15,7 +15,7 @@ use Psalm\Type\Union;
 final class FunctionCallInfo
 {
     /**
-     * Interned lowercase function id
+     * Interned function id
      */
     public ?int $function_id = null;
 
@@ -58,7 +58,7 @@ final class FunctionCallInfo
      *
      * Used as a set (id => true) to deduplicate repeated ids.
      *
-     * @var array<int, true> lowercase function id => true
+     * @var array<int, true> function id => true
      */
     public array $callable_ids = [];
 

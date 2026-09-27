@@ -9,7 +9,6 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Interner;
 use Psalm\StrId;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -62,7 +61,7 @@ final class YieldFromAnalyzer
             foreach ($stmt_expr_type->getAtomicTypes() as $atomic_type) {
                 if ($yield_from_type === null) {
                     if ($atomic_type instanceof TGenericObject
-                        && Interner::lower($atomic_type->value) === StrId::generator
+                        && $atomic_type->value === StrId::Generator
                         && isset($atomic_type->type_params[3])
                     ) {
                         $yield_from_type = $atomic_type->type_params[3];

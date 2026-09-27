@@ -26,7 +26,7 @@ use function array_search;
 final class ClassTemplateParamCollector
 {
     /**
-     * @param ?int $method_name lowercase method name id
+     * @param ?int $method_name method name id
      * @return array<int, non-empty-array<int, Union>>|null template name id => defining entity id => type
      * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress LessSpecificReturnStatement

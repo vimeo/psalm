@@ -350,7 +350,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->methods_to_rename && $this instanceof MethodAnalyzer) {
             $this_method_id = $this->getMethodId();
-            $new_method_name = $codebase->methods_to_rename[Interner::lower($this_method_id->fq_class_name)]
+            $new_method_name = $codebase->methods_to_rename[$this_method_id->fq_class_name]
                 [$this_method_id->method_name] ?? null;
 
             if ($new_method_name !== null) {
@@ -1085,13 +1085,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $this_method_id,
                     );
 
-                    $method_name_lc = Interner::lower($storage->cased_name);
+                    $method_name = $storage->cased_name;
 
-                    if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                    if (!isset($class_storage->overridden_method_ids[$method_name])) {
                         continue;
                     }
 
-                    foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
+                    foreach ($class_storage->overridden_method_ids[$method_name] as $parent_method_id) {
                         $codebase->file_reference_provider->addMethodParamUse(
                             $parent_method_id,
                             $i,
@@ -1226,7 +1226,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         false,
                         false,
                         $this->function instanceof ClassMethod
-                            && $this->function->name->toLowerString() !== '__construct',
+                            && $this->function->name->name !== '__construct',
                         $context,
                     ) === false) {
                         $check_stmts = false;
@@ -1804,7 +1804,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return MethodIdentifier|int method id, or lowercase function/closure id
+     * @return MethodIdentifier|int method id, or function/closure id
      */
     public function getId(): MethodIdentifier|int
     {
@@ -2045,7 +2045,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     && !$storage->mutation_free_assumed
                 ) {
                     $props = ['reference_free' => true];
-                    if ($this->function->name->toLowerString() !== '__construct') {
+                    if ($this->function->name->name !== '__construct') {
                         $props['allow_mutations'] = false;
                     }
                 }
@@ -2130,7 +2130,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     || !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_trait
                 ) && $storage->cased_name !== StrId::__construct
                 && ($storage->cased_name !== StrId::__toString
-                    || isset($appearing_class_storage->direct_class_interfaces[StrId::stringable]))
+                    || isset($appearing_class_storage->direct_class_interfaces[StrId::Stringable]))
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingOverrideAttribute(
@@ -2199,8 +2199,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
 
                     // we've already checked this in the class checker
-                    $overridden_fq_class_name_lc = Interner::lower($overridden_fq_class_name);
-                    if (!isset($appearing_class_storage->class_implements[$overridden_fq_class_name_lc])) {
+                    if (!isset($appearing_class_storage->class_implements[$overridden_fq_class_name])) {
                         MethodComparator::compare(
                             $codebase,
                             count($overridden_method_ids) === 1 ? $this->function : null,
@@ -2227,11 +2226,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context->calling_method_id = $method_id;
             }
         } elseif ($this instanceof FunctionAnalyzer) {
-            $function_name = $this->function->name->name;
-            $namespace_prefix = $this->getNamespace();
-            $namespace_prefix = $namespace_prefix !== null ? Interner::str($namespace_prefix) : '';
-            $cased_method_id = ($namespace_prefix !== '' ? $namespace_prefix . '\\' : '') . $function_name;
-            $context->calling_function_id = Interner::internLower($cased_method_id);
+            $context->calling_function_id = $this->getFunctionId();
         } elseif ($this instanceof ClosureAnalyzer) {
             if ($storage->return_type) {
                 $closure_return_type = TypeExpander::expandUnion(
@@ -2338,14 +2333,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-            $method_name_lc = Interner::lower($storage->cased_name);
+            $method_name = $storage->cased_name;
 
             if ($storage->abstract) {
                 continue;
             }
 
-            if (isset($class_storage->overridden_method_ids[$method_name_lc])) {
-                $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+            if (isset($class_storage->overridden_method_ids[$method_name])) {
+                $parent_method_id = end($class_storage->overridden_method_ids[$method_name]);
 
                 if ($parent_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($parent_method_id);

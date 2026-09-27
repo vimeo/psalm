@@ -10,7 +10,6 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Interner;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\IsClassNotEqual;
 use Psalm\Storage\Assertion\IsNotCountable;
@@ -175,7 +174,7 @@ final class NegatedAssertionReconciler extends Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assertion_type instanceof TNamedObject
-            && Interner::lower($assertion_type->value) === StrId::traversable
+            && $assertion_type->value === StrId::Traversable
             && isset($existing_var_atomic_types['iterable'])
         ) {
             /** @var TIterable */

@@ -62,13 +62,10 @@ use function array_values;
 use function explode;
 use function implode;
 use function is_int;
-use function preg_quote;
-use function preg_replace;
 use function str_contains;
-use function stripos;
+use function str_starts_with;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -118,14 +115,14 @@ abstract class Type
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
-            $first_namespace_id = Interner::find(strtolower($first_namespace));
+            $first_namespace_id = Interner::find($first_namespace);
             if ($first_namespace_id !== null && isset($imported_namespaces[$first_namespace_id])) {
                 return Interner::intern(
                     Interner::str($imported_namespaces[$first_namespace_id]) . '\\' . implode('\\', $class_parts),
                 );
             }
         } else {
-            $class_id = Interner::find(strtolower($class));
+            $class_id = Interner::find($class);
             if ($class_id !== null && isset($imported_namespaces[$class_id])) {
                 return $imported_namespaces[$class_id];
             }
@@ -137,7 +134,7 @@ abstract class Type
     }
 
     /**
-     * @param array<int, int> $aliased_classes lowercase class name id => alias id
+     * @param array<int, int> $aliased_classes class name id => alias id
      * @psalm-pure
      */
     public static function getStringFromFQCLN(
@@ -155,20 +152,15 @@ abstract class Type
             return 'self';
         }
 
-        $value_lc = Interner::lower($value);
-        if (isset($aliased_classes[$value_lc])) {
-            return Interner::str($aliased_classes[$value_lc]);
+        if (isset($aliased_classes[$value])) {
+            return Interner::str($aliased_classes[$value]);
         }
 
         $value = Interner::str($value);
         $namespace = $namespace === null ? '' : Interner::str($namespace);
 
-        if ($namespace !== '' && stripos($value, $namespace . '\\') === 0) {
-            $candidate = (string) preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
-                '',
-                $value,
-            );
+        if ($namespace !== '' && str_starts_with($value, $namespace . '\\')) {
+            $candidate = substr($value, strlen($namespace) + 1);
 
             $candidate_parts = explode('\\', $candidate);
 
@@ -200,16 +192,16 @@ abstract class Type
     }
 
     /**
-     * @param array<int, int> $aliased_classes lowercase class name id => alias id
+     * @param array<int, int> $aliased_classes class name id => alias id
      * @psalm-pure
      */
     private static function getAliasedClass(array $aliased_classes, string $class): ?string
     {
-        $class_lc = Interner::find(strtolower($class));
-        if ($class_lc === null || !isset($aliased_classes[$class_lc])) {
+        $class_id = Interner::find($class);
+        if ($class_id === null || !isset($aliased_classes[$class_id])) {
             return null;
         }
-        return Interner::str($aliased_classes[$class_lc]);
+        return Interner::str($aliased_classes[$class_id]);
     }
 
     /**

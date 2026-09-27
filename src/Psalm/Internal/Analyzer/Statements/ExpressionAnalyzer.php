@@ -47,7 +47,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Interner;
 use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
@@ -487,7 +486,7 @@ final class ExpressionAnalyzer
      */
     public static function isMock(int $fq_class_name): bool
     {
-        return in_array(Interner::lower($fq_class_name), Config::getInstance()->getMockClasses(), true);
+        return in_array($fq_class_name, Config::getInstance()->getMockClasses(), true);
     }
 
     /**

@@ -20,7 +20,6 @@ use function assert;
 use function count;
 use function preg_replace;
 use function strpos;
-use function strtolower;
 use function substr;
 
 /**
@@ -160,8 +159,8 @@ final class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Returns true if $calling_identifier is the same as, or is within with $identifier, in a
-     * case-insensitive comparison. Identifiers can be namespaces, classlikes, functions, or methods.
+     * Returns true if $calling_identifier is the same as, or is within with $identifier.
+     * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
      * @throws InvalidArgumentException if $identifier is not a valid identifier
@@ -193,7 +192,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 
     /**
      * Returns true if $calling_identifier is the same as or is within any identifier
-     * in $identifiers in a case-insensitive comparison, or if $identifiers is empty.
+     * in $identifiers, or if $identifiers is empty.
      * Identifiers can be namespaces, classlikes, functions, or methods.
      *
      * @psalm-pure
@@ -231,17 +230,15 @@ final class NamespaceAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @return ($lowercase is true ? lowercase-string : string)
      * @psalm-pure
      */
-    public static function normalizeIdentifier(string $identifier, bool $lowercase = true): string
+    public static function normalizeIdentifier(string $identifier): string
     {
         if ($identifier === "") {
             return "";
         }
 
-        $identifier = $identifier[0] === "\\" ? substr($identifier, 1) : $identifier;
-        return $lowercase ? strtolower($identifier) : $identifier;
+        return $identifier[0] === "\\" ? substr($identifier, 1) : $identifier;
     }
 
     /**

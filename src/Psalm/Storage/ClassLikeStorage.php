@@ -83,28 +83,28 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * Interfaces this class implements directly
      *
-     * @var array<int, int> lowercase name id => name id
+     * @var array<int, int> name id => name id (same id)
      */
     public array $direct_class_interfaces = [];
 
     /**
      * Interfaces this class implements explicitly and implicitly
      *
-     * @var array<int, int> lowercase name id => name id
+     * @var array<int, int> name id => name id (same id)
      */
     public array $class_implements = [];
 
     /**
      * Parent interfaces listed explicitly
      *
-     * @var array<int, int> lowercase name id => name id
+     * @var array<int, int> name id => name id (same id)
      */
     public array $direct_interface_parents = [];
 
     /**
      * Parent interfaces
      *
-     * @var  array<int, int> lowercase name id => name id
+     * @var  array<int, int> name id => name id (same id)
      */
     public array $parent_interfaces = [];
 
@@ -116,7 +116,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * Parent classes
      *
-     * @var array<int, int> lowercase name id => name id
+     * @var array<int, int> name id => name id (same id)
      */
     public array $parent_classes = [];
 
@@ -135,12 +135,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $trait_used = false;
 
     /**
-     * @var array<int, int> lowercase name id => name id
+     * @var array<int, int> name id => name id (same id)
      */
     public array $used_traits = [];
 
     /**
-     * @var array<int, int> lowercase alias id => lowercase method name id
+     * @var array<int, int> alias method name id => method name id
      */
     public array $trait_alias_map = [];
 
@@ -150,12 +150,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $trait_alias_map_cased = [];
 
     /**
-     * @var array<int, bool> lowercase method name id => final
+     * @var array<int, bool> method name id => final
      */
     public array $trait_final_map = [];
 
     /**
-     * @var array<int, ClassLikeAnalyzer::VISIBILITY_*> lowercase method name id => visibility
+     * @var array<int, ClassLikeAnalyzer::VISIBILITY_*> method name id => visibility
      */
     public array $trait_visibility_map = [];
 
@@ -173,17 +173,17 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $specialize_instance = false;
 
     /**
-     * @var array<int, MethodStorage> lowercase method name id => storage
+     * @var array<int, MethodStorage> method name id => storage
      */
     public array $methods = [];
 
     /**
-     * @var array<int, MethodStorage> lowercase method name id => storage
+     * @var array<int, MethodStorage> method name id => storage
      */
     public array $pseudo_methods = [];
 
     /**
-     * @var array<int, MethodStorage> lowercase method name id => storage
+     * @var array<int, MethodStorage> method name id => storage
      */
     public array $pseudo_static_methods = [];
 
@@ -191,45 +191,45 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     /**
      * Maps pseudo method names to the original declaring method identifier
-     * The key is the method name in lowercase, and the value is the original `MethodIdentifier` instance
+     * The key is the method name as declared, and the value is the original `MethodIdentifier` instance
      *
      * This property contains all pseudo methods declared on ancestors.
      *
-     * @var array<int, MethodIdentifier> lowercase method name id => method id
+     * @var array<int, MethodIdentifier> method name id => method id
      */
     public array $declaring_pseudo_method_ids = [];
 
     /**
-     * @var array<int, MethodIdentifier> lowercase method name id => method id
+     * @var array<int, MethodIdentifier> method name id => method id
      */
     public array $declaring_method_ids = [];
 
     /**
-     * @var array<int, MethodIdentifier> lowercase method name id => method id
+     * @var array<int, MethodIdentifier> method name id => method id
      */
     public array $appearing_method_ids = [];
 
     /**
-     * Map from lowercase method name to list of declarations in order from parent, to grandparent, to
+     * Map from method name to list of declarations in order from parent, to grandparent, to
      * great-grandparent, etc **including traits and interfaces**. Ancestors that don't have their own declaration are
      * skipped.
      *
-     * @var array<int, array<int, MethodIdentifier>> lowercase method name id => class name id => method id
+     * @var array<int, array<int, MethodIdentifier>> method name id => class name id => method id
      */
     public array $overridden_method_ids = [];
 
     /**
-     * @var array<int, MethodIdentifier> lowercase method name id => method id
+     * @var array<int, MethodIdentifier> method name id => method id
      */
     public array $documenting_method_ids = [];
 
     /**
-     * @var array<int, MethodIdentifier> lowercase method name id => method id
+     * @var array<int, MethodIdentifier> method name id => method id
      */
     public array $inheritable_method_ids = [];
 
     /**
-     * lowercase method name id => lowercase class name id => lowercase method name id => true
+     * method name id => class name id => method name id => true
      *
      * @var array<int, array<int, array<int, bool>>>
      */
@@ -342,12 +342,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $initialized_properties = [];
 
     /**
-     * @var array<int, true> lowercase class name id => true
+     * @var array<int, true> class name id => true
      */
     public array $invalid_dependencies = [];
 
     /**
-     * @var array<int, bool> lowercase class name id => true
+     * @var array<int, bool> class name id => true
      */
     public array $dependent_classlikes = [];
 

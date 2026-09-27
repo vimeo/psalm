@@ -163,7 +163,7 @@ final class AtomicPropertyFetchAnalyzer
         if ($lhs_type_part instanceof TObject
             || (
                 in_array(
-                    Interner::lower($lhs_type_part->value),
+                    $lhs_type_part->value,
                     Config::getInstance()->getUniversalObjectCrates(),
                     true,
                 )
@@ -442,7 +442,7 @@ final class AtomicPropertyFetchAnalyzer
             return;
         }
 
-        $new_property_name = $codebase->properties_to_rename[Interner::lower($declaring_property_class)][$prop_name]
+        $new_property_name = $codebase->properties_to_rename[$declaring_property_class][$prop_name]
             ?? null;
 
         if ($new_property_name !== null) {

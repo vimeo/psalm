@@ -15,7 +15,6 @@ use Psalm\Type;
 
 use function implode;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -42,7 +41,7 @@ final class InstanceofAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
                 return false;
             }
-        } elseif (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
+        } elseif (!in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)) {
             if ($context->check_classes) {
                 $codebase = $statements_analyzer->getCodebase();
 
@@ -71,7 +70,7 @@ final class InstanceofAnalyzer
                     );
                 }
 
-                if (!isset($context->phantom_classes[Interner::lower($fq_class_name)])) {
+                if (!isset($context->phantom_classes[$fq_class_name])) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                         $statements_analyzer,
                         $fq_class_name,

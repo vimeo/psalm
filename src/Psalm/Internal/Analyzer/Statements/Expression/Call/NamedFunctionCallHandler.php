@@ -70,7 +70,7 @@ use const EXTR_SKIP;
 final class NamedFunctionCallHandler
 {
     /**
-     * @param int $function_id interned lowercase function id
+     * @param int $function_id interned function id
      */
     public static function handle(
         StatementsAnalyzer $statements_analyzer,
@@ -123,7 +123,7 @@ final class NamedFunctionCallHandler
                     if ($literal_class_name !== ''
                         && !$codebase->classlikes->classExists(Interner::intern($literal_class_name), null, $context)
                     ) {
-                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
+                        $context->phantom_classes[Interner::intern($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -135,7 +135,7 @@ final class NamedFunctionCallHandler
                     );
 
                     if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
+                        $context->phantom_classes[$resolved_name] = true;
                     }
                 }
             }
@@ -155,7 +155,7 @@ final class NamedFunctionCallHandler
                             $context,
                         )
                     ) {
-                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
+                        $context->phantom_classes[Interner::intern($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -167,7 +167,7 @@ final class NamedFunctionCallHandler
                     );
 
                     if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
+                        $context->phantom_classes[$resolved_name] = true;
                     }
                 }
             }
@@ -183,7 +183,7 @@ final class NamedFunctionCallHandler
                     if ($literal_class_name !== ''
                         && !$codebase->classlikes->enumExists(Interner::intern($literal_class_name), null, $context)
                     ) {
-                        $context->phantom_classes[Interner::internLower($literal_class_name)] = true;
+                        $context->phantom_classes[Interner::intern($literal_class_name)] = true;
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -195,7 +195,7 @@ final class NamedFunctionCallHandler
                     );
 
                     if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[Interner::lower($resolved_name)] = true;
+                        $context->phantom_classes[$resolved_name] = true;
                     }
                 }
             }

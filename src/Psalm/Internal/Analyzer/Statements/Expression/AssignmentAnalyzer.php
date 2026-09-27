@@ -99,7 +99,6 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
 
 /**
  * @internal
@@ -1670,9 +1669,9 @@ final class AssignmentAnalyzer
                     foreach ($stmt_var_type->getAtomicTypes() as $type) {
                         if ($type instanceof TNamedObject) {
                             $codebase->analyzer->addMixedMemberName(
-                                strtolower(Interner::str($type->value)) . '::$',
+                                Interner::str($type->value) . '::$',
                                 $context->calling_method_id !== null
-                                    ? strtolower((string) $context->calling_method_id)
+                                    ? (string) $context->calling_method_id
                                     : $statements_analyzer->getFileName(),
                             );
                         }

@@ -22,7 +22,6 @@ use function is_string;
 use function ltrim;
 use function str_contains;
 use function str_replace;
-use function strtolower;
 
 /**
  * @internal
@@ -59,7 +58,6 @@ final class PhpStormMetaScanner
                     if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
                         && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
-                        && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Union([
                             new TNamedObject(Interner::intern($array_item->value->class->toString())),
@@ -93,7 +91,6 @@ final class PhpStormMetaScanner
                     if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
                         && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
                         && $array_item->value->name instanceof PhpParser\Node\Identifier
-                        && strtolower($array_item->value->name->name)
                     ) {
                         $map[$meta_key] = new Union([
                             new TNamedObject(Interner::intern($array_item->value->class->toString())),
@@ -133,7 +130,7 @@ final class PhpStormMetaScanner
         ) {
             $meta_fq_classlike_name = Interner::intern($identifier->class->toString());
 
-            $meta_method_name = Interner::internLower($identifier->name->name);
+            $meta_method_name = Interner::intern($identifier->name->name);
 
             if ($map) {
                 $offset = 0;
@@ -155,14 +152,14 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
                         }
 
                         if ($meta_method_name !== $method_name
-                            || !Interner::equalsLower($meta_fq_classlike_name, $fq_classlike_name)
+                            || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
@@ -207,14 +204,14 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
                         }
 
                         if ($meta_method_name !== $method_name
-                            || !Interner::equalsLower($meta_fq_classlike_name, $fq_classlike_name)
+                            || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
@@ -241,14 +238,14 @@ final class PhpStormMetaScanner
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
-                        $method_name = $event->getMethodNameLowercase();
+                        $method_name = $event->getMethodName();
                         $fq_classlike_name = $event->getFqClasslikeName();
                         if (!$statements_analyzer instanceof StatementsAnalyzer) {
                             return Type::getMixed();
                         }
 
                         if ($meta_method_name !== $method_name
-                            || !Interner::equalsLower($meta_fq_classlike_name, $fq_classlike_name)
+                            || $meta_fq_classlike_name !== $fq_classlike_name
                         ) {
                             return null;
                         }
@@ -283,7 +280,7 @@ final class PhpStormMetaScanner
                 || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
-            $function_id = Interner::internLower($identifier->name->toString());
+            $function_id = Interner::intern($identifier->name->toString());
 
             if ($map) {
                 $offset = 0;
@@ -336,7 +333,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            Interner::lower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -366,7 +363,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            Interner::lower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();
@@ -406,7 +403,7 @@ final class PhpStormMetaScanner
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
-                            Interner::lower($function_id),
+                            $function_id,
                         );
 
                         return $storage->return_type ?: Type::getMixed();

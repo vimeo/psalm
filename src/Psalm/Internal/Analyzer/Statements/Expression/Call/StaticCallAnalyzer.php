@@ -32,7 +32,6 @@ use Psalm\Type\Union;
 
 use function count;
 use function in_array;
-use function strtolower;
 
 /**
  * @internal
@@ -56,7 +55,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->getParts()) === 1
-                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                && in_array($stmt->class->getFirst(), ['self', 'static', 'parent'], true)
             ) {
                 if ($stmt->class->getFirst() === 'parent') {
                     $child_fq_class_name = $context->self;
@@ -153,7 +152,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 if ($context->self) {
                     $self_storage = $codebase->classlike_storage_provider->get($context->self);
 
-                    if (isset($self_storage->used_traits[Interner::lower($fq_class_name)])) {
+                    if (isset($self_storage->used_traits[$fq_class_name])) {
                         $fq_class_name = $context->self;
                         $does_class_exist = true;
                     }

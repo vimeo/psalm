@@ -47,7 +47,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\VersionCompareReturnTypeProvider;
-use Psalm\Interner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -133,7 +132,7 @@ final class FunctionReturnTypeProvider
      */
     public function registerClosure(int $function_id, Closure $c): void
     {
-        self::$handlers[Interner::lower($function_id)][] = $c;
+        self::$handlers[$function_id][] = $c;
     }
 
     /**
@@ -141,7 +140,7 @@ final class FunctionReturnTypeProvider
      */
     public function has(int $function_id): bool
     {
-        return isset(self::$handlers[Interner::lower($function_id)]);
+        return isset(self::$handlers[$function_id]);
     }
 
     public function getReturnType(
@@ -151,7 +150,7 @@ final class FunctionReturnTypeProvider
         Context $context,
         CodeLocation $code_location,
     ): ?Union {
-        foreach (self::$handlers[Interner::lower($function_id)] ?? [] as $function_handler) {
+        foreach (self::$handlers[$function_id] ?? [] as $function_handler) {
             $event = new FunctionReturnTypeProviderEvent(
                 $statements_source,
                 $function_id,

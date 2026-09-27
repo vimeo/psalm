@@ -39,17 +39,17 @@ final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderIn
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {
         $config = Config::getInstance();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
 
         if (!$config->php_extensions["pdo"]) {
             return null;
         }
 
-        if ($method_name_lowercase === StrId::fetch) {
+        if ($method_name === StrId::fetch) {
             return self::handleFetch($event);
         }
 
-        if ($method_name_lowercase === StrId::fetchall) {
+        if ($method_name === StrId::fetchAll) {
             return self::handleFetchAll($event);
         }
 

@@ -51,6 +51,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use ReflectionFunction;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
@@ -192,7 +193,7 @@ final class Config
     /**
      * These are special object classes that allow any and all properties to be get/set on them
      *
-     * @var list<int> lowercase class name ids
+     * @var list<int> class name ids
      */
     private array $universal_object_crates;
 
@@ -291,7 +292,7 @@ final class Config
     private array $issue_handlers = [];
 
     /**
-     * @var list<int> lowercase class name ids
+     * @var list<int> class name ids
      */
     private array $mock_classes = [];
 
@@ -390,7 +391,7 @@ final class Config
     public bool $ensure_override_attribute = true;
 
     /**
-     * @var array<int, bool> lowercase function name id => true
+     * @var array<int, bool> function name id => true
      */
     public array $forbidden_functions = [];
     /**
@@ -451,7 +452,7 @@ final class Config
     /** @var array<int, mixed> constant name id => value */
     private array $predefined_constants = [];
 
-    /** @var array<int, bool> lowercase function name id => true */
+    /** @var array<int, bool> function name id => true */
     private array $predefined_functions = [];
 
     /** @var list<ClassLoader> $autoloaders */
@@ -631,7 +632,7 @@ final class Config
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();
         $this->universal_object_crates = [
-            StrId::stdclass,
+            StrId::stdClass,
         ];
     }
 
@@ -1331,7 +1332,7 @@ final class Config
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             /** @var SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
-                $config->mock_classes[] = Interner::internLower((string)$mock_class['name']);
+                $config->mock_classes[] = Interner::intern((string)$mock_class['name']);
             }
         }
 
@@ -1369,7 +1370,7 @@ final class Config
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
-                $config->forbidden_functions[Interner::internLower((string) $forbidden_function['name'])] = true;
+                $config->forbidden_functions[Interner::intern((string) $forbidden_function['name'])] = true;
             }
         }
 
@@ -2172,7 +2173,7 @@ final class Config
     }
 
     /**
-     * @param int $function_id interned lowercase function id
+     * @param int $function_id interned function id
      * @psalm-mutation-free
      */
     public function getReportingLevelForFunction(string $issue_type, int $function_id): ?string
@@ -2324,7 +2325,7 @@ final class Config
     }
 
     /**
-     * @return list<int> lowercase class name ids
+     * @return list<int> class name ids
      */
     public function getMockClasses(): array
     {
@@ -2575,7 +2576,7 @@ final class Config
     }
 
     /**
-     * @return array<int, bool> lowercase function name id => true
+     * @return array<int, bool> function name id => true
      */
     public function getPredefinedFunctions(): array
     {
@@ -2586,10 +2587,12 @@ final class Config
     {
         $defined_functions = get_defined_functions();
         foreach ($defined_functions['user'] as $function_name) {
-            $this->predefined_functions[Interner::internLower($function_name)] = true;
+            // get_defined_functions() lowercases user function names: use the declared name
+            $this->predefined_functions[Interner::intern((new ReflectionFunction($function_name))->getName())]
+                = true;
         }
         foreach ($defined_functions['internal'] as $function_name) {
-            $this->predefined_functions[Interner::internLower($function_name)] = true;
+            $this->predefined_functions[Interner::intern($function_name)] = true;
         }
     }
 
@@ -2908,11 +2911,11 @@ final class Config
         if (!class_exists($class_str)) {
             throw new UnexpectedValueException($class_str . ' is not a known class');
         }
-        $this->universal_object_crates[] = Interner::lower($class);
+        $this->universal_object_crates[] = $class;
     }
 
     /**
-     * @return list<int> lowercase class name ids
+     * @return list<int> class name ids
      */
     public function getUniversalObjectCrates(): array
     {

@@ -34,9 +34,9 @@ final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProvider
     {
         $statements_source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $method_name_lowercase = $event->getMethodNameLowercase();
+        $method_name = $event->getMethodName();
         if (!$statements_source instanceof StatementsAnalyzer
-            || $method_name_lowercase !== StrId::modify
+            || $method_name !== StrId::modify
             || !isset($call_args[0])
         ) {
             return null;

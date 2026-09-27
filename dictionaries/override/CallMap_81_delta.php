@@ -8,12 +8,12 @@ return array (
       0 => 'bool',
       'stream' => 'resource',
     ),
-    'fiber::resume' => 
+    'Fiber::resume' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
     ),
-    'fiber::suspend' => 
+    'Fiber::suspend' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
@@ -42,11 +42,11 @@ return array (
       0 => 'false|float|int|null|string',
       'column=' => 'int',
     ),
-    'reflectionenum::getbackingtype' => 
+    'ReflectionEnum::getBackingType' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'reflectionenum::getcases' => 
+    'ReflectionEnum::getCases' => 
     array (
       0 => 'list<ReflectionEnumUnitCase>',
     ),
@@ -71,7 +71,7 @@ return array (
   ),
   'changed' => 
   array (
-    'appenditerator::getinneriterator' => 
+    'AppendIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -82,7 +82,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'appenditerator::getiteratorindex' => 
+    'AppendIterator::getIteratorIndex' => 
     array (
       'old' => 
       array (
@@ -93,7 +93,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'cachingiterator::getinneriterator' => 
+    'CachingIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -104,7 +104,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'callbackfilteriterator::getinneriterator' => 
+    'CallbackFilterIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -294,7 +294,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'domdocument::createcomment' => 
+    'DOMDocument::createComment' => 
     array (
       'old' => 
       array (
@@ -307,7 +307,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'domdocument::createdocumentfragment' => 
+    'DOMDocument::createDocumentFragment' => 
     array (
       'old' => 
       array (
@@ -318,7 +318,7 @@ return array (
         0 => 'DOMDocumentFragment',
       ),
     ),
-    'domdocument::createtextnode' => 
+    'DOMDocument::createTextNode' => 
     array (
       'old' => 
       array (
@@ -331,7 +331,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'filteriterator::getinneriterator' => 
+    'FilterIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -1132,7 +1132,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'imagickpixel::setcolorvaluequantum' => 
+    'ImagickPixel::setColorValueQuantum' => 
     array (
       'old' => 
       array (
@@ -1147,7 +1147,7 @@ return array (
         'value' => 'IMAGICK_QUANTUM_TYPE',
       ),
     ),
-    'imagickpixel::setindex' => 
+    'ImagickPixel::setIndex' => 
     array (
       'old' => 
       array (
@@ -2087,7 +2087,7 @@ return array (
         'mailbox' => 'string',
       ),
     ),
-    'infiniteiterator::getinneriterator' => 
+    'InfiniteIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -2128,7 +2128,7 @@ return array (
         'value' => 'null|scalar',
       ),
     ),
-    'intlbreakiterator::createcharacterinstance' => 
+    'IntlBreakIterator::createCharacterInstance' => 
     array (
       'old' => 
       array (
@@ -2141,7 +2141,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlbreakiterator::createlineinstance' => 
+    'IntlBreakIterator::createLineInstance' => 
     array (
       'old' => 
       array (
@@ -2154,7 +2154,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlbreakiterator::createsentenceinstance' => 
+    'IntlBreakIterator::createSentenceInstance' => 
     array (
       'old' => 
       array (
@@ -2167,7 +2167,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlbreakiterator::createtitleinstance' => 
+    'IntlBreakIterator::createTitleInstance' => 
     array (
       'old' => 
       array (
@@ -2180,7 +2180,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlbreakiterator::createwordinstance' => 
+    'IntlBreakIterator::createWordInstance' => 
     array (
       'old' => 
       array (
@@ -2193,7 +2193,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcodepointbreakiterator::createcharacterinstance' => 
+    'IntlCodePointBreakIterator::createCharacterInstance' => 
     array (
       'old' => 
       array (
@@ -2206,7 +2206,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcodepointbreakiterator::createlineinstance' => 
+    'IntlCodePointBreakIterator::createLineInstance' => 
     array (
       'old' => 
       array (
@@ -2219,7 +2219,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcodepointbreakiterator::createsentenceinstance' => 
+    'IntlCodePointBreakIterator::createSentenceInstance' => 
     array (
       'old' => 
       array (
@@ -2232,7 +2232,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcodepointbreakiterator::createtitleinstance' => 
+    'IntlCodePointBreakIterator::createTitleInstance' => 
     array (
       'old' => 
       array (
@@ -2245,7 +2245,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlcodepointbreakiterator::createwordinstance' => 
+    'IntlCodePointBreakIterator::createWordInstance' => 
     array (
       'old' => 
       array (
@@ -2258,7 +2258,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intldateformatter::__construct' => 
+    'IntlDateFormatter::__construct' => 
     array (
       'old' => 
       array (
@@ -2281,7 +2281,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'intldateformatter::create' => 
+    'IntlDateFormatter::create' => 
     array (
       'old' => 
       array (
@@ -2304,7 +2304,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'intlgregoriancalendar::createinstance' => 
+    'IntlGregorianCalendar::createInstance' => 
     array (
       'old' => 
       array (
@@ -2319,7 +2319,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::createcharacterinstance' => 
+    'IntlRuleBasedBreakIterator::createCharacterInstance' => 
     array (
       'old' => 
       array (
@@ -2332,7 +2332,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::createlineinstance' => 
+    'IntlRuleBasedBreakIterator::createLineInstance' => 
     array (
       'old' => 
       array (
@@ -2345,7 +2345,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::createsentenceinstance' => 
+    'IntlRuleBasedBreakIterator::createSentenceInstance' => 
     array (
       'old' => 
       array (
@@ -2358,7 +2358,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::createtitleinstance' => 
+    'IntlRuleBasedBreakIterator::createTitleInstance' => 
     array (
       'old' => 
       array (
@@ -2371,7 +2371,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'intlrulebasedbreakiterator::createwordinstance' => 
+    'IntlRuleBasedBreakIterator::createWordInstance' => 
     array (
       'old' => 
       array (
@@ -2384,7 +2384,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'iteratoriterator::getinneriterator' => 
+    'IteratorIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -3316,7 +3316,7 @@ return array (
         'ldap' => 'LDAP\\Connection',
       ),
     ),
-    'limititerator::getinneriterator' => 
+    'LimitIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -3327,7 +3327,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'locale::getallvariants' => 
+    'Locale::getAllVariants' => 
     array (
       'old' => 
       array (
@@ -3340,7 +3340,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'locale::getkeywords' => 
+    'Locale::getKeywords' => 
     array (
       'old' => 
       array (
@@ -3353,7 +3353,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'locale::getprimarylanguage' => 
+    'Locale::getPrimaryLanguage' => 
     array (
       'old' => 
       array (
@@ -3366,7 +3366,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'locale::getregion' => 
+    'Locale::getRegion' => 
     array (
       'old' => 
       array (
@@ -3379,7 +3379,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'locale::getscript' => 
+    'Locale::getScript' => 
     array (
       'old' => 
       array (
@@ -3392,7 +3392,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'locale::parselocale' => 
+    'Locale::parseLocale' => 
     array (
       'old' => 
       array (
@@ -3405,7 +3405,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'messageformatter::create' => 
+    'MessageFormatter::create' => 
     array (
       'old' => 
       array (
@@ -3420,7 +3420,7 @@ return array (
         'pattern' => 'string',
       ),
     ),
-    'mongodb\\driver\\cursor::getid' => 
+    'MongoDB\\Driver\\Cursor::getId' => 
     array (
       'old' => 
       array (
@@ -3432,7 +3432,7 @@ return array (
         0 => 'MongoDB\\BSON\\Int64',
       ),
     ),
-    'mongodb\\driver\\manager::executecommand' => 
+    'MongoDB\\Driver\\Manager::executeCommand' => 
     array (
       'old' => 
       array (
@@ -3449,92 +3449,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\manager::executequery' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MongoDB\\Driver\\Cursor',
-        'namespace' => 'string',
-        'query' => 'MongoDB\\Driver\\Query',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'MongoDB\\Driver\\CursorInterface',
-        'namespace' => 'string',
-        'query' => 'MongoDB\\Driver\\Query',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'mongodb\\driver\\manager::executereadcommand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MongoDB\\Driver\\Cursor',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'MongoDB\\Driver\\CursorInterface',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'mongodb\\driver\\manager::executereadwritecommand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MongoDB\\Driver\\Cursor',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'MongoDB\\Driver\\CursorInterface',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'mongodb\\driver\\manager::executewritecommand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MongoDB\\Driver\\Cursor',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'MongoDB\\Driver\\CursorInterface',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'mongodb\\driver\\server::executecommand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MongoDB\\Driver\\Cursor',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'MongoDB\\Driver\\CursorInterface',
-        'db' => 'string',
-        'command' => 'MongoDB\\Driver\\Command',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'mongodb\\driver\\server::executequery' => 
+    'MongoDB\\Driver\\Manager::executeQuery' => 
     array (
       'old' => 
       array (
@@ -3551,7 +3466,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executereadcommand' => 
+    'MongoDB\\Driver\\Manager::executeReadCommand' => 
     array (
       'old' => 
       array (
@@ -3568,7 +3483,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executereadwritecommand' => 
+    'MongoDB\\Driver\\Manager::executeReadWriteCommand' => 
     array (
       'old' => 
       array (
@@ -3585,7 +3500,7 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\server::executewritecommand' => 
+    'MongoDB\\Driver\\Manager::executeWriteCommand' => 
     array (
       'old' => 
       array (
@@ -3602,7 +3517,92 @@ return array (
         'options=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'mongodb\\driver\\writeresult::getdeletedcount' => 
+    'MongoDB\\Driver\\Server::executeCommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'MongoDB\\Driver\\Server::executeQuery' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'namespace' => 'string',
+        'query' => 'MongoDB\\Driver\\Query',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'MongoDB\\Driver\\Server::executeReadCommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'MongoDB\\Driver\\Server::executeReadWriteCommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'MongoDB\\Driver\\Server::executeWriteCommand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MongoDB\\Driver\\Cursor',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'MongoDB\\Driver\\CursorInterface',
+        'db' => 'string',
+        'command' => 'MongoDB\\Driver\\Command',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'MongoDB\\Driver\\WriteResult::getDeletedCount' => 
     array (
       'old' => 
       array (
@@ -3613,7 +3613,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'mongodb\\driver\\writeresult::getinsertedcount' => 
+    'MongoDB\\Driver\\WriteResult::getInsertedCount' => 
     array (
       'old' => 
       array (
@@ -3624,7 +3624,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'mongodb\\driver\\writeresult::getmatchedcount' => 
+    'MongoDB\\Driver\\WriteResult::getMatchedCount' => 
     array (
       'old' => 
       array (
@@ -3635,7 +3635,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'mongodb\\driver\\writeresult::getmodifiedcount' => 
+    'MongoDB\\Driver\\WriteResult::getModifiedCount' => 
     array (
       'old' => 
       array (
@@ -3646,7 +3646,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'mongodb\\driver\\writeresult::getupsertedcount' => 
+    'MongoDB\\Driver\\WriteResult::getUpsertedCount' => 
     array (
       'old' => 
       array (
@@ -3657,7 +3657,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'multipleiterator::current' => 
+    'MultipleIterator::current' => 
     array (
       'old' => 
       array (
@@ -3820,7 +3820,7 @@ return array (
         '&r array' => 'array<array-key, mixed>',
       ),
     ),
-    'norewinditerator::getinneriterator' => 
+    'NoRewindIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5340,7 +5340,7 @@ return array (
         'connection=' => 'PgSql\\Connection|null',
       ),
     ),
-    'phar::buildfromdirectory' => 
+    'Phar::buildFromDirectory' => 
     array (
       'old' => 
       array (
@@ -5355,7 +5355,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'phar::buildfromiterator' => 
+    'Phar::buildFromIterator' => 
     array (
       'old' => 
       array (
@@ -5370,7 +5370,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'phardata::buildfromdirectory' => 
+    'PharData::buildFromDirectory' => 
     array (
       'old' => 
       array (
@@ -5385,7 +5385,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'phardata::buildfromiterator' => 
+    'PharData::buildFromIterator' => 
     array (
       'old' => 
       array (
@@ -5712,7 +5712,7 @@ return array (
         'word' => 'string',
       ),
     ),
-    'recursivecachingiterator::getinneriterator' => 
+    'RecursiveCachingIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5723,7 +5723,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'recursivecallbackfilteriterator::getinneriterator' => 
+    'RecursiveCallbackFilterIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5734,7 +5734,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'recursivefilteriterator::getinneriterator' => 
+    'RecursiveFilterIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5745,7 +5745,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'recursiveregexiterator::getinneriterator' => 
+    'RecursiveRegexIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5756,7 +5756,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'reflectionclass::getstaticproperties' => 
+    'ReflectionClass::getStaticProperties' => 
     array (
       'old' => 
       array (
@@ -5767,7 +5767,7 @@ return array (
         0 => 'array<string, ReflectionProperty>|null',
       ),
     ),
-    'reflectionclass::newinstanceargs' => 
+    'ReflectionClass::newInstanceArgs' => 
     array (
       'old' => 
       array (
@@ -5780,7 +5780,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'reflectionfunction::getclosurescopeclass' => 
+    'ReflectionFunction::getClosureScopeClass' => 
     array (
       'old' => 
       array (
@@ -5791,7 +5791,7 @@ return array (
         0 => 'ReflectionClass|null',
       ),
     ),
-    'reflectionfunction::getclosurethis' => 
+    'ReflectionFunction::getClosureThis' => 
     array (
       'old' => 
       array (
@@ -5802,7 +5802,7 @@ return array (
         0 => 'null|object',
       ),
     ),
-    'reflectionmethod::getclosurescopeclass' => 
+    'ReflectionMethod::getClosureScopeClass' => 
     array (
       'old' => 
       array (
@@ -5813,7 +5813,7 @@ return array (
         0 => 'ReflectionClass|null',
       ),
     ),
-    'reflectionmethod::getclosurethis' => 
+    'ReflectionMethod::getClosureThis' => 
     array (
       'old' => 
       array (
@@ -5824,7 +5824,7 @@ return array (
         0 => 'null|object',
       ),
     ),
-    'reflectionobject::getstaticproperties' => 
+    'ReflectionObject::getStaticProperties' => 
     array (
       'old' => 
       array (
@@ -5835,7 +5835,7 @@ return array (
         0 => 'array<array-key, ReflectionProperty>|null',
       ),
     ),
-    'reflectionobject::newinstanceargs' => 
+    'ReflectionObject::newInstanceArgs' => 
     array (
       'old' => 
       array (
@@ -5848,7 +5848,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'regexiterator::getinneriterator' => 
+    'RegexIterator::getInnerIterator' => 
     array (
       'old' => 
       array (
@@ -5872,7 +5872,7 @@ return array (
         '&r array' => 'array<array-key, mixed>',
       ),
     ),
-    'soapclient::__setcookie' => 
+    'SoapClient::__setCookie' => 
     array (
       'old' => 
       array (
@@ -5887,7 +5887,7 @@ return array (
         'value=' => 'null|string',
       ),
     ),
-    'soapclient::__setlocation' => 
+    'SoapClient::__setLocation' => 
     array (
       'old' => 
       array (
@@ -5900,7 +5900,7 @@ return array (
         'location=' => 'null|string',
       ),
     ),
-    'splfileobject::fputcsv' => 
+    'SplFileObject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -5920,7 +5920,7 @@ return array (
         'eol=' => 'string',
       ),
     ),
-    'splfileobject::fscanf' => 
+    'SplFileObject::fscanf' => 
     array (
       'old' => 
       array (
@@ -5935,7 +5935,7 @@ return array (
         '&...vars=' => 'float|int|string',
       ),
     ),
-    'spltempfileobject::fputcsv' => 
+    'SplTempFileObject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -5955,7 +5955,7 @@ return array (
         'eol=' => 'string',
       ),
     ),
-    'spltempfileobject::fscanf' => 
+    'SplTempFileObject::fscanf' => 
     array (
       'old' => 
       array (
@@ -5991,7 +5991,7 @@ return array (
         'microseconds=' => 'int|null',
       ),
     ),
-    'swoole\\http\\response::cookie' => 
+    'Swoole\\Http\\Response::cookie' => 
     array (
       'old' => 
       array (
@@ -6021,7 +6021,7 @@ return array (
         'partitioned=' => 'bool',
       ),
     ),
-    'swoole\\http\\response::rawcookie' => 
+    'Swoole\\Http\\Response::rawcookie' => 
     array (
       'old' => 
       array (
@@ -6051,7 +6051,7 @@ return array (
         'partitioned=' => 'bool',
       ),
     ),
-    'swoole\\lock::lock' => 
+    'Swoole\\Lock::lock' => 
     array (
       'old' => 
       array (
@@ -6064,7 +6064,7 @@ return array (
         'timeout=' => 'float',
       ),
     ),
-    'swoole\\server::addprocess' => 
+    'Swoole\\Server::addProcess' => 
     array (
       'old' => 
       array (
@@ -6077,7 +6077,7 @@ return array (
         'process' => 'Swoole\\Process',
       ),
     ),
-    'swoole\\server::stop' => 
+    'Swoole\\Server::stop' => 
     array (
       'old' => 
       array (
@@ -6145,55 +6145,55 @@ return array (
   ),
   'removed' => 
   array (
-    'reflectionmethod::isstatic' => 
+    'ReflectionMethod::isStatic' => 
     array (
       0 => 'bool',
     ),
-    'swoole\\coroutine\\mysql::__destruct' => 
+    'Swoole\\Coroutine\\MySQL::__destruct' => 
     array (
       0 => 'ReturnType',
     ),
-    'swoole\\coroutine\\mysql::close' => 
+    'Swoole\\Coroutine\\MySQL::close' => 
     array (
       0 => 'ReturnType',
     ),
-    'swoole\\coroutine\\mysql::connect' => 
+    'Swoole\\Coroutine\\MySQL::connect' => 
     array (
       0 => 'ReturnType',
       'server_config=' => 'array<array-key, mixed>',
     ),
-    'swoole\\coroutine\\mysql::getdefer' => 
+    'Swoole\\Coroutine\\MySQL::getDefer' => 
     array (
       0 => 'ReturnType',
     ),
-    'swoole\\coroutine\\mysql::query' => 
+    'Swoole\\Coroutine\\MySQL::query' => 
     array (
       0 => 'ReturnType',
       'sql' => 'mixed',
       'timeout=' => 'mixed',
     ),
-    'swoole\\coroutine\\mysql::recv' => 
+    'Swoole\\Coroutine\\MySQL::recv' => 
     array (
       0 => 'ReturnType',
     ),
-    'swoole\\coroutine\\mysql::setdefer' => 
+    'Swoole\\Coroutine\\MySQL::setDefer' => 
     array (
       0 => 'ReturnType',
       'defer=' => 'mixed',
     ),
-    'swoole\\lock::__destruct' => 
+    'Swoole\\Lock::__destruct' => 
     array (
       0 => 'void',
     ),
-    'swoole\\lock::lock_read' => 
+    'Swoole\\Lock::lock_read' => 
     array (
       0 => 'bool',
     ),
-    'swoole\\lock::trylock' => 
+    'Swoole\\Lock::trylock' => 
     array (
       0 => 'bool',
     ),
-    'swoole\\lock::trylock_read' => 
+    'Swoole\\Lock::trylock_read' => 
     array (
       0 => 'bool',
     ),

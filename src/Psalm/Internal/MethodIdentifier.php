@@ -26,7 +26,7 @@ final class MethodIdentifier implements Stringable
 
     /**
      * @param int $fq_class_name interned class name
-     * @param int $method_name interned lowercase method name
+     * @param int $method_name interned method name, as declared/written (case-sensitive)
      * @psalm-mutation-free
      */
     public function __construct(public readonly int $fq_class_name, public readonly int $method_name)
@@ -54,7 +54,7 @@ final class MethodIdentifier implements Stringable
         // remove leading backslash if it exists
         $method_id = ltrim($method_id, '\\');
         $method_id_parts = explode('::', $method_id);
-        return new self(Interner::intern($method_id_parts[0]), Interner::internLower($method_id_parts[1]));
+        return new self(Interner::intern($method_id_parts[0]), Interner::intern($method_id_parts[1]));
     }
 
     /**
@@ -63,13 +63,20 @@ final class MethodIdentifier implements Stringable
     public function equals(self $other): bool
     {
         return $this->method_name === $other->method_name
-            && Interner::equalsLower($this->fq_class_name, $other->fq_class_name);
+            && $this->fq_class_name === $other->fq_class_name;
     }
 
-    /** @return non-empty-string */
+    /** @var array<int, array<int, non-empty-string>> */
+    private static array $strings = [];
+
+    /**
+     * @return non-empty-string
+     * @psalm-suppress ImpureStaticProperty memoization only
+     */
     #[Override]
     public function __toString(): string
     {
-        return Interner::str($this->fq_class_name) . '::' . Interner::str($this->method_name);
+        return self::$strings[$this->fq_class_name][$this->method_name]
+            ??= Interner::$strings[$this->fq_class_name] . '::' . Interner::$strings[$this->method_name];
     }
 }

@@ -16,10 +16,10 @@ use Psalm\Type\Union;
 
 use function array_values;
 use function count;
-use function preg_quote;
-use function preg_replace;
 use function str_contains;
-use function stripos;
+use function str_starts_with;
+use function strlen;
+use function substr;
 
 /**
  * Denotes the `class-string` type, used to describe a string representing a valid PHP class.
@@ -125,21 +125,16 @@ class TClassString extends TString
         $as = Interner::str($this->as);
         $namespace = $namespace === null ? '' : Interner::str($namespace);
 
-        if ($namespace !== '' && stripos($as, $namespace . '\\') === 0) {
-            return 'class-string<' . preg_replace(
-                '/^' . preg_quote($namespace . '\\') . '/i',
-                '',
-                $as,
-            ) . '>';
+        if ($namespace !== '' && str_starts_with($as, $namespace . '\\')) {
+            return 'class-string<' . substr($as, strlen($namespace) + 1) . '>';
         }
 
         if ($namespace === '' && !str_contains($as, '\\')) {
             return 'class-string<' . $as . '>';
         }
 
-        $as_lc = Interner::lower($this->as);
-        if (isset($aliased_classes[$as_lc])) {
-            return 'class-string<' . Interner::str($aliased_classes[$as_lc]) . '>';
+        if (isset($aliased_classes[$this->as])) {
+            return 'class-string<' . Interner::str($aliased_classes[$this->as]) . '>';
         }
 
         return 'class-string<\\' . $as . '>';

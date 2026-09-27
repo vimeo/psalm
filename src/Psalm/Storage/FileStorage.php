@@ -18,31 +18,31 @@ final class FileStorage
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @var array<int, int> lowercase class name id => class name id
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $classlikes_in_file = [];
 
     /**
-     * @var array<int, int> lowercase class name id => class name id
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $referenced_classlikes = [];
 
     /**
-     * @var array<int, int> lowercase class name id => class name id
+     * @var array<int, int> class name id => class name id (same id)
      */
     public array $required_classes = [];
 
     /**
-     * @var array<int, int> lowercase interface name id => interface name id
+     * @var array<int, int> interface name id => interface name id (same id)
      */
     public array $required_interfaces = [];
 
     /**
-     * @var array<int, FunctionStorage> lowercase function id => storage
+     * @var array<int, FunctionStorage> function id => storage
      */
     public array $functions = [];
 
-    /** @var array<int, string> lowercase function id => lowercase file path */
+    /** @var array<int, string> function id => lowercase file path */
     public array $declaring_function_ids = [];
 
     /**
