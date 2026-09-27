@@ -7,14 +7,25 @@ on:
 #  branches:
 #   - main
 
+permissions:
+  contents: read
+
 jobs:
   psalm:
     name: Psalm
     runs-on: ubuntu-latest
+    # The image ships Psalm, PHP 8.4 and Composer; see https://github.com/danog/psalm/pkgs/container/psalm
     container:
       image: ghcr.io/danog/psalm:__PSALM_VERSION__
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      # Psalm needs your project's autoloader to resolve classes, and it loads
+      # Psalm plugins from your vendor directory, so dependencies are required.
+      - name: Install dependencies
+        env:
+          COMPOSER_ALLOW_SUPERUSER: '1'
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       # --output-format=github annotates pull requests inline with Psalm issues.
       # --threads=4: Psalm defaults to 1 thread in CI; standard GitHub runners have 4 cores.

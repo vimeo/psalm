@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Config;
 
 use JsonException;
+use UnexpectedValueException;
 
 use function array_merge;
-use function assert;
 use function dirname;
 use function file_exists;
 use function file_get_contents;
@@ -35,12 +35,13 @@ final class CiCreator
 
     private static function loadTemplate(): string
     {
-        $path = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . '.github'
-            . DIRECTORY_SEPARATOR . 'stubs'
+        $path = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'resources'
             . DIRECTORY_SEPARATOR . 'github-actions-psalm.yml';
 
         $contents = file_get_contents($path);
-        assert($contents !== false);
+        if ($contents === false) {
+            throw new UnexpectedValueException('Cannot locate the CI workflow template at ' . $path);
+        }
 
         return $contents;
     }
@@ -83,14 +84,15 @@ final class CiCreator
             if (!is_string($version)) {
                 return null;
             }
-            // Extract major version from e.g. "6.8.4" or "v6.8.4"
-            if (preg_match('/v?(\d+)/', $version, $matches) === 1
-                && isset($matches[1])
-            ) {
-                return $matches[1];
+
+            // The Docker tags published by bin/ci/push-docker.php are the VCS tags verbatim
+            // (e.g. "6.18.1", "7.0.0-beta22"); there is no bare-major tag such as "6".
+            // Branch installs ("dev-master") have no matching release image, so fall back to "latest".
+            if (preg_match('/^v?\d+\.\d+\.\d+(?:-[A-Za-z0-9.]+)?$/', $version) !== 1) {
+                return null;
             }
 
-            return null;
+            return $version;
         }
 
         return null;
