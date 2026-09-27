@@ -583,7 +583,7 @@ final class TypeParser
     ): Atomic|Union {
         $generic_type = $parse_tree->value;
 
-        $purity_trees = $parse_tree->purity->children ?? [];
+        $purity_trees = $parse_tree->purity?->children ?? [];
 
         // `T[K]`, with templates T and K: an indexed access
         if ($parse_tree->children === []
