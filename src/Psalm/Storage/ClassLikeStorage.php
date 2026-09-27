@@ -60,6 +60,14 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $namedMixins = [];
 
+    /**
+     * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
+     * Filled during population; see getNamedMixinsForLookup().
+     *
+     * @var list<TNamedObject>
+     */
+    public array $transitiveNamedMixins = [];
+
     public ?string $mixin_declaring_fqcln = null;
 
     public ?bool $sealed_properties = null;
@@ -473,6 +481,18 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return $type_params;
+    }
+
+    /**
+     * Named mixins in member-lookup order: transitive ones first, then those declared on or inherited by
+     * the class, so that with last-match-wins lookup a nearer mixin shadows a deeper one.
+     *
+     * @return list<TNamedObject>
+     * @psalm-mutation-free
+     */
+    public function getNamedMixinsForLookup(): array
+    {
+        return [...$this->transitiveNamedMixins, ...$this->namedMixins];
     }
 
     /**

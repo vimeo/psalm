@@ -30,6 +30,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -578,6 +579,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $emit_issues = true,
+        bool $is_write = false,
     ): ?bool {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -632,7 +634,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $storage = $class_storage->properties[$property_name];
 
-        switch ($storage->visibility) {
+        // the set visibility is always at least as restrictive as the get visibility,
+        // so checking it alone is enough for writes
+        $visibility = $is_write ? $storage->set_visibility : $storage->visibility;
+
+        if ($is_write && $storage->hasAsymmetricVisibility()) {
+            $verb = 'modify';
+            $visibility_text = PropertyStorage::getVisibilityText($visibility) . '(set)';
+        } else {
+            $verb = 'access';
+            $visibility_text = PropertyStorage::getVisibilityText($visibility);
+        }
+
+        $from_context = $context->self !== null ? ' from context ' . $context->self : '';
+
+        switch ($visibility) {
             case self::VISIBILITY_PUBLIC:
                 return $emit_issues ? null : true;
 
@@ -640,7 +656,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 if ($emit_issues) {
                     IssueBuffer::maybeAdd(
                         new InaccessibleProperty(
-                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
+                            'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id . $from_context,
                             $code_location,
                         ),
                         $suppressed_issues,
@@ -653,7 +669,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
-                                'Cannot access protected property ' . $property_id,
+                                'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id,
                                 $code_location,
                             ),
                             $suppressed_issues,
@@ -671,7 +687,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
-                                'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
+                                'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id
+                                    . $from_context,
                                 $code_location,
                             ),
                             $suppressed_issues,

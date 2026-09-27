@@ -116,6 +116,29 @@ final class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nativeIntersectionWithFinalClassDeclaredBeforeInterface' => [
+                // The final class storage exists when the signature is scanned, the interface storage does not yet.
+                // Scanning must not depend on that, so the intersection has to be kept as written.
+                'code' => '<?php
+                    final class Vector {
+                        public function vectorMethod(): void {}
+                    }
+                    /**
+                     * @param Vector&ResultInterface $docblock_in
+                     */
+                    function test(Vector&ResultInterface $in, Vector&ResultInterface $docblock_in): void {
+                        $in->vectorMethod();
+                        $in->resultMethod();
+                        $docblock_in->resultMethod();
+                    }
+                    interface ResultInterface {
+                        public function resultMethod(): void;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

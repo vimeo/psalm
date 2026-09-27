@@ -829,7 +829,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     ): array {
         $naive_method_exists = false;
 
-        foreach ($class_storage->namedMixins as $mixin) {
+        foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
             if (!$class_storage->mixin_declaring_fqcln) {
                 continue;
             }

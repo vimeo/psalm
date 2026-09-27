@@ -91,6 +91,9 @@ echo $b->b;
 echo $b->a; // works
 ```
 
+Mixins are followed transitively: if `B` mixes in `A` and `C` mixes in `B`, members of `A` are also available on `C`.
+Chains are only followed through non-generic mixins; a generic hop such as `@mixin Collection<T>` is not traversed.
+
 
 ## Psalm-specific tags
 
@@ -120,6 +123,35 @@ function addFoo(?string &$s) : void {
     $s .= "foo";
 }
 ```
+
+### `@param-closure-this`, `@psalm-param-closure-this`, `@phpstan-param-closure-this`
+
+This binds `$this` to a specific class type inside a `Closure` or arrow-function expression passed directly as an argument. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name (including a generic type such as `Box<int>`), `$this`, `static`, `self`, `parent`, or a class-level template parameter.
+
+```php
+<?php
+class Macroable {
+    /**
+     * @param-closure-this static $macro
+     */
+    public static function macro(string $name, Closure $macro): void {
+        // store $macro and later run $macro->call($instance)
+    }
+}
+
+class Builder extends Macroable {
+    public int $value = 42;
+}
+
+Builder::macro('grab', function (): int {
+    // $this is Builder here, not the outer scope
+    return $this->value;
+});
+```
+
+Inside the callback, class scope follows the bound type: `self::` refers to that class and `parent::` to its parent. Property types retain the bound class's generic arguments rather than using the caller's property types.
+
+The tag is ignored when it cannot name one known class to bind to (a union such as `A|B`, or a class Psalm has not seen), and when the argument is a static closure, since PHP cannot rebind one.
 
 ### `@psalm-var`, `@psalm-param`, `@psalm-return`, `@psalm-property`, `@psalm-property-read`, `@psalm-property-write`, `@psalm-method`
 
