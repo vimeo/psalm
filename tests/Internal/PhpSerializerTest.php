@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use Amp\Serialization\SerializationException;
+use Fiber;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Fork\PhpSerializer;
@@ -39,9 +40,23 @@ final class PhpSerializerTest extends TestCase
         return str_repeat('a:1:{i:0;', $depth) . 'i:1;' . str_repeat('}', $depth);
     }
 
-    public function testUnserializesDeeperThanTheDefaultLimit(): void
+    public function testUnserializesDeeperThanTheDefaultLimitRegardlessOfTheCurrentStack(): void
     {
-        self::assertIsArray((new PhpSerializer())->unserialize(self::nestedArray(PhpSerializer::MINIMUM_MAX_DEPTH)));
+        $previous_stack_size = (string) ini_get('fiber.stack_size');
+
+        try {
+            // PHP's default fiber stack on 64-bit systems, too small to unserialize this payload
+            ini_set('fiber.stack_size', '2M');
+            $data = self::nestedArray(PhpSerializer::DEEP_MAX_DEPTH);
+
+            $fiber = new Fiber(static fn(): mixed => (new PhpSerializer())->unserialize($data));
+            $fiber->start();
+
+            self::assertIsArray($fiber->getReturn());
+            self::assertSame('2M', ini_get('fiber.stack_size'));
+        } finally {
+            ini_set('fiber.stack_size', $previous_stack_size);
+        }
     }
 
     public function testRejectsPayloadsBeyondTheLimitInsteadOfCrashing(): void
@@ -52,11 +67,13 @@ final class PhpSerializerTest extends TestCase
         (new PhpSerializer())->unserialize(self::nestedArray(200_000));
     }
 
-    public function testRespectsALargerConfiguredLimit(): void
+    public function testUsesANonDefaultConfiguredLimitAsIs(): void
     {
         ini_set('unserialize_max_depth', '20000');
-
-        self::assertSame(20_000, PhpSerializer::getMaxDepth());
         self::assertIsArray((new PhpSerializer())->unserialize(self::nestedArray(15_000)));
+
+        ini_set('unserialize_max_depth', '100');
+        $this->expectException(SerializationException::class);
+        (new PhpSerializer())->unserialize(self::nestedArray(200));
     }
 }
