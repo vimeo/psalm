@@ -57,11 +57,22 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /** @psalm-mutation-free */
-    public function getBoundThisClass(): ?string
+    #[Override]
+    public function getFQCLN(): ?string
     {
-        return $this->bound_this_class;
+        return $this->bound_this_class ?? parent::getFQCLN();
     }
 
+    /** @psalm-mutation-free */
+    #[Override]
+    public function getParentFQCLN(): ?string
+    {
+        if ($this->bound_this_class === null) {
+            return parent::getParentFQCLN();
+        }
+
+        return $this->codebase->classlike_storage_provider->get($this->bound_this_class)->parent_class;
+    }
 
     /** @psalm-mutation-free */
     #[Override]
@@ -85,9 +96,8 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * Type `@param-closure-this` bound `$this` to at this call site, as stamped on the node by
      * {@see \Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer}.
      *
-     * Only a single known class binds. A union would leave `self::` and the property seeding in
-     * {@see self::analyzeExpression()} ambiguous, and a static closure cannot be rebound at all,
-     * so both fall back to the usual unbound handling.
+     * Only a single known class binds. A union would leave class scope ambiguous, and a static
+     * closure cannot be rebound at all, so both fall back to the usual unbound handling.
      *
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $stmt
      */
@@ -166,21 +176,18 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
         }
 
-        $properties_class = $bound_self ?? $context->self;
-
-        if ($properties_class !== null && $codebase->classlike_storage_provider->has($properties_class)) {
-            $self_class_storage = $codebase->classlike_storage_provider->get($properties_class);
-
-            $parent_fqcln = $bound_self !== null
-                ? $self_class_storage->parent_class
-                : $statements_analyzer->getParentFQCLN();
+        if ($bound_self === null
+            && $context->self !== null
+            && $codebase->classlike_storage_provider->has($context->self)
+        ) {
+            $self_class_storage = $codebase->classlike_storage_provider->get($context->self);
 
             ClassAnalyzer::addContextProperties(
                 $statements_analyzer,
                 $self_class_storage,
                 $use_context,
-                $properties_class,
-                $parent_fqcln,
+                $context->self,
+                $statements_analyzer->getParentFQCLN(),
             );
         }
 

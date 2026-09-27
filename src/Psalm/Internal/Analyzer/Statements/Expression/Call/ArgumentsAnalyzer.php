@@ -132,6 +132,13 @@ final class ArgumentsAnalyzer
         }
 
         foreach ($args as $argument_offset => $arg) {
+            if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+            ) {
+                // The node may be re-analyzed for another callable target.
+                $arg->value->setAttribute('psalm-closure-this-type', null);
+            }
+
             if ($function_params === null) {
                 if (self::evaluateArbitraryParam(
                     $statements_analyzer,
@@ -154,7 +161,7 @@ final class ArgumentsAnalyzer
                     }
                 }
 
-                if ($last_param && $last_param->is_variadic) {
+                if ($param === null && $last_param && $last_param->is_variadic) {
                     $param = $last_param;
                 }
             } elseif ($argument_offset < count($function_params)) {
@@ -241,10 +248,6 @@ final class ArgumentsAnalyzer
             if ($arg->value instanceof PhpParser\Node\Expr\Closure
                 || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
             ) {
-                // always clear first: the same node is re-analyzed for each call it reaches, and a
-                // type left over from a previous, bound call must not leak into an unbound one
-                $arg->value->setAttribute('psalm-closure-this-type', null);
-
                 if ($param && $param->closure_this_type) {
                     self::applyParamClosureThisHint(
                         $statements_analyzer,
@@ -623,13 +626,18 @@ final class ArgumentsAnalyzer
                 $called_class_storage = $codebase->classlike_storage_provider->get($called_class);
                 $static_class_is_final = $called_class_storage->final;
 
-                // `self` is the class that wrote the docblock, which for an inherited method is a
-                // parent of the called class, while `static` stays the called class.
-                $declaring_method_id = $called_class_storage
-                    ->declaring_method_ids[$called_method_id->method_name] ?? null;
+                // `self` is the class where the method appears. For a trait, that is
+                // its consuming class; for normal inheritance, it is the declaring class.
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($called_method_id);
 
                 if ($declaring_method_id !== null) {
                     $self_fq_class_name = $declaring_method_id->fq_class_name;
+
+                    $appearing_method_id = $codebase->methods->getAppearingMethodId($called_method_id);
+
+                    if ($appearing_method_id !== null && $declaring_method_id !== $appearing_method_id) {
+                        $self_fq_class_name = $appearing_method_id->fq_class_name;
+                    }
                 }
             }
         }

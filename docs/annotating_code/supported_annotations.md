@@ -123,7 +123,7 @@ function addFoo(?string &$s) : void {
 
 ### `@param-closure-this`, `@psalm-param-closure-this`, `@phpstan-param-closure-this`
 
-This is used to bind `$this` inside a `Closure` or arrow-function argument to a specific class type. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name, `$this`, `static`, `self`, `parent`, or a class-level template parameter.
+This binds `$this` to a specific class type inside a `Closure` or arrow-function expression passed directly as an argument. Use it when the receiving function or method runs the callback with `Closure::bind` / `Closure::call` so that `$this` resolves to a different object than the caller's `$this`. The bound type may be a class name (including a generic type such as `Box<int>`), `$this`, `static`, `self`, `parent`, or a class-level template parameter.
 
 ```php
 <?php
@@ -145,6 +145,8 @@ Builder::macro('grab', function (): int {
     return $this->value;
 });
 ```
+
+Inside the callback, class scope follows the bound type: `self::` refers to that class and `parent::` to its parent. Property types retain the bound class's generic arguments rather than using the caller's property types.
 
 The tag is ignored when it cannot name one known class to bind to (a union such as `A|B`, or a class Psalm has not seen), and when the argument is a static closure, since PHP cannot rebind one.
 

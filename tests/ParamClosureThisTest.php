@@ -160,27 +160,6 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
             ],
-            'selfResolvesToDeclaringClassOnInheritedStatic' => [
-                'code' => '<?php
-                    class Base {
-                        public int $only_on_base = 100;
-
-                        /**
-                         * @param-closure-this self $cb
-                         */
-                        public static function run(Closure $cb): void {
-                        }
-                    }
-
-                    class Child extends Base {
-                        public int $only_on_child = 200;
-                    }
-
-                    Child::run(function (): int {
-                        return $this->only_on_base;
-                    });
-                ',
-            ],
             'staticResolvesToCalledClassOnInheritedStatic' => [
                 'code' => '<?php
                     class Base {
@@ -215,6 +194,26 @@ final class ParamClosureThisTest extends TestCase
                         return $this->p;
                     });
                 ',
+            ],
+            'namedClosureParameterTakesPreVariadicAnnotation' => [
+                'code' => '<?php
+                    class Bound {
+                        public int $value = 99;
+                    }
+
+                    /**
+                     * @param-closure-this Bound $callback
+                     */
+                    function withBound(Closure $callback, mixed ...$rest): void {
+                    }
+
+                    withBound(callback: function (): int {
+                        return $this->value;
+                    });
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'classGenericTemplateBindsClosureThis' => [
                 'code' => '<?php
@@ -270,6 +269,62 @@ final class ParamClosureThisTest extends TestCase
                     }
                 ',
             ],
+            'traitSelfResolvesToUsingClass' => [
+                'code' => '<?php
+                    trait RunsCallback {
+                        /** @param-closure-this self $callback */
+                        public function run(Closure $callback): void {
+                            $callback->call($this);
+                        }
+                    }
+
+                    class Host {
+                        use RunsCallback;
+
+                        public int $value = 1;
+                    }
+
+                    (new Host())->run(function (): int {
+                        return $this->value;
+                    });',
+            ],
+            'boundParentConstantUsesBoundScope' => [
+                'code' => '<?php
+                    class Base {
+                        protected const VALUE = 1;
+                    }
+
+                    class Bound extends Base {}
+
+                    /** @param-closure-this Bound $callback */
+                    function bind(Closure $callback): void {}
+
+                    bind(function (): int {
+                        return parent::VALUE;
+                    });
+                ',
+            ],
+            'genericBoundReceiverPropertyUsesBoundType' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param-closure-this Box<int> $callback */
+                    function bind(Closure $callback): void {}
+
+                    bind(function (): int {
+                        return $this->value;
+                    });
+                ',
+            ],
         ];
     }
 
@@ -277,23 +332,49 @@ final class ParamClosureThisTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'closureNodeUnboundAfterPreviousBoundCallDoesNotLeak' => [
+            'sameClosureNodeIsClearedForUnboundUnionReceiver' => [
                 'code' => '<?php
-                    class Bound { public int $p = 1; }
-
-                    /** @param-closure-this Bound $cb */
-                    function bound(Closure $cb): void {
-                        $cb->call(new Bound());
+                    class Bound {
+                        public int $value = 1;
                     }
 
-                    function unbound(Closure $cb): void {
-                        $cb();
+                    class ABoundReceiver {
+                        /** @param-closure-this Bound $callback */
+                        public function run(Closure $callback): void {}
                     }
 
-                    bound(function (): int { return $this->p; });
-                    unbound(function (): int { return $this->p; });
+                    class ZUnboundReceiver {}
+
+                    $receiver = rand(0, 1)
+                        ? new ABoundReceiver()
+                        : new ZUnboundReceiver();
+
+                    $receiver->run(function (): int {
+                        return $this->value;
+                    });
                 ',
                 'error_message' => 'InvalidScope',
+                'ignored_issues' => ['PossiblyUndefinedMethod'],
+            ],
+            'selfOnInheritedMethodStaysAtDeclaringClass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param-closure-this self $cb
+                         */
+                        public static function run(Closure $cb): void {
+                        }
+                    }
+
+                    class Child extends Base {
+                        public int $only_on_child = 200;
+                    }
+
+                    Child::run(function (): int {
+                        return $this->only_on_child;
+                    });
+                ',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'callerPropertyNotVisibleInsideBoundClosure' => [
                 'code' => '<?php
@@ -385,6 +466,54 @@ final class ParamClosureThisTest extends TestCase
                 ',
                 'error_message' => 'InvalidScope',
                 'ignored_issues' => ['UndefinedDocblockClass'],
+            ],
+            'traitSelfOnInheritedMethodStaysAtUsingClass' => [
+                'code' => '<?php
+                    trait RunsCallback {
+                        /** @param-closure-this self $callback */
+                        public function run(Closure $callback): void {
+                            $callback->call($this);
+                        }
+                    }
+
+                    class Host {
+                        use RunsCallback;
+                    }
+
+                    class Child extends Host {
+                        public int $child_only = 1;
+                    }
+
+                    (new Child())->run(function (): int {
+                        return $this->child_only;
+                    });',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'traitParentOnInheritedMethodUsesConsumerParent' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public int $parent_only = 1;
+                    }
+
+                    trait RunsCallback {
+                        /** @param-closure-this parent $callback */
+                        public function run(Closure $callback): void {
+                            $callback->call($this);
+                        }
+                    }
+
+                    class Host extends ParentClass {
+                        use RunsCallback;
+
+                        public int $host_only = 1;
+                    }
+
+                    class Child extends Host {}
+
+                    (new Child())->run(function (): int {
+                        return $this->host_only;
+                    });',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
         ];
     }
