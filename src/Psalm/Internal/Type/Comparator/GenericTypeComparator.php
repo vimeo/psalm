@@ -16,6 +16,7 @@ use Psalm\Type\Union;
 
 use function array_merge;
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -157,7 +158,11 @@ final class GenericTypeComparator
 
                         // Make sure types are basically the same.
                         // Int ranges are compared as int, the same way literals widen above
-                        $widened_input_param = self::widenIntRanges($input_param);
+                        // Only for the same class: through inheritance, $i does not index the input's own params
+                        $widened_input_param = strtolower($input_type_part->value)
+                            === strtolower($container_type_part->value)
+                            ? self::widenIntRanges($input_param)
+                            : $input_param;
                         $reverse_contained = UnionTypeComparator::isContainedBy(
                             $codebase,
                             $container_param,
