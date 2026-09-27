@@ -38,6 +38,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualPipeArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -1151,7 +1152,8 @@ final class ArgumentsAnalyzer
         Context $context,
         ?TemplateResult $template_result,
     ): ?bool {
-        if ($arg->value instanceof PhpParser\Node\Scalar
+        if ($arg instanceof VirtualPipeArg
+            || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -1171,7 +1173,10 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    $arg instanceof VirtualPipeArg
+                        ? 'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                            . ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                        : 'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
