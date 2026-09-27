@@ -13,7 +13,6 @@ use Amp\Parallel\Context\Internal\ContextChannel;
 use Amp\Parallel\Context\Internal\ExitFailure;
 use Amp\Parallel\Context\Internal\ExitSuccess;
 use Amp\Parallel\Ipc\IpcHub;
-use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\SerializationException;
 use Amp\TimeoutCancellation;
 use Error;
@@ -77,7 +76,7 @@ final class ForkContext extends AbstractContext
     ): self {
         $serializer = extension_loaded('igbinary')
             ? new IgbinarySerializer
-            : new NativeSerializer;
+            : new PhpSerializer;
 
         $key = $ipcHub->generateKey();
 
