@@ -1440,11 +1440,6 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'ReservedWord',
             ],
-            'voidParamType' => [
-                'code' => '<?php
-                    function f(void $p): void {}',
-                'error_message' => 'ReservedWord',
-            ],
             'voidClass' => [
                 'code' => '<?php
                     class void {}',

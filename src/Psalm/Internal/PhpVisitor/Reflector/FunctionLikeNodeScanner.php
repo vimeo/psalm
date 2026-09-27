@@ -683,6 +683,10 @@ final class FunctionLikeNodeScanner
                     }
                 }
 
+                if ($attribute->fq_class_name === 'NoDiscard') {
+                    $storage->no_discard = true;
+                }
+
                 if ($attribute->fq_class_name === 'Psalm\\Deprecated'
                     || $attribute->fq_class_name === 'Deprecated'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Deprecated'
