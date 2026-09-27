@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Provider;
 
-use Amp\Serialization\NativeSerializer;
+use Amp\Serialization\SerializationException;
+use Amp\Serialization\Serializer;
 use Override;
 use PhpParser\PrettyPrinter\Standard;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Tests\TestCase;
 use ReflectionProperty;
-
-use function array_fill;
-use function implode;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -77,21 +75,36 @@ final class StatementsProviderTest extends TestCase
         $this->assertStringContainsString('function g(', (new Standard())->prettyPrint($stmts));
     }
 
-    public function testVendorFileTooDeepToUnserializeIsParsedAgain(): void
+    public function testVendorFileThatCannotBeUnserializedIsParsedWithoutMemoisingItAgain(): void
     {
-        // The native serializer refuses anything nested deeper than unserialize_max_depth (4096 by default)
-        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, new NativeSerializer());
+        $serializer = new class implements Serializer {
+            public int $serialized = 0;
 
-        $files = new FakeFileProvider();
-        $files->registerFile(self::vendorFilePath(), '<?php return ' . implode(' + ', array_fill(0, 5_000, '1')) . ';');
-        $provider = new StatementsProvider($files, new FakeParserCacheProvider());
+            #[Override]
+            public function serialize(mixed $data): string
+            {
+                $this->serialized++;
+
+                return 'x';
+            }
+
+            #[Override]
+            public function unserialize(string $data): never
+            {
+                throw new SerializationException('Maximum depth exceeded');
+            }
+        };
+        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, $serializer);
+
+        $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
         $progress = new RecordingProgress();
 
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
         }
 
-        $this->assertSame(4, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(5, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(1, $serializer->serialized);
     }
 
     public function testStatementsAreNotMemoisedWithoutAParserCacheProvider(): void
@@ -99,10 +112,11 @@ final class StatementsProviderTest extends TestCase
         $provider = new StatementsProvider(self::vendorFileProvider());
         $progress = new RecordingProgress();
 
-        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
-        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        for ($i = 0; $i < 3; $i++) {
+            $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        }
 
-        $this->assertSame(2, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(3, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
     }
 
     /**

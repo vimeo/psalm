@@ -123,9 +123,10 @@ final class StatementsProvider
             // Keeping their statements serialized turns those repeats into an unserialize, which yields the same
             // fresh node graph a re-parse would, for a fraction of the cost.
             //
-            // Files that land here only because there is no parser cache provider at all (--no-cache) are
-            // deliberately left alone: that path also carries every project file, and holding all of them is what
-            // made the former StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b).
+            // Files that land here only because there is no parser cache provider at all are deliberately left
+            // alone: that path also carries every project file, and holding all of them is what made the former
+            // StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b). The CLI always has a provider, even
+            // with --no-cache, so there only vendor files are memoised.
             $vendor_hash = $this->parser_cache_provider === null
                 ? null
                 : hash('xxh128', $analysis_php_version_id . "\0" . $file_contents);
