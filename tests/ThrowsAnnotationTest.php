@@ -9,6 +9,8 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\IssueBuffer;
+use Psalm\Type;
+use Psalm\Type\Union;
 use RuntimeException;
 use Throwable;
 
@@ -968,6 +970,100 @@ final class ThrowsAnnotationTest extends TestCase
         );
 
         $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     *
+     * A return type provider for the class short-circuits the regular pseudo-method branch.
+     */
+    public function testPseudoMethodThrowsPropagatedWithReturnTypeProvider(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->project_analyzer->getCodebase()->methods->return_type_provider->registerClosure(
+            'Foo',
+            static fn(): Union => Type::getVoid(),
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): void {
+                        (new Foo())->doIt(); // throws RuntimeException, injected into the storage below
+                    }
+                }',
+        );
+
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     *
+     * parent::doIt() on a pseudo-method is forwarded as an instance call on a cloned context.
+     */
+    public function testPseudoMethodThrowsPropagatedViaParentCall(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method void doIt()
+                 */
+                class Foo {
+                    public function __call(string $name, array $args): void {}
+                }
+
+                class Bar extends Foo {
+                    public function trigger(): void {
+                        parent::doIt(); // throws RuntimeException, injected into the storage below
+                    }
+                }',
+        );
+
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', false, RuntimeException::class);
+    }
+
+    /**
+     * @see https://github.com/vimeo/psalm/issues/11842
+     */
+    public function testPseudoStaticMethodThrowsNotPropagatedForFirstClassCallable(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method static void doIt()
+                 */
+                class Foo {
+                    public static function __callStatic(string $name, array $args): void {}
+                }
+
+                class Caller {
+                    public function trigger(): Closure {
+                        return Foo::doIt(...);
+                    }
+                }',
+        );
+
+        $this->analyzeWithPluginInjectedThrows('somefile.php', 'foo', 'doit', true, RuntimeException::class);
     }
 
     /**

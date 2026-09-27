@@ -67,6 +67,20 @@ final class MissingMethodCallHandler
             return null;
         }
 
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc,
+        );
+
+        // Merged before the return type provider short-circuit, which would skip it otherwise
+        if ($found_method_and_class_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $found_method_and_class_storage[0],
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+            );
+        }
+
         if ($codebase->methods->return_type_provider->has($fq_class_name)) {
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
@@ -105,24 +119,11 @@ final class MissingMethodCallHandler
             }
         }
 
-        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
-            $codebase,
-            $class_storage,
-            $method_name_lc,
-        );
-
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
             $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
-
-            if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions(
-                    $pseudo_method_storage,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                );
-            }
 
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,

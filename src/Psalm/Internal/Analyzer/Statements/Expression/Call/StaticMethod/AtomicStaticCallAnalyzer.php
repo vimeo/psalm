@@ -754,6 +754,9 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
+                // Keep exceptions thrown by the forwarded pseudo-method call
+                $context->possibly_thrown_exceptions = $tmp_context->possibly_thrown_exceptions;
+
                 unset($tmp_context);
 
                 // Resolve actual static return type according to caller (i.e. $this) static type
