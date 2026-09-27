@@ -25,6 +25,7 @@ use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\TemplateIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
@@ -346,6 +347,10 @@ final class TypeParser
                 throw new TypeParseTreeException('Invalid conditional');
             }
 
+            if (count($parse_tree->condition->children) !== 1) {
+                throw new TypeParseTreeException('Invalid conditional, expected type after is');
+            }
+
             $first_class = array_keys($template_type_map[$template_param_name])[0];
 
             $conditional_type = self::getTypeFromTree(
@@ -396,6 +401,10 @@ final class TypeParser
                 $else_type,
                 $from_docblock,
             );
+        }
+
+        if ($parse_tree instanceof TemplateIsTree) {
+            throw new TypeParseTreeException('Invalid conditional, expected ? after is');
         }
 
         if (!$parse_tree instanceof Value) {

@@ -3523,6 +3523,35 @@ final class AssertionFinder
             $if_types[$other_var_name] = [$orred_types];
         }
 
+        foreach ([$conditional->left, $conditional->right] as $nullsafe_operand) {
+            if (!$nullsafe_operand instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                continue;
+            }
+
+            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
+                $nullsafe_operand->var,
+                $this_class_name,
+                $source,
+            );
+
+            if ($nullsafe_var_name === null) {
+                continue;
+            }
+
+            $other_operand = $nullsafe_operand === $conditional->left
+                ? $conditional->right
+                : $conditional->left;
+            $other_operand_type = $source->node_data->getType($other_operand);
+
+            if ($other_operand_type
+                && $identical
+                && !$other_operand_type->isNullable()
+                && !$other_operand_type->isMixed()
+            ) {
+                $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
+            }
+        }
+
         if ($codebase && $other_type && $var_type && $identical) {
             self::handleParadoxicalAssertions(
                 $source,

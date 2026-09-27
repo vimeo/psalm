@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\IncompatibleTypeParameters;
+use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -202,20 +203,35 @@ final class TypeVariableTracker
                     false,
                     $union_comparison_result,
                 )) {
-                    if ($union_comparison_result->type_coerced_from_mixed) {
-                        // a bound inferred through mixed gets the same loose
-                        // gate Psalm applies when binding templates from
-                        // mixed arguments
-                        continue;
-                    }
-
-                    $has_issue = true;
-
                     // argument requirements point at the call site; return
                     // types and constraints point at where the value entered
                     $pos = $upper_bound->from_argument_requirement
                         ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
                         : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
+
+                    if ($union_comparison_result->type_coerced_from_mixed) {
+                        if ($upper_bound->from_argument_requirement) {
+                            // a `mixed` value reaching a narrower argument
+                            // requirement still coerces: report the
+                            // MixedArgumentTypeCoercion that eager template
+                            // pinning raised at the argument (a non-`new`
+                            // `Foo<mixed>` reports it too). Other mixed-inferred
+                            // bounds (e.g. a class-string construction) keep the
+                            // loose gate Psalm applies elsewhere.
+                            IssueBuffer::maybeAdd(
+                                new MixedArgumentTypeCoercion(
+                                    'Type ' . $relevant_lower_bound->type->getId()
+                                        . ' should be a subtype of ' . $upper_bound->type->getId(),
+                                    $pos,
+                                ),
+                                $suppressed_issues,
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    $has_issue = true;
 
                     IssueBuffer::maybeAdd(
                         new IncompatibleTypeParameters(
