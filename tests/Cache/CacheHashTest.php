@@ -93,6 +93,7 @@ final class CacheHashTest extends TestCase
         $cache = $this->newCache();
 
         $this->assertNull($cache->getHash('never/written.php'));
+        $this->assertFalse($cache->hasItem('never/written.php'));
     }
 
     public function testGetHashRoundTripsAnEmptyHash(): void
@@ -121,7 +122,9 @@ final class CacheHashTest extends TestCase
 
         unlink($this->itemPath($key));
 
-        $this->assertNull($this->newCache()->getHash($key));
+        $reader = $this->newCache();
+        $this->assertNull($reader->getHash($key));
+        $this->assertFalse($reader->hasItem($key));
     }
 
     /** @dataProvider provideCorruptHeaders */
@@ -134,7 +137,10 @@ final class CacheHashTest extends TestCase
 
         file_put_contents($this->itemPath($key) . '.hash', $header);
 
-        $this->assertNull($this->newCache()->getHash($key));
+        $reader = $this->newCache();
+        $this->assertNull($reader->getHash($key));
+        // Still an entry, so callers can tell this apart from a key that was never cached.
+        $this->assertTrue($reader->hasItem($key));
     }
 
     /** @return iterable<string, list{string}> */
@@ -183,7 +189,9 @@ final class CacheHashTest extends TestCase
         $path = $this->itemPath($key);
         unlink($path . '.hash');
 
-        $this->assertNull($this->newCache()->getHash($key));
+        $reader = $this->newCache();
+        $this->assertNull($reader->getHash($key));
+        $this->assertTrue($reader->hasItem($key));
     }
 
     /** Keys and hashes are handled bytewise, so binary content must round-trip intact. */
