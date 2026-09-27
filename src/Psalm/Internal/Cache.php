@@ -31,6 +31,8 @@ use function is_dir;
 use function is_int;
 use function mkdir;
 use function pack;
+use function str_contains;
+use function str_replace;
 use function stream_get_contents;
 use function strlen;
 use function substr;
@@ -129,12 +131,7 @@ final class Cache
                 $hashLen = unpack('V', $key)[1];
                 $hash = substr($key, 4, $hashLen);
                 $key = substr($key, 4+$hashLen);
-                /** @psalm-suppress TypeDoesNotContainNull getItem() returns null on a cache miss */
-                if ($this->getItem($key, $hash) === null) {
-                    // Unreadable entry: leave the files alone instead of dropping them, the next
-                    // write for this key will replace them.
-                    continue;
-                }
+                Assert::notNull($this->getItem($key, $hash));
                 unlink($f->getPathname());
                 unlink(substr($f->getPathname(), 0, -5));
             }
@@ -236,10 +233,14 @@ final class Cache
         try {
             /** @var T */
             $content = $this->serializer->unserialize($content);
-        } catch (Throwable) {
-            // Treat an entry we cannot read back as a cache miss: it may be corrupt, or nested
-            // too deeply for the serializer to restore within the available call stack (#11967).
-            return null;
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path."
+                . ' The cache may be corrupt, run Psalm with --clear-cache to rebuild it. Cause: '
+                . self::describeError($e),
+                0,
+                $e,
+            );
         }
 
         if ($this->arrayCache) {
@@ -259,15 +260,17 @@ final class Cache
             return;
         }
         if ($this->persistent) {
+            // Serialize before touching the files, so a failure leaves the previous entry intact.
             try {
                 $serialized = $this->serializer->serialize($item);
-            } catch (Throwable) {
-                // The cache is only an optimisation, so an item that cannot be serialized is
-                // skipped rather than aborting the whole run. This happens for ASTs nested deeply
-                // enough to exhaust the call stack of the native serializer (#11967).
-                // The item is not kept in the in-memory cache either, as consolidate() would then
-                // fail to persist any of it.
-                return;
+            } catch (Throwable $e) {
+                $cause = self::describeError($e);
+                $message = 'Could not serialize the cache entry for ' . self::describeKey($key) . '.';
+                if (str_contains($cause, 'Maximum call stack size')) {
+                    $message .= ' The value is nested too deeply for the available call stack, raise the'
+                        . ' fiber.stack_size and zend.max_allowed_stack_size ini settings to allow it.';
+                }
+                throw new RuntimeException("$message Cause: $cause", 0, $e);
             }
 
             $path = $this->dir . hash('xxh128', $key);
@@ -284,5 +287,27 @@ final class Cache
             fclose($f);
         }
         $this->cache[$key] = [$hash, $item];
+    }
+
+    /**
+     * Keys may join several parts with NUL bytes, e.g. a file path and a class name.
+     */
+    private static function describeKey(string $key): string
+    {
+        return "'" . str_replace("\0", "', '", $key) . "'";
+    }
+
+    /**
+     * Serializers wrap the actual failure, whose message may embed the whole payload.
+     */
+    private static function describeError(Throwable $e): string
+    {
+        while (($previous = $e->getPrevious()) !== null) {
+            $e = $previous;
+        }
+
+        $message = $e->getMessage();
+
+        return strlen($message) > 200 ? substr($message, 0, 200) . '...' : $message;
     }
 }

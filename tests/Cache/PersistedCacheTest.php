@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace Psalm\Tests\Cache;
 
 use Closure;
+use Fiber;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\RuntimeCaches;
+use RuntimeException;
 
 use function basename;
 use function file_exists;
 use function file_put_contents;
 use function glob;
+use function ini_get;
+use function ini_set;
 use function is_dir;
 use function rmdir;
 use function str_ends_with;
@@ -83,13 +87,15 @@ final class PersistedCacheTest extends TestCase
 
 
     /** @return Cache<array> */
-    private function createCache(): Cache
+    private function createCache(?string $serializer = null): Cache
     {
+        $serializer_attribute = $serializer === null ? '' : " serializer=\"$serializer\"";
+
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
             <<<XML
                 <?xml version="1.0"?>
-                <psalm cacheDirectory="{$this->cache_directory}">
+                <psalm cacheDirectory="{$this->cache_directory}"{$serializer_attribute}>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -100,20 +106,50 @@ final class PersistedCacheTest extends TestCase
         return new Cache($config, 'test');
     }
 
-    public function testItemThatCannotBeSerializedIsSkippedInsteadOfAbortingTheRun(): void
+    public function testItemThatCannotBeSerializedThrowsAndKeepsThePreviousEntry(): void
     {
         $cache = $this->createCache();
         $cache->saveItem('key', ['serializable'], 'hash1');
 
-        // a closure cannot be serialized, just like an AST nested too deeply for the serializer
-        // to walk within the available call stack
-        $cache->saveItem('key', [Closure::fromCallable('strlen')], 'hash2');
+        try {
+            $cache->saveItem('key', [Closure::fromCallable('strlen')], 'hash2');
+            self::fail('Expected an exception');
+        } catch (RuntimeException $e) {
+            self::assertStringStartsWith("Could not serialize the cache entry for 'key'. Cause: ", $e->getMessage());
+            self::assertStringContainsString('Closure', $e->getMessage());
+            self::assertNotNull($e->getPrevious());
+        }
 
-        self::assertNull($cache->getItem('key', 'hash2'));
         self::assertSame(['serializable'], $this->createCache()->getItem('key', 'hash1'));
     }
 
-    public function testUnreadableItemIsTreatedAsCacheMiss(): void
+    public function testTooDeeplyNestedItemThrowsWithAHint(): void
+    {
+        $previous = (string) ini_get('fiber.stack_size');
+        ini_set('fiber.stack_size', '256K');
+
+        try {
+            $item = [];
+            for ($i = 0; $i < 5_000; $i++) {
+                $item = [$item];
+            }
+
+            // igbinary does not guard against stack overflows, the process would crash instead
+            $cache = $this->createCache('php');
+            $fiber = new Fiber(static fn() => $cache->saveItem("src/deep.php\0deep", $item, 'hash'));
+
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessageMatches(
+                "/^Could not serialize the cache entry for 'src\\/deep\\.php', 'deep'\\. .*fiber\\.stack_size.* Cause: Maximum call stack size/",
+            );
+
+            $fiber->start();
+        } finally {
+            ini_set('fiber.stack_size', $previous);
+        }
+    }
+
+    public function testUnreadableItemThrows(): void
     {
         $this->createCache()->saveItem('key', ['serializable'], 'hash1');
 
@@ -123,6 +159,11 @@ final class PersistedCacheTest extends TestCase
             }
         }
 
-        self::assertNull($this->createCache()->getItem('key', 'hash1'));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches(
+            "/^Could not unserialize the cache entry for 'key' from .+\\. .+--clear-cache.+ Cause: ./",
+        );
+
+        $this->createCache()->getItem('key', 'hash1');
     }
 }
