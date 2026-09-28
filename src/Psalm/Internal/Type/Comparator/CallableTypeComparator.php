@@ -182,9 +182,10 @@ final class CallableTypeComparator
     /**
      * Resolves a method's templates against the callable it is expected to satisfy: they are bound
      * to the argument types that callable passes in and to the return type it expects.
-     * If the resolved parameter types reject an argument the callable comparison does not check
-     * itself (a default value the expected callable may fall back on, or a trailing argument
-     * passed to a variadic parameter), the templates are left unresolved.
+     * The templates are left unresolved if one is inferred outside its declared bound, or if the
+     * resolved parameter types reject an argument the callable comparison does not check itself
+     * (a default value the expected callable may fall back on, or a trailing argument passed to
+     * a variadic parameter).
      */
     private static function resolveMethodTemplates(
         Codebase $codebase,
@@ -259,6 +260,24 @@ final class CallableTypeComparator
                 null,
                 $container_type_part->return_type,
             );
+        }
+
+        // a template inferred outside its declared bound would erase that constraint
+        foreach ($template_result->lower_bounds as $template_name => $lower_bounds_by_class) {
+            foreach ($lower_bounds_by_class as $defining_class => $lower_bounds) {
+                $template_as = $template_result->template_types[$template_name][$defining_class] ?? null;
+
+                if ($template_as
+                    && !$template_as->isMixed()
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($lower_bounds, $codebase),
+                        $template_as,
+                    )
+                ) {
+                    return $callable;
+                }
+            }
         }
 
         $resolved_callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
