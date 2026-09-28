@@ -204,7 +204,11 @@ final class TemplateDefaultTest extends TestCase
 
                     $c = new Container(42);',
                 'assertions' => [
-                    '$c===' => 'Container<42>',
+                    // T is constrainable (assigned to a public property), so `new Container(42)`
+                    // mints a type variable for it rather than eagerly pinning T to 42; the
+                    // exact `===` form reveals that unreconciled variable (see upstream
+                    // d89f08cd1, which updated its own affected tests the same way).
+                    '$c===' => 'Container<`_0:42>',
                 ],
             ],
             'phpstanTemplateSyntax' => [
