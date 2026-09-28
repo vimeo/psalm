@@ -273,6 +273,33 @@ final class IssueSuppressionTest extends TestCase
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
+    public function testPluginAppendedClassSuppressionIsNotReportedAsUnused(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @psalm-suppress UndefinedClass
+                 */
+                final class Foo {
+                    public function foo(): void {
+                        new Missing();
+                    }
+                }
+            ',
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        // what a plugin does in afterCodebasePopulated(), e.g. psalm/plugin-phpunit's TestCaseHandler
+        $codebase->classlike_storage_provider->get('Foo')->suppressed_issues[] = 'MissingConstructor';
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
