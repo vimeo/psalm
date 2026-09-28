@@ -17,6 +17,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -42,6 +43,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -379,6 +381,19 @@ final class ConcatAnalyzer
         $comparison_result = new TypeComparisonResult();
 
         foreach ($operand_type->getAtomicTypes() as $operand_type_part) {
+            if ($operand_type_part instanceof TTypeVariable) {
+                // a type variable concatenates, constrained from above to array-key
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    [],
+                    [[$operand_type_part->name, new TemplateBound(Type::getArrayKey())]],
+                    new CodeLocation($statements_analyzer->getSource(), $operand),
+                );
+
+                $has_valid_operand = true;
+
+                continue;
+            }
+
             if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
                 IssueBuffer::maybeAdd(
                     new MixedOperand(

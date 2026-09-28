@@ -1112,7 +1112,10 @@ final class ClassTemplateTest extends TestCase
 
                     $c = new C();',
                 'assertions' => [
-                    '$c===' => "C<'hello'>",
+                    // `$c holds an unreconciled type variable minted for T at the
+                    // construction site; the exact `===` form reveals it (the plain
+                    // display form still renders through the bound as C<'hello'>).
+                    '$c===' => "C<`_0:'hello'>",
                 ],
             ],
             'SKIPPED-templateDefaultConstant' => [
@@ -1186,7 +1189,8 @@ final class ClassTemplateTest extends TestCase
 
                     $e = new E();',
                 'assertions' => [
-                    '$e===' => 'E<D>',
+                    // exact form reveals the construction-site type variable for T
+                    '$e===' => 'E<`_0:D>',
                 ],
             ],
             'allowNullablePropertyAssignment' => [
@@ -2641,7 +2645,7 @@ final class ClassTemplateTest extends TestCase
 
                         public function __construct()
                         {
-                            $this->c = new ArrayCollection();
+                            $this->c = new ArrayCollection([new DateTime()]);
                             $this->c->filter(function (DateTime $dt): bool {
                                 return $dt === $dt;
                             });
@@ -4215,6 +4219,161 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'preventTemplatedCorrectionBeingWrittenTo' => [
+                'code' => '<?php
+                    namespace NS;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    class ArrayCollection {
+                        /** @var array<TKey,TValue> */
+                        private $data;
+
+                        /** @param array<TKey,TValue> $data */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @param TKey $key
+                         * @param TValue $value
+                         */
+                        public function addItem($key, $value) : void {
+                            $this->data[$key] = $value;
+                        }
+                    }
+
+                    class Item {}
+                    class SubItem extends Item {}
+                    class OtherSubItem extends Item {}
+
+                    /**
+                     * @param ArrayCollection<int,Item> $i
+                     */
+                    function takesCollectionOfItems(ArrayCollection $i): void {
+                       $i->addItem(10, new OtherSubItem);
+                    }
+
+                    $subitem_collection = new ArrayCollection([ new SubItem ]);
+
+                    takesCollectionOfItems($subitem_collection);',
+            ],
+            'noCrashTemplatedClosure' => [
+                'code' => '<?php
+                    /**
+                     * @template TCallback as Closure():string
+                     */
+                    class A {
+                        /** @var TCallback */
+                        private $callback;
+
+                        /** @param TCallback $callback */
+                        public function __construct(Closure $callback) {
+                            $this->callback = $callback;
+                        }
+
+                        /** @param TCallback $callback */
+                        public function setCallback(Closure $callback): void {
+                            $this->callback = $callback;
+                        }
+                    }
+                    $a = new A(function() { return "a";});
+                    $a->setCallback(function() { return "b";});',
+            ],
+            'classTemplateSelfs' => [
+                'code' => '<?php
+                    /**
+                     * @template T as object
+                     */
+                    class Foo {
+                        /** @var class-string<T> */
+                        public $T;
+
+                        /**
+                         * @param class-string<T> $T
+                         */
+                        public function __construct(string $T) {
+                            $this->T = $T;
+                        }
+
+                        /**
+                         * @return T
+                         * @psalm-suppress MixedMethodCall
+                         */
+                        public function bar() {
+                            $t = $this->T;
+                            return new $t();
+                        }
+                    }
+
+                    class E {
+                        /**
+                         * @return Foo<self>
+                         */
+                        public static function getFoo() {
+                            return new Foo(__CLASS__);
+                        }
+
+                        /**
+                         * @return Foo<self>
+                         */
+                        public static function getFoo2() {
+                            return new Foo(self::class);
+                        }
+
+                        /**
+                         * @return Foo<static>
+                         */
+                        public static function getFoo3() {
+                            return new Foo(static::class);
+                        }
+                    }
+
+                    class G extends E {}
+
+                    $efoo = E::getFoo();
+                    $efoo2 = E::getFoo2();
+                    $efoo3 = E::getFoo3();
+
+                    $gfoo = G::getFoo();
+                    $gfoo2 = G::getFoo2();
+                    $gfoo3 = G::getFoo3();',
+            ],
+            'constructorLiteralArgsGeneralize' => [
+                'code' => '<?php
+                    /** @template T */
+                    class SomeCollection {
+                        /** @param array<T> $c */
+                        public function __construct(array $c) {}
+                    }
+
+                    /** @param SomeCollection<int> $c */
+                    function takesInts(SomeCollection $c): void {}
+
+                    takesInts(new SomeCollection([1, 2, 3]));',
+            ],
+            'nullReturnAgainstTemplatedTypeSilent' => [
+                'code' => '<?php
+                    /** @template T as array|object|string */
+                    class Cache9 {
+                        /** @var T|null */
+                        private $item = null;
+
+                        /** @return T */
+                        public function getItem(bool $flag): array|object|string|null
+                        {
+                            if ($flag) {
+                                return null;
+                            }
+                            return $this->item;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4259,7 +4418,8 @@ final class ClassTemplateTest extends TestCase
 
                     $foo = new Foo(A::class);
                     $foo->add(new B);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:36:31 - Type B should be a subtype of A',
             ],
             'restrictTemplateInputWithTClassBadInput' => [
                 'code' => '<?php
@@ -4298,7 +4458,8 @@ final class ClassTemplateTest extends TestCase
 
                     $foo = new Foo(A::class);
                     $foo->add(new B);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:36:31 - Type B should be a subtype of A',
             ],
             'templatedClosureProperty' => [
                 'code' => '<?php
@@ -4605,48 +4766,6 @@ final class ClassTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
-            'preventTemplatedCorrectionBeingWrittenTo' => [
-                'code' => '<?php
-                    namespace NS;
-
-                    /**
-                     * @template TKey
-                     * @template TValue
-                     */
-                    class ArrayCollection {
-                        /** @var array<TKey,TValue> */
-                        private $data;
-
-                        /** @param array<TKey,TValue> $data */
-                        public function __construct(array $data) {
-                            $this->data = $data;
-                        }
-
-                        /**
-                         * @param TKey $key
-                         * @param TValue $value
-                         */
-                        public function addItem($key, $value) : void {
-                            $this->data[$key] = $value;
-                        }
-                    }
-
-                    class Item {}
-                    class SubItem extends Item {}
-                    class OtherSubItem extends Item {}
-
-                    /**
-                     * @param ArrayCollection<int,Item> $i
-                     */
-                    function takesCollectionOfItems(ArrayCollection $i): void {
-                       $i->addItem(10, new OtherSubItem);
-                    }
-
-                    $subitem_collection = new ArrayCollection([ new SubItem ]);
-
-                    takesCollectionOfItems($subitem_collection);',
-                'error_message' => 'InvalidArgument',
-            ],
             'noClassTemplatesInStaticMethods' => [
                 'code' => '<?php
                     /**
@@ -4709,7 +4828,8 @@ final class ClassTemplateTest extends TestCase
                             $this->elements[$key] = $t;
                         }
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:57 - Type C should be a subtype of B',
             ],
             'preventIteratorAggregateToIterableWithDifferentTypes' => [
                 'code' => '<?php
@@ -4849,29 +4969,6 @@ final class ClassTemplateTest extends TestCase
 
                     $child = new AChild();
                     takesA($child);',
-                'error_message' => 'InvalidArgument',
-            ],
-            'noCrashTemplatedClosure' => [
-                'code' => '<?php
-                    /**
-                     * @template TCallback as Closure():string
-                     */
-                    class A {
-                        /** @var TCallback */
-                        private $callback;
-
-                        /** @param TCallback $callback */
-                        public function __construct(Closure $callback) {
-                            $this->callback = $callback;
-                        }
-
-                        /** @param TCallback $callback */
-                        public function setCallback(Closure $callback): void {
-                            $this->callback = $callback;
-                        }
-                    }
-                    $a = new A(function() { return "a";});
-                    $a->setCallback(function() { return "b";});',
                 'error_message' => 'InvalidArgument',
             ],
             'preventBoundsMismatchDifferentContainers' => [

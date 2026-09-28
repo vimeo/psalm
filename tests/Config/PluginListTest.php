@@ -33,13 +33,13 @@ final class PluginListTest extends TestCase
         RuntimeCaches::clearAll();
 
         $this->config = Mockery::mock(Config::class);
-        $this->config->allows()->getPluginClasses()->andReturns([])->byDefault();
+        $this->config->shouldReceive('getPluginClasses')->withNoArgs()->andReturns([])->byDefault();
 
         $this->config_file = Mockery::mock(ConfigFile::class);
-        $this->config_file->allows()->getConfig()->andReturns($this->config)->byDefault();
+        $this->config_file->shouldReceive('getConfig')->withNoArgs()->andReturns($this->config)->byDefault();
 
         $this->composer_lock = Mockery::mock(ComposerLock::class);
-        $this->composer_lock->allows()->getPlugins()->andReturns([])->byDefault();
+        $this->composer_lock->shouldReceive('getPlugins')->withNoArgs()->andReturns([])->byDefault();
     }
 
     /**
@@ -47,7 +47,7 @@ final class PluginListTest extends TestCase
      */
     public function pluginsPresentInConfigAreEnabled(): void
     {
-        $this->config->expects()->getPluginClasses()->andReturns([
+        $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
             ['class' => 'a\b\c', 'config' => null],
             ['class' => 'c\d\e', 'config' => null],
         ]);
@@ -65,11 +65,11 @@ final class PluginListTest extends TestCase
      */
     public function pluginsPresentInPackageLockOnlyAreAvailable(): void
     {
-        $this->config->expects()->getPluginClasses()->andReturns([
+        $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
             ['class' => 'a\b\c', 'config' => null],
         ]);
 
-        $this->composer_lock->expects()->getPlugins()->andReturns([
+        $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
             'vendor/package' => 'a\b\c',
             'another-vendor/another-package' => 'c\d\e',
         ]);
@@ -86,11 +86,11 @@ final class PluginListTest extends TestCase
      */
     public function pluginsPresentInPackageLockAndConfigHavePluginPackageName(): void
     {
-        $this->config->expects()->getPluginClasses()->andReturns([
+        $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
             ['class' => 'a\b\c', 'config' => null],
         ]);
 
-        $this->composer_lock->expects()->getPlugins()->andReturns([
+        $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
             'vendor/package' => 'a\b\c',
         ]);
 
@@ -115,7 +115,7 @@ final class PluginListTest extends TestCase
      */
     public function canFindPluginClassByPackageName(): void
     {
-        $this->composer_lock->expects()->getPlugins()->andReturns([
+        $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
             'vendor/package' => 'a\b\c',
         ]);
 
@@ -128,7 +128,7 @@ final class PluginListTest extends TestCase
      */
     public function canShowAvailablePluginsWithoutAConfigFile(): void
     {
-        $this->composer_lock->expects()->getPlugins()->andReturns([
+        $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
             'vendor/package' => 'a\b\c',
             'another-vendor/another-package' => 'c\d\e',
         ]);
@@ -145,7 +145,7 @@ final class PluginListTest extends TestCase
      */
     public function enabledPackageIsEnabled(): void
     {
-        $this->config->expects()->getPluginClasses()->andReturns([
+        $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
             ['class' => 'a\b\c', 'config' => null],
         ]);
 
@@ -172,7 +172,7 @@ final class PluginListTest extends TestCase
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);
 
-        $this->config_file->expects()->addPlugin('a\b\c');
+        $this->config_file->shouldReceive('addPlugin')->once()->with('a\b\c');
 
         $plugin_list->enable('a\b\c');
     }
@@ -184,7 +184,7 @@ final class PluginListTest extends TestCase
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);
 
-        $this->config_file->expects()->removePlugin('a\b\c');
+        $this->config_file->shouldReceive('removePlugin')->once()->with('a\b\c');
 
         $plugin_list->disable('a\b\c');
     }

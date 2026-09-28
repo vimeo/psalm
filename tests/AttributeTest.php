@@ -314,6 +314,61 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'overrideAttributeOnMethod' => [
+                'code' => '<?php
+
+                    namespace OverrideAttributeOnMethod;
+
+                    class ParentClass {
+                        public function foo(): void {}
+                    }
+
+                    class ChildClass extends ParentClass {
+                        #[\Override]
+                        public function foo(): void {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideAttributeOnProperty' => [
+                'code' => '<?php
+
+                    namespace OverrideAttributeOnProperty;
+
+                    class ParentClass {
+                        protected int $foo = 1;
+                    }
+
+                    class ChildClass extends ParentClass {
+                        #[\Override]
+                        protected int $foo = 2;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideAttributeOnPromotedProperty' => [
+                'code' => '<?php
+
+                    namespace OverrideAttributeOnPromotedProperty;
+
+                    class ParentClass {
+                        protected int $foo = 1;
+                    }
+
+                    class ChildClass extends ParentClass {
+                        public function __construct(
+                            #[\Override] protected int $foo = 2
+                        ) {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'createObjectAsAttributeArg' => [
                 'code' => '<?php
                     #[Attribute]
@@ -737,6 +792,18 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a class constant',
+            ],
+            'getAttributesOnClassConstantWithOverrideAttribute' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR = "baz";
+                    }
+
+                    $r = new ReflectionClassConstant(Foo::class, "BAR");
+                    $r->getAttributes(\Override::class);
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Override cannot be used on a class constant',
             ],
             'getAttributesOnParameterWithNonParameterAttribute' => [
                 'code' => '<?php

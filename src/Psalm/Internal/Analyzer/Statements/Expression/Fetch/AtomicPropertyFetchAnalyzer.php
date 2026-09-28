@@ -30,6 +30,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
@@ -266,7 +267,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$naive_property_exists) {
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -414,6 +415,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -496,6 +512,13 @@ final class AtomicPropertyFetchAnalyzer
             $prop_name,
             $lhs_type_part,
         );
+
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
@@ -643,6 +666,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -1259,6 +1287,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(
