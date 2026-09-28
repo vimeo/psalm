@@ -12,8 +12,8 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_pop;
-use function count;
 use function ctype_space;
+use function end;
 use function in_array;
 use function preg_match;
 use function strlen;
@@ -65,18 +65,28 @@ final class PurityWildcard
         $length = strlen($type);
 
         for ($i = 0; $i < $length; $i++) {
-            if (preg_match('/\G(?<![\w\\\\-])(\\\\?Closure|callable)(?![\w-])/', $type, $matches, 0, $i)) {
-                $keyword = $matches[1];
-                $result .= $keyword;
-                $i += strlen($keyword) - 1;
+            // `impure-` and `[impure]` spell out the default purity: they are replaced by `_` too
+            if (preg_match(
+                '/\G(?<![\w\\\\-])(impure-)?(\\\\?Closure|callable)(?![\w-])(\s*\[\s*impure\s*\])?/',
+                $type,
+                $matches,
+                0,
+                $i,
+            )) {
+                $match = $matches[0] ?? '';
+                $i += strlen($match) - 1;
 
-                if (!preg_match('/\G\s*\[/', $type, $_, 0, $i + 1)
+                $has_other_purity = !isset($matches[3]) && preg_match('/\G\s*\[/', $type, $_, 0, $i + 1);
+
+                if (!$has_other_purity
                     && !$in_return
                     && !in_array('params', $stack, true)
                     && !in_array('generic', $stack, true)
                 ) {
-                    $result .= '[' . self::NAME . ']';
+                    $result .= ($matches[2] ?? '') . '[' . self::NAME . ']';
                     $changed = true;
+                } else {
+                    $result .= $match;
                 }
 
                 $previous = 'keyword';
@@ -109,7 +119,7 @@ final class PurityWildcard
                     $in_return = (bool) array_pop($group_in_return);
                 }
             } elseif ($char === '|' && $top_level) {
-                $in_return = $group_in_return ? $group_in_return[count($group_in_return) - 1] : false;
+                $in_return = (bool) end($group_in_return);
             }
 
             if (!ctype_space($char)) {

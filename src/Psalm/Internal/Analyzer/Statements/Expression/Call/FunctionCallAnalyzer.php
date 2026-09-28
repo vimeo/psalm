@@ -1310,7 +1310,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
     /**
      * A call of a closure or callable parameter of the function or method being analysed whose
-     * purity is fixed: with a `_` purity (`Closure[_]`), the call would be charged to the callers,
+     * purity is the default one (`impure`): with a `_` purity (`Closure[_]`), the call would be charged to the callers,
      * so it is left out of the purity inferred for the function-like, which records the parameter
      * for `--alter` to add the `_` along with the purity annotation.
      */
@@ -1326,8 +1326,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             || !$source instanceof FunctionLikeAnalyzer
             || $source instanceof ClosureAnalyzer
             || !$source->track_mutations
+            // only the default purity of a closure type: one written out was chosen deliberately
             || !$var_type_part->hasFixedPurity()
-            || $var_type_part->getCapabilities() === Capabilities::NONE
+            || $var_type_part->getCapabilities() !== Capabilities::ALL
         ) {
             return false;
         }
@@ -1347,6 +1348,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             foreach ($param->type->getAtomicTypes() as $atomic) {
                 if (($atomic instanceof TClosure || $atomic instanceof TCallable)
                     && $atomic->hasFixedPurity()
+                    && $atomic->getCapabilities() === Capabilities::ALL
                 ) {
                     $source->purity_wildcard_candidates[$param->name] = true;
 

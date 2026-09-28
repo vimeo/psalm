@@ -137,6 +137,29 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPurityWildcardReplacingTheDefaultPurityOnly' => [
+                'input' => '<?php
+                    /**
+                     * @param impure-Closure(int): string $f
+                     * @param Closure[read-props](int): string $g
+                     */
+                    function both(Closure $f, Closure $g, int $i): string {
+                        return $f($i) . $g($i);
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     * @param Closure[read-props](int): string $g
+                     *
+                     * @psalm-capabilities read-props
+                     */
+                    function both(Closure $f, Closure $g, int $i): string {
+                        return $f($i) . $g($i);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'callsPureFunctionDeclaredLater' => [
                 'input' => '<?php
                     function foo(string $s): string {

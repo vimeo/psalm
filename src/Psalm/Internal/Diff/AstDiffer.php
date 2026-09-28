@@ -20,14 +20,16 @@ use function count;
  * Algorithmica 1.1 (1986): 251-266.
  *
  * @internal
+ * @psalm-suppress MissingImmutableAnnotation the statement differs extending it read the AST they compare
  */
 abstract class AstDiffer
 {
     /**
-     * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
+     * @param Closure[_](Stmt, Stmt, string, string, bool=): bool $is_equal
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
+     * @psalm-pure
      */
     protected static function calculateTrace(
         Closure $is_equal,
