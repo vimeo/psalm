@@ -484,7 +484,8 @@ final class AtomicPropertyFetchAnalyzer
 
             if (!$declaring_class_storage->user_defined
                 && $property_since_id !== null
-                && $codebase->analysis_php_version_id < $property_since_id
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
                 && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
             ) {
                 IssueBuffer::maybeAdd(

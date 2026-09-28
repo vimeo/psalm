@@ -61,6 +61,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -87,6 +88,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -2227,6 +2229,35 @@ final class Codebase
     public function isClassLikePolyfilled(string $fq_classlike_name): bool
     {
         return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+    }
+
+    /**
+     * The lowest PHP version the code at this point runs on, when a guard raised it above the
+     * analysed one: a PHP_VERSION_ID comparison, or a `*_exists()` check of a newer native symbol.
+     * Null otherwise.
+     */
+    public function getGuardedPhpVersionId(?Context $context): ?int
+    {
+        $type = $context?->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? null;
+
+        if ($type === null) {
+            return null;
+        }
+
+        $min = null;
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic_min = $atomic->value;
+            } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
+                $atomic_min = $atomic->min_bound;
+            } else {
+                return null;
+            }
+
+            $min = $min === null ? $atomic_min : min($min, $atomic_min);
+        }
+
+        return $min > $this->analysis_php_version_id ? $min : null;
     }
 
     /**

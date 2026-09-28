@@ -347,7 +347,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         if ($check_classes
             && !$class_storage->user_defined
             && $class_storage->since_php_version_id !== null
-            && $codebase->analysis_php_version_id < $class_storage->since_php_version_id
+            && ($codebase->getGuardedPhpVersionId($options->context) ?? $codebase->analysis_php_version_id)
+                < $class_storage->since_php_version_id
             && !($options->from_attribute && $codebase->analysis_php_version_id < 8_00_00)
             && !$codebase->isClassLikePolyfilled($class_storage->name)
         ) {

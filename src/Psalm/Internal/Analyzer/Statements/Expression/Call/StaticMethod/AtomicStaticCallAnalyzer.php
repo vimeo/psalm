@@ -99,6 +99,7 @@ final class AtomicStaticCallAnalyzer
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->getParts()) === 1
                         && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                    context: $context,
                 ),
             )) {
                 return;
@@ -117,6 +118,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -150,6 +152,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -803,6 +806,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
                 $context->calling_method_id,
                 $with_pseudo,
+                $context,
             );
         } else {
             $does_method_exist = null;
