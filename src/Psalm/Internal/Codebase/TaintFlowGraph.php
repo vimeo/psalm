@@ -38,11 +38,13 @@ use Psalm\Type\TaintKind;
 use Webmozart\Assert\Assert;
 
 use function array_pop;
+use function array_splice;
 use function array_unshift;
 use function count;
 use function end;
 use function json_encode;
 use function ksort;
+use function str_starts_with;
 use function strpos;
 use function substr;
 
@@ -58,6 +60,11 @@ final class TaintFlowGraph extends DataFlowGraph
      * unspecialized base id and specialization key (see DataFlowNode::make()).
      */
     private const SPECIALIZATION_SEPARATOR = ' specialized in ';
+
+    /**
+     * The expression types whose assignments and fetches shouldIgnoreFetch() matches.
+     */
+    private const STRUCTURAL_PATH_TYPE_FAMILIES = ['arraykey', 'arrayvalue', 'property'];
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -570,6 +577,7 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $source_taints = $generated_source->taints;
+        $open_assignments = self::getOpenAssignments($generated_source->path_types);
 
         // $generated_source->specialized_calls is constant across all of this node's outgoing
         // edges, so encode it once here rather than re-serialising it for every edge in the
@@ -601,15 +609,15 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $path_type = $path->type;
 
-            if (self::shouldIgnoreFetch($path_type, 'arraykey', $generated_source->path_types)) {
+            if (self::shouldIgnoreFetch($path_type, 'arraykey', $open_assignments)) {
                 continue;
             }
 
-            if (self::shouldIgnoreFetch($path_type, 'arrayvalue', $generated_source->path_types)) {
+            if (self::shouldIgnoreFetch($path_type, 'arrayvalue', $open_assignments)) {
                 continue;
             }
 
-            if (self::shouldIgnoreFetch($path_type, 'property', $generated_source->path_types)) {
+            if (self::shouldIgnoreFetch($path_type, 'property', $open_assignments)) {
                 continue;
             }
 
@@ -653,16 +661,85 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            $path_types = $generated_source->path_types;
-            $path_types []= $path_type;
-
             $new_sources[$key] = $this->nodes[$to_id]->withFlow(
                 $new_taints,
                 $generated_source,
-                $path_types,
+                self::appendPathType($open_assignments, $path_type),
                 $generated_source->specialized_calls,
             );
         }
+    }
+
+    /**
+     * Returns the path types of a flow that took an edge of type $path_type from a
+     * node whose open assignments (see getOpenAssignments()) are $open_assignments.
+     *
+     * Of the path types a flow went through, only what shouldIgnoreFetch() can still
+     * observe is kept: the assignments to array keys, array values and properties
+     * that no later fetch has matched yet -- a fetch matches the latest such
+     * assignment of its expression type -- followed by the type of the edge the
+     * flow took last, which the trace displays, unless that is such an assignment
+     * itself. Keeping each node's full path would make the resolution use memory
+     * quadratic in the length of the flows.
+     *
+     * @param list<string> $open_assignments
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    private static function appendPathType(array $open_assignments, string $path_type): array
+    {
+        foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
+            if (!str_starts_with($path_type, $family . '-fetch')) {
+                continue;
+            }
+
+            for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+                if (str_starts_with($open_assignments[$i], $family . '-assignment')) {
+                    array_splice($open_assignments, $i, 1);
+
+                    break;
+                }
+            }
+
+            break;
+        }
+
+        $open_assignments[] = $path_type;
+
+        return $open_assignments;
+    }
+
+    /**
+     * Returns the open assignments of a flow from its path types (see
+     * appendPathType()): the path types without the trailing one if that is not an
+     * assignment. This is the history shouldIgnoreFetch() matches the flow's next
+     * edge against; it gives the same result as on the full history.
+     *
+     * @param list<string> $path_types
+     * @return list<string>
+     * @psalm-pure
+     */
+    private static function getOpenAssignments(array $path_types): array
+    {
+        if ($path_types && !self::isStructuralAssignment($path_types[count($path_types) - 1])) {
+            array_pop($path_types);
+        }
+
+        return $path_types;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isStructuralAssignment(string $path_type): bool
+    {
+        foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
+            if (str_starts_with($path_type, $family . '-assignment')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function reportTaintedFlow(
