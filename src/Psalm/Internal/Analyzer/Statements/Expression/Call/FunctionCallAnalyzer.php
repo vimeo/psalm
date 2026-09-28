@@ -1310,9 +1310,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
     /**
      * A call of a closure or callable parameter of the function or method being analysed whose
-     * purity is the default one (`impure`): with a `_` purity (`Closure[_]`), the call would be charged to the callers,
-     * so it is left out of the purity inferred for the function-like, which records the parameter
-     * for `--alter` to add the `_` along with the purity annotation.
+     * purity is the default one (`impure`): with a `_` purity (`Closure[_]`), the call would be
+     * charged to the callers, so it is left out of the purity inferred for the function-like, which
+     * records the parameter for `--alter` to add the `_` along with the purity annotation.
+     *
+     * Not for closures: the purity inferred for a closure is also the purity of its type, which
+     * must keep what calling its parameters does.
      */
     private static function isPurityWildcardCandidate(
         StatementsAnalyzer $statements_analyzer,

@@ -14,7 +14,7 @@ function couldBePure(int $a): int {
 }
 ```
 
-A function-like that calls one of its closure or callable parameters is inferred without those calls when giving the parameter the `_` purity (`Closure[_]`, `callable[_]`, see [`@psalm-purity-template`](../../annotating_code/supported_annotations.md#psalm-purity-template)) would charge them to its callers: the issue then names the parameters, and `--alter` adds the `_` to their types along with the purity annotation.
+A function or method (not a closure) that calls one of its closure or callable parameters with the default purity is inferred without those calls when giving the parameter the `_` purity (`Closure[_]`, `callable[_]`, see [`@psalm-purity-template`](../../annotating_code/supported_annotations.md#psalm-purity-template)) would charge them to its callers: the issue then names the parameters, and `--alter` adds the `_` to their types along with the purity annotation.
 
 ```php
 <?php
