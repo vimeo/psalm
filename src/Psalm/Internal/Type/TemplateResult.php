@@ -56,12 +56,14 @@ final class TemplateResult
      */
     public static function make(array $template_types, array $lower_bounds): self
     {
-        foreach ($lower_bounds as &$boundSet) {
-            foreach ($boundSet as &$bound) {
-                $bound = [new TemplateBound($bound)];
-            } unset($bound);
-        } unset($boundSet);
-        return new self($template_types, $lower_bounds);
+        $bounds = [];
+        foreach ($lower_bounds as $template_name => $bound_set) {
+            foreach ($bound_set as $defining_class => $bound) {
+                $bounds[$template_name][$defining_class] = [new TemplateBound($bound)];
+            }
+        }
+
+        return new self($template_types, $bounds);
     }
 
     public function merge(TemplateResult $result): TemplateResult
