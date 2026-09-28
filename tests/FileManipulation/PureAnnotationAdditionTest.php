@@ -1116,11 +1116,11 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'dontAddPureIfCallableNotPure' => [
                 'input' => '<?php
-                    function pure(callable $callable): string{
+                    function pure(callable &$callable): string{
                         return $callable();
                     }',
                 'output' => '<?php
-                    function pure(callable $callable): string{
+                    function pure(callable &$callable): string{
                         return $callable();
                     }',
                 'php_version' => '7.4',
