@@ -1008,6 +1008,9 @@ final class ForeachTest extends TestCase
                             f($item);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'loopOverIteratorWithTooFewParams' => [
                 'code' => '<?php

@@ -493,6 +493,16 @@ final class UnionTypeComparator
             }
 
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
+                if ($input_type_part instanceof TTypeVariable) {
+                    // an unresolved type variable can still become anything
+                    // its bounds allow, so it can be contained here; the
+                    // constraint is reconciled when the surrounding
+                    // function-like has been analyzed, exactly as
+                    // self::isContainedBy() treats it
+                    $matching_input_keys[$input_type_part->getKey()] = true;
+                    continue;
+                }
+
                 $atomic_comparison_result = new TypeComparisonResult();
                 $is_atomic_contained_by = AtomicTypeComparator::isContainedBy(
                     $codebase,

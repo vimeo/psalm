@@ -61,6 +61,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -87,6 +88,7 @@ use function is_numeric;
 use function is_string;
 use function krsort;
 use function ksort;
+use function min;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
@@ -2207,5 +2209,70 @@ final class Codebase
     public static function transformPhpVersionId(int $php_version_id, int $div): int
     {
         return intdiv($php_version_id, $div);
+    }
+
+    /**
+     * Renders a php_version_id (e.g. 8_05_00) as a `major.minor` string for messages.
+     */
+    public static function getPhpVersionString(int $php_version_id): string
+    {
+        return self::transformPhpVersionId($php_version_id, 10_000)
+            . '.' . self::transformPhpVersionId($php_version_id % 10_000, 100);
+    }
+
+    /**
+     * Whether a native class-like stubbed with a newer `@since` than the analysed PHP version is
+     * provided by a polyfill the project's composer autoloader can load (e.g. `Stringable` from
+     * symfony/polyfill-php80). Such polyfills are usually never scanned, since the stub already
+     * defines the class, so the autoloader is asked directly.
+     */
+    public function isClassLikePolyfilled(string $fq_classlike_name): bool
+    {
+        return $this->config->getComposerFilePathForClassLike($fq_classlike_name) !== false;
+    }
+
+    /**
+     * The lowest PHP version the code at this point runs on, when a guard raised it above the
+     * analysed one: a PHP_VERSION_ID comparison, or a `*_exists()` check of a newer native symbol.
+     * Null otherwise.
+     */
+    public function getGuardedPhpVersionId(?Context $context): ?int
+    {
+        $type = $context?->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? null;
+
+        if ($type === null) {
+            return null;
+        }
+
+        $min = null;
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic_min = $atomic->value;
+            } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
+                $atomic_min = $atomic->min_bound;
+            } else {
+                return null;
+            }
+
+            $min = $min === null ? $atomic_min : min($min, $atomic_min);
+        }
+
+        return $min > $this->analysis_php_version_id ? $min : null;
+    }
+
+    /**
+     * The tail shared by the Undefined* messages reported when a native symbol (introduced in
+     * `$since_php_version_id`) is used on an older analysed PHP version without a polyfill. Prefix
+     * it with the symbol, e.g. "Function foo ". `symfony/polyfill-php<major><minor>` is the polyfill
+     * package for that version (e.g. symfony/polyfill-php81).
+     */
+    public function getUnavailableSymbolMessageSuffix(int $since_php_version_id): string
+    {
+        $since = self::getPhpVersionString($since_php_version_id);
+
+        return 'is not defined for the analysed PHP version '
+            . self::getPhpVersionString($this->analysis_php_version_id)
+            . ' (it was introduced in PHP ' . $since . '); install symfony/polyfill-php'
+            . str_replace('.', '', $since) . ', define a polyfill, or raise the analysed PHP version';
     }
 }

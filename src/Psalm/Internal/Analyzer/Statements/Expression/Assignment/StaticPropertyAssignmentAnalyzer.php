@@ -139,6 +139,8 @@ final class StaticPropertyAssignmentAnalyzer
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
             ) === false) {
                 return false;
             }

@@ -40,6 +40,11 @@ final class FunctionDocblockComment
     public array $params_out = [];
 
     /**
+     * @var array<int, array{name:string, type:string, line_number: int}>
+     */
+    public array $params_closure_this = [];
+
+    /**
      * @var array{type:string, line_number: int}|null
      */
     public ?array $self_out = null;
