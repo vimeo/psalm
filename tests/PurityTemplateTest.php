@@ -560,6 +560,21 @@ final class PurityTemplateTest extends TestCase
                         return $d->run($b);
                     }',
             ],
+            'callOfTypeTemplateBoundToClosureIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return "";
+                    }',
+            ],
             'builtinSortsInheritTheComparatorsPurity' => [
                 'code' => '<?php
                     /**
