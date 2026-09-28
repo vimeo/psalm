@@ -47,6 +47,28 @@ namespace {
     function str_split(string $string, int $length = 1) {}
 
     /**
+     * Iterating over $iterator does what its purity says (nothing for an array).
+     *
+     * @psalm-purity-template P
+     * @param iterable[P] $iterator
+     * @return array
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template P
+     */
+    function iterator_to_array(iterable $iterator, bool $preserve_keys = true): array {}
+
+    /**
+     * @psalm-purity-template P
+     * @param iterable[P] $iterator
+     * @return int<0, max>
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template P
+     */
+    function iterator_count(iterable $iterator): int {}
+
+    /**
      * @psalm-immutable
      * @template TValue
      *

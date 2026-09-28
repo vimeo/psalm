@@ -479,7 +479,7 @@ final class Psalm
     }
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-globals
      */
     private static function initOutputFormat(array $options): string
     {
@@ -490,7 +490,7 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
-     * @psalm-pure
+     * @psalm-capabilities read-globals
      */
     private static function findDefaultOutputFormat(): string
     {
@@ -1138,6 +1138,7 @@ final class Psalm
     /**
      * @param array<string, false|list<mixed>|string> $options
      * @param-out array<string, false|list<mixed>|string> $options
+     * @psalm-capabilities write-refs|read-props
      */
     private static function syncShortOptions(array &$options): void
     {

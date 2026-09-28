@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -16,6 +17,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -23,6 +25,7 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -842,6 +845,26 @@ final class CastAnalyzer
                             ) ?? Type::getString();
 
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
+
+                            if ($declaring_method_id !== null) {
+                                $to_string_storage = $codebase->methods->getStorage($declaring_method_id);
+                                $var_id = ExpressionIdentifier::getExtendedVarId(
+                                    $stmt,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer,
+                                );
+
+                                $statements_analyzer->signalMutation(
+                                    $to_string_storage->capabilities & ~Capabilities::READ_PROPS,
+                                    $context,
+                                    'possibly-mutating method ' . $intersection_type->value . '::__toString',
+                                    ImpureMethodCall::class,
+                                    $stmt,
+                                    $to_string_storage->capabilities,
+                                    false,
+                                    $var_id === '$this' ? $to_string_storage : null,
+                                );
+                            }
 
                             MethodCallReturnTypeFetcher::taintMethodCallResult(
                                 $statements_analyzer,

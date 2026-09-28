@@ -1238,6 +1238,86 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testPurityArgumentsInBrackets(): void
+    {
+        $this->assertSame('Traversable[pure]<int, string>', (string) Type::parseString('Traversable[pure]<int, string>'));
+        $this->assertSame(
+            'Generator[write-props|io]<int, string, mixed, void>',
+            (string) Type::parseString('Generator[write-props|io]<int, string, mixed, void>'),
+        );
+        $this->assertSame('Iterator[pure]<mixed, mixed>', (string) Type::parseString('Iterator[pure]'));
+        $this->assertSame('Iterator[pure]<mixed, int>', (string) Type::parseString('Iterator[pure]<int>'));
+        $this->assertSame('Foo[io]', (string) Type::parseString('Foo[io]'));
+        $this->assertSame('Foo[pure, io]<int>', (string) Type::parseString('Foo[pure, io]<int>'));
+        $this->assertSame('array<array-key, Foo[pure]>', Type::parseString('Foo[pure][]')->getId());
+        $this->assertSame('Foo[pure]|null', (string) Type::parseString('?Foo[pure]'));
+    }
+
+    public function testIterablePurity(): void
+    {
+        $this->assertSame('iterable[pure]<int, string>', (string) Type::parseString('iterable[pure]<int, string>'));
+        $this->assertSame('iterable[pure]<mixed, mixed>', (string) Type::parseString('iterable[pure]'));
+        $this->assertSame('iterable[read-props]<mixed, int>', (string) Type::parseString('iterable[read-props]<int>'));
+        // impure is the default purity of iterable
+        $this->assertSame('iterable<int, string>', (string) Type::parseString('iterable[impure]<int, string>'));
+    }
+
+    public function testCallablePurityInBrackets(): void
+    {
+        $this->assertSame('Closure[io](int):void', (string) Type::parseString('Closure[io](int): void'));
+        $this->assertSame('callable[read-props]():int', (string) Type::parseString('callable[read-props](): int'));
+        $this->assertSame('pure-Closure():void', (string) Type::parseString('Closure[pure](): void'));
+        $this->assertSame('Closure[io]', (string) Type::parseString('Closure[io]'));
+    }
+
+    public function testEmptyPurityBracketsAreAnArray(): void
+    {
+        $this->assertSame('array<array-key, Foo>', Type::parseString('Foo[]')->getId());
+    }
+
+    public function testEmptyPurityBracketsBeforeTypeParams(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[]<int, string>');
+    }
+
+    public function testPurityArgumentInAngleBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('Purity arguments are given in brackets');
+        Type::parseString('Traversable<int, string, pure>');
+    }
+
+    public function testCallablePurityInAngleBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Closure<pure>(): void');
+    }
+
+    public function testNonPurityArgumentInBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[int]<int, string>');
+    }
+
+    public function testPurityArgumentsOfArray(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array[pure]<int, string>');
+    }
+
+    public function testTooManyIterablePurityArguments(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('iterable[pure, io]<int, string>');
+    }
+
+    public function testEmptyPurityArgument(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[pure,]<int, string>');
+    }
+
     public function testReflectionTypeParse(): void
     {
         if (!function_exists('Psalm\Tests\someFunction')) {

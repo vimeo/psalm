@@ -335,6 +335,10 @@ class Reconciler
                 $result_type = $result_type->setByRef(true);
             }
 
+            if ($before_adjustment && $before_adjustment->from_global_state) {
+                $result_type = $result_type->setProperties(['from_global_state' => true]);
+            }
+
             $type_changed = !$before_adjustment
                 || !$result_type->equals($before_adjustment)
                 || $result_type->different

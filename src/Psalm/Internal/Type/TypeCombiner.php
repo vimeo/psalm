@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -66,7 +67,7 @@ use function count;
 use function is_int;
 use function is_numeric;
 use function min;
-use function strpos;
+use function strcspn;
 use function strtolower;
 use function substr;
 
@@ -189,6 +190,10 @@ final class TypeCombiner
             assert(count($combined_param_types) <= 2);
 
             $combination->value_types['iterable'] = new TIterable($combined_param_types);
+            self::addIterablePurity(
+                $combination,
+                $combination->builtin_type_params['Traversable'][2] ?? Type::getImpure(),
+            );
 
             $combination->array_type_params = [];
 
@@ -264,7 +269,7 @@ final class TypeCombiner
         }
 
         foreach ($combination->object_type_params as $generic_type => $generic_type_params) {
-            $generic_type = substr($generic_type, 0, (int) strpos($generic_type, '<'));
+            $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
             $generic_object = new TGenericObject(
@@ -365,6 +370,8 @@ final class TypeCombiner
             $new_types[] = $type->setFromDocblock($from_docblock);
         }
 
+        $new_types = self::setIterablePurity($new_types, $combination);
+
         if (!$new_types) {
             if (!$has_never) {
                 throw new UnexpectedValueException('There should be types here');
@@ -389,6 +396,37 @@ final class TypeCombiner
         }
 
         return $union_type;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
+     */
+    private static function addIterablePurity(TypeCombination $combination, Union $purity): void
+    {
+        $combination->iterable_purity = Type::combineUnionTypes($combination->iterable_purity, $purity);
+    }
+
+    /**
+     * Gives every iterable combined the purity of all the iterables combined.
+     *
+     * @param list<Atomic> $new_types
+     * @return list<Atomic>
+     * @psalm-mutation-free
+     */
+    private static function setIterablePurity(array $new_types, TypeCombination $combination): array
+    {
+        if ($combination->iterable_purity === null) {
+            return $new_types;
+        }
+
+        foreach ($new_types as $i => $new_type) {
+            if ($new_type instanceof TIterable) {
+                $new_types[$i] = $new_type->setPurity($combination->iterable_purity);
+            }
+        }
+
+        return $new_types;
     }
 
     /**
@@ -475,6 +513,13 @@ final class TypeCombiner
             $type_key = $type->getKey();
         }
 
+        if ($type instanceof TIterable) {
+            self::addIterablePurity($combination, $type->purity);
+        } elseif ($type_key === 'iterable' && $type instanceof TGenericObject) {
+            // a Traversable combined into an iterable
+            self::addIterablePurity($combination, $type->type_params[2] ?? Type::getImpure());
+        }
+
         if ($type instanceof TIterable
             && $combination->array_type_params
             && ($type->has_docblock_params || $combination->array_type_params[1]->isMixed())
@@ -499,11 +544,18 @@ final class TypeCombiner
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->builtin_type_params['Traversable']))
         ) {
+            // the purity of an iterable is not one of its type parameters
+            $traversable_params = $combination->builtin_type_params['Traversable'] ?? null;
+            self::addIterablePurity($combination, $traversable_params[2] ?? Type::getImpure());
+            $traversable_params = isset($traversable_params[1])
+                ? [$traversable_params[0], $traversable_params[1]]
+                : null;
+
             if (!isset($combination->builtin_type_params['iterable'])) {
                 $combination->builtin_type_params['iterable']
-                    = $combination->builtin_type_params['Traversable'] ?? [Type::getMixed(), Type::getMixed()];
-            } elseif (isset($combination->builtin_type_params['Traversable'])) {
-                foreach ($combination->builtin_type_params['Traversable'] as $i => $array_type_param) {
+                    = $traversable_params ?? [Type::getMixed(), Type::getMixed()];
+            } elseif ($traversable_params !== null) {
+                foreach ($traversable_params as $i => $array_type_param) {
                     $iterable_type_param = $combination->builtin_type_params['iterable'][$i];
                     /** @psalm-suppress PropertyTypeCoercion */
                     $combination->builtin_type_params['iterable'][$i] = Type::combineUnionTypes(
@@ -626,6 +678,11 @@ final class TypeCombiner
             || ($type instanceof TArray && $type_key === 'iterable')
         ) {
             foreach ($type->type_params as $i => $type_param) {
+                // the purity of an iterable is not one of its type parameters, see addIterablePurity()
+                if ($type_key === 'iterable' && $i > 1) {
+                    break;
+                }
+
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
@@ -963,6 +1020,17 @@ final class TypeCombiner
                 $combination->floats = null;
                 $combination->value_types['float'] = $type;
             }
+
+            return null;
+        }
+
+        if ($type instanceof TCapabilities) {
+            // a union of capability sets is the capability set allowing all of them
+            $existing = $combination->value_types['capabilities'] ?? null;
+            $combination->value_types['capabilities'] = new TCapabilities(
+                $type->capabilities | ($existing instanceof TCapabilities ? $existing->capabilities : 0),
+                $type->from_docblock,
+            );
 
             return null;
         }

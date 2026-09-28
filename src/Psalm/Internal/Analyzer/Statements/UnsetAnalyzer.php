@@ -7,11 +7,13 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ImpureVariable;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
@@ -62,10 +64,22 @@ final class UnsetAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new ImpureVariable(
-                            'Cannot modify global ' . $var_id . ' in a mutation-free context',
+                            'Cannot modify global ' . $var_id . ' in a '
+                                . Capabilities::toString($context->capabilities) . ' context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
+                if ($var instanceof PhpParser\Node\Expr\Variable && isset($context->vars_in_scope[$var_id])) {
+                    // the object the variable holds may die here
+                    DestructorAnalyzer::chargeDestruction(
+                        $statements_analyzer,
+                        $context,
+                        $context->vars_in_scope[$var_id],
+                        $var_id,
+                        $stmt,
                     );
                 }
 

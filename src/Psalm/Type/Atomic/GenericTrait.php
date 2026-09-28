@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Closure;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -42,13 +43,60 @@ trait GenericTrait
         return $cloned;
     }
 
+    /**
+     * The type parameters written in angle brackets, and the purity arguments written in square
+     * brackets before them (`Traversable[pure]<int, string>`): the trailing purity arguments of a
+     * generic object, the purity of an iterable unless it is impure.
+     *
+     * @return array{list<Union>, list<Union>}
+     */
+    public function getTypeParamsAndPurityArgs(): array
+    {
+        return [$this->type_params, []];
+    }
+
+    /**
+     * @param list<Union> $type_params
+     * @param list<Union> $purity_args
+     * @param Closure[read-props](Union): string $to_string
+     */
+    private static function formatTypeParams(array $type_params, array $purity_args, Closure $to_string): string
+    {
+        $s = '';
+
+        if ($purity_args) {
+            $args = [];
+
+            foreach ($purity_args as $purity_arg) {
+                $args[] = $to_string($purity_arg);
+            }
+
+            $s .= '[' . implode(', ', $args) . ']';
+        }
+
+        if ($type_params) {
+            $params = [];
+
+            foreach ($type_params as $type_param) {
+                $params[] = $to_string($type_param);
+            }
+
+            $s .= '<' . implode(', ', $params) . '>';
+        }
+
+        return $s;
+    }
+
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        $s = '';
-        foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId($exact) . ', ';
-        }
+        [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
+
+        $s = self::formatTypeParams(
+            $type_params,
+            $purity_args,
+            static fn(Union $type_param): string => $type_param->getId($exact),
+        );
 
         $extra_types = '';
 
@@ -68,7 +116,7 @@ trait GenericTrait
             }
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        return $this->value . $s . $extra_types;
     }
 
     /**
@@ -113,7 +161,7 @@ trait GenericTrait
         if ($intersection_pos !== false) {
             $base_value = substr($base_value, 0, $intersection_pos);
         }
-        $type_params = $this->type_params;
+        [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
         //no need for special format if the key is not determined
         if ($this instanceof TArray &&
@@ -148,17 +196,14 @@ trait GenericTrait
             );
         }
 
-        return $base_value .
-                '<' .
-                implode(
-                    ', ',
-                    array_map(
-                        static fn(Union $type_param): string =>
-                            $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
-                        $type_params,
-                    ),
-                ) .
-                '>' . $extra_types;
+        return $base_value
+            . self::formatTypeParams(
+                $type_params,
+                $purity_args,
+                static fn(Union $type_param): string =>
+                    $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+            )
+            . $extra_types;
     }
 
     /**

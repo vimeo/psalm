@@ -177,6 +177,7 @@ HEADING;
 
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
+            /** @psalm-suppress ImpureFunctionCall read once, like configuration */
             $this->link_format = (
                 ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
             ) ?: 'file://%f#L%l';

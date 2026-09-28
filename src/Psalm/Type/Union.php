@@ -22,6 +22,7 @@ use function get_object_vars;
  *      from_calculation?: bool,
  *      from_property?: bool,
  *      from_static_property?: bool,
+ *      from_global_state?: bool,
  *      initialized?: bool,
  *      initialized_class?: ?string,
  *      checked?: bool,
@@ -78,6 +79,13 @@ final class Union implements TypeNode
      * like __construct() to be initialized in
      */
     public bool $from_static_property = false;
+
+    /**
+     * Whether the value was reached from global state: read from a static property, a
+     * superglobal or a `global` variable, returned by a callee that reads globals, or fetched
+     * from such a value. Mutating it needs the write-globals capability.
+     */
+    public bool $from_global_state = false;
 
     /**
      * Whether the property that this type has been derived from has been initialized in a constructor
@@ -196,6 +204,7 @@ final class Union implements TypeNode
         'from_calculation' => 'from_calculation',
         'from_property' => 'from_property',
         'from_static_property' => 'from_static_property',
+        'from_global_state' => 'from_global_state',
         'initialized' => 'initialized',
         'initialized_class' => 'initialized_class',
         'checked' => 'checked',

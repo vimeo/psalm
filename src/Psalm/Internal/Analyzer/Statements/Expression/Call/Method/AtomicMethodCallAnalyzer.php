@@ -228,7 +228,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $return_type_candidate = new Union([new TClosure(
                             $method_storage->params,
                             $method_storage->return_type,
-                            $method_storage->allowed_mutations,
+                            $method_storage->capabilities,
                         )]);
                     }
                 }

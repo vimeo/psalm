@@ -114,9 +114,11 @@ final class Deque implements Sequence
     }
 
     /**
-     * @param (callable(TValue): bool)|null $callback
+     * @psalm-purity-template P
+     * @param (callable[P](TValue): bool)|null $callback
      * @return Deque<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function filter(callable $callback = null): Deque
     {
@@ -167,9 +169,11 @@ final class Deque implements Sequence
 
     /**
      * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TNewValue $callback
      * @return Deque<TNewValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function map(callable $callback): Deque
     {
@@ -195,10 +199,12 @@ final class Deque implements Sequence
 
     /**
      * @template TCarry
-     * @param callable(TCarry, TValue): TCarry $callback
+     * @psalm-purity-template P
+     * @param callable[P](TCarry, TValue): TCarry $callback
      * @param TCarry $initial
      * @return TCarry
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function reduce(callable $callback, $initial = null)
     {
@@ -237,9 +243,11 @@ final class Deque implements Sequence
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
      * @return Deque<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Deque
     {
@@ -306,7 +314,10 @@ final class Map implements Collection, ArrayAccess
     }
 
     /**
-     * @param callable(TKey, TValue): TValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TKey, TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function apply(callable $callback): void
     {
@@ -388,9 +399,11 @@ final class Map implements Collection, ArrayAccess
     }
 
     /**
-     * @param (callable(TKey, TValue): bool)|null $callback
+     * @psalm-purity-template P
+     * @param (callable[P](TKey, TValue): bool)|null $callback
      * @return Map<TKey, TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function filter(callable $callback = null): Map
     {
@@ -422,9 +435,11 @@ final class Map implements Collection, ArrayAccess
 
     /**
      * @template TNewValue
-     * @param callable(TKey, TValue): TNewValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TKey, TValue): TNewValue $callback
      * @return Map<TKey, TNewValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function map(callable $callback): Map
     {
@@ -455,10 +470,12 @@ final class Map implements Collection, ArrayAccess
 
     /**
      * @template TCarry
-     * @param callable(TCarry, TKey, TValue): TCarry $callback
+     * @psalm-purity-template P
+     * @param callable[P](TCarry, TKey, TValue): TCarry $callback
      * @param TCarry $initial
      * @return TCarry
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function reduce(callable $callback, $initial = null)
     {
@@ -496,32 +513,42 @@ final class Map implements Collection, ArrayAccess
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function sort(callable $comparator = null)
     {
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
      * @return Map<TKey, TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Map
     {
     }
 
     /**
-     * @param (callable(TKey, TKey): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TKey, TKey): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function ksort(callable $comparator = null)
     {
     }
 
     /**
-     * @param (callable(TKey, TKey): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TKey, TKey): int)|null $comparator
      * @return Map<TKey, TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function ksorted(callable $comparator = null): Map
     {
@@ -637,7 +664,10 @@ interface Sequence extends Collection, ArrayAccess
     public function sum();
 
     /**
-     * @param callable(TValue): TValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TValue $callback
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function apply(callable $callback): void;
 
@@ -648,9 +678,11 @@ interface Sequence extends Collection, ArrayAccess
     public function contains(...$values): bool;
 
     /**
-     * @param (callable(TValue): bool)|null $callback
+     * @psalm-purity-template P
+     * @param (callable[P](TValue): bool)|null $callback
      * @return Sequence<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function filter(callable $callback = null): Sequence;
 
@@ -695,9 +727,11 @@ interface Sequence extends Collection, ArrayAccess
 
     /**
      * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TNewValue $callback
      * @return Sequence<TNewValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function map(callable $callback): Sequence;
 
@@ -722,10 +756,12 @@ interface Sequence extends Collection, ArrayAccess
 
     /**
      * @template TCarry
-     * @param callable(TCarry, TValue): TCarry $callback
+     * @psalm-purity-template P
+     * @param callable[P](TCarry, TValue): TCarry $callback
      * @param TCarry $initial
      * @return TCarry
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function reduce(callable $callback, $initial = null);
 
@@ -760,14 +796,19 @@ interface Sequence extends Collection, ArrayAccess
     public function slice(int $index, ?int $length = null): Sequence;
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function sort(callable $comparator = null);
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
      * @return Sequence<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Sequence;
 
@@ -852,9 +893,11 @@ final class Vector implements Sequence
     }
 
     /**
-     * @param (callable(TValue): bool)|null $callback
+     * @psalm-purity-template P
+     * @param (callable[P](TValue): bool)|null $callback
      * @return Vector<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function filter(callable $callback = null): Vector
     {
@@ -905,9 +948,11 @@ final class Vector implements Sequence
 
     /**
      * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TNewValue $callback
      * @return Vector<TNewValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function map(callable $callback): Vector
     {
@@ -933,10 +978,12 @@ final class Vector implements Sequence
 
     /**
      * @template TCarry
-     * @param callable(TCarry, TValue): TCarry $callback
+     * @psalm-purity-template P
+     * @param callable[P](TCarry, TValue): TCarry $callback
      * @param TCarry $initial
      * @return TCarry
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function reduce(callable $callback, $initial = null)
     {
@@ -975,9 +1022,11 @@ final class Vector implements Sequence
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
      * @return Vector<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Vector
     {
@@ -1068,9 +1117,11 @@ final class Set implements Collection, ArrayAccess
     }
 
     /**
-     * @param (callable(TValue): bool)|null $callback
+     * @psalm-purity-template P
+     * @param (callable[P](TValue): bool)|null $callback
      * @return Set<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function filter(callable $callback = null): Set
     {
@@ -1115,8 +1166,11 @@ final class Set implements Collection, ArrayAccess
 
     /**
      * @template TNewValue
-     * @param callable(TValue): TNewValue $callback
+     * @psalm-purity-template P
+     * @param callable[P](TValue): TNewValue $callback
      * @return Set<TNewValue>
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template P
      */
     public function map(callable $callback): Set
     {
@@ -1156,16 +1210,21 @@ final class Set implements Collection, ArrayAccess
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P
      */
     public function sort(callable $comparator = null): void
     {
     }
 
     /**
-     * @param (callable(TValue, TValue): int)|null $comparator
+     * @psalm-purity-template P
+     * @param (callable[P](TValue, TValue): int)|null $comparator
      * @return Set<TValue>
      * @psalm-mutation-free
+     * @psalm-purity-from-template P
      */
     public function sorted(callable $comparator = null): Set
     {

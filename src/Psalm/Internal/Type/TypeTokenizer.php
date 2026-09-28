@@ -70,10 +70,15 @@ final class TypeTokenizer
         'pure-Closure' => true,
         'impure-callable' => true,
         'impure-Closure' => true,
-        'self-mutating-callable' => true,
-        'self-mutating-Closure' => true,
-        'self-accessing-callable' => true,
-        'self-accessing-Closure' => true,
+        'pure' => true,
+        'impure' => true,
+        'read-props' => true,
+        'write-this-props' => true,
+        'write-props' => true,
+        'read-globals' => true,
+        'write-globals' => true,
+        'write-refs' => true,
+        'io' => true,
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
@@ -476,6 +481,15 @@ final class TypeTokenizer
             }
 
             if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1][0] === '(') {
+                continue;
+            }
+
+            // `Closure[purity]`, like `Closure(...)`, is the built-in type
+            if (($string_type_token[0] === 'Closure' || $string_type_token[0] === '\\Closure')
+                && isset($type_tokens[$i + 2])
+                && $type_tokens[$i + 1][0] === '['
+                && $type_tokens[$i + 2][0] !== ']'
+            ) {
                 continue;
             }
 

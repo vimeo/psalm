@@ -285,9 +285,14 @@ function rsort(array &$array, int $flags = SORT_REGULAR): bool
  * @psalm-template T
  * @psalm-template TArray as array<T>
  *
+ * @psalm-purity-template P
+ *
  * @param TArray $array
- * @param callable(T,T):int $callback
+ * @param callable[P](T,T):int $callback
  * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $array
+ *
+ * @psalm-capabilities write-refs
+ * @psalm-purity-from-template P
  */
 function usort(array &$array, callable $callback): bool
 {
@@ -298,9 +303,14 @@ function usort(array &$array, callable $callback): bool
  * @psalm-template T
  * @psalm-template TArray as array<TKey,T>
  *
+ * @psalm-purity-template P
+ *
  * @param TArray $array
- * @param callable(T,T):int $callback
+ * @param callable[P](T,T):int $callback
  * @param-out (TArray is non-empty-array ? non-empty-array<TKey,T> : array<TKey,T>) $array
+ *
+ * @psalm-capabilities write-refs
+ * @psalm-purity-from-template P
  */
 function uasort(array &$array, callable $callback): bool
 {
@@ -311,9 +321,14 @@ function uasort(array &$array, callable $callback): bool
  * @psalm-template T
  * @psalm-template TArray as array<TKey,T>
  *
+ * @psalm-purity-template P
+ *
  * @param TArray $array
- * @param callable(TKey,TKey):int $callback
+ * @param callable[P](TKey,TKey):int $callback
  * @param-out (TArray is non-empty-array ? non-empty-array<TKey,T> : array<TKey,T>) $array
+ *
+ * @psalm-capabilities write-refs
+ * @psalm-purity-from-template P
  */
 function uksort(array &$array, callable $callback): bool
 {
@@ -1204,19 +1219,76 @@ function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count
 
 /**
  * @template TKey of array-key
+ * @psalm-purity-template P
  *
  * @param non-empty-string|non-empty-string[] $pattern
- * @param callable(string[]):string $callback
+ * @param callable[P](string[]):string $callback
  * @param string|array<TKey, string|int|float> $subject
  * @param int<0, max> $count
  * @return ($subject is array ? array<TKey, string>|null : string|null)
  *
  * @psalm-ignore-nullable-return
  *
+ * @psalm-capabilities write-refs
+ * @psalm-purity-from-template P
+ *
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
  */
 function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
+
+/**
+ * @template TKey of array-key
+ * @psalm-purity-template P
+ *
+ * @param array<string, callable[P](array<array-key, mixed>):string> $pattern
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
+ *
+ * @psalm-capabilities write-refs
+ * @psalm-purity-from-template P
+ *
+ * @psalm-taint-specialize
+ * @psalm-flow ($subject) -> return
+ */
+function preg_replace_callback_array(array $pattern, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
+
+/**
+ * Iterating over $iterator does what its purity says.
+ *
+ * @psalm-purity-template P
+ * @param Traversable[P] $iterator
+ * @return array
+ *
+ * @psalm-pure
+ * @psalm-purity-from-template P
+ */
+function iterator_to_array(Traversable $iterator, bool $preserve_keys = true): array {}
+
+/**
+ * @psalm-purity-template P
+ * @param Traversable[P] $iterator
+ * @return int<0, max>
+ *
+ * @psalm-pure
+ * @psalm-purity-from-template P
+ */
+function iterator_count(Traversable $iterator): int {}
+
+/**
+ * @psalm-purity-template P, Q
+ * @param Traversable[P] $iterator
+ * @param callable[Q] $callback
+ * @return int<0, max>
+ *
+ * @psalm-pure
+ * @psalm-purity-from-template P
+ * @psalm-purity-from-template Q
+ */
+function iterator_apply(Traversable $iterator, callable $callback, ?array $args = null): int {}
 
 /**
  * @psalm-pure
@@ -1833,12 +1905,20 @@ function time_sleep_until(float $timestamp): bool {}
 function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
 
 /**
+ * @psalm-purity-template P
+ * @param callable[P] $callback
  * @psalm-taint-sink callable $callback
+ * @psalm-pure
+ * @psalm-purity-from-template P
  */
 function forward_static_call(callable $callback, mixed ...$args): mixed {}
 
 /**
+ * @psalm-purity-template P
+ * @param callable[P] $callback
  * @psalm-taint-sink callable $callback
+ * @psalm-pure
+ * @psalm-purity-from-template P
  */
 function forward_static_call_array(callable $callback, array $args): mixed {}
 

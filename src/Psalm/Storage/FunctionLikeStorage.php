@@ -142,10 +142,30 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $is_static = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /**
+     * The capabilities (side effects) this function-like may use: a bitmask of
+     * {@see Capabilities} constants, {@see Capabilities::ALL} when unannotated.
+     */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
+
+    /**
+     * A `@psalm-capabilities` value that names imported type aliases, resolved into
+     * {@see self::$capabilities} by the populator once every class is scanned.
+     */
+    public ?Union $capabilities_type = null;
+
+    /**
+     * Names of the templates (function-level or class-level) this function-like inherits
+     * its purity from (`@psalm-purity-from-template T`): purity templates declared with
+     * `@psalm-purity-template`, or type templates bound to a closure/callable type. The
+     * capabilities a call needs are {@see self::$capabilities} plus those of the closures
+     * the templates are bound to at that call.
+     *
+     * @var list<string>
+     */
+    public array $purity_from_templates = [];
 
     /**
      * Whether the return value of this function/method must be used by callers.
@@ -199,7 +219,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public function isMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -207,7 +227,32 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public function isExternalMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+    }
+
+    /**
+     * The capabilities for inheritance/contract checks. For a function-like carrying
+     * `@psalm-purity-from-template`, its purity is assumed to be the worst possible over the
+     * referenced templates, i.e. their upper bounds. Without such annotations this is just
+     * the declared {@see self::$capabilities}.
+     *
+     * @param array<string, non-empty-array<string, Union>> $class_template_types the templates of the
+     *                                                                             containing class, if any
+     * @psalm-mutation-free
+     */
+    public function getWorstCaseCapabilities(array $class_template_types = []): int
+    {
+        $capabilities = $this->capabilities;
+
+        foreach ($this->purity_from_templates as $template_name) {
+            $bounds = $this->template_types[$template_name] ?? $class_template_types[$template_name] ?? [];
+
+            foreach ($bounds as $bound) {
+                $capabilities |= Capabilities::fromType($bound);
+            }
+        }
+
+        return $capabilities;
     }
 
     /**
@@ -216,7 +261,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public function isPure(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
     }
 
     /**

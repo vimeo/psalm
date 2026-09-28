@@ -443,7 +443,7 @@ final class UnionTypeComparator
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function isContainedByInPhp(
         ?Union $input_type,

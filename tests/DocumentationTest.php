@@ -73,6 +73,9 @@ final class DocumentationTest extends TestCase
      */
     private const INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS = [
         '@psalm-self-out', // Not documented as it's a legacy alias of @psalm-this-out
+        // Not documented as they are legacy aliases of @psalm-capabilities
+        '@psalm-mutation-free',
+        '@psalm-external-mutation-free',
         '@psalm-variadic',
     ];
 

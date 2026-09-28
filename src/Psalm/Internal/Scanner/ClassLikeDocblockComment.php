@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner;
 
 use PhpParser\Node\Stmt\ClassMethod;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 
 /**
  * @internal
@@ -45,6 +45,36 @@ final class ClassLikeDocblockComment
     public array $templates = [];
 
     /**
+     * The names of the templates declared with `@psalm-purity-template`, whose values are
+     * capability sets.
+     *
+     * @var list<string>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * The default of each purity template that has one, for subclasses that do not bind it.
+     *
+     * @var array<string, string>
+     */
+    public array $purity_template_defaults = [];
+
+    /**
+     * The lower bound of each purity template that has one: what every value of it requires.
+     *
+     * @var array<string, string>
+     */
+    public array $purity_template_lower_bounds = [];
+
+    /**
+     * The values of `@psalm-capabilities` tags that are not plain capability lists: purity
+     * types, resolved once the type aliases in scope are known.
+     *
+     * @var list<string>
+     */
+    public array $capabilities_expressions = [];
+
+    /**
      * @var array<int, string>
      */
     public array $template_extends = [];
@@ -74,8 +104,9 @@ final class ClassLikeDocblockComment
 
     public bool $override_method_visibility = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    /** @var int */
+    /** A bitmask of {@see Capabilities} constants */
+    public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
 

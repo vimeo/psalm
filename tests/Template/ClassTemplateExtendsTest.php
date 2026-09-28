@@ -686,7 +686,7 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     $i = (new SomeIterator())->getIterator();',
                 'assertions' => [
-                    '$i' => 'Traversable<int, Foo>',
+                    '$i' => 'Traversable[impure]<int, Foo>',
                 ],
             ],
             'templateCountOnExtendedAndImplemented' => [

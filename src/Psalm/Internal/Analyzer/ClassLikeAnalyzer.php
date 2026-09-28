@@ -14,6 +14,7 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\InaccessibleProperty;
@@ -29,6 +30,7 @@ use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -696,7 +698,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             ? 0
             : count($parent_storage->template_types);
 
-        if ($expected_param_count > $given_param_count) {
+        if ($parent_storage->getRequiredTemplateParamCount() > $given_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
@@ -705,7 +707,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
-        } elseif ($expected_param_count < $given_param_count) {
+        } elseif ($expected_param_count < $given_param_count
+            || (isset($storage->template_extended_offsets[$parent_storage->name])
+                && !PurityArguments::fit($storage->template_extended_offsets[$parent_storage->name], $parent_storage))
+        ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $storage->name . ' has too many template params when extending ' . $parent_storage->name
@@ -745,7 +750,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
 
+            // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
+
+            foreach ($parent_storage->template_types as $template_name => $type_map) {
+                $extended_purity = $storage->template_extended_params[$parent_storage->name][$template_name] ?? null;
+
+                foreach ($type_map as $declaring_class => $template_type) {
+                    if ($extended_purity !== null
+                        && Capabilities::isPurityType($template_type)
+                        && Capabilities::isPurityType($extended_purity)
+                    ) {
+                        $previous_extended[$template_name] = [$declaring_class => $extended_purity];
+                    }
+                }
+            }
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 // declares the variables
@@ -828,12 +847,28 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             null,
                         );
 
+                        $lower_bound = $parent_storage->template_lower_bounds[$template_name] ?? null;
+
                         if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidTemplateParam(
                                     'Extended template param ' . $template_name
                                         . ' expects type ' . $template_type_copy->getId()
                                         . ', type ' . $extended_type->getId() . ' given',
+                                    $code_location,
+                                ),
+                                $storage->suppressed_issues + $this->getSuppressedIssues(),
+                            );
+                        } elseif ($lower_bound !== null
+                            && Capabilities::isPurityType($extended_type)
+                            && !Capabilities::allows(Capabilities::fromType($extended_type), $lower_bound)
+                        ) {
+                            // a purity template with a lower bound: the value must require at least that
+                            IssueBuffer::maybeAdd(
+                                new InvalidTemplateParam(
+                                    'Extended template param ' . $template_name
+                                        . ' must include at least ' . Capabilities::toString($lower_bound)
+                                        . ', ' . $extended_type->getId() . ' given',
                                     $code_location,
                                 ),
                                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -857,7 +892,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

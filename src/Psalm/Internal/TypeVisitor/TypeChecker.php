@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -26,6 +27,7 @@ use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
@@ -205,7 +207,8 @@ final class TypeChecker extends TypeVisitor
         $template_type_count = count($expected_type_params);
         $template_param_count = count($atomic->type_params);
 
-        if ($template_type_count > $template_param_count) {
+        // trailing purity templates with a default need not be given
+        if ($class_storage->getRequiredTemplateParamCount() > $template_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '
@@ -214,7 +217,9 @@ final class TypeChecker extends TypeVisitor
                 ),
                 $this->suppressed_issues,
             );
-        } elseif ($template_type_count < $template_param_count) {
+        } elseif ($template_type_count < $template_param_count
+            || !PurityArguments::fit($atomic->type_params, $class_storage)
+        ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $atomic->getId(). ' has too many template params, expecting '
@@ -227,6 +232,22 @@ final class TypeChecker extends TypeVisitor
 
         $expected_type_param_keys = array_keys($expected_type_params);
         $template_result = new TemplateResult($expected_type_params, []);
+
+        // the bounds of type templates may use purity templates, which come after them
+        foreach ($atomic->type_params as $i => $type_param) {
+            $expected_template_name = $expected_type_param_keys[$i] ?? null;
+
+            if ($expected_template_name === null || !Capabilities::isPurityType($type_param)) {
+                continue;
+            }
+
+            foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
+                if (Capabilities::isPurityType($expected_type_param)) {
+                    $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                        = new TemplateBound($type_param);
+                }
+            }
+        }
 
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
@@ -257,6 +278,8 @@ final class TypeChecker extends TypeVisitor
                         null,
                     );
 
+                    $lower_bound = $class_storage->template_lower_bounds[$expected_template_name] ?? null;
+
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
                         IssueBuffer::maybeAdd(
                             new InvalidTemplateParam(
@@ -265,6 +288,22 @@ final class TypeChecker extends TypeVisitor
                                     . ' expects type '
                                     . $expected_type_param->getId()
                                     . ', type ' . $type_param->getId() . ' given',
+                                $this->code_location,
+                            ),
+                            $this->suppressed_issues,
+                        );
+                    } elseif ($lower_bound !== null
+                        && Capabilities::isPurityType($type_param)
+                        && !Capabilities::allows(Capabilities::fromType($type_param), $lower_bound)
+                    ) {
+                        // a purity template with a lower bound: the value must require at least that
+                        IssueBuffer::maybeAdd(
+                            new InvalidTemplateParam(
+                                'Extended template param ' . $expected_template_name
+                                    . ' of ' . $atomic->getId()
+                                    . ' must include at least '
+                                    . Capabilities::toString($lower_bound)
+                                    . ', ' . $type_param->getId() . ' given',
                                 $this->code_location,
                             ),
                             $this->suppressed_issues,

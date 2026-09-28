@@ -211,6 +211,7 @@ class Exception implements Throwable
      * @param string $message
      * @param int $code
      * @param Throwable $previous
+     * @psalm-external-mutation-free
      */
     public function __construct($message = "", $code = 0, Throwable $previous = null) {}
 
@@ -290,6 +291,7 @@ class Error implements Throwable
      * @param string $message
      * @param int $code
      * @param Throwable $previous
+     * @psalm-external-mutation-free
      */
     public function __construct($message = "", $code = 0, Throwable $previous = null) {}
 

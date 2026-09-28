@@ -12,10 +12,12 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\MixedClone;
 use Psalm\Issue\PossiblyInvalidClone;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -92,6 +94,30 @@ final class CloneAnalyzer
                                 $location,
                                 $statements_analyzer->getSuppressedIssues(),
                             );
+
+                            $declaring_clone_method_id = $does_method_exist
+                                ? $codebase->methods->getDeclaringMethodId($clone_method_id)
+                                : null;
+
+                            if ($declaring_clone_method_id !== null
+                                && $codebase->methods->hasStorage($declaring_clone_method_id)
+                            ) {
+                                // __clone only mutates the copy: what it does to it is fine
+                                $clone_method_storage = $codebase->methods->getStorage($declaring_clone_method_id);
+
+                                $statements_analyzer->signalMutation(
+                                    $clone_method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
+                                    $context,
+                                    'method ' . $clone_type_part->value . '::__clone',
+                                    ImpureMethodCall::class,
+                                    $stmt,
+                                    null,
+                                    false,
+                                    $clone_method_storage,
+                                    true,
+                                );
+                            }
+
                             $possibly_valid = true;
                             $immutable_cloned = true;
                         }
