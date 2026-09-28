@@ -1293,6 +1293,52 @@ final class CallableTest extends TestCase
 
                     bar([Id::class, "id"]);',
             ],
+            'polymorphicArrayCallableWithVariadicTemplate' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect(...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, int): list<int> $f
+                     */
+                    function pair(callable $f): void {}
+
+                    /**
+                     * @param callable(int...): list<int> $f
+                     */
+                    function many(callable $f): void {}
+
+                    pair([Collector::class, "collect"]);
+                    many([Collector::class, "collect"]);',
+            ],
+            'polymorphicArrayCallableWithOmittedDefault' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = 0) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+            ],
             'callableMethodArrayCallableMissingTypes' => [
                 'code' => '<?php
                     function foo(callable $c): void {}
@@ -2666,6 +2712,48 @@ final class CallableTest extends TestCase
 
                     bar([Str::class, "id"]);',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'polymorphicArrayCallableVariadicWithMismatchedArgument' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect(...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param callable(int, string): list<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Collector::class, "collect"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'polymorphicArrayCallableWithMismatchedOmittedDefault' => [
+                'code' => '<?php
+                    class Id {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return B
+                         */
+                        public static function id($b = false) {
+                            return $b;
+                        }
+                    }
+
+                    /**
+                     * @param callable(): int $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Id::class, "id"]);',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 'code' => '<?php
