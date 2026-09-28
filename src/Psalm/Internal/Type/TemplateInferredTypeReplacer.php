@@ -101,6 +101,22 @@ final class TemplateInferredTypeReplacer
                     )
                     : null;
 
+                // No inferred lower bound: fall back to the template's declared default,
+                // the same as the plain TTemplateParam case above — class-string<T> was
+                // only ever checking lower bounds, so a defaulted T stayed unresolved.
+                if ($template_type === null && $apply_defaults) {
+                    $template_type = self::getTemplateDefault(
+                        new TTemplateParam(
+                            $atomic_type->param_name,
+                            $atomic_type->as_type ? new Union([$atomic_type->as_type]) : Type::getObject(),
+                            $atomic_type->defining_class,
+                        ),
+                        $template_result,
+                        $codebase,
+                        $visiting_defaults,
+                    );
+                }
+
                 $class_template_type = null;
 
                 if ($template_type) {

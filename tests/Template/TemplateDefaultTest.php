@@ -979,6 +979,24 @@ final class TemplateDefaultTest extends TestCase
                      */
                     class Foo {}',
             ],
+            // class-string<T> only checks lower bounds when substituting T, never the
+            // declared default, so with no arguments to infer from it's left as a raw
+            // unresolved template instead of resolving to the default class.
+            'templateDefaultAppliedToClassString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object = stdClass
+                     * @return class-string<T>
+                     */
+                    function foo() {
+                        throw new \RuntimeException();
+                    }
+
+                    $r = foo();',
+                'assertions' => [
+                    '$r===' => 'class-string<stdClass>',
+                ],
+            ],
         ];
     }
 
