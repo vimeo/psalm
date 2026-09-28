@@ -327,6 +327,7 @@ final class UnusedCodeTest extends TestCase
                         echo $i;
                         return $i;
                     });',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
             ],
             'usedMethodsCallingEachOther' => [
                 'code' => '<?php
