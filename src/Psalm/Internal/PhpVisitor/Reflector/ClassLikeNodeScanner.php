@@ -67,9 +67,12 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -2160,6 +2163,22 @@ final class ClassLikeNodeScanner
         $default_visitor->traverse($default_type);
         if ($bound_visitor->matches() && $default_visitor->matches()) {
             return false;
+        }
+
+        // Skip when the bound is (or contains) callable, Closure, or object, and the
+        // default names a class: whether that class satisfies the bound can depend on
+        // members or interfaces it only has through inheritance (e.g. an __invoke()
+        // declared on a parent class makes it callable), which Populator hasn't
+        // resolved yet at scan time.
+        if ($default_visitor->matches()) {
+            foreach ($bound->getAtomicTypes() as $bound_atomic) {
+                if ($bound_atomic instanceof TCallable
+                    || $bound_atomic instanceof TClosure
+                    || $bound_atomic instanceof TObject
+                ) {
+                    return false;
+                }
+            }
         }
 
         // Skip when either side is derived from a class constant or a class's
