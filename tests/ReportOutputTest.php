@@ -592,17 +592,23 @@ final class ReportOutputTest extends TestCase
         $var_node    = $make_node('$cmd', 7, 'test.php', '/app/test.php');
         $sink_node   = $make_node('shell_exec($cmd)', 10, 'test.php', '/app/test.php');
 
+        /** @param list<DataFlowNodeData> $trace */
         $make_issue = static fn(array $trace): IssueData => new IssueData(
             IssueData::SEVERITY_ERROR,
-            10, 10,
+            10,
+            10,
             'TaintedShell',
             'Detected tainted shell code',
             'test.php',
             '/app/test.php',
             'shell_exec($cmd);',
             'shell_exec($cmd)',
-            0, 16, 0, 17,
-            1, 17,
+            0,
+            16,
+            0,
+            17,
+            1,
+            17,
             taint_trace: $trace,
         );
 
