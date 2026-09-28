@@ -257,7 +257,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 $x = fdiv(1.0, 2.0);
             ',
             'error_message' => 'Function fdiv is not defined for the analysed PHP version 7.4'
-                . ' (it was introduced in PHP 8.0)',
+                . ' (it was introduced in PHP 8.0',
             'ignored_issues' => [],
             'php_version' => '7.4',
         ];
@@ -269,7 +269,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 }
             ',
             'error_message' => 'Method ReflectionClass::isEnum is not defined for the analysed PHP version 8.0'
-                . ' (it was introduced in PHP 8.1)',
+                . ' (it was introduced in PHP 8.1',
             'ignored_issues' => [],
             'php_version' => '8.0',
         ];
