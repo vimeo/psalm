@@ -400,6 +400,40 @@ final class PurityTemplateTest extends TestCase
                         return apply(fn(): int => Counter::$n) + apply(fn(): int => 1);
                     }',
             ],
+            'classPurityTemplateBoundByFunctionPurityTemplate' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     * @return Box[P]
+                     */
+                    function makeBox(Closure $f): Box {
+                        return new Box($f);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return makeBox(fn(): int => 1)->fire();
+                    }',
+            ],
             'classPurityTemplateDefault' => [
                 'code' => '<?php
                     /** @psalm-purity-template C(pure) <= write-this-props|write-props */
@@ -508,6 +542,26 @@ final class PurityTemplateTest extends TestCase
                             echo "x";
                             return 1;
                         });
+                    }',
+            ],
+            'wildcardPurityInNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use Closure;
+
+                    /**
+                     * @psalm-pure
+                     * @param Closure[_](): int $f
+                     * @param ?callable[_](): int $g
+                     */
+                    function apply(Closure $f, ?callable $g = null): int {
+                        return $f() + ($g !== null ? $g() : 0);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return apply(fn(): int => 1, fn(): int => 2);
                     }',
             ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
@@ -1106,6 +1160,44 @@ final class PurityTemplateTest extends TestCase
                         return apply(function (): void { echo "x"; });
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'classPurityTemplateBoundByFunctionPurityTemplateIsCharged' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     * @return Box[P]
+                     */
+                    function makeBox(Closure $f): Box {
+                        return new Box($f);
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): int {
+                        return makeBox(function (): int {
+                            echo "x";
+                            return 1;
+                        })->fire();
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
             'classPurityTemplateBoundToImpure' => [
                 'code' => '<?php

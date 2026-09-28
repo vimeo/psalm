@@ -1,0 +1,37 @@
+<?php
+
+// Signature refinements for functions that already exist on earlier PHP versions but whose Psalm
+// types are tightened for PHP 8.2 (iterator_to_array() and iterator_count() accept any iterable from
+// 8.2). Kept version gated (loaded only when analysing >= 8.2) so the stricter types are not applied
+// against the looser earlier signatures. See Php80Functions.phpstub.
+
+/**
+ * @psalm-pure
+ * @param positive-int $length
+ * @return list<non-empty-string>
+ *
+ * @psalm-flow ($string) -> return
+ */
+function str_split(string $string, int $length = 1) {}
+
+/**
+ * Iterating over $iterator does what its purity says (nothing for an array).
+ *
+ * @psalm-purity-template P
+ * @param iterable[P] $iterator
+ * @return array
+ *
+ * @psalm-pure
+ * @psalm-purity-from-template P
+ */
+function iterator_to_array(iterable $iterator, bool $preserve_keys = true): array {}
+
+/**
+ * @psalm-purity-template P
+ * @param iterable[P] $iterator
+ * @return int<0, max>
+ *
+ * @psalm-pure
+ * @psalm-purity-from-template P
+ */
+function iterator_count(iterable $iterator): int {}

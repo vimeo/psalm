@@ -165,6 +165,79 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The `analysis_php_version_id` that introduced a native method, unless a polyfill provides it.
+     *
+     * A method inherits the availability of its declaring class (a class introduced in PHP 8.1 has
+     * no method available before 8.1) unless the method itself carries a later `@since`, which then
+     * takes priority.
+     */
+    public static function getMethodSincePhpVersionId(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        bool $with_pseudo = false,
+    ): ?int {
+        try {
+            $method_storage = $codebase->methods->getStorage($method_id, $with_pseudo);
+        } catch (UnexpectedValueException) {
+            return null;
+        }
+
+        $defining_class = $method_storage->defining_fqcln ?? $method_id->fq_class_name;
+
+        $method_since_id = $method_storage->since_php_version_id;
+        if ($method_since_id === null && $codebase->classlike_storage_provider->has($defining_class)) {
+            $defining_class_storage = $codebase->classlike_storage_provider->get($defining_class);
+            $method_since_id = $defining_class_storage->since_php_version_id;
+
+            // A native method with no `@since` on it or its class is dated by the versioned
+            // callmaps (e.g. ReflectionClass::isEnum(), added in PHP 8.1 to a pre-existing class).
+            if ($method_since_id === null && !$defining_class_storage->user_defined) {
+                $method_since_id = InternalCallMapHandler::getIntroducingPhpVersionId(
+                    $defining_class . '::' . $method_id->method_name,
+                );
+            }
+        }
+
+        return $method_since_id !== null && !$codebase->isClassLikePolyfilled($defining_class)
+            ? $method_since_id
+            : null;
+    }
+
+    /**
+     * Reports a native method used below the PHP version that introduced it.
+     *
+     * @param  string[]     $suppressed_issues
+     */
+    public static function checkMethodAvailability(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $with_pseudo = false,
+        ?Context $context = null,
+    ): void {
+        // The method is known to Psalm (its stubbed signature is always loaded so analysis is
+        // unaffected), but a native method introduced in a later PHP version is undefined when
+        // analysing an older version without a polyfill. The issue is reported without treating
+        // the method as unknown, so its stubbed signature is still used for the rest of analysis.
+        $method_since_id = self::getMethodSincePhpVersionId($codebase, $method_id, $with_pseudo);
+
+        if ($method_since_id !== null
+            && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id) < $method_since_id
+        ) {
+            IssueBuffer::maybeAdd(
+                new UndefinedMethod(
+                    'Method ' . $codebase->methods->getCasedMethodId($method_id) . ' '
+                        . $codebase->getUnavailableSymbolMessageSuffix($method_since_id),
+                    $code_location,
+                    (string) $method_id,
+                ),
+                $suppressed_issues,
+            );
+        }
+    }
+
+    /**
      * @param  string[]     $suppressed_issues
      * @param  lowercase-string|null  $calling_method_id
      */
@@ -175,6 +248,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         array $suppressed_issues,
         ?string $calling_method_id = null,
         bool $with_pseudo = false,
+        ?Context $context = null,
     ): ?bool {
         if ($codebase->methodExists(
             method_id: $method_id,
@@ -186,6 +260,15 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
             source_file_path: $code_location->file_path,
             with_pseudo: $with_pseudo,
         )) {
+            self::checkMethodAvailability(
+                $codebase,
+                $method_id,
+                $code_location,
+                $suppressed_issues,
+                $with_pseudo,
+                $context,
+            );
+
             return true;
         }
 

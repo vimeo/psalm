@@ -4,11 +4,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Branch pushes only: tags and releases never build the stub images (a
+# `branches` filter on `push` excludes tag pushes).
 on:
   push:
-  release:
-    types:
-      - published
+    branches:
+      - '**'
 
 permissions:
   contents: read

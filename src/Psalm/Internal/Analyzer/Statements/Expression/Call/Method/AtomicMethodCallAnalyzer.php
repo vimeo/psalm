@@ -182,7 +182,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 new CodeLocation($source, $stmt->var),
                 $context,
                 $statements_analyzer->getSuppressedIssues(),
-                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
+                new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock, context: $context),
                 $context->check_classes,
             );
         }
@@ -475,6 +475,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             return;
         }
+
+        MethodAnalyzer::checkMethodAvailability(
+            $codebase,
+            $method_id,
+            new CodeLocation($source, $stmt->name),
+            $statements_analyzer->getSuppressedIssues(),
+            false,
+            $context,
+        );
 
         $old_node_data = $statements_analyzer->node_data;
 
