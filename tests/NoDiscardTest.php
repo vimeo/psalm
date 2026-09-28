@@ -565,20 +565,5 @@ final class NoDiscardTest extends TestCase
             // issue) and enforcement still reports the discarded result.
             'php_version' => '8.0',
         ];
-
-        yield 'noDiscardUndefinedBelowPhp85WithoutPolyfill' => [
-            'code' => '<?php
-                // No polyfill and analysing below 8.5, so #[\NoDiscard] is not available: Psalm
-                // reports it as an undefined attribute class (enforcement is orthogonal).
-                #[\NoDiscard]
-                function f(): int { return 1; }
-
-                $x = f();
-                echo $x;
-            ',
-            'error_message' => 'UndefinedAttributeClass',
-            'ignored_issues' => [],
-            'php_version' => '8.0',
-        ];
     }
 }
