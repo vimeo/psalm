@@ -76,6 +76,7 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function ltrim;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
@@ -498,11 +499,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
     /**
      * Records that a named function is referenced, so dead-code analysis sees it
-     * is used. Covers ordinary calls and `foo(...)` first-class callables;
-     * callable-string/array references are recorded through the callable-argument
-     * analysis. In-call-map (internal) functions are never reported, so skipped.
-     *
-     * @psalm-external-mutation-free
+     * is used. Covers ordinary calls, `foo(...)` first-class callables and calls
+     * through a literal callable string (`$f = 'foo'; $f()`, `'foo'()`), which are
+     * rewritten to a named call; callables passed as arguments are recorded by
+     * the callable-argument analysis (see recordFunctionReference()).
      */
     private static function recordNamedFunctionReference(
         StatementsAnalyzer $statements_analyzer,
@@ -511,18 +511,47 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         FunctionCallInfo $function_call_info,
         Context $context,
     ): void {
-        if ($function_name instanceof PhpParser\Node\Name
-            && $function_call_info->function_id !== null
-            && !$function_call_info->in_call_map
-            && !$context->collect_initializations
-            && !$context->collect_mutations
-        ) {
-            $codebase->addReferenceToFunctionLike(
-                strtolower($function_call_info->function_id),
+        if (!$function_name instanceof PhpParser\Node\Name || $function_call_info->in_call_map) {
+            return;
+        }
+
+        $function_id = $function_call_info->function_id ?? ltrim($function_name->toString(), '\\');
+
+        if ($function_id !== '') {
+            self::recordFunctionReference(
+                $statements_analyzer,
+                $codebase,
+                $function_id,
                 new CodeLocation($statements_analyzer->getSource(), $function_name),
                 $context,
             );
         }
+    }
+
+    /**
+     * Records a use of a user-defined function (internal ones are never reported
+     * as unused), so dead-code analysis sees it is reachable.
+     *
+     * @param non-empty-string $function_id
+     */
+    public static function recordFunctionReference(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        string $function_id,
+        CodeLocation $location,
+        Context $context,
+    ): void {
+        $function_id = strtolower($function_id);
+
+        if ($context->collect_initializations
+            || $context->collect_mutations
+            || InternalCallMapHandler::inCallMap($function_id)
+            || !$codebase->functions->functionExists($statements_analyzer, $function_id)
+        ) {
+            return;
+        }
+
+        $codebase->addReferenceToFunctionLike($function_id, $location, $context);
     }
 
     private static function handleNamedFunction(

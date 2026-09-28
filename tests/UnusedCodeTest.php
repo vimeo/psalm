@@ -398,6 +398,42 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testFunctionsReferencedByIndirectCallablesAreUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function via_usort(int $a, int $b): int { return $a <=> $b; }
+                function via_call_user_func(): int { return 1; }
+                function via_call_user_func_array(int $x): int { return $x; }
+                function via_variable(): int { return 1; }
+                function via_string_call(): int { return 1; }
+                function via_from_callable(): int { return 1; }
+                function via_shutdown(): void {}
+
+                $l = [2, 1];
+                usort($l, "via_usort");
+                echo (int) call_user_func("via_call_user_func");
+                echo (int) call_user_func_array("via_call_user_func_array", [1]);
+                $f = "via_variable";
+                echo (int) $f();
+                echo (int) "via_string_call"();
+                echo (int) Closure::fromCallable("via_from_callable")();
+                register_shutdown_function("via_shutdown");',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testFunctionReferencedByFirstClassCallableIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
