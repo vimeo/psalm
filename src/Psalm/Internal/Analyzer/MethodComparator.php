@@ -1234,7 +1234,7 @@ final class MethodComparator
      * and callable types (`Closure[_](): int`), replaced by their bounds: the method accepts
      * whatever they may be bound to.
      *
-     * @psalm-pure
+     * @psalm-capabilities write-props
      */
     private static function replaceFunctionTemplatesWithBounds(Union $type): Union
     {
