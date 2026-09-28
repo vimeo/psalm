@@ -2944,6 +2944,55 @@ final class CallableTest extends TestCase
                     bar([Factory::class, "make"]);',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'polymorphicArrayCallableWithMixedArgumentAndInvariantReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    class Boxer {
+                        /**
+                         * @template B
+                         * @param B $b
+                         * @return Box<B>
+                         */
+                        public static function box($b): Box {
+                            return new Box($b);
+                        }
+                    }
+
+                    /**
+                     * @param callable(mixed): Box<int> $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Boxer::class, "box"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'polymorphicArrayCallableVariadicAfterExpectedVariadic' => [
+                'code' => '<?php
+                    class Collector {
+                        /**
+                         * @template T
+                         * @param mixed $head
+                         * @param T ...$xs
+                         * @return list<T>
+                         */
+                        public static function collect($head = null, ...$xs): array {
+                            return array_values($xs);
+                        }
+                    }
+
+                    /**
+                     * @param (callable(mixed...): list<int>)|null $f
+                     */
+                    function bar(?callable $f): void {}
+
+                    bar([Collector::class, "collect"]);',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 'code' => '<?php
                     class A {

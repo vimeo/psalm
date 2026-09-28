@@ -183,9 +183,8 @@ final class CallableTypeComparator
      * Resolves a method's templates against the callable it is expected to satisfy: they are bound
      * to the argument types that callable passes in and to the return type it expects.
      * The templates are left unresolved if one is inferred outside its declared bound, or if the
-     * resolved parameter types reject an argument the callable comparison does not check itself
-     * (a default value the expected callable may fall back on, or a trailing argument passed to
-     * a variadic parameter).
+     * resolved parameter types reject any of those arguments (including default values the
+     * expected callable may fall back on), since the callable comparison skips some of them.
      */
     private static function resolveMethodTemplates(
         Codebase $codebase,
@@ -199,7 +198,7 @@ final class CallableTypeComparator
             ? $last_container_param
             : null;
 
-        $unchecked_args = [];
+        $resolved_args = [];
 
         foreach ($callable->params ?? [] as $offset => $param) {
             if (!$param->type) {
@@ -209,10 +208,15 @@ final class CallableTypeComparator
             $args = [];
 
             if ($param->is_variadic) {
-                foreach (array_slice($container_params, $offset, null, true) as $arg_offset => $container_param) {
+                $variadic_args = array_slice($container_params, $offset, null, true);
+
+                if (!$variadic_args && $container_variadic_param) {
+                    $variadic_args = [$offset => $container_variadic_param];
+                }
+
+                foreach ($variadic_args as $arg_offset => $container_param) {
                     if ($container_param->type) {
                         $args[] = [$arg_offset, $container_param->type];
-                        $unchecked_args[] = [$offset, $container_param->type];
                     }
                 }
             } else {
@@ -231,7 +235,6 @@ final class CallableTypeComparator
                         : Type::getMixed();
 
                     $args[] = [$offset, $default_type];
-                    $unchecked_args[] = [$offset, $default_type];
                 }
             }
 
@@ -245,6 +248,8 @@ final class CallableTypeComparator
                     $arg_type,
                     $arg_offset,
                 );
+
+                $resolved_args[] = [$offset, $arg_type];
             }
         }
 
@@ -282,7 +287,7 @@ final class CallableTypeComparator
 
         $resolved_callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
-        foreach ($unchecked_args as [$offset, $arg_type]) {
+        foreach ($resolved_args as [$offset, $arg_type]) {
             $resolved_param_type = $resolved_callable->params[$offset]->type ?? null;
 
             if ($resolved_param_type
