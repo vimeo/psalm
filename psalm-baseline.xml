@@ -938,7 +938,6 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
     <PossiblyNullArgument>
       <code><![CDATA[$function_name]]></code>
-      <code><![CDATA[$function_name]]></code>
     </PossiblyNullArgument>
     <PossiblyNullPropertyFetch>
       <code><![CDATA[$stmt->getArgs()[0]->value]]></code>
