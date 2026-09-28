@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * Native symbols stubbed with an `@since x.y` tag are reported as undefined when analysing an
  * older PHP version without a polyfill, while analysis still uses their stubbed shape.
@@ -56,7 +58,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'code' => '<?php
                 $m = new WeakMap();
             ',
-            'error_message' => 'UndefinedClass - src/somefile.php:2:26 - WeakMap is not'
+            'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - WeakMap is not'
                 . ' defined for the analysed PHP version 7.4 (it was introduced in PHP 8.0);'
                 . ' install symfony/polyfill-php80',
             'ignored_issues' => [],
