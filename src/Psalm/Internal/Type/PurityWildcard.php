@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Internal\TypeVisitor\PurityWildcardFinder;
+use Psalm\Internal\TypeVisitor\PurityWildcardStripper;
 use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
@@ -79,6 +81,29 @@ final class PurityWildcard
         }
 
         return false;
+    }
+
+    /**
+     * Whether a closure or callable anywhere in the type, not only at the top level, has the `_`
+     * purity.
+     */
+    public static function containsAnywhere(Union $type): bool
+    {
+        $finder = new PurityWildcardFinder();
+        $finder->traverse($type);
+
+        return $finder->matches();
+    }
+
+    /**
+     * The type with every `_` purity at any depth replaced by `impure`, where `_` has no parameter
+     * to stand for (`_` is only bound when the closure or callable is the parameter's type).
+     */
+    public static function stripAnywhere(Union $type): Union
+    {
+        (new PurityWildcardStripper())->traverse($type);
+
+        return $type;
     }
 
     /**

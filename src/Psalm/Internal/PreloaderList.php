@@ -995,6 +995,8 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsStaticVisitor::class,
         \Psalm\Internal\TypeVisitor\FromDocblockSetter::class,
+        \Psalm\Internal\TypeVisitor\PurityWildcardFinder::class,
+        \Psalm\Internal\TypeVisitor\PurityWildcardStripper::class,
         \Psalm\Internal\TypeVisitor\TemplateTypeCollector::class,
         \Psalm\Internal\TypeVisitor\TypeChecker::class,
         \Psalm\Internal\TypeVisitor\TypeLocalizer::class,

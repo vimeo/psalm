@@ -1512,6 +1512,40 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'wildcardPurityNestedInMethodParam' => [
+                'code' => '<?php
+                    abstract class Runner {
+                        /** @param array<Closure[_](int): int> $fs */
+                        public function runAll(array $fs): int {
+                            return count($fs);
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInParamOfClosureParam' => [
+                'code' => '<?php
+                    /** @param Closure(Closure[_](): int): int $f */
+                    function apply(Closure $f): int {
+                        return $f(fn(): int => 1);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityNestedInReturnType' => [
+                'code' => '<?php
+                    /** @return list<Closure[_](): int> */
+                    function make(): array {
+                        return [fn(): int => 1];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInPropertyType' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var Closure[_](): int|null */
+                        public ?Closure $f = null;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'classPurityTemplateLowerBoundRejectsSmallerExtends' => [
                 'code' => '<?php
                     /** @psalm-purity-template write-props <= C */

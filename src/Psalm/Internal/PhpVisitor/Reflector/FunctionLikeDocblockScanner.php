@@ -870,6 +870,8 @@ final class FunctionLikeDocblockScanner
                 continue;
             }
 
+            $wildcard_clash = false;
+
             if (PurityWildcard::contains($new_param_type)) {
                 // `Closure[_]`: the function-like inherits its purity from this parameter,
                 // through a purity template of its own
@@ -884,6 +886,7 @@ final class FunctionLikeDocblockScanner
                         . ' in docblock for ' . $cased_method_id,
                         $docblock_type_location,
                     );
+                    $wildcard_clash = true;
                 } else {
                     $wildcard_bound = new Union([new TCapabilities(Capabilities::ALL)]);
                     $storage->template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
@@ -895,6 +898,19 @@ final class FunctionLikeDocblockScanner
 
                     $new_param_type = PurityWildcard::bind($new_param_type, $wildcard_template, $defining_id);
                 }
+            }
+
+            // any `_` left is nested (`array<Closure[_](): int>`), where it has no parameter to stand for
+            if (PurityWildcard::containsAnywhere($new_param_type)) {
+                if (!$wildcard_clash) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'The purity `_` can only be used on a closure or callable that is the type of a'
+                        . ' parameter, in docblock for ' . $cased_method_id,
+                        $docblock_type_location,
+                    );
+                }
+
+                $new_param_type = PurityWildcard::stripAnywhere($new_param_type);
             }
 
             $storage_param->has_docblock_type = true;
@@ -1073,14 +1089,14 @@ final class FunctionLikeDocblockScanner
                 true,
             );
 
-            if (PurityWildcard::contains($storage->return_type)) {
+            if (PurityWildcard::containsAnywhere($storage->return_type)) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     'The purity `_` can only be used in the type of a parameter, in docblock for '
                     . $cased_function_id,
                     new CodeLocation($file_scanner, $stmt, null, true),
                 );
 
-                $storage->return_type = PurityWildcard::strip($storage->return_type);
+                $storage->return_type = PurityWildcard::stripAnywhere($storage->return_type);
             }
 
             if ($storage instanceof MethodStorage) {
