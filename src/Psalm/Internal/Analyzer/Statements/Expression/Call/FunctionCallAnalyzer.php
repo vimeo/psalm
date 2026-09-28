@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -106,6 +107,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->getArgs()[0]->unpack
         ) {
             $original_function_id = implode('\\', $function_name->getParts());
+
+            // PHP 8.5 clone(...) form: parsed as a FuncCall, not Clone_, so route it in.
+            if (strtolower($original_function_id) === 'clone') {
+                return CloneAnalyzer::analyzeFuncCall($statements_analyzer, $stmt, $context);
+            }
 
             if ($original_function_id === 'call_user_func') {
                 $other_args = array_slice($stmt->getArgs(), 1);
@@ -351,6 +357,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         self::checkFunctionCallPurity(
             $statements_analyzer,
             $codebase,
+            $stmt,
+            $function_name,
+            $function_call_info,
+            $context,
+        );
+
+        self::checkFunctionNoDiscard(
+            $statements_analyzer,
             $stmt,
             $function_name,
             $function_call_info,
@@ -1119,6 +1133,40 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Reports the return value of a `#[\NoDiscard]` function being discarded at a call site.
+     *
+     * @see NoDiscardAnalyzer::isDiscardReported() for when this applies.
+     */
+    private static function checkFunctionNoDiscard(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node $function_name,
+        FunctionCallInfo $function_call_info,
+        Context $context,
+    ): void {
+        if ($function_call_info->function_id === null
+            || $function_call_info->function_storage === null
+            || !NoDiscardAnalyzer::isDiscardReported(
+                $statements_analyzer->getCodebase(),
+                $context,
+                $function_call_info->function_storage,
+                $stmt->isFirstClassCallable(),
+            )
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UnusedFunctionCall(
+                'The call to ' . $function_call_info->function_id . ' is not used',
+                new CodeLocation($statements_analyzer, $function_name),
+                $function_call_info->function_id,
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     private static function callUsesByReferenceArguments(

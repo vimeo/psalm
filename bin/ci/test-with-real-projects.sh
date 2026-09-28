@@ -10,6 +10,13 @@ PSALM_PHAR="$(readlink -f "$SCRIPT_DIR/../../build/psalm.phar" || echo "")"
 
 if [ ! -f "$PSALM_PHAR" ]; then PSALM_PHAR="$PSALM"; fi
 
+# On this branch Psalm's analysis diverges from master, so the baselines committed
+# on the endtoend-test repositories' default branches (which track master) no longer
+# match and would fail with UnusedBaselineEntry errors. Those repositories therefore
+# carry a dedicated "psalm-baseline-6.x" branch with baselines regenerated against 6.x,
+# which we check out below instead of the default branch.
+BASELINE_BRANCH=psalm-baseline-6.x
+
 which gsed > /dev/null && sed=gsed || sed=sed
 
 rm -Rf /tmp/testing-with-real-projects
@@ -28,7 +35,7 @@ update)
 	exit 0
 	;;
 phpunit)
-	git clone --depth=1 git@github.com:psalm/endtoend-test-phpunit
+	git clone --depth=1 --branch "$BASELINE_BRANCH" git@github.com:psalm/endtoend-test-phpunit
 	cd endtoend-test-phpunit
 	composer install
 	"$PSALM_PHAR" --config=.psalm/config.xml --monochrome --show-info=false --set-baseline=.psalm/baseline.xml || FAIL=$?
@@ -36,7 +43,7 @@ phpunit)
 	;;
 
 collections)
-	git clone --depth=1 git@github.com:psalm/endtoend-test-collections.git
+	git clone --depth=1 --branch "$BASELINE_BRANCH" git@github.com:psalm/endtoend-test-collections.git
 	cd endtoend-test-collections
 	composer install
 	rm vendor/amphp/amp/lib/functions.php; touch vendor/amphp/amp/lib/functions.php;

@@ -855,7 +855,7 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
 
                     class c {
                         public function a(): a { return (new a)->g(); }
-                        public function b(): a&b { return (new b)->g(); }
+                        public function b(): b { return (new b)->g(); }
                     }
                 ',
                 'php_version' => '8.1',

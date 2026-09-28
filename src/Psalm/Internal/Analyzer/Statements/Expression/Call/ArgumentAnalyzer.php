@@ -986,6 +986,11 @@ final class ArgumentAnalyzer
                 }
             }
 
+            // these upper bounds are requirements imposed by this call site
+            foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                $upper_bound->from_argument_requirement = true;
+            }
+
             // transfer any type-variable bounds the containment comparison
             // recorded, stamped with the argument's position
             $statements_analyzer->type_variable_tracker->addBounds(
@@ -1967,16 +1972,32 @@ final class ArgumentAnalyzer
 
                 if ($new_params !== null) {
                     foreach ($new_params as $param_offset => $callable_param) {
-                        if ($callable_param->type) {
-                            $resolved_param_type = self::resolveTypeVariablesInUnion(
-                                $callable_param->type,
-                                $codebase,
-                                $changed,
-                            );
+                        if (!$callable_param->type) {
+                            continue;
+                        }
 
-                            if ($resolved_param_type !== $callable_param->type) {
-                                $new_params[$param_offset] = $callable_param->setType($resolved_param_type);
-                            }
+                        // A parameter position (contravariant) is resolved to a
+                        // concrete shape so callable-signature validation can
+                        // compare shapes and report a precise error. But when a
+                        // type variable there resolves to `mixed`, the resolved
+                        // `callable(mixed)` would be silently accepted (the
+                        // hasMixed() gate), dropping the coercion; leave the
+                        // variable in place so the comparison records a bound
+                        // (`_0 <: Item`) that reconciles at the end of the
+                        // function-like instead.
+                        $param_changed = false;
+                        $resolved_param_type = self::resolveTypeVariablesInUnion(
+                            $callable_param->type,
+                            $codebase,
+                            $param_changed,
+                        );
+
+                        if ($param_changed
+                            && !$resolved_param_type->isMixed()
+                            && $resolved_param_type !== $callable_param->type
+                        ) {
+                            $new_params[$param_offset] = $callable_param->setType($resolved_param_type);
+                            $changed = true;
                         }
                     }
                 }

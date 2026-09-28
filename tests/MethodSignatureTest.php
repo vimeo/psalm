@@ -993,6 +993,123 @@ final class MethodSignatureTest extends TestCase
                     }
                 PHP,
             ],
+            'finalClassMayReplaceStaticReturnWithSelf' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'finalClassMayReplaceStaticReturnWithOwnName' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): b {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'finalClassMayKeepStaticReturn' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'finalClassMayReplaceNullableStaticReturnWithSelf' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): ?static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): ?self {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'finalClassMayReplaceStaticReturnFromInterface' => [
+                'code' => '<?php
+                    interface a {
+                        public function ret(): static;
+                    }
+
+                    final class b implements a {
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'finalClassMayReplaceStaticReturnFromAbstractTrait' => [
+                'code' => '<?php
+                    trait t {
+                        abstract public function ret(): static;
+                    }
+
+                    final class b {
+                        use t;
+
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'enumMayReplaceStaticReturnWithSelf' => [
+                'code' => '<?php
+                    interface a {
+                        public function ret(): static;
+                    }
+
+                    enum b implements a {
+                        case X;
+
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -1701,6 +1818,157 @@ final class MethodSignatureTest extends TestCase
                     public function bar(int $i): string;
                 }',
                 'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'finalClassSelfForStaticBefore85' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'finalClassOwnNameForStaticBefore85' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): b {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'finalClassParentNameForStatic' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): a {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'nonFinalClassSelfForStatic' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    class b extends a {
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'finalMethodSelfForStaticInNonFinalClass' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): static {
+                            return $this;
+                        }
+                    }
+
+                    class b extends a {
+                        final public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'finalClassNullableSelfForStaticBefore85' => [
+                'code' => '<?php
+                    class a {
+                        public function ret(): ?static {
+                            return $this;
+                        }
+                    }
+
+                    final class b extends a {
+                        public function ret(): ?self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'finalClassSelfForInterfaceStaticBefore85' => [
+                'code' => '<?php
+                    interface a {
+                        public function ret(): static;
+                    }
+
+                    final class b implements a {
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'finalClassSelfForAbstractTraitStaticBefore85' => [
+                'code' => '<?php
+                    trait t {
+                        abstract public function ret(): static;
+                    }
+
+                    final class b {
+                        use t;
+
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'enumSelfForStaticBefore85' => [
+                'code' => '<?php
+                    interface a {
+                        public function ret(): static;
+                    }
+
+                    enum b implements a {
+                        case X;
+
+                        public function ret(): self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
         ];
     }
