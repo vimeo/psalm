@@ -1053,21 +1053,26 @@ final class AssignmentAnalyzer
             $statements_analyzer,
         );
 
-        if ($var_id !== null
-            && $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
-            && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->name instanceof PhpParser\Node\Identifier
-            && $statements_analyzer->getCodebase()->properties->propertyExists($var_id, false)
-        ) {
-            ClassLikeAnalyzer::checkPropertyVisibility(
-                $var_id,
-                $context,
+        if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $property_id = ExpressionIdentifier::getVarId(
+                $stmt,
+                $context->self ?? $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues(),
-                true,
-                true,
             );
+
+            if ($property_id !== null
+                && $statements_analyzer->getCodebase()->properties->propertyExists($property_id, false)
+            ) {
+                ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                );
+            }
         }
 
         if ($var_id) {

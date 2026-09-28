@@ -239,6 +239,24 @@ final class AsymmetricVisibilityTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'privateStaticInTraitPassedByReference' => [
+                'code' => '<?php
+                    trait Registry {
+                        /** @var list<int> */
+                        private static array $queue = [];
+
+                        public static function push(int $i): void {
+                            self::$queue[] = $i;
+                            sort(self::$queue);
+                        }
+                    }
+
+                    final class C { use Registry; }
+                    C::push(1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'staticProtectedSetWrittenFromChildOnPhp85' => [
                 'code' => '<?php
                     abstract class A {
