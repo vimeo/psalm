@@ -305,12 +305,30 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
     {
         return [
+            'mutationFreeMethodCallWithImpureClosureIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @param Closure[_](int): int $f
+                         * @psalm-capabilities read-props
+                         */
+                        public function each(Closure $f): int {
+                            return $f(1);
+                        }
+                    }
+
+                    (new A)->each(function (int $i): int {
+                        echo $i;
+                        return $i;
+                    });',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
+            ],
             'usedMethodsCallingEachOther' => [
                 'code' => '<?php
                     final class A {
