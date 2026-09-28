@@ -560,6 +560,23 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'wildcardPurityInOverrideOfNullableClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int|null $g */
+                        public function run(?Closure $g): int {
+                            return $g === null ? 0 : $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[_](int): int|null $g */
+                        #[Override]
+                        public function run(?Closure $g): int {
+                            return $g === null ? 0 : $g(2);
+                        }
+                    }',
+            ],
             'classPurityTemplateLowerBound' => [
                 'code' => '<?php
                     final class Box {
@@ -880,6 +897,42 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'pureClosureParamInOverrideOfImpureOneIsMoreSpecific' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'pureClosureParamInOverrideOfWildcardOneIsMoreSpecific' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[_](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
             'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */
