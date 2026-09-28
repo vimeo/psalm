@@ -62,13 +62,14 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use function strlen;
-use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
 
 use const PHP_EOL;
+use const PREG_OFFSET_CAPTURE;
 
+const NEW_LINE_LENGTH = 1;
 /**
  * @internal
  *
@@ -868,27 +869,31 @@ final class ClassLikes
                     && !$classlike_storage->is_enum
                     && !$classlike_storage->is_interface
                 ) {
+                    $codeIssue = new ClassMustBeFinal(
+                        'Class ' . $classlike_storage->name
+                            . ' is never extended and is not part of the public API, and thus must be made final.',
+                        $classlike_storage->location,
+                        $classlike_storage->name,
+                    );
                     IssueBuffer::maybeAdd(
-                        new ClassMustBeFinal(
-                            'Class ' . $classlike_storage->name
-                                . ' is never extended and is not part of the public API, and thus must be made final.',
-                            $classlike_storage->location,
-                            $classlike_storage->name,
-                        ),
+                        $codeIssue,
                         $classlike_storage->suppressed_issues,
                         true,
                     );
-                    
+
                     if ($codebase->alter_code
                         && $classlike_storage->stmt_location !== null
+                        && !IssueBuffer::isSuppressed($codeIssue, $classlike_storage->suppressed_issues)
                         && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
                     ) {
                         $selection = $classlike_storage->stmt_location->getSnippet();
-                        $insert_pos = strpos($selection, "class");
-        
-                        if ($insert_pos === false) {
-                            $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
-                        }
+                        $bounds = $classlike_storage->stmt_location->getSnippetBounds();
+
+                        preg_match("/\n(?:readonly\s)?class\s/", $selection, $matches, PREG_OFFSET_CAPTURE);
+                        $insert_pos = match (true) {
+                            !empty($matches) && isset($matches[0][1]) => $matches[0][1] + $bounds[0] + NEW_LINE_LENGTH,
+                            default => $classlike_storage->stmt_location->getSelectionBounds()[0]
+                        };
 
                         FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
                             new FileManipulation($insert_pos, $insert_pos, 'final ', true),
