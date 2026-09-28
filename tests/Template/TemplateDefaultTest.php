@@ -835,6 +835,44 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => '42',
                 ],
             ],
+            // T appears only in the callable parameter's input position, so it's
+            // inferred as an upper bound (see TemplateResult doc comment), not a lower
+            // bound. That's still real inferred content from the passed closure, not an
+            // unmatched placeholder, so it must not be flagged from_unbound_template_fallback
+            // — doing so would make the declared default override a real inference.
+            'templateDefaultNotAppliedOverRealCallableParamInference' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @param callable(T): void $c
+                     * @return T
+                     */
+                    function process(callable $c) {
+                        throw new RuntimeException("empty");
+                    }
+
+                    $r = process(function (int $v): void {});',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'templateDefaultNotAppliedOverRealCallableParamInferenceMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     * @param callable(T): void $c
+                     * @return T
+                     */
+                    function process(callable $c) {
+                        throw new RuntimeException("empty");
+                    }
+
+                    /** @psalm-suppress MixedAssignment */
+                    $r = process(function ($v): void {});',
+                'assertions' => [
+                    '$r===' => 'mixed',
+                ],
+            ],
         ];
     }
 

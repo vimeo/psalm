@@ -431,15 +431,22 @@ final class ArgumentAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class],
                 )) {
-                    // this template appears in the parameter's type but nothing in the
-                    // call actually matched it (e.g. a `(callable(T): TResult)|null`
-                    // parameter passed `null`): the bound below is a placeholder, not
-                    // real inferred content, so mark it as such
-                    if (isset(
+                    // this template appears in the parameter's type but has no lower
+                    // bound. That can mean nothing in the call actually matched it (e.g.
+                    // a `(callable(T): TResult)|null` parameter passed `null`), in which
+                    // case the bound below is a placeholder, not real inferred content,
+                    // so mark it as such. But it can also mean the template only appears
+                    // in a callable parameter's input position (e.g. `callable(T): void`
+                    // matched against a closure with a real, non-template param type):
+                    // that's genuine inference, just recorded as an upper bound instead
+                    // of a lower one, so it must not be flagged as a fallback.
+                    $is_real_inference = isset(
                         $template_result->upper_bounds
                             [$template_type->param_name]
                             [$template_type->defining_class],
-                    )) {
+                    );
+
+                    if ($is_real_inference) {
                         $fallback_bound = new TemplateBound(
                             $template_result->upper_bounds
                                 [$template_type->param_name]
@@ -451,7 +458,7 @@ final class ArgumentAnalyzer
                         );
                     }
 
-                    $fallback_bound->from_unbound_template_fallback = true;
+                    $fallback_bound->from_unbound_template_fallback = !$is_real_inference;
                     $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
                         $fallback_bound,
                     ];
