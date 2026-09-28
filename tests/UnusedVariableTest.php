@@ -44,6 +44,9 @@ final class UnusedVariableTest extends TestCase
                         }
                         return null;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayOffset' => [
                 'code' => '<?php
