@@ -146,7 +146,7 @@ final class MethodCallReturnTypeFetcher
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,
-                    $method_id,
+                    $declaring_method_id ?? $method_id,
                     count($stmt->getArgs()),
                     $codebase,
                 );
@@ -207,7 +207,7 @@ final class MethodCallReturnTypeFetcher
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,
-                    $method_id,
+                    $declaring_method_id ?? $method_id,
                     count($stmt->getArgs()),
                     $codebase,
                 );
