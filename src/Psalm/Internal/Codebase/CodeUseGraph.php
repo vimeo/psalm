@@ -373,7 +373,6 @@ final class CodeUseGraph
      * Whether a node is a root of the usage search: a root is always alive.
      *
      * @param Closure[_](string): bool $is_external whether a node belongs to code outside of the project
-     *
      * @psalm-pure
      */
     private static function isRoot(string $node_id, Closure $is_external): bool
@@ -585,7 +584,6 @@ final class CodeUseGraph
      *        edges) belongs to code outside of the project, e.g. a vendor class
      *        or a caller made up by a plugin: such code is never reported as
      *        unused, so what it references is used.
-     *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function resolve(Closure $is_external): void
