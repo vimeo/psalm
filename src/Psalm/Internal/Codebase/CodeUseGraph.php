@@ -16,6 +16,7 @@ use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
 use function array_pop;
+use function get_object_vars;
 use function md5;
 use function strpos;
 use function strtolower;
@@ -193,6 +194,39 @@ final class CodeUseGraph
         public bool $collect_locations = false,
         private readonly ?Closure $is_root = null,
     ) {
+    }
+
+    /**
+     * Workers send their graph back to the main process, which only merges its
+     * edges, files and locations (see addGraph()). The storage provider and the
+     * root predicate are process-local and can't be serialized (the provider's
+     * cache holds a file lock), so they are left out and a fresh provider is
+     * attached on the receiving side.
+     *
+     * @return array<string, mixed>
+     * @psalm-capabilities read-props
+     */
+    public function __serialize(): array
+    {
+        $data = get_object_vars($this);
+        unset($data['storage_provider'], $data['is_root']);
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @psalm-suppress MixedAssignment the properties __serialize() wrote
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function __unserialize(array $data): void
+    {
+        foreach ($data as $property => $value) {
+            $this->$property = $value;
+        }
+
+        $this->storage_provider = new ClassLikeStorageProvider();
+        $this->is_root = null;
     }
 
     // Node ids
