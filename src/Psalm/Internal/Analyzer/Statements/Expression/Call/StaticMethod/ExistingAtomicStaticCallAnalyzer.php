@@ -187,22 +187,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
 
-        // The method may be inherited (via extends/use) rather than redeclared on the
-        // called class, so its declared defaults live on the declaring method's own
-        // storage, not the called class's copy of it.
-        $declaring_method_id_for_defaults = $codebase->methods->getDeclaringMethodId($method_id);
-        $method_storage_for_defaults = $declaring_method_id_for_defaults
-            && $codebase->methods->hasStorage($declaring_method_id_for_defaults)
-                ? $codebase->methods->getStorage($declaring_method_id_for_defaults)
-                : ($class_storage->methods[$method_name_lc] ?? null);
-        if ($method_storage_for_defaults && $method_storage_for_defaults->template_type_defaults !== null) {
-            foreach ($method_storage_for_defaults->template_type_defaults as $template_name => $default_type) {
-                if (isset($method_storage_for_defaults->template_types[$template_name])) {
-                    $defining_key = array_key_first($method_storage_for_defaults->template_types[$template_name]);
-                    $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
-                }
-            }
-        }
+        self::seedTemplateTypeDefaults($codebase, $method_id, $method_name_lc, $class_storage, $template_result);
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
@@ -626,6 +611,40 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * Seeds $template_result's template_type_defaults from the called method's declared
+     * `@template T = Default` tags, so TemplateInferredTypeReplacer can apply them later
+     * when nothing was actually inferred for a template.
+     *
+     * The method may be inherited (via extends/use) rather than redeclared on the called
+     * class, so its declared defaults live on the declaring method's own storage, not the
+     * called class's copy of it.
+     */
+    private static function seedTemplateTypeDefaults(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        string $method_name_lc,
+        ClassLikeStorage $class_storage,
+        TemplateResult $template_result,
+    ): void {
+        $declaring_method_id_for_defaults = $codebase->methods->getDeclaringMethodId($method_id);
+        $method_storage_for_defaults = $declaring_method_id_for_defaults
+            && $codebase->methods->hasStorage($declaring_method_id_for_defaults)
+                ? $codebase->methods->getStorage($declaring_method_id_for_defaults)
+                : ($class_storage->methods[$method_name_lc] ?? null);
+
+        if ($method_storage_for_defaults === null || $method_storage_for_defaults->template_type_defaults === null) {
+            return;
+        }
+
+        foreach ($method_storage_for_defaults->template_type_defaults as $template_name => $default_type) {
+            if (isset($method_storage_for_defaults->template_types[$template_name])) {
+                $defining_key = array_key_first($method_storage_for_defaults->template_types[$template_name]);
+                $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+            }
+        }
     }
 
     /**
