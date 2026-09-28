@@ -2647,6 +2647,7 @@ final class Codebase
      * ```
      *
      * @return array{Union, Union}
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function getKeyValueParamsForTraversableObject(Atomic $type): array
     {
