@@ -457,10 +457,12 @@ final class TemplateDefaultTest extends TestCase
             ],
             // unlike the forward-reference case above, T here is already registered as a
             // template by the time its own default is parsed, so `= T` is a genuine
-            // self-reference: resolving it re-enters getTemplateDefault() for T while
-            // already resolving T's default, which is exactly what the cycle guard
-            // (visiting_defaults) exists to catch. It returns null rather than looping,
-            // so T is left unresolved (shown with its "as" bound) instead of a type.
+            // self-reference. getTemplateDefault() pre-resolves a self-reference to the
+            // template's own bound (here: mixed, since T is unbounded) before expanding
+            // the rest of the default, so this bottoms out at mixed instead of recursing;
+            // the visiting_defaults cycle guard remains in place as a backstop for longer
+            // indirect cycles (T = U, U = V, V = T) that this pre-substitution doesn't
+            // catch, since it only rewrites T referring to itself, not a chain.
             'classSelfReferentialTemplateDefaultDoesNotInfiniteLoop' => [
                 'code' => '<?php
                     /**
@@ -473,9 +475,39 @@ final class TemplateDefaultTest extends TestCase
                         }
                     }
 
+                    /** @psalm-suppress MixedAssignment */
                     $r = (new SelfCycle())->get();',
                 'assertions' => [
-                    '$r===' => 'T:SelfCycle as mixed',
+                    '$r===' => 'mixed',
+                ],
+            ],
+            // the self-reference here is nested inside a generic type param rather than
+            // being the whole default, so resolving it recurses into replace() through
+            // GenericTrait::replaceTypeParamsTemplateTypesWithArgTypes(), which doesn't
+            // thread the visiting_defaults cycle guard. Without the guard surviving that
+            // hop, this used to recurse without ever terminating. The fix pre-resolves a
+            // self-reference to the template's bound (here: mixed, since T is unbounded)
+            // before expanding the rest of the default. `array<int, T>` gets unrolled
+            // through two independent code paths that each apply this once (TypeExpander's
+            // own bare-class default expansion, then the generic template-param fallback
+            // it recurses into), so the pathological cycle bottoms out two levels deep
+            // instead of one — still finite and still terminates quickly, which is what
+            // actually matters here.
+            'classSelfReferentialNestedTemplateDefaultDoesNotInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @template T = array<int, T>
+                     */
+                    class NestedCycle {
+                        /** @return T */
+                        public function get() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    $r = new NestedCycle();',
+                'assertions' => [
+                    '$r===' => 'NestedCycle<array<int, array<int, mixed>>>',
                 ],
             ],
             'functionTemplateDefaultAppliedWhenNoArguments' => [
