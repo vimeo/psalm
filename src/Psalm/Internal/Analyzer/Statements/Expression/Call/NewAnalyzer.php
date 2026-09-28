@@ -214,6 +214,8 @@ final class NewAnalyzer extends CallAnalyzer
                     return true;
                 }
 
+                $codebase->scanner->registerReflectedClassLikeStorage($fq_class_name);
+
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
                     $fq_class_name,

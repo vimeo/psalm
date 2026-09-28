@@ -32,15 +32,20 @@ use function array_filter;
 use function array_merge;
 use function array_pop;
 use function ceil;
+use function class_exists;
 use function count;
+use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function interface_exists;
+use function ltrim;
 use function min;
 use function realpath;
 use function str_ends_with;
 use function strtolower;
 use function substr;
+use function trait_exists;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -148,6 +153,25 @@ final class Scanner
         private readonly FileReferenceProvider $file_reference_provider,
         private readonly Progress $progress,
     ) {
+    }
+
+    public function registerReflectedClassLikeStorage(string $fq_classlike_name): void
+    {
+        $fq_classlike_name = ltrim($fq_classlike_name, '\\');
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
+            || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
+            || (!class_exists($fq_classlike_name, false)
+                && !interface_exists($fq_classlike_name, false)
+                && !enum_exists($fq_classlike_name, false)
+                && !trait_exists($fq_classlike_name, false))
+        ) {
+            return;
+        }
+
+        $this->reflection->registerClass(new ReflectionClass($fq_classlike_name));
+        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**
