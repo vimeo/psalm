@@ -519,6 +519,7 @@ final class CallableTypeComparator
                         )->getSingleAtomic();
                     }
 
+                    /** @psalm-suppress LessSpecificReturnStatement */
                     return $callable;
                 }
             }
