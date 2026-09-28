@@ -377,8 +377,8 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         return $cb !== null ? $cb($x) : $x;
                     }
 
-                    function reassigned(Closure $f): int {
-                        $f = function (): int { return 1; };
+                    function reassigned(Closure $f, Closure $g): int {
+                        $f = $g;
                         return $f();
                     }',
                 'output' => '<?php
@@ -400,11 +400,8 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         return $cb !== null ? $cb($x) : $x;
                     }
 
-                    /**
-                     * @psalm-pure
-                     */
-                    function reassigned(Closure $f): int {
-                        $f = function (): int { return 1; };
+                    function reassigned(Closure $f, Closure $g): int {
+                        $f = $g;
                         return $f();
                     }',
                 'php_version' => '7.4',
