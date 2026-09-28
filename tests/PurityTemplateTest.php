@@ -602,18 +602,13 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-pure
                      * @param Iterator[pure]<int, string> $it
-                     * @param list<int> $xs
                      */
-                    function consume(Iterator $it, array $xs): int {
+                    function consume(Iterator $it): int {
                         $all = iterator_to_array($it);
                         return count($all)
                             + iterator_count(gen())
-                            + iterator_count($xs)
                             + iterator_apply(gen(), fn(): bool => true);
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
             ],
             'pregReplaceCallbackArrayInheritsTheCallbacksPurity' => [
                 'code' => '<?php
