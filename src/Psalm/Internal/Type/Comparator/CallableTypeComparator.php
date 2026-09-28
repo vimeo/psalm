@@ -520,11 +520,19 @@ final class CallableTypeComparator
                     );
 
                     if ($template_result) {
-                        $callable = TemplateInferredTypeReplacer::replace(
+                        $replaced_callable = TemplateInferredTypeReplacer::replace(
                             new Union([$callable]),
                             $template_result,
                             $codebase,
                         )->getSingleAtomic();
+
+                        // replace() only substitutes template types within $callable's own
+                        // params/return type, it never changes the outer atomic's class, so
+                        // this is always still a TCallable in practice; the instanceof check
+                        // just gives the analyzer the narrower type it can't infer on its own.
+                        if ($replaced_callable instanceof TCallable) {
+                            $callable = $replaced_callable;
+                        }
                     }
 
                     return $callable;
