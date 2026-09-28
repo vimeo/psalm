@@ -575,6 +575,23 @@ final class PurityTemplateTest extends TestCase
                         return "";
                     }',
             ],
+            'callOfTypeTemplateBoundToCallableIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as callable(int): string
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(callable $cb): string {
+                        return $cb(1);
+                    }
+
+                    /** @psalm-pure */
+                    function caller(): string {
+                        return apply(static fn(int $i): string => (string) $i);
+                    }',
+            ],
             'builtinSortsInheritTheComparatorsPurity' => [
                 'code' => '<?php
                     /**
@@ -867,6 +884,51 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'callOfTypeTemplateBoundToClosureChecksArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb("x");
+                        }
+                        return "";
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callOfTypeTemplateBoundToClosureReturnsTheClosuresType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): int {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'callOfNullableTypeTemplateKeepsTheNull' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        return $cb(1);
+                    }',
+                'error_message' => 'PossiblyNullFunctionCall',
+            ],
             'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */
