@@ -235,6 +235,20 @@ final class TaintFlowGraph extends DataFlowGraph
         return $out;
     }
 
+    /**
+     * Returns the id of the node the flow into $node started at: the root of its taintSource chain.
+     *
+     * @psalm-pure
+     */
+    private static function getFlowOrigin(DataFlowNode $node): string
+    {
+        while (($previous = $node->taintSource) !== null && $previous !== $node) {
+            $node = $previous;
+        }
+
+        return $node->id;
+    }
+
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
@@ -288,6 +302,9 @@ final class TaintFlowGraph extends DataFlowGraph
         // Node id => taints => true
         $visited_source_ids = [];
 
+        // Sink id => predecessor id => origin id => taints already reported for that flow
+        $reported_flows = [];
+
         // The number of rounds is not known ahead of time, so the progress bar
         // renders this phase as indeterminate (a tick per round, no percentage).
         while (count($sinks) && count($sources)) {
@@ -301,6 +318,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 foreach ($this->getPropagatingNodes($source) as $generated_source) {
                     $this->getChildNodes(
                         $new_sources,
+                        $reported_flows,
                         $generated_source,
                         $visited_source_ids,
                         $sinks,
@@ -527,12 +545,15 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, DataFlowNode> $new_sources
      * @param-out array<string, DataFlowNode> $new_sources
+     * @param array<string, array<string, array<string, int>>> $reported_flows
+     * @param-out array<string, array<string, array<string, int>>> $reported_flows
      * @param array<string, array<int, true>> $visited_source_ids
      * @param array<string, DataFlowNode> $sinks
      * @param array<string, true> $sink_reachable
      */
     private function getChildNodes(
         array &$new_sources,
+        array &$reported_flows,
         DataFlowNode $generated_source,
         array $visited_source_ids,
         array $sinks,
@@ -568,7 +589,13 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            if (isset($visited_source_ids[$to_id][$new_taints])) {
+            // The visited guard keeps the fixed point finite, so a visited node is never
+            // propagated from again. A visited sink still gets to report, though: the flow
+            // arriving through this edge may be a different one from the flow that visited it
+            // first (it can arrive rounds later when its path is longer).
+            $already_visited = isset($visited_source_ids[$to_id][$new_taints]);
+
+            if ($already_visited && !isset($sinks[$to_id])) {
                 continue;
             }
 
@@ -591,15 +618,33 @@ final class TaintFlowGraph extends DataFlowGraph
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
-                    $this->reportTaintedFlow(
-                        $generated_source,
-                        $generated_source->code_location,
-                        $sink,
-                        $matching_taints,
-                        $config,
-                        $codebase,
-                    );
+                    // A flow is identified by its origin and by the edge it enters the sink
+                    // through: the origin keeps distinct sources apart where they share that
+                    // edge (e.g. two calls to a specialized function), the edge keeps distinct
+                    // call sites of the same source apart. Each taint kind is reported once per
+                    // flow, however many rounds, taint masks or specialization contexts carry it.
+                    $origin = self::getFlowOrigin($generated_source);
+                    $reported_taints = $reported_flows[$to_id][$generated_source->id][$origin] ?? 0;
+                    $unreported_taints = $matching_taints & ~$reported_taints;
+
+                    if ($unreported_taints) {
+                        $reported_flows[$to_id][$generated_source->id][$origin]
+                            = $reported_taints | $unreported_taints;
+
+                        $this->reportTaintedFlow(
+                            $generated_source,
+                            $generated_source->code_location,
+                            $sink,
+                            $unreported_taints,
+                            $config,
+                            $codebase,
+                        );
+                    }
                 }
+            }
+
+            if ($already_visited) {
+                continue;
             }
 
             $key = $to_id . ' ' . $specialized_calls_key . ' ' . $new_taints;

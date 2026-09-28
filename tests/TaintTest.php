@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
@@ -3373,11 +3374,15 @@ final class TaintTest extends TestCase
 
     /**
      * @param list<string> $expectedIssuesTypes
+     * @param list<int>|null $expectedSourceLines line of each issue's taint origin, in any order
      * @test
      * @dataProvider multipleTaintIssuesAreDetectedDataProvider
      */
-    public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
-    {
+    public function multipleTaintIssuesAreDetected(
+        string $code,
+        array $expectedIssuesTypes,
+        ?array $expectedSourceLines = null,
+    ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
@@ -3390,18 +3395,33 @@ final class TaintTest extends TestCase
 
         $this->analyzeFile($filePath, new Context(), false);
 
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($filePath),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
         $actualIssueTypes = array_map(
             static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
-            array_values(array_filter(
-                IssueBuffer::getIssuesDataForFile($filePath),
-                static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
-            )),
+            $issues,
         );
         self::assertSame($expectedIssuesTypes, $actualIssueTypes);
+
+        if ($expectedSourceLines !== null) {
+            $actualSourceLines = [];
+            foreach ($issues as $issue) {
+                $origin = $issue->taint_trace[0] ?? null;
+                self::assertInstanceOf(DataFlowNodeData::class, $origin);
+                $actualSourceLines[] = $origin->line_from;
+            }
+            self::assertEqualsCanonicalizing($expectedSourceLines, $actualSourceLines);
+        }
     }
 
     /**
-     * @return array<string, array{code: string, expectedIssueTypes: list<string>}>
+     * @return array<string, array{
+     *     code: string,
+     *     expectedIssueTypes: list<string>,
+     *     expectedSourceLines?: list<int>,
+     * }>
      * @psalm-pure
      */
     public function multipleTaintIssuesAreDetectedDataProvider(): array
@@ -3471,6 +3491,94 @@ final class TaintTest extends TestCase
                 'expectedIssueTypes' => [
                     'TaintedInclude{ require $first; }',
                     'TaintedInclude{ require $second; }',
+                ],
+            ],
+            'flowsOfDifferentLengthIntoSharedSink' => [
+                // The relayed flow reaches the runCmd() sink a resolution round after the
+                // direct one, when the sink has already been visited with the same taints.
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> return */
+                    function relay(string $value): string { return $value; }
+                    /** @psalm-taint-sink shell $cmd */
+                    function runCmd(string $cmd): void {}
+
+                    runCmd((string)($_GET["direct"] ?? ""));
+                    runCmd(relay((string)($_GET["relayed"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+                'expectedSourceLines' => [7, 8],
+            ],
+            'distinctOriginsThroughSpecializedFunction' => [
+                // Both flows enter the sink through the same edge inside wrap().
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function runCmd(string $cmd): void {}
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): void { runCmd($s); }
+
+                    wrap((string)($_GET["a"] ?? ""));
+                    wrap((string)($_GET["b"] ?? ""));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+                'expectedSourceLines' => [7, 8],
+            ],
+            'sameOriginThroughDistinctCallSites' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function runCmd(string $cmd): void {}
+
+                    $x = (string)($_GET["a"] ?? "");
+                    runCmd($x);
+                    runCmd($x);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+            ],
+            'sameFlowWithTwoTaintMasksIsReportedOnce' => [
+                // escapeHtml() removes the html taint but keeps shell, so the same origin reaches
+                // the sink through the same argument with two different taint masks.
+                'code' => '<?php
+                    /** @psalm-taint-sink shell $cmd */
+                    function runCmd(string $cmd): void {}
+                    /**
+                     * @psalm-flow ($s) -> return
+                     * @psalm-taint-escape html
+                     */
+                    function escapeHtml(string $s): string { return $s; }
+
+                    $x = (string)($_GET["a"] ?? "");
+                    runCmd(rand(0, 1) ? $x : escapeHtml($x));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+            ],
+            'everyCustomTaintKindOfAFlowIsReported' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-source alpha
+                     * @psalm-taint-source beta
+                     */
+                    function externalInput(): string { return "x"; }
+                    /**
+                     * @psalm-taint-sink alpha $arg
+                     * @psalm-taint-sink beta $arg
+                     */
+                    function customSink(string $arg): void {}
+
+                    customSink(externalInput());
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedCustom{ function customSink(string $arg): void {} }',
+                    'TaintedCustom{ function customSink(string $arg): void {} }',
                 ],
             ],
         ];
