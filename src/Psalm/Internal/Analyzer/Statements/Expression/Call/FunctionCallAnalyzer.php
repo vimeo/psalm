@@ -514,6 +514,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_call_info->function_id,
                     $code_location,
                     $is_maybe_root_function,
+                    $context,
                 ) === false) {
                     if ($args) {
                         ArgumentsAnalyzer::analyze(

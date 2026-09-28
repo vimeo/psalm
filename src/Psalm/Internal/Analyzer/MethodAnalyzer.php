@@ -163,6 +163,36 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The `analysis_php_version_id` that introduced a native method, unless a polyfill provides it.
+     *
+     * A method inherits the availability of its declaring class (a class introduced in PHP 8.1 has
+     * no method available before 8.1) unless the method itself carries a later `@since`, which then
+     * takes priority.
+     */
+    public static function getMethodSincePhpVersionId(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        bool $with_pseudo = false,
+    ): ?int {
+        try {
+            $method_storage = $codebase->methods->getStorage($method_id, $with_pseudo);
+        } catch (UnexpectedValueException) {
+            return null;
+        }
+
+        $defining_class = $method_storage->defining_fqcln ?? $method_id->fq_class_name;
+
+        $method_since_id = $method_storage->since_php_version_id;
+        if ($method_since_id === null && $codebase->classlike_storage_provider->has($defining_class)) {
+            $method_since_id = $codebase->classlike_storage_provider->get($defining_class)->since_php_version_id;
+        }
+
+        return $method_since_id !== null && !$codebase->isClassLikePolyfilled($defining_class)
+            ? $method_since_id
+            : null;
+    }
+
+    /**
      * Reports a native method used below the PHP version that introduced it.
      *
      * @param  string[]     $suppressed_issues
@@ -173,32 +203,16 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $with_pseudo = false,
+        ?Context $context = null,
     ): void {
         // The method is known to Psalm (its stubbed signature is always loaded so analysis is
         // unaffected), but a native method introduced in a later PHP version is undefined when
         // analysing an older version without a polyfill. The issue is reported without treating
         // the method as unknown, so its stubbed signature is still used for the rest of analysis.
-        try {
-            $method_storage = $codebase->methods->getStorage($method_id, $with_pseudo);
-        } catch (UnexpectedValueException) {
-            return;
-        }
-
-        // A method inherits the availability of its declaring class (a class introduced in
-        // PHP 8.1 has no method available before 8.1) unless the method itself carries a later
-        // `@since`, which then takes priority.
-        $method_since_id = $method_storage->since_php_version_id;
-        if ($method_since_id === null) {
-            $defining_class = strtolower($method_storage->defining_fqcln ?? $method_id->fq_class_name);
-            if ($codebase->classlike_storage_provider->has($defining_class)) {
-                $method_since_id = $codebase->classlike_storage_provider
-                    ->get($defining_class)->since_php_version_id;
-            }
-        }
+        $method_since_id = self::getMethodSincePhpVersionId($codebase, $method_id, $with_pseudo);
 
         if ($method_since_id !== null
-            && $codebase->analysis_php_version_id < $method_since_id
-            && !$codebase->isClassLikePolyfilled($method_storage->defining_fqcln ?? $method_id->fq_class_name)
+            && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id) < $method_since_id
         ) {
             IssueBuffer::maybeAdd(
                 new UndefinedMethod(
@@ -223,6 +237,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         array $suppressed_issues,
         ?string $calling_method_id = null,
         bool $with_pseudo = false,
+        ?Context $context = null,
     ): ?bool {
         if ($codebase->methods->methodExists(
             $method_id,
@@ -243,6 +258,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
                 $code_location,
                 $suppressed_issues,
                 $with_pseudo,
+                $context,
             );
 
             return true;

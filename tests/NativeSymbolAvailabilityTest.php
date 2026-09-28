@@ -76,6 +76,56 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.0',
         ];
+
+        yield 'guardedByPhpVersionId' => [
+            'code' => '<?php
+                function a(): ?object {
+                    if (PHP_VERSION_ID >= 80000) {
+                        return new WeakMap();
+                    }
+
+                    return null;
+                }
+
+                function b(): ?object {
+                    return \\PHP_VERSION_ID >= 80000 ? new WeakMap() : null;
+                }
+
+                function c(): object {
+                    if (PHP_VERSION_ID < 80000) {
+                        throw new RuntimeException();
+                    }
+
+                    return new WeakMap();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'guardedByClassExists' => [
+            'code' => '<?php
+                function a(): ?object {
+                    if (class_exists(WeakMap::class)) {
+                        return new WeakMap();
+                    }
+
+                    return null;
+                }
+
+                function b(): object {
+                    if (!class_exists("WeakMap")) {
+                        throw new RuntimeException();
+                    }
+
+                    return new WeakMap();
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
     }
 
     #[Override]
@@ -138,6 +188,21 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'UndefinedAttributeClass',
             'ignored_issues' => [],
             'php_version' => '8.0',
+        ];
+
+        yield 'guardedForAnOlderVersion' => [
+            'code' => '<?php
+                function a(): ?object {
+                    if (PHP_VERSION_ID < 80000) {
+                        return new WeakMap();
+                    }
+
+                    return null;
+                }
+            ',
+            'error_message' => 'UndefinedClass',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
         ];
     }
 }

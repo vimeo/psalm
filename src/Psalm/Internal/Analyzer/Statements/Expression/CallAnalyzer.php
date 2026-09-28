@@ -594,6 +594,7 @@ abstract class CallAnalyzer
         string &$function_id,
         CodeLocation $code_location,
         bool $can_be_in_root_scope,
+        ?Context $context = null,
     ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
@@ -635,7 +636,8 @@ abstract class CallAnalyzer
         }
 
         if ($function_storage->since_php_version_id !== null
-            && $codebase->analysis_php_version_id < $function_storage->since_php_version_id
+            && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                < $function_storage->since_php_version_id
         ) {
             IssueBuffer::maybeAdd(
                 new UndefinedFunction(
