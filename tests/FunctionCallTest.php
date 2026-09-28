@@ -29,6 +29,9 @@ final class FunctionCallTest extends TestCase
                     function startsWithGreeting(string $s): bool {
                         return str_starts_with($s, "здравствуй");
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
