@@ -1,6 +1,6 @@
 # UnusedClass
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a
+Emitted when `--find-unused-code` is turned on and Psalm cannot find any uses of a
 given class.
 
 If this class is genuinely part of your public API — used from outside the analysed codebase (for example a library entry point, or a class instantiated only by a framework or plugin loader) — annotate it with `@api` (or `@psalm-api`); use this only for real public surface. Otherwise the class is dead code and should be removed.
