@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\IncompatibleTypeParameters;
+use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -87,6 +88,17 @@ final class TypeVariableTracker
      */
     public static function resolveTypeVariables(Union $type, ?Codebase $codebase): Union
     {
+        return self::doResolveTypeVariables($type, $codebase, []);
+    }
+
+    /**
+     * @param array<string, true> $seen names currently being resolved, so a
+     *      cyclic bound (`_a` bounded by `_b` bounded by `_a`) stops instead of
+     *      recursing forever.
+     * @psalm-external-mutation-free
+     */
+    private static function doResolveTypeVariables(Union $type, ?Codebase $codebase, array $seen): Union
+    {
         $has_type_variable = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -105,7 +117,10 @@ final class TypeVariableTracker
         foreach ($type->getAtomicTypes() as $atomic_type) {
             $resolved = null;
 
-            if ($atomic_type instanceof TTypeVariable && $atomic_type->bounds) {
+            if ($atomic_type instanceof TTypeVariable
+                && $atomic_type->bounds
+                && !isset($seen[$atomic_type->name])
+            ) {
                 if ($atomic_type->bounds->lower_bounds) {
                     $resolved = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $atomic_type->bounds->lower_bounds,
@@ -113,6 +128,18 @@ final class TypeVariableTracker
                     );
                 } elseif ($atomic_type->bounds->upper_bounds) {
                     $resolved = $atomic_type->bounds->upper_bounds[0]->type;
+                }
+
+                // A bound may itself be, or contain, another type variable
+                // (`_b` whose bound is `_a` whose bound is a concrete type).
+                // Resolve through to the concrete bound so a single call reaches
+                // a fixpoint, guarding against cyclic bounds.
+                if ($resolved) {
+                    $resolved = self::doResolveTypeVariables(
+                        $resolved,
+                        $codebase,
+                        $seen + [$atomic_type->name => true],
+                    );
                 }
             }
 
@@ -206,20 +233,35 @@ final class TypeVariableTracker
                     false,
                     $union_comparison_result,
                 )) {
-                    if ($union_comparison_result->type_coerced_from_mixed) {
-                        // a bound inferred through mixed gets the same loose
-                        // gate Psalm applies when binding templates from
-                        // mixed arguments
-                        continue;
-                    }
-
-                    $has_issue = true;
-
                     // argument requirements point at the call site; return
                     // types and constraints point at where the value entered
                     $pos = $upper_bound->from_argument_requirement
                         ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
                         : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
+
+                    if ($union_comparison_result->type_coerced_from_mixed) {
+                        if ($upper_bound->from_argument_requirement) {
+                            // a `mixed` value reaching a narrower argument
+                            // requirement still coerces: report the
+                            // MixedArgumentTypeCoercion that eager template
+                            // pinning raised at the argument (a non-`new`
+                            // `Foo<mixed>` reports it too). Other mixed-inferred
+                            // bounds (e.g. a class-string construction) keep the
+                            // loose gate Psalm applies elsewhere.
+                            IssueBuffer::maybeAdd(
+                                new MixedArgumentTypeCoercion(
+                                    'Type ' . $relevant_lower_bound->type->getId()
+                                        . ' should be a subtype of ' . $upper_bound->type->getId(),
+                                    $pos,
+                                ),
+                                $suppressed_issues,
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    $has_issue = true;
 
                     IssueBuffer::maybeAdd(
                         new IncompatibleTypeParameters(

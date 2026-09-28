@@ -45,6 +45,17 @@ final class UnusedVariableTest extends TestCase
 
                     unset($arr[$a]);',
             ],
+            'impureDestructor' => [
+                'code' => '<?php
+                    class ImpureDestructor {
+                        /** @psalm-impure */
+                        public function __destruct() {
+                            echo "destructed";
+                        }
+                    }
+
+                    $object = new ImpureDestructor();',
+            ],
             'eval' => [
                 'code' => '<?php
                     if (rand()) {
@@ -2924,6 +2935,17 @@ final class UnusedVariableTest extends TestCase
                             return;
                         }
                     }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'impureDestructorImplicit' => [
+                'code' => '<?php
+                    class ImpureDestructor {
+                        public function __destruct() {
+                            echo "destructed";
+                        }
+                    }
+
+                    $object = new ImpureDestructor();',
                 'error_message' => 'UnusedVariable',
             ],
             'loopTypeChangedInIfWithoutReference' => [

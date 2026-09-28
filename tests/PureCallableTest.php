@@ -275,7 +275,6 @@ final class PureCallableTest extends TestCase
                      * @return impure-callable(int):int
                      */
                     function foo(): callable {
-                        /** @psalm-suppress ImpureFunctionCall */
                         return function(int $a): int {
                             return $a + mt_rand(0, $a);
                         };

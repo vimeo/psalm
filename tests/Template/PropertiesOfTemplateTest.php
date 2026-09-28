@@ -83,7 +83,9 @@ final class PropertiesOfTemplateTest extends TestCase
                     $objAsArray = asArray($obj);
                 ',
                 'assertions' => [
-                    '$objAsArray===' => 'array{a: 42, b: bool, c: string, ...<string, mixed>}',
+                    // `new A(42)` mints a type variable for T (constrainable via the
+                    // public $a property); the exact form reveals it in the `a` field.
+                    '$objAsArray===' => 'array{a: `_0:42, b: bool, c: string, ...<string, mixed>}',
                 ],
             ],
             'privatePropertiesPicksPrivate' => [

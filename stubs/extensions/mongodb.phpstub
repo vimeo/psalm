@@ -254,14 +254,14 @@ namespace MongoDB\Driver
         }
 
         /**
-         * @return Cursor<int, array|object>
+         * @return Cursor<array|object>
          */
         final public function executeQuery(string $namespace, Query $query, $options = null): Cursor
         {
         }
 
         /**
-         * @return Cursor<int, array|object>
+         * @return Cursor<array|object>
          */
         final public function executeCommand(string $db, Command $command, $options = null): Cursor
         {

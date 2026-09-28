@@ -11,10 +11,15 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -27,8 +32,10 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\UnusedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -286,16 +293,69 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if (!$context->inside_throw) {
-                $statements_analyzer->signalMutation(
-                    $method_storage->allowed_mutations,
-                    $context,
-                    'method',
-                    ImpureMethodCall::class,
-                    $stmt,
-                    null,
-                    false,
-                    $method_storage,
+            $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
+
+            $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $method_storage,
+                $method_storage->capabilities,
+                $template_result,
+                $found_generic_params ?? [],
+            );
+
+            $call_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                $statements_analyzer,
+                $context,
+                $resolved_capabilities,
+                $method_storage->params,
+                $call_args,
+            );
+
+            $stmt->setAttribute(
+                NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
+                    | $call_capabilities,
+            );
+
+            $statements_analyzer->signalMutation(
+                $call_capabilities,
+                $context,
+                'method ' . $cased_method_id,
+                ImpureMethodCall::class,
+                $stmt,
+                $method_storage->capabilities,
+                false,
+                $method_storage,
+            );
+
+            // what this call reads, not what it writes through its by-reference arguments
+            if (($resolved_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $call_args,
+                $call_capabilities,
+                ImpureMethodCall::class,
+                'method ' . $cased_method_id,
+            );
+
+            if (NoDiscardAnalyzer::isDiscardReported(
+                $context,
+                $method_storage,
+                $stmt->isFirstClassCallable(),
+                $class_storage,
+            )) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -337,6 +397,33 @@ final class ExistingAtomicStaticCallAnalyzer
                         $method_storage->if_false_assertions,
                     ),
                 );
+            }
+        } elseif (!$stmt->isFirstClassCallable()) {
+            // a builtin method known from reflection only: it may do what its reflected storage says,
+            // which is anything but for the few known to be pure, as for instance calls
+            $native_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            $native_capabilities = $native_method_id !== null
+                && $codebase->methods->hasStorage($native_method_id)
+                ? $codebase->methods->getStorage($native_method_id)->capabilities
+                : Capabilities::ALL;
+
+            $stmt->setAttribute(
+                NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
+                    | $native_capabilities,
+            );
+
+            $statements_analyzer->signalMutation(
+                $native_capabilities,
+                $context,
+                'method ' . $cased_method_id,
+                ImpureMethodCall::class,
+                $stmt,
+            );
+
+            if (($native_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
             }
         }
 
@@ -420,6 +507,11 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result,
             $context,
         );
+
+        if ($method_storage?->has_yield && !$stmt->isFirstClassCallable()) {
+            // a generator method always returns a new generator: nothing else holds it
+            $return_type_candidate = $return_type_candidate->setProperties(['reference_free' => true]);
+        }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
         $statements_analyzer->node_data->setType(
@@ -590,7 +682,7 @@ final class ExistingAtomicStaticCallAnalyzer
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {

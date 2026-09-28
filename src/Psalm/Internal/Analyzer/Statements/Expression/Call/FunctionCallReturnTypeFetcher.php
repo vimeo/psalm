@@ -89,7 +89,7 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type = new Union([new TClosure(
                     $candidate_callable->params,
                     $candidate_callable->return_type,
-                    $candidate_callable->allowed_mutations,
+                    $candidate_callable->purity,
                     callable_id: strtolower($function_id),
                 )]);
             } else {
@@ -663,7 +663,6 @@ final class FunctionCallReturnTypeFetcher
                     $i,
                     $storage,
                     $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
-                    $param->sinks,
                 );
                 $graph->addNode($param_node);
 
@@ -804,7 +803,6 @@ final class FunctionCallReturnTypeFetcher
             $function_id . '(' . $path . ')',
             $location,
             $taints,
-            $location,
         );
         $graph->addSource($source);
 
@@ -962,7 +960,7 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param array<PhpParser\Node\Arg>   $args
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingFlows(
         FunctionLikeStorage $function_storage,
@@ -1010,7 +1008,7 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,

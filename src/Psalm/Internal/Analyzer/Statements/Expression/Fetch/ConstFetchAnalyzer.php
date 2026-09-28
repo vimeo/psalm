@@ -84,6 +84,11 @@ final class ConstFetchAnalyzer
                     $context,
                 );
 
+                // narrowed by a PHP_VERSION_ID comparison guarding this branch
+                if ($const_type !== null && $stmt->name->getParts() === ['PHP_VERSION_ID']) {
+                    $const_type = $context->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? $const_type;
+                }
+
                 $codebase = $statements_analyzer->getCodebase();
 
                 $aliased_constants = $statements_analyzer->getAliases()->constants;
@@ -149,7 +154,7 @@ final class ConstFetchAnalyzer
 
         $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        $source = DataFlowNode::getForTaint('STDIN', $location, $taints, $location);
+        $source = DataFlowNode::getForTaint('STDIN', $location, $taints);
         $graph->addSource($source);
 
         $type = $type->setParentNodes([$source->id => $source]);

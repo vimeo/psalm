@@ -9,12 +9,15 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -22,6 +25,7 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -49,6 +53,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -299,6 +304,31 @@ final class CastAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getNull());
 
             return true;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\Cast\Void_) {
+            // PHP 8.5's (void) cast evaluates its operand and explicitly discards the result.
+            // It is only valid as a statement; consuming its result is a compile error in PHP
+            // (the parser nikic/php-parser accepts more leniently), so reject it in any
+            // value-consuming position. Otherwise it is the documented escape hatch for
+            // #[\NoDiscard]: analysing the operand under inside_general_use marks it as used, so
+            // no discarded-return-value issue is raised. The parser only produces this node when
+            // targeting PHP 8.5+, so no version guard is needed here.
+            if ($context->insideUse()) {
+                IssueBuffer::maybeAdd(
+                    new InvalidCast(
+                        'The (void) cast can only be used as a statement, not as an expression',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            $expression_result = self::checkExprGeneralUse($statements_analyzer, $stmt, $context);
+
+            $statements_analyzer->node_data->setType($stmt, Type::getVoid());
+
+            return $expression_result;
         }
 
         IssueBuffer::maybeAdd(
@@ -816,6 +846,26 @@ final class CastAnalyzer
 
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
 
+                            if ($declaring_method_id !== null) {
+                                $to_string_storage = $codebase->methods->getStorage($declaring_method_id);
+                                $var_id = ExpressionIdentifier::getExtendedVarId(
+                                    $stmt,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer,
+                                );
+
+                                $statements_analyzer->signalMutation(
+                                    $to_string_storage->capabilities & ~Capabilities::READ_PROPS,
+                                    $context,
+                                    'possibly-mutating method ' . $intersection_type->value . '::__toString',
+                                    ImpureMethodCall::class,
+                                    $stmt,
+                                    $to_string_storage->capabilities,
+                                    false,
+                                    $var_id === '$this' ? $to_string_storage : null,
+                                );
+                            }
+
                             MethodCallReturnTypeFetcher::taintMethodCallResult(
                                 $statements_analyzer,
                                 $return_type,
@@ -852,6 +902,20 @@ final class CastAnalyzer
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
+            }
+
+            if ($atomic_type instanceof TTypeVariable) {
+                // A class-template type variable is castable through the bound
+                // its construction inferred — as the TTemplateParam branch reads
+                // through `as`. Resolve it so `(string) $var` sees that bound
+                // instead of rejecting the bare variable as uncastable.
+                $resolved = TypeVariableTracker::resolveTypeVariables(new Union([$atomic_type]), $codebase);
+
+                if ($resolved->getId() !== $atomic_type->getId()) {
+                    $atomic_types = array_merge($atomic_types, $resolved->getAtomicTypes());
+
+                    continue;
+                }
             }
 
             $invalid_casts[] = $atomic_type->getId();

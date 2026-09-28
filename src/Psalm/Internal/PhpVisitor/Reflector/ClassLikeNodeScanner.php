@@ -34,6 +34,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -57,12 +58,12 @@ use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Storage\PropertyHookStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -81,15 +82,18 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function in_array;
 use function ltrim;
-use function min;
+use function pathinfo;
 use function preg_match;
 use function preg_split;
+use function reset;
 use function sprintf;
 use function strtolower;
 use function trim;
 use function usort;
 
+use const PATHINFO_EXTENSION;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
@@ -178,9 +182,16 @@ final class ClassLikeNodeScanner
                 }
 
                 if (!$this->codebase->register_stub_files) {
-                    if (!$duplicate_storage->stmt_location
+                    // A native class stubbed with an `@since` newer than the analysed PHP version
+                    // is not available there, so a project definition is a polyfill: it replaces
+                    // the stub rather than duplicating it.
+                    $is_polyfill = $duplicate_storage->stubbed
+                        && $duplicate_storage->since_php_version_id !== null
+                        && $this->codebase->analysis_php_version_id < $duplicate_storage->since_php_version_id;
+
+                    if (!$is_polyfill && (!$duplicate_storage->stmt_location
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
-                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash()
+                        || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
                         IssueBuffer::maybeAdd(
                             new DuplicateClass(
@@ -368,6 +379,18 @@ final class ClassLikeNodeScanner
                     $name_location ?? $class_location,
                 );
             }
+
+            // Keep the stubbed definition loaded on every version for analysis, but record the
+            // version that introduced the class (from an `@since x.y` tag in a stub file) so its
+            // use is reported as undefined when analysing an older PHP version without a polyfill.
+            if ($docblock_info
+                && $docblock_info->since_php_major_version
+                && $this->codebase->register_stub_files
+                && pathinfo($this->file_path, PATHINFO_EXTENSION) === 'phpstub'
+            ) {
+                $storage->since_php_version_id = $docblock_info->since_php_major_version * 10_000
+                    + $docblock_info->since_php_minor_version * 100;
+            }
         }
 
         foreach ($node->getComments() as $comment) {
@@ -412,10 +435,45 @@ final class ClassLikeNodeScanner
             if ($docblock_info->templates) {
                 $storage->template_types = [];
 
+                // purity templates come after the type templates, whatever their order in the
+                // docblock: their arguments are written apart (`Foo[pure]<int>`) and appended
+                $purity_templates = $docblock_info->purity_templates;
                 usort(
                     $docblock_info->templates,
-                    static fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1,
+                    /**
+                     * @param array{string, ?string, ?string, bool, int} $l
+                     * @param array{string, ?string, ?string, bool, int} $r
+                     */
+                    static fn(array $l, array $r): int
+                        => [in_array($l[0], $purity_templates, true), $l[4]]
+                            <=> [in_array($r[0], $purity_templates, true), $r[4]],
                 );
+
+                // but the bounds of the type templates may use them (`TIterator as Traversable[P]<K, V>`):
+                // their own bounds are capability sets, which use no other template
+                $purity_template_types = [];
+
+                foreach ($docblock_info->templates as $template_map) {
+                    if (in_array($template_map[0], $purity_templates, true) && $template_map[2] !== null) {
+                        try {
+                            $purity_template_types[$template_map[0]] = [
+                                $fq_classlike_name => TypeParser::parseTokens(
+                                    TypeTokenizer::getFullyQualifiedTokens(
+                                        CommentAnalyzer::sanitizeDocblockType($template_map[2]),
+                                        $this->aliases,
+                                        null,
+                                        $this->type_aliases,
+                                    ),
+                                    null,
+                                    [],
+                                    $this->type_aliases,
+                                ),
+                            ];
+                        } catch (TypeParseTreeException) {
+                            // reported below
+                        }
+                    }
+                }
 
                 foreach ($docblock_info->templates as $i => $template_map) {
                     $template_name = $template_map[0];
@@ -438,11 +496,11 @@ final class ClassLikeNodeScanner
                                     TypeTokenizer::getFullyQualifiedTokens(
                                         $type_string,
                                         $this->aliases,
-                                        $storage->template_types,
+                                        $storage->template_types + $purity_template_types,
                                         $this->type_aliases,
                                     ),
                                     null,
-                                    $storage->template_types,
+                                    $storage->template_types + $purity_template_types,
                                     $this->type_aliases,
                                 );
                             } catch (TypeParseTreeException $e) {
@@ -472,6 +530,105 @@ final class ClassLikeNodeScanner
                 }
 
                 $this->class_template_types = $storage->template_types;
+
+                foreach ($docblock_info->purity_templates as $purity_template) {
+                    $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;
+
+                    if ($bound !== null && !Capabilities::isPurityType($bound)) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The bound of the purity template ' . $purity_template . ' must be a set of'
+                            . ' capabilities (e.g. write-props|io), ' . $bound->getId() . ' given, in docblock for '
+                            . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+                    }
+
+                    if (isset($docblock_info->purity_template_lower_bounds[$purity_template])) {
+                        try {
+                            $lower = TypeParser::parseTokens(
+                                TypeTokenizer::getFullyQualifiedTokens(
+                                    $docblock_info->purity_template_lower_bounds[$purity_template],
+                                    $this->aliases,
+                                    $storage->template_types,
+                                    $this->type_aliases,
+                                ),
+                                null,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                $name_location ?? $class_location,
+                            );
+
+                            continue;
+                        }
+
+                        $lower_capabilities = Capabilities::fromType($lower);
+
+                        if (!Capabilities::isPurityType($lower)
+                            || ($bound !== null
+                                && !Capabilities::allows(Capabilities::fromType($bound), $lower_capabilities))
+                        ) {
+                            $storage->docblock_issues[] = new InvalidDocblock(
+                                'The lower bound of the purity template ' . $purity_template . ' must be a set'
+                                . ' of capabilities within its upper bound, ' . $lower->getId()
+                                . ' given, in docblock for ' . $fq_classlike_name,
+                                $name_location ?? $class_location,
+                            );
+
+                            continue;
+                        }
+
+                        $storage->template_lower_bounds[$purity_template] = $lower_capabilities;
+                    }
+
+                    if (!isset($docblock_info->purity_template_defaults[$purity_template])) {
+                        continue;
+                    }
+
+                    try {
+                        $default = TypeParser::parseTokens(
+                            TypeTokenizer::getFullyQualifiedTokens(
+                                $docblock_info->purity_template_defaults[$purity_template],
+                                $this->aliases,
+                                $storage->template_types,
+                                $this->type_aliases,
+                            ),
+                            null,
+                            $storage->template_types,
+                            $this->type_aliases,
+                        );
+                    } catch (TypeParseTreeException $e) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    if (!Capabilities::isPurityType($default)
+                        || ($bound !== null
+                            && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($default)))
+                        || !Capabilities::allows(
+                            Capabilities::fromType($default),
+                            $storage->template_lower_bounds[$purity_template] ?? Capabilities::NONE,
+                        )
+                    ) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The default of the purity template ' . $purity_template . ' must be a set of'
+                            . ' capabilities within its bounds, ' . $default->getId() . ' given, in docblock for '
+                            . $fq_classlike_name,
+                            $name_location ?? $class_location,
+                        );
+
+                        continue;
+                    }
+
+                    $storage->template_defaults[$purity_template] = $default;
+                }
             }
 
             foreach ($docblock_info->template_extends as $extended_class_name) {
@@ -574,6 +731,8 @@ final class ClassLikeNodeScanner
                         $this->aliases,
                         $this->class_template_types,
                         $this->type_aliases,
+                        $fq_classlike_name,
+                        $storage->parent_class,
                     );
 
                     try {
@@ -707,12 +866,50 @@ final class ClassLikeNodeScanner
                 }
             }
 
-            $storage->allowed_mutations = min(
-                $docblock_info->allowed_mutations,
-                $storage->allowed_mutations,
-            );
+            $deferred_capabilities = [];
+
+            foreach ($docblock_info->capabilities_expressions as $capabilities_expression) {
+                try {
+                    $resolved = CapabilitiesExpressionResolver::resolve(
+                        $capabilities_expression,
+                        $this->aliases,
+                        $storage->template_types ?? [],
+                        $this->type_aliases,
+                        $fq_classlike_name,
+                    );
+
+                    if ($resolved instanceof Union) {
+                        $deferred_capabilities[] = $resolved;
+                    } else {
+                        $docblock_info->capabilities |= $resolved;
+                    }
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        'Invalid @psalm-capabilities tag: ' . $e->getMessage() . ' in docblock for '
+                        . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
+
+            $docblock_info->capabilities_expressions = [];
+
+            if ($deferred_capabilities !== []) {
+                // imported type aliases: the populator applies them to $storage->capabilities
+                $storage->capabilities_type = CapabilitiesExpressionResolver::deferred(
+                    $docblock_info->capabilities,
+                    $deferred_capabilities,
+                );
+            } else {
+                $storage->capabilities = $docblock_info->capabilities & $storage->capabilities;
+            }
             $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
-            $storage->specialize_instance = $docblock_info->taint_specialize;
+            // `@psalm-capabilities pure` and `@psalm-capabilities read-props` are specialized like
+            // the `@psalm-pure` and `@psalm-mutation-free` they spell
+            $storage->specialize_instance = $docblock_info->taint_specialize
+                || ($docblock_info->has_mutations_annotation
+                    && $deferred_capabilities === []
+                    && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities));
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
@@ -800,18 +997,12 @@ final class ClassLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
                     || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
                 ) {
-                    $storage->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ,
-                        $storage->allowed_mutations,
-                    );
+                    $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
                 }
 
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree') {
-                    $storage->allowed_mutations = min(
-                        Mutations::LEVEL_INTERNAL_READ_WRITE,
-                        $storage->allowed_mutations,
-                    );
+                    $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
                 }
 
@@ -1245,7 +1436,7 @@ final class ClassLikeNodeScanner
         $storage->cased_name = '__construct';
         $storage->defining_fqcln = $class_storage->name;
 
-        $storage->allowed_mutations = Mutations::LEVEL_NONE;
+        $storage->capabilities = Capabilities::NONE;
         $storage->mutation_free_assumed = true;
 
         $class_storage->declaring_method_ids['__construct'] = new MethodIdentifier(
@@ -1260,6 +1451,32 @@ final class ClassLikeNodeScanner
         $class_storage->overridden_method_ids['__construct'] = [];
 
         $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+    }
+
+    /**
+     * Parses a PHP-version `@since` tag (e.g. `@since 8.1`) from a stub member docblock into an
+     * `analysis_php_version_id`, or null when absent or not a PHP version. Restricted to stub
+     * files, since `@since` on project code usually means the project version, not the PHP one.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function parseSincePhpVersionId(ParsedDocblock $comments): ?int
+    {
+        if (!isset($comments->tags['since'])
+            || pathinfo($this->file_path, PATHINFO_EXTENSION) !== 'phpstub'
+        ) {
+            return null;
+        }
+
+        $since = trim((string) reset($comments->tags['since']));
+
+        if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $matches)
+            && isset($matches[1], $matches[2])
+        ) {
+            return (int) $matches[1] * 10_000 + (int) $matches[2] * 100;
+        }
+
+        return null;
     }
 
     private function visitClassConstDeclaration(
@@ -1281,6 +1498,7 @@ final class ClassLikeNodeScanner
         $var_comment = null;
         $deprecated = false;
         $description = null;
+        $since_php_version_id = null;
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
@@ -1289,6 +1507,8 @@ final class ClassLikeNodeScanner
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
             }
+
+            $since_php_version_id = $this->parseSincePhpVersionId($comments);
 
             $description = $comments->description;
 
@@ -1425,6 +1645,7 @@ final class ClassLikeNodeScanner
                 $attributes,
                 $suppressed_issues,
                 $description,
+                $since_php_version_id,
             );
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
@@ -1686,6 +1907,9 @@ final class ClassLikeNodeScanner
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
+            $property_storage->since_php_version_id = $comment
+                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment))
+                : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
@@ -1776,15 +2000,16 @@ final class ClassLikeNodeScanner
                 $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
 
-            if ($stmt->isPublic()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-            } elseif ($stmt->isProtected()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
-            } elseif ($stmt->isPrivate()) {
-                $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
-            }
-
             $property_id = $fq_classlike_name . '::$' . $property->name->name;
+
+            PropertyVisibilityResolver::resolve(
+                $this->codebase,
+                $storage,
+                $property_storage,
+                $stmt->flags,
+                new CodeLocation($this->file_scanner, $stmt, null, true),
+                $property_id,
+            );
 
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;

@@ -18,7 +18,8 @@ final class ReferenceConstraint
     public ?Union $type = null;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
+     * @psalm-suppress ImpureMethodCall only mutates the builder it creates
      */
     public function __construct(?Union $type = null)
     {

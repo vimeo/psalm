@@ -44,9 +44,9 @@ use Psalm\Node\VirtualNode;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Union;
@@ -63,16 +63,26 @@ use function explode;
 use function get_declared_classes;
 use function get_declared_interfaces;
 use function implode;
+use function is_array;
+use function ltrim;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
+use function token_get_all;
 
 use const PHP_EOL;
+use const T_CLASS;
+use const T_COMMENT;
+use const T_DOC_COMMENT;
+use const T_READONLY;
+use const T_STRING;
+use const T_WHITESPACE;
 
 /**
  * @internal
@@ -194,7 +204,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -213,7 +223,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -232,7 +242,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -251,7 +261,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFullyQualifiedEnumName(string $fq_class_name, ?string $file_path = null): void
     {
@@ -270,7 +280,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addFullyQualifiedClassLikeName(string $fq_class_name_lc, ?string $file_path = null): void
     {
@@ -333,7 +343,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function hasFullyQualifiedClassName(
         string $fq_class_name,
@@ -375,7 +385,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
@@ -417,7 +427,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
@@ -459,7 +469,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function hasFullyQualifiedTraitName(
         string $fq_class_name,
@@ -486,7 +496,7 @@ final class ClassLikes
     /**
      * Check whether a class/interface exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function classOrInterfaceExists(
         string $fq_class_name,
@@ -500,7 +510,7 @@ final class ClassLikes
     /**
      * Check whether a class/interface exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -515,7 +525,7 @@ final class ClassLikes
     /**
      * Determine whether or not a given class exists
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function classExists(
         string $fq_class_name,
@@ -616,7 +626,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function interfaceExists(
         string $fq_interface_name,
@@ -635,7 +645,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function enumExists(
         string $fq_enum_name,
@@ -673,7 +683,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function traitExists(string $fq_trait_name, ?CodeLocation $location = null, ?Context $context = null): bool
     {
@@ -1007,31 +1017,28 @@ final class ClassLikes
                         && !$classlike_storage->is_enum
                         && !$classlike_storage->is_interface
                     ) {
+                        $code_issue = new ClassMustBeFinal(
+                            'Class ' . $classlike_storage->name
+                                . ' is never extended and is not part of the public API, and thus must be made final.',
+                            $classlike_storage->location,
+                            $classlike_storage->name,
+                        );
+
                         IssueBuffer::maybeAdd(
-                            new ClassMustBeFinal(
-                                'Class ' . $classlike_storage->name
-                                    . ' is never extended and is not part of the public API'
-                                    .', and thus must be made final.',
-                                $classlike_storage->location,
-                                $classlike_storage->name,
-                            ),
+                            $code_issue,
                             $classlike_storage->suppressed_issues,
                             true,
                         );
-                        
+
                         if ($codebase->alter_code
                             && $classlike_storage->stmt_location !== null
+                            && !IssueBuffer::isSuppressed($code_issue, $classlike_storage->suppressed_issues)
                             && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
                         ) {
-                            $selection = $classlike_storage->stmt_location->getSnippet();
-                            $insert_pos = strpos($selection, "class");
-            
-                            if ($insert_pos === false) {
-                                $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
-                            }
+                            $insert_pos = self::getFinalInsertionPosition($classlike_storage->stmt_location);
 
                             FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                                new FileManipulation($insert_pos, $insert_pos, 'final ', true),
+                                new FileManipulation($insert_pos, $insert_pos, 'final '),
                             ]);
                         }
                     }
@@ -1041,9 +1048,10 @@ final class ClassLikes
                     continue;
                 }
 
-                $mut = $codebase->analyzer->mutable_classes[$fq_class_name_lc]
-                    ?? Mutations::LEVEL_NONE;
-                if ($mut !== Mutations::LEVEL_ALL
+                $mut = Capabilities::toNamedLevel(
+                    $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE,
+                );
+                if ($mut !== Capabilities::ALL
                     && !$classlike_storage->has_mutations_annotation
                 ) {
                     $change = $codebase->alter_code
@@ -1086,11 +1094,8 @@ final class ClassLikes
         }
     }
 
-    /**
-     * @param Mutations::LEVEL_* $allowed_mutations
-     */
     private static function makeImmutable(
-        int $allowed_mutations,
+        int $capabilities,
         bool $change,
         ClassLikeStorage $storage,
         ClassLike $class_stmt,
@@ -1107,8 +1112,8 @@ final class ClassLikes
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
                     $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-mutation-free,'
-                    . ' @psalm-external-mutation-free or @psalm-mutable to aid security analysis',
+                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
+                    . ' to aid security analysis',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
@@ -1124,14 +1129,13 @@ final class ClassLikes
                 $class_stmt,
             );
 
-            $manipulator->setAllowedMutations($allowed_mutations);
+            $manipulator->setCapabilities($capabilities);
         }
 
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $msg ?? ($storage->name . ' must be marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                    $allowed_mutations
-                ].' to aid security analysis,'
+                $msg ?? ($storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
+                    . ' to aid security analysis,'
                     .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
                 $storage->location,
             ),
@@ -1218,6 +1222,93 @@ final class ClassLikes
         }
 
         FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getFinalInsertionPosition(CodeLocation $class_location): int
+    {
+        $selection = $class_location->getSnippet();
+        $snippet_bounds = $class_location->getSnippetBounds();
+        $tokenized_selection = str_starts_with(ltrim($selection), '<?php')
+            ? $selection
+            : '<?php ' . $selection;
+        $tokens = token_get_all($tokenized_selection);
+
+        $offset = $tokenized_selection === $selection ? 0 : -6;
+        $previous_significant_token = null;
+        $previous_significant_offset = null;
+
+        foreach ($tokens as $i => $token) {
+            if (is_array($token)) {
+                [$token_id, $token_text] = $token;
+
+                if ($token_id === T_CLASS && self::isClassDeclarationToken($tokens, $i)) {
+                    if ($previous_significant_token === T_READONLY && $previous_significant_offset !== null) {
+                        return $snippet_bounds[0] + $previous_significant_offset;
+                    }
+
+                    return $snippet_bounds[0] + $offset;
+                }
+
+                if (!self::isTriviaToken($token_id)) {
+                    $previous_significant_token = $token_id;
+                    $previous_significant_offset = $offset;
+                }
+
+                $offset += strlen($token_text);
+                continue;
+            }
+
+            if ($token !== '{'
+                && $token !== '}'
+                && $token !== '('
+                && $token !== ')'
+                && $token !== '['
+                && $token !== ']'
+            ) {
+                $previous_significant_token = $token;
+                $previous_significant_offset = $offset;
+            }
+
+            $offset += strlen($token);
+        }
+
+        return $class_location->getSelectionBounds()[0];
+    }
+
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @psalm-pure
+     */
+    private static function isClassDeclarationToken(array $tokens, int $class_token_offset): bool
+    {
+        for ($i = $class_token_offset + 1, $c = count($tokens); $i < $c; $i++) {
+            $token = $tokens[$i];
+
+            if (is_array($token)) {
+                if (self::isTriviaToken($token[0])) {
+                    continue;
+                }
+
+                return $token[0] === T_STRING;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isTriviaToken(int $token_id): bool
+    {
+        return $token_id === T_WHITESPACE
+            || $token_id === T_COMMENT
+            || $token_id === T_DOC_COMMENT;
     }
 
     public function moveProperties(Properties $properties, ?Progress $progress = null): void
@@ -2515,7 +2606,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function removeClassLike(string $fq_class_name): void
     {

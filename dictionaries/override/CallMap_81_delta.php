@@ -3281,13 +3281,13 @@ return array (
       array (
         0 => 'bool',
         'ldap' => 'resource',
-        'callback' => 'callable|null',
+        'callback' => 'impure-callable|null',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'LDAP\\Connection',
-        'callback' => 'callable|null',
+        'callback' => 'impure-callable|null',
       ),
     ),
     'ldap_start_tls' => 

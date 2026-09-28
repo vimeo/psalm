@@ -114,7 +114,6 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [UnusedFunctionCall](issues/UnusedFunctionCall.md)
  - [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md)
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
-
 ## Errors that only appear at level 1
 
 At the default level (2), these are reported as info. Set `errorLevel="1"` to treat them as errors.
@@ -308,6 +307,7 @@ These issues become info (non-blocking) at level 7 and higher.
  - [NullArgument](issues/NullArgument.md)
  - [NullArrayOffset](issues/NullArrayOffset.md)
  - [OverriddenFinalConstant](issues/OverriddenFinalConstant.md)
+ - [OverriddenFinalProperty](issues/OverriddenFinalProperty.md)
  - [OverriddenInterfaceConstant](issues/OverriddenInterfaceConstant.md)
  - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
  - [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)
@@ -360,6 +360,8 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedInclude](issues/TaintedInclude.md)
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
+ - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
+ - [TaintedNosql](issues/TaintedNosql.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)

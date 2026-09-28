@@ -11,12 +11,12 @@ use Psalm\Type\Union;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities read-props|write-this-props|write-props|write-refs
  */
 final class ClosedInheritanceToUnion
 {
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function map(Union $input, Codebase $codebase): Union
     {

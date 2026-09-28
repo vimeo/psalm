@@ -6,12 +6,14 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
@@ -130,6 +132,13 @@ final class AtomicTypeComparator
 
         if ($input_type_part instanceof TNever) {
             return true;
+        }
+
+        if ($input_type_part instanceof TCapabilities || $container_type_part instanceof TCapabilities) {
+            // a capability set is a subtype of every superset: pure fits anywhere, impure only in impure
+            return $input_type_part instanceof TCapabilities
+                && $container_type_part instanceof TCapabilities
+                && Capabilities::allows($container_type_part->capabilities, $input_type_part->capabilities);
         }
 
         if ($input_type_part instanceof TMixed

@@ -68,6 +68,11 @@ final class MutableUnion implements TypeNode
     public bool $from_static_property = false;
 
     /**
+     * Whether the value was reached from global state
+     */
+    public bool $from_global_state = false;
+
+    /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      */
     public bool $initialized = true;

@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -23,7 +24,7 @@ use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralString;
@@ -103,6 +104,7 @@ final class StaticPropertyFetchAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context,
                     $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(context: $context),
                 ) !== true) {
                     return false;
                 }
@@ -194,9 +196,9 @@ final class StaticPropertyFetchAnalyzer
         }
 
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            Capabilities::READ_GLOBALS,
             $context,
-            'static property',
+            'reading a static property',
             ImpureStaticProperty::class,
             $stmt,
         );

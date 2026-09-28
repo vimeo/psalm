@@ -339,6 +339,110 @@ final class TypeParseTest extends TestCase
         Type::parseString('array{a: int}&T1');
     }
 
+    public function testIntersectionOfNonEmptyStringAndLowercaseString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-string&lowercase-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfLowercaseStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('lowercase-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyStringAndLiteralString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('non-empty-string&literal-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfLiteralStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('literal-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfSameNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-string',
+            Type::parseString('non-empty-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLowercaseStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-lowercase-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLowercaseStringAndLowercaseString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-lowercase-string&lowercase-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLiteralStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('non-empty-literal-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyStringAndNonFalsyString(): void
+    {
+        $this->assertSame(
+            'non-falsy-string',
+            Type::parseString('non-empty-string&non-falsy-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNumericStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'numeric-string',
+            Type::parseString('numeric-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfStringPseudoTypeAndNonStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('non-empty-string&int');
+    }
+
+    public function testIntersectionOfNumericStringAndLowercaseStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('numeric-string&lowercase-string');
+    }
+
+    public function testIntersectionOfNonFalsyStringAndLowercaseStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('non-falsy-string&lowercase-string');
+    }
+
+    public function testIntersectionOfNonEmptyStringAndCallableStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('callable-string&lowercase-string');
+    }
+
     public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, list{int}>', Type::parseString('iterable<string, array{int}>')->getId());
@@ -759,6 +863,18 @@ final class TypeParseTest extends TestCase
             '(T is string ? string : int)',
             (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => Type::getArray()]]),
         );
+    }
+
+    public function testConditionalTypeWithoutTernary(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(T is string)', null, ['T' => ['' => Type::getArray()]]);
+    }
+
+    public function testConditionalTypeWithoutIsType(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(T is ? string : int)', null, ['T' => ['' => Type::getArray()]]);
     }
 
     public function testConditionalTypeWithCallableElseBool(): void
@@ -1236,6 +1352,86 @@ final class TypeParseTest extends TestCase
             'class-string<IFoo>',
             (string) Type::parseString('class-string<IFoo>|class-string<IFoo&IBar>'),
         );
+    }
+
+    public function testPurityArgumentsInBrackets(): void
+    {
+        $this->assertSame('Traversable[pure]<int, string>', (string) Type::parseString('Traversable[pure]<int, string>'));
+        $this->assertSame(
+            'Generator[write-props|io]<int, string, mixed, void>',
+            (string) Type::parseString('Generator[write-props|io]<int, string, mixed, void>'),
+        );
+        $this->assertSame('Iterator[pure]<mixed, mixed>', (string) Type::parseString('Iterator[pure]'));
+        $this->assertSame('Iterator[pure]<mixed, int>', (string) Type::parseString('Iterator[pure]<int>'));
+        $this->assertSame('Foo[io]', (string) Type::parseString('Foo[io]'));
+        $this->assertSame('Foo[pure, io]<int>', (string) Type::parseString('Foo[pure, io]<int>'));
+        $this->assertSame('array<array-key, Foo[pure]>', Type::parseString('Foo[pure][]')->getId());
+        $this->assertSame('Foo[pure]|null', (string) Type::parseString('?Foo[pure]'));
+    }
+
+    public function testIterablePurity(): void
+    {
+        $this->assertSame('iterable[pure]<int, string>', (string) Type::parseString('iterable[pure]<int, string>'));
+        $this->assertSame('iterable[pure]<mixed, mixed>', (string) Type::parseString('iterable[pure]'));
+        $this->assertSame('iterable[read-props]<mixed, int>', (string) Type::parseString('iterable[read-props]<int>'));
+        // impure is the default purity of iterable
+        $this->assertSame('iterable<int, string>', (string) Type::parseString('iterable[impure]<int, string>'));
+    }
+
+    public function testCallablePurityInBrackets(): void
+    {
+        $this->assertSame('Closure[io](int):void', (string) Type::parseString('Closure[io](int): void'));
+        $this->assertSame('callable[read-props]():int', (string) Type::parseString('callable[read-props](): int'));
+        $this->assertSame('pure-Closure():void', (string) Type::parseString('Closure[pure](): void'));
+        $this->assertSame('Closure[io]', (string) Type::parseString('Closure[io]'));
+    }
+
+    public function testEmptyPurityBracketsAreAnArray(): void
+    {
+        $this->assertSame('array<array-key, Foo>', Type::parseString('Foo[]')->getId());
+    }
+
+    public function testEmptyPurityBracketsBeforeTypeParams(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[]<int, string>');
+    }
+
+    public function testPurityArgumentInAngleBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('Purity arguments are given in brackets');
+        Type::parseString('Traversable<int, string, pure>');
+    }
+
+    public function testCallablePurityInAngleBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Closure<pure>(): void');
+    }
+
+    public function testNonPurityArgumentInBrackets(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[int]<int, string>');
+    }
+
+    public function testPurityArgumentsOfArray(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array[pure]<int, string>');
+    }
+
+    public function testTooManyIterablePurityArguments(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('iterable[pure, io]<int, string>');
+    }
+
+    public function testEmptyPurityArgument(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('Traversable[pure,]<int, string>');
     }
 
     public function testReflectionTypeParse(): void

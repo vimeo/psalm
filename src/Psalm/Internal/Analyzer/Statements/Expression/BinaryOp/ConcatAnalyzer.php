@@ -464,7 +464,7 @@ final class ConcatAnalyzer
                             $statements_analyzer,
                         );
                         $statements_analyzer->signalMutation(
-                            $storage->allowed_mutations,
+                            $storage->capabilities,
                             $context,
                             'possibly-mutating method '
                                         . $atomic_type->value . '::__toString',

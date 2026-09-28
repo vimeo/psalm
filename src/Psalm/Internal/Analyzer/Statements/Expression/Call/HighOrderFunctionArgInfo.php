@@ -61,14 +61,14 @@ final class HighOrderFunctionArgInfo
                 new TClosure(
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->allowed_mutations,
+                    $this->function_storage->capabilities,
                 ),
             ]),
             self::TYPE_STRING_CALLABLE, self::TYPE_CLASS_CALLABLE => new Union([
                 new TCallable(
                     $this->function_storage->params,
                     $this->function_storage->return_type,
-                    $this->function_storage->allowed_mutations,
+                    $this->function_storage->capabilities,
                 ),
             ]),
             default => $this->function_storage->return_type ?? Type::getMixed(),

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Plugin;
 
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -43,10 +43,8 @@ final class DynamicFunctionStorage
 
     /**
      * Function purity.
-     *
-     * @var Mutations::LEVEL_*
      */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    public int $capabilities = Capabilities::ALL;
 
     /**
      * Determines if a function can be called with a various number of arguments.
@@ -63,7 +61,7 @@ final class DynamicFunctionStorage
         $storage->setParams($this->params);
         $storage->return_type = $this->return_type;
         $storage->allow_named_arg_calls = $this->allow_named_arg_calls;
-        $storage->allowed_mutations = $this->allowed_mutations;
+        $storage->capabilities = $this->capabilities;
         $storage->variadic = $this->variadic;
 
         if (!empty($this->templates)) {

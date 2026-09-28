@@ -1,6 +1,6 @@
 # MissingPureAnnotation
 
-Emitted when a potentially pure function or method does not have a `@psalm-pure` declaration.  
+Emitted when a potentially pure function or method does not have a `@psalm-pure` or `@psalm-capabilities` declaration: the issue suggests the capabilities it was inferred to need.  
 
 To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`.  
 

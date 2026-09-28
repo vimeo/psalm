@@ -17,6 +17,8 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -30,7 +32,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_slice;
 use function assert;
 use function count;
@@ -71,7 +72,12 @@ final class CallableTypeComparator
         }
         assert($input_type_part instanceof TClosure || $input_type_part instanceof TCallable);
 
-        if ($container_type_part->allowed_mutations < $input_type_part->allowed_mutations) {
+        // a callable needing fewer capabilities fits where more are allowed, never the reverse
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $input_type_part->purity,
+            $container_type_part->purity,
+        )) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
             }
@@ -186,10 +192,10 @@ final class CallableTypeComparator
     }
 
     /**
-     * Compares a contravariant parameter position, recording type-variable
-     * bounds flipped: a lower bound recorded on the param comparison is an
-     * upper bound on the variable, and vice versa. On a failed comparison
-     * the bounds are dropped with the rest of the result.
+     * Compares a contravariant parameter position: the container's parameter
+     * type must be contained by the input's. Any type-variable bound recorded
+     * by the comparison is already in the correct direction (see the note in
+     * the body).
      */
     private static function isParamContainedBy(
         Codebase $codebase,
@@ -197,6 +203,13 @@ final class CallableTypeComparator
         Union $input_param_type,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        // Contravariant position: the container's parameter type must be
+        // contained by the input's. Passing them to isContainedBy in this
+        // order already records any type-variable bound in the correct
+        // direction — a variable in the container's parameter is in input
+        // position here, so `callable(`_0):_` against `callable(Item):_`
+        // records `_0 <: Item`, which is exactly the constraint the value
+        // imposes. No post-hoc flip is needed.
         if (!$atomic_comparison_result) {
             return UnionTypeComparator::isContainedBy(
                 $codebase,
@@ -205,10 +218,7 @@ final class CallableTypeComparator
             );
         }
 
-        $lower_bound_count = count($atomic_comparison_result->type_variable_lower_bounds);
-        $upper_bound_count = count($atomic_comparison_result->type_variable_upper_bounds);
-
-        $contained = UnionTypeComparator::isContainedBy(
+        return UnionTypeComparator::isContainedBy(
             $codebase,
             $container_param_type,
             $input_param_type,
@@ -216,39 +226,6 @@ final class CallableTypeComparator
             false,
             $atomic_comparison_result,
         );
-
-        $new_lower_bounds = array_slice(
-            $atomic_comparison_result->type_variable_lower_bounds,
-            $lower_bound_count,
-        );
-        $new_upper_bounds = array_slice(
-            $atomic_comparison_result->type_variable_upper_bounds,
-            $upper_bound_count,
-        );
-
-        $atomic_comparison_result->type_variable_lower_bounds = array_slice(
-            $atomic_comparison_result->type_variable_lower_bounds,
-            0,
-            $lower_bound_count,
-        );
-        $atomic_comparison_result->type_variable_upper_bounds = array_slice(
-            $atomic_comparison_result->type_variable_upper_bounds,
-            0,
-            $upper_bound_count,
-        );
-
-        if ($contained) {
-            $atomic_comparison_result->type_variable_lower_bounds = array_merge(
-                $atomic_comparison_result->type_variable_lower_bounds,
-                $new_upper_bounds,
-            );
-            $atomic_comparison_result->type_variable_upper_bounds = array_merge(
-                $atomic_comparison_result->type_variable_upper_bounds,
-                $new_lower_bounds,
-            );
-        }
-
-        return $contained;
     }
 
     public static function isNotExplicitlyCallableTypeCallable(
@@ -391,10 +368,26 @@ final class CallableTypeComparator
                     $params = $function_storage->params;
                 }
 
-                return new TCallable(
-                    $params,
-                    $return_type,
-                    $function_storage->allowed_mutations,
+                // builtin functions are pure unless listed as impure, whatever their reflected or
+                // stubbed storage says: the same rule direct calls follow
+                $purity = InternalCallMapHandler::inCallMap($input_type_part->value)
+                    ? $codebase->functions->getCallMapFunctionCapabilities(
+                        $statements_analyzer,
+                        $context,
+                        $codebase,
+                        $input_type_part->value,
+                        null,
+                    )
+                    : self::getCallableCapabilities($function_storage);
+
+                return self::withoutPurityTemplates(
+                    new TCallable(
+                        $params,
+                        $return_type,
+                        $purity,
+                    ),
+                    $function_storage->template_types ?? [],
+                    $codebase,
                 );
             } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
@@ -425,8 +418,8 @@ final class CallableTypeComparator
 
                     $must_use = false;
 
-                    $matching_callable = $matching_callable->setAllowedMutations(
-                        $codebase->functions->getCallMapFunctionMutations(
+                    $matching_callable = $matching_callable->setPurity(
+                        $codebase->functions->getCallMapFunctionCapabilities(
                             $statements_analyzer,
                             $context,
                             $codebase,
@@ -458,11 +451,44 @@ final class CallableTypeComparator
                         );
                     }
 
-                    return new TCallable(
-                        $method_storage->params,
-                        $converted_return_type,
-                        $method_storage->allowed_mutations,
+                    $class_template_types = $codebase->methods->getClassLikeStorageForMethod($method_id)
+                        ->template_types ?? [];
+
+                    $callable = self::withoutPurityTemplates(
+                        new TCallable(
+                            $method_storage->params,
+                            $converted_return_type,
+                            self::getCallableCapabilities($method_storage, $class_template_types),
+                        ),
+                        ($method_storage->template_types ?? []) + $class_template_types,
+                        $codebase,
                     );
+
+                    // Resolve method-level templates against the expected callable shape, so
+                    // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+                    if ($method_storage->template_types !== null && $container_type_part !== null) {
+                        $template_result = new TemplateResult($method_storage->template_types, []);
+
+                        TemplateStandinTypeReplacer::fillTemplateResult(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                            null,
+                            new Union([$container_type_part]),
+                        );
+
+                        $replaced = TemplateInferredTypeReplacer::replace(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                        )->getSingleAtomic();
+
+                        if ($replaced instanceof TCallable) {
+                            $callable = $replaced;
+                        }
+                    }
+
+                    return $callable;
                 } catch (UnexpectedValueException) {
                     // do nothing
                 }
@@ -528,7 +554,12 @@ final class CallableTypeComparator
                     $callable = new TCallable(
                         $method_storage->params,
                         $converted_return_type,
-                        $method_storage->allowed_mutations,
+                        self::getCallableCapabilities(
+                            $method_storage,
+                            $codebase->methods->getClassLikeStorageForMethod($declaring_method_id)
+                                ->template_types ?? [],
+                            $template_result,
+                        ),
                     );
 
                     if ($template_result) {
@@ -539,6 +570,7 @@ final class CallableTypeComparator
                         )->getSingleAtomic();
                     }
 
+                    /** @psalm-suppress LessSpecificReturnStatement */
                     return $callable;
                 }
             }
@@ -548,8 +580,79 @@ final class CallableTypeComparator
     }
 
     /**
+     * What calling a function-like through a callable value may do: its own capabilities, plus
+     * what its purity templates are bound to by the value's type (the class template params of an
+     * invokable object), or their bounds when nothing binds them: no call binds them any more.
+     *
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @psalm-mutation-free
+     */
+    private static function getCallableCapabilities(
+        FunctionLikeStorage $storage,
+        array $class_template_types = [],
+        ?TemplateResult $template_result = null,
+    ): int {
+        $capabilities = $storage->capabilities;
+
+        foreach ($storage->purity_from_templates as $template_name) {
+            if (isset($template_result->lower_bounds[$template_name])) {
+                foreach ($template_result->lower_bounds[$template_name] as $bounds) {
+                    foreach ($bounds as $bound) {
+                        $capabilities |= Capabilities::fromType($bound->type);
+                    }
+                }
+
+                continue;
+            }
+
+            $bounds = $storage->template_types[$template_name] ?? $class_template_types[$template_name] ?? [];
+
+            foreach ($bounds as $bound) {
+                $capabilities |= Capabilities::fromType($bound);
+            }
+        }
+
+        return $capabilities;
+    }
+
+    /**
+     * A callable value made from a function-like is called without binding its purity templates,
+     * which would otherwise leak into the types of its params (`Closure[P](int): int`): they are
+     * replaced by their bounds, which is what the callable's own purity assumes.
+     *
+     * @param array<string, non-empty-array<string, Union>> $template_types
+     */
+    private static function withoutPurityTemplates(
+        TCallable $callable,
+        array $template_types,
+        Codebase $codebase,
+    ): TCallable {
+        $lower_bounds = [];
+
+        foreach ($template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if (Capabilities::isPurityType($bound)) {
+                    $lower_bounds[$template_name][$defining_class] = $bound;
+                }
+            }
+        }
+
+        if ($lower_bounds === []) {
+            return $callable;
+        }
+
+        $replaced = TemplateInferredTypeReplacer::replace(
+            new Union([$callable]),
+            new TemplateResult([], $lower_bounds),
+            $codebase,
+        )->getSingleAtomic();
+
+        return $replaced instanceof TCallable ? $replaced : $callable;
+    }
+
+    /**
      * @return null|'not-callable'|MethodIdentifier
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function getCallableMethodIdFromTKeyedArray(
         TKeyedArray $input_type_part,

@@ -14,6 +14,8 @@ use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function spl_object_id;
+
 /**
  * @internal
  */
@@ -68,10 +70,12 @@ final class IssetAnalyzer
         Context $context,
     ): void {
         $context->inside_isset = true;
+        $context->isset_root_id = spl_object_id($stmt);
 
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
         $context->inside_isset = false;
+        $context->isset_root_id = 0;
     }
 
     /**

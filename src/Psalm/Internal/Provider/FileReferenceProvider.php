@@ -145,7 +145,7 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
@@ -190,7 +190,7 @@ final class FileReferenceProvider
 
     /**
      * @return array<int, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function calculateFilesInheritingFile(Codebase $codebase, string $file): array
     {

@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
@@ -23,7 +24,7 @@ use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -112,6 +113,12 @@ final class InstancePropertyFetchAnalyzer
         if (!$stmt_var_type) {
             return true;
         }
+
+        // A class-template type variable used as a property-fetch receiver is
+        // the object it was inferred to be, so resolve it through its bounds —
+        // as MethodCallAnalyzer does for method calls — instead of rejecting
+        // the bare variable as a non-object.
+        $stmt_var_type = TypeVariableTracker::resolveTypeVariables($stmt_var_type, $codebase);
 
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(
@@ -469,8 +476,8 @@ final class InstancePropertyFetchAnalyzer
                         if ($context->inside_unset) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
-                                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                                    : Mutations::LEVEL_EXTERNAL,
+                                    ? Capabilities::WRITE_THIS_PROPS
+                                    : Capabilities::WRITE_PROPS,
                                 $context,
                                 'unsetting a property on a mutable object',
                                 ImpurePropertyAssignment::class,
@@ -478,7 +485,7 @@ final class InstancePropertyFetchAnalyzer
                             );
                         } else {
                             $statements_analyzer->signalMutation(
-                                Mutations::LEVEL_INTERNAL_READ,
+                                Capabilities::READ_PROPS,
                                 $context,
                                 'accessing a property on a mutable object',
                                 ImpurePropertyFetch::class,

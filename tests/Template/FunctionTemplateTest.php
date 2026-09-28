@@ -558,7 +558,7 @@ final class FunctionTemplateTest extends TestCase
 
                     $i = (new SomeIterator())->getIterator();',
                 'assertions' => [
-                    '$i' => 'Traversable<mixed, mixed>',
+                    '$i' => 'Traversable[impure]<mixed, mixed>',
                 ],
             ],
             'upcastArrayToIterable' => [

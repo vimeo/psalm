@@ -30,6 +30,7 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
+use function array_reverse;
 
 /**
  * @internal
@@ -64,6 +65,20 @@ final class MissingMethodCallHandler
             }
 
             return null;
+        }
+
+        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
+            $codebase,
+            $class_storage,
+            $method_name_lc,
+        );
+
+        // Merged before the return type provider short-circuit, which would skip it otherwise
+        if ($found_method_and_class_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $found_method_and_class_storage[0],
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+            );
         }
 
         if ($codebase->methods->return_type_provider->has($fq_class_name)) {
@@ -103,12 +118,6 @@ final class MissingMethodCallHandler
                 return null;
             }
         }
-
-        $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
-            $codebase,
-            $class_storage,
-            $method_name_lc,
-        );
 
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
@@ -278,6 +287,13 @@ final class MissingMethodCallHandler
                 return;
             }
 
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions(
+                    $pseudo_method_storage,
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                );
+            }
+
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $defining_class_storage,
@@ -401,7 +417,7 @@ final class MissingMethodCallHandler
             return new Union([new TClosure(
                 $method_storage->params,
                 $method_storage->return_type,
-                $method_storage->allowed_mutations,
+                $method_storage->capabilities,
             )]);
         }
 
@@ -438,7 +454,12 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
-        foreach ($static_class_storage->namedMixins as $namedObject) {
+        // First match wins here, so the nearest mixins come first.
+        $named_mixins = [
+            ...$static_class_storage->namedMixins,
+            ...array_reverse($static_class_storage->transitiveNamedMixins),
+        ];
+        foreach ($named_mixins as $namedObject) {
             $type = $namedObject->value;
             if ($type) {
                 $ancestors[$type] = true;

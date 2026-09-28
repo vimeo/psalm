@@ -18,7 +18,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_keys;
+use function array_reverse;
 use function array_values;
+use function count;
 use function in_array;
 
 /**
@@ -43,6 +46,15 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $stubbed = false;
 
+    /**
+     * The `analysis_php_version_id` at which this native symbol became available, from an `@since`
+     * tag on a stub class (e.g. 8_05_00 for a class tagged `@since 8.5`). Used to report the symbol
+     * as undefined when analysing an older PHP version without a polyfill, while still keeping its
+     * stubbed definition for analysis. Null when unversioned/user-defined. Propagates to the class's
+     * own constants, methods and properties unless they carry a later `@since` of their own.
+     */
+    public ?int $since_php_version_id = null;
+
     public bool $deprecated = false;
 
     /**
@@ -59,6 +71,14 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var list<TNamedObject>
      */
     public array $namedMixins = [];
+
+    /**
+     * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
+     * Filled during population; see getNamedMixinsForLookup().
+     *
+     * @var list<TNamedObject>
+     */
+    public array $transitiveNamedMixins = [];
 
     public ?string $mixin_declaring_fqcln = null;
 
@@ -165,8 +185,13 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
-    /** @var Mutations::LEVEL_* */
-    public int $allowed_mutations = Mutations::LEVEL_ALL;
+    public int $capabilities = Capabilities::ALL;
+
+    /**
+     * A `@psalm-capabilities` value that names imported type aliases, resolved into
+     * {@see self::$capabilities} by the populator once every class is scanned.
+     */
+    public ?Union $capabilities_type = null;
 
     public bool $has_mutations_annotation = false;
 
@@ -289,6 +314,23 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
+     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
+     * what a subclass that does not bind the template gets.
+     *
+     * @var array<string, Union>
+     */
+    public array $template_defaults = [];
+
+    /**
+     * The lower bound of each purity template that has one (`@psalm-purity-template write-props <= C`):
+     * what every value of the template requires, so the methods depending on it get these
+     * capabilities unconditionally, and subclasses may not bind it to less.
+     *
+     * @var array<string, int>
+     */
+    public array $template_lower_bounds = [];
+
+    /**
      * A map of which generic classlikes are extended or implemented by this class or interface.
      *
      * This is only used in the populator, which poulates the $template_extended_params property below.
@@ -405,7 +447,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isPure(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_NONE;
+        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
     }
 
     /**
@@ -413,7 +455,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ;
+        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -421,7 +463,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isExternalMutationFree(): bool
     {
-        return $this->allowed_mutations <= Mutations::LEVEL_INTERNAL_READ_WRITE;
+        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -459,6 +501,27 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
+     * How many template params a use of this class must give: all of them, except trailing purity
+     * templates with a default, which need not be given.
+     *
+     * @psalm-mutation-free
+     */
+    public function getRequiredTemplateParamCount(): int
+    {
+        $required_param_count = count($this->template_types ?? []);
+
+        foreach (array_reverse(array_keys($this->template_types ?? [])) as $template_name) {
+            if (!isset($this->template_defaults[$template_name])) {
+                break;
+            }
+
+            $required_param_count--;
+        }
+
+        return $required_param_count;
+    }
+
+    /**
      * Get the template constraint types for the class.
      *
      * @return list<Union>
@@ -473,6 +536,18 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return $type_params;
+    }
+
+    /**
+     * Named mixins in member-lookup order: transitive ones first, then those declared on or inherited by
+     * the class, so that with last-match-wins lookup a nearer mixin shadows a deeper one.
+     *
+     * @return list<TNamedObject>
+     * @psalm-mutation-free
+     */
+    public function getNamedMixinsForLookup(): array
+    {
+        return [...$this->transitiveNamedMixins, ...$this->namedMixins];
     }
 
     /**

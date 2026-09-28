@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -18,6 +19,10 @@ use function substr;
 
 /**
  * Denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
+ *
+ * The arguments of the purity templates of the class, if any, are the last type parameters, like
+ * the templates in the class storage; they are written in brackets before the others:
+ * `Traversable[pure]<int, string>` has the type parameters `int`, `string` and `pure`.
  *
  * @psalm-immutable
  * @api
@@ -62,14 +67,24 @@ final class TGenericObject extends TNamedObject
         );
     }
 
+    /**
+     * @return array{list<Union>, list<Union>}
+     */
+    public function getTypeParamsAndPurityArgs(): array
+    {
+        return PurityArguments::split($this->type_params);
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        $s = '';
+        [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
-        foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getKey() . ', ';
-        }
+        $s = self::formatTypeParams(
+            $type_params,
+            $purity_args,
+            static fn(Union $type_param): string => $type_param->getKey(),
+        );
 
         $extra_types = '';
 
@@ -77,7 +92,7 @@ final class TGenericObject extends TNamedObject
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        return $this->value . $s . $extra_types;
     }
 
     /**

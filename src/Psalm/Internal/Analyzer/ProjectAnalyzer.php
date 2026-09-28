@@ -366,6 +366,8 @@ final class ProjectAnalyzer
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
+
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
         }
@@ -1101,7 +1103,7 @@ final class ProjectAnalyzer
     /**
      * @param array<string>  $diff_files
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true): array
     {

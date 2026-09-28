@@ -9,6 +9,7 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -104,6 +105,7 @@ final class TypeExpander
         $fleshed_out_type->initialized = $return_type->initialized;
         $fleshed_out_type->from_property = $return_type->from_property;
         $fleshed_out_type->from_static_property = $return_type->from_static_property;
+        $fleshed_out_type->from_global_state = $return_type->from_global_state;
         $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
@@ -449,8 +451,36 @@ final class TypeExpander
                 );
             }
             unset($type_param);
+
+            // `Foo[pure]` for a class with type templates
+            if ($return_type instanceof TGenericObject
+                && $codebase->classlike_storage_provider->has($return_type->value)
+            ) {
+                $type_params = PurityArguments::align(
+                    $type_params,
+                    $codebase->classlike_storage_provider->get($return_type->value),
+                );
+            }
+
             /** @psalm-suppress InvalidArgument Psalm bug */
             $return_type = $return_type->setTypeParams($type_params);
+
+            // the purity of an iterable may name a type alias (`iterable[Storage]`)
+            if ($return_type instanceof TIterable) {
+                $return_type = $return_type->setPurity(self::expandUnion(
+                    $codebase,
+                    $return_type->purity,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                ));
+            }
         } elseif ($return_type instanceof TKeyedArray) {
             $properties = $return_type->properties;
             $changed = false;
@@ -574,6 +604,23 @@ final class TypeExpander
                 $params,
                 $sub_return_type,
             );
+
+            // the purity may name a type alias (`Closure[Storage]`)
+            if (!Capabilities::isPurityType($return_type->purity) || $return_type->purity->hasTypeAlias()) {
+                $return_type = $return_type->setPurity(self::expandUnion(
+                    $codebase,
+                    $return_type->purity,
+                    $self_class,
+                    $static_class_type,
+                    $parent_class,
+                    $evaluate_class_constants,
+                    $evaluate_conditional_types,
+                    $final,
+                    $expand_generic,
+                    $expand_templates,
+                    $throw_on_unresolvable_constant,
+                ));
+            }
         }
 
         return [$return_type];

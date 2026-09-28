@@ -7,7 +7,7 @@ return array (
     array (
       0 => 'array-key|null',
       'array' => 'array<array-key, mixed>',
-      'callback' => 'callable',
+      'callback' => 'impure-callable',
     ),
     'sodium_crypto_aead_aes256gcm_keygen' => 
     array (
@@ -918,13 +918,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_default_handler' => 
@@ -933,13 +933,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_element_handler' => 
@@ -948,15 +948,15 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'start_handler' => 'callable',
-        'end_handler' => 'callable',
+        'start_handler' => 'impure-callable',
+        'end_handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'start_handler' => 'callable|null',
-        'end_handler' => 'callable|null',
+        'start_handler' => 'impure-callable|null',
+        'end_handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_end_namespace_decl_handler' => 
@@ -965,13 +965,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_external_entity_ref_handler' => 
@@ -980,13 +980,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_notation_decl_handler' => 
@@ -995,13 +995,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_processing_instruction_handler' => 
@@ -1010,13 +1010,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_start_namespace_decl_handler' => 
@@ -1025,13 +1025,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xml_set_unparsed_entity_decl_handler' => 
@@ -1040,13 +1040,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable',
+        'handler' => 'impure-callable',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'callable|null',
+        'handler' => 'impure-callable|null',
       ),
     ),
     'xmlreader::close' => 

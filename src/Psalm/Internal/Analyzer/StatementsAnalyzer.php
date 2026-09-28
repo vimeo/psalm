@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -67,7 +68,10 @@ use Psalm\IssueBuffer;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_change_key_case;
@@ -396,6 +400,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * @return false|null
+     * @psalm-suppress ComplexMethod dispatches on every kind of statement
      */
     private static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
@@ -634,6 +639,21 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $stmt,
             ) === false) {
                 return false;
+            }
+
+            if ($stmt->expr instanceof PhpParser\Node\Expr\New_) {
+                $new_type = $statements_analyzer->node_data->getType($stmt->expr);
+
+                if ($new_type !== null) {
+                    // nothing holds the new object: it dies right away
+                    DestructorAnalyzer::chargeDestruction(
+                        $statements_analyzer,
+                        $context,
+                        $new_type,
+                        'the discarded new object',
+                        $stmt->expr,
+                    );
+                }
             }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
             // do nothing
@@ -1000,6 +1020,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
                         $original_location,
                     );
                 } else {
+                    if ($this->hasImpureDestructor($context->vars_in_scope[$var_id] ?? null, $codebase)) {
+                        continue;
+                    }
                     $issue = new UnusedVariable(
                         $var_id . ' is never referenced or the value is not used',
                         $original_location,
@@ -1028,6 +1051,36 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasImpureDestructor(?Union $type, Codebase $codebase): bool
+    {
+        if ($type === null) {
+            return false;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $destructor_id = DestructorAnalyzer::getDestructorId($codebase, $atomic_type->value);
+
+            if ($destructor_id === null) {
+                continue;
+            }
+
+            $destructor = $codebase->methods->getStorage($destructor_id);
+
+            if ($destructor->has_mutations_annotation && $destructor->capabilities === Capabilities::ALL) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

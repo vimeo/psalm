@@ -433,9 +433,17 @@ final class ReturnAnalyzer
                         // transfer recorded type-variable bounds, upgrading
                         // plain upper bounds to equality bounds: the declared
                         // return type names the type parameter exactly, so a
-                        // conflicting use elsewhere must fail reconciliation
+                        // conflicting use elsewhere must fail reconciliation.
+                        //
+                        // A bound merged from several arms of a union return
+                        // type (`Foo<int>|Foo<string>`) stays a plain upper
+                        // bound (`int|string`): the arms are alternatives the
+                        // value need only satisfy one of, as Hack localizes
+                        // that union to `Foo<(int | string)>`.
                         foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
-                            if ($upper_bound->equality_bound_classlike === null) {
+                            if ($upper_bound->equality_bound_classlike === null
+                                && !$upper_bound->from_union_alternatives
+                            ) {
                                 $upper_bound->equality_bound_classlike = '';
                             }
                         }

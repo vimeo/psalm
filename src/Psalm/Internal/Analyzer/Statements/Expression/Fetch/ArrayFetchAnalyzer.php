@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -25,6 +26,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -83,6 +85,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -95,6 +98,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function spl_object_id;
 use function strlen;
 use function strtolower;
 
@@ -603,6 +607,26 @@ final class ArrayFetchAnalyzer
             $original_type_real = $type;
             $original_type = $type;
 
+            if ($type instanceof TTypeVariable) {
+                // A type variable minted for a class template at its construction
+                // site (Hack's `new Foo<_>(...)`) prints as, and is fetched
+                // through, the bound its constructor arguments inferred — just as
+                // the TTemplateParam branch below reads through `as`. Resolve it to
+                // that bound so `$var[0]` reaches the inferred element type; without
+                // this the bare variable falls through every array branch and is
+                // reported as a non-array despite printing like one.
+                $resolved = TypeVariableTracker::resolveTypeVariables(
+                    new Union([$type]),
+                    $codebase,
+                );
+
+                if ($resolved->isSingle()) {
+                    $type = $resolved->getSingleAtomic();
+                    $original_type = $type;
+                    $original_type_real = $type;
+                }
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
                 || $type instanceof TNever
@@ -1013,7 +1037,7 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
@@ -1867,6 +1891,13 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+                && ($context->inside_isset || $context->inside_unset)
+            ) {
+                // a null receiver is what isset() and unset() are for
+                $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
+            }
+
             if ($in_assignment) {
                 $old_node_data = $statements_analyzer->node_data;
 
@@ -1904,33 +1935,102 @@ final class ArrayFetchAnalyzer
             if ($stmt->dim) {
                 $old_node_data = $statements_analyzer->node_data;
 
-                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+                // `unset($a[$k])` calls offsetUnset, `isset($a[$k])` and `$a[$k] ?? ...` call
+                // offsetExists (the latter then offsetGet), everything else calls offsetGet
+                if ($context->inside_unset) {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-                $fake_get_method_call = new VirtualMethodCall(
-                    $stmt->var,
-                    new VirtualIdentifier('offsetGet', $stmt->var->getAttributes()),
-                    [
-                        new VirtualArg(
-                            $stmt->dim,
-                        ),
-                    ],
-                );
+                    $fake_unset_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetUnset', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
 
-                MethodCallAnalyzer::analyze(
-                    $statements_analyzer,
-                    $fake_get_method_call,
-                    $context,
-                );
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_unset_method_call,
+                        $context,
+                    );
 
-                $call_array_access_type =
-                    $statements_analyzer->node_data->getType($fake_get_method_call) ?? Type::getMixed();
+                    $statements_analyzer->node_data = $old_node_data;
+                }
 
-                $statements_analyzer->node_data = $old_node_data;
+                if ($context->inside_isset) {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    $fake_exists_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetExists', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
+
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_exists_method_call,
+                        $context,
+                    );
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
+
+                if ($context->inside_unset) {
+                    $call_array_access_type = Type::getVoid();
+                } elseif ($context->inside_isset && $context->isset_root_id === spl_object_id($stmt)) {
+                    // a plain isset() never calls offsetGet: only its declared type is of interest
+                    $call_array_access_type = Type::getMixed();
+                    $get_method_id = new MethodIdentifier($type->value, 'offsetget');
+
+                    if ($codebase->methods->methodExists($codebase, $get_method_id)) {
+                        $self_class = $type->value;
+                        $call_array_access_type = $codebase->methods->getMethodReturnType(
+                            $codebase,
+                            $get_method_id,
+                            $self_class,
+                        ) ?? Type::getMixed();
+                    }
+                } else {
+                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+                    $fake_get_method_call = new VirtualMethodCall(
+                        $stmt->var,
+                        new VirtualIdentifier('offsetGet', $stmt->var->getAttributes()),
+                        [
+                            new VirtualArg(
+                                $stmt->dim,
+                            ),
+                        ],
+                    );
+
+                    MethodCallAnalyzer::analyze(
+                        $statements_analyzer,
+                        $fake_get_method_call,
+                        $context,
+                    );
+
+                    $call_array_access_type =
+                        $statements_analyzer->node_data->getType($fake_get_method_call) ?? Type::getMixed();
+
+                    $statements_analyzer->node_data = $old_node_data;
+                }
             } else {
                 $call_array_access_type = Type::getVoid();
             }
 
             $has_array_access = true;
+
+            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+                && ($context->inside_isset || $context->inside_unset)
+            ) {
+                $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
+            }
 
             if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                 $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);

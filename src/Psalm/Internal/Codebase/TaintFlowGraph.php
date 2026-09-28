@@ -286,7 +286,9 @@ final class TaintFlowGraph extends DataFlowGraph
         // finite, so the loop is guaranteed to terminate on its own. Combined
         // with the sink-reachability pruning above, this converges quickly enough
         // that no artificial nesting limit is needed.
-        $progress->expand(1);
+        //
+        // The number of rounds is not known ahead of time, so the progress bar
+        // renders this phase as indeterminate (a tick per round, no percentage).
         while (count($sinks) && count($sources)) {
             $new_sources = [];
 
@@ -454,6 +456,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * @param array<string, DataFlowNode> $sources
      * @param array<string, DataFlowNode> $sinks
      * @return array<string, true>
+     * @psalm-capabilities read-props
      */
     private function getSinkReachableNodes(array $sources, array $sinks): array
     {
@@ -516,6 +519,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities write-refs|read-props
      */
     private function linkSpecialization(array &$reverse, string $id): void
     {
@@ -539,6 +543,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities write-refs|read-props
      */
     private function linkSpecializationByField(array &$reverse, DataFlowNode $node): void
     {

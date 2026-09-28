@@ -33,6 +33,7 @@ use Psalm\Issue\ParamNameMismatch;
 use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\IssueBuffer;
 use Psalm\Storage\AttributeStorage;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -378,17 +379,65 @@ final class MethodComparator
             );
         }
 
-        if ($guide_method_storage->isExternalMutationFree()
-            && !$implementer_method_storage->isExternalMutationFree()
+        // an override may need fewer capabilities than the overridden method, never more. For a
+        // method with `@psalm-purity-from-template`, the capabilities it needs unconditionally
+        // must fit those the overridden method needs unconditionally (a caller passing pure
+        // closures gets a call as pure as the overridden method promises), and the worst case
+        // over the templates must fit the overridden method's worst case.
+        $guide_capabilities = $guide_method_storage->capabilities;
+        $implementer_capabilities = $implementer_method_storage->capabilities;
+
+        // a class-level purity template the implementer's class binds (`@extends Doer[io]`)
+        // is part of what the overridden method needs unconditionally in that class. One it
+        // forwards to a purity template of its own (`@extends Doer[P]`) is still open: it will be
+        // bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and
+        // an override may use the rest only through `@psalm-purity-from-template P`, like Hack's
+        // abstract context constants
+        foreach ($guide_method_storage->purity_from_templates as $template_name) {
+            if (!isset($guide_classlike_storage->template_types[$template_name])) {
+                continue;
+            }
+
+            $bound_type = $implementer_classlike_storage
+                ->template_extended_params[$guide_classlike_storage->name][$template_name] ?? null;
+
+            if ($bound_type === null) {
+                continue;
+            }
+
+            foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
+                if ($bound_atomic instanceof TTemplateParam
+                    && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
+                ) {
+                    $guide_capabilities |= $codebase->classlike_storage_provider
+                        ->get($bound_atomic->defining_class)
+                        ->template_lower_bounds[$bound_atomic->param_name] ?? Capabilities::NONE;
+                } else {
+                    $guide_capabilities |= Capabilities::fromType(new Union([$bound_atomic]));
+                }
+            }
+        }
+
+        if (Capabilities::allows($guide_capabilities, $implementer_capabilities)) {
+            $guide_capabilities = $guide_method_storage->getWorstCaseCapabilities(
+                $guide_classlike_storage->template_types ?? [],
+            );
+            $implementer_capabilities = $implementer_method_storage->getWorstCaseCapabilities(
+                $implementer_classlike_storage->template_types ?? [],
+            );
+        }
+
+        if (!Capabilities::allows($guide_capabilities, $implementer_capabilities)
             && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {
             IssueBuffer::maybeAdd(
                 new ImmutableDependency(
-                    $cased_guide_method_id . ' is marked at least @psalm-external-mutation-free, but '
+                    $cased_guide_method_id . ' is ' . Capabilities::toString($guide_capabilities) . ', but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-external-mutation-free',
+                        . ' additionally requires '
+                        . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -973,6 +1022,12 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        // PHP 8.5 allows a final class to satisfy a `static` return type with `self`
+        // or its own class name. Earlier versions reject that substitution.
+        $resolve_static_to_final_class = $codebase->analysis_php_version_id >= 8_05_00
+            && $implementer_classlike_storage->final
+            && !$implementer_classlike_storage->final_from_docblock;
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
@@ -981,6 +1036,7 @@ final class MethodComparator
                 : $guide_classlike_storage->name,
             ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
                 || $guide_classlike_storage->final
+                || $resolve_static_to_final_class
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
@@ -988,7 +1044,7 @@ final class MethodComparator
                 : $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $resolve_static_to_final_class,
         );
 
         $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -1195,6 +1251,7 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,

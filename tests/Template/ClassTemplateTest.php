@@ -1115,7 +1115,10 @@ final class ClassTemplateTest extends TestCase
 
                     $c = new C();',
                 'assertions' => [
-                    '$c===' => "C<'hello'>",
+                    // `$c holds an unreconciled type variable minted for T at the
+                    // construction site; the exact `===` form reveals it (the plain
+                    // display form still renders through the bound as C<'hello'>).
+                    '$c===' => "C<`_0:'hello'>",
                 ],
             ],
             'SKIPPED-templateDefaultConstant' => [
@@ -1189,7 +1192,8 @@ final class ClassTemplateTest extends TestCase
 
                     $e = new E();',
                 'assertions' => [
-                    '$e===' => 'E<D>',
+                    // exact form reveals the construction-site type variable for T
+                    '$e===' => 'E<`_0:D>',
                 ],
             ],
             'allowNullablePropertyAssignment' => [
@@ -2644,7 +2648,7 @@ final class ClassTemplateTest extends TestCase
 
                         public function __construct()
                         {
-                            $this->c = new ArrayCollection();
+                            $this->c = new ArrayCollection([new DateTime()]);
                             $this->c->filter(function (DateTime $dt): bool {
                                 return $dt === $dt;
                             });

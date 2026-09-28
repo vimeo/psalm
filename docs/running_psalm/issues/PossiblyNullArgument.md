@@ -35,7 +35,7 @@ if (is_string($catName) {
 unset($catName);
 ```
 
-Or add [`@psalm-mutation-free`](../../annotating_code/supported_annotations.md#psalm-mutation-free) to the declaration of the function
+Or add [`@psalm-capabilities read-props`](../../annotating_code/supported_annotations.md#psalm-capabilities) to the declaration of the function
 
 ### Calling Another Function After `if`
 
@@ -51,5 +51,5 @@ This fails since psalm cannot know if `changeCat()` does actually modify `$cat`.
 
 #### Possible Solutions
 
-* Add [`@psalm-mutation-free`](../../annotating_code/supported_annotations.md#psalm-mutation-free) to the declaration of the other function (here: `changeCat()`) too
+* Add [`@psalm-capabilities read-props`](../../annotating_code/supported_annotations.md#psalm-capabilities) to the declaration of the other function (here: `changeCat()`) too
 * Use a variable: See above
