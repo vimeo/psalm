@@ -3230,15 +3230,6 @@
             )]]></code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Storage/FunctionLikeParameter.php">
-    <ImpureMethodCall>
-      <code><![CDATA[traverse]]></code>
-      <code><![CDATA[traverse]]></code>
-      <code><![CDATA[traverse]]></code>
-      <code><![CDATA[traverse]]></code>
-      <code><![CDATA[traverse]]></code>
-    </ImpureMethodCall>
-  </file>
   <file src="src/Psalm/Storage/FunctionLikeStorage.php">
     <ImplicitToStringCast>
       <code><![CDATA[$param->type ?: 'mixed']]></code>

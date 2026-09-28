@@ -629,6 +629,7 @@ final class CliUtils
      * Returns whether the given stream is attached to an interactive terminal.
      *
      * @param resource $stream
+     * @psalm-pure
      */
     public static function streamIsInteractive($stream): bool
     {

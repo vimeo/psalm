@@ -1191,6 +1191,9 @@ final class ClassLikes
         FileManipulationBuffer::addCodeMigrations($code_migrations);
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getFinalInsertionPosition(CodeLocation $class_location): int
     {
         $selection = $class_location->getSnippet();
@@ -1244,6 +1247,7 @@ final class ClassLikes
 
     /**
      * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @psalm-pure
      */
     private static function isClassDeclarationToken(array $tokens, int $class_token_offset): bool
     {
@@ -1264,6 +1268,9 @@ final class ClassLikes
         return false;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function isTriviaToken(int $token_id): bool
     {
         return $token_id === T_WHITESPACE

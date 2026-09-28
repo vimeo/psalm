@@ -1135,6 +1135,9 @@ final class ConditionalReturnTypeTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {

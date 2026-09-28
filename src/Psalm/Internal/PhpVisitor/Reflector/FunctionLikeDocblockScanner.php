@@ -346,91 +346,20 @@ final class FunctionLikeDocblockScanner
             );
         }
 
-        foreach ($docblock_info->params_out as $docblock_param_out) {
-            self::handleParamTag(
-                $docblock_param_out,
-                $aliases,
-                $function_template_types,
-                $class_template_types,
-                $type_aliases,
-                $cased_function_id,
-                $file_scanner,
-                $stmt,
-                $storage,
-                $codebase,
-                $file_storage,
-                null,
-            );
-        }
-
-        foreach ($docblock_info->params_closure_this as $docblock_param_closure_this) {
-            self::handleParamTag(
-                $docblock_param_closure_this,
-                $aliases,
-                $function_template_types,
-                $class_template_types,
-                $type_aliases,
-                $cased_function_id,
-                $file_scanner,
-                $stmt,
-                $storage,
-                $codebase,
-                $file_storage,
-                $classlike_storage,
-                true,
-            );
-        }
-
-        if ($docblock_info->self_out
-            && $storage instanceof MethodStorage) {
-            try {
-                [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
-                    $docblock_info->self_out['type'],
-                    $aliases,
-                    $function_template_types + $class_template_types,
-                    $type_aliases,
-                    $storage,
-                    $classlike_storage,
-                    $cased_function_id,
-                    $function_template_types,
-                );
-
-                $storage->self_out_type = TypeParser::parseTokens(
-                    array_values($fixed_type_tokens),
-                    null,
-                    $function_template_types + $class_template_types,
-                    $type_aliases,
-                );
-            } catch (TypeParseTreeException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
-                );
-            }
-        }
-
-        if ($docblock_info->if_this_is
-            && $storage instanceof MethodStorage) {
-            try {
-                $storage->if_this_is_type = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->if_this_is['type'],
-                        $aliases,
-                        $function_template_types + $class_template_types,
-                        $type_aliases,
-                        $classlike_storage ? $classlike_storage->name : null,
-                    ),
-                    null,
-                    $function_template_types + $class_template_types,
-                    $type_aliases,
-                );
-            } catch (TypeParseTreeException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
-                );
-            }
-        }
+        $function_template_types = self::handleOutAndThisTags(
+            $docblock_info,
+            $aliases,
+            $function_template_types,
+            $class_template_types,
+            $type_aliases,
+            $cased_function_id,
+            $file_scanner,
+            $stmt,
+            $storage,
+            $codebase,
+            $file_storage,
+            $classlike_storage,
+        );
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
@@ -1526,6 +1455,119 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * Handles `@param-out`, `@param-closure-this`, `@psalm-self-out` and `@psalm-if-this-is`.
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, non-empty-array<string, Union>> $function_template_types
+     * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @return array<string, non-empty-array<string, Union>>
+     */
+    private static function handleOutAndThisTags(
+        FunctionDocblockComment $docblock_info,
+        Aliases $aliases,
+        array $function_template_types,
+        array $class_template_types,
+        array $type_aliases,
+        string $cased_function_id,
+        FileScanner $file_scanner,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionLikeStorage $storage,
+        Codebase $codebase,
+        FileStorage $file_storage,
+        ?ClassLikeStorage $classlike_storage,
+    ): array {
+        foreach ($docblock_info->params_out as $docblock_param_out) {
+            self::handleParamTag(
+                $docblock_param_out,
+                $aliases,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $cased_function_id,
+                $file_scanner,
+                $stmt,
+                $storage,
+                $codebase,
+                $file_storage,
+                null,
+            );
+        }
+
+        foreach ($docblock_info->params_closure_this as $docblock_param_closure_this) {
+            self::handleParamTag(
+                $docblock_param_closure_this,
+                $aliases,
+                $function_template_types,
+                $class_template_types,
+                $type_aliases,
+                $cased_function_id,
+                $file_scanner,
+                $stmt,
+                $storage,
+                $codebase,
+                $file_storage,
+                $classlike_storage,
+                true,
+            );
+        }
+
+        if (!$storage instanceof MethodStorage) {
+            return $function_template_types;
+        }
+
+        if ($docblock_info->self_out) {
+            try {
+                [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
+                    $docblock_info->self_out['type'],
+                    $aliases,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                    $storage,
+                    $classlike_storage,
+                    $cased_function_id,
+                    $function_template_types,
+                );
+
+                $storage->self_out_type = TypeParser::parseTokens(
+                    array_values($fixed_type_tokens),
+                    null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                );
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
+        }
+
+        if ($docblock_info->if_this_is) {
+            try {
+                $storage->if_this_is_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->if_this_is['type'],
+                        $aliases,
+                        $function_template_types + $class_template_types,
+                        $type_aliases,
+                        $classlike_storage ? $classlike_storage->name : null,
+                    ),
+                    null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
+                );
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
+        }
+
+        return $function_template_types;
     }
 
     /**

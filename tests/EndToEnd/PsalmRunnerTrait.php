@@ -28,6 +28,7 @@ trait PsalmRunnerTrait
      * Kept in sync with CliUtils::runningUnderAiAgent().
      *
      * @return array<string, false>
+     * @psalm-pure
      */
     private static function agentEnvVarsToUnset(): array
     {

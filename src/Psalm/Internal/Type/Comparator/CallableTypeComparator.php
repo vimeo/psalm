@@ -477,11 +477,15 @@ final class CallableTypeComparator
                             new Union([$container_type_part]),
                         );
 
-                        $callable = TemplateInferredTypeReplacer::replace(
+                        $replaced = TemplateInferredTypeReplacer::replace(
                             new Union([$callable]),
                             $template_result,
                             $codebase,
                         )->getSingleAtomic();
+
+                        if ($replaced instanceof TCallable) {
+                            $callable = $replaced;
+                        }
                     }
 
                     return $callable;

@@ -1448,6 +1448,7 @@ final class TypeParser
      * string pseudo-types or has no known single-atomic equivalent.
      *
      * @param non-empty-array<array-key, Atomic> $intersection_types
+     * @psalm-pure
      */
     private static function collapseStringPseudoTypeIntersection(
         array $intersection_types,
@@ -1484,6 +1485,8 @@ final class TypeParser
      * (e.g. `non-falsy-string & lowercase-string`, which has no single-token
      * equivalent). Widening such cases to `non-empty-lowercase-string` would
      * silently drop the non-falsy constraint.
+     *
+     * @psalm-pure
      */
     private static function intersectStringPseudoTypePair(
         TString $a,

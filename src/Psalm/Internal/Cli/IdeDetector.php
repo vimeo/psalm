@@ -24,6 +24,7 @@ final class IdeDetector
 
     /**
      * @return self::IDE_*|null
+     * @psalm-capabilities read-globals
      */
     public static function detect(): ?string
     {

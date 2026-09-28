@@ -273,6 +273,8 @@ final class Psalter
             chdir($current_dir);
         }
         
+        $in_ci = CliUtils::runningInCI();
+
         $threads = Psalm::getThreads($options, $config, false);
         $scanThreads = Psalm::getThreads($options, $config, true);
 

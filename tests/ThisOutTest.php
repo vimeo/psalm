@@ -227,6 +227,7 @@ final class ThisOutTest extends TestCase
 
     /**
      * @return array<string, array{code: string, error_message: string}>
+     * @psalm-pure
      */
     #[Override]
     public function providerInvalidCodeParse(): iterable

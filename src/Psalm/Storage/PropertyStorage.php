@@ -105,6 +105,7 @@ final class PropertyStorage implements HasAttributesInterface
 
     /**
      * @param ClassLikeAnalyzer::VISIBILITY_* $visibility
+     * @psalm-pure
      */
     public static function getVisibilityText(int $visibility): string
     {
@@ -115,6 +116,9 @@ final class PropertyStorage implements HasAttributesInterface
         };
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public function hasAsymmetricVisibility(): bool
     {
         return $this->set_visibility !== $this->visibility;
