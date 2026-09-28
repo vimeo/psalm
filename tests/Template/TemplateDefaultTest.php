@@ -940,6 +940,28 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'int',
                 ],
             ],
+            // passing `null` for `(callable(): T)|null $f` gives T a lower bound that's
+            // only a placeholder (from_unbound_template_fallback), not real inferred
+            // content — the constructor argument never actually names T. NewAnalyzer
+            // must still fall through to the declared default here, the same as it does
+            // when the argument is omitted entirely.
+            'constructorFallbackPlaceholderDoesNotBlockDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     */
+                    class Box {
+                        /** @param (callable(): T)|null $f */
+                        public function __construct($f = null) {}
+                    }
+
+                    $a = new Box();
+                    $b = new Box(null);',
+                'assertions' => [
+                    '$a===' => 'Box<string>',
+                    '$b===' => 'Box<string>',
+                ],
+            ],
         ];
     }
 
