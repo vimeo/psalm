@@ -532,6 +532,34 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'wildcardPurityInOverrideOfImpureCallableParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param callable(int): bool|null $f */
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(1) ? 1 : 0;
+                        }
+
+                        /** @param Closure[_](int): int $g */
+                        public function map(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param callable[_](int): bool|null $f */
+                        #[Override]
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(2) ? 1 : 0;
+                        }
+
+                        /** @param Closure(int): int $g */
+                        #[Override]
+                        public function map(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
             'classPurityTemplateLowerBound' => [
                 'code' => '<?php
                     final class Box {
