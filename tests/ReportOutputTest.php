@@ -686,6 +686,17 @@ final class ReportOutputTest extends TestCase
             $cross_file_report->create(),
         );
 
+        // eval/include traces stop before the sink, so the issue location is appended as the endpoint
+        $no_sink_report = new CompactReport(
+            [$make_issue([$source_node, $var_node])],
+            [],
+            $report_options,
+        );
+        $this->assertSame(
+            "test.php:10:1 TaintedShell [2]\n  \$_GET['query']@5 → \$cmd → sink@10\n",
+            $no_sink_report->create(),
+        );
+
         // Custom taints share one issue type, so the message carrying the taint name is kept
         $custom_report = new CompactReport(
             [$make_issue([$source_node, $sink_node], 'TaintedCustom', 'Detected tainted custom_foo')],

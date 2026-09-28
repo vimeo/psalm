@@ -97,6 +97,12 @@ final class CompactReport extends Report
         $sink_file = $issue_data->file_name;
         $parts = [];
         $last_idx = count($app_nodes) - 1;
+        // The trace stops at the sink's predecessor, which is the "call to ..." node for function
+        // sinks but not for eval, include and the like, so the sink itself may be missing
+        $last_line = $app_nodes[$last_idx]->line_from;
+        $ends_at_sink = $app_nodes[$last_idx]->file_name === $sink_file
+            && $last_line >= $issue_data->line_from
+            && $last_line <= $issue_data->line_to;
 
         foreach ($app_nodes as $i => $node) {
             $label = $node->label;
@@ -108,13 +114,17 @@ final class CompactReport extends Report
                 } else {
                     $label .= '@[' . $node->file_name . ':' . $node->line_from . ']';
                 }
-            } elseif ($i === $last_idx) {
+            } elseif ($i === $last_idx && $ends_at_sink) {
                 // Sink: annotate with line number
                 $label .= '@' . $node->line_from;
             }
             // Intermediate nodes: label only, no line numbers
 
             $parts[] = $label;
+        }
+
+        if (!$ends_at_sink) {
+            $parts[] = 'sink@' . $issue_data->line_from;
         }
 
         return $parts;
