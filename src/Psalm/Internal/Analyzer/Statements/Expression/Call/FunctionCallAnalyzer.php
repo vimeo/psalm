@@ -787,7 +787,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
                         $stmt,
-                        null,
+                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                            ? Capabilities::NONE
+                            : null,
                         false,
                         $function_call_info->function_storage,
                     )) {
@@ -1304,6 +1306,58 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * A call of a closure or callable parameter of the function or method being analysed whose
+     * purity is fixed: with a `_` purity (`Closure[_]`), the call would be charged to the callers,
+     * so it is left out of the purity inferred for the function-like, which records the parameter
+     * for `--alter` to add the `_` along with the purity annotation.
+     */
+    private static function isPurityWildcardCandidate(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $var_type_part,
+    ): bool {
+        $source = $statements_analyzer->getSource();
+
+        if (!$function_name instanceof PhpParser\Node\Expr\Variable
+            || !is_string($function_name->name)
+            || !$source instanceof FunctionLikeAnalyzer
+            || $source instanceof ClosureAnalyzer
+            || !$source->track_mutations
+            || !$var_type_part->hasFixedPurity()
+            || $var_type_part->getCapabilities() === Capabilities::NONE
+        ) {
+            return false;
+        }
+
+        foreach ($source->getStorage()->params as $param) {
+            if ($param->name !== $function_name->name) {
+                continue;
+            }
+
+            if ($param->by_ref
+                || $param->type === null
+                || $source->isParamReassigned($param->name)
+            ) {
+                return false;
+            }
+
+            foreach ($param->type->getAtomicTypes() as $atomic) {
+                if (($atomic instanceof TClosure || $atomic instanceof TCallable)
+                    && $atomic->hasFixedPurity()
+                ) {
+                    $source->purity_wildcard_candidates[$param->name] = true;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return false;
     }
 
     /**

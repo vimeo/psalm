@@ -11,6 +11,13 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_pop;
+use function count;
+use function ctype_space;
+use function in_array;
+use function preg_match;
+use function strlen;
+
 /**
  * The `_` purity of a closure type in a parameter (`Closure[_](): int $f`): shorthand for a
  * purity template of the function-like, which inherits its purity from that parameter, like
@@ -34,6 +41,85 @@ final class PurityWildcard
             [new TTemplateParam(self::NAME, new Union([new TCapabilities(Capabilities::ALL)]), '')],
             ['from_docblock' => $from_docblock],
         );
+    }
+
+    /**
+     * The docblock type with the `_` purity added to its closure and callable types, or null if it
+     * has none without a purity: those it is a union of, not those of their parameters, return
+     * types or type arguments (`Closure(Closure(): int): int|null` becomes
+     * `Closure[_](Closure(): int): int|null`).
+     *
+     * @psalm-pure
+     */
+    public static function addToTypeString(string $type): ?string
+    {
+        $result = '';
+        $changed = false;
+        /** @var list<'params'|'group'|'generic'> $stack */
+        $stack = [];
+        // whether we are in the return type of a callable, and whether the enclosing groups are
+        $in_return = false;
+        /** @var list<bool> $group_in_return */
+        $group_in_return = [];
+        $previous = '';
+        $length = strlen($type);
+
+        for ($i = 0; $i < $length; $i++) {
+            if (preg_match('/\G(?<![\w\\\\-])(\\\\?Closure|callable)(?![\w-])/', $type, $matches, 0, $i)) {
+                $keyword = $matches[1];
+                $result .= $keyword;
+                $i += strlen($keyword) - 1;
+
+                if (!preg_match('/\G\s*\[/', $type, $_, 0, $i + 1)
+                    && !$in_return
+                    && !in_array('params', $stack, true)
+                    && !in_array('generic', $stack, true)
+                ) {
+                    $result .= '[' . self::NAME . ']';
+                    $changed = true;
+                }
+
+                $previous = 'keyword';
+                continue;
+            }
+
+            $char = $type[$i];
+            $top_level = !in_array('params', $stack, true) && !in_array('generic', $stack, true);
+
+            if ($char === '(') {
+                if ($previous === 'keyword' || $previous === ']') {
+                    $stack[] = 'params';
+                } else {
+                    $stack[] = 'group';
+                    $group_in_return[] = $in_return;
+                }
+            } elseif ($char === '<' || $char === '{' || $char === '[') {
+                $stack[] = 'generic';
+            } elseif ($char === ')' || $char === '>' || $char === '}' || $char === ']') {
+                $popped = array_pop($stack);
+
+                if ($popped === 'params') {
+                    if (preg_match('/\G\)\s*:/', $type, $_, 0, $i)
+                        && !in_array('params', $stack, true)
+                        && !in_array('generic', $stack, true)
+                    ) {
+                        $in_return = true;
+                    }
+                } elseif ($popped === 'group') {
+                    $in_return = (bool) array_pop($group_in_return);
+                }
+            } elseif ($char === '|' && $top_level) {
+                $in_return = $group_in_return ? $group_in_return[count($group_in_return) - 1] : false;
+            }
+
+            if (!ctype_space($char)) {
+                $previous = $char;
+            }
+
+            $result .= $char;
+        }
+
+        return $changed ? $result : null;
     }
 
     /**
