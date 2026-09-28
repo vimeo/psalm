@@ -49,6 +49,33 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '7.4',
         ];
+
+        yield 'classPolyfilledByProjectBelowItsVersion' => [
+            'code' => '<?php
+                interface Stringable {
+                    public function __toString(): string;
+                }
+
+                final class A implements Stringable {
+                    public function __toString(): string { return ""; }
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'stubShapeKeptBelowItsVersion' => [
+            'code' => '<?php
+                /** @psalm-suppress UndefinedClass, UndefinedPropertyFetch */
+                function f(UnitEnum $e): string {
+                    return $e->name;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
     }
 
     #[Override]
@@ -73,6 +100,44 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'UndefinedDocblockClass',
             'ignored_issues' => [],
             'php_version' => '7.4',
+        ];
+
+        yield 'interfaceBelowItsVersion' => [
+            'code' => '<?php
+                final class A implements Stringable {
+                    public function __toString(): string { return ""; }
+                }
+            ',
+            'error_message' => 'UndefinedClass',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'propertyInheritsItsClassVersion' => [
+            'code' => '<?php
+                /** @psalm-suppress UndefinedClass */
+                function f(UnitEnum $e): string {
+                    return $e->name;
+                }
+            ',
+            'error_message' => 'UndefinedPropertyFetch',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'attributeBelowItsVersion' => [
+            'code' => '<?php
+                // No polyfill and analysing below 8.5, so #[\NoDiscard] is not available: Psalm
+                // reports it as an undefined attribute class (enforcement is orthogonal).
+                #[\NoDiscard]
+                function f(): int { return 1; }
+
+                $x = f();
+                echo $x;
+            ',
+            'error_message' => 'UndefinedAttributeClass',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
     }
 }
