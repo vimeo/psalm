@@ -553,8 +553,11 @@ final class Scanner
                 || $this->codebase->all_functions_global
             ) {
                 foreach ($file_storage->functions as $function_storage) {
+                    // like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native
+                    // function the analysed version predates doesn't replace the native signature
                     if ($function_storage->cased_name
                         && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
+                        && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
                     ) {
                         $this->codebase->functions->addGlobalFunction(
                             $function_storage->cased_name,

@@ -993,10 +993,15 @@ final class FunctionLikeNodeScanner
                     && ($this->codebase->register_stub_files
                         || !$this->codebase->functions->hasStubbedFunction($function_id))
                 ) {
-                    $this->codebase->functions->addGlobalFunction(
-                        $function_id,
-                        $this->file_storage->functions[$function_id],
-                    );
+                    // see the polyfill rule where the function is first registered
+                    if ($this->codebase->register_stub_files
+                        || InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                    ) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_id,
+                            $this->file_storage->functions[$function_id],
+                        );
+                    }
 
                     $storage = $this->storage = $this->file_storage->functions[$function_id];
 
