@@ -349,24 +349,24 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             && $class_storage->since_php_version_id !== null
             && $codebase->analysis_php_version_id < $class_storage->since_php_version_id
             && !($options->from_attribute && $codebase->analysis_php_version_id < 8_00_00)
-            && !$codebase->isClassLikePolyfilled($fq_class_name)
+            && !$codebase->isClassLikePolyfilled($class_storage->name)
         ) {
-            $message = $fq_class_name . ' '
+            $message = $class_storage->name . ' '
                 . $codebase->getUnavailableSymbolMessageSuffix($class_storage->since_php_version_id);
 
             if ($options->from_docblock) {
                 IssueBuffer::maybeAdd(
-                    new UndefinedDocblockClass($message, $code_location, $fq_class_name),
+                    new UndefinedDocblockClass($message, $code_location, $class_storage->name),
                     $suppressed_issues,
                 );
             } elseif ($options->from_attribute) {
                 IssueBuffer::maybeAdd(
-                    new UndefinedAttributeClass($message, $code_location, $fq_class_name),
+                    new UndefinedAttributeClass($message, $code_location, $class_storage->name),
                     $suppressed_issues,
                 );
             } else {
                 IssueBuffer::maybeAdd(
-                    new UndefinedClass($message, $code_location, $fq_class_name),
+                    new UndefinedClass($message, $code_location, $class_storage->name),
                     $suppressed_issues,
                 );
             }
