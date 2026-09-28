@@ -510,6 +510,26 @@ final class PurityTemplateTest extends TestCase
                         });
                     }',
             ],
+            'wildcardPurityInNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use Closure;
+
+                    /**
+                     * @psalm-pure
+                     * @param Closure[_](): int $f
+                     * @param ?callable[_](): int $g
+                     */
+                    function apply(Closure $f, ?callable $g = null): int {
+                        return $f() + ($g !== null ? $g() : 0);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return apply(fn(): int => 1, fn(): int => 2);
+                    }',
+            ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
                     abstract class Base {
