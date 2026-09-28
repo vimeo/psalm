@@ -89,63 +89,15 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer->getSuppressedIssues(),
         );
 
-        if ($class_storage->user_defined
-            && $context->self
-            && ($context->collect_mutations || $context->collect_initializations)
-        ) {
-            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-
-            if (!$appearing_method_id) {
-                return;
-            }
-
-            $appearing_method_class_name = $appearing_method_id->fq_class_name;
-
-            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
-                $old_context_include_location = $context->include_location;
-                $old_self = $context->self;
-                $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-                $context->self = $appearing_method_class_name;
-
-                $file_analyzer = $statements_analyzer->getFileAnalyzer();
-
-                if ($context->collect_mutations) {
-                    $file_analyzer->getMethodMutations($appearing_method_id, $context);
-                } else {
-                    // collecting initializations
-                    $local_vars_in_scope = [];
-                    $local_vars_possibly_in_scope = [];
-
-                    foreach ($context->vars_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                        }
-                    }
-
-                    foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                        }
-                    }
-
-                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        $context->initialized_methods[(string) $appearing_method_id] = true;
-
-                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
-
-                        foreach ($local_vars_in_scope as $var => $type) {
-                            $context->vars_in_scope[$var] = $type;
-                        }
-
-                        foreach ($local_vars_possibly_in_scope as $var => $type) {
-                            $context->vars_possibly_in_scope[$var] = $type;
-                        }
-                    }
-                }
-
-                $context->include_location = $old_context_include_location;
-                $context->self = $old_self;
-            }
+        if (!self::collectParentMutationsOrInitializations(
+            $codebase,
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $class_storage,
+            $method_id,
+        )) {
+            return;
         }
 
         $found_generic_params = ClassTemplateParamCollector::collect(
@@ -629,6 +581,86 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         return $return_type_candidate;
+    }
+
+    /**
+     * When calling a method that's collecting mutations or initializations (e.g. analyzing
+     * a subclass constructor that calls `parent::__construct()`), and the called method
+     * appears on a class the current `self` context extends, runs that parent method's
+     * mutations/initializations against $context so its effects (property types set,
+     * assertions recorded) are visible to the caller.
+     *
+     * @return bool false means the caller should return early (mirrors the original inline
+     *     `return;` for a method with no appearing id)
+     */
+    private static function collectParentMutationsOrInitializations(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $method_id,
+    ): bool {
+        if ($class_storage->user_defined
+            && $context->self
+            && ($context->collect_mutations || $context->collect_initializations)
+        ) {
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            if (!$appearing_method_id) {
+                return false;
+            }
+
+            $appearing_method_class_name = $appearing_method_id->fq_class_name;
+
+            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+                $old_context_include_location = $context->include_location;
+                $old_self = $context->self;
+                $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                $context->self = $appearing_method_class_name;
+
+                $file_analyzer = $statements_analyzer->getFileAnalyzer();
+
+                if ($context->collect_mutations) {
+                    $file_analyzer->getMethodMutations($appearing_method_id, $context);
+                } else {
+                    // collecting initializations
+                    $local_vars_in_scope = [];
+                    $local_vars_possibly_in_scope = [];
+
+                    foreach ($context->vars_in_scope as $var => $_) {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                        }
+                    }
+
+                    foreach ($context->vars_possibly_in_scope as $var => $_) {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                        }
+                    }
+
+                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
+                        $context->initialized_methods[(string) $appearing_method_id] = true;
+
+                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
+
+                        foreach ($local_vars_in_scope as $var => $type) {
+                            $context->vars_in_scope[$var] = $type;
+                        }
+
+                        foreach ($local_vars_possibly_in_scope as $var => $type) {
+                            $context->vars_possibly_in_scope[$var] = $type;
+                        }
+                    }
+                }
+
+                $context->include_location = $old_context_include_location;
+                $context->self = $old_self;
+            }
+        }
+
+        return true;
     }
 
     /**
