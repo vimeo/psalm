@@ -592,6 +592,7 @@ final class TypeExpander
     ): TNamedObject|TTemplateParam {
         if ($expand_generic
             && $return_type::class === TNamedObject::class
+            && !$return_type->is_static
             && !$return_type->extra_types
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {

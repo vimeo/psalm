@@ -14,6 +14,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -90,6 +91,24 @@ final class ClassTemplateParamCollector
 
         if (!$template_types) {
             return null;
+        }
+
+        // A receiver resolved from `static`/`$this` against a generic class can end up
+        // as a bare (non-generic) TNamedObject intersected with the actual TGenericObject
+        // sibling that carries the real type args (e.g. `Foo&Foo<42>`), rather than a
+        // TGenericObject itself. Prefer that sibling so the receiver's real args are used
+        // below instead of falling through to the class-level declared default.
+        if (!$lhs_type_part instanceof TGenericObject
+            && $lhs_type_part instanceof TNamedObject
+        ) {
+            foreach ($lhs_type_part->extra_types as $extra_type) {
+                if ($extra_type instanceof TGenericObject
+                    && $extra_type->value === $lhs_type_part->value
+                ) {
+                    $lhs_type_part = $extra_type;
+                    break;
+                }
+            }
         }
 
         $class_template_params = [];

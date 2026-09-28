@@ -805,6 +805,36 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => '1|2',
                 ],
             ],
+            // `me()` returns `static`, resolved against the receiver `Foo<42>`. That
+            // receiver already carries a real inferred type arg, so the class-level
+            // default for T must not be re-applied when expanding `static` — the
+            // receiver's args win.
+            'staticReturnPreservesReceiverArgsOverClassDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = string
+                     */
+                    class Foo {
+                        /** @var T */
+                        private $v;
+                        /** @param T $v */
+                        public function __construct($v) {
+                            $this->v = $v;
+                        }
+                        /** @return T */
+                        public function get() {
+                            return $this->v;
+                        }
+                        public function me(): static {
+                            return $this;
+                        }
+                    }
+
+                    $r = (new Foo(42))->me()->get();',
+                'assertions' => [
+                    '$r===' => '42',
+                ],
+            ],
         ];
     }
 
