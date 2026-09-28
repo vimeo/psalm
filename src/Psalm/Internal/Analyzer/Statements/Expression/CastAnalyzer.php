@@ -873,8 +873,14 @@ final class CastAnalyzer
                 continue;
             }
 
+            // the value is one of the conditional's branch types; as_type is only the type the
+            // condition tests
             if ($atomic_type instanceof TConditional) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as_type->getAtomicTypes());
+                $atomic_types = array_merge(
+                    $atomic_types,
+                    $atomic_type->if_type->getAtomicTypes(),
+                    $atomic_type->else_type->getAtomicTypes(),
+                );
 
                 continue;
             }

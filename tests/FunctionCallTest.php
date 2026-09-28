@@ -2968,6 +2968,17 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'castConditionalParamTypeToString' => [
+                'code' => '<?php
+                    /**
+                     * @param ($flag is 0 ? int : array) $in
+                     * @param 0|1 $flag
+                     */
+                    function test($in, int $flag): string {
+                        return (string) $in;
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
             'templateTypesInParams' => [
                 'code' => '<?php
                     /** 
