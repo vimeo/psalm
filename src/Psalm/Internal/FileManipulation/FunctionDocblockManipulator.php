@@ -14,6 +14,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Storage\Capabilities;
 
 use function array_key_exists;
@@ -25,6 +26,7 @@ use function is_string;
 use function ltrim;
 use function preg_match;
 use function reset;
+use function rtrim;
 use function str_replace;
 use function str_split;
 use function strlen;
@@ -88,6 +90,13 @@ final class FunctionDocblockManipulator
 
     /** @var list<string> */
     private array $throwsExceptions = [];
+
+    /**
+     * The parameters to give the `_` purity ({@see PurityWildcard})
+     *
+     * @var list<string>
+     */
+    private array $purity_wildcards = [];
 
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
@@ -406,6 +415,40 @@ final class FunctionDocblockManipulator
             }
         }
 
+        foreach ($this->purity_wildcards as $param_name) {
+            $found_in_params = false;
+
+            foreach (['psalm-param', 'phpstan-param', 'param'] as $tag) {
+                foreach ($parsed_docblock->tags[$tag] ?? [] as $offset => $param_block) {
+                    $doc_parts = CommentAnalyzer::splitDocLine($param_block);
+
+                    if (($doc_parts[1] ?? null) !== '$' . $param_name
+                        && ($doc_parts[1] ?? null) !== '...$' . $param_name
+                    ) {
+                        continue;
+                    }
+
+                    $found_in_params = true;
+                    $new_type = PurityWildcard::addToTypeString($doc_parts[0]);
+
+                    if ($new_type !== null) {
+                        $modified_docblock = true;
+                        $parsed_docblock->tags[$tag][$offset] = rtrim($new_type
+                            . substr($param_block, strpos($param_block, $doc_parts[0]) + strlen($doc_parts[0])));
+                    }
+                }
+            }
+
+            if (!$found_in_params) {
+                $new_type = PurityWildcard::addToTypeString($this->getNativeParamType($param_name) ?? '');
+
+                if ($new_type !== null) {
+                    $modified_docblock = true;
+                    $parsed_docblock->tags['param'][] = $new_type . ' $' . $param_name;
+                }
+            }
+        }
+
         $old_phpdoc_return_type = null;
         if (isset($parsed_docblock->tags['return'])) {
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
@@ -520,6 +563,7 @@ final class FunctionDocblockManipulator
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
                 || $manipulator->capabilities !== null
+                || $manipulator->purity_wildcards !== []
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -573,6 +617,74 @@ final class FunctionDocblockManipulator
     public function setCapabilities(int $capabilities): void
     {
         $this->capabilities = $capabilities;
+    }
+
+    /**
+     * Gives the closure and callable types of the parameters the `_` purity (`Closure[_]`).
+     *
+     * @param list<string> $param_names
+     * @psalm-external-mutation-free
+     */
+    public function addPurityWildcards(array $param_names): void
+    {
+        $this->purity_wildcards = $param_names;
+    }
+
+    /**
+     * The native type of the parameter as written.
+     *
+     * @psalm-mutation-free
+     */
+    private function getNativeParamType(string $param_name): ?string
+    {
+        foreach ($this->stmt->getParams() as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable
+                && $param->var->name === $param_name
+                && $param->type !== null
+            ) {
+                return self::getNativeTypeString($param->type);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getNativeTypeString(PhpParser\Node $type): ?string
+    {
+        if ($type instanceof PhpParser\Node\Identifier) {
+            return $type->toString();
+        }
+
+        if ($type instanceof PhpParser\Node\Name) {
+            return $type->toCodeString();
+        }
+
+        if ($type instanceof PhpParser\Node\NullableType) {
+            $inner = self::getNativeTypeString($type->type);
+
+            return $inner === null ? null : '?' . $inner;
+        }
+
+        if ($type instanceof PhpParser\Node\UnionType) {
+            $types = [];
+
+            foreach ($type->types as $inner_type) {
+                $inner = self::getNativeTypeString($inner_type);
+
+                if ($inner === null) {
+                    return null;
+                }
+
+                $types[] = $inner;
+            }
+
+            return implode('|', $types);
+        }
+
+        return null;
     }
 
     /**
