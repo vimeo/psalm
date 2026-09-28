@@ -26,8 +26,10 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -45,6 +47,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 
 use function array_filter;
 use function array_unique;
@@ -205,10 +208,40 @@ trait UnionTrait
      */
     public function getId(bool $exact = true): string
     {
-        if ($exact && $this->exact_id) {
-            return $this->exact_id;
-        } elseif (!$exact && $this->id) {
-            return $this->id;
+        // A type variable (see TTypeVariable) renders through bounds that keep
+        // accumulating in its TypeVariableTracker as it flows through a function-like's
+        // body, so its rendered id is not stable for the lifetime of this Union — caching
+        // it here would freeze whatever partial state happened to be recorded the first
+        // time this exact Union instance was asked for its id, even though later reads
+        // (e.g. the test harness, or a later statement) are meant to see its current
+        // state. A type variable only ever appears directly in a Union or one level down,
+        // as an object's own type param (e.g. `Container<`_0>`), never nested deeper, so
+        // this check is bounded rather than a full recursive walk of the type tree.
+        $skip_cache = false;
+        foreach ($this->types as $type) {
+            if ($type instanceof TTypeVariable) {
+                $skip_cache = true;
+                break;
+            }
+
+            if ($type instanceof TArray || $type instanceof TGenericObject || $type instanceof TIterable) {
+                foreach ($type->type_params as $type_param) {
+                    foreach ($type_param->getAtomicTypes() as $type_param_atomic) {
+                        if ($type_param_atomic instanceof TTypeVariable) {
+                            $skip_cache = true;
+                            break 3;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$skip_cache) {
+            if ($exact && $this->exact_id) {
+                return $this->exact_id;
+            } elseif (!$exact && $this->id) {
+                return $this->id;
+            }
         }
 
         $types = [];
@@ -228,12 +261,14 @@ trait UnionTrait
 
         $id = implode('|', $types);
 
-        if ($exact) {
-            /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
-            $this->exact_id = $id;
-        } else {
-            /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
-            $this->id = $id;
+        if (!$skip_cache) {
+            if ($exact) {
+                /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
+                $this->exact_id = $id;
+            } else {
+                /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
+                $this->id = $id;
+            }
         }
 
         return $id;
