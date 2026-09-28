@@ -426,6 +426,32 @@ final class ClassLikeNodeScanner
                             <=> [in_array($r[0], $purity_templates, true), $r[4]],
                 );
 
+                // but the bounds of the type templates may use them (`TIterator as Traversable[P]<K, V>`):
+                // their own bounds are capability sets, which use no other template
+                $purity_template_types = [];
+
+                foreach ($docblock_info->templates as $template_map) {
+                    if (in_array($template_map[0], $purity_templates, true) && $template_map[2] !== null) {
+                        try {
+                            $purity_template_types[$template_map[0]] = [
+                                $fq_classlike_name => TypeParser::parseTokens(
+                                    TypeTokenizer::getFullyQualifiedTokens(
+                                        CommentAnalyzer::sanitizeDocblockType($template_map[2]),
+                                        $this->aliases,
+                                        null,
+                                        $this->type_aliases,
+                                    ),
+                                    null,
+                                    [],
+                                    $this->type_aliases,
+                                ),
+                            ];
+                        } catch (TypeParseTreeException) {
+                            // reported below
+                        }
+                    }
+                }
+
                 foreach ($docblock_info->templates as $i => $template_map) {
                     $template_name = $template_map[0];
 
@@ -447,11 +473,11 @@ final class ClassLikeNodeScanner
                                     TypeTokenizer::getFullyQualifiedTokens(
                                         $type_string,
                                         $this->aliases,
-                                        $storage->template_types,
+                                        $storage->template_types + $purity_template_types,
                                         $this->type_aliases,
                                     ),
                                     null,
-                                    $storage->template_types,
+                                    $storage->template_types + $purity_template_types,
                                     $this->type_aliases,
                                 );
                             } catch (TypeParseTreeException $e) {

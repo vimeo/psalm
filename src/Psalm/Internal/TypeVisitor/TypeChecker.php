@@ -233,6 +233,22 @@ final class TypeChecker extends TypeVisitor
         $expected_type_param_keys = array_keys($expected_type_params);
         $template_result = new TemplateResult($expected_type_params, []);
 
+        // the bounds of type templates may use purity templates, which come after them
+        foreach ($atomic->type_params as $i => $type_param) {
+            $expected_template_name = $expected_type_param_keys[$i] ?? null;
+
+            if ($expected_template_name === null || !Capabilities::isPurityType($type_param)) {
+                continue;
+            }
+
+            foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
+                if (Capabilities::isPurityType($expected_type_param)) {
+                    $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                        = new TemplateBound($type_param);
+                }
+            }
+        }
+
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
                 && $this->source->getMethodName() !== '__construct'

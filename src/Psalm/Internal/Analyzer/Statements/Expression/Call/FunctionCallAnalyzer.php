@@ -1196,7 +1196,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         ) {
             $must_use = true;
 
-            $mutations = $function_call_info->function_id && $function_call_info->in_call_map
+            // a builtin whose stub says which templates its purity comes from is taken at its word
+            $purity_from_stub = $function_call_info->in_call_map
+                && $function_call_info->is_stubbed
+                && $function_call_info->function_storage
+                && $function_call_info->function_storage->purity_from_templates !== [];
+
+            $mutations = $function_call_info->function_id && $function_call_info->in_call_map && !$purity_from_stub
                 ? $codebase->functions->getCallMapFunctionCapabilities(
                     $statements_analyzer,
                     $context,
@@ -1205,7 +1211,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     $must_use,
                 )
-                : (!$function_call_info->in_call_map
+                : ((!$function_call_info->in_call_map || $purity_from_stub)
                     && $function_call_info->function_storage
                     // @psalm-purity-from-template: plus the capabilities of the closures passed
                     ? CallPurityResolver::getCallCapabilities(

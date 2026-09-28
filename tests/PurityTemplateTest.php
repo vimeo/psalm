@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * `@psalm-purity-template` / `@psalm-purity-from-template`: function-likes whose purity depends
  * on the closures they are given, and classes whose purity depends on their subclass or on
@@ -557,6 +559,293 @@ final class PurityTemplateTest extends TestCase
                     function useDefault(DefaultDoer $d, Box $b): int {
                         return $d->run($b);
                     }',
+            ],
+            'builtinSortsInheritTheComparatorsPurity' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<string, int> $xs
+                     * @return array<string, int>
+                     */
+                    function sortAll(array $xs): array {
+                        uasort($xs, fn(int $a, int $b): int => $a <=> $b);
+                        uksort($xs, "strcmp");
+                        $ys = array_values($xs);
+                        usort($ys, fn(int $a, int $b): int => $b <=> $a);
+                        return $xs;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param list<int> $xs
+                     * @param Closure[P](int, int): int $cmp
+                     * @return list<int>
+                     * @psalm-purity-from-template P
+                     */
+                    function sortWith(array $xs, Closure $cmp): array {
+                        usort($xs, $cmp); // deferred to the callers of sortWith
+                        return $xs;
+                    }',
+            ],
+            'builtinIteratorFunctionsInheritTheIterationPurity' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        return 1;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Iterator[pure]<int, string> $it
+                     * @param list<int> $xs
+                     */
+                    function consume(Iterator $it, array $xs): int {
+                        $all = iterator_to_array($it);
+                        return count($all)
+                            + iterator_count(gen())
+                            + iterator_count($xs)
+                            + iterator_apply(gen(), fn(): bool => true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'pregReplaceCallbackArrayInheritsTheCallbacksPurity' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function replace(string $s): ?string {
+                        return preg_replace_callback_array(
+                            [
+                                "/a/" => fn(array $m): string => "b",
+                                "/c/" => fn(array $m): string => "d",
+                            ],
+                            $s,
+                        );
+                    }',
+            ],
+            'arrayObjectSortInheritsTheComparatorsPurity' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-capabilities write-props
+                     * @param ArrayObject<int, int> $o
+                     * @param ArrayIterator<int, int> $i
+                     */
+                    function sortBoth(ArrayObject $o, ArrayIterator $i): void {
+                        $o->uasort(fn(int $a, int $b): int => $a <=> $b);
+                        $i->uksort(fn(int $a, int $b): int => $a <=> $b);
+                    }',
+            ],
+            'closureRebindingKeepsTheClosureType' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function rebind(): int {
+                        $c = fn(int $x): int => $x;
+                        $d = Closure::bind($c, null, null);
+                        $e = $c->bindTo(null);
+                        return ($d ? $d(1) : 0) + ($e ? $e(2) : 0);
+                    }
+
+                    /** @psalm-pure */
+                    function fromCallable(): int {
+                        $c = Closure::fromCallable(fn(): int => 1);
+                        return $c();
+                    }',
+                'assertions' => [],
+            ],
+            'closureCallIsACallOfTheClosure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(): int {
+                        $c = fn(int $x): int => $x;
+                        return $c->call(new stdClass, 1);
+                    }
+
+                    $r = (fn(): string => "a")->call(new stdClass);',
+                'assertions' => [
+                    '$r===' => "'a'",
+                ],
+            ],
+            'fiberInheritsTheCallbacksPurity' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function runFiber(): mixed {
+                        $f = new Fiber(function (int $x): int {
+                            $y = Fiber::suspend($x);
+                            return is_int($y) ? $y : 0;
+                        });
+                        $f->start(1);
+                        if (!$f->isTerminated()) {
+                            $f->resume(2);
+                        }
+                        return $f->getReturn();
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Fiber[pure] $f
+                     */
+                    function resumePure(Fiber $f): mixed {
+                        return $f->resume();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'classPurityTemplateInTypeTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {
+                        /**
+                         * @param TIterator $inner
+                         * @psalm-pure
+                         */
+                        public function __construct(Traversable $inner) {}
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template TPurity
+                         */
+                        public function count(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, string, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1 => "a";
+                        return 1;
+                    }
+
+                    /** @psalm-pure */
+                    function countIt(): int {
+                        $w = new Wrapper(gen());
+                        return $w->count();
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Wrapper[pure]<int, int, Iterator[pure]<int, int>> $w
+                     */
+                    function countGiven(Wrapper $w): int {
+                        return $w->count();
+                    }
+
+                    $w = new Wrapper(gen());',
+                'assertions' => [
+                    '$w' => 'Wrapper[pure]<int, string, Generator[pure]<int, string, mixed, int>>',
+                ],
+            ],
+            'forwardedClassPurityTemplateOverrideUsesTheTemplate' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    class Filter {
+                        /**
+                         * @param Closure[P](): bool $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function accept(): bool {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-purity-template P
+                     * @extends Filter[P]
+                     */
+                    final class Negated extends Filter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        #[Override]
+                        public function accept(): bool {
+                            return !parent::accept();
+                        }
+                    }',
+            ],
+            'firstClassCallableOfPurityPolymorphicFunctionTakesAnyClosure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): int $f
+                     * @psalm-purity-from-template P
+                     */
+                    function apply(Closure $f): int {
+                        return $f(1);
+                    }
+
+                    $apply = apply(...);
+                    $r = $apply(fn(int $x): int => $x);',
+                'assertions' => [
+                    '$apply' => 'impure-Closure(impure-Closure(int):int):int',
+                ],
+            ],
+            'splWrapperIteratorsInheritTheirPurity' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        yield 2;
+                        return 2;
+                    }
+
+                    /** @psalm-pure */
+                    function countEvens(): int {
+                        $it = new CallbackFilterIterator(gen(), fn(int $v): bool => $v % 2 === 0);
+                        $n = 0;
+                        foreach ($it as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+
+                    /** @psalm-pure */
+                    function countFirst(): int {
+                        return iterator_count(new LimitIterator(new NoRewindIterator(gen()), 0, 1))
+                            + iterator_count(new IteratorIterator(gen()));
+                    }
+
+                    $it = new CallbackFilterIterator(gen(), fn(int $v): bool => true);',
+                'assertions' => [
+                    '$it' => 'CallbackFilterIterator[pure]<int, int, Generator[pure]<int, int, mixed, int>>',
+                ],
+            ],
+            'promotedPropertyTypedByTemplateWithTemplatedBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable<TKey, TValue>
+                     */
+                    final class Box {
+                        /** @param TIterator $inner */
+                        public function __construct(public Traversable $inner) {}
+                    }
+
+                    $box = new Box(new ArrayIterator([1 => "a"]));',
             ],
         ];
     }
@@ -1216,6 +1505,338 @@ final class PurityTemplateTest extends TestCase
                      */
                     function f(): void {}',
                 'error_message' => 'MissingDocblockType',
+            ],
+            'builtinIteratorFunctionIteratesImpureIterator' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Iterator<int, string> $it
+                     */
+                    function count_it(Iterator $it): int {
+                        return iterator_count($it);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - The context is pure but function call on iterator_count requires impure',
+            ],
+            'iteratorApplyWithImpureCallback' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Iterator[pure]<int, string> $it
+                     */
+                    function apply(Iterator $it): int {
+                        return iterator_apply($it, function (): bool { echo "x"; return true; });
+                    }',
+                'error_message' => 'function call on iterator_apply requires io',
+            ],
+            'pregReplaceCallbackArrayWithImpureCallback' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function replace(string $s): ?string {
+                        return preg_replace_callback_array(
+                            [
+                                "/a/" => fn(array $m): string => "b",
+                                "/c/" => function (array $m): string { echo "x"; return "d"; },
+                            ],
+                            $s,
+                        );
+                    }',
+                'error_message' => 'function call on preg_replace_callback_array requires io',
+            ],
+            'arrayObjectSortWithImpureComparator' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-capabilities write-props
+                     * @param ArrayObject<int, int> $o
+                     */
+                    function sortIt(ArrayObject $o): void {
+                        $o->uasort(function (int $a, int $b): int { echo "x"; return $a <=> $b; });
+                    }',
+                'error_message' => 'method ArrayObject::uasort requires write-props|io',
+            ],
+            'closureRebindingKeepsImpurity' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function rebind(): int {
+                        $c = (function (): int { echo "x"; return 1; })->bindTo(null);
+                        return $c ? $c() : 0;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'closureCallOfImpureClosure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function run(): int {
+                        $c = function (): int { echo "x"; return 1; };
+                        return $c->call(new stdClass);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'closureCallWritesTheNewThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    final class A {
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function reset(Counter $counter): void {
+                            $c = function (): void { $this->n = 0; };
+                            $c->call($counter);
+                        }
+                    }',
+                'error_message' => 'method Closure::call requires write-props',
+            ],
+            'fiberWithImpureCallback' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function runFiber(): mixed {
+                        $f = new Fiber(function (): int { echo "x"; return 1; });
+                        $f->start();
+                        return $f->getReturn();
+                    }',
+                'error_message' => 'method Fiber::start requires io',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classPurityTemplateInTypeTemplateBoundIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {
+                        /**
+                         * @param TIterator $inner
+                         * @psalm-pure
+                         */
+                        public function __construct(Traversable $inner) {}
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template TPurity
+                         */
+                        public function count(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Iterator<int, string> $it
+                     */
+                    function countIt(Iterator $it): int {
+                        $w = new Wrapper($it);
+                        return $w->count();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'classPurityTemplateInTypeTemplateBoundChecksArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {}
+
+                    /** @param Wrapper[pure]<int, int, Iterator[io]<int, int>> $w */
+                    function f(Wrapper $w): void {}',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Extended template param TIterator of Wrapper[pure]<int, int, Iterator[io]<int, int>> expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
+            ],
+            'classPurityTemplateInTypeTemplateBoundChecksExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    abstract class Wrapper {}
+
+                    /** @extends Wrapper[pure]<int, int, Iterator[io]<int, int>> */
+                    final class Bad extends Wrapper {}',
+                'error_message' => 'Extended template param TIterator expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
+            ],
+            'forwardedClassPurityTemplateOverrideCannotDoMore' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    class Filter {
+                        /**
+                         * @param Closure[P](): bool $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function accept(): bool {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-purity-template P
+                     * @extends Filter[P]
+                     */
+                    final class Noisy extends Filter {
+                        /** @psalm-capabilities io */
+                        #[Override]
+                        public function accept(): bool {
+                            echo "x";
+                            return true;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:25 - Filter::accept is read-props, but Noisy::accept additionally requires io',
+            ],
+            'nativeStaticMethodCallIsCharged' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function locale(): string {
+                        return Locale::getDefault();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'firstClassCallableOfPurityPolymorphicFunctionIsImpure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): int $f
+                     * @psalm-purity-from-template P
+                     */
+                    function apply(Closure $f): int {
+                        return $f(1);
+                    }
+
+                    /** @psalm-pure */
+                    function viaCallable(): int {
+                        $apply = apply(...);
+                        return $apply(function (int $x): int { echo "x"; return $x; });
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'invokableObjectCallableCarriesItsBoundPurity' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Task {
+                        /**
+                         * @param Closure[P](): int $f
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $f) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function __invoke(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param pure-callable(): int $c
+                     */
+                    function callIt(callable $c): int {
+                        return $c();
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Task[io] $t
+                     */
+                    function run(Task $t): int {
+                        return callIt($t);
+                    }',
+                'error_message' => 'callable[io]():int provided',
+            ],
+            'callbackFilterIteratorWithImpureCallback' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        return 1;
+                    }
+
+                    /** @psalm-pure */
+                    function countAll(): int {
+                        $it = new CallbackFilterIterator(gen(), function (int $v): bool { echo $v; return true; });
+                        return iterator_count($it);
+                    }',
+                'error_message' => 'function call on iterator_count requires io',
+            ],
+            'userFilterIteratorWithoutPurityIsImpure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        return 1;
+                    }
+
+                    /** @extends FilterIterator<int, int, Iterator<int, int>> */
+                    final class Noisy extends FilterIterator {
+                        #[Override]
+                        public function accept(): bool {
+                            echo "x";
+                            return true;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function countAll(): int {
+                        $n = 0;
+                        foreach (new Noisy(gen()) as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'widenedIteratorMustKeepItsPurity' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {
+                        /**
+                         * @param TIterator $inner
+                         * @psalm-pure
+                         */
+                        public function __construct(public Traversable $inner) {}
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, string, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1 => "a";
+                        return 1;
+                    }
+
+                    /** @param Iterator<int, string> $it */
+                    function swap(Iterator $it): void {
+                        $w = new Wrapper(gen());
+                        $w->inner = $it;
+                    }',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
         ];
     }

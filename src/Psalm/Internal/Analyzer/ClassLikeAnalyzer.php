@@ -750,7 +750,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
 
+            // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
+
+            foreach ($parent_storage->template_types as $template_name => $type_map) {
+                $extended_purity = $storage->template_extended_params[$parent_storage->name][$template_name] ?? null;
+
+                foreach ($type_map as $declaring_class => $template_type) {
+                    if ($extended_purity !== null
+                        && Capabilities::isPurityType($template_type)
+                        && Capabilities::isPurityType($extended_purity)
+                    ) {
+                        $previous_extended[$template_name] = [$declaring_class => $extended_purity];
+                    }
+                }
+            }
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 // declares the variables

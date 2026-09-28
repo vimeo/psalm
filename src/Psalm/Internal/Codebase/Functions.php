@@ -416,6 +416,14 @@ final class Functions
         ?array $args,
         bool &$must_use = true,
     ): int {
+        // a builtin whose stub says which templates its purity comes from is taken at its word
+        // (calls resolve them, see FunctionCallAnalyzer); without a call, they count for their bounds
+        $stub_storage = self::$stubbed_functions[strtolower($function_id)] ?? null;
+
+        if ($stub_storage !== null && $stub_storage->purity_from_templates !== []) {
+            return $stub_storage->getWorstCaseCapabilities();
+        }
+
         $listed_capabilities = ImpureFunctionsList::getCapabilities($function_id);
 
         if ($listed_capabilities !== Capabilities::NONE) {

@@ -457,7 +457,7 @@ final class Repo {
 final class Service {
     /**
      * @psalm-capabilities Storage
-     * @param Closure<Storage>(): void $after
+     * @param Closure[Storage](): void $after
      */
     public function run(Repo $repo, Closure $after): void {
         $repo->save();
@@ -667,6 +667,10 @@ arguments), whatever the order of the tags. Several purity arguments are separat
 (`Pair[pure, io]<int>`), and each is a capability set (`write-props|io`) or a purity template.
 An empty capability set is written `pure`: `Box[]` is always an array of `Box`.
 
+The bounds of type templates may use purity templates, which are then inferred with them: a
+class with `@template TIterator as Traversable[P]<K, V>` and `@psalm-purity-template P`, constructed
+with a `Generator[pure]<int, string, mixed, void>`, is a `Foo[pure]<int, string, Generator[pure]<int, string, mixed, void>>`.
+
 Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
 closures it is given, like Hack's `[ctx $f]` contexts.
 
@@ -785,6 +789,13 @@ it from those methods, as whoever iterates it sees them: a method writing the it
 properties makes it `write-this-props|write-props`. So `MyIterator` is accepted where `Iterator[pure]<int, string>`
 is expected exactly when its iteration methods are pure.
 
+The SPL iterators wrapping another one (`IteratorIterator`, `FilterIterator`, `CallbackFilterIterator`,
+`LimitIterator`, `NoRewindIterator`, `InfiniteIterator`) have a `TPurity` too, bound when they are
+constructed to what iterating over the inner iterator (and calling the callback of a
+`CallbackFilterIterator`) does: `new CallbackFilterIterator(gen(), fn(int $v): bool => $v > 0)` is a
+`CallbackFilterIterator[pure]<...>` when `gen()` returns a `Generator[pure]<...>`. A subclass of
+`FilterIterator` that does not bind `TPurity` iterates impurely, whatever its `accept()` does.
+
 ### `@psalm-purity-from-template`
 
 Used to make a function-like's purity depend on one or more templates: each call needs the
@@ -901,6 +912,21 @@ function runPure(Deferred $deferred): void {
     $deferred->run(); // OK: T is a pure closure
 }
 ```
+
+The builtins that call the closures they are given work the same way: `array_map`, `usort`,
+`preg_replace_callback`, `ArrayObject::uasort`, `Ds\Vector::map`, … need what their callbacks
+need and nothing else, `iterator_to_array` and `iterator_count` what iterating over their
+argument does, and `Fiber` has a purity template for what its callback does, which starting or
+resuming the fiber costs. `Closure::bind()` and `bindTo()` keep the type of the closure they
+rebind, and `$closure->call($newThis, ...)` is a call of the closure that writes `$newThis`
+where the closure writes `$this`.
+
+A subclass may bind a class purity template of its parent to one of its own
+(`@psalm-purity-template P` with `@extends Filter[P]`), which is then bound by each `new`, possibly
+to `pure`. Its overrides may therefore use that template only as the parent does, through
+`@psalm-purity-from-template P`: what they need unconditionally must fit what the parent's method
+needs unconditionally (plus the template's lower bound), like overrides in Hack that may only use
+an abstract context constant through `this::C`.
 
 ### `@psalm-allow-private-mutation`
 

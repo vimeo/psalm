@@ -348,8 +348,12 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * be respectively less than, equal to, or greater than the
      * second.
      *
-     * @param callable(TValue, TValue):int $cmp_function
+     * @psalm-purity-template P
+     * @param callable[P](TValue, TValue):int $cmp_function
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-purity-from-template P
      *
      * @since 5.2.0
      */
@@ -366,8 +370,12 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * be respectively less than, equal to, or greater than the
      * second.
      *
-     * @param callable(TKey, TKey):int $cmp_function The callable comparison function.
+     * @psalm-purity-template P
+     * @param callable[P](TKey, TKey):int $cmp_function The callable comparison function.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-purity-from-template P
      *
      * @since 5.2.0
      */

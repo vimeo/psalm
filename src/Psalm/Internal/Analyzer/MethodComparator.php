@@ -387,8 +387,12 @@ final class MethodComparator
         $guide_capabilities = $guide_method_storage->capabilities;
         $implementer_capabilities = $implementer_method_storage->capabilities;
 
-        // a class-level purity template the implementer's class binds (`@extends Doer<io>`)
-        // is part of what the overridden method needs unconditionally in that class
+        // a class-level purity template the implementer's class binds (`@extends Doer[io]`)
+        // is part of what the overridden method needs unconditionally in that class. One it
+        // forwards to a purity template of its own (`@extends Doer[P]`) is still open: it will be
+        // bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and
+        // an override may use the rest only through `@psalm-purity-from-template P`, like Hack's
+        // abstract context constants
         foreach ($guide_method_storage->purity_from_templates as $template_name) {
             if (!isset($guide_classlike_storage->template_types[$template_name])) {
                 continue;
@@ -397,8 +401,20 @@ final class MethodComparator
             $bound_type = $implementer_classlike_storage
                 ->template_extended_params[$guide_classlike_storage->name][$template_name] ?? null;
 
-            if ($bound_type !== null) {
-                $guide_capabilities |= Capabilities::fromType($bound_type);
+            if ($bound_type === null) {
+                continue;
+            }
+
+            foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
+                if ($bound_atomic instanceof TTemplateParam
+                    && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
+                ) {
+                    $guide_capabilities |= $codebase->classlike_storage_provider
+                        ->get($bound_atomic->defining_class)
+                        ->template_lower_bounds[$bound_atomic->param_name] ?? Capabilities::NONE;
+                } else {
+                    $guide_capabilities |= Capabilities::fromType(new Union([$bound_atomic]));
+                }
             }
         }
 

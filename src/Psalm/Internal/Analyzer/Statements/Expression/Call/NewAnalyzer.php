@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -536,7 +537,14 @@ final class NewAnalyzer extends CallAnalyzer
                         // bounds as lower bounds and the declared constraint as an upper
                         // bound; the bounds reconcile when the surrounding function-like
                         // has been analyzed.
-                        $constraint = array_values($base_type)[0];
+                        // the constraint may name the class's other templates
+                        // (`TIterator as Traversable<TKey, TValue>`): those are what the
+                        // arguments bound them to
+                        $constraint = TemplateInferredTypeReplacer::replace(
+                            array_values($base_type)[0],
+                            $template_result,
+                            $codebase,
+                        );
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
                         if ($fq_class_name !== 'SplObjectStorage'
@@ -1353,6 +1361,16 @@ final class NewAnalyzer extends CallAnalyzer
             if ($property_storage->type) {
                 foreach ($property_storage->type->getTemplateTypes() as $template_type) {
                     unset($unconstrainable[$template_type->param_name]);
+                }
+            }
+        }
+
+        // a purity template is what the object was constructed with: what its methods cost is
+        // charged when they are called, so it cannot be widened by what happens afterwards
+        foreach ($storage->template_types ?? [] as $template_name => $bounds) {
+            foreach ($bounds as $bound) {
+                if (Capabilities::isPurityType($bound)) {
+                    $unconstrainable[$template_name] = true;
                 }
             }
         }

@@ -223,8 +223,14 @@ final class Populator
             return;
         }
 
+        // the iterator interfaces only: the purity template of an iterator class it extends
+        // without binding (`IteratorIterator`) is what that class was constructed with, which
+        // defaults to impure
         foreach ($storage->template_extended_params as $parent_name => $type_map) {
-            if (isset($type_map['TPurity']) && $this->isTraversableLike($parent_name)) {
+            if (isset($type_map['TPurity'])
+                && $this->isTraversableLike($parent_name)
+                && $this->classlike_storage_provider->get($parent_name)->is_interface
+            ) {
                 $storage->template_extended_params[$parent_name]['TPurity']
                     = new Union([new TCapabilities($purity)]);
             }

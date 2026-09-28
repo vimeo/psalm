@@ -399,6 +399,33 @@ final class ExistingAtomicStaticCallAnalyzer
                     ),
                 );
             }
+        } elseif (!$stmt->isFirstClassCallable()) {
+            // a builtin method known from reflection only: it may do what its reflected storage says,
+            // which is anything but for the few known to be pure, as for instance calls
+            $native_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            $native_capabilities = $native_method_id !== null
+                && $codebase->methods->hasStorage($native_method_id)
+                ? $codebase->methods->getStorage($native_method_id)->capabilities
+                : Capabilities::ALL;
+
+            $stmt->setAttribute(
+                NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
+                    | $native_capabilities,
+            );
+
+            $statements_analyzer->signalMutation(
+                $native_capabilities,
+                $context,
+                'method ' . $cased_method_id,
+                ImpureMethodCall::class,
+                $stmt,
+            );
+
+            if (($native_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
         }
 
         if ($codebase->alter_code) {

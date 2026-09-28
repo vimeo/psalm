@@ -44,6 +44,17 @@ use const PHP_VERSION_ID;
 final class Reflection
 {
     /**
+     * Builtin methods known to have no effect. Creating or rebinding a closure is not an effect:
+     * what the closure does is carried by its type, which ClosureReturnTypeProvider keeps.
+     */
+    private const PURE_METHODS = [
+        'datetimezone::__construct' => true,
+        'closure::bind' => true,
+        'closure::bindto' => true,
+        'closure::fromcallable' => true,
+    ];
+
+    /**
      * @var array<string, FunctionStorage>
      */
     private static array $builtin_functions = [];
@@ -278,7 +289,7 @@ final class Reflection
         $storage->is_static = $method->isStatic();
         $storage->abstract = $method->isAbstract();
 
-        if ($method_name_lc === '__construct' && $fq_class_name_lc === 'datetimezone') {
+        if (isset(self::PURE_METHODS[$fq_class_name_lc . '::' . $method_name_lc])) {
             $storage->capabilities = Capabilities::NONE;
         } else {
             $storage->capabilities = Capabilities::ALL;

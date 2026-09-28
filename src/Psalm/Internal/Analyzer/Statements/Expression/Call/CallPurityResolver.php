@@ -12,6 +12,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
@@ -138,7 +139,12 @@ final class CallPurityResolver
             $on_receiver = false;
 
             if ($bound === null) {
-                $bound = self::resolveClassTemplateType($template_name, $class_template_params, $codebase);
+                $bound = self::resolveClassTemplateType(
+                    $template_name,
+                    $class_template_params,
+                    $codebase,
+                    $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
+                );
                 $on_receiver = $receiver_is_this !== null;
             }
 
@@ -226,7 +232,18 @@ final class CallPurityResolver
         string $template_name,
         array $class_template_params,
         Codebase $codebase,
+        ?string $defining_class = null,
     ): ?Union {
+        // the template of the class defining the method, which may share its name with the
+        // templates of the classes extending it (`TPurity` of IteratorIterator and FilterIterator)
+        if ($defining_class !== null && isset($class_template_params[$template_name][$defining_class])) {
+            return self::resolveStandins(
+                $class_template_params[$template_name][$defining_class],
+                $class_template_params,
+                $codebase,
+            );
+        }
+
         if (isset($class_template_params[$template_name])) {
             $type = null;
 

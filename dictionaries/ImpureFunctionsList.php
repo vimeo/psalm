@@ -234,10 +234,8 @@ return [
     'session_cache_limiter' => Capabilities::IO,
     // ldap
     'ldap_set_option' => Capabilities::IO,
-    // iterators
+    // file pointers
     'rewind' => Capabilities::ALL,
-    'iterator_apply' => Capabilities::ALL,
-    'iterator_to_array' => Capabilities::ALL,
     // mysqli
     'mysqli_select_db' => Capabilities::IO,
     'mysqli_dump_debug_info' => Capabilities::IO,

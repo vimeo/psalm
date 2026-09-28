@@ -119,28 +119,68 @@ interface SeekableIterator extends Iterator {
 }
 
 /**
+ * TPurity is what iterating over the inner iterator may do, which is all iterating over the
+ * wrapper does: where it is positioned is engine state, like the position of a generator.
+ *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements OuterIterator<TKey, TValue>
+ * @template-implements OuterIterator[TPurity]<TKey, TValue>
  *
  * @mixin TIterator
  */
 class IteratorIterator implements OuterIterator {
     /**
+     * Wrapping an IteratorAggregate calls its getIterator().
+     *
      * @param TIterator $iterator
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      */
     public function __construct(Traversable $iterator, ?string $class = null) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return Iterator[TPurity]<TKey, TValue>|null
+     */
+    public function getInnerIterator() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey|null current key value or null when iterator is drained
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function key() {}
@@ -267,14 +307,22 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function ksort() { }
 
     /**
-     * @param callable(TValue,TValue):int $cmp_function The compare function used for the sort.
+     * @psalm-purity-template P
+     * @param callable[P](TValue,TValue):int $cmp_function The compare function used for the sort.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-purity-from-template P
      */
     public function uasort($cmp_function) { }
 
     /**
-     * @param callable(TKey,TKey):int $cmp_function The compare function used for the sort.
+     * @psalm-purity-template P
+     * @param callable[P](TKey,TKey):int $cmp_function The compare function used for the sort.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-purity-from-template P
      */
     public function uksort($cmp_function) { }
 
@@ -334,22 +382,55 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 }
 
 /**
+ * Iterating calls accept(): a subclass binding TPurity (`@extends FilterIterator[pure]<...>`) must
+ * accept within it, and one that binds nothing may accept however it likes, as TPurity is then
+ * impure.
+ *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Traversable<TKey, TValue>
+ * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 abstract class FilterIterator extends IteratorIterator {
-    /** @return bool */
+    /**
+     * @param TIterator $iterator
+     * @psalm-pure
+     */
+    public function __construct(Iterator $iterator) {}
+
+    /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
     abstract public function accept();
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue Can return any type.
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey scalar on success, or null on failure.
      */
     public function key() {}
@@ -401,28 +482,43 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
 }
 
 /**
+ * TPurity is what iterating over the inner iterator and calling the callback may do.
+ *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements OuterIterator<TKey, TValue>
+ * @template-implements OuterIterator[TPurity]<TKey, TValue>
  *
- * @template-extends FilterIterator<TKey, TValue, TIterator>
+ * @template-extends FilterIterator[TPurity]<TKey, TValue, TIterator>
  */
 class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
     /**
      * @param TIterator $iterator
-     * @param callable(TValue, TKey, TIterator): bool $callback
+     * @param callable[TPurity](TValue, TKey, TIterator): bool $callback
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator, callable $callback) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function accept() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -552,23 +648,36 @@ class GlobIterator extends FilesystemIterator implements Countable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 class InfiniteIterator extends IteratorIterator {
     /**
      * @param TIterator $iterator
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator) {}
 
     /**
-     * @return TValue|null current value or null if iterator is drained
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -578,25 +687,61 @@ class InfiniteIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements OuterIterator<TKey, TValue>
+ * @template-implements OuterIterator[TPurity]<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
      * @param TIterator $iterator
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator, int $offset = 0, int $limit = -1) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     */
+    public function seek(int $offset): int {}
+
+    /** @psalm-pure */
+    public function getPosition(): int {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -608,24 +753,51 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 class NoRewindIterator extends IteratorIterator {
     /**
      * @param TIterator $iterator
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey|null current value or null when iterator is drained
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function key() {}
@@ -835,35 +1007,48 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends CallbackFilterIterator<TKey, TValue, TIterator>
+ * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
+ * @template-extends CallbackFilterIterator[TPurity]<TKey, TValue, TIterator>
  */
 class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements RecursiveIterator {
 
     /**
      * @param TIterator $iterator
-     * @param callable(TValue, TKey, TIterator): bool $callback
+     * @param callable[TPurity](TValue, TKey, TIterator): bool $callback
+     * @psalm-pure
      */
     public function __construct(RecursiveIterator $iterator, callable $callback) {}
+
     /**
-     * @return RecursiveCallbackFilterIterator<TKey, TValue, TIterator>
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveCallbackFilterIterator[TPurity]<TKey, TValue, TIterator>
      */
     public function getChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function hasChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
-     * @return TKey|null current value or null when iterator is drained
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return TKey|null current key or null when iterator is drained
+     * @psalm-ignore-nullable-return
      */
     public function key() {}
 }

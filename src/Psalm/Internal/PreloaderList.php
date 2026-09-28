@@ -916,7 +916,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider::class,
-        \Psalm\Internal\Provider\ReturnTypeProvider\ClosureFromCallableReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ClosureReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider::class,

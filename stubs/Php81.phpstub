@@ -91,6 +91,63 @@ namespace {
         /** @return false */
         public function allowsNull(): bool {}
     }
+
+    /**
+     * TPurity is what running the fiber's callback may do: starting or resuming the fiber runs it
+     * until it suspends or returns, so it costs what the callback costs and nothing else. Like the
+     * position of a generator, where a fiber is suspended is engine state, not an effect.
+     *
+     * @psalm-purity-template TPurity(impure)
+     */
+    final class Fiber
+    {
+        /**
+         * @param callable[TPurity] $callback
+         * @psalm-pure
+         */
+        public function __construct(callable $callback) {}
+
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
+        public function start(mixed ...$args): mixed {}
+
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
+        public function resume(mixed $value = null): mixed {}
+
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
+        public function throw(Throwable $exception): mixed {}
+
+        /** @psalm-pure */
+        public function getReturn(): mixed {}
+
+        /** @psalm-pure */
+        public function isStarted(): bool {}
+
+        /** @psalm-pure */
+        public function isSuspended(): bool {}
+
+        /** @psalm-pure */
+        public function isRunning(): bool {}
+
+        /** @psalm-pure */
+        public function isTerminated(): bool {}
+
+        /**
+         * Hands control back to whoever started or resumed the current fiber, like `yield`: what
+         * that code does until it resumes this fiber is its own effect.
+         *
+         * @psalm-pure
+         */
+        public static function suspend(mixed $value = null): mixed {}
+    }
 }
 
 namespace FTP {
