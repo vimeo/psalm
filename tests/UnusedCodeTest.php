@@ -305,7 +305,7 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
      */
     public function providerValidCodeParse(): array
