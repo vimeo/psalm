@@ -423,8 +423,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
 
             foreach ($byref_uses as $var_id => $_) {
-                $byref_vars[$var_id] = $ref_context->vars_in_scope[$var_id];
-                $context->vars_in_scope[$var_id] = $ref_context->vars_in_scope[$var_id];
+                // unsetting the variable only drops the closure's own reference to it: what the
+                // closure wrote through the reference before is not known anymore
+                $byref_type = $ref_context->vars_in_scope[$var_id] ?? Type::getMixed();
+
+                $byref_vars[$var_id] = $byref_type;
+                $context->vars_in_scope[$var_id] = $byref_type;
             }
         }
 
