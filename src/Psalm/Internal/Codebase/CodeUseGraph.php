@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Closure;
 use InvalidArgumentException;
 use LogicException;
 use Psalm\CodeLocation;
@@ -182,11 +183,15 @@ final class CodeUseGraph
     private array $mutation_info = [];
 
     /**
+     * @param ?pure-Closure(string): bool $is_root replaces the out-of-project root predicate (see
+     *                                            isRoot()), so tests can pick roots among synthetic
+     *                                            node ids without real storages
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly ClassLikeStorageProvider $storage_provider,
         public bool $collect_locations = false,
+        private readonly ?Closure $is_root = null,
     ) {
     }
 
@@ -379,13 +384,17 @@ final class CodeUseGraph
      * override — so it is assumed reachable. Whether such external code keeps an
      * in-project *override* alive is decided separately, on the overriding
      * class's own reachability (see the EDGE_OVERRIDE handling in resolve()).
-     * Structural roots (top-level file code) are handled in resolve(). Overridable
-     * in tests.
+     * Structural roots (top-level file code) are handled in resolve(). Tests can
+     * replace the predicate through the constructor.
      *
      * @psalm-external-mutation-free
      */
-    protected function isRoot(string $node_id): bool
+    private function isRoot(string $node_id): bool
     {
+        if ($this->is_root !== null) {
+            return ($this->is_root)($node_id);
+        }
+
         $owner_class = self::getOwnerClass($node_id);
 
         if ($owner_class === null) {

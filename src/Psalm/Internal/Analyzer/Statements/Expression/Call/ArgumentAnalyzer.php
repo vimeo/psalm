@@ -1663,6 +1663,15 @@ final class ArgumentAnalyzer
                             ) {
                                 return;
                             }
+
+                            // whatever calls the callable uses the function
+                            FunctionCallAnalyzer::recordFunctionReference(
+                                $statements_analyzer,
+                                $codebase,
+                                $function_id,
+                                $arg_location,
+                                $context,
+                            );
                         }
                     }
                 }

@@ -8,12 +8,11 @@ use Closure;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Tests\TestCase;
-use Psalm\Tests\TestCodeUseGraph;
 
 final class CodeUseGraphTest extends TestCase
 {
     /**
-     * @return Closure(string): bool
+     * @return pure-Closure(string): bool
      */
     private static function noExtraRoots(): Closure
     {
@@ -22,7 +21,7 @@ final class CodeUseGraphTest extends TestCase
 
     public function testResolvesCyclesRecursively(): void
     {
-        $graph = new TestCodeUseGraph(self::noExtraRoots());
+        $graph = new CodeUseGraph(new ClassLikeStorageProvider(), is_root: self::noExtraRoots());
         // method ids (with ::) so they are not free-function entry points
         $used_a = CodeUseGraph::functionLikeNode('used\\c::a');
         $used_b = CodeUseGraph::functionLikeNode('used\\c::b');
@@ -45,7 +44,7 @@ final class CodeUseGraphTest extends TestCase
 
     public function testUsedReturnUsesFunction(): void
     {
-        $graph = new TestCodeUseGraph(self::noExtraRoots());
+        $graph = new CodeUseGraph(new ClassLikeStorageProvider(), is_root: self::noExtraRoots());
         $function = CodeUseGraph::functionLikeNode('a\\c::m');
         $return = CodeUseGraph::functionLikeReturnNode('a\\c::m');
         $graph->addEdge($return, $function, CodeUseGraph::EDGE_RETURN);
@@ -60,7 +59,7 @@ final class CodeUseGraphTest extends TestCase
 
     public function testCanResolveAgainAfterGraphChanges(): void
     {
-        $graph = new TestCodeUseGraph(self::noExtraRoots());
+        $graph = new CodeUseGraph(new ClassLikeStorageProvider(), is_root: self::noExtraRoots());
         $a = CodeUseGraph::functionLikeNode('a\\c::m');
         $b = CodeUseGraph::functionLikeNode('b\\c::m');
         $graph->markAsPublicApi($a);
@@ -75,7 +74,7 @@ final class CodeUseGraphTest extends TestCase
 
     public function testWriteEdgeDoesNotMarkPropertyUsed(): void
     {
-        $graph = new TestCodeUseGraph(self::noExtraRoots());
+        $graph = new CodeUseGraph(new ClassLikeStorageProvider(), is_root: self::noExtraRoots());
         $property = CodeUseGraph::propertyNode('a\\c', 'value');
 
         // a read from top-level code of /read.php, a write from /write.php
@@ -102,7 +101,10 @@ final class CodeUseGraphTest extends TestCase
         $external = CodeUseGraph::functionLikeNode('vendor\\c::caller');
 
         // the caller belongs to code outside the project, so what it calls is used
-        $graph = new TestCodeUseGraph(static fn(string $node_id): bool => $node_id === $external);
+        $graph = new CodeUseGraph(
+            new ClassLikeStorageProvider(),
+            is_root: static fn(string $node_id): bool => $node_id === $external,
+        );
         $graph->addEdge($external, $method);
 
         $graph->resolve();
@@ -130,7 +132,7 @@ final class CodeUseGraphTest extends TestCase
 
     public function testFreeFunctionIsNotARootByItself(): void
     {
-        $graph = new TestCodeUseGraph(self::noExtraRoots());
+        $graph = new CodeUseGraph(new ClassLikeStorageProvider(), is_root: self::noExtraRoots());
         $function = CodeUseGraph::functionLikeNode('some_free_fn');
         $target = CodeUseGraph::classNode('used\\only\\by\\fn');
         $graph->addEdge($function, $target);
