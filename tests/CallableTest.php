@@ -1359,6 +1359,31 @@ final class CallableTest extends TestCase
 
                     bar([Id::class, "id"]);',
             ],
+            'polymorphicArrayCallableWithBoundedClassStringTemplate' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {}
+                    final class Sub extends Base {}
+                    final class Unrelated {}
+
+                    class Factory {
+                        /**
+                         * @template T of Base
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public static function make(string $class): Base {
+                            return new $class();
+                        }
+                    }
+
+                    /**
+                     * @param callable(class-string<Sub>): Sub $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Factory::class, "make"]);',
+            ],
             'callableMethodArrayCallableMissingTypes' => [
                 'code' => '<?php
                     function foo(callable $c): void {}
@@ -2892,6 +2917,32 @@ final class CallableTest extends TestCase
                     bar([Id::class, "id"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
                 'error_levels' => ['CircularReference'],
+            ],
+            'polymorphicArrayCallableInferringClassStringOutsideTemplateBound' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {}
+                    final class Sub extends Base {}
+                    final class Unrelated {}
+
+                    class Factory {
+                        /**
+                         * @template T of Base
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public static function make(string $class): Base {
+                            return new $class();
+                        }
+                    }
+
+                    /**
+                     * @param callable(class-string<Unrelated>): Unrelated $f
+                     */
+                    function bar(callable $f): void {}
+
+                    bar([Factory::class, "make"]);',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 'code' => '<?php
