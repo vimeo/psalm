@@ -340,6 +340,21 @@ final class StaticPropertyFetchAnalyzer
             return false;
         }
 
+        // unsetting a property is a write, so the set visibility applies
+        if ($context->inside_unset
+            && ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
+            ) === false
+        ) {
+            return false;
+        }
+
         $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
 
         if ($codebase->alter_code) {
