@@ -65,8 +65,6 @@ ENV GPG_KEYS AFD8691FDAEDF03BDF6E460563F15A9B715376CA 9D7F99A0CB8F05C8A6958D6256
 
 ADD bin/docker/deepbind.patch /
 
-ADD https://github.com/php/php-src/commits/master.atom /dev/null
-
 RUN set -eux; \
 	\
 	mkdir -p /usr/src; \

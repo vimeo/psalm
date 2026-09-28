@@ -181,6 +181,9 @@ final class TypeVariableResolver extends MutableTypeVisitor
         return $result;
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     protected function enterNode(TypeNode &$type): ?int
     {

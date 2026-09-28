@@ -24,6 +24,22 @@ final class PropertyStorage implements HasAttributesInterface
      */
     public int $visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
 
+    /**
+     * The visibility required to write to the property (PHP 8.4 asymmetric visibility).
+     *
+     * Always at least as restrictive as $visibility. Equal to $visibility when no
+     * explicit set visibility (e.g. `private(set)`) was declared.
+     *
+     * @var ClassLikeAnalyzer::VISIBILITY_*
+     */
+    public int $set_visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+
+    /**
+     * Whether the property is declared `final`, either explicitly or implicitly
+     * (properties declared `private(set)` are implicitly final).
+     */
+    public bool $is_final = false;
+
     public ?CodeLocation $location = null;
 
     public ?CodeLocation $stmt_location = null;
@@ -41,6 +57,13 @@ final class PropertyStorage implements HasAttributesInterface
     public bool $has_default = false;
 
     public bool $deprecated = false;
+
+    /**
+     * The `analysis_php_version_id` at which this property became available (from its own `@since`
+     * tag). Null unless explicitly versioned; the owning class's
+     * {@see ClassLikeStorage::$since_php_version_id} applies otherwise.
+     */
+    public ?int $since_php_version_id = null;
 
     public bool $readonly = false;
 
@@ -78,13 +101,34 @@ final class PropertyStorage implements HasAttributesInterface
      */
     public function getInfo(): string
     {
-        $visibility_text = match ($this->visibility) {
+        $visibility_text = self::getVisibilityText($this->visibility);
+
+        if ($this->set_visibility !== $this->visibility) {
+            $visibility_text .= ' ' . self::getVisibilityText($this->set_visibility) . '(set)';
+        }
+
+        return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
+    }
+
+    /**
+     * @param ClassLikeAnalyzer::VISIBILITY_* $visibility
+     * @psalm-pure
+     */
+    public static function getVisibilityText(int $visibility): string
+    {
+        return match ($visibility) {
             ClassLikeAnalyzer::VISIBILITY_PRIVATE => 'private',
             ClassLikeAnalyzer::VISIBILITY_PROTECTED => 'protected',
             default => 'public',
         };
+    }
 
-        return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function hasAsymmetricVisibility(): bool
+    {
+        return $this->set_visibility !== $this->visibility;
     }
 
     /**

@@ -11,10 +11,12 @@ use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
@@ -28,6 +30,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\IfThisIsMismatch;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
@@ -37,9 +40,11 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -47,6 +52,7 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
+use function array_slice;
 use function count;
 use function explode;
 use function in_array;
@@ -132,6 +138,16 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             );
 
             return $statements_analyzer->node_data->getType($fake_function_call) ?? Type::getMixed();
+        }
+
+        if ($fq_class_name === 'Closure'
+            && $method_name_lc === 'call'
+            && !$stmt->isFirstClassCallable()
+            && isset($args[0])
+            && !$args[0]->unpack
+            && $args[0]->name === null
+        ) {
+            return self::analyzeClosureCall($statements_analyzer, $stmt, $args, $context);
         }
 
         $source = $statements_analyzer->getSource();
@@ -282,6 +298,11 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result,
         );
 
+        if ($method_storage?->has_yield && !$is_first_class_callable) {
+            // a generator method always returns a new generator: nothing else holds it
+            $return_type_candidate = $return_type_candidate->setProperties(['reference_free' => true]);
+        }
+
         if ($is_first_class_callable) {
             return $return_type_candidate;
         }
@@ -389,6 +410,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $config,
                     $result,
+                    $template_result,
+                    $class_template_params ?? [],
                 );
             }
 
@@ -700,5 +723,70 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * `$closure->call($newThis, ...$args)` calls the closure with `$newThis` bound: it is analysed
+     * like `$closure(...$args)`, and what the closure writes to its `$this` is written to `$newThis`,
+     * which costs what writing it as a receiver would.
+     *
+     * @param non-empty-list<PhpParser\Node\Arg> $args
+     */
+    private static function analyzeClosureCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        array $args,
+        Context $context,
+    ): Union {
+        $new_this = $args[0]->value;
+
+        ExpressionAnalyzer::analyze($statements_analyzer, $new_this, $context);
+
+        $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+        $fake_function_call = new VirtualFuncCall(
+            $stmt->var,
+            array_slice($args, 1),
+            $stmt->getAttributes(),
+        );
+
+        FunctionCallAnalyzer::analyze(
+            $statements_analyzer,
+            $fake_function_call,
+            $context,
+        );
+
+        $closure_type = $statements_analyzer->node_data->getType($stmt->var);
+
+        if ($closure_type !== null) {
+            $closure_capabilities = Capabilities::NONE;
+
+            foreach ($closure_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TClosure) {
+                    $closure_capabilities |= CallPurityResolver::resolvePurity(
+                        $atomic_type->purity,
+                        $statements_analyzer,
+                    );
+                }
+            }
+
+            $receiver_capabilities = MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
+                $closure_capabilities & (Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_PROPS),
+                MethodCallPurityAnalyzer::isThis($new_this),
+                MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $new_this),
+            ) & ~$closure_capabilities;
+
+            if ($receiver_capabilities !== Capabilities::NONE) {
+                $statements_analyzer->signalMutation(
+                    $receiver_capabilities,
+                    $context,
+                    'method Closure::call',
+                    ImpureMethodCall::class,
+                    $stmt->name,
+                );
+            }
+        }
+
+        return $statements_analyzer->node_data->getType($fake_function_call) ?? Type::getMixed();
     }
 }

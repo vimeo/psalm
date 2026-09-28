@@ -14,7 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ImpureStaticVariable;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 
 use function is_string;
@@ -32,7 +32,7 @@ final class StaticAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_INTERNAL_READ_WRITE,
+            Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS,
             $context,
             'static variable',
             ImpureStaticVariable::class,

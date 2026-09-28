@@ -14,8 +14,10 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
@@ -29,7 +31,9 @@ use Psalm\Issue\UndefinedDocblockClass;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -383,6 +387,42 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return null;
         }
 
+        // The class is known to Psalm (its stubbed definition is always loaded so analysis is
+        // unaffected), but a native symbol introduced in a later PHP version is undefined when
+        // analysing an older version without a polyfill. The issue is reported without halting
+        // resolution, so the rest of the analysis still sees the symbol's real shape.
+        //
+        // Attributes are a PHP 8.0 feature: below 8.0 an `#[...]` is an inert comment that
+        // references no class, so attribute-class availability is not reported there.
+        if ($check_classes
+            && !$class_storage->user_defined
+            && $class_storage->since_php_version_id !== null
+            && ($codebase->getGuardedPhpVersionId($options->context) ?? $codebase->analysis_php_version_id)
+                < $class_storage->since_php_version_id
+            && !($options->from_attribute && $codebase->analysis_php_version_id < 8_00_00)
+            && !$codebase->isClassLikePolyfilled($class_storage->name)
+        ) {
+            $message = $class_storage->name . ' '
+                . $codebase->getUnavailableSymbolMessageSuffix($class_storage->since_php_version_id);
+
+            if ($options->from_docblock) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedDocblockClass($message, $code_location, $class_storage->name),
+                    $suppressed_issues,
+                );
+            } elseif ($options->from_attribute) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedAttributeClass($message, $code_location, $class_storage->name),
+                    $suppressed_issues,
+                );
+            } else {
+                IssueBuffer::maybeAdd(
+                    new UndefinedClass($message, $code_location, $class_storage->name),
+                    $suppressed_issues,
+                );
+            }
+        }
+
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
@@ -578,6 +618,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $emit_issues = true,
+        bool $is_write = false,
     ): ?bool {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -632,7 +673,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         $storage = $class_storage->properties[$property_name];
 
-        switch ($storage->visibility) {
+        // the set visibility is always at least as restrictive as the get visibility,
+        // so checking it alone is enough for writes
+        $visibility = $is_write ? $storage->set_visibility : $storage->visibility;
+
+        if ($is_write && $storage->hasAsymmetricVisibility()) {
+            $verb = 'modify';
+            $visibility_text = PropertyStorage::getVisibilityText($visibility) . '(set)';
+        } else {
+            $verb = 'access';
+            $visibility_text = PropertyStorage::getVisibilityText($visibility);
+        }
+
+        $from_context = $context->self !== null ? ' from context ' . $context->self : '';
+
+        switch ($visibility) {
             case self::VISIBILITY_PUBLIC:
                 return $emit_issues ? null : true;
 
@@ -640,7 +695,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 if ($emit_issues) {
                     IssueBuffer::maybeAdd(
                         new InaccessibleProperty(
-                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
+                            'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id . $from_context,
                             $code_location,
                         ),
                         $suppressed_issues,
@@ -653,7 +708,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
-                                'Cannot access protected property ' . $property_id,
+                                'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id,
                                 $code_location,
                             ),
                             $suppressed_issues,
@@ -671,7 +726,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
                             new InaccessibleProperty(
-                                'Cannot access protected property ' . $property_id . ' from context ' . $context->self,
+                                'Cannot ' . $verb . ' ' . $visibility_text . ' property ' . $property_id
+                                    . $from_context,
                                 $code_location,
                             ),
                             $suppressed_issues,
@@ -696,7 +752,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             ? 0
             : count($parent_storage->template_types);
 
-        if ($expected_param_count > $given_param_count) {
+        if ($parent_storage->getRequiredTemplateParamCount() > $given_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
@@ -705,7 +761,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
-        } elseif ($expected_param_count < $given_param_count) {
+        } elseif ($expected_param_count < $given_param_count
+            || (isset($storage->template_extended_offsets[$parent_storage->name])
+                && !PurityArguments::fit($storage->template_extended_offsets[$parent_storage->name], $parent_storage))
+        ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $storage->name . ' has too many template params when extending ' . $parent_storage->name
@@ -745,7 +804,21 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
 
+            // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
+
+            foreach ($parent_storage->template_types as $template_name => $type_map) {
+                $extended_purity = $storage->template_extended_params[$parent_storage->name][$template_name] ?? null;
+
+                foreach ($type_map as $declaring_class => $template_type) {
+                    if ($extended_purity !== null
+                        && Capabilities::isPurityType($template_type)
+                        && Capabilities::isPurityType($extended_purity)
+                    ) {
+                        $previous_extended[$template_name] = [$declaring_class => $extended_purity];
+                    }
+                }
+            }
 
             foreach ($parent_storage->template_types as $template_name => $type_map) {
                 // declares the variables
@@ -754,6 +827,17 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
                 if (isset($storage->template_extended_params[$parent_storage->name][$template_name])) {
                     $extended_type = $storage->template_extended_params[$parent_storage->name][$template_name];
+
+                    // Resolve `self`/`static` against the implementing class so the bound check
+                    // below treats `Holder<self>` and `Holder<ConcreteSelf>` as equivalent.
+                    $extended_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $extended_type,
+                        $storage->name,
+                        $storage->name,
+                        $storage->parent_class,
+                        final: $storage->final,
+                    );
 
                     if (isset($parent_storage->template_covariants[$i])
                         && !$parent_storage->template_covariants[$i]
@@ -828,12 +912,28 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             null,
                         );
 
+                        $lower_bound = $parent_storage->template_lower_bounds[$template_name] ?? null;
+
                         if (!UnionTypeComparator::isContainedBy($codebase, $extended_type, $template_type_copy)) {
                             IssueBuffer::maybeAdd(
                                 new InvalidTemplateParam(
                                     'Extended template param ' . $template_name
                                         . ' expects type ' . $template_type_copy->getId()
                                         . ', type ' . $extended_type->getId() . ' given',
+                                    $code_location,
+                                ),
+                                $storage->suppressed_issues + $this->getSuppressedIssues(),
+                            );
+                        } elseif ($lower_bound !== null
+                            && Capabilities::isPurityType($extended_type)
+                            && !Capabilities::allows(Capabilities::fromType($extended_type), $lower_bound)
+                        ) {
+                            // a purity template with a lower bound: the value must require at least that
+                            IssueBuffer::maybeAdd(
+                                new InvalidTemplateParam(
+                                    'Extended template param ' . $template_name
+                                        . ' must include at least ' . Capabilities::toString($lower_bound)
+                                        . ', ' . $extended_type->getId() . ' given',
                                     $code_location,
                                 ),
                                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -857,7 +957,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * @return array<string, string>
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function getClassesForFile(Codebase $codebase, string $file_path): array
     {

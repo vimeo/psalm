@@ -66,6 +66,11 @@ final class TypeCombination
 
     public ?Union $objectlike_value_type = null;
 
+    /**
+     * What iterating over any of the iterables combined may do (arrays do nothing).
+     */
+    public ?Union $iterable_purity = null;
+
     public bool $empty_mixed = false;
 
     public bool $non_empty_mixed = false;

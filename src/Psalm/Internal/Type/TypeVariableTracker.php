@@ -117,6 +117,27 @@ final class TypeVariableTracker
      */
     public static function resolveTypeVariables(Union $type, ?Codebase $codebase): Union
     {
+        $resolved = self::doResolveTypeVariables($type, $codebase, []);
+
+        // A variable minted for an empty construction stands for `never`
+        // wherever it is nested as well: a `list<T>` read off an empty
+        // collection is an empty list, and the surrounding analysis can
+        // only see that once the variable has become `never`. Variables
+        // bound to something stay live in there for later constraints.
+        $nested_resolver = new TypeVariableResolver($codebase, true);
+        $nested_resolver->traverse($resolved);
+
+        return $resolved;
+    }
+
+    /**
+     * @param array<string, true> $seen names currently being resolved, so a
+     *      cyclic bound (`_a` bounded by `_b` bounded by `_a`) stops instead of
+     *      recursing forever.
+     * @psalm-external-mutation-free
+     */
+    private static function doResolveTypeVariables(Union $type, ?Codebase $codebase, array $seen): Union
+    {
         $has_type_variable = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
@@ -127,14 +148,6 @@ final class TypeVariableTracker
         }
 
         if (!$has_type_variable) {
-            // A variable minted for an empty construction stands for `never`
-            // wherever it is nested as well: a `list<T>` read off an empty
-            // collection is an empty list, and the surrounding analysis can
-            // only see that once the variable has become `never`. Variables
-            // bound to something stay live in there for later constraints.
-            $nested_resolver = new TypeVariableResolver($codebase, true);
-            $nested_resolver->traverse($type);
-
             return $type;
         }
 
@@ -143,7 +156,10 @@ final class TypeVariableTracker
         foreach ($type->getAtomicTypes() as $atomic_type) {
             $resolved = null;
 
-            if ($atomic_type instanceof TTypeVariable && $atomic_type->bounds) {
+            if ($atomic_type instanceof TTypeVariable
+                && $atomic_type->bounds
+                && !isset($seen[$atomic_type->name])
+            ) {
                 if ($atomic_type->bounds->lower_bounds) {
                     $resolved = TTypeVariable::widenMixedToConstraint(
                         TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
@@ -154,6 +170,18 @@ final class TypeVariableTracker
                     );
                 } elseif ($atomic_type->bounds->upper_bounds) {
                     $resolved = $atomic_type->bounds->upper_bounds[0]->type;
+                }
+
+                // A bound may itself be, or contain, another type variable
+                // (`_b` whose bound is `_a` whose bound is a concrete type).
+                // Resolve through to the concrete bound so a single call reaches
+                // a fixpoint, guarding against cyclic bounds.
+                if ($resolved) {
+                    $resolved = self::doResolveTypeVariables(
+                        $resolved,
+                        $codebase,
+                        $seen + [$atomic_type->name => true],
+                    );
                 }
             }
 
@@ -166,12 +194,7 @@ final class TypeVariableTracker
             }
         }
 
-        $resolved = TypeCombiner::combine($resolved_types, $codebase);
-
-        $nested_resolver = new TypeVariableResolver($codebase, true);
-        $nested_resolver->traverse($resolved);
-
-        return $resolved;
+        return TypeCombiner::combine($resolved_types, $codebase);
     }
 
     /**

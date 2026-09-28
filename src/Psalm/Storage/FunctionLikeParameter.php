@@ -57,6 +57,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         public bool $is_variadic = false,
         public Union|UnresolvedConstantComponent|null $default_type = null,
         public ?Union $out_type = null,
+        public ?Union $closure_this_type = null,
     ) {
         $this->signature_type_location = $type_location;
     }
@@ -82,7 +83,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     /**
      * @internal Should only be used by the MutableTypeVisitor.
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function visit(TypeVisitor $visitor): bool
@@ -94,6 +95,9 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
             return false;
         }
         if ($this->out_type && !$visitor->traverse($this->out_type)) {
+            return false;
+        }
+        if ($this->closure_this_type && !$visitor->traverse($this->closure_this_type)) {
             return false;
         }
         if ($this->default_type instanceof Union && !$visitor->traverse($this->default_type)) {
@@ -109,7 +113,7 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     #[Override]
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
-        foreach (['type', 'signature_type', 'out_type', 'default_type'] as $key) {
+        foreach (['type', 'signature_type', 'out_type', 'closure_this_type', 'default_type'] as $key) {
             if (!$node->{$key} instanceof TypeNode) {
                 continue;
             }

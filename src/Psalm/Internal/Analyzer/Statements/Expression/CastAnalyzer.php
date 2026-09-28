@@ -9,13 +9,16 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -23,6 +26,7 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -50,6 +54,7 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -864,6 +869,26 @@ final class CastAnalyzer
 
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
 
+                            if ($declaring_method_id !== null) {
+                                $to_string_storage = $codebase->methods->getStorage($declaring_method_id);
+                                $var_id = ExpressionIdentifier::getExtendedVarId(
+                                    $stmt,
+                                    $statements_analyzer->getFQCLN(),
+                                    $statements_analyzer,
+                                );
+
+                                $statements_analyzer->signalMutation(
+                                    $to_string_storage->capabilities & ~Capabilities::READ_PROPS,
+                                    $context,
+                                    'possibly-mutating method ' . $intersection_type->value . '::__toString',
+                                    ImpureMethodCall::class,
+                                    $stmt,
+                                    $to_string_storage->capabilities,
+                                    false,
+                                    $var_id === '$this' ? $to_string_storage : null,
+                                );
+                            }
+
                             MethodCallReturnTypeFetcher::taintMethodCallResult(
                                 $statements_analyzer,
                                 $return_type,
@@ -900,6 +925,20 @@ final class CastAnalyzer
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
 
                 continue;
+            }
+
+            if ($atomic_type instanceof TTypeVariable) {
+                // A class-template type variable is castable through the bound
+                // its construction inferred — as the TTemplateParam branch reads
+                // through `as`. Resolve it so `(string) $var` sees that bound
+                // instead of rejecting the bare variable as uncastable.
+                $resolved = TypeVariableTracker::resolveTypeVariables(new Union([$atomic_type]), $codebase);
+
+                if ($resolved->getId() !== $atomic_type->getId()) {
+                    $atomic_types = array_merge($atomic_types, $resolved->getAtomicTypes());
+
+                    continue;
+                }
             }
 
             $invalid_casts[] = $atomic_type->getId();

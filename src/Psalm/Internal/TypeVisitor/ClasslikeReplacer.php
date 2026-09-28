@@ -31,6 +31,9 @@ final class ClasslikeReplacer extends MutableTypeVisitor
         $this->old = strtolower($old);
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     protected function enterNode(TypeNode &$type): ?int
     {

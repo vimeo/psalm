@@ -8,8 +8,8 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\Mutations;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -35,7 +35,7 @@ final class TClosure extends TNamedObject
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
-     * @param Mutations::LEVEL_* $allowed_mutations
+     * @param int|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
      *                                        known (e.g. for a first-class callable `foo(...)`). Metadata
@@ -45,7 +45,7 @@ final class TClosure extends TNamedObject
     public function __construct(
         ?array $params = null,
         ?Union $return_type = null,
-        int $allowed_mutations = Mutations::LEVEL_ALL,
+        int|Union $purity = Capabilities::ALL,
         public array $byref_uses = [],
         array $extra_types = [],
         bool $from_docblock = false,
@@ -53,7 +53,7 @@ final class TClosure extends TNamedObject
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
-        $this->allowed_mutations = $allowed_mutations;
+        $this->purity = self::purityFrom($purity);
         parent::__construct(
             'Closure',
             false,
@@ -69,7 +69,8 @@ final class TClosure extends TNamedObject
         // it can, if it's just 'Closure'
         return $this->params === null
             && $this->return_type === null
-            && $this->allowed_mutations === Mutations::LEVEL_ALL;
+            && $this->hasFixedPurity()
+            && $this->getCapabilities() === Capabilities::ALL;
     }
 
     /**
@@ -88,7 +89,7 @@ final class TClosure extends TNamedObject
         return new static(
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
-            $this->allowed_mutations,
+            $replaced[2] ?? $this->purity,
             $this->byref_uses,
             $intersection ?? $this->extra_types,
             $this->from_docblock,
@@ -142,7 +143,7 @@ final class TClosure extends TNamedObject
         return new static(
             $replaced[0] ?? $this->params,
             $replaced[1] ?? $this->return_type,
-            $this->allowed_mutations,
+            $replaced[2] ?? $this->purity,
             $this->byref_uses,
             $intersection ?? $this->extra_types,
             $this->from_docblock,

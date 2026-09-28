@@ -7,6 +7,7 @@ namespace Psalm\Internal\Cli;
 use Composer\Autoload\ClassLoader;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
+use Psalm\Config\CiCreator;
 use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigCreationException;
@@ -68,11 +69,13 @@ use function implode;
 use function in_array;
 use function ini_get;
 use function is_array;
+use function is_dir;
 use function is_numeric;
 use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function mkdir;
 use function opcache_get_status;
 use function parse_url;
 use function preg_match;
@@ -103,6 +106,7 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
+require_once __DIR__ . '/IdeDetector.php';
 
 /**
  * @internal
@@ -137,6 +141,7 @@ final class Psalm
         'help',
         'ignore-baseline',
         'init',
+        'init-ci',
         'memory-limit:',
         'monochrome',
         'no-diff',
@@ -235,6 +240,11 @@ final class Psalm
 
         $current_dir = self::getCurrentDir($options);
 
+        if (array_key_exists('init-ci', $options)) {
+            self::generateCiConfig($current_dir);
+            exit;
+        }
+
         $path_to_config = CliUtils::getPathToConfig($options);
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
@@ -283,8 +293,8 @@ final class Psalm
             $options['long-progress'] = true;
         }
 
-        $threads = self::getThreads($options, $config, $in_ci, false);
-        $scanThreads = self::getThreads($options, $config, $in_ci, true);
+        $threads = self::getThreads($options, $config, false);
+        $scanThreads = self::getThreads($options, $config, true);
 
         $progress = self::initProgress($options, $config, $in_ci);
 
@@ -435,7 +445,7 @@ final class Psalm
     }
 
     /** @return int<1, max> */
-    public static function getThreads(array $options, Config $config, bool $in_ci, bool $for_scan): int
+    public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
@@ -448,29 +458,29 @@ final class Psalm
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);
-            } elseif (isset($options['debug']) || $in_ci) {
+            } elseif (isset($options['debug'])) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
                 $threads = $config->scan_threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCount());
+                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
             }
         } else {
             if (isset($options['threads'])) {
                 $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug']) || $in_ci) {
+            } elseif (isset($options['debug'])) {
                 $threads = 1;
             } elseif ($config->threads) {
                 $threads = $config->threads;
             } else {
-                $threads = max(1, (new CpuCoreCounter())->getCount());
+                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
             }
         }
         return $threads;
     }
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-globals
      */
     private static function initOutputFormat(array $options): string
     {
@@ -481,12 +491,11 @@ final class Psalm
 
     /**
      * @return Report::TYPE_*
-     * @psalm-pure
+     * @psalm-capabilities read-globals
      */
     private static function findDefaultOutputFormat(): string
     {
-        $emulator = getenv('TERMINAL_EMULATOR');
-        if (is_string($emulator) && str_starts_with($emulator, 'JetBrains')) {
+        if (IdeDetector::detect() === IdeDetector::IDE_PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
 
@@ -622,6 +631,34 @@ final class Psalm
         }
     }
 
+    private static function generateCiConfig(string $current_dir): void
+    {
+        require_once __DIR__ . '/../../Config/CiCreator.php';
+        $workflow_dir = $current_dir . DIRECTORY_SEPARATOR . '.github'
+            . DIRECTORY_SEPARATOR . 'workflows';
+        $workflow_file = $workflow_dir . DIRECTORY_SEPARATOR . 'psalm.yml';
+
+        if (file_exists($workflow_file)) {
+            fwrite(STDERR, 'A CI workflow already exists at ' . $workflow_file . PHP_EOL);
+            exit(1);
+        }
+
+        $contents = CiCreator::getContents($current_dir);
+
+        if (!is_dir($workflow_dir) && !mkdir($workflow_dir, 0777, true)) {
+            fwrite(STDERR, 'Could not create directory ' . $workflow_dir . PHP_EOL);
+            exit(1);
+        }
+
+        if (file_put_contents($workflow_file, $contents) === false) {
+            fwrite(STDERR, 'Could not write to ' . $workflow_file . PHP_EOL);
+            exit(1);
+        }
+
+        echo 'GitHub Actions workflow created at .github/workflows/psalm.yml' . PHP_EOL
+            . 'Review the file for tips on enabling taint analysis, baselines, and more.' . PHP_EOL;
+    }
+
     /** @param list<ClassLoader> $autoloaders */
     private static function loadConfig(
         ?string $path_to_config,
@@ -663,14 +700,26 @@ final class Psalm
             ? $options['show-info'] === 'true' || $options['show-info'] === '1'
             : false;
 
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build. Agents that
+        // need the CI log quieted can pass --no-progress explicitly.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci
+                && !isset($options['long-progress'])
+                && CliUtils::runningUnderAiAgent());
+
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif (isset($options['no-progress'])) {
+        } elseif ($no_progress) {
             $progress = new VoidProgress();
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
-            if (isset($options['long-progress'])) {
-                $progress = new LongProgress($show_errors, $show_info, $in_ci);
+            // A `\r`-based progress bar on a piped stderr just floods the log
+            // with every intermediate update. Fall back to the CI-style output,
+            // which emits one line per phase transition.
+            $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
+            if (isset($options['long-progress']) || $quiet_progress) {
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
             } else {
                 $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
             }
@@ -878,7 +927,9 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options);
+        $stdout_report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1101,6 +1152,7 @@ final class Psalm
     /**
      * @param array<string, false|list<mixed>|string> $options
      * @param-out array<string, false|list<mixed>|string> $options
+     * @psalm-capabilities write-refs|read-props
      */
     private static function syncShortOptions(array &$options): void
     {
@@ -1488,7 +1540,9 @@ final class Psalm
 
         Output:
             -m, --monochrome
-                Enable monochrome output
+                Enable monochrome output.
+                Auto-enabled when NO_COLOR is set to a non-empty value or when
+                an AI coding agent is driving the shell.
 
             --output-format=console
                 Changes the output format.
@@ -1496,10 +1550,13 @@ final class Psalm
                     $outputFormats
 
             --no-progress
-                Disable the progress indicator
+                Disable the progress indicator.
+                Auto-enabled when an AI coding agent is driving the shell
+                (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs
+                Use a progress indicator suitable for Continuous Integration logs.
+                Auto-enabled in CI and when stderr is not attached to a terminal.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
@@ -1548,6 +1605,10 @@ final class Psalm
             -i, --init [source_dir=src] [level=3]
                 Create a psalm config file in the current directory that points to [source_dir]
                 at the required level, from 1, most strict, to 8, most permissive.
+
+            --init-ci
+                Create a GitHub Actions workflow file at .github/workflows/psalm.yml.
+                Uses the published Psalm Docker image, pinned to the version from composer.lock.
 
             --debug
                 Debug information

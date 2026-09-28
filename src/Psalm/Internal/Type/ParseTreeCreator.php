@@ -12,7 +12,6 @@ use Psalm\Internal\Type\ParseTree\ConditionalTree;
 use Psalm\Internal\Type\ParseTree\EncapsulationTree;
 use Psalm\Internal\Type\ParseTree\FieldEllipsis;
 use Psalm\Internal\Type\ParseTree\GenericTree;
-use Psalm\Internal\Type\ParseTree\IndexedAccessTree;
 use Psalm\Internal\Type\ParseTree\IntersectionTree;
 use Psalm\Internal\Type\ParseTree\KeyedArrayPropertyTree;
 use Psalm\Internal\Type\ParseTree\KeyedArrayTree;
@@ -20,6 +19,7 @@ use Psalm\Internal\Type\ParseTree\MethodParamTree;
 use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\NullableTree;
+use Psalm\Internal\Type\ParseTree\PurityTree;
 use Psalm\Internal\Type\ParseTree\Root;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\TemplateIsTree;
@@ -40,6 +40,16 @@ use function substr;
  */
 final class ParseTreeCreator
 {
+    private const CALLABLE_KEYWORDS = [
+        'callable',
+        'pure-callable',
+        'impure-callable',
+        'Closure',
+        '\\Closure',
+        'pure-Closure',
+        'impure-Closure',
+    ];
+
     private ParseTree $parse_tree;
 
     private ParseTree $current_leaf;
@@ -66,8 +76,11 @@ final class ParseTreeCreator
 
             switch ($type_token[0]) {
                 case '{':
-                case ']':
                     throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+
+                case ']':
+                    $this->handleClosedSquareBracket();
+                    break;
 
                 case '<':
                     $this->handleLessThan();
@@ -87,7 +100,7 @@ final class ParseTreeCreator
 
                 case '>':
                     do {
-                        if ($this->current_leaf->parent === null) {
+                        if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
                             throw new TypeParseTreeException('Cannot parse generic type');
                         }
 
@@ -319,36 +332,20 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected token [');
         }
 
-        $indexed_access = false;
-
+        // `Name[...]` is handled with the name, see handleValue()
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
         if (!$next_token || $next_token[0] !== ']') {
-            $next_next_token = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
+            throw new TypeParseTreeException('Unexpected token [');
+        }
 
-            if ($next_next_token !== null && $next_next_token[0] === ']') {
-                $indexed_access = true;
-                ++$this->t;
-            } else {
-                throw new TypeParseTreeException('Unexpected token [');
-            }
+        if ($this->current_leaf instanceof KeyedArrayPropertyTree) {
+            throw new TypeParseTreeException('Unexpected token [');
         }
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($indexed_access) {
-            if ($next_token === null) {
-                throw new TypeParseTreeException('Unexpected token [');
-            }
-
-            $new_parent_leaf = new IndexedAccessTree($next_token[0], $current_parent);
-        } else {
-            if ($this->current_leaf instanceof KeyedArrayPropertyTree) {
-                throw new TypeParseTreeException('Unexpected token [');
-            }
-
-            $new_parent_leaf = new GenericTree('array', $current_parent);
-        }
+        $new_parent_leaf = new GenericTree('array', $current_parent);
 
         $this->current_leaf->parent = $new_parent_leaf;
         $new_parent_leaf->children = [$this->current_leaf];
@@ -364,10 +361,82 @@ final class ParseTreeCreator
         ++$this->t;
     }
 
+    /**
+     * Ends the purity arguments of `Name[...]`, which may be followed by the type parameters.
+     */
+    private function handleClosedSquareBracket(): void
+    {
+        if ($this->t > 0 && $this->type_tokens[$this->t - 1][0] === ',') {
+            throw new TypeParseTreeException('Unexpected token ]');
+        }
+
+        while (!$this->current_leaf instanceof PurityTree) {
+            if ($this->current_leaf->parent === null) {
+                throw new TypeParseTreeException('Unexpected token ]');
+            }
+
+            $this->current_leaf = $this->current_leaf->parent;
+        }
+
+        $generic_leaf = $this->current_leaf->parent;
+
+        if (!$generic_leaf instanceof GenericTree || !$this->current_leaf->children) {
+            throw new TypeParseTreeException('Unexpected token ]');
+        }
+
+        $this->current_leaf = $generic_leaf;
+
+        $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+
+        if ($next_token !== null && $next_token[0] === '<') {
+            // `Name[purity]<params>`: the type parameters follow
+            ++$this->t;
+        } else {
+            $generic_leaf->terminated = true;
+        }
+    }
+
     private function handleOpenRoundBracket(): void
     {
         if ($this->current_leaf instanceof Value) {
             throw new TypeParseTreeException('Unrecognised token (');
+        }
+
+        if ($this->current_leaf instanceof GenericTree
+            && $this->current_leaf->terminated
+            && in_array($this->current_leaf->value, self::CALLABLE_KEYWORDS, true)
+        ) {
+            // `Closure[purity](params): return`: the brackets only carry the purity
+            $generic_leaf = $this->current_leaf;
+
+            if ($generic_leaf->children
+                || $generic_leaf->purity === null
+                || count($generic_leaf->purity->children) !== 1
+            ) {
+                throw new TypeParseTreeException(
+                    $generic_leaf->value . '[...](...) must be given exactly one purity, e.g. '
+                    . $generic_leaf->value . '[pure](int): void',
+                );
+            }
+
+            $parent = $generic_leaf->parent;
+            $callable_leaf = new CallableTree($generic_leaf->value, $parent);
+            $callable_leaf->purity = $generic_leaf->purity->children[0];
+            $callable_leaf->purity->parent = $callable_leaf;
+
+            if ($parent) {
+                foreach ($parent->children as $i => $child) {
+                    if ($child === $generic_leaf) {
+                        $parent->children[$i] = $callable_leaf;
+                    }
+                }
+            } else {
+                $this->parse_tree = $callable_leaf;
+            }
+
+            $this->current_leaf = $callable_leaf;
+
+            return;
         }
 
         $new_parent = !$this->current_leaf instanceof Root ? $this->current_leaf : null;
@@ -431,6 +500,11 @@ final class ParseTreeCreator
 
         $context_node = $this->current_leaf;
 
+        if ($context_node instanceof PurityTree) {
+            // `Name[,` or `Name[a,,`
+            throw new TypeParseTreeException('Unexpected token ,');
+        }
+
         if ($context_node instanceof GenericTree
             || $context_node instanceof KeyedArrayTree
             || $context_node instanceof CallableTree
@@ -441,6 +515,7 @@ final class ParseTreeCreator
 
         while ($context_node
             && !$context_node instanceof GenericTree
+            && !$context_node instanceof PurityTree
             && !$context_node instanceof KeyedArrayTree
             && !$context_node instanceof CallableTree
             && !$context_node instanceof MethodTree
@@ -830,6 +905,29 @@ final class ParseTreeCreator
 
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
+        if ($next_token !== null
+            && $next_token[0] === '['
+            && $this->t + 2 < $this->type_token_count
+            && $this->type_tokens[$this->t + 2][0] !== ']'
+        ) {
+            // `Name[purity, ...]`, optionally followed by `<params>` (or by `(params)` for a
+            // Closure/callable): the purity arguments, as in Hack. `T[K]` with templates T and K
+            // is an indexed access, told apart when the type is built.
+            $new_leaf = new GenericTree($type_token[0], $new_parent);
+            $new_leaf->purity = new PurityTree($new_leaf);
+
+            if ($this->current_leaf instanceof Root) {
+                $this->parse_tree = $new_leaf;
+            } elseif ($new_parent) {
+                $new_parent->children[] = $new_leaf;
+            }
+
+            $this->current_leaf = $new_leaf->purity;
+            ++$this->t;
+
+            return;
+        }
+
         switch ($next_token[0] ?? null) {
             case '<':
                 $new_leaf = new GenericTree(
@@ -910,8 +1008,8 @@ final class ParseTreeCreator
                 } else {
                     throw new TypeParseTreeException(
                         'Parenthesis must be preceded by “Closure”, "pure-Closure", "impure-Closure",'
-                        . ' "self-mutating-Closure", "callable”, "pure-callable", "self-mutating-callable",'
-                        . ' "impure-callable" or a valid @method name',
+                        . ' "Closure[purity]", "callable”, "pure-callable", "impure-callable",'
+                        . ' "callable[purity]" or a valid @method name',
                     );
                 }
 

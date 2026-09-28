@@ -7,7 +7,10 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -15,10 +18,12 @@ use Psalm\Type\Union;
 
 use function count;
 use function implode;
-use function substr;
 
 /**
  * denotes the `iterable` type(which can also result from an `is_iterable` check).
+ *
+ * Its purity is what iterating over it may do, given in brackets: `iterable[pure]<int, string>` is
+ * satisfied by arrays and by Traversable[pure]<int, string>. It is impure unless given.
  *
  * @psalm-immutable
  * @api
@@ -42,11 +47,21 @@ final class TIterable extends Atomic
     public bool $has_docblock_params = false;
 
     /**
+     * What iterating over the value may do: a capability set ({@see TCapabilities}) or a purity
+     * template.
+     */
+    public Union $purity;
+
+    /**
      * @param array{Union, Union}|array<never, never> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
-    public function __construct(array $type_params = [], array $extra_types = [], bool $from_docblock = false)
-    {
+    public function __construct(
+        array $type_params = [],
+        array $extra_types = [],
+        bool $from_docblock = false,
+        ?Union $purity = null,
+    ) {
         if (isset($type_params[0], $type_params[1])) {
             $this->has_docblock_params = true;
             $this->type_params = $type_params;
@@ -54,7 +69,45 @@ final class TIterable extends Atomic
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
         $this->extra_types = $extra_types;
+        $this->purity = $purity ?? Type::getImpure($from_docblock);
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * @return static
+     */
+    public function setPurity(Union $purity): self
+    {
+        if ($this->purity === $purity) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->purity = $purity;
+        return $cloned;
+    }
+
+    /**
+     * @return array{list<Union>, list<Union>}
+     */
+    public function getTypeParamsAndPurityArgs(): array
+    {
+        return [$this->type_params, $this->hasDefaultPurity() ? [] : [$this->purity]];
+    }
+
+    /**
+     * Whether the purity is the default one, impure, which is not written.
+     *
+     * @psalm-mutation-free
+     */
+    public function hasDefaultPurity(): bool
+    {
+        foreach ($this->purity->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TCapabilities || $atomic->capabilities !== Capabilities::ALL) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #[Override]
@@ -79,10 +132,7 @@ final class TIterable extends Atomic
     #[Override]
     public function getId(bool $exact = true, bool $nested = false): string
     {
-        $s = '';
-        foreach ($this->type_params as $type_param) {
-            $s .= $type_param->getId($exact) . ', ';
-        }
+        [$type_params, $purity_args] = $this->getTypeParamsAndPurityArgs();
 
         $extra_types = '';
 
@@ -90,7 +140,13 @@ final class TIterable extends Atomic
             $extra_types = '&' . implode('&', $this->extra_types);
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+        return $this->value
+            . self::formatTypeParams(
+                $type_params,
+                $purity_args,
+                static fn(Union $type_param): string => $type_param->getId($exact),
+            )
+            . $extra_types;
     }
 
     /**
@@ -110,7 +166,7 @@ final class TIterable extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
+        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed() && $this->hasDefaultPurity();
     }
 
     #[Override]
@@ -130,7 +186,7 @@ final class TIterable extends Atomic
             }
         }
 
-        return true;
+        return $this->purity->equals($other_type->purity, $ensure_source_equality, false);
     }
 
     /**
@@ -139,7 +195,7 @@ final class TIterable extends Atomic
     #[Override]
     protected function getChildNodeKeys(): array
     {
-        return ['type_params', 'extra_types'];
+        return ['type_params', 'extra_types', 'purity'];
     }
 
     /**
@@ -156,9 +212,16 @@ final class TIterable extends Atomic
             $template_result,
             $codebase,
         );
+        $purity = TemplateInferredTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+        );
         return new static(
             $type_params ?? $this->type_params,
             $intersection ?? $this->extra_types,
+            false,
+            $purity,
         );
     }
 
@@ -202,12 +265,29 @@ final class TIterable extends Atomic
             $add_lower_bound,
             $depth,
         );
-        if (!$types && !$intersection) {
+        // what iterating over the passed iterable may do binds the purity template, if any
+        $purity = TemplateStandinTypeReplacer::replace(
+            $this->purity,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_type !== null && $input_type->isIterable($codebase)
+                ? $input_type->getIterable($codebase)->purity
+                : null,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+        );
+        if (!$types && !$intersection && $purity === $this->purity) {
             return $this;
         }
         return new static(
             $types ?? $this->type_params,
             $intersection ?? $this->extra_types,
+            false,
+            $purity,
         );
     }
 }

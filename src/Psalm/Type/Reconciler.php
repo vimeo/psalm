@@ -7,6 +7,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -333,6 +334,10 @@ class Reconciler
 
             if ($before_adjustment && $before_adjustment->by_ref) {
                 $result_type = $result_type->setByRef(true);
+            }
+
+            if ($before_adjustment && $before_adjustment->from_global_state) {
+                $result_type = $result_type->setProperties(['from_global_state' => true]);
             }
 
             $type_changed = !$before_adjustment
@@ -679,6 +684,10 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
+            if ($key === Context::PHP_VERSION_ID_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getIntRange(1, null);
+            }
+
             return $existing_keys[$key_parts[0]] ?? null;
         }
 

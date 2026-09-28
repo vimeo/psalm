@@ -463,7 +463,7 @@ final class UnionTypeComparator
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
@@ -540,10 +540,12 @@ final class UnionTypeComparator
 
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 if ($input_type_part instanceof TTypeVariable) {
-                    // a type variable can stand for anything the container
-                    // accepts; it is bound as itself (read sites unroll a
-                    // variable nested in another variable's bound), and
-                    // reconciles with the constraints it is later held to
+                    // an unresolved type variable can still become anything
+                    // its bounds allow, so it can be contained here; it is
+                    // bound as itself (read sites unroll a variable nested in
+                    // another variable's bound), and the constraint is
+                    // reconciled when the surrounding function-like has been
+                    // analyzed, exactly as self::isContainedBy() treats it
                     $matching_input_keys[$input_type_part->getKey()] = true;
                     continue;
                 }
@@ -577,7 +579,9 @@ final class UnionTypeComparator
      *
      * - a variable every alternative bounded from above is bounded by the
      *   union of the recorded types (a single alternative's several upper
-     *   bounds are folded the same way, which can only loosen them);
+     *   bounds are folded the same way, which can only loosen them), flagged
+     *   as merged from union alternatives so it is never pinned as an
+     *   equality bound;
      * - a variable every alternative bounded from below identically keeps that
      *   bound; differing lower bounds are dropped.
      *
@@ -586,7 +590,7 @@ final class UnionTypeComparator
      *     list<array{string, TemplateBound}>
      * }> $alternatives
      * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function mergeAlternativeBounds(array $alternatives, Codebase $codebase): array
     {
@@ -651,16 +655,34 @@ final class UnionTypeComparator
             }
 
             $merged_type = null;
+            $first_bound = null;
+            $all_mirrors = true;
+            $all_requirements = true;
 
             foreach ($bounds_by_alternative as $bounds) {
                 foreach ($bounds as $bound) {
                     $merged_type = Type::combineUnionTypes($merged_type, $bound->type, $codebase);
+                    $first_bound ??= $bound;
+                    $all_mirrors = $all_mirrors && $bound->from_invariant_argument_mirror;
+                    $all_requirements = $all_requirements && $bound->from_argument_requirement;
                 }
             }
 
-            assert($merged_type !== null);
+            assert($merged_type !== null && $first_bound !== null);
 
-            $merged_upper_bounds[] = [$name, new TemplateBound($merged_type)];
+            // the arms are alternatives the value need only satisfy one of, the
+            // way Hack localizes `Foo<int>|Foo<string>` to `Foo<int|string>`
+            // for a covariant Foo: the merged bound is never an equality bound
+            $merged_bound = new TemplateBound(
+                $merged_type,
+                $first_bound->appearance_depth,
+                $first_bound->arg_offset,
+            );
+            $merged_bound->from_union_alternatives = true;
+            $merged_bound->from_invariant_argument_mirror = $all_mirrors;
+            $merged_bound->from_argument_requirement = $all_requirements;
+
+            $merged_upper_bounds[] = [$name, $merged_bound];
         }
 
         return [$merged_lower_bounds, $merged_upper_bounds];

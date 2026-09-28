@@ -47,6 +47,16 @@ final class TTypeVariable extends Atomic
      * union of its lower bounds, or the constraint it was minted with when
      * nothing has bound it from below.
      *
+     * The inexact (display) form renders as the bare bound, so ordinary output
+     * matches Hack's eager `new Foo<_>(...)` inference and the old pre-variable
+     * pinning. The exact form additionally names the variable (`` `_0:bound ``),
+     * mirroring how {@see TTemplateParam::getId()} exposes `T:Class as ...`: a
+     * variable that survives into an exact rendering — a `@psalm-trace`, an
+     * issue message, a type-identity key — is then visible as an unreconciled
+     * variable rather than silently masquerading as its resolved bound, which is
+     * what let one leak unnoticed into array access (`$var[0]` on a variable
+     * that prints like an array but was never resolved to one).
+     *
      * @psalm-suppress ImpureMethodCall the bounds accumulate while the variable
      *      flows through the function body, and the variable always displays
      *      their current state
@@ -76,19 +86,21 @@ final class TTypeVariable extends Atomic
 
         try {
             if ($this->bounds->lower_bounds) {
-                return self::widenMixedToConstraint(
+                $bound = self::widenMixedToConstraint(
                     TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                         $this->bounds->lower_bounds,
                         null,
                     ),
                     $this->bounds,
                 )->getId($exact);
+            } else {
+                $bound = $this->bounds->upper_bounds[0]->type->getId($exact);
             }
-
-            return $this->bounds->upper_bounds[0]->type->getId($exact);
         } finally {
             unset($rendering[$this->name]);
         }
+
+        return $exact ? $this->name . ':' . $bound : $bound;
     }
 
     /**

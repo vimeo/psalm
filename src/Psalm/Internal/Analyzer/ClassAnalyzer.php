@@ -55,6 +55,7 @@ use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
+use Psalm\Issue\OverriddenFinalProperty;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -74,10 +75,11 @@ use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -718,6 +720,39 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location,
                             ),
                         );
+                    } elseif ($property_storage->set_visibility > $guide_property_storage->set_visibility
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' has a more restrictive set visibility ('
+                                    . PropertyStorage::getVisibilityText($property_storage->set_visibility)
+                                    . '(set)) than '
+                                    . $guide_class_name . '::$' . $property_name . ' ('
+                                    . PropertyStorage::getVisibilityText($guide_property_storage->set_visibility)
+                                    . '(set))',
+                                $property_storage->location,
+                            ),
+                        );
+                    }
+
+                    if ($guide_property_storage->is_final
+                        && $property_class_name === $fq_class_name
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenFinalProperty(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' cannot override final property '
+                                    . $guide_class_name . '::$' . $property_name
+                                    . ($guide_property_storage->set_visibility === self::VISIBILITY_PRIVATE
+                                        ? ' (private(set) properties are implicitly final)'
+                                        : ''),
+                                $property_storage->location,
+                                $guide_class_name . '::$' . $property_name,
+                            ),
+                        );
                     }
 
                     if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
@@ -1281,7 +1316,32 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
-            $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+            // the initialisation pass has to see `$this` exactly as the normal
+            // method pass does (@see FunctionLikeAnalyzer::getFunctionInformation),
+            // otherwise a templated class reads its own properties through the
+            // templates' bounds instead of the templates themselves
+            if ($storage->template_types !== null && $storage->template_types !== []) {
+                $template_params = [];
+
+                foreach ($storage->template_types as $param_name => $template_map) {
+                    $template_params[] = new Union([
+                        new TTemplateParam(
+                            $param_name,
+                            reset($template_map),
+                            array_keys($template_map)[0],
+                        ),
+                    ]);
+                }
+
+                $this_atomic_object_type = new TGenericObject(
+                    $fq_class_name,
+                    $template_params,
+                    false,
+                    !$storage->final,
+                );
+            } else {
+                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+            }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
@@ -1492,18 +1552,17 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($storage->allowed_mutations < $trait_storage->allowed_mutations) {
+            if (!Capabilities::allows($storage->capabilities, $trait_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $storage->name . ' is marked '.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $storage->allowed_mutations
-                        ].' but ' . $fq_trait_name . ' is not',
+                        $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
+                            . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->allowed_mutations);
+            $codebase->analyzer->addMutableClass($storage->name, $trait_storage->capabilities);
 
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name_resolved);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name_resolved);
@@ -2213,14 +2272,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($interface_storage->allowed_mutations
-                < $storage->allowed_mutations
-            ) {
+            if (!Capabilities::allows($interface_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $fq_interface_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $interface_storage->allowed_mutations
-                        ].', but '
+                        $fq_interface_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
                     ),
@@ -2230,7 +2286,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             $codebase->analyzer->addMutableClass(
                 $storage->name,
-                $interface_storage->allowed_mutations,
+                $interface_storage->capabilities,
             );
 
             foreach ($interface_storage->methods as $interface_method_name_lc => $interface_method_storage) {
@@ -2460,34 +2516,28 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($parent_class_storage->allowed_mutations
-                < $storage->allowed_mutations
-            ) {
+            if (!Capabilities::allows($parent_class_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
-                        $parent_fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $parent_class_storage->allowed_mutations
-                        ].', but '
+                        $parent_fq_class_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            } elseif ($parent_class_storage->allowed_mutations
-                > $storage->allowed_mutations
-            ) {
+            } elseif (!Capabilities::allows($storage->capabilities, $parent_class_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
-                        $fq_class_name . ' is marked with @'.Mutations::TO_ATTRIBUTE_CLASSLIKE[
-                            $storage->allowed_mutations
-                        ].', but parent class '
+                        $fq_class_name . ' is marked with @'
+                            . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->allowed_mutations);
+            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->capabilities);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(

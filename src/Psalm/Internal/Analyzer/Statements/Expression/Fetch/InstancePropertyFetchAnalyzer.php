@@ -24,7 +24,7 @@ use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Mutations;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -116,7 +116,9 @@ final class InstancePropertyFetchAnalyzer
 
         // A bare type variable minted for a class template stands for the object
         // inferred at its construction site; resolve it so the property is
-        // fetched on that object rather than on an unrecognised atomic.
+        // fetched on that object rather than being rejected as a non-object, as
+        // MethodCallAnalyzer does for method-call receivers. Only top-level
+        // variables resolve: one nested in a generic object stays live.
         $stmt_var_type = TypeVariableResolver::resolveTopLevel($stmt_var_type, $codebase);
 
         if ($stmt_var_type->isNull()) {
@@ -475,8 +477,8 @@ final class InstancePropertyFetchAnalyzer
                         if ($context->inside_unset) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
-                                    ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                                    : Mutations::LEVEL_EXTERNAL,
+                                    ? Capabilities::WRITE_THIS_PROPS
+                                    : Capabilities::WRITE_PROPS,
                                 $context,
                                 'unsetting a property on a mutable object',
                                 ImpurePropertyAssignment::class,
@@ -484,7 +486,7 @@ final class InstancePropertyFetchAnalyzer
                             );
                         } else {
                             $statements_analyzer->signalMutation(
-                                Mutations::LEVEL_INTERNAL_READ,
+                                Capabilities::READ_PROPS,
                                 $context,
                                 'accessing a property on a mutable object',
                                 ImpurePropertyFetch::class,

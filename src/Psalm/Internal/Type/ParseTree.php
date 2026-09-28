@@ -32,7 +32,7 @@ class ParseTree
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function cleanParents(): void
     {

@@ -14,8 +14,8 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
@@ -109,7 +109,7 @@ final class EchoAnalyzer
         }
 
         $statements_analyzer->signalMutation(
-            Mutations::LEVEL_EXTERNAL,
+            Capabilities::IO,
             $context,
             'echo',
             ImpureFunctionCall::class,

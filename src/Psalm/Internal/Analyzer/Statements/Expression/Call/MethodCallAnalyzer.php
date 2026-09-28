@@ -421,19 +421,22 @@ final class MethodCallAnalyzer extends CallAnalyzer
         ) {
             // the method call may have written a bare type variable back into
             // scope; resolve it again so the narrowed type keeps a concrete
-            // object rather than dropping to nothing below
+            // object
             $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
 
             $types = $class_type->getAtomicTypes();
 
-            $had_type_variable = false;
-
             foreach ($types as $key => &$type) {
-                if ($type instanceof TTypeVariable) {
-                    $had_type_variable = true;
-                }
-
-                if (!$type instanceof TNamedObject && !$type instanceof TObject && !$type instanceof TConditional) {
+                // A type variable that survived here (one with no bounds to
+                // resolve it through) is a valid method-call receiver — the
+                // call landed on it — so it belongs with the concrete object
+                // types rather than being stripped as a non-object, which
+                // would leave nothing behind.
+                if (!$type instanceof TNamedObject
+                    && !$type instanceof TObject
+                    && !$type instanceof TConditional
+                    && !$type instanceof TTypeVariable
+                ) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);
@@ -441,19 +444,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
             unset($type);
 
-            if (!$types && !$had_type_variable) {
+            if (!$types) {
                 throw new AssertionError("We must have some types here!");
             }
 
-            if ($types) {
-                // an unresolvable type variable leaves nothing to narrow to; in
-                // that case skip the update rather than tripping the invariant
-                $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
 
-                $class_type = $class_type->getBuilder()->setTypes($types);
-                $class_type->from_docblock = false;
-                $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
-            }
+            $class_type = $class_type->getBuilder()->setTypes($types);
+            $class_type->from_docblock = false;
+            $context->vars_in_scope[$lhs_var_id] = $class_type->freeze();
         }
 
         return true;

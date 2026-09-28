@@ -47,8 +47,8 @@ use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\Mutations;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -266,7 +266,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$naive_property_exists) {
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -414,6 +414,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -458,6 +473,29 @@ final class AtomicPropertyFetchAnalyzer
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
+
+            // A property inherits the availability of its (native) declaring class unless it
+            // carries a later `@since` of its own, which then takes priority. Reported when the
+            // owning value came from e.g. a native factory return, so the class is never named in
+            // the analysed code and would otherwise go unchecked.
+            $property_since_id = $property_storage->since_php_version_id
+                ?? $declaring_class_storage->since_php_version_id;
+
+            if (!$declaring_class_storage->user_defined
+                && $property_since_id !== null
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
+                && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedPropertyFetch(
+                        $property_id . ' ' . $codebase->getUnavailableSymbolMessageSuffix($property_since_id),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
@@ -511,8 +549,8 @@ final class AtomicPropertyFetchAnalyzer
             if ($context->inside_unset) {
                 $statements_analyzer->signalMutation(
                     $stmt_var_id === '$this'
-                        ? Mutations::LEVEL_INTERNAL_READ_WRITE
-                        : Mutations::LEVEL_EXTERNAL,
+                        ? Capabilities::WRITE_THIS_PROPS
+                        : Capabilities::WRITE_PROPS,
                     $context,
                     'unsetting a property on a mutable object',
                     ImpurePropertyAssignment::class,
@@ -520,7 +558,7 @@ final class AtomicPropertyFetchAnalyzer
                 );
             } else {
                 $statements_analyzer->signalMutation(
-                    Mutations::LEVEL_INTERNAL_READ,
+                    Capabilities::READ_PROPS,
                     $context,
                     'accessing a property on a mutable object',
                     ImpurePropertyFetch::class,
@@ -1081,7 +1119,7 @@ final class AtomicPropertyFetchAnalyzer
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             $statements_analyzer->signalMutation(
-                Mutations::LEVEL_INTERNAL_READ, // Strange but matches previous code
+                Capabilities::READ_PROPS, // Strange but matches previous code
                 $context,
                 'accessing a property on a mutable object',
                 ImpurePropertyFetch::class,
