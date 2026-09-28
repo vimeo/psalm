@@ -38,6 +38,8 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -892,34 +894,12 @@ final class MethodComparator
             }
         }
 
-        $builder = $implementer_method_storage_param_type->getBuilder();
-        foreach ($builder->getAtomicTypes() as $k => $t) {
-            if ($t instanceof TTemplateParam
-                && str_starts_with($t->defining_class, 'fn-')
-            ) {
-                $builder->removeType($k);
-
-                foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $builder->addType($as_t);
-                }
-            }
-        }
-        $implementer_method_storage_param_type = $builder->freeze();
-
-        $builder = $guide_method_storage_param_type->getBuilder();
-        foreach ($builder->getAtomicTypes() as $k => $t) {
-            if ($t instanceof TTemplateParam
-                && str_starts_with($t->defining_class, 'fn-')
-            ) {
-                $builder->removeType($k);
-
-                foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $builder->addType($as_t);
-                }
-            }
-        }
-        $guide_method_storage_param_type = $builder->freeze();
-        unset($builder);
+        $implementer_method_storage_param_type = self::replaceFunctionTemplatesWithBounds(
+            $implementer_method_storage_param_type,
+        );
+        $guide_method_storage_param_type = self::replaceFunctionTemplatesWithBounds(
+            $guide_method_storage_param_type,
+        );
 
         if ($implementer_classlike_storage->template_extended_params) {
             self::transformTemplates(
@@ -1247,6 +1227,39 @@ final class MethodComparator
                 );
             }
         }
+    }
+
+    /**
+     * The type with the templates of the method, including the purity templates of its closure
+     * and callable types (`Closure[_](): int`), replaced by their bounds: the method accepts
+     * whatever they may be bound to.
+     *
+     * @psalm-pure
+     */
+    private static function replaceFunctionTemplatesWithBounds(Union $type): Union
+    {
+        $builder = $type->getBuilder();
+
+        foreach ($builder->getAtomicTypes() as $k => $t) {
+            if ($t instanceof TTemplateParam
+                && str_starts_with($t->defining_class, 'fn-')
+            ) {
+                $builder->removeType($k);
+
+                foreach ($t->as->getAtomicTypes() as $as_t) {
+                    $builder->addType($as_t);
+                }
+            } elseif ($t instanceof TClosure || $t instanceof TCallable) {
+                $purity = self::replaceFunctionTemplatesWithBounds($t->purity);
+
+                if ($purity !== $t->purity) {
+                    $builder->removeType($k);
+                    $builder->addType($t->setPurity($purity));
+                }
+            }
+        }
+
+        return $builder->freeze();
     }
 
     /**

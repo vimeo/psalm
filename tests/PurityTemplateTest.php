@@ -510,6 +510,69 @@ final class PurityTemplateTest extends TestCase
                         });
                     }',
             ],
+            'wildcardPurityInNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use Closure;
+
+                    /**
+                     * @psalm-pure
+                     * @param Closure[_](): int $f
+                     * @param ?callable[_](): int $g
+                     */
+                    function apply(Closure $f, ?callable $g = null): int {
+                        return $f() + ($g !== null ? $g() : 0);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return apply(fn(): int => 1, fn(): int => 2);
+                    }',
+            ],
+            'callOfTypeTemplateBoundToClosureIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return "";
+                    }',
+            ],
+            'wildcardPurityInOverrideOfImpureCallableParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param callable(int): bool|null $f */
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(1) ? 1 : 0;
+                        }
+
+                        /** @param Closure[_](int): int $g */
+                        public function map(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param callable[_](int): bool|null $f */
+                        #[Override]
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(2) ? 1 : 0;
+                        }
+
+                        /** @param Closure(int): int $g */
+                        #[Override]
+                        public function map(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
                     abstract class Base {

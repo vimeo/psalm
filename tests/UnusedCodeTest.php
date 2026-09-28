@@ -311,6 +311,23 @@ final class UnusedCodeTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'mutationFreeMethodCallWithImpureClosureIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        /**
+                         * @param Closure[_](int): int $f
+                         * @psalm-capabilities read-props
+                         */
+                        public function each(Closure $f): int {
+                            return $f(1);
+                        }
+                    }
+
+                    (new A)->each(function (int $i): int {
+                        echo $i;
+                        return $i;
+                    });',
+            ],
             'usedMethodsCallingEachOther' => [
                 'code' => '<?php
                     final class A {
