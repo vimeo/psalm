@@ -203,6 +203,19 @@ final class ClassLikeDocblockParser
             $info->deprecated = true;
         }
 
+        if (isset($parsed_docblock->tags['since'])) {
+            $since = trim((string) reset($parsed_docblock->tags['since']));
+            // Only a PHP-version `@since` (major in 4/5/7/8, e.g. `8.5`) is meaningful here; the
+            // caller additionally restricts this to stub files, since `@since` is commonly used
+            // with a project version rather than the PHP version.
+            if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $since_match)
+                && isset($since_match[1], $since_match[2])
+            ) {
+                $info->since_php_major_version = (int) $since_match[1];
+                $info->since_php_minor_version = (int) $since_match[2];
+            }
+        }
+
         if (isset($parsed_docblock->tags['internal'])) {
             $info->internal = true;
         }
