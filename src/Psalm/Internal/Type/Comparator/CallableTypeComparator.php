@@ -9,9 +9,11 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -185,6 +187,79 @@ final class CallableTypeComparator
      * by the comparison is already in the correct direction (see the note in
      * the body).
      */
+    /**
+     * Binds a method's templates to the argument types the expected callable passes in,
+     * and to its expected return type
+     */
+    private static function inferMethodTemplatesFromContainer(
+        Codebase $codebase,
+        TCallable $callable,
+        TCallable $container_type_part,
+        TemplateResult $template_result,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): void {
+        $container_params = $container_type_part->params ?? [];
+        $last_container_param = end($container_params);
+        $container_variadic_param = $last_container_param && $last_container_param->is_variadic
+            ? $last_container_param
+            : null;
+
+        foreach ($callable->params ?? [] as $offset => $param) {
+            if (!$param->type) {
+                continue;
+            }
+
+            if ($param->is_variadic) {
+                $arg_types = [];
+
+                foreach (array_slice($container_params, $offset, null, true) as $arg_offset => $container_param) {
+                    $arg_types[$arg_offset] = $container_param->type;
+                }
+            } elseif (isset($container_params[$offset])) {
+                $arg_types = [$offset => $container_params[$offset]->type];
+            } elseif ($container_variadic_param) {
+                $arg_types = [$offset => $container_variadic_param->type];
+            } elseif ($param->default_type instanceof UnresolvedConstantComponent) {
+                // the expected callable omits this argument, so the method gets its default
+                $arg_types = [$offset => new Union([ConstantTypeResolver::resolve(
+                    $codebase->classlikes,
+                    $param->default_type,
+                    $statements_analyzer,
+                )])];
+            } else {
+                $arg_types = [$offset => $param->default_type];
+            }
+
+            // distinct offsets keep every argument's bound, rather than only the deepest one
+            foreach ($arg_types as $arg_offset => $arg_type) {
+                if ($arg_type) {
+                    TemplateStandinTypeReplacer::fillTemplateResult(
+                        $param->type,
+                        $template_result,
+                        $codebase,
+                        null,
+                        $arg_type,
+                        $arg_offset,
+                    );
+                }
+            }
+        }
+
+        // a void expected return means the caller discards the value
+        if ($callable->return_type
+            && $container_type_part->return_type
+            && !$container_type_part->return_type->isVoid()
+        ) {
+            TemplateStandinTypeReplacer::fillTemplateResult(
+                $callable->return_type,
+                $template_result,
+                $codebase,
+                null,
+                $container_type_part->return_type,
+            );
+        }
+    }
+
     private static function isParamContainedBy(
         Codebase $codebase,
         Union $container_param_type,
@@ -425,34 +500,13 @@ final class CallableTypeComparator
                     if ($method_storage->template_types !== null && $container_type_part !== null) {
                         $template_result = new TemplateResult($method_storage->template_types, []);
 
-                        // Bind templates to the argument types the expected callable passes in
-                        foreach ($callable->params ?? [] as $offset => $param) {
-                            $container_param_type = $container_type_part->params[$offset]->type ?? null;
-
-                            if ($param->type && $container_param_type) {
-                                TemplateStandinTypeReplacer::fillTemplateResult(
-                                    $param->type,
-                                    $template_result,
-                                    $codebase,
-                                    null,
-                                    $container_param_type,
-                                );
-                            }
-                        }
-
-                        // and to the expected return type, unless the caller discards it
-                        if ($callable->return_type
-                            && $container_type_part->return_type
-                            && !$container_type_part->return_type->isVoid()
-                        ) {
-                            TemplateStandinTypeReplacer::fillTemplateResult(
-                                $callable->return_type,
-                                $template_result,
-                                $codebase,
-                                null,
-                                $container_type_part->return_type,
-                            );
-                        }
+                        self::inferMethodTemplatesFromContainer(
+                            $codebase,
+                            $callable,
+                            $container_type_part,
+                            $template_result,
+                            $statements_analyzer,
+                        );
 
                         $callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                     }
