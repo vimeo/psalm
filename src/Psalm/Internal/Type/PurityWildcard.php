@@ -107,28 +107,6 @@ final class PurityWildcard
     }
 
     /**
-     * The type with every `_` purity replaced by `impure`, where `_` has no parameter to stand for.
-     *
-     * @psalm-pure
-     */
-    public static function strip(Union $type): Union
-    {
-        $atomics = [];
-
-        foreach ($type->getAtomicTypes() as $key => $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                $atomic = $atomic->setPurity(Capabilities::ALL);
-            }
-
-            $atomics[$key] = $atomic;
-        }
-
-        return $type->setTypes($atomics);
-    }
-
-    /**
      * The type with every `_` purity replaced by the template $template (already declared on
      * the function-like $defining_id).
      *
