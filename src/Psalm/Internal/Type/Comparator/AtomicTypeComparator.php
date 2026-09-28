@@ -135,6 +135,17 @@ final class AtomicTypeComparator
         }
 
         if ($input_type_part instanceof TCapabilities || $container_type_part instanceof TCapabilities) {
+            // a purity template fits wherever its bound does
+            if ($input_type_part instanceof TTemplateParam) {
+                foreach ($input_type_part->as->getAtomicTypes() as $as_type_part) {
+                    if (!self::isContainedBy($codebase, $as_type_part, $container_type_part)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             // a capability set is a subtype of every superset: pure fits anywhere, impure only in impure
             return $input_type_part instanceof TCapabilities
                 && $container_type_part instanceof TCapabilities
