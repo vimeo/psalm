@@ -1906,7 +1906,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $targets = [];
 
             foreach ($finder->find(
-                $this->function->getStmts() ?? [],
+                $this->function->getStmts(),
                 static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
                     || $node instanceof PhpParser\Node\Expr\AssignRef
                     || $node instanceof PhpParser\Node\Expr\AssignOp
@@ -1922,7 +1922,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
                     $targets = [...$targets, ...$node->vars];
-                } else {
+                } elseif ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\ClosureUse
+                ) {
                     $targets[] = $node->var;
                 }
             }

@@ -433,8 +433,9 @@ final class FunctionDocblockManipulator
 
                     if ($new_type !== null) {
                         $modified_docblock = true;
-                        $parsed_docblock->tags[$tag][$offset] = rtrim($new_type
-                            . substr($param_block, strpos($param_block, $doc_parts[0]) + strlen($doc_parts[0])));
+                        $parsed_docblock->tags[$tag][$offset] = rtrim(
+                            str_replace($doc_parts[0], $new_type, $param_block),
+                        );
                     }
                 }
             }
@@ -632,8 +633,6 @@ final class FunctionDocblockManipulator
 
     /**
      * The native type of the parameter as written.
-     *
-     * @psalm-mutation-free
      */
     private function getNativeParamType(string $param_name): ?string
     {
@@ -649,9 +648,6 @@ final class FunctionDocblockManipulator
         return null;
     }
 
-    /**
-     * @psalm-pure
-     */
     private static function getNativeTypeString(PhpParser\Node $type): ?string
     {
         if ($type instanceof PhpParser\Node\Identifier) {
