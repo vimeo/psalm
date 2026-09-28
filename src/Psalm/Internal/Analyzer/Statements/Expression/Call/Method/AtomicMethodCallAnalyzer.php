@@ -479,6 +479,13 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             return;
         }
 
+        MethodAnalyzer::checkMethodAvailability(
+            $codebase,
+            $method_id,
+            new CodeLocation($source, $stmt->name),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
         $old_node_data = $statements_analyzer->node_data;
 
         $return_type_candidate = ExistingAtomicMethodCallAnalyzer::analyze(
