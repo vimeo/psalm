@@ -962,6 +962,23 @@ final class TemplateDefaultTest extends TestCase
                     '$b===' => 'Box<string>',
                 ],
             ],
+            // Child doesn't declare __invoke itself, it inherits it from Root. Deciding
+            // whether Child satisfies the `callable` bound needs the resolved
+            // inheritance chain, which Populator hasn't built yet at scan time
+            // (defaultViolatesBound runs during scanning), so this must not be flagged.
+            'templateDefaultBoundNotFlaggedWhenClassSatisfiesCallableThroughInheritance' => [
+                'code' => '<?php
+                    class Root {
+                        public function __invoke(): void {}
+                    }
+
+                    class Child extends Root {}
+
+                    /**
+                     * @template T of callable = Child
+                     */
+                    class Foo {}',
+            ],
         ];
     }
 
