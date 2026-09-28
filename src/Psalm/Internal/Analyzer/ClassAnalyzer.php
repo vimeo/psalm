@@ -55,6 +55,7 @@ use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
 use Psalm\Issue\NonInvariantDocblockPropertyType;
 use Psalm\Issue\NonInvariantPropertyType;
+use Psalm\Issue\OverriddenFinalProperty;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PropertyNotSetInConstructor;
@@ -78,6 +79,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -718,6 +720,39 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location,
                             ),
                         );
+                    } elseif ($property_storage->set_visibility > $guide_property_storage->set_visibility
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' has a more restrictive set visibility ('
+                                    . PropertyStorage::getVisibilityText($property_storage->set_visibility)
+                                    . '(set)) than '
+                                    . $guide_class_name . '::$' . $property_name . ' ('
+                                    . PropertyStorage::getVisibilityText($guide_property_storage->set_visibility)
+                                    . '(set))',
+                                $property_storage->location,
+                            ),
+                        );
+                    }
+
+                    if ($guide_property_storage->is_final
+                        && $property_class_name === $fq_class_name
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenFinalProperty(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' cannot override final property '
+                                    . $guide_class_name . '::$' . $property_name
+                                    . ($guide_property_storage->set_visibility === self::VISIBILITY_PRIVATE
+                                        ? ' (private(set) properties are implicitly final)'
+                                        : ''),
+                                $property_storage->location,
+                                $guide_class_name . '::$' . $property_name,
+                            ),
+                        );
                     }
 
                     if ((($property_storage->signature_type && !$guide_property_storage->signature_type)
@@ -1281,7 +1316,32 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
             $method_context->self = $fq_class_name;
 
-            $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+            // the initialisation pass has to see `$this` exactly as the normal
+            // method pass does (@see FunctionLikeAnalyzer::getFunctionInformation),
+            // otherwise a templated class reads its own properties through the
+            // templates' bounds instead of the templates themselves
+            if ($storage->template_types !== null && $storage->template_types !== []) {
+                $template_params = [];
+
+                foreach ($storage->template_types as $param_name => $template_map) {
+                    $template_params[] = new Union([
+                        new TTemplateParam(
+                            $param_name,
+                            reset($template_map),
+                            array_keys($template_map)[0],
+                        ),
+                    ]);
+                }
+
+                $this_atomic_object_type = new TGenericObject(
+                    $fq_class_name,
+                    $template_params,
+                    false,
+                    !$storage->final,
+                );
+            } else {
+                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+            }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;

@@ -383,7 +383,7 @@ final class AtomicStaticCallAnalyzer
             && $class_storage->mixin_declaring_fqcln
             && $class_storage->namedMixins
         ) {
-            foreach ($class_storage->namedMixins as $mixin) {
+            foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
                     $method_name_lc,
@@ -408,6 +408,7 @@ final class AtomicStaticCallAnalyzer
                         $mixin_candidates[] = $mixin_candidate;
                     }
 
+                    // Forward to the declared mixins only: each resolves its own transitive chain.
                     foreach ($class_storage->namedMixins as $mixin_candidate) {
                         $mixin_candidates[] = $mixin_candidate;
                     }
@@ -726,6 +727,9 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
+                // Keep exceptions thrown by the forwarded pseudo-method call
+                $context->possibly_thrown_exceptions = $tmp_context->possibly_thrown_exceptions;
+
                 unset($tmp_context);
 
                 // Resolve actual static return type according to caller (i.e. $this) static type
@@ -870,6 +874,13 @@ final class AtomicStaticCallAnalyzer
         MethodStorage $pseudo_method_storage,
         Context $context,
     ): ?bool {
+        if (!$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $pseudo_method_storage,
+                new CodeLocation($statements_analyzer, $stmt),
+            );
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,

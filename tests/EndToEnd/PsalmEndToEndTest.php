@@ -293,6 +293,24 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame('', $result['STDERR']);
     }
 
+    public function testRefactorAcceptsNoProgressOption(): void
+    {
+        $process = new Process(
+            [
+                PHP_BINARY,
+                __DIR__ . '/../../psalm-refactor',
+                '--no-progress',
+                '--help',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+        $this->assertSame('', $process->getErrorOutput());
+    }
+
     /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */

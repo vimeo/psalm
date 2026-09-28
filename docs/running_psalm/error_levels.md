@@ -307,6 +307,7 @@ These issues become info (non-blocking) at level 7 and higher.
  - [NullArgument](issues/NullArgument.md)
  - [NullArrayOffset](issues/NullArrayOffset.md)
  - [OverriddenFinalConstant](issues/OverriddenFinalConstant.md)
+ - [OverriddenFinalProperty](issues/OverriddenFinalProperty.md)
  - [OverriddenInterfaceConstant](issues/OverriddenInterfaceConstant.md)
  - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
  - [TraitMethodSignatureMismatch](issues/TraitMethodSignatureMismatch.md)

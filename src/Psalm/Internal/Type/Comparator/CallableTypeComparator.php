@@ -454,7 +454,7 @@ final class CallableTypeComparator
                     $class_template_types = $codebase->methods->getClassLikeStorageForMethod($method_id)
                         ->template_types ?? [];
 
-                    return self::withoutPurityTemplates(
+                    $callable = self::withoutPurityTemplates(
                         new TCallable(
                             $method_storage->params,
                             $converted_return_type,
@@ -463,6 +463,28 @@ final class CallableTypeComparator
                         ($method_storage->template_types ?? []) + $class_template_types,
                         $codebase,
                     );
+
+                    // Resolve method-level templates against the expected callable shape, so
+                    // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+                    if ($method_storage->template_types !== null && $container_type_part !== null) {
+                        $template_result = new TemplateResult($method_storage->template_types, []);
+
+                        TemplateStandinTypeReplacer::fillTemplateResult(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                            null,
+                            new Union([$container_type_part]),
+                        );
+
+                        $callable = TemplateInferredTypeReplacer::replace(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                        )->getSingleAtomic();
+                    }
+
+                    return $callable;
                 } catch (UnexpectedValueException) {
                     // do nothing
                 }
