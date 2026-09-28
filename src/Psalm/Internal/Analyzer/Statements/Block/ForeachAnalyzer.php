@@ -1002,6 +1002,9 @@ final class ForeachAnalyzer
         }
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     public static function getKeyValueParamsForTraversableObject(
         Atomic $iterator_atomic_type,
         Codebase $codebase,

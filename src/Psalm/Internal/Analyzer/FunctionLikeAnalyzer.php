@@ -552,6 +552,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && ($this->function instanceof Function_
                 || $this->function instanceof ClassMethod
                 || $this->function instanceof Closure
+                || $this->function instanceof ArrowFunction
             )
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -572,7 +573,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
             }
 
-            if ($this->function->stmts === null) {
+            if ($this->function->getStmts() === null) {
                 $isVoid = $storage->return_type
                     ? $storage->return_type->isVoid()
                     : false;
@@ -597,6 +598,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
             if ($isVoid
                 && !$this->function instanceof Closure
+                && !$this->function instanceof ArrowFunction
                 && !(
                     $storage->throw_locations
                     || $storage->throws
@@ -618,7 +620,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($this->function->stmts === null) {
+            if ($this->function->getStmts() === null) {
                 if (!$storage->has_mutations_annotation && $storage->location) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
@@ -643,7 +645,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'start' => (int) $this->function->getAttribute('startFilePos'),
                     'fresh' => true,
                     // inline callbacks are not worth annotating, closures assigned to a variable are
-                    'report' => !$this->function instanceof Closure
+                    'report' => !($this->function instanceof Closure || $this->function instanceof ArrowFunction)
                         || $this->function->getAttribute('assigned_var_id') !== null,
                 ]);
             }

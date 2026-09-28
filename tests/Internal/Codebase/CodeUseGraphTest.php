@@ -14,6 +14,7 @@ final class CodeUseGraphTest extends TestCase
      * Nothing is treated as external code in these unit tests.
      *
      * @return Closure(string): bool
+     * @psalm-pure
      */
     private static function notExternal(): Closure
     {
