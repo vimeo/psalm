@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -177,6 +178,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * @var array<string, TTemplateParam>
      */
     public array $used_purity_templates = [];
+
+    /**
+     * The closure and callable parameters this function-like calls although their purity is fixed:
+     * with a `_` purity (`Closure[_]`), those calls would be charged to its callers instead, so its
+     * purity is inferred without them and `--alter` adds the `_` (param name => true).
+     *
+     * @var array<string, true>
+     */
+    public array $purity_wildcard_candidates = [];
+
+    /**
+     * The parameters the body may assign, lazily computed (param name => true).
+     *
+     * @var array<string, true>|null
+     */
+    private ?array $reassigned_params = null;
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -685,6 +702,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         && !($storage->has_mutations_annotation
                             && ($storage->capabilities === Capabilities::ALL
                                 || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
+                    'wildcards' => array_keys($this->purity_wildcard_candidates),
                 ]);
             }
         }
@@ -1872,6 +1890,51 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return $this->getClosureId();
+    }
+
+    /**
+     * Whether the body may give the parameter another value than the argument: by assigning or
+     * unsetting it, iterating into it, or capturing it by reference.
+     */
+    public function isParamReassigned(string $param_name): bool
+    {
+        if ($this->reassigned_params === null) {
+            $this->reassigned_params = [];
+
+            $finder = new NodeFinder();
+
+            $targets = [];
+
+            foreach ($finder->find(
+                $this->function->getStmts() ?? [],
+                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Stmt\Foreach_
+                    || $node instanceof PhpParser\Node\Stmt\Unset_
+                    || ($node instanceof PhpParser\Node\ClosureUse && $node->byRef),
+            ) as $node) {
+                if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
+                    $targets[] = $node->valueVar;
+
+                    if ($node->keyVar !== null) {
+                        $targets[] = $node->keyVar;
+                    }
+                } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                    $targets = [...$targets, ...$node->vars];
+                } else {
+                    $targets[] = $node->var;
+                }
+            }
+
+            foreach ($finder->findInstanceOf($targets, PhpParser\Node\Expr\Variable::class) as $variable) {
+                if (is_string($variable->name)) {
+                    $this->reassigned_params[$variable->name] = true;
+                }
+            }
+        }
+
+        return isset($this->reassigned_params[$param_name]);
     }
 
     /**

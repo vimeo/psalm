@@ -364,6 +364,53 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPurityWildcardToCalledClosureParams' => [
+                'input' => '<?php
+                    /**
+                     * @param Closure(int): string $f
+                     */
+                    function mapInt(Closure $f, int $i): string {
+                        return $f($i);
+                    }
+
+                    function apply(?callable $cb, int $x): int {
+                        return $cb !== null ? $cb($x) : $x;
+                    }
+
+                    function reassigned(Closure $f): int {
+                        $f = function (): int { return 1; };
+                        return $f();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     *
+                     * @psalm-pure
+                     */
+                    function mapInt(Closure $f, int $i): string {
+                        return $f($i);
+                    }
+
+                    /**
+                     * @param ?callable[_] $cb
+                     *
+                     * @psalm-pure
+                     */
+                    function apply(?callable $cb, int $x): int {
+                        return $cb !== null ? $cb($x) : $x;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function reassigned(Closure $f): int {
+                        $f = function (): int { return 1; };
+                        return $f();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'callsPureFunctionDeclaredLater' => [
                 'input' => '<?php
                     function foo(string $s): string {
