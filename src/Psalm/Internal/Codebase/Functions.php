@@ -29,12 +29,15 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_bool;
+use function pathinfo;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
+
+use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -151,6 +154,26 @@ final class Functions
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
+    }
+
+    /**
+     * Whether scanned PHP code (a project or autoloaded file, not a stub) declares the function, as
+     * a polyfill of a native function does. The native storage (a stub or the runtime's reflection)
+     * usually takes precedence over such a declaration, so the scanned files are asked directly.
+     */
+    public function isDeclaredInCode(string $function_id): bool
+    {
+        $function_id = strtolower($function_id);
+
+        foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
+            if (isset($file_storage->functions[$function_id])
+                && pathinfo($file_path, PATHINFO_EXTENSION) !== 'phpstub'
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
