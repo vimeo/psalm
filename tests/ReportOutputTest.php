@@ -593,12 +593,16 @@ final class ReportOutputTest extends TestCase
         $sink_node   = $make_node('shell_exec($cmd)', 10, 'test.php', '/app/test.php');
 
         /** @param list<DataFlowNodeData> $trace */
-        $make_issue = static fn(array $trace): IssueData => new IssueData(
+        $make_issue = static fn(
+            array $trace,
+            string $type = 'TaintedShell',
+            string $message = 'Detected tainted shell code',
+        ): IssueData => new IssueData(
             IssueData::SEVERITY_ERROR,
             10,
             10,
-            'TaintedShell',
-            'Detected tainted shell code',
+            $type,
+            $message,
             'test.php',
             '/app/test.php',
             'shell_exec($cmd);',
@@ -641,9 +645,11 @@ final class ReportOutputTest extends TestCase
         // Stub and vendor nodes are stripped from the chain; valid source/sink remain
         $stub_node   = $make_node('stub-source', 0, 'stubs/http.php', '/vendor/stubs/http.php');
         $vendor_node = $make_node('SomeClass::method', 8, 'vendor/lib/Foo.php', '/app/vendor/lib/Foo.php');
+        $win_vendor_node = $make_node('Other::method', 9, 'vendor\\lib\\Bar.php', 'C:\\app\\vendor\\lib\\Bar.php');
         $synth_node  = $make_node('variable-use', 6, 'test.php', '/app/test.php');
+        $cast_node   = $make_node('string-cast', 6, 'test.php', '/app/test.php');
         $strip_report = new CompactReport(
-            [$make_issue([$stub_node, $source_node, $synth_node, $vendor_node, $sink_node])],
+            [$make_issue([$stub_node, $source_node, $synth_node, $cast_node, $vendor_node, $win_vendor_node, $sink_node])],
             [],
             $report_options,
         );
@@ -663,16 +669,33 @@ final class ReportOutputTest extends TestCase
             $all_filtered_report->create(),
         );
 
-        // Cross-file source: source in a different file gets @[OtherFile.php:line] notation
-        $cross_file_source = $make_node('$request->input(\'q\')', 12, 'OtherController.php', '/app/OtherController.php');
+        // Cross-file source: source in a different file gets @[path/to/OtherFile.php:line] notation
+        $cross_file_source = $make_node(
+            '$request->input(\'q\')',
+            12,
+            'src/Admin/OtherController.php',
+            '/app/src/Admin/OtherController.php',
+        );
         $cross_file_report = new CompactReport(
             [$make_issue([$cross_file_source, $sink_node])],
             [],
             $report_options,
         );
         $this->assertSame(
-            "test.php:10:1 TaintedShell [direct]\n  \$request->input('q')@[OtherController.php:12] → shell_exec(\$cmd)@10\n",
+            "test.php:10:1 TaintedShell [direct]\n  \$request->input('q')@[src/Admin/OtherController.php:12] → shell_exec(\$cmd)@10\n",
             $cross_file_report->create(),
+        );
+
+        // Custom taints share one issue type, so the message carrying the taint name is kept
+        $custom_report = new CompactReport(
+            [$make_issue([$source_node, $sink_node], 'TaintedCustom', 'Detected tainted custom_foo')],
+            [],
+            $report_options,
+        );
+        $this->assertSame(
+            "test.php:10:1 TaintedCustom [direct]: Detected tainted custom_foo\n"
+                . "  \$_GET['query']@5 → shell_exec(\$cmd)@10\n",
+            $custom_report->create(),
         );
     }
 

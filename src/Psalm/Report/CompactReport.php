@@ -9,11 +9,11 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
-use function basename;
 use function count;
 use function implode;
 use function in_array;
 use function str_contains;
+use function str_ends_with;
 
 /**
  * @psalm-external-mutation-free
@@ -22,7 +22,15 @@ use function str_contains;
 final class CompactReport extends Report
 {
     /** @var list<string> */
-    private const SYNTHETIC_LABELS = ['variable-use', 'arrayvalue-fetch', 'coalesce', 'concat'];
+    private const SYNTHETIC_LABELS = [
+        'variable-use',
+        'arrayvalue-fetch',
+        'arraykey-fetch',
+        'coalesce',
+        'concat',
+        'bitwisenot',
+        'mixed-var-array-access',
+    ];
 
     /**
      * @psalm-mutation-free
@@ -42,7 +50,9 @@ final class CompactReport extends Report
                 $hop_label = $hop_count <= 1 ? 'direct' : (string) $hop_count;
 
                 $output .= $issue_data->file_name . ':' . $issue_data->line_from
-                    . ':' . $issue_data->column_from . ' ' . $issue_data->type . ' [' . $hop_label . ']' . "\n";
+                    . ':' . $issue_data->column_from . ' ' . $issue_data->type . ' [' . $hop_label . ']'
+                    // Custom taints share one issue type, the taint name is only in the message
+                    . ($issue_data->type === 'TaintedCustom' ? ': ' . $issue_data->message : '') . "\n";
                 $output .= '  ' . implode(' → ', $chain_parts) . "\n";
             } else {
                 $output .= $issue_data->file_name . ':' . $issue_data->line_from
@@ -71,10 +81,10 @@ final class CompactReport extends Report
             if ($trace->line_from === 0) {
                 continue; // Skip stubs
             }
-            if (str_contains($trace->file_path, '/vendor/')) {
+            if (str_contains($trace->file_path, '/vendor/') || str_contains($trace->file_path, '\\vendor\\')) {
                 continue; // Skip vendor nodes
             }
-            if (in_array($trace->label, self::SYNTHETIC_LABELS, true)) {
+            if (in_array($trace->label, self::SYNTHETIC_LABELS, true) || str_ends_with($trace->label, '-cast')) {
                 continue; // Skip Psalm-internal graph nodes
             }
             $app_nodes[] = $trace;
@@ -96,7 +106,7 @@ final class CompactReport extends Report
                 if ($node->file_name === $sink_file) {
                     $label .= '@' . $node->line_from;
                 } else {
-                    $label .= '@[' . basename($node->file_name) . ':' . $node->line_from . ']';
+                    $label .= '@[' . $node->file_name . ':' . $node->line_from . ']';
                 }
             } elseif ($i === $last_idx) {
                 // Sink: annotate with line number
