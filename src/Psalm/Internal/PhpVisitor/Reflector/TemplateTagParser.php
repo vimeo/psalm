@@ -69,9 +69,8 @@ final class TemplateTagParser
      * the top level, outside any of those, is the default separator.
      *
      * @param list<string> $tokens
-     * @return int|false
      */
-    private static function findTopLevelEquals(array $tokens)
+    private static function findTopLevelEquals(array $tokens): int|false
     {
         $depth = 0;
         $quote = null;
