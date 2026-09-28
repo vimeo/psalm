@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use function array_search;
 use function array_shift;
 use function array_slice;
 use function array_unshift;
 use function implode;
+use function strlen;
 use function strpos;
 use function substr;
 
@@ -49,7 +49,7 @@ final class TemplateTagParser
             return [$name, [], implode(' ', $tokens) ?: null];
         }
 
-        $eq_pos = array_search('=', $tokens, true);
+        $eq_pos = self::findTopLevelEquals($tokens);
 
         if ($eq_pos === false) {
             return [$name, $tokens, null];
@@ -59,5 +59,49 @@ final class TemplateTagParser
         $default_type_string = implode(' ', $default_tokens) ?: null;
 
         return [$name, array_slice($tokens, 0, $eq_pos), $default_type_string];
+    }
+
+    /**
+     * Finds the index of the `=` token that separates a bound from its default,
+     * ignoring any `=` that's inside a quoted string literal (e.g. the bound
+     * `'a = b'`) or nested inside `<>`, `{}`, `()`, or `[]` (e.g. a conditional type
+     * or shape whose own syntax happens to use `=`). Only a standalone `=` token at
+     * the top level, outside any of those, is the default separator.
+     *
+     * @param list<string> $tokens
+     * @return int|false
+     */
+    private static function findTopLevelEquals(array $tokens)
+    {
+        $depth = 0;
+        $quote = null;
+
+        foreach ($tokens as $i => $token) {
+            if ($quote === null && $depth === 0 && $token === '=') {
+                return $i;
+            }
+
+            $length = strlen($token);
+            for ($j = 0; $j < $length; $j++) {
+                $char = $token[$j];
+
+                if ($quote !== null) {
+                    if ($char === $quote && ($j === 0 || $token[$j - 1] !== '\\')) {
+                        $quote = null;
+                    }
+                    continue;
+                }
+
+                if ($char === "'" || $char === '"') {
+                    $quote = $char;
+                } elseif ($char === '<' || $char === '{' || $char === '(' || $char === '[') {
+                    $depth++;
+                } elseif ($char === '>' || $char === '}' || $char === ')' || $char === ']') {
+                    $depth = $depth > 0 ? $depth - 1 : 0;
+                }
+            }
+        }
+
+        return false;
     }
 }
