@@ -117,12 +117,10 @@ final class CallableTypeComparator
 
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
-                    && !UnionTypeComparator::isContainedBy(
+                    && !self::isParamContainedBy(
                         $codebase,
                         $container_param->type,
                         $input_param->type ?: Type::getMixed(),
-                        false,
-                        false,
                         $atomic_comparison_result,
                     )
                 ) {
@@ -137,12 +135,10 @@ final class CallableTypeComparator
             foreach (array_slice($container_type_part->params ?? [], $input_variadic_param_idx) as $container_param) {
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
-                    && !UnionTypeComparator::isContainedBy(
+                    && !self::isParamContainedBy(
                         $codebase,
                         $container_param->type,
                         $input_param->type ?: Type::getMixed(),
-                        false,
-                        false,
                         $atomic_comparison_result,
                     )
                 ) {
@@ -182,6 +178,43 @@ final class CallableTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * Compares a contravariant parameter position: the container's parameter
+     * type must be contained by the input's. Any type-variable bound recorded
+     * by the comparison is already in the correct direction (see the note in
+     * the body).
+     */
+    private static function isParamContainedBy(
+        Codebase $codebase,
+        Union $container_param_type,
+        Union $input_param_type,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): bool {
+        // Contravariant position: the container's parameter type must be
+        // contained by the input's. Passing them to isContainedBy in this
+        // order already records any type-variable bound in the correct
+        // direction — a variable in the container's parameter is in input
+        // position here, so `callable(`_0):_` against `callable(Item):_`
+        // records `_0 <: Item`, which is exactly the constraint the value
+        // imposes. No post-hoc flip is needed.
+        if (!$atomic_comparison_result) {
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $container_param_type,
+                $input_param_type,
+            );
+        }
+
+        return UnionTypeComparator::isContainedBy(
+            $codebase,
+            $container_param_type,
+            $input_param_type,
+            false,
+            false,
+            $atomic_comparison_result,
+        );
     }
 
     public static function isNotExplicitlyCallableTypeCallable(
@@ -381,12 +414,34 @@ final class CallableTypeComparator
                         );
                     }
 
-                    return new TCallable(
+                    $callable = new TCallable(
                         'callable',
                         $method_storage->params,
                         $converted_return_type,
                         $method_storage->pure,
                     );
+
+                    // Resolve method-level templates against the expected callable shape, so
+                    // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
+                    if ($method_storage->template_types !== null && $container_type_part !== null) {
+                        $template_result = new TemplateResult($method_storage->template_types, []);
+
+                        TemplateStandinTypeReplacer::fillTemplateResult(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                            null,
+                            new Union([$container_type_part]),
+                        );
+
+                        $callable = TemplateInferredTypeReplacer::replace(
+                            new Union([$callable]),
+                            $template_result,
+                            $codebase,
+                        )->getSingleAtomic();
+                    }
+
+                    return $callable;
                 } catch (UnexpectedValueException) {
                     // do nothing
                 }
@@ -464,6 +519,7 @@ final class CallableTypeComparator
                         )->getSingleAtomic();
                     }
 
+                    /** @psalm-suppress LessSpecificReturnStatement */
                     return $callable;
                 }
             }

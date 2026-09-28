@@ -15,6 +15,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
+use Throwable;
 
 use function addslashes;
 use function assert;
@@ -30,6 +31,7 @@ use function str_replace;
 /**
  * Represents an 'object-like array' - an array with known keys.
  *
+ * @psalm-api
  * @psalm-immutable
  */
 class TKeyedArray extends Atomic
@@ -87,6 +89,22 @@ class TKeyedArray extends Atomic
             }
         }
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * @psalm-pure
+     * @param non-empty-array<string|int, Union> $properties
+     * @param array<string, bool> $class_strings
+     * @param array{Union, Union}|null $fallback_params
+     */
+    public static function make(
+        array $properties,
+        ?array $class_strings = null,
+        ?array $fallback_params = null,
+        bool $is_list = false,
+        bool $from_docblock = false,
+    ): self {
+        return new self($properties, $class_strings, $fallback_params, $is_list, $from_docblock);
     }
 
     /**
@@ -697,10 +715,15 @@ class TKeyedArray extends Atomic
                 $quote = true;
             }
 
-            if (preg_match('/^-?[1-9][0-9]*$/', $name)
-                && (string)(int) $name !== $name // overflow occurred
-            ) {
-                $quote = true;
+            if (preg_match('/^-?[1-9][0-9]*$/', $name)) {
+                try {
+                    // If overflow occurred
+                    if ((string)(int) $name !== $name) {
+                        $quote = true;
+                    }
+                } catch (Throwable) {
+                    $quote = true;
+                }
             }
 
             if (preg_match('/^[1-9][0-9]*_([0-9]+_)*[0-9]+$/', $name)) {

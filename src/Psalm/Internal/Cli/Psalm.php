@@ -102,6 +102,7 @@ require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
+require_once __DIR__ . '/IdeDetector.php';
 
 /**
  * @internal
@@ -120,6 +121,7 @@ final class Psalm
 
     private const LONG_OPTIONS = [
         'clear-cache',
+        'consolidate-cache',
         'clear-global-cache',
         'config:',
         'debug',
@@ -142,6 +144,7 @@ final class Psalm
         'no-cache',
         'no-reflection-cache',
         'no-file-cache',
+        'no-reference-cache',
         'output-format:',
         'plugin:',
         'report:',
@@ -149,7 +152,7 @@ final class Psalm
         'root:',
         'set-baseline::',
         'show-info:',
-        'show-snippet:',
+        'show-snippet::',
         'stats',
         'threads:',
         'scan-threads:',
@@ -338,6 +341,10 @@ final class Psalm
             self::clearCache($config);
         }
 
+        if (isset($options['consolidate-cache'])) {
+            self::consolidateCache($config, $current_dir);
+        }
+
         if (isset($options['clear-global-cache'])) {
             self::clearGlobalCache($config);
         }
@@ -470,8 +477,7 @@ final class Psalm
      */
     private static function findDefaultOutputFormat(): string
     {
-        $emulator = getenv('TERMINAL_EMULATOR');
-        if (is_string($emulator) && str_starts_with($emulator, 'JetBrains')) {
+        if (IdeDetector::detect() === IdeDetector::IDE_PHPSTORM) {
             return Report::TYPE_PHP_STORM;
         }
 
@@ -644,14 +650,26 @@ final class Psalm
             ? $options['show-info'] === 'true' || $options['show-info'] === '1'
             : false;
 
+        // CI takes precedence over AI detection: persistent CI logs still want
+        // per-phase breadcrumbs for humans reviewing the build. Agents that
+        // need the CI log quieted can pass --no-progress explicitly.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci
+                && !isset($options['long-progress'])
+                && CliUtils::runningUnderAiAgent());
+
         if ($debug) {
             $progress = new DebugProgress();
-        } elseif (isset($options['no-progress'])) {
+        } elseif ($no_progress) {
             $progress = new VoidProgress();
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
-            if (isset($options['long-progress'])) {
-                $progress = new LongProgress($show_errors, $show_info, $in_ci);
+            // A `\r`-based progress bar on a piped stderr just floods the log
+            // with every intermediate update. Fall back to the CI-style output,
+            // which emits one line per phase transition.
+            $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
+            if (isset($options['long-progress']) || $quiet_progress) {
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
             } else {
                 $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
             }
@@ -668,26 +686,23 @@ final class Psalm
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
             $no_file_cache = isset($options['no-file-cache']);
-
-            $file_storage_cache_provider = $no_reflection_cache
-                ? null
-                : new FileStorageCacheProvider($config);
-
-            $classlike_storage_cache_provider = $no_reflection_cache
-                ? null
-                : new ClassLikeStorageCacheProvider($config);
+            $no_reference_cache = isset($options['no-reference-cache']);
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, !$no_file_cache),
-                $file_storage_cache_provider,
-                $classlike_storage_cache_provider,
-                new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
+                new ProjectCacheProvider(),
             );
         }
         return $providers;
@@ -862,7 +877,9 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options);
+        $stdout_report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -896,6 +913,22 @@ final class Psalm
             Config::removeCacheDirectory($cache_directory);
         }
         echo 'Cache directory deleted' . PHP_EOL;
+        exit;
+    }
+
+
+    private static function consolidateCache(Config $config, string $current_dir): never
+    {
+        $cache_directory = $config->getCacheDirectory();
+
+        if ($cache_directory !== null) {
+            $lock = Composer::getLockFile($current_dir);
+            (new ParserCacheProvider($config, $lock))->consolidate();
+            (new FileStorageCacheProvider($config, $lock))->consolidate();
+            (new ClassLikeStorageCacheProvider($config, $lock))->consolidate();
+            (new FileReferenceCacheProvider($config, $lock))->consolidate();
+        }
+        echo 'Cache consolidated' . PHP_EOL;
         exit;
     }
 
@@ -934,6 +967,7 @@ final class Psalm
         Progress $progress,
     ): void {
         $ini_handler = new PsalmRestarter('PSALM');
+        $ini_handler->enableJit = $force_jit;
 
         if (isset($options['disable-extension'])) {
             if (is_array($options['disable-extension'])) {
@@ -982,20 +1016,25 @@ final class Psalm
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
-            } else {
+            } elseif ($force_jit) {
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
                     . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF' . PHP_EOL
+                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
                     . PHP_EOL . PHP_EOL);
             }
         } else {
             $progress->write(PHP_EOL
                 . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
+                . 'Install and enable the opcache extension to use JIT with --force-jit.'
                 . PHP_EOL . PHP_EOL);
         }
         if ($force_jit && !$hasJit) {
-            $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
+            $progress->write('Exiting because --force-jit was set but JIT is not available.' . PHP_EOL . PHP_EOL);
             exit(1);
         }
 
@@ -1374,7 +1413,7 @@ final class Psalm
                 Used to disable certain extensions while Psalm is running.
 
             --force-jit
-                If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
+                Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
             --threads=INT
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
@@ -1443,7 +1482,9 @@ final class Psalm
 
         Output:
             -m, --monochrome
-                Enable monochrome output
+                Enable monochrome output.
+                Auto-enabled when NO_COLOR is set to a non-empty value or when
+                an AI coding agent is driving the shell.
 
             --output-format=console
                 Changes the output format.
@@ -1451,10 +1492,13 @@ final class Psalm
                     $outputFormats
 
             --no-progress
-                Disable the progress indicator
+                Disable the progress indicator.
+                Auto-enabled when an AI coding agent is driving the shell
+                (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs
+                Use a progress indicator suitable for Continuous Integration logs.
+                Auto-enabled in CI and when stderr is not attached to a terminal.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
@@ -1468,6 +1512,11 @@ final class Psalm
                 Whether the report should include non-errors in its output (defaults to true)
 
         Caching:
+            --consolidate-cache
+                Consolidates all cache files that Psalm uses for this specific project into a single file,
+                for quicker runs when doing whole project scans.  
+                Make sure to consolidate the cache again after running Psalm before saving the cache via CI.
+
             --clear-cache
                 Clears all cache files that Psalm uses for this specific project
 
@@ -1480,6 +1529,9 @@ final class Psalm
             --no-reflection-cache
                 Runs Psalm without using cached representations of unchanged classes and files.
                 Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
+
+            --no-reference-cache
+                Runs Psalm without using cached representations of unchanged methods.
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -105,6 +106,7 @@ final class StaticPropertyFetchAnalyzer
                     $context->self,
                     $context->calling_method_id,
                     $statements_analyzer->getSuppressedIssues(),
+                    new ClassLikeNameOptions(context: $context),
                 ) !== true) {
                     return false;
                 }

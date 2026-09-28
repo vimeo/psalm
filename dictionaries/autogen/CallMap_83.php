@@ -2559,6 +2559,7 @@ return array (
   array (
     0 => 'bool',
     'cid' => 'int',
+    'throw_exception=' => 'bool',
   ),
   'co::create' => 
   array (
@@ -2693,6 +2694,11 @@ return array (
   array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
+  ),
+  'co::settimelimit' => 
+  array (
+    0 => 'bool',
+    'timeout' => 'float',
   ),
   'co::sleep' => 
   array (
@@ -3342,6 +3348,12 @@ return array (
   array (
     0 => 'bool',
   ),
+  'co\\http\\client::disconnect' => 
+  array (
+    0 => 'bool',
+    'code=' => 'int',
+    'reason=' => 'string',
+  ),
   'co\\http\\client::download' => 
   array (
     0 => 'bool',
@@ -3395,6 +3407,11 @@ return array (
   array (
     0 => 'false|int',
   ),
+  'co\\http\\client::ping' => 
+  array (
+    0 => 'bool',
+    'data=' => 'string',
+  ),
   'co\\http\\client::post' => 
   array (
     0 => 'bool',
@@ -3410,7 +3427,7 @@ return array (
   ),
   'co\\http\\client::recv' => 
   array (
-    0 => 'Swoole\\WebSocket\\Frame|bool',
+    0 => 'Swoole\\WebSocket\\Frame|bool|string',
     'timeout=' => 'float',
   ),
   'co\\http\\client::set' => 
@@ -10600,31 +10617,31 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_assoc' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_both' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_object' => 
   array (
     0 => 'false|stdClass',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_fetch_row' => 
   array (
     0 => 'mixed',
     'stmt' => 'mixed',
-    'row_number=' => 'int|null',
+    'row_number=' => 'int',
   ),
   'db2_field_display_size' => 
   array (
@@ -13611,195 +13628,95 @@ return array (
     0 => 'float',
     'value' => 'mixed',
   ),
-  'ds\\deque::__construct' => 
+  'ds\\heap' => 
+  array (
+    0 => 'mixed',
+    'values=' => 'mixed',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\heap::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+    'comparator=' => 'callable|null',
   ),
-  'ds\\deque::allocate' => 
+  'ds\\heap::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\heap::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'ds\\heap::allocate' => 
   array (
     0 => 'mixed',
     'capacity' => 'int',
   ),
-  'ds\\deque::apply' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::capacity' => 
+  'ds\\heap::capacity' => 
   array (
     0 => 'int',
   ),
-  'ds\\deque::clear' => 
+  'ds\\heap::clear' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::contains' => 
+  'ds\\heap::copy' => 
   array (
-    0 => 'bool',
-    '...values=' => 'mixed',
+    0 => 'mixed',
   ),
-  'ds\\deque::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\deque::count' => 
+  'ds\\heap::count' => 
   array (
     0 => 'int',
   ),
-  'ds\\deque::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
-  'ds\\deque::find' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::first' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\deque::getiterator' => 
+  'ds\\heap::getiterator' => 
   array (
     0 => 'Traversable',
   ),
-  'ds\\deque::insert' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\deque::isempty' => 
+  'ds\\heap::isempty' => 
   array (
     0 => 'bool',
   ),
-  'ds\\deque::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
-  ),
-  'ds\\deque::jsonserialize' => 
+  'ds\\heap::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::last' => 
+  'ds\\heap::peek' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\deque::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
-  'ds\\deque::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\deque::pop' => 
+  'ds\\heap::pop' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\deque::push' => 
+  'ds\\heap::push' => 
   array (
     0 => 'mixed',
     '...values=' => 'mixed',
   ),
-  'ds\\deque::reduce' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-    'initial=' => 'mixed',
-  ),
-  'ds\\deque::remove' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\deque::reverse' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
-  ),
-  'ds\\deque::rotate' => 
-  array (
-    0 => 'mixed',
-    'rotations' => 'int',
-  ),
-  'ds\\deque::set' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\deque::shift' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
-  'ds\\deque::sort' => 
-  array (
-    0 => 'mixed',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\deque::sum' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\deque::toarray' => 
+  'ds\\heap::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\deque::unshift' => 
+  'ds\\map' => 
   array (
     0 => 'mixed',
-    '...values=' => 'mixed',
+    'values=' => 'mixed',
   ),
   'ds\\map::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+  ),
+  'ds\\map::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\map::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\map::allocate' => 
   array (
@@ -13821,7 +13738,7 @@ return array (
   ),
   'ds\\map::copy' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'mixed',
   ),
   'ds\\map::count' => 
   array (
@@ -14004,12 +13921,17 @@ return array (
   'ds\\pair::__construct' => 
   array (
     0 => 'void',
-    'key=' => 'mixed',
-    'value=' => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
-  'ds\\pair::copy' => 
+  'ds\\pair::__serialize' => 
   array (
-    0 => 'Ds\\Pair',
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\pair::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\pair::jsonserialize' => 
   array (
@@ -14019,141 +13941,223 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'ds\\priorityqueue::__construct' => 
-  array (
-    0 => 'void',
-  ),
-  'ds\\priorityqueue::allocate' => 
+  'ds\\seq' => 
   array (
     0 => 'mixed',
-    'capacity' => 'int',
+    'values=' => 'mixed',
   ),
-  'ds\\priorityqueue::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\priorityqueue::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\priorityqueue::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\priorityqueue::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\priorityqueue::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\priorityqueue::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::peek' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\priorityqueue::push' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-    'priority' => 'mixed',
-  ),
-  'ds\\priorityqueue::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\queue::__construct' => 
+  'ds\\seq::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
   ),
-  'ds\\queue::allocate' => 
+  'ds\\seq::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\seq::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'ds\\seq::allocate' => 
   array (
     0 => 'mixed',
     'capacity' => 'int',
   ),
-  'ds\\queue::capacity' => 
+  'ds\\seq::apply' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'ds\\seq::capacity' => 
   array (
     0 => 'int',
   ),
-  'ds\\queue::clear' => 
+  'ds\\seq::clear' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::copy' => 
+  'ds\\seq::contains' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'bool',
+    '...values=' => 'mixed',
   ),
-  'ds\\queue::count' => 
+  'ds\\seq::copy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::count' => 
   array (
     0 => 'int',
   ),
-  'ds\\queue::getiterator' => 
+  'ds\\seq::filter' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback=' => 'callable|null',
+  ),
+  'ds\\seq::find' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'ds\\seq::first' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::get' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\seq::getiterator' => 
   array (
     0 => 'Traversable',
   ),
-  'ds\\queue::isempty' => 
+  'ds\\seq::insert' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    '...values=' => 'mixed',
+  ),
+  'ds\\seq::isempty' => 
   array (
     0 => 'bool',
   ),
-  'ds\\queue::jsonserialize' => 
+  'ds\\seq::join' => 
+  array (
+    0 => 'string',
+    'glue=' => 'string',
+  ),
+  'ds\\seq::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::offsetexists' => 
+  'ds\\seq::last' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::map' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'callback' => 'callable',
+  ),
+  'ds\\seq::merge' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'values' => 'mixed',
+  ),
+  'ds\\seq::offsetexists' => 
   array (
     0 => 'bool',
     'offset' => 'mixed',
   ),
-  'ds\\queue::offsetget' => 
+  'ds\\seq::offsetget' => 
   array (
     0 => 'mixed',
     'offset' => 'mixed',
   ),
-  'ds\\queue::offsetset' => 
+  'ds\\seq::offsetset' => 
   array (
     0 => 'void',
     'offset' => 'mixed',
     'value' => 'mixed',
   ),
-  'ds\\queue::offsetunset' => 
+  'ds\\seq::offsetunset' => 
   array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'ds\\queue::peek' => 
+  'ds\\seq::pop' => 
   array (
     0 => 'mixed',
   ),
-  'ds\\queue::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\queue::push' => 
+  'ds\\seq::push' => 
   array (
     0 => 'mixed',
     '...values=' => 'mixed',
   ),
-  'ds\\queue::toarray' => 
+  'ds\\seq::reduce' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+    'initial=' => 'mixed',
+  ),
+  'ds\\seq::remove' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ds\\seq::reverse' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::reversed' => 
+  array (
+    0 => 'Ds\\Sequence',
+  ),
+  'ds\\seq::rotate' => 
+  array (
+    0 => 'mixed',
+    'rotations' => 'int',
+  ),
+  'ds\\seq::set' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+    'value' => 'mixed',
+  ),
+  'ds\\seq::shift' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::slice' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'index' => 'int',
+    'length=' => 'int|null',
+  ),
+  'ds\\seq::sort' => 
+  array (
+    0 => 'mixed',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\seq::sorted' => 
+  array (
+    0 => 'Ds\\Sequence',
+    'comparator=' => 'callable|null',
+  ),
+  'ds\\seq::sum' => 
+  array (
+    0 => 'mixed',
+  ),
+  'ds\\seq::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'ds\\seq::unshift' => 
+  array (
+    0 => 'mixed',
+    '...values=' => 'mixed',
+  ),
+  'ds\\set' => 
+  array (
+    0 => 'mixed',
+    'values=' => 'mixed',
   ),
   'ds\\set::__construct' => 
   array (
     0 => 'void',
     'values=' => 'mixed',
+  ),
+  'ds\\set::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'ds\\set::__unserialize' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'ds\\set::add' => 
   array (
@@ -14180,7 +14184,7 @@ return array (
   ),
   'ds\\set::copy' => 
   array (
-    0 => 'Ds\\Collection',
+    0 => 'mixed',
   ),
   'ds\\set::count' => 
   array (
@@ -14314,267 +14318,6 @@ return array (
   array (
     0 => 'Ds\\Set',
     'set' => 'Ds\\Set',
-  ),
-  'ds\\stack::__construct' => 
-  array (
-    0 => 'void',
-    'values=' => 'mixed',
-  ),
-  'ds\\stack::allocate' => 
-  array (
-    0 => 'mixed',
-    'capacity' => 'int',
-  ),
-  'ds\\stack::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\stack::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\stack::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\stack::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\stack::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\stack::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\stack::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\stack::peek' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\stack::push' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
-  ),
-  'ds\\stack::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\vector::__construct' => 
-  array (
-    0 => 'void',
-    'values=' => 'mixed',
-  ),
-  'ds\\vector::allocate' => 
-  array (
-    0 => 'mixed',
-    'capacity' => 'int',
-  ),
-  'ds\\vector::apply' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::capacity' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\vector::clear' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::contains' => 
-  array (
-    0 => 'bool',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::copy' => 
-  array (
-    0 => 'Ds\\Collection',
-  ),
-  'ds\\vector::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\vector::filter' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback=' => 'callable|null',
-  ),
-  'ds\\vector::find' => 
-  array (
-    0 => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::first' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::get' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\vector::getiterator' => 
-  array (
-    0 => 'Traversable',
-  ),
-  'ds\\vector::insert' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\vector::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
-  ),
-  'ds\\vector::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::last' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::map' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'callback' => 'callable',
-  ),
-  'ds\\vector::merge' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'values' => 'mixed',
-  ),
-  'ds\\vector::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
-  'ds\\vector::pop' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::push' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
-  ),
-  'ds\\vector::reduce' => 
-  array (
-    0 => 'mixed',
-    'callback' => 'callable',
-    'initial=' => 'mixed',
-  ),
-  'ds\\vector::remove' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ds\\vector::reverse' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::reversed' => 
-  array (
-    0 => 'Ds\\Sequence',
-  ),
-  'ds\\vector::rotate' => 
-  array (
-    0 => 'mixed',
-    'rotations' => 'int',
-  ),
-  'ds\\vector::set' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ds\\vector::shift' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::slice' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
-  'ds\\vector::sort' => 
-  array (
-    0 => 'mixed',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sorted' => 
-  array (
-    0 => 'Ds\\Sequence',
-    'comparator=' => 'callable|null',
-  ),
-  'ds\\vector::sum' => 
-  array (
-    0 => 'mixed',
-  ),
-  'ds\\vector::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\vector::unshift' => 
-  array (
-    0 => 'mixed',
-    '...values=' => 'mixed',
   ),
   'emptyiterator::current' => 
   array (
@@ -20223,7 +19966,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'bool',
-    'kernel' => 'array<array-key, mixed>',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'int',
   ),
   'imagick::count' => 
@@ -20347,7 +20090,7 @@ return array (
   ),
   'imagick::evaluateimages' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
     'evaluate' => 'int',
   ),
   'imagick::exportimagepixels' => 
@@ -20854,7 +20597,7 @@ return array (
   ),
   'imagick::getregistry' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'key' => 'string',
   ),
   'imagick::getreleasedate' => 
@@ -20872,7 +20615,7 @@ return array (
   ),
   'imagick::getresourcelimit' => 
   array (
-    0 => 'int',
+    0 => 'float',
     'type' => 'int',
   ),
   'imagick::getsamplingfactors' => 
@@ -21023,7 +20766,7 @@ return array (
   ),
   'imagick::localcontrastimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'radius' => 'float',
     'strength' => 'float',
   ),
@@ -21096,7 +20839,7 @@ return array (
     'columns' => 'int',
     'rows' => 'int',
     'background_color' => 'ImagickPixel|string',
-    'format=' => 'string',
+    'format=' => 'null|string',
   ),
   'imagick::newpseudoimage' => 
   array (
@@ -21140,7 +20883,7 @@ return array (
   ),
   'imagick::optimizeimagelayers' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
   ),
   'imagick::optimizeimagetransparency' => 
   array (
@@ -21856,8 +21599,8 @@ return array (
   array (
     0 => 'Imagick',
     'image' => 'Imagick',
-    '&offset=' => 'array<array-key, mixed>|null',
-    '&similarity=' => 'float|null',
+    '&offset=' => 'mixed',
+    '&similarity=' => 'mixed',
     'threshold=' => 'float',
     'metric=' => 'int',
   ),
@@ -21932,8 +21675,8 @@ return array (
   array (
     0 => 'Imagick',
     'image' => 'Imagick',
-    '&offset=' => 'array<array-key, mixed>|null',
-    '&similarity=' => 'float|null',
+    '&offset=' => 'mixed',
+    '&similarity=' => 'mixed',
     'threshold=' => 'float',
     'metric=' => 'int',
   ),
@@ -22173,7 +21916,7 @@ return array (
   ),
   'imagickdraw::getclippath' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getcliprule' => 
   array (
@@ -22289,7 +22032,7 @@ return array (
   ),
   'imagickdraw::gettextencoding' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::gettextinterlinespacing' => 
   array (
@@ -22889,7 +22632,7 @@ return array (
   array (
     0 => 'ImagickKernel',
     'matrix' => 'array<array-key, mixed>',
-    'origin' => 'array<array-key, mixed>|null',
+    'origin=' => 'array<array-key, mixed>|null',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -22998,19 +22741,19 @@ return array (
   ),
   'imagickpixel::ispixelsimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel|string',
     'fuzz' => 'float',
   ),
   'imagickpixel::ispixelsimilarquantum' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel|string',
     'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
   ),
   'imagickpixel::issimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel|string',
     'fuzz_quantum_range_scaled_by_square_root_of_three' => 'float',
   ),
@@ -23107,7 +22850,7 @@ return array (
   ),
   'imagickpixeliterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::destroy' => 
   array (
@@ -23115,7 +22858,7 @@ return array (
   ),
   'imagickpixeliterator::getcurrentiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getiteratorrow' => 
   array (
@@ -23123,7 +22866,7 @@ return array (
   ),
   'imagickpixeliterator::getnextiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getpixeliterator' => 
   array (
@@ -27111,6 +26854,12 @@ return array (
     0 => 'void',
     'data' => 'array<array-key, mixed>',
   ),
+  'mongodb\\bson\\binary::fromvector' => 
+  array (
+    0 => 'MongoDB\\BSON\\Binary',
+    'vector' => 'array<array-key, mixed>',
+    'vectorType' => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::getdata' => 
   array (
     0 => 'string',
@@ -27119,18 +26868,17 @@ return array (
   array (
     0 => 'int',
   ),
+  'mongodb\\bson\\binary::getvectortype' => 
+  array (
+    0 => 'MongoDB\\BSON\\VectorType',
+  ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\binary::serialize' => 
+  'mongodb\\bson\\binary::toarray' => 
   array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binary::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\bson\\dbpointer::__construct' => 
   array (
@@ -27158,15 +26906,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\dbpointer::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\dbpointer::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
     0 => 'void',
@@ -27193,15 +26932,6 @@ return array (
   'mongodb\\bson\\decimal128::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\decimal128::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\decimal128::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\document::__construct' => 
   array (
@@ -27275,10 +27005,6 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\document::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\document::tocanonicalextendedjson' => 
   array (
     0 => 'string',
@@ -27291,21 +27017,6 @@ return array (
   'mongodb\\bson\\document::torelaxedextendedjson' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\document::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\fromjson' => 
-  array (
-    0 => 'string',
-    'json' => 'string',
-  ),
-  'mongodb\\bson\\fromphp' => 
-  array (
-    0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
@@ -27333,15 +27044,6 @@ return array (
   'mongodb\\bson\\int64::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\int64::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\int64::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\iterator::__construct' => 
   array (
@@ -27403,15 +27105,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\javascript::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascript::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\maxkey::__serialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -27430,15 +27123,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\maxkey::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\maxkey::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\minkey::__serialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -27456,15 +27140,6 @@ return array (
   'mongodb\\bson\\minkey::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\minkey::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\minkey::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
@@ -27496,15 +27171,6 @@ return array (
   'mongodb\\bson\\objectid::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\objectid::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\objectid::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\packedarray::__construct' => 
   array (
@@ -27573,10 +27239,6 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\packedarray::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\packedarray::tocanonicalextendedjson' => 
   array (
     0 => 'string',
@@ -27589,11 +27251,6 @@ return array (
   'mongodb\\bson\\packedarray::torelaxedextendedjson' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\packedarray::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\regex::__construct' => 
   array (
@@ -27631,15 +27288,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\regex::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regex::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\symbol::__construct' => 
   array (
     0 => 'void',
@@ -27665,15 +27313,6 @@ return array (
   'mongodb\\bson\\symbol::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\symbol::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\symbol::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
@@ -27711,36 +27350,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\timestamp::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\timestamp::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tojson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'bson' => 'string',
-    'typemap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
   'mongodb\\bson\\undefined::__construct' => 
   array (
     0 => 'void',
@@ -27767,19 +27376,10 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\undefined::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\undefined::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
     0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|float|int|null|string',
+    'milliseconds=' => 'DateTimeInterface|MongoDB\\BSON\\Int64|int|null',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -27803,10 +27403,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\utcdatetime::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\utcdatetime::todatetime' => 
   array (
     0 => 'DateTime',
@@ -27815,10 +27411,9 @@ return array (
   array (
     0 => 'DateTimeImmutable',
   ),
-  'mongodb\\bson\\utcdatetime::unserialize' => 
+  'mongodb\\bson\\vectortype::cases' => 
   array (
-    0 => 'void',
-    'data' => 'string',
+    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
@@ -27846,6 +27441,99 @@ return array (
     'filter' => 'array<array-key, mixed>|object',
     'newObj' => 'array<array-key, mixed>|object',
     'updateOptions=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::__construct' => 
+  array (
+    0 => 'void',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::count' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommand::deletemany' => 
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::deleteone' => 
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::insertone' => 
+  array (
+    0 => 'mixed',
+    'namespace' => 'string',
+    'document' => 'array<array-key, mixed>|object',
+  ),
+  'mongodb\\driver\\bulkwritecommand::replaceone' => 
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'replacement' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::updatemany' => 
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'update' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommand::updateone' => 
+  array (
+    0 => 'void',
+    'namespace' => 'string',
+    'filter' => 'array<array-key, mixed>|object',
+    'update' => 'array<array-key, mixed>|object',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getdeletedcount' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getdeleteresults' => 
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getinsertedcount' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getinsertresults' => 
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getmatchedcount' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getmodifiedcount' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getupdateresults' => 
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::getupsertedcount' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\bulkwritecommandresult::isacknowledged' => 
+  array (
+    0 => 'bool',
   ),
   'mongodb\\driver\\clientencryption::__construct' => 
   array (
@@ -27928,8 +27616,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
-    0 => 'MongoDB\\BSON\\Int64|MongoDB\\Driver\\CursorId',
-    'asInt64=' => 'bool',
+    0 => 'MongoDB\\BSON\\Int64',
   ),
   'mongodb\\driver\\cursor::getserver' => 
   array (
@@ -27963,37 +27650,6 @@ return array (
   'mongodb\\driver\\cursor::valid' => 
   array (
     0 => 'bool',
-  ),
-  'mongodb\\driver\\cursorid::__construct' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\cursorid::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursorid::__set_state' => 
-  array (
-    0 => 'MongoDB\\Driver\\CursorId',
-    'properties' => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursorid::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\cursorid::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursorid::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\cursorid::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__construct' => 
   array (
@@ -28039,6 +27695,70 @@ return array (
     0 => 'string',
   ),
   'mongodb\\driver\\exception\\authenticationexception::haserrorlabel' => 
+  array (
+    0 => 'bool',
+    'errorLabel' => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::geterrorreply' => 
+  array (
+    0 => 'MongoDB\\BSON\\Document|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getpartialresult' => 
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getwriteconcernerrors' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::getwriteerrors' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'mongodb\\driver\\exception\\bulkwritecommandexception::haserrorlabel' => 
   array (
     0 => 'bool',
     'errorLabel' => 'string',
@@ -28521,54 +28241,6 @@ return array (
     0 => 'bool',
     'errorLabel' => 'string',
   ),
-  'mongodb\\driver\\exception\\sslconnectionexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::getcode' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::getprevious' => 
-  array (
-    0 => 'Throwable|null',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::gettrace' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::haserrorlabel' => 
-  array (
-    0 => 'bool',
-    'errorLabel' => 'string',
-  ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__construct' => 
   array (
     0 => 'void',
@@ -28612,58 +28284,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\exception\\writeexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-  ),
-  'mongodb\\driver\\exception\\writeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getcode' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getprevious' => 
-  array (
-    0 => 'Throwable|null',
-  ),
-  'mongodb\\driver\\exception\\writeexception::gettrace' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\exception\\writeexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
-  array (
-    0 => 'MongoDB\\Driver\\WriteResult',
-  ),
-  'mongodb\\driver\\exception\\writeexception::haserrorlabel' => 
-  array (
-    0 => 'bool',
-    'errorLabel' => 'string',
-  ),
   'mongodb\\driver\\manager::__construct' => 
   array (
     0 => 'void',
@@ -28686,39 +28306,45 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\manager::executebulkwritecommand' => 
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult',
+    'bulkWriteCommand' => 'MongoDB\\Driver\\BulkWriteCommand',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executereadwritecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\manager::executewritecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
@@ -28803,10 +28429,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
   array (
     0 => 'int|null',
@@ -28846,10 +28468,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandstartedevent::getrequestid' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
   array (
@@ -28894,10 +28512,6 @@ return array (
   'mongodb\\driver\\monitoring\\commandsucceededevent::getrequestid' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
   array (
@@ -29082,10 +28696,6 @@ return array (
     0 => 'void',
     'level=' => 'null|string',
   ),
-  'mongodb\\driver\\readconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'mongodb\\driver\\readconcern::__set_state' => 
   array (
     0 => 'MongoDB\\Driver\\ReadConcern',
@@ -29108,25 +28718,12 @@ return array (
   array (
     0 => 'bool',
   ),
-  'mongodb\\driver\\readconcern::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\readconcern::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
   'mongodb\\driver\\readpreference::__construct' => 
   array (
     0 => 'void',
-    'mode' => 'int|string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\readpreference::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\readpreference::__set_state' => 
   array (
@@ -29150,10 +28747,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\driver\\readpreference::getmode' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\readpreference::getmodestring' => 
   array (
     0 => 'string',
@@ -29161,15 +28754,6 @@ return array (
   'mongodb\\driver\\readpreference::gettagsets' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\readpreference::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\readpreference::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\server::__construct' => 
   array (
@@ -29180,39 +28764,45 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\server::executebulkwritecommand' => 
+  array (
+    0 => 'MongoDB\\Driver\\BulkWriteCommandResult',
+    'bulkWriteCommand' => 'MongoDB\\Driver\\BulkWriteCommand',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executereadwritecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\server::executewritecommand' => 
   array (
-    0 => 'MongoDB\\Driver\\Cursor',
+    0 => 'MongoDB\\Driver\\CursorInterface',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
     'options=' => 'array<array-key, mixed>|null',
@@ -29289,15 +28879,6 @@ return array (
   'mongodb\\driver\\serverapi::bsonserialize' => 
   array (
     0 => 'stdClass',
-  ),
-  'mongodb\\driver\\serverapi::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\serverapi::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\serverdescription::__construct' => 
   array (
@@ -29418,10 +28999,6 @@ return array (
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
   ),
-  'mongodb\\driver\\writeconcern::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'mongodb\\driver\\writeconcern::__set_state' => 
   array (
     0 => 'MongoDB\\Driver\\WriteConcern',
@@ -29451,15 +29028,6 @@ return array (
   'mongodb\\driver\\writeconcern::isdefault' => 
   array (
     0 => 'bool',
-  ),
-  'mongodb\\driver\\writeconcern::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\writeconcern::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
   ),
   'mongodb\\driver\\writeconcernerror::__construct' => 
   array (
@@ -29503,7 +29071,7 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getdeletedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::geterrorreplies' => 
   array (
@@ -29511,15 +29079,15 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getinsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmatchedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getmodifiedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getserver' => 
   array (
@@ -29527,7 +29095,7 @@ return array (
   ),
   'mongodb\\driver\\writeresult::getupsertedcount' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'mongodb\\driver\\writeresult::getupsertedids' => 
   array (
@@ -34984,6 +34552,12 @@ return array (
     'key' => 'array<array-key, mixed>|string',
     '...other_keys=' => 'string',
   ),
+  'redis::delifeq' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
   'redis::discard' => 
   array (
     0 => 'bool',
@@ -35049,6 +34623,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'null|string',
+  ),
+  'redis::expiremember' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'ttl' => 'int',
+    'unit=' => 'null|string',
+  ),
+  'redis::expirememberat' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'timestamp' => 'int',
   ),
   'redis::expiretime' => 
   array (
@@ -35260,6 +34849,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'redis::getwithmeta' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
   'redis::hdel' => 
   array (
     0 => 'false|int',
@@ -35273,6 +34867,28 @@ return array (
     'key' => 'string',
     'field' => 'string',
   ),
+  'redis::hexpire' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hexpireat' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'time' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hexpiretime' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'redis::hget' => 
   array (
     0 => 'mixed',
@@ -35283,6 +34899,25 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
     'key' => 'string',
+  ),
+  'redis::hgetdel' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hgetex' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null|string',
+  ),
+  'redis::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+    'member' => 'string',
   ),
   'redis::hincrby' => 
   array (
@@ -35320,6 +34955,40 @@ return array (
     'key' => 'string',
     'fieldvals' => 'array<array-key, mixed>',
   ),
+  'redis::hpersist' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hpexpire' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hpexpireat' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'mstime' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'redis::hpexpiretime' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'redis::hpttl' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'redis::hrandfield' => 
   array (
     0 => 'array<array-key, mixed>|false|string',
@@ -35340,6 +35009,13 @@ return array (
     'key' => 'string',
     '...fields_and_vals=' => 'mixed',
   ),
+  'redis::hsetex' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null',
+  ),
   'redis::hsetnx' => 
   array (
     0 => 'bool',
@@ -35352,6 +35028,12 @@ return array (
     0 => 'false|int',
     'key' => 'string',
     'field' => 'string',
+  ),
+  'redis::httl' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
   ),
   'redis::hvals' => 
   array (
@@ -35772,6 +35454,14 @@ return array (
     0 => 'bool',
     'db' => 'int',
   ),
+  'redis::servername' => 
+  array (
+    0 => 'false|string',
+  ),
+  'redis::serverversion' => 
+  array (
+    0 => 'false|string',
+  ),
   'redis::set' => 
   array (
     0 => 'bool|string',
@@ -36021,6 +35711,90 @@ return array (
   'redis::unwatch' => 
   array (
     0 => 'bool',
+  ),
+  'redis::vadd' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'element' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'redis::vcard' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+  ),
+  'redis::vdim' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+  ),
+  'redis::vemb' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'raw=' => 'bool',
+  ),
+  'redis::vgetattr' => 
+  array (
+    0 => 'array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'member' => 'mixed',
+    'decode=' => 'bool',
+  ),
+  'redis::vinfo' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
+  'redis::vismember' => 
+  array (
+    0 => 'bool',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'redis::vlinks' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'withscores=' => 'bool',
+  ),
+  'redis::vrandmember' => 
+  array (
+    0 => 'array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'count=' => 'int',
+  ),
+  'redis::vrange' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'min' => 'string',
+    'max' => 'string',
+    'count=' => 'int',
+  ),
+  'redis::vrem' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'redis::vsetattr' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+    'attributes' => 'array<array-key, mixed>|string',
+  ),
+  'redis::vsim' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::wait' => 
   array (
@@ -36781,6 +36555,12 @@ return array (
     'key' => 'array<array-key, mixed>|string',
     '...other_keys=' => 'string',
   ),
+  'rediscluster::delifeq' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
   'rediscluster::discard' => 
   array (
     0 => 'bool',
@@ -36847,6 +36627,21 @@ return array (
     'key' => 'string',
     'timestamp' => 'int',
     'mode=' => 'null|string',
+  ),
+  'rediscluster::expiremember' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'ttl' => 'int',
+    'unit=' => 'null|string',
+  ),
+  'rediscluster::expirememberat' => 
+  array (
+    0 => 'false|int',
+    'key' => 'string',
+    'field' => 'string',
+    'timestamp' => 'int',
   ),
   'rediscluster::expiretime' => 
   array (
@@ -36964,6 +36759,11 @@ return array (
     'key' => 'string',
     'value' => 'int',
   ),
+  'rediscluster::getdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+  ),
   'rediscluster::getex' => 
   array (
     0 => 'RedisCluster|false|string',
@@ -37000,6 +36800,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>|false',
   ),
+  'rediscluster::getwithmeta' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
   'rediscluster::hdel' => 
   array (
     0 => 'RedisCluster|false|int',
@@ -37013,6 +36818,28 @@ return array (
     'key' => 'string',
     'member' => 'string',
   ),
+  'rediscluster::hexpire' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hexpireat' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'time' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hexpiretime' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'rediscluster::hget' => 
   array (
     0 => 'mixed',
@@ -37023,6 +36850,25 @@ return array (
   array (
     0 => 'RedisCluster|array<array-key, mixed>|false',
     'key' => 'string',
+  ),
+  'rediscluster::hgetdel' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hgetex' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null|string',
+  ),
+  'rediscluster::hgetwithmeta' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+    'member' => 'string',
   ),
   'rediscluster::hincrby' => 
   array (
@@ -37060,6 +36906,40 @@ return array (
     'key' => 'string',
     'key_values' => 'array<array-key, mixed>',
   ),
+  'rediscluster::hpersist' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hpexpire' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'ttl' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hpexpireat' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'mstime' => 'int',
+    'fields' => 'array<array-key, mixed>',
+    'mode=' => 'null|string',
+  ),
+  'rediscluster::hpexpiretime' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'rediscluster::hpttl' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+  ),
   'rediscluster::hrandfield' => 
   array (
     0 => 'RedisCluster|array<array-key, mixed>|string',
@@ -37081,6 +36961,13 @@ return array (
     'member' => 'string',
     'value' => 'mixed',
   ),
+  'rediscluster::hsetex' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'expiry=' => 'array<array-key, mixed>|null',
+  ),
   'rediscluster::hsetnx' => 
   array (
     0 => 'RedisCluster|bool',
@@ -37093,6 +36980,12 @@ return array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
     'field' => 'string',
+  ),
+  'rediscluster::httl' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'fields' => 'array<array-key, mixed>',
   ),
   'rediscluster::hvals' => 
   array (
@@ -37641,6 +37534,90 @@ return array (
   'rediscluster::unwatch' => 
   array (
     0 => 'bool',
+  ),
+  'rediscluster::vadd' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'element' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'rediscluster::vcard' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+  ),
+  'rediscluster::vdim' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+  ),
+  'rediscluster::vemb' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'raw=' => 'bool',
+  ),
+  'rediscluster::vgetattr' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'member' => 'mixed',
+    'decode=' => 'bool',
+  ),
+  'rediscluster::vinfo' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+  ),
+  'rediscluster::vismember' => 
+  array (
+    0 => 'RedisCluster|bool',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vlinks' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'withscores=' => 'bool',
+  ),
+  'rediscluster::vrandmember' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false|string',
+    'key' => 'string',
+    'count=' => 'int',
+  ),
+  'rediscluster::vrange' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'min' => 'string',
+    'max' => 'string',
+    'count=' => 'int',
+  ),
+  'rediscluster::vrem' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+  ),
+  'rediscluster::vsetattr' => 
+  array (
+    0 => 'RedisCluster|false|int',
+    'key' => 'string',
+    'member' => 'mixed',
+    'attributes' => 'array<array-key, mixed>|string',
+  ),
+  'rediscluster::vsim' => 
+  array (
+    0 => 'RedisCluster|array<array-key, mixed>|false',
+    'key' => 'string',
+    'member' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'rediscluster::waitaof' => 
   array (
@@ -40661,6 +40638,10 @@ return array (
     'namespaceOrPrefix=' => 'string',
     'isPrefix=' => 'bool',
   ),
+  'simplexmlelement::__debuginfo' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
+  ),
   'simplexmlelement::__tostring' => 
   array (
     0 => 'string',
@@ -40767,6 +40748,10 @@ return array (
     'dataIsURL=' => 'bool',
     'namespaceOrPrefix=' => 'string',
     'isPrefix=' => 'bool',
+  ),
+  'simplexmliterator::__debuginfo' => 
+  array (
+    0 => 'array<array-key, mixed>|null',
   ),
   'simplexmliterator::__tostring' => 
   array (
@@ -43593,6 +43578,250 @@ return array (
     'format' => 'string',
     '&...vars=' => 'mixed',
   ),
+  'ssh2_auth_agent' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+  ),
+  'ssh2_auth_hostbased_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'hostname' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+    'local_username=' => 'null|string',
+  ),
+  'ssh2_auth_none' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+  ),
+  'ssh2_auth_password' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'password' => 'string',
+  ),
+  'ssh2_auth_pubkey' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'pubkey' => 'string',
+    'privkey' => 'string',
+    'passphrase=' => 'null|string',
+  ),
+  'ssh2_auth_pubkey_file' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'username' => 'string',
+    'pubkeyfile' => 'string',
+    'privkeyfile' => 'string',
+    'passphrase=' => 'null|string',
+  ),
+  'ssh2_connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'string',
+    'port=' => 'int',
+    'methods=' => 'array<array-key, mixed>|null',
+    'callbacks=' => 'array<array-key, mixed>|null',
+  ),
+  'ssh2_disconnect' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+  ),
+  'ssh2_exec' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'command' => 'string',
+    'pty=' => 'bool',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+  ),
+  'ssh2_fetch_stream' => 
+  array (
+    0 => 'mixed',
+    'channel' => 'mixed',
+    'streamid' => 'int',
+  ),
+  'ssh2_fingerprint' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'flags=' => 'int',
+  ),
+  'ssh2_forward_accept' => 
+  array (
+    0 => 'false|resource',
+    'listener' => 'resource',
+    '&host=' => 'null|string',
+    '&port=' => 'int|null',
+  ),
+  'ssh2_forward_listen' => 
+  array (
+    0 => 'false|resource',
+    'session' => 'mixed',
+    'port' => 'int',
+    'host=' => 'string',
+    'max_connections=' => 'int',
+  ),
+  'ssh2_methods_negotiated' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'session' => 'mixed',
+  ),
+  'ssh2_publickey_add' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'mixed',
+    'algoname' => 'string',
+    'blob' => 'string',
+    'overwrite=' => 'bool',
+    'attributes=' => 'array<array-key, mixed>|null',
+  ),
+  'ssh2_publickey_init' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+  ),
+  'ssh2_publickey_list' => 
+  array (
+    0 => 'mixed',
+    'pkey' => 'mixed',
+  ),
+  'ssh2_publickey_remove' => 
+  array (
+    0 => 'bool',
+    'pkey' => 'mixed',
+    'algoname' => 'string',
+    'blob' => 'string',
+  ),
+  'ssh2_scp_recv' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'remote_file' => 'string',
+    'local_file' => 'string',
+  ),
+  'ssh2_scp_send' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'local_file' => 'string',
+    'remote_file' => 'string',
+    'create_mode=' => 'int',
+  ),
+  'ssh2_send_eof' => 
+  array (
+    0 => 'bool',
+    'channel' => 'mixed',
+  ),
+  'ssh2_sftp' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+  ),
+  'ssh2_sftp_chmod' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+    'mode' => 'int',
+  ),
+  'ssh2_sftp_lstat' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'path' => 'string',
+  ),
+  'ssh2_sftp_mkdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'dirname' => 'string',
+    'mode=' => 'int',
+    'recursive=' => 'bool',
+  ),
+  'ssh2_sftp_readlink' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'link' => 'string',
+  ),
+  'ssh2_sftp_realpath' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+  ),
+  'ssh2_sftp_rename' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'from' => 'string',
+    'to' => 'string',
+  ),
+  'ssh2_sftp_rmdir' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'dirname' => 'string',
+  ),
+  'ssh2_sftp_stat' => 
+  array (
+    0 => 'mixed',
+    'sftp' => 'mixed',
+    'path' => 'string',
+  ),
+  'ssh2_sftp_symlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'target' => 'string',
+    'link' => 'string',
+  ),
+  'ssh2_sftp_unlink' => 
+  array (
+    0 => 'bool',
+    'sftp' => 'mixed',
+    'filename' => 'string',
+  ),
+  'ssh2_shell' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'termtype=' => 'string',
+    'env=' => 'array<array-key, mixed>|null',
+    'width=' => 'int',
+    'height=' => 'int',
+    'width_height_type=' => 'int',
+  ),
+  'ssh2_shell_resize' => 
+  array (
+    0 => 'bool',
+    'session' => 'mixed',
+    'width' => 'int',
+    'height' => 'int',
+  ),
+  'ssh2_tunnel' => 
+  array (
+    0 => 'mixed',
+    'session' => 'mixed',
+    'host' => 'string',
+    'port' => 'int',
+  ),
   'stat' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -44945,6 +45174,7 @@ return array (
   array (
     0 => 'bool',
     'cid' => 'int',
+    'throw_exception=' => 'bool',
   ),
   'swoole\\coroutine::create' => 
   array (
@@ -45080,6 +45310,11 @@ return array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
   ),
+  'swoole\\coroutine::settimelimit' => 
+  array (
+    0 => 'bool',
+    'timeout' => 'float',
+  ),
   'swoole\\coroutine::sleep' => 
   array (
     0 => 'bool',
@@ -45152,6 +45387,49 @@ return array (
     0 => 'array<array-key, mixed>',
     'tasks' => 'array<array-key, mixed>',
     'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\canceledexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\canceledexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\canceledexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\canceledexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\canceledexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\canceledexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\coroutine\\canceledexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\canceledexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\canceledexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\canceledexception::gettraceasstring' => 
+  array (
+    0 => 'string',
   ),
   'swoole\\coroutine\\channel::__construct' => 
   array (
@@ -45752,6 +46030,12 @@ return array (
   array (
     0 => 'bool',
   ),
+  'swoole\\coroutine\\http\\client::disconnect' => 
+  array (
+    0 => 'bool',
+    'code=' => 'int',
+    'reason=' => 'string',
+  ),
   'swoole\\coroutine\\http\\client::download' => 
   array (
     0 => 'bool',
@@ -45805,6 +46089,11 @@ return array (
   array (
     0 => 'false|int',
   ),
+  'swoole\\coroutine\\http\\client::ping' => 
+  array (
+    0 => 'bool',
+    'data=' => 'string',
+  ),
   'swoole\\coroutine\\http\\client::post' => 
   array (
     0 => 'bool',
@@ -45820,7 +46109,7 @@ return array (
   ),
   'swoole\\coroutine\\http\\client::recv' => 
   array (
-    0 => 'Swoole\\WebSocket\\Frame|bool',
+    0 => 'Swoole\\WebSocket\\Frame|bool|string',
     'timeout=' => 'float',
   ),
   'swoole\\coroutine\\http\\client::set' => 
@@ -46149,17 +46438,10 @@ return array (
     0 => 'void',
     'shared=' => 'bool',
   ),
-  'swoole\\coroutine\\lock::__destruct' => 
-  array (
-    0 => 'mixed',
-  ),
   'swoole\\coroutine\\lock::lock' => 
   array (
     0 => 'bool',
-  ),
-  'swoole\\coroutine\\lock::trylock' => 
-  array (
-    0 => 'bool',
+    'operation=' => 'int',
   ),
   'swoole\\coroutine\\lock::unlock' => 
   array (
@@ -46560,6 +46842,49 @@ return array (
     'filename' => 'string',
     'fileContent' => 'string',
     'flags=' => 'int',
+  ),
+  'swoole\\coroutine\\timeoutexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\timeoutexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\timeoutexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\timeoutexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\coroutine\\timeoutexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\coroutine\\timeoutexception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\coroutine\\timeoutexception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\timeoutexception::gettraceasstring' => 
+  array (
+    0 => 'string',
   ),
   'swoole\\coroutine\\waitgroup::__construct' => 
   array (
@@ -49190,6 +49515,12 @@ return array (
   array (
     0 => 'bool',
   ),
+  'swoole\\http\\response::disconnect' => 
+  array (
+    0 => 'bool',
+    'code=' => 'int',
+    'reason=' => 'string',
+  ),
   'swoole\\http\\response::end' => 
   array (
     0 => 'bool',
@@ -49219,6 +49550,7 @@ return array (
   'swoole\\http\\response::ping' => 
   array (
     0 => 'bool',
+    'data=' => 'string',
   ),
   'swoole\\http\\response::push' => 
   array (
@@ -49545,7 +49877,6 @@ return array (
   array (
     0 => 'bool',
     'workerId=' => 'int',
-    'waitEvent=' => 'bool',
   ),
   'swoole\\http\\server::task' => 
   array (
@@ -49587,32 +49918,95 @@ return array (
     0 => 'void',
     'type=' => 'int',
   ),
-  'swoole\\lock::__destruct' => 
-  array (
-    0 => 'mixed',
-  ),
   'swoole\\lock::lock' => 
   array (
     0 => 'bool',
-  ),
-  'swoole\\lock::lock_read' => 
-  array (
-    0 => 'bool',
-  ),
-  'swoole\\lock::lockwait' => 
-  array (
-    0 => 'bool',
+    'operation=' => 'int',
     'timeout=' => 'float',
   ),
-  'swoole\\lock::trylock' => 
-  array (
-    0 => 'bool',
-  ),
-  'swoole\\lock::trylock_read' => 
-  array (
-    0 => 'bool',
-  ),
   'swoole\\lock::unlock' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\mongodb\\client::__call' => 
+  array (
+    0 => 'mixed',
+    'method' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\mongodb\\client::__construct' => 
+  array (
+    0 => 'void',
+    'uri=' => 'null|string',
+    'uriOptions=' => 'array<array-key, mixed>',
+    'driverOptions=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\mongodb\\client::__get' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+  ),
+  'swoole\\mongodb\\client::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::__set' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\mongodb\\client::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\mongodb\\client::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\mongodb\\client::getobject' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+  ),
+  'swoole\\mongodb\\client::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\mongodb\\client::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\mongodb\\client::offsetexists' => 
+  array (
+    0 => 'bool',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::offsetunset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+  ),
+  'swoole\\mongodb\\client::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\mongodb\\client::valid' => 
   array (
     0 => 'bool',
   ),
@@ -50206,7 +50600,7 @@ return array (
   ),
   'swoole\\process::setblocking' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'blocking' => 'bool',
   ),
   'swoole\\process::setpriority' => 
@@ -50637,7 +51031,6 @@ return array (
   array (
     0 => 'bool',
     'workerId=' => 'int',
-    'waitEvent=' => 'bool',
   ),
   'swoole\\redis\\server::task' => 
   array (
@@ -50664,6 +51057,350 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'tasks' => 'array<array-key, mixed>',
     'timeout=' => 'float',
+  ),
+  'swoole\\remoteobject::__call' => 
+  array (
+    0 => 'mixed',
+    'method' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::__construct' => 
+  array (
+    0 => 'void',
+    'coroutineId' => 'mixed',
+    'clientId' => 'mixed',
+  ),
+  'swoole\\remoteobject::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::__get' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+  ),
+  'swoole\\remoteobject::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::__set' => 
+  array (
+    0 => 'mixed',
+    'property' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\remoteobject::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::call' => 
+  array (
+    0 => 'mixed',
+    'client' => 'Swoole\\RemoteObject\\Client',
+    'fn' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject::create' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'client' => 'Swoole\\RemoteObject\\Client',
+    'class' => 'string',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::execute' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'path' => 'string',
+    'params=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject::getobjectid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject::marshal' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'objectId' => 'int',
+    'ownerCoroutineId' => 'int',
+    'clientId' => 'string',
+  ),
+  'swoole\\remoteobject::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject::offsetexists' => 
+  array (
+    0 => 'bool',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetget' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\remoteobject::offsetunset' => 
+  array (
+    0 => 'void',
+    'offset' => 'mixed',
+  ),
+  'swoole\\remoteobject::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject::valid' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\client::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'string',
+    'port=' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::call' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'string',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::create' => 
+  array (
+    0 => 'Swoole\\RemoteObject',
+    'class' => 'string',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\remoteobject\\client::execute' => 
+  array (
+    0 => 'mixed',
+    'path' => 'string',
+    'array' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::genuuid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\client::getid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\client::getinstance' => 
+  array (
+    0 => 'null|static',
+    'clientId' => 'string',
+  ),
+  'swoole\\remoteobject\\client::ping' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\context::__construct' => 
+  array (
+    0 => 'void',
+    'request' => 'Swoole\\Http\\Request',
+    'response' => 'Swoole\\Http\\Response',
+  ),
+  'swoole\\remoteobject\\context::end' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\context::getclientid' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\context::getcoroutineid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject\\context::getdataparam' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\remoteobject\\context::gethandler' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\context::getparam' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'swoole\\remoteobject\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'string',
+    'code=' => 'int',
+    'previous=' => 'Throwable|null',
+  ),
+  'swoole\\remoteobject\\exception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::__wakeup' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\remoteobject\\exception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::getline' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\remoteobject\\exception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\exception::getprevious' => 
+  array (
+    0 => 'Throwable|null',
+  ),
+  'swoole\\remoteobject\\exception::gettrace' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\exception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\remoteobject\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'string',
+    'port=' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\server::_call_function' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_call_method' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_destroy' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_new' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_exists' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_get' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_set' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_offset_unset' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_ping' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_read_property' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_to_string' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::_write_property' => 
+  array (
+    0 => 'void',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+  ),
+  'swoole\\remoteobject\\server::addobject' => 
+  array (
+    0 => 'int',
+    'object' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::marshal' => 
+  array (
+    0 => 'mixed',
+    'ctx' => 'Swoole\\RemoteObject\\Context',
+    'data' => 'mixed',
+  ),
+  'swoole\\remoteobject\\server::onrequest' => 
+  array (
+    0 => 'void',
+    'request' => 'Swoole\\Http\\Request',
+    'response' => 'Swoole\\Http\\Response',
+  ),
+  'swoole\\remoteobject\\server::onstart' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\remoteobject\\server::start' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\remoteobject\\server::unmarshal' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'swoole\\runtime::enablecoroutine' => 
   array (
@@ -50903,7 +51640,6 @@ return array (
   array (
     0 => 'bool',
     'workerId=' => 'int',
-    'waitEvent=' => 'bool',
   ),
   'swoole\\server::task' => 
   array (
@@ -51919,6 +52655,12 @@ return array (
     0 => 'bool',
     'fd' => 'int',
   ),
+  'swoole\\websocket\\server::ping' => 
+  array (
+    0 => 'bool',
+    'fd' => 'int',
+    'data=' => 'string',
+  ),
   'swoole\\websocket\\server::protect' => 
   array (
     0 => 'bool',
@@ -51999,7 +52741,6 @@ return array (
   array (
     0 => 'bool',
     'workerId=' => 'int',
-    'waitEvent=' => 'bool',
   ),
   'swoole\\websocket\\server::task' => 
   array (
@@ -52061,6 +52802,12 @@ return array (
     0 => 'bool',
     'settings' => 'array<array-key, mixed>',
   ),
+  'swoole_checkdnsrr' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    'type=' => 'string',
+  ),
   'swoole_clear_dns_cache' => 
   array (
     0 => 'void',
@@ -52079,7 +52826,7 @@ return array (
   ),
   'swoole_container_cpu_num' => 
   array (
-    0 => 'mixed',
+    0 => 'int',
   ),
   'swoole_coroutine_create' => 
   array (
@@ -52157,6 +52904,28 @@ return array (
     'obj' => 'Swoole\\Curl\\Handler',
     'array' => 'mixed',
   ),
+  'swoole_dns_check_record' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    'type=' => 'string',
+  ),
+  'swoole_dns_get_mx' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    '&hosts' => 'array<array-key, mixed>',
+    '&weights=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole_dns_get_record' => 
+  array (
+    0 => 'array<array-key, mixed>|false',
+    'hostname' => 'string',
+    'type=' => 'int',
+    '&authoritative_name_servers=' => 'array<array-key, mixed>|null',
+    '&additional_records=' => 'array<array-key, mixed>|null',
+    'raw=' => 'bool',
+  ),
   'swoole_errno' => 
   array (
     0 => 'int',
@@ -52212,6 +52981,10 @@ return array (
     'fd' => 'mixed',
     'events=' => 'int',
   ),
+  'swoole_event_rshutdown' => 
+  array (
+    0 => 'void',
+  ),
   'swoole_event_set' => 
   array (
     0 => 'bool',
@@ -52237,9 +53010,14 @@ return array (
     '&output=' => 'mixed',
     '&returnVar=' => 'mixed',
   ),
+  'swoole_get_default_remote_object_client' => 
+  array (
+    0 => 'Swoole\\RemoteObject\\Client',
+  ),
   'swoole_get_local_ip' => 
   array (
     0 => 'array<array-key, mixed>',
+    'family=' => 'int',
   ),
   'swoole_get_local_mac' => 
   array (
@@ -52263,6 +53041,23 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'swoole_gethostbyaddr' => 
+  array (
+    0 => 'string',
+    'ip' => 'string',
+  ),
+  'swoole_gethostbynamel' => 
+  array (
+    0 => 'mixed',
+    'domain' => 'string',
+  ),
+  'swoole_getmxrr' => 
+  array (
+    0 => 'bool',
+    'hostname' => 'string',
+    '&hosts' => 'array<array-key, mixed>',
+    '&weights=' => 'array<array-key, mixed>|null',
+  ),
   'swoole_hashcode' => 
   array (
     0 => 'false|int',
@@ -52280,13 +53075,17 @@ return array (
     'fn' => 'string',
     'args=' => 'mixed',
   ),
+  'swoole_init_default_remote_object_server' => 
+  array (
+    0 => 'void',
+  ),
   'swoole_internal_call_user_shutdown_begin' => 
   array (
     0 => 'bool',
   ),
   'swoole_is_in_container' => 
   array (
-    0 => 'mixed',
+    0 => 'bool',
   ),
   'swoole_last_error' => 
   array (
@@ -52311,6 +53110,14 @@ return array (
   array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
+  ),
+  'swoole_mail' => 
+  array (
+    0 => 'bool',
+    'to' => 'string',
+    'subject' => 'string',
+    'message' => 'string',
+    'headers=' => 'array<array-key, mixed>',
   ),
   'swoole_mbstring' => 
   array (
@@ -52491,6 +53298,27 @@ return array (
     0 => 'false|string',
     'handle' => 'CurlHandle',
     'string' => 'string',
+  ),
+  'swoole_native_curl_upkeep' => 
+  array (
+    0 => 'bool',
+    'handle' => 'CurlHandle',
+  ),
+  'swoole_real_dns_get_record' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'hostname' => 'string',
+    'type' => 'int',
+    'authoritative_name_servers=' => 'array<array-key, mixed>|null',
+    'additional_records=' => 'array<array-key, mixed>|null',
+    'raw=' => 'bool',
+  ),
+  'swoole_real_getmxrr' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'hostname' => 'string',
+    'hosts=' => 'array<array-key, mixed>|null',
+    'weights=' => 'array<array-key, mixed>|null',
   ),
   'swoole_select' => 
   array (
@@ -52765,6 +53593,21 @@ return array (
     0 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable',
+  ),
+  'swoole_tracer_leak_detect' => 
+  array (
+    0 => 'void',
+    'threshold=' => 'int',
+  ),
+  'swoole_tracer_prof_begin' => 
+  array (
+    0 => 'bool',
+    'options=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole_tracer_prof_end' => 
+  array (
+    0 => 'bool',
+    'output_file' => 'string',
   ),
   'swoole_version' => 
   array (
@@ -56166,8 +57009,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'mixed',
-    'watcher_cb' => 'mixed',
-    '&stat_info' => 'mixed',
+    'watcher_cb=' => 'mixed',
+    '&stat_info=' => 'mixed',
   ),
   'zookeeperconfig::remove' => 
   array (

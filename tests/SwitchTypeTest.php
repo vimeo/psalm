@@ -537,9 +537,9 @@ final class SwitchTypeTest extends TestCase
                             return "hello";
                         }
 
-                        if (isset($predefined_constants[$fq_const_name])
+                        if ($fq_const_name !== null && (isset($predefined_constants[$fq_const_name])
                             || isset($predefined_constants[$const_name])
-                        ) {
+                        )) {
                             switch ($const_name) {
                                 case "PHP_MAJOR_VERSION":
                                 case "PHP_ZTS":
@@ -551,7 +551,7 @@ final class SwitchTypeTest extends TestCase
                                     return "float";
                             }
 
-                            if ($fq_const_name !== null && isset($predefined_constants[$fq_const_name])) {
+                            if (isset($predefined_constants[$fq_const_name])) {
                                 return "mixed";
                             }
 

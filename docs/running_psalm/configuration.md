@@ -265,7 +265,7 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
   forceJit="[bool]"
 >
 ```
-When `true`, Psalm will exit immediately if JIT acceleration (up to +20% performance) cannot be enabled, the equivalent of running with `--force-jit`. Defaults to `false`.
+When `true`, Psalm will enable JIT acceleration and exit immediately if it cannot be enabled, the equivalent of running with `--force-jit`. When `false` (default), Psalm runs without JIT.
 
 #### noCache
 ```xml
@@ -274,6 +274,18 @@ When `true`, Psalm will exit immediately if JIT acceleration (up to +20% perform
 >
 ```
 When `true`, Psalm will disable usage of the cache, the equivalent of running with `--no-cache`. Defaults to `false`.
+
+#### arrayCache
+```xml
+<psalm
+  arrayCache="[bool]"
+>
+```
+When `false`, Psalm will disable usage of the array cache. 
+
+The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
+
+Defaults to `true`.
 
 #### disallowLiteralKeysOnUnshapedArrays
 ```xml
@@ -464,6 +476,30 @@ Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or e
 >
 ```
 Whether or not to allow `require`/`include` calls in your PHP. Defaults to `true`.
+
+#### ignoreIncludeSideEffects
+```xml
+<psalm
+  ignoreIncludeSideEffects="[bool]"
+>
+```
+Whether or not to ignore side effects of includes.  
+
+Ignoring include side effects can significantly speed up scans on legacy codebases, but changes to variables or variables defined inside of included files will not be visible to Psalm (functions, constants and classes will still be visible anyway, especially if the hoistConstants, allConstantsGlobal, allFunctionsGlobal configuration parameters are set to true).  
+
+Defaults to `false`.
+
+#### respectIncludeOnce
+```xml
+<psalm
+  respectIncludeOnce="[bool]"
+>
+```
+Whether or not to process files after the first `require_once()` or `include_once()` call.  
+
+By default, Psalm treats `require_once()` and `include_once()` calls as if they were `require()` or `include()` calls in an attempt to consider all possible permutations of file include order.  Respecting `require_once()` and `include_once()` behavior can significantly speed up scans on codebases with circular `require_once()` or `include_once()` calls.  While potentially less comprehensive, this setting aims to more closely mimic PHP's runtime behavior.
+
+Defaults to `false`.
 
 #### serializer
 ```xml

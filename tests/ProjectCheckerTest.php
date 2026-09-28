@@ -8,7 +8,11 @@ use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
@@ -16,12 +20,9 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
-use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\FakeFileReferenceCacheProvider;
-use Psalm\Tests\Internal\Provider\FileStorageInstanceCacheProvider;
-use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\Progress\EchoProgress;
+use Psalm\Tests\TestConfig;
 
 use function get_class;
 use function getcwd;
@@ -35,8 +36,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class ProjectCheckerTest extends TestCase
 {
-    protected static TestConfig $config;
-
     protected ProjectAnalyzer $project_analyzer;
 
     #[Override]
@@ -48,7 +47,7 @@ final class ProjectCheckerTest extends TestCase
         global $argv;
         $argv = [];
 
-        self::$config = new TestConfig();
+        new TestConfig();
     }
 
     #[Override]
@@ -65,10 +64,10 @@ final class ProjectCheckerTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new ParserInstanceCacheProvider(),
-                new FileStorageInstanceCacheProvider(),
-                new ClassLikeStorageInstanceCacheProvider(),
-                new FakeFileReferenceCacheProvider(),
+                new ParserCacheProvider($config, '', false),
+                new FileStorageCacheProvider($config, '', false),
+                new ClassLikeStorageCacheProvider($config, '', false),
+                new FileReferenceCacheProvider($config, '', false),
                 new ProjectCacheProvider(),
             ),
             new ReportOptions(),

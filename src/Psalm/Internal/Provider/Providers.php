@@ -7,10 +7,9 @@ namespace Psalm\Internal\Provider;
 use RuntimeException;
 
 use function fclose;
-use function filesize;
 use function flock;
 use function fopen;
-use function fread;
+use function stream_get_contents;
 use function usleep;
 
 use const LOCK_SH;
@@ -41,7 +40,6 @@ final class Providers
         $this->statements_provider = new StatementsProvider(
             $file_provider,
             $parser_cache_provider,
-            $file_storage_cache_provider,
         );
         $this->file_reference_provider = new FileReferenceProvider($file_provider, $file_reference_cache_provider);
     }
@@ -69,11 +67,7 @@ final class Providers
             throw new RuntimeException('Could not acquire lock for ' . $path);
         }
 
-        $file_size = filesize($path);
-        $content = '';
-        if ($file_size > 0) {
-            $content = (string) fread($fp, $file_size);
-        }
+        $content = stream_get_contents($fp);
 
         fclose($fp);
 

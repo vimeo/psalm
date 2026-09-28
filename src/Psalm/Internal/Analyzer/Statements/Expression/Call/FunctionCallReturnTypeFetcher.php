@@ -624,11 +624,19 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if ($function_storage->return_source_params) {
+            // A first-class callable has no argument list yet, and CallLike::getArgs() asserts
+            // against being called on one. Nothing downstream can propagate taint through arguments
+            // that do not exist, so stop here rather than crash under zend.assertions=1.
+            if ($stmt->isFirstClassCallable()) {
+                return $function_call_node;
+            }
+
             $removed_taints = $function_storage->removed_taints;
 
-            if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
-                $first_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[0]->value);
-                $second_stmt_type = $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value);
+            $args = $stmt->getArgs();
+            if ($function_id === 'preg_replace' && count($args) > 2) {
+                $first_stmt_type = $statements_analyzer->node_data->getType($args[0]->value);
+                $second_stmt_type = $statements_analyzer->node_data->getType($args[1]->value);
 
                 if ($first_stmt_type
                     && $second_stmt_type
@@ -664,17 +672,19 @@ final class FunctionCallReturnTypeFetcher
                 $codebase->config->eventDispatcher->dispatchRemoveTaints($event),
             );
 
-            self::taintUsingFlows(
-                $statements_analyzer,
-                $function_storage,
-                $statements_analyzer->data_flow_graph,
-                $function_id,
-                $stmt->getArgs(),
-                $node_location,
-                $function_call_node,
-                array_merge($removed_taints, $conditionally_removed_taints),
-                $added_taints,
-            );
+            if (!$stmt->isFirstClassCallable()) {
+                self::taintUsingFlows(
+                    $statements_analyzer,
+                    $function_storage,
+                    $statements_analyzer->data_flow_graph,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $node_location,
+                    $function_call_node,
+                    array_merge($removed_taints, $conditionally_removed_taints),
+                    $added_taints,
+                );
+            }
         }
 
         self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
@@ -703,10 +713,9 @@ final class FunctionCallReturnTypeFetcher
                 continue;
             }
 
-            $current_arg_is_variadic = $function_storage->params[$i]->is_variadic;
             $taintable_arg_index = [$i];
 
-            if ($current_arg_is_variadic) {
+            if ($function_storage->params[$i]->is_variadic) {
                 $max_params = count($args) - 1;
                 for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
                     $taintable_arg_index[] = $arg_index;

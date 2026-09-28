@@ -28,6 +28,11 @@ final class ClientConfiguration
     public ?int $onChangeDebounceMs = null;
 
     /**
+     * Debounce time in milliseconds for onOpen events
+     */
+    public ?int $onOpenDebounceMs = null;
+
+    /**
      * Undocumented function
      *
      * @param 'always'|'auto'|null $findUnusedCode

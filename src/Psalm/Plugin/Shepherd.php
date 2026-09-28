@@ -17,7 +17,6 @@ use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function assert;
-use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
@@ -152,9 +151,6 @@ final class Shepherd implements AfterAnalysisInterface
 
         /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
         $curl_info = curl_getinfo($ch);
-
-        // Close cURL session handle
-        curl_close($ch);
 
         $response_status_code = $curl_info['http_code'];
         if ($response_status_code >= 200 && $response_status_code < 300) {

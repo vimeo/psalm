@@ -166,10 +166,26 @@ final class IncludeAnalyzer
 
             if ($current_file_analyzer->project_analyzer->fileExists($path_to_file)
                 && !$current_file_analyzer->project_analyzer->isDirectory($path_to_file)) {
+                if ($config->ignore_include_side_effects) {
+                    return true;
+                }
                 if ($statements_analyzer->hasParentFilePath($path_to_file)
                     || !$codebase->file_storage_provider->has($path_to_file)
-                    || ($statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
-                        && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
+                    || (
+                        $statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
+                        && (
+                            !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements
+                            ||
+                            (
+                                $config->respect_include_once
+                                &&
+                                in_array($stmt->type, [
+                                    PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE,
+                                    PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE,
+                                ])
+                            )
+                        )
+                    )
                 ) {
                     return true;
                 }
@@ -337,15 +353,16 @@ final class IncludeAnalyzer
             $stmt->name instanceof PhpParser\Node\Name &&
             $stmt->name->getParts() === ['dirname']
         ) {
-            if ($stmt->getArgs()) {
+            $args = $stmt->getArgs();
+            if ($args) {
                 $dir_level = 1;
 
-                if (isset($stmt->getArgs()[1])) {
-                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\Int_) {
-                        $dir_level = $stmt->getArgs()[1]->value->value;
+                if (isset($args[1])) {
+                    if ($args[1]->value instanceof PhpParser\Node\Scalar\Int_) {
+                        $dir_level = $args[1]->value->value;
                     } else {
                         if ($statements_analyzer) {
-                            $t = $statements_analyzer->node_data->getType($stmt->getArgs()[1]->value);
+                            $t = $statements_analyzer->node_data->getType($args[1]->value);
                             if ($t && $t->isSingleIntLiteral()) {
                                 $dir_level = $t->getSingleIntLiteral()->value;
                             } else {
@@ -358,7 +375,7 @@ final class IncludeAnalyzer
                 }
 
                 $evaled_path = self::getPathTo(
-                    $stmt->getArgs()[0]->value,
+                    $args[0]->value,
                     $type_provider,
                     $statements_analyzer,
                     $file_name,

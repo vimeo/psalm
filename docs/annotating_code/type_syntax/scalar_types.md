@@ -37,7 +37,7 @@ This is the same concept as [`int-mask`](#int-mask1-2-4) but this type is used w
 
 ## numeric
 
-`numeric` is a supertype of `int` or `float` and [`numeric-string`](#numeric-string).
+`numeric` is a supertype of `int` or `float` or [`numeric-string`](#numeric-string).
 
 ## class-string, interface-string
 

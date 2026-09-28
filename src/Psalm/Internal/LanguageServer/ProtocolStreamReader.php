@@ -44,6 +44,7 @@ final class ProtocolStreamReader implements ProtocolReader
     public function __construct($input)
     {
         $input = new ReadableResourceStream($input);
+        $input->reference();
         EventLoop::queue(
             function () use ($input): void {
                 while ($this->is_accepting_new_requests) {
@@ -65,6 +66,7 @@ final class ProtocolStreamReader implements ProtocolReader
         $this->on(
             'close',
             static function () use ($input): void {
+                $input->unreference();
                 $input->close();
             },
         );

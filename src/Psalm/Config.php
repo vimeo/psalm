@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Amp\Serialization\NativeSerializer;
+use Amp\Serialization\Serializer;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
@@ -26,7 +28,10 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
+use Psalm\Internal\Fork\IgbinarySerializer;
+use Psalm\Internal\GzipSerializer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\Lz4Serializer;
 use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\ArgumentIssue;
@@ -216,6 +221,8 @@ final class Config
      */
     public ?string $cache_directory = null;
 
+    public bool $array_cache = true;
+
     private bool $cache_directory_initialized = false;
 
     /**
@@ -294,6 +301,10 @@ final class Config
     public bool $hide_all_errors_except_passed_files = false;
 
     public bool $allow_includes = true;
+
+    public bool $ignore_include_side_effects = false;
+
+    public bool $respect_include_once = false;
 
     /** @var 1|2|3|4|5|6|7|8 */
     public int $level = 1;
@@ -935,6 +946,7 @@ final class Config
         $config_xml = simplexml_import_dom($dom_document);
 
         $booleanAttributes = [
+            'arrayCache' => 'array_cache',
             'useDocblockTypes' => 'use_docblock_types',
             'useDocblockPropertyTypes' => 'use_docblock_property_types',
             'docblockPropertyTypesSealProperties' => 'docblock_property_types_seal_properties',
@@ -943,6 +955,8 @@ final class Config
             'hideAllErrorsExceptPassedFiles' => 'hide_all_errors_except_passed_files',
             'resolveFromConfigFile' => 'resolve_from_config_file',
             'allowFileIncludes' => 'allow_includes',
+            'ignoreIncludeSideEffects' => 'ignore_include_side_effects',
+            'respectIncludeOnce' => 'respect_include_once',
             'strictBinaryOperands' => 'strict_binary_operands',
             'allowBoolToLiteralBoolComparison' => 'allow_bool_to_literal_bool_comparison',
             'rememberPropertyAssignmentsAfterCall' => 'remember_property_assignments_after_call',
@@ -2273,6 +2287,19 @@ final class Config
             $core_generic_files[] = $stringable_path;
         }
 
+        // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
+        // loaded via internal_stubs). When the running PHP is older than the newest of them, its
+        // reflection cannot provide them, so preload the file too.
+        if (PHP_VERSION_ID < 8_05_00) {
+            $versioned_classes_path = dirname(__DIR__, 2) . '/stubs/PhpVersionedClasses.phpstub';
+
+            if (!file_exists($versioned_classes_path)) {
+                throw new UnexpectedValueException('Cannot locate versioned PHP classes');
+            }
+
+            $core_generic_files[] = $versioned_classes_path;
+        }
+
         $stub_files = array_merge($core_generic_files, $this->preloaded_stub_files);
 
         if (!$stub_files) {
@@ -2317,6 +2344,13 @@ final class Config
             $stubsDir . 'Reflection.phpstub',
             $stubsDir . 'SPL.phpstub',
             $stubsDir . 'CoreGenericAttributes.phpstub',
+            // Genuinely-new classes introduced by a specific PHP version. Loaded on every analysis
+            // version so they are known to analysis; each carries an `@since` tag, so a use is
+            // reported as undefined (via the since_php_version_id check at each reference site) when
+            // analysing an older PHP version without a polyfill. Version-specific *refinements* of
+            // pre-existing symbols (the Php8X.phpstub files below) stay version gated so they are
+            // not applied early.
+            $stubsDir . 'PhpVersionedClasses.phpstub',
         ];
 
         if ($codebase->analysis_php_version_id >= 7_04_00) {
@@ -2325,6 +2359,8 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
             $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80Functions.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80Attribute.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
@@ -2333,6 +2369,7 @@ final class Config
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
             $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php82Functions.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
@@ -2739,6 +2776,8 @@ final class Config
                     '8.1',
                     '8.2',
                     '8.3',
+                    '8.4',
+                    '8.5',
                 ];
 
                 foreach ($php_versions as $candidate) {
@@ -2768,6 +2807,17 @@ final class Config
     public function getUniversalObjectCrates(): array
     {
         return $this->universal_object_crates;
+    }
+
+    /** @internal */
+    public function getCacheSerializer(): Serializer
+    {
+        $s = $this->use_igbinary ? new IgbinarySerializer : new NativeSerializer();
+        return match ($this->compressor) {
+            'deflate' => new GzipSerializer($s),
+            'lz4' => new Lz4Serializer($s),
+            'off' => $s
+        };
     }
 
     /** @internal */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use InvalidArgumentException;
 use LogicException;
 use PhpParser;
@@ -146,7 +147,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $interface_context,
             $class_storage,
             $this->class->attrGroups,
-            AttributesAnalyzer::TARGET_CLASS,
+            Attribute::TARGET_CLASS,
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
@@ -157,6 +158,14 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_name_lc = strtolower($stmt->name->name);
+                if (!isset($class_storage->methods[$method_name_lc])) {
+                    // Storage was overwritten by a different class-like with the same FQCN
+                    // (e.g., project declares interface X while vendor has class X).
+                    // Skip analysis — DuplicateClass was already emitted during scanning.
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $type_provider = new NodeDataProvider();
@@ -183,6 +192,11 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                // PHP 8.4+ allows interface properties with hooks
+                if ($codebase->analysis_php_version_id >= 8_04_00 && !empty($stmt->hooks)) {
+                    continue;
+                }
+
                 IssueBuffer::maybeAdd(
                     new ParseError(
                         'Interfaces cannot have properties',

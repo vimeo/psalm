@@ -45,9 +45,6 @@ final class ShutdownScannerTask implements Task
             'errors' => $statements_provider->getErrors(),
             'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
             'file_storage' => $codebase->file_storage_provider->getAll(),
-            'new_file_content_hashes' => $statements_provider->parser_cache_provider
-                ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
-                : [],
             'taint_data' => $codebase->taint_flow_graph,
             'global_constants' => $codebase->getAllStubbedConstants(),
             'global_functions' => $codebase->functions->getAllStubbedFunctions(),

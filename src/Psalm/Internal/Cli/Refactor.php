@@ -14,12 +14,12 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
@@ -79,7 +79,7 @@ final class Refactor
         $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
         $valid_long_options = [
             'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
-            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:',
+            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress',
         ];
 
         // get options from command line
@@ -139,6 +139,10 @@ final class Refactor
 
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
+
+                --no-progress
+                    Disable the progress indicator.
+                    Auto-enabled when an AI coding agent is driving the shell outside CI.
 
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
@@ -314,26 +318,38 @@ final class Refactor
 
         $providers = new Providers(
             new FileProvider(),
-            new ParserCacheProvider($config, false),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
             null,
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
+            new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+            null,
+            new ProjectCacheProvider(),
         );
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
-        $progress = $debug
-            ? new DebugProgress()
-            : new DefaultProgress();
+        // CI takes precedence over AI detection, matching Psalm.php / Psalter.php.
+        $no_progress = isset($options['no-progress'])
+            || (!$in_ci && CliUtils::runningUnderAiAgent());
+        if ($debug) {
+            $progress = new DebugProgress();
+        } elseif ($no_progress) {
+            $progress = new VoidProgress();
+        } else {
+            $progress = new DefaultProgress();
+        }
 
         if (array_key_exists('debug-emitted-issues', $options)) {
             $config->debug_emitted_issues = true;
         }
 
+        $report_options = new ReportOptions();
+        $report_options->use_color = !array_key_exists('m', $options)
+            && !CliUtils::noColorRequested()
+            && !CliUtils::runningUnderAiAgent();
+
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
-            new ReportOptions(),
+            $report_options,
             [],
             $threads,
             $scanThreads,

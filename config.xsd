@@ -39,6 +39,8 @@
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
+        <xs:attribute name="ignoreIncludeSideEffects" type="xs:boolean" default="false" />
+        <xs:attribute name="respectIncludeOnce" type="xs:boolean" default="false" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsDocblock" type="xs:boolean" default="false" />
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
@@ -51,6 +53,7 @@
         <xs:attribute name="allConstantsGlobal" type="xs:boolean" default="false" />
         <xs:attribute name="forceJit" type="xs:boolean" default="false" />
         <xs:attribute name="noCache" type="xs:boolean" default="false" />
+        <xs:attribute name="arrayCache" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="true" />
@@ -270,6 +273,7 @@
             <xs:element name="InaccessibleClassConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="IncompatibleTypeParameters" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InheritorViolation" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
@@ -385,6 +389,7 @@
             <xs:element name="NullPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenFinalConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenFinalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenInterfaceConstant" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenPropertyAccess" type="PropertyIssueHandlerType" minOccurs="0" />
@@ -761,6 +766,7 @@
             <xs:enumeration value="geos"/>
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
+            <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>

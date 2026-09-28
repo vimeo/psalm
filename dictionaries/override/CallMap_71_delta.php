@@ -130,10 +130,6 @@ return array (
     array (
       0 => 'stdClass',
     ),
-    'mongodb\\driver\\serverapi::serialize' => 
-    array (
-      0 => 'string',
-    ),
     'mongodb\\driver\\serverapi::unserialize' => 
     array (
       0 => 'void',
@@ -452,8 +448,8 @@ return array (
         0 => 'false|resource',
         'hostname' => 'string',
         'port' => 'int',
-        '&w_errno=' => 'int',
-        '&w_errstr=' => 'string',
+        '&w errno=' => 'int',
+        '&w errstr=' => 'string',
         'timeout=' => 'float',
       ),
       'new' => 
@@ -461,8 +457,8 @@ return array (
         0 => 'false|resource',
         'hostname' => 'string',
         'port=' => 'int',
-        '&w_errno=' => 'int',
-        '&w_errstr=' => 'string',
+        '&w errno=' => 'int',
+        '&w errstr=' => 'string',
         'timeout=' => 'float',
       ),
     ),
@@ -522,7 +518,7 @@ return array (
         0 => 'array<string, false|list<false|string>|string>|false',
         'options' => 'string',
         'opts=' => 'array<array-key, mixed>',
-        '&w_optind=' => 'int',
+        '&w optind=' => 'int',
       ),
     ),
     'hash_update_file' => 
@@ -787,7 +783,7 @@ return array (
         'password' => 'string',
         'options=' => 'int',
         'iv=' => 'string',
-        '&w_tag=' => 'string',
+        '&w tag=' => 'string',
         'aad=' => 'string',
         'tag_length=' => 'int',
       ),
@@ -798,7 +794,7 @@ return array (
       array (
         0 => 'bool',
         'x509' => 'resource|string',
-        '&w_out' => 'string',
+        '&w out' => 'string',
         'priv_key' => 'array<array-key, mixed>|resource|string',
         'pass' => 'string',
         'args' => 'array<array-key, mixed>',
@@ -807,7 +803,7 @@ return array (
       array (
         0 => 'bool',
         'x509' => 'resource|string',
-        '&w_out' => 'string',
+        '&w out' => 'string',
         'priv_key' => 'array<array-key, mixed>|resource|string',
         'pass' => 'string',
         'args=' => 'array<array-key, mixed>',
@@ -854,8 +850,8 @@ return array (
         0 => 'false|resource',
         'hostname' => 'string',
         'port' => 'int',
-        '&w_errno=' => 'int',
-        '&w_errstr=' => 'string',
+        '&w errno=' => 'int',
+        '&w errstr=' => 'string',
         'timeout=' => 'float',
       ),
       'new' => 
@@ -863,8 +859,8 @@ return array (
         0 => 'false|resource',
         'hostname' => 'string',
         'port=' => 'int',
-        '&w_errno=' => 'int',
-        '&w_errstr=' => 'string',
+        '&w errno=' => 'int',
+        '&w errstr=' => 'string',
         'timeout=' => 'float',
       ),
     ),

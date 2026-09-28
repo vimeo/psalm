@@ -45,14 +45,18 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
         '...args=' => 'mixed',
     ];
     foreach (['check', 'embed', 'fork', 'prepare'] as $f) {
-        $baseMaps[$version]["evloop::$f"] = [
-            0 => $baseMaps[$version]["evloop::$f"][0],
-            'callback' => 'callable',
-            'data=' => 'mixed',
-            'priority=' => 'int',
-        ];
+        if (isset($baseMaps[$version]["evloop::$f"])) {
+            $baseMaps[$version]["evloop::$f"] = [
+                0 => $baseMaps[$version]["evloop::$f"][0],
+                'callback' => 'callable',
+                'data=' => 'mixed',
+                'priority=' => 'int',
+            ];
+        }
     }
-    if (count($baseMaps[$version]['amqpbasicproperties::__construct']) === 1) {
+    if (isset($baseMaps[$version]['amqpbasicproperties::__construct'])
+        && count($baseMaps[$version]['amqpbasicproperties::__construct']) === 1
+    ) {
         $baseMaps[$version]['amqpbasicproperties::__construct'] = [
             0 => 'void',
             'contentType=' => 'null|string',
@@ -75,11 +79,13 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
         unset($baseMaps[$version]['file_get_contents']['flags=']);
         $baseMaps[$version]['file_get_contents']['use_include_path='] = 'bool';
     }
-    foreach ($baseMaps[$version]['date_time_set'] as &$t) {
-        if ($t === 'mixed') {
-            $t = 'int';
-        }
-    } unset($t);
+    if (isset($baseMaps[$version]['date_time_set'])) {
+        foreach ($baseMaps[$version]['date_time_set'] as &$t) {
+            if ($t === 'mixed') {
+                $t = 'int';
+            }
+        } unset($t);
+    }
 
     foreach ($baseMaps[$version] as $func => &$ret) {
         if ($func !== 'redis::pipeline' && $func !== 'redis::multi') {
@@ -97,7 +103,7 @@ $last = array_key_last($baseMaps);
 
 // Load+normalize hand-written diff maps
 $customMaps = [
-    84 => require __DIR__."/../../dictionaries/override/CallMap.php",
+    85 => require __DIR__."/../../dictionaries/override/CallMap.php",
 ];
 
 $customDiffs = [];

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: '8.1'
           tools: composer:v2
@@ -18,7 +18,7 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -39,7 +39,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: '8.1'
           tools: composer:v2
@@ -69,7 +69,7 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -83,7 +83,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -135,6 +135,7 @@ jobs:
           - "8.2"
           - "8.3"
           - "8.4"
+          - "8.5"
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
@@ -146,17 +147,18 @@ jobs:
 
     steps:
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: "${{ matrix.php-version }}"
-          ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
+          ini-values: zend.assertions=1, assert.exception=1
+          #ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
           tools: composer:v2
           coverage: none
           extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Get Composer Cache Directories
         id: composer-cache
@@ -171,7 +173,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -187,3 +189,57 @@ jobs:
 
       - name: Run unit tests
         run: bin/ci/tests-github-actions.sh
+
+  hack-conformance:
+    name: Hack conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      # docker is preinstalled on ubuntu runners; pull the pinned HHVM image so
+      # the conformance test runs for real instead of skipping.
+      - name: Pull pinned HHVM image
+        run: |
+          image=$(php -r 'echo json_decode(file_get_contents("bin/hack-conformance/manifest.json"), true)["hhvm_image"];')
+          echo "Pulling $image"
+          docker pull "$image"
+
+      # --fail-on-skipped guarantees the harness actually ran (a skip here would
+      # mean docker/HHVM was unavailable, which must fail rather than pass silently).
+      - name: Run Hack conformance tests
+        run: vendor/bin/phpunit tests/HackConformanceTest.php --fail-on-skipped

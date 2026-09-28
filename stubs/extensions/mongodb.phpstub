@@ -182,15 +182,14 @@ namespace MongoDB\BSON
 namespace MongoDB\Driver
 {
     use Iterator;
-    use Traversable;
 
     /**
      * @template-covariant TKey
      * @template-covariant TValue
      *
-     * @template-extends Traversable<TKey, TValue>
+     * @template-extends Iterator<TKey, TValue>
      */
-    interface CursorInterface extends Traversable
+    interface CursorInterface extends Iterator
     {
         /**
          * @return array<TValue>
@@ -201,10 +200,9 @@ namespace MongoDB\Driver
     /**
      * @template-covariant TValue of array|object
      *
-     * @template-implements Iterator<int, TValue>
      * @template-implements CursorInterface<int, TValue>
      */
-    final class Cursor implements CursorInterface, Iterator
+    final class Cursor implements CursorInterface
     {
         /**
          * @return TValue

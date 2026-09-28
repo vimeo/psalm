@@ -38,6 +38,7 @@ use function array_filter;
 use function array_intersect;
 use function array_merge;
 use function array_unique;
+use function array_unshift;
 use function count;
 use function end;
 use function implode;
@@ -183,23 +184,23 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
-        $previous_source = $source->previous;
-
-        $node = [
-            'location' => $source->code_location,
-            'label' => $source->label,
-            'entry_path_type' => end($source->path_types) ?: '',
-        ];
-
-        if ($previous_source) {
+        $out = [];
+        do {
+            /** @var DataFlowNode $source */
+            $previous_source = $source->previous;
             if ($previous_source === $source) {
-                return [];
+                break;
             }
+            $path_types = $source->path_types;
+            array_unshift($out, [
+                'location' => $source->code_location,
+                'label' => $source->label,
+                'entry_path_type' => end($path_types) ?: '',
+            ]);
+            $source = $previous_source;
+        } while ($previous_source);
 
-            return [...$this->getIssueTrace($previous_source), $node];
-        }
-
-        return [$node];
+        return $out;
     }
 
     public function connectSinksAndSources(): void
@@ -443,7 +444,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_destination->previous = $generated_source;
             $new_destination->taints = $new_taints;
             $new_destination->specialized_calls = $generated_source->specialized_calls;
-            $new_destination->path_types = [...$generated_source->path_types, $path_type];
+            $new_destination->path_types = $generated_source->path_types;
+            $new_destination->path_types []= $path_type;
 
             $key = $to_id .
                 ' ' . json_encode($new_destination->specialized_calls, JSON_THROW_ON_ERROR) .

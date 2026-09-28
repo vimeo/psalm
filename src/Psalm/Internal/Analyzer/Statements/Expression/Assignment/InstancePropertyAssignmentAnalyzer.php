@@ -211,6 +211,23 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                // transfer any type-variable bounds recorded while checking
+                // the assignment
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    $union_comparison_results->type_variable_lower_bounds,
+                    $union_comparison_results->type_variable_upper_bounds,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                );
+            }
+
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     IssueBuffer::maybeAdd(
@@ -986,7 +1003,14 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                if (!$class_exists) {
+                // Test if the property has a 'set' hook
+                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                    ? $interface_storage->properties[$stmt->name->name] ?? null
+                    : null;
+                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
+                    && $interface_property?->hook_set !== null;
+
+                if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -1041,6 +1065,7 @@ final class InstancePropertyAssignmentAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer->getSuppressedIssues(),
                         false,
+                        true,
                     ) !== true)
             )
             && $codebase->methods->methodExists(
@@ -1242,6 +1267,8 @@ final class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
                 ) === false) {
                     return null;
                 }
@@ -1253,6 +1280,7 @@ final class InstancePropertyAssignmentAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues(),
                     false,
+                    true,
                 ) !== true) {
                     return null;
                 }
@@ -1312,6 +1340,7 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$property_storage->readonly
                 && !$context->collect_mutations
                 && !$context->collect_initializations
+                && $lhs_var_id !== null
                 && isset($context->vars_in_scope[$lhs_var_id])
                 && !$context->vars_in_scope[$lhs_var_id]->allow_mutations
             ) {

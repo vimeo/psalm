@@ -34,7 +34,7 @@ final class DocComment
         'allow-private-mutation', 'readonly-allow-private-mutation',
         'yield', 'trace', 'import-type', 'flow', 'taint-specialize', 'taint-escape',
         'taint-unescape', 'self-out', 'consistent-constructor', 'stub-override',
-        'require-extends', 'require-implements', 'param-out', 'ignore-var',
+        'require-extends', 'require-implements', 'param-out', 'param-closure-this', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
         'api', 'inheritors',
     ];
@@ -54,7 +54,8 @@ final class DocComment
         }
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
-            if (str_starts_with($special_key, 'psalm-')) {
+            /** @psalm-suppress RedundantCast */
+            if (str_starts_with((string) $special_key, 'psalm-')) {
                 $special_key = substr($special_key, 6);
 
                 if (!in_array(

@@ -63,7 +63,6 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
-use function clearstatcache;
 use function count;
 use function dirname;
 use function end;
@@ -88,7 +87,6 @@ use function substr;
 use function usort;
 
 use const PHP_EOL;
-use const PSALM_VERSION;
 use const STDERR;
 
 /**
@@ -192,7 +190,7 @@ final class ProjectAnalyzer
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
-    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[01234])(\..*)?$';
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[012345])(\..*)?$';
 
     /**
      * @param array<ReportOptions> $generated_report_options
@@ -230,8 +228,6 @@ final class ProjectAnalyzer
         $this->progress = $progress;
         $this->config = $config;
 
-        $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
-
         $this->codebase = $codebase;
 
         $this->config->processPluginFileExtensions($this);
@@ -266,52 +262,6 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
-    }
-
-    private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
-    {
-        $cache_directory = $this->config->getCacheDirectory();
-        if ($cache_directory === null) {
-            return;
-        }
-
-        if ($this->project_cache_provider
-            && $this->project_cache_provider->hasLockfileChanged()
-        ) {
-            // we only clear the cache if it actually exists
-            // if it's not populated yet, we don't clear anything but populate the cache instead
-            clearstatcache(true, $cache_directory);
-            if (is_dir($cache_directory)) {
-                $this->progress->debug(
-                    'Composer lockfile change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
-                );
-
-                Config::removeCacheDirectory($cache_directory);
-            }
-
-            if ($this->file_reference_provider->cache) {
-                $this->file_reference_provider->cache->setConfigHashCache();
-            }
-
-            $this->project_cache_provider->updateComposerLockHash();
-        } elseif ($this->file_reference_provider->cache
-            && $this->file_reference_provider->cache->hasConfigChanged()
-        ) {
-            clearstatcache(true, $cache_directory);
-            if (is_dir($cache_directory)) {
-                $this->progress->debug(
-                    'Config change detected, clearing cache directory ' . $cache_directory . PHP_EOL,
-                );
-
-                Config::removeCacheDirectory($cache_directory);
-            }
-
-            $this->file_reference_provider->cache->setConfigHashCache();
-
-            if ($this->project_cache_provider) {
-                $this->project_cache_provider->updateComposerLockHash();
-            }
-        }
     }
 
     /**
@@ -368,6 +318,8 @@ final class ProjectAnalyzer
 
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
+
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
@@ -436,8 +388,6 @@ final class ProjectAnalyzer
 
     public function check(string $base_dir, bool $is_diff = false): void
     {
-        $start_checks = (int)microtime(true);
-
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
@@ -527,14 +477,6 @@ final class ProjectAnalyzer
             $this->codebase->alter_code,
             true,
         );
-
-        if ($this->parser_cache_provider && !$is_diff) {
-            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches($start_checks);
-
-            if ($removed_parser_files) {
-                $this->progress->debug('Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL);
-            }
-        }
     }
 
     public function consolidateAnalyzedData(): void
@@ -924,12 +866,10 @@ final class ProjectAnalyzer
 
         $diff_files = [];
 
-        $last_run = $this->project_cache_provider->getLastRun(PSALM_VERSION);
-
         foreach ($this->project_files as $file_path) {
-            if ($this->file_provider->getModifiedTime($file_path) >= $last_run
-                && $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path)
-                    !== $this->file_provider->getContents($file_path)
+            $hash = $this->parser_cache_provider->getHash($file_path);
+            if ($hash !== null &&
+                $hash !== $this->file_provider->getContents($file_path)
             ) {
                 $diff_files[] = $file_path;
             }
@@ -1002,6 +942,9 @@ final class ProjectAnalyzer
         $this->progress->startScanningFiles();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+
+        $this->config->initializePlugins($this);
+
         $this->visitAutoloadFiles();
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
@@ -1019,9 +962,6 @@ final class ProjectAnalyzer
         }
 
         $this->file_reference_provider->loadReferenceCache();
-
-        $this->config->initializePlugins($this);
-
 
         $this->codebase->scanFiles($this->scanThreads);
 

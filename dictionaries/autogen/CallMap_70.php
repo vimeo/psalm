@@ -2654,6 +2654,14 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'co\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'co\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -2706,6 +2714,10 @@ return array (
   array (
     0 => 'mixed',
     'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
   ),
   'co\\context::__construct' => 
   array (
@@ -19568,6 +19580,12 @@ return array (
     'lookup_table' => 'Imagick',
     'channel=' => 'mixed',
   ),
+  'imagick::clutimagewithinterpolate' => 
+  array (
+    0 => 'mixed',
+    'lookup_table' => 'Imagick',
+    'pixel_interpolate_method' => 'mixed',
+  ),
   'imagick::coalesceimages' => 
   array (
     0 => 'mixed',
@@ -19648,7 +19666,7 @@ return array (
   'imagick::convolveimage' => 
   array (
     0 => 'mixed',
-    'kernel' => 'mixed',
+    'kernel' => 'ImagickKernel',
     'channel=' => 'mixed',
   ),
   'imagick::count' => 
@@ -20872,6 +20890,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimagebordercolor' => 
   array (
@@ -20961,6 +20980,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimageindex' => 
   array (
@@ -21027,6 +21047,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setimagerenderingintent' => 
   array (
@@ -21069,6 +21090,7 @@ return array (
     0 => 'mixed',
     'x' => 'mixed',
     'y' => 'mixed',
+    'z' => 'mixed',
   ),
   'imagick::setinterlacescheme' => 
   array (
@@ -22237,7 +22259,7 @@ return array (
   array (
     0 => 'mixed',
     'matrix' => 'mixed',
-    'origin' => 'mixed',
+    'origin=' => 'mixed',
   ),
   'imagickkernel::getmatrix' => 
   array (
@@ -40485,6 +40507,15 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+    'callback=' => 'callable',
+  ),
+  'swoole\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -40553,6 +40584,10 @@ return array (
     'how' => 'mixed',
   ),
   'swoole\\client::sleep' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client::verifypeercert' => 
   array (
     0 => 'mixed',
   ),
@@ -40802,6 +40837,14 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole\\coroutine\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\coroutine\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -40854,6 +40897,10 @@ return array (
   array (
     0 => 'mixed',
     'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\coroutine\\context::__construct' => 
   array (
@@ -44472,6 +44519,15 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole_client::enablessl' => 
+  array (
+    0 => 'mixed',
+    'callback=' => 'callable',
+  ),
+  'swoole_client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole_client::getpeername' => 
   array (
     0 => 'mixed',
@@ -44540,6 +44596,10 @@ return array (
     'how' => 'mixed',
   ),
   'swoole_client::sleep' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::verifypeercert' => 
   array (
     0 => 'mixed',
   ),
@@ -48688,8 +48748,8 @@ return array (
   'zookeeperconfig::get' => 
   array (
     0 => 'mixed',
-    'watcher_cb' => 'mixed',
-    '&stat_info' => 'mixed',
+    'watcher_cb=' => 'mixed',
+    '&stat_info=' => 'mixed',
   ),
   'zookeeperconfig::remove' => 
   array (

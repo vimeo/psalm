@@ -235,6 +235,9 @@ final class ForkContext extends AbstractContext
             if ($signal === 11) {
                 $signal = "11: THIS IS A PHP BUG, please report this to https://github.com/vimeo/psalm/issues".
                     " AND to https://github.com/php/php-src/issues";
+            } elseif ($signal === 9) {
+                $signal = "9: the process was likely killed by the OOM killer, try increasing the swap space ".
+                    "or use the arrayCache=\"false\" config to reduce memory usage";
             }
             throw new ContextException("Worker exited due to signal $signal!");
         }

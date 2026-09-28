@@ -78,7 +78,7 @@ function normalizeParameters(string $func, array $parameters): array
 
         // Read the reference mode
         if ($normalizedEntry['byRef']) {
-            $parts = explode('_', $normalizedKey, 2);
+            $parts = explode(' ', $normalizedKey, 2);
             if (count($parts) === 2) {
                 if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
                     $normalizedEntry['refMode'] = 'rw';
@@ -139,7 +139,7 @@ function assertEntryParameters(string $func, array $baseParameters, array $custo
             continue;
         }
         if (($param['refMode'] ?? 'rw') !== 'rw') {
-            $key = "{$param['refMode']}_$key";
+            $key = "{$param['refMode']} $key";
         }
         if ($param['variadic']) {
             $key = "...$key";

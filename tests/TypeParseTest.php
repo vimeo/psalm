@@ -58,6 +58,56 @@ final class TypeParseTest extends TestCase
         $this->assertSame('A|static', (string) Type::parseString('$this|A'));
     }
 
+    public function testThisInGenericTypeParam(): void
+    {
+        $this->assertSame('B<static>', (string) Type::parseString('B<$this>'));
+    }
+
+    public function testThisAsFirstGenericTypeParam(): void
+    {
+        $this->assertSame('B<static, A>', (string) Type::parseString('B<$this, A>'));
+    }
+
+    public function testThisInMultipleGenericTypeParams(): void
+    {
+        $this->assertSame('B<A, static>', (string) Type::parseString('B<A, $this>'));
+    }
+
+    public function testThisInNestedGenericTypeParam(): void
+    {
+        $this->assertSame('A<B<static>>', (string) Type::parseString('A<B<$this>>'));
+    }
+
+    public function testThisIntersection(): void
+    {
+        $this->assertSame('Foo', (string) Type::parseString('$this&Foo'));
+    }
+
+    public function testThisIntersectionInsideGenericParam(): void
+    {
+        $this->assertSame('B<Foo>', (string) Type::parseString('B<$this&Foo>'));
+    }
+
+    public function testThisUnionInsideGenericParam(): void
+    {
+        $this->assertSame('B<Foo|static>', (string) Type::parseString('B<$this|Foo>'));
+    }
+
+    public function testThisInKeyedArrayValue(): void
+    {
+        $this->assertSame('array{key: static}', (string) Type::parseString('array{key: $this}'));
+    }
+
+    public function testThisAsCallableReturnType(): void
+    {
+        $this->assertSame('Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
+    }
+
+    public function testThisModelVariableNotTreatedAsThis(): void
+    {
+        $this->assertSame('Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
+    }
+
     public function testIntOrString(): void
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
@@ -139,6 +189,26 @@ final class TypeParseTest extends TestCase
     public function testGeneric(): void
     {
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));
+    }
+
+    public function testGenericWithInlineCovariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<covariant int>'));
+    }
+
+    public function testGenericWithInlineContravariant(): void
+    {
+        $this->assertSame('B<int>', (string) Type::parseString('B<contravariant int>'));
+    }
+
+    public function testGenericWithMultipleInlineVariance(): void
+    {
+        $this->assertSame('B<int, string>', (string) Type::parseString('B<covariant int, contravariant string>'));
+    }
+
+    public function testGenericWithInlineVarianceAndUnion(): void
+    {
+        $this->assertSame('B<int|string>', (string) Type::parseString('B<covariant int|string>'));
     }
 
     public function testIntersection(): void
@@ -267,6 +337,110 @@ final class TypeParseTest extends TestCase
     {
         $this->expectException(TypeParseTreeException::class);
         Type::parseString('array{a: int}&T1');
+    }
+
+    public function testIntersectionOfNonEmptyStringAndLowercaseString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-string&lowercase-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfLowercaseStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('lowercase-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyStringAndLiteralString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('non-empty-string&literal-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfLiteralStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('literal-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfSameNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-string',
+            Type::parseString('non-empty-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLowercaseStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-lowercase-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLowercaseStringAndLowercaseString(): void
+    {
+        $this->assertSame(
+            'non-empty-lowercase-string',
+            Type::parseString('non-empty-lowercase-string&lowercase-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyLiteralStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'non-empty-literal-string',
+            Type::parseString('non-empty-literal-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNonEmptyStringAndNonFalsyString(): void
+    {
+        $this->assertSame(
+            'non-falsy-string',
+            Type::parseString('non-empty-string&non-falsy-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNumericStringAndNonEmptyString(): void
+    {
+        $this->assertSame(
+            'numeric-string',
+            Type::parseString('numeric-string&non-empty-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfStringPseudoTypeAndNonStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('non-empty-string&int');
+    }
+
+    public function testIntersectionOfNumericStringAndLowercaseStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('numeric-string&lowercase-string');
+    }
+
+    public function testIntersectionOfNonFalsyStringAndLowercaseStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('non-falsy-string&lowercase-string');
+    }
+
+    public function testIntersectionOfNonEmptyStringAndCallableStringRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('callable-string&lowercase-string');
     }
 
     public function testIterableContainingTKeyedArray(): void
@@ -689,6 +863,18 @@ final class TypeParseTest extends TestCase
             '(T is string ? string : int)',
             (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => Type::getArray()]]),
         );
+    }
+
+    public function testConditionalTypeWithoutTernary(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(T is string)', null, ['T' => ['' => Type::getArray()]]);
+    }
+
+    public function testConditionalTypeWithoutIsType(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(T is ? string : int)', null, ['T' => ['' => Type::getArray()]]);
     }
 
     public function testConditionalTypeWithCallableElseBool(): void

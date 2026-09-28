@@ -22,7 +22,6 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\TraitFinder;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\PossiblyUnusedMethod;
@@ -59,16 +58,25 @@ use function explode;
 use function get_declared_classes;
 use function get_declared_interfaces;
 use function implode;
+use function is_array;
+use function ltrim;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
+use function token_get_all;
 
 use const PHP_EOL;
+use const T_CLASS;
+use const T_COMMENT;
+use const T_DOC_COMMENT;
+use const T_READONLY;
+use const T_STRING;
+use const T_WHITESPACE;
 
 /**
  * @internal
@@ -145,7 +153,6 @@ final class ClassLikes
         private readonly Config $config,
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
         public FileReferenceProvider $file_reference_provider,
-        private readonly StatementsProvider $statements_provider,
         private readonly Scanner $scanner,
     ) {
         $this->collectPredefinedClassLikes();
@@ -776,9 +783,9 @@ final class ClassLikes
             throw new UnexpectedValueException('Storage should exist for ' . $fq_trait_name);
         }
 
-        $file_statements = $this->statements_provider->getStatementsForFile(
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+        $file_statements = $codebase->getStatementsForFile(
             $storage->location->file_path,
-            ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id,
         );
 
         $trait_finder = new TraitFinder($fq_trait_name);
@@ -870,30 +877,28 @@ final class ClassLikes
                     && !$classlike_storage->is_enum
                     && !$classlike_storage->is_interface
                 ) {
+                    $code_issue = new ClassMustBeFinal(
+                        'Class ' . $classlike_storage->name
+                            . ' is never extended and is not part of the public API, and thus must be made final.',
+                        $classlike_storage->location,
+                        $classlike_storage->name,
+                    );
+
                     IssueBuffer::maybeAdd(
-                        new ClassMustBeFinal(
-                            'Class ' . $classlike_storage->name
-                                . ' is never extended and is not part of the public API, and thus must be made final.',
-                            $classlike_storage->location,
-                            $classlike_storage->name,
-                        ),
+                        $code_issue,
                         $classlike_storage->suppressed_issues,
                         true,
                     );
                     
                     if ($codebase->alter_code
                         && $classlike_storage->stmt_location !== null
+                        && !IssueBuffer::isSuppressed($code_issue, $classlike_storage->suppressed_issues)
                         && isset($project_analyzer->getIssuesToFix()['ClassMustBeFinal'])
                     ) {
-                        $selection = $classlike_storage->stmt_location->getSnippet();
-                        $insert_pos = strpos($selection, "class");
-        
-                        if ($insert_pos === false) {
-                            $insert_pos = $classlike_storage->stmt_location->getSelectionBounds()[0];
-                        }
+                        $insert_pos = self::getFinalInsertionPosition($classlike_storage->stmt_location);
 
                         FileManipulationBuffer::add($classlike_storage->stmt_location->file_path, [
-                            new FileManipulation($insert_pos, $insert_pos, 'final ', true),
+                            new FileManipulation($insert_pos, $insert_pos, 'final '),
                         ]);
                     }
                 }
@@ -1033,6 +1038,86 @@ final class ClassLikes
         }
 
         FileManipulationBuffer::addCodeMigrations($code_migrations);
+    }
+
+    private static function getFinalInsertionPosition(CodeLocation $class_location): int
+    {
+        $selection = $class_location->getSnippet();
+        $snippet_bounds = $class_location->getSnippetBounds();
+        $tokenized_selection = str_starts_with(ltrim($selection), '<?php')
+            ? $selection
+            : '<?php ' . $selection;
+        $tokens = token_get_all($tokenized_selection);
+
+        $offset = $tokenized_selection === $selection ? 0 : -6;
+        $previous_significant_token = null;
+        $previous_significant_offset = null;
+
+        foreach ($tokens as $i => $token) {
+            if (is_array($token)) {
+                [$token_id, $token_text] = $token;
+
+                if ($token_id === T_CLASS && self::isClassDeclarationToken($tokens, $i)) {
+                    if ($previous_significant_token === T_READONLY && $previous_significant_offset !== null) {
+                        return $snippet_bounds[0] + $previous_significant_offset;
+                    }
+
+                    return $snippet_bounds[0] + $offset;
+                }
+
+                if (!self::isTriviaToken($token_id)) {
+                    $previous_significant_token = $token_id;
+                    $previous_significant_offset = $offset;
+                }
+
+                $offset += strlen($token_text);
+                continue;
+            }
+
+            if ($token !== '{'
+                && $token !== '}'
+                && $token !== '('
+                && $token !== ')'
+                && $token !== '['
+                && $token !== ']'
+            ) {
+                $previous_significant_token = $token;
+                $previous_significant_offset = $offset;
+            }
+
+            $offset += strlen($token);
+        }
+
+        return $class_location->getSelectionBounds()[0];
+    }
+
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private static function isClassDeclarationToken(array $tokens, int $class_token_offset): bool
+    {
+        for ($i = $class_token_offset + 1, $c = count($tokens); $i < $c; $i++) {
+            $token = $tokens[$i];
+
+            if (is_array($token)) {
+                if (self::isTriviaToken($token[0])) {
+                    continue;
+                }
+
+                return $token[0] === T_STRING;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    private static function isTriviaToken(int $token_id): bool
+    {
+        return $token_id === T_WHITESPACE
+            || $token_id === T_COMMENT
+            || $token_id === T_DOC_COMMENT;
     }
 
     public function moveProperties(Properties $properties, ?Progress $progress = null): void

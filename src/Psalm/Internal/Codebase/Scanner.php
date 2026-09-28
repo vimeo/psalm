@@ -32,15 +32,20 @@ use function array_filter;
 use function array_merge;
 use function array_pop;
 use function ceil;
+use function class_exists;
 use function count;
+use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function interface_exists;
+use function ltrim;
 use function min;
 use function realpath;
 use function str_ends_with;
 use function strtolower;
 use function substr;
+use function trait_exists;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -79,7 +84,6 @@ use const PHP_EOL;
  *     errors:array<string, bool>,
  *     classlike_storage:array<string, ClassLikeStorage>,
  *     file_storage:array<lowercase-string, FileStorage>,
- *     new_file_content_hashes: array<string, string>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
  *     global_functions: array<lowercase-string, FunctionStorage>
@@ -149,6 +153,25 @@ final class Scanner
         private readonly FileReferenceProvider $file_reference_provider,
         private readonly Progress $progress,
     ) {
+    }
+
+    public function registerReflectedClassLikeStorage(string $fq_classlike_name): void
+    {
+        $fq_classlike_name = ltrim($fq_classlike_name, '\\');
+        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
+            || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
+            || (!class_exists($fq_classlike_name, false)
+                && !interface_exists($fq_classlike_name, false)
+                && !enum_exists($fq_classlike_name, false)
+                && !trait_exists($fq_classlike_name, false))
+        ) {
+            return;
+        }
+
+        $this->reflection->registerClass(new ReflectionClass($fq_classlike_name));
+        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**
@@ -352,12 +375,6 @@ final class Scanner
 
                 $this->addThreadData($pool_data['scanner_data']);
 
-                if ($this->codebase->statements_provider->parser_cache_provider) {
-                    $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
-                        $pool_data['new_file_content_hashes'],
-                    );
-                }
-
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
@@ -366,10 +383,6 @@ final class Scanner
                 $this->scanAPath($file_path);
                 $this->progress->taskDone(0);
             }
-        }
-
-        if ($this->codebase->statements_provider->parser_cache_provider) {
-            $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
         }
 
         $this->file_reference_provider->addClassLikeFiles($this->classlike_files);
@@ -544,7 +557,7 @@ final class Scanner
     ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));
-        $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
+        $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : '';
 
         $file_name = $this->config->shortenFileName($file_path);
 
@@ -590,6 +603,22 @@ final class Scanner
             );
 
             return true;
+        }
+
+        foreach ($this->config->eventDispatcher->file_path_provider_interface as $provider) {
+            /** @psalm-suppress ArgumentTypeCoercion */
+            $file_path = $provider::getClassFilePath($fq_class_name);
+
+            if ($file_path !== null && file_exists($file_path)) {
+                $this->progress->debug('Using custom file path provider to locate file for ' . $fq_class_name . "\n");
+
+                $classlikes->addFullyQualifiedClassLikeName(
+                    $fq_class_name_lc,
+                    (string) realpath($file_path),
+                );
+
+                return true;
+            }
         }
 
         $reflected_class = ErrorHandler::runWithExceptionsSuppressed(

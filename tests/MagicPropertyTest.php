@@ -760,6 +760,123 @@ final class MagicPropertyTest extends TestCase
                     $a->type = A::TYPE_B;
                 ',
             ],
+            'propertyWithSelfWildcardConstantComparison' => [
+                'code' => '<?php
+                    /** @property self::STATUS_* $status */
+                    final class Thing {
+                        public const STATUS_A = "a";
+                        public const STATUS_B = "b";
+
+                        public function __get(string $_prop): mixed { return null; }
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+
+                    function handle(Thing $t): void {
+                        if ($t->status === Thing::STATUS_B) {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyWithParentWildcardConstantComparison' => [
+                'code' => '<?php
+                    class Base {
+                        public const FOO_A = "a";
+                        public const FOO_B = "b";
+                    }
+                    /** @property parent::FOO_* $f */
+                    final class C extends Base {
+                        public function __get(string $_prop): mixed { return null; }
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+
+                    function handle(C $c): void {
+                        if ($c->f === Base::FOO_A) {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyWithSelfLiteralConstant' => [
+                'code' => '<?php
+                    /** @property self::FOO_A $f */
+                    final class C {
+                        public const FOO_A = "a";
+                        public const FOO_B = "b";
+
+                        public function __get(string $_prop): mixed { return null; }
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+                    $c = new C();
+                    $v = $c->f;
+                ',
+                'assertions' => [
+                    '$v===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyReadWithSelfWildcardConstant' => [
+                'code' => '<?php
+                    /** @property-read self::FOO_* $f */
+                    final class C {
+                        public const FOO_A = "a";
+                        public const FOO_B = "b";
+
+                        public function __get(string $_prop): mixed { return null; }
+                    }
+
+                    function handle(C $c): void {
+                        if ($c->f === C::FOO_A) {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyWriteWithSelfWildcardConstant' => [
+                'code' => '<?php
+                    /** @property-write self::FOO_* $f */
+                    final class C {
+                        public const FOO_A = "a";
+                        public const FOO_B = "b";
+
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+                    $c = new C();
+                    $c->f = C::FOO_A;
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyWithSelfWildcardConstantInheritedConstants' => [
+                'code' => '<?php
+                    class Base {
+                        public const FOO_A = "a";
+                        public const FOO_B = "b";
+                    }
+                    /** @property self::FOO_* $f */
+                    final class C extends Base {
+                        public function __get(string $_prop): mixed { return null; }
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+
+                    function handle(C $c): void {
+                        if ($c->f === C::FOO_A) {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'impureMethodTest' => [
                 'code' => '<?php
                     /**
@@ -828,6 +945,26 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'propertyWithSelfWildcardConstantNonMatchingString' => [
+                'code' => '<?php
+                    /** @property self::STATUS_* $status */
+                    final class Thing {
+                        public const STATUS_A = "a";
+                        public const STATUS_B = "b";
+
+                        public function __get(string $_prop): mixed { return null; }
+                        /** @param mixed $_value */
+                        public function __set(string $_prop, $_value): void {}
+                    }
+
+                    function handle(Thing $t): void {
+                        if ($t->status === "not-a-status") {}
+                    }
+                ',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'propertyDocblockInvalidAssignment' => [
                 'code' => '<?php

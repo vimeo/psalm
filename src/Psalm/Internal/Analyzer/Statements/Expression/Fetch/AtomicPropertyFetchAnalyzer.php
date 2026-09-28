@@ -30,6 +30,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InternalClass;
@@ -266,7 +267,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$naive_property_exists) {
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -414,6 +415,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -459,6 +475,29 @@ final class AtomicPropertyFetchAnalyzer
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
 
+            // A property inherits the availability of its (native) declaring class unless it
+            // carries a later `@since` of its own, which then takes priority. Reported when the
+            // owning value came from e.g. a native factory return, so the class is never named in
+            // the analysed code and would otherwise go unchecked.
+            $property_since_id = $property_storage->since_php_version_id
+                ?? $declaring_class_storage->since_php_version_id;
+
+            if (!$declaring_class_storage->user_defined
+                && $property_since_id !== null
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
+                && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedPropertyFetch(
+                        $property_id . ' ' . $codebase->getUnavailableSymbolMessageSuffix($property_since_id),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
@@ -496,6 +535,13 @@ final class AtomicPropertyFetchAnalyzer
             $prop_name,
             $lhs_type_part,
         );
+
+        if (!$in_assignment) {
+            // reading a property through a type variable resolves it via its
+            // accumulated bounds (a concrete shape is required here); writes
+            // keep the variable so they record bounds instead
+            $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
+        }
 
         if (!$context->collect_mutations
             && !$context->collect_initializations
@@ -643,6 +689,11 @@ final class AtomicPropertyFetchAnalyzer
                                 $declaring_property_class,
                             ) : $class_storage,
                     );
+
+                    // reading a property through a type variable resolves it
+                    // via its accumulated bounds (a concrete shape is required
+                    // here)
+                    $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
                 }
 
                 self::processTaints(
@@ -1168,12 +1219,19 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            if (!$class_exists &&
-                //interfaces can't have properties. Except when they do... In PHP Core, they can
-                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name)) &&
-                !$intersects_with_enum
-            ) {
+            // In PHP Core enum interfaces have properties
+            $is_enum_interface = in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
+                || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                || $intersects_with_enum;
+
+            // Since PHP 8.4 interfaces can have hook properties
+            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
+                ? $interface_storage->properties[$stmt->name->name] ?? null
+                : null;
+            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
+                $interface_property?->hook_get !== null;
+
+            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
@@ -1252,6 +1310,8 @@ final class AtomicPropertyFetchAnalyzer
                             $declaring_property_class,
                         ) : $class_storage,
                 );
+
+                $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
             }
 
             self::processTaints(

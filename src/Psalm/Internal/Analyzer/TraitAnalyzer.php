@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer;
 
+use Attribute;
 use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
@@ -81,7 +82,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
             $context,
             $storage,
             $stmt->attrGroups,
-            AttributesAnalyzer::TARGET_CLASS,
+            Attribute::TARGET_CLASS,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
 

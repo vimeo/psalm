@@ -62,8 +62,6 @@ final class FileStorage
 
     public bool $has_extra_statements = false;
 
-    public string $hash = '';
-
     public bool $has_visitor_issues = false;
 
     /**

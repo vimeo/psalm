@@ -40,6 +40,15 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $stubbed = false;
 
+    /**
+     * The `analysis_php_version_id` at which this native symbol became available, from an `@since`
+     * tag on a stub class (e.g. 8_05_00 for a class tagged `@since 8.5`). Used to report the symbol
+     * as undefined when analysing an older PHP version without a polyfill, while still keeping its
+     * stubbed definition for analysis. Null when unversioned/user-defined. Propagates to the class's
+     * own constants, methods and properties unless they carry a later `@since` of their own.
+     */
+    public ?int $since_php_version_id = null;
+
     public bool $deprecated = false;
 
     /**
@@ -56,6 +65,14 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var list<TNamedObject>
      */
     public array $namedMixins = [];
+
+    /**
+     * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
+     * Filled during population; see getNamedMixinsForLookup().
+     *
+     * @var list<TNamedObject>
+     */
+    public array $transitiveNamedMixins = [];
 
     public ?string $mixin_declaring_fqcln = null;
 
@@ -343,11 +360,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $dependent_classlikes = [];
 
-    /**
-     * A hash of the source file's name, contents, and this file's modified on date
-     */
-    public string $hash = '';
-
     public bool $has_visitor_issues = false;
 
     /**
@@ -441,6 +453,17 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return $type_params;
+    }
+
+    /**
+     * Named mixins in member-lookup order: transitive ones first, then those declared on or inherited by
+     * the class, so that with last-match-wins lookup a nearer mixin shadows a deeper one.
+     *
+     * @return list<TNamedObject>
+     */
+    public function getNamedMixinsForLookup(): array
+    {
+        return [...$this->transitiveNamedMixins, ...$this->namedMixins];
     }
 
     public function hasSealedProperties(Config $config): bool
