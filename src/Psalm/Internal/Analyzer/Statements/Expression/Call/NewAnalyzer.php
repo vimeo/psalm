@@ -525,7 +525,21 @@ final class NewAnalyzer extends CallAnalyzer
                 $unconstrainable_templates = null;
 
                 foreach ($storage->template_types as $template_name => $base_type) {
-                    if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
+                    // A constructor argument like `(callable(): T)|null $f = null` passed
+                    // `null` records a lower bound for T, but it's only a placeholder
+                    // (from_unbound_template_fallback): the argument never actually named
+                    // T, so it carries no real inferred content. Treat that the same as no
+                    // bound at all, so a declared default still applies below, matching
+                    // what happens when the argument is omitted entirely.
+                    $has_real_lower_bound = false;
+                    foreach ($template_result->lower_bounds[$template_name][$fq_class_name] ?? [] as $lower_bound) {
+                        if (!$lower_bound->from_unbound_template_fallback) {
+                            $has_real_lower_bound = true;
+                            break;
+                        }
+                    }
+
+                    if ($has_real_lower_bound) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
                             $codebase,
