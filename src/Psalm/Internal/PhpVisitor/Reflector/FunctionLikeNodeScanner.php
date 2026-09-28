@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
@@ -483,10 +484,13 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            if ($this->codebase->all_functions_global
-                || $this->codebase->register_stub_files
-                || ($this->codebase->register_autoload_files
-                    && !$this->codebase->functions->hasStubbedFunction($function_id))
+            // A polyfill of a native function the analysed version predates must not replace the
+            // native signature (and its purity); the polyfill is still known through this file.
+            if ($this->codebase->register_stub_files
+                || (($this->codebase->all_functions_global
+                        || ($this->codebase->register_autoload_files
+                            && !$this->codebase->functions->hasStubbedFunction($function_id)))
+                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null)
             ) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
             }
@@ -957,7 +961,10 @@ final class FunctionLikeNodeScanner
                     return [$function_id, $storage, null, null, null, null, false, null, true];
                 }
 
-                if (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                // a core function the analysed PHP version predates can be polyfilled
+                if (isset($this->config->getPredefinedFunctions()[$function_id])
+                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                ) {
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $reflection_function = new ReflectionFunction($function_id);
 

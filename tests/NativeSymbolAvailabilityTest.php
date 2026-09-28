@@ -126,6 +126,53 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '7.4',
         ];
+
+        yield 'callMapFunctionAvailableFromItsVersion' => [
+            'code' => '<?php
+                $x = fdiv(1.0, 2.0);
+            ',
+            'assertions' => [
+                '$x===' => 'float',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'callMapFunctionPolyfilledBelowItsVersion' => [
+            'code' => '<?php
+                if (!function_exists("fdiv")) {
+                    function fdiv(float $num1, float $num2): float {
+                        return $num1 / $num2;
+                    }
+                }
+
+                $x = fdiv(1.0, 2.0);
+            ',
+            'assertions' => [
+                '$x===' => 'float',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'callMapSymbolsGuarded' => [
+            'code' => '<?php
+                function a(float $f): float {
+                    return PHP_VERSION_ID >= 80000 ? fdiv($f, 2.0) : $f / 2.0;
+                }
+
+                function b(ReflectionClass $r): bool {
+                    if (PHP_VERSION_ID >= 80100 && $r->isEnum()) {
+                        return true;
+                    }
+
+                    return false;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
     }
 
     #[Override]
@@ -203,6 +250,28 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'UndefinedClass',
             'ignored_issues' => [],
             'php_version' => '7.4',
+        ];
+
+        yield 'callMapFunctionBelowItsVersion' => [
+            'code' => '<?php
+                $x = fdiv(1.0, 2.0);
+            ',
+            'error_message' => 'Function fdiv is not defined for the analysed PHP version 7.4'
+                . ' (it was introduced in PHP 8.0',
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'callMapMethodBelowItsVersion' => [
+            'code' => '<?php
+                function f(ReflectionClass $r): bool {
+                    return $r->isEnum();
+                }
+            ',
+            'error_message' => 'Method ReflectionClass::isEnum is not defined for the analysed PHP version 8.0'
+                . ' (it was introduced in PHP 8.1',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
     }
 }

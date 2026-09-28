@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -913,7 +914,8 @@ final class AssertionFinder
                     try {
                         $since_php_version_id = $codebase->functions
                             ->getStorage($source, $guarded_function_id)
-                            ->since_php_version_id;
+                            ->since_php_version_id
+                            ?? InternalCallMapHandler::getIntroducingPhpVersionId($guarded_function_id);
                     } catch (UnexpectedValueException) {
                     }
                 }
