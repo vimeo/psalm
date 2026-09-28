@@ -187,7 +187,14 @@ final class ExistingAtomicStaticCallAnalyzer
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
 
-        $method_storage_for_defaults = $class_storage->methods[$method_name_lc] ?? null;
+        // The method may be inherited (via extends/use) rather than redeclared on the
+        // called class, so its declared defaults live on the declaring method's own
+        // storage, not the called class's copy of it.
+        $declaring_method_id_for_defaults = $codebase->methods->getDeclaringMethodId($method_id);
+        $method_storage_for_defaults = $declaring_method_id_for_defaults
+            && $codebase->methods->hasStorage($declaring_method_id_for_defaults)
+                ? $codebase->methods->getStorage($declaring_method_id_for_defaults)
+                : ($class_storage->methods[$method_name_lc] ?? null);
         if ($method_storage_for_defaults && $method_storage_for_defaults->template_type_defaults !== null) {
             foreach ($method_storage_for_defaults->template_type_defaults as $template_name => $default_type) {
                 if (isset($method_storage_for_defaults->template_types[$template_name])) {
@@ -269,6 +276,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $fq_class_name,
                 $class_storage,
                 $config,
+                $declaring_method_id,
             );
         }
 
@@ -493,6 +501,7 @@ final class ExistingAtomicStaticCallAnalyzer
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config,
+        ?MethodIdentifier $declaring_method_id = null,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
@@ -517,6 +526,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $class_storage,
                             $method_id,
                             $template_type,
+                            $declaring_method_id,
                         );
 
                         if ($resolved_lower_bound !== null) {
@@ -639,6 +649,7 @@ final class ExistingAtomicStaticCallAnalyzer
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
         TTemplateParam $template_type,
+        ?MethodIdentifier $declaring_method_id = null,
     ): ?array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [
@@ -687,7 +698,13 @@ final class ExistingAtomicStaticCallAnalyzer
             ];
         }
 
-        $method_storage = $class_storage->methods[$method_id->method_name] ?? null;
+        // The default may be declared on the method as inherited (e.g. via `extends` or
+        // `use`) rather than redeclared on the called class, so look it up from the
+        // declaring method's own storage rather than the called class's copy of it.
+        $declaring_lookup_id = $declaring_method_id ?? $method_id;
+        $method_storage = $codebase->methods->hasStorage($declaring_lookup_id)
+            ? $codebase->methods->getStorage($declaring_lookup_id)
+            : null;
         if (isset($method_storage->template_type_defaults[$template_type->param_name])) {
             // Templates with a declared default are intentionally left unbound
             // here so TemplateInferredTypeReplacer can apply the default.

@@ -873,6 +873,73 @@ final class TemplateDefaultTest extends TestCase
                     '$r===' => 'mixed',
                 ],
             ],
+            // the default is declared on A::make(), not on B. Looking the default up
+            // from the called class's method storage (B's) instead of the declaring
+            // method's storage (A's) loses it, since B inherits the method without
+            // re-declaring the docblock.
+            // T is a *method-level* template declared on A::make(), not a class-level
+            // template on A. B inherits make() without redeclaring it, so looking the
+            // default up from the called class's (B's) method storage instead of the
+            // declaring method's (A's) storage loses it entirely.
+            'inheritedMethodTemplateDefaultAppliedThroughSubclass' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @template T = int
+                         * @return T
+                         */
+                        public function make() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class B extends A {}
+
+                    $r = (new B())->make();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'inheritedStaticMethodTemplateDefaultAppliedThroughSubclass' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @template T = int
+                         * @return T
+                         */
+                        public static function make() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class B extends A {}
+
+                    $r = B::make();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
+            'traitMethodTemplateDefaultAppliedThroughUsingClass' => [
+                'code' => '<?php
+                    trait Tr {
+                        /**
+                         * @template T = int
+                         * @return T
+                         */
+                        public function make() {
+                            throw new RuntimeException("empty");
+                        }
+                    }
+
+                    class C {
+                        use Tr;
+                    }
+
+                    $r = (new C())->make();',
+                'assertions' => [
+                    '$r===' => 'int',
+                ],
+            ],
         ];
     }
 
