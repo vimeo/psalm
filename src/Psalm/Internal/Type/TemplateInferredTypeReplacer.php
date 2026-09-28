@@ -676,6 +676,22 @@ final class TemplateInferredTypeReplacer
         // including their own defaults — `@template U = T` should expand U through T.
         $visiting_defaults[$visit_key] = true;
 
+        // The cycle guard above only catches a *direct* self-reference (`@template T
+        // = T`). A self-reference nested inside a generic type param (`@template T =
+        // array<int, T>`) recurses into replace() through
+        // GenericTrait::replaceTypeParamsTemplateTypesWithArgTypes(), which doesn't
+        // thread $visiting_defaults, so the guard is lost on that hop and recursion
+        // never terminates. Pre-resolve any such nested self-reference to the
+        // template's own bound before expanding the rest of the default: by the time
+        // the real replace() below reaches it, it's an inferred lower bound rather
+        // than a template param, so there's nothing left to recurse into.
+        $self_bound_result = clone $template_result;
+        $self_bound_result->lower_bounds[$param_name][$defining_class] = [
+            new TemplateBound($atomic_type->as),
+        ];
+
+        $default = self::replace($default, $self_bound_result, $codebase, false);
+
         return self::replace($default, $template_result, $codebase, true, $visiting_defaults);
     }
 
