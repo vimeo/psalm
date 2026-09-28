@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -1051,6 +1052,23 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($var_id !== null
+            && $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $statements_analyzer->getCodebase()->properties->propertyExists($var_id, false)
+        ) {
+            ClassLikeAnalyzer::checkPropertyVisibility(
+                $var_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
+            );
+        }
 
         if ($var_id) {
             $var_not_in_scope = false;
