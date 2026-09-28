@@ -202,7 +202,7 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new UndefinedMethod(
-                    'Method ' . ((string) $method_id) . ' '
+                    'Method ' . $codebase->methods->getCasedMethodId($method_id) . ' '
                         . $codebase->getUnavailableSymbolMessageSuffix($method_since_id),
                     $code_location,
                     (string) $method_id,
