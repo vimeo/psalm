@@ -21,6 +21,29 @@ final class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalReturnOnOneParamKeepsOtherTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TK of array-key
+                     * @template TV
+                     * @param array<mixed, TK> $k
+                     * @param array<mixed, TV> $v
+                     * @return ($k is non-empty-array ? non-empty-array<TK, TV> : array<TK, TV>)
+                     */
+                    function combine(array $k, array $v): array {
+                        return [];
+                    }
+
+                    /** @param list{string, ...<string>} $a */
+                    function f(array $a): array {
+                        return combine(["x"], $a);
+                    }
+
+                    $r = combine(["a", "b"], [1, 2]);',
+                'assertions' => [
+                    '$r===' => "non-empty-array<'a'|'b', 1|2>",
+                ],
+            ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
                     $error = error_get_last();',
