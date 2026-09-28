@@ -3375,6 +3375,7 @@ final class TaintTest extends TestCase
     /**
      * @param list<string> $expectedIssuesTypes
      * @param list<int>|null $expectedSourceLines line of each issue's taint origin, in any order
+     * @param bool $findUnusedVariables track unused variables, as the CLI does by default
      * @test
      * @dataProvider multipleTaintIssuesAreDetectedDataProvider
      */
@@ -3382,6 +3383,7 @@ final class TaintTest extends TestCase
         string $code,
         array $expectedIssuesTypes,
         ?array $expectedSourceLines = null,
+        bool $findUnusedVariables = false,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -3389,6 +3391,7 @@ final class TaintTest extends TestCase
 
         // disables issue exceptions - we need all, not just the first
         $this->testConfig->throw_exception = false;
+        $this->project_analyzer->getCodebase()->find_unused_variables = $findUnusedVariables;
         $filePath = self::$src_dir_path . 'somefile.php';
         $this->addFile($filePath, $code);
         $this->project_analyzer->trackTaintedInputs();
@@ -3421,6 +3424,7 @@ final class TaintTest extends TestCase
      *     code: string,
      *     expectedIssueTypes: list<string>,
      *     expectedSourceLines?: list<int>,
+     *     findUnusedVariables?: bool,
      * }>
      * @psalm-pure
      */
@@ -3580,6 +3584,30 @@ final class TaintTest extends TestCase
                     'TaintedCustom{ function customSink(string $arg): void {} }',
                     'TaintedCustom{ function customSink(string $arg): void {} }',
                 ],
+            ],
+            'specializedMethodWithFlowAnnotation' => [
+                'code' => '<?php
+                    class Formatter {
+                        /**
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($s) -> return
+                         */
+                        public function format(string $s): string { return ""; }
+                    }
+
+                    echo (new Formatter())->format((string)($_GET["a"] ?? ""));
+                    echo (new Formatter())->format("safe");
+                    $formatter = new Formatter();
+                    echo $formatter->format((string)($_GET["b"] ?? ""));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo (new Formatter())->format((string)($_GET["a"] ?? "")); }',
+                    'TaintedTextWithQuotes{ echo (new Formatter())->format((string)($_GET["a"] ?? "")); }',
+                    'TaintedHtml{ echo $formatter->format((string)($_GET["b"] ?? "")); }',
+                    'TaintedTextWithQuotes{ echo $formatter->format((string)($_GET["b"] ?? "")); }',
+                ],
+                'expectedSourceLines' => [10, 10, 13, 13],
+                'findUnusedVariables' => true,
             ],
         ];
     }

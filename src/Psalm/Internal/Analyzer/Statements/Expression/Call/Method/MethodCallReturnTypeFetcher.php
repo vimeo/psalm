@@ -318,9 +318,12 @@ final class MethodCallReturnTypeFetcher
         );
 
         $method_call_node = null;
+        $specialized = false;
         if ($method_storage->specialize_call
             && $taint_flow_graph
         ) {
+            $specialized = true;
+
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
@@ -487,7 +490,7 @@ final class MethodCallReturnTypeFetcher
             $graph = $variable_use_graph;
         }
         if ($graph) {
-            $method_call_node = DataFlowNode::getForMethodReturn(
+            $graph_method_call_node = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
                 $method_storage,
             );
@@ -504,18 +507,25 @@ final class MethodCallReturnTypeFetcher
                 $graph->addNode($declaring_method_call_node);
                 $graph->addPath(
                     $declaring_method_call_node,
-                    $method_call_node,
+                    $graph_method_call_node,
                     'parent',
                     $added_taints,
                     $removed_taints,
                 );
             }
 
-            $graph->addNode($method_call_node);
+            $graph->addNode($graph_method_call_node);
 
-            $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
-            ]);
+            // A specialized call's result keeps its per-call-site nodes set above: the
+            // unspecialized node is the body's own return node, which would connect every
+            // call's result to the taint returned by any call. Usage tracking works through
+            // the specialized nodes just the same.
+            if (!$specialized) {
+                $method_call_node = $graph_method_call_node;
+                $return_type_candidate = $return_type_candidate->setParentNodes([
+                    $method_call_node->id => $method_call_node,
+                ]);
+            }
         }
 
         if (!$taint_flow_graph || !$method_call_node) {
