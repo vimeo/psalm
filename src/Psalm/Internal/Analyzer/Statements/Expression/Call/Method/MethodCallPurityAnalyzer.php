@@ -135,7 +135,6 @@ final class MethodCallPurityAnalyzer
         }
 
         if (NoDiscardAnalyzer::isDiscardReported(
-            $codebase,
             $context,
             $method_storage,
             $stmt->isFirstClassCallable(),

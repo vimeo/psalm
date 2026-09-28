@@ -99,6 +99,7 @@ final class AtomicStaticCallAnalyzer
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->getParts()) === 1
                         && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                    context: $context,
                 ),
             )) {
                 return;
@@ -117,6 +118,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -150,6 +152,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -754,6 +757,9 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
+                // Keep exceptions thrown by the forwarded pseudo-method call
+                $context->possibly_thrown_exceptions = $tmp_context->possibly_thrown_exceptions;
+
                 unset($tmp_context);
 
                 // Resolve actual static return type according to caller (i.e. $this) static type
@@ -800,6 +806,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
                 $context->calling_method_id,
                 $with_pseudo,
+                $context,
             );
         } else {
             $does_method_exist = null;
@@ -898,6 +905,13 @@ final class AtomicStaticCallAnalyzer
         MethodStorage $pseudo_method_storage,
         Context $context,
     ): ?bool {
+        if (!$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $pseudo_method_storage,
+                new CodeLocation($statements_analyzer, $stmt),
+            );
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,

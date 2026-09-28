@@ -241,6 +241,33 @@ final class CloneTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'cloneWithPrivateSetPropertyInsideClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(public private(set) int $x) {}
+
+                        public function withX(int $x): static {
+                            return clone($this, ["x" => $x]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithProtectedSetPropertyFromSubclass' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public protected(set) int $x) {}
+                    }
+                    final class Bar extends Foo {
+                        public function withX(int $x): static {
+                            return clone($this, ["x" => $x]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -474,6 +501,28 @@ final class CloneTest extends TestCase
                     $o = new Foo(1);
                     clone($o, ["x" => 2]);',
                 'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithPrivateSetPropertyFromOutside' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(public private(set) int $x) {}
+                    }
+                    $o = new Foo(1);
+                    clone($o, ["x" => 2]);',
+                'error_message' => 'Cannot modify private(set) property Foo::$x',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'cloneWithProtectedSetPropertyFromOutside' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public protected(set) int $x) {}
+                    }
+                    $o = new Foo(1);
+                    clone($o, ["x" => 2]);',
+                'error_message' => 'Cannot modify protected(set) property Foo::$x',
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
