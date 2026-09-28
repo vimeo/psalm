@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
+use function array_fill;
 use function array_filter;
 use function array_flip;
 use function array_map;
@@ -181,6 +182,57 @@ final class TaintTest extends TestCase
         }
 
         $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * Every level of this chain of specialized functions calls the next level
+     * twice, the second time with what the first call stored in a static
+     * property, and every call site of the outermost function is a distinct
+     * context. Tracking each chain of calls separately explodes combinatorially
+     * (and replaying every call's full trace grows exponentially with the depth),
+     * whereas each specialized function body is resolved once per entry and
+     * applied to every call, so this resolves in well under a second.
+     */
+    public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
+    {
+        $depth = 20;
+        $call_sites = 20;
+
+        $code = "<?php\n"
+            . "final class Store { public static string \$value = ''; }\n"
+            . "/** @psalm-taint-specialize */\n"
+            . "function f$depth(string \$s): string { Store::\$value = \$s; return Store::\$value; }\n";
+
+        for ($i = $depth - 1; $i > 0; $i--) {
+            $next = $i + 1;
+            $code .= "/** @psalm-taint-specialize */\n"
+                . "function f$i(string \$s): string {\n"
+                . "    \$r = f$next(\$s);\n"
+                . "    Store::\$value = \$r;\n"
+                . "    return f$next(Store::\$value) . \$r;\n"
+                . "}\n";
+        }
+
+        for ($i = 0; $i < $call_sites; $i++) {
+            $code .= "function site$i(): void { exec(f1((string) (\$_GET['k$i'] ?? ''))); }\n";
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issue_types = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $type): bool => !in_array($type, self::IGNORE, true),
+        ));
+
+        self::assertSame(array_fill(0, $call_sites, 'TaintedShell'), $taint_issue_types);
     }
 
     /**
@@ -3584,6 +3636,331 @@ final class TaintTest extends TestCase
                     'TaintedCustom{ function customSink(string $arg): void {} }',
                     'TaintedCustom{ function customSink(string $arg): void {} }',
                 ],
+            ],
+            'sinkInSpecializedFunctionReachedByLaterCall' => [
+                // The relayed call enters the specialized function a round after the direct one, when its body has
+                // been walked with the same taints.
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+                    /** @psalm-flow ($v) -> return */ function relay2(string $v): string { return $v; }
+                    /** @psalm-taint-specialize */
+                    function execute(string $value): void { exec($value); }
+
+                    final class Runner {
+                        /** @psalm-taint-specialize */
+                        public static function execute(string $value): void { system($value); }
+                    }
+
+                    execute((string)($_GET["first"] ?? ""));
+                    execute(relay((string)($_GET["second"] ?? "")));
+                    Runner::execute((string)($_GET["first"] ?? ""));
+                    Runner::execute(relay2((string)($_GET["second"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function execute(string $value): void { exec($value); } }',
+                    'TaintedShell{ public static function execute(string $value): void { system($value); } }',
+                    'TaintedShell{ function execute(string $value): void { exec($value); } }',
+                    'TaintedShell{ public static function execute(string $value): void { system($value); } }',
+                ],
+                'expectedSourceLines' => [13, 14, 15, 16],
+            ],
+            'returnOfSpecializedFunctionReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    /** @psalm-taint-specialize */
+                    function id(string $s): string { return $s; }
+
+                    $a = id((string)($_GET["a"] ?? ""));
+                    exec($a);
+                    $b = id(relay(relay((string)($_GET["b"] ?? ""))));
+                    exec($b);
+                    $c = id("safe");
+                    exec($c);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec($a); }',
+                    'TaintedShell{ exec($b); }',
+                ],
+                'expectedSourceLines' => [8, 10],
+            ],
+            'sinkInSpecializedFunctionReportedOncePerOrigin' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function run(string $s): void { exec($s); }
+
+                    $input = (string)($_GET["a"] ?? "");
+                    run($input);
+                    run($input);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function run(string $s): void { exec($s); } }',
+                ],
+                'expectedSourceLines' => [5],
+            ],
+            'nestedSpecializedCallsReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    /** @psalm-taint-specialize */
+                    function inner(string $s): string {
+                        passthru($s);
+                        return $s;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function outer(string $s): string { return inner($s); }
+
+                    inner((string)($_GET["x"] ?? ""));
+                    $a = outer((string)($_GET["a"] ?? ""));
+                    exec($a);
+                    $b = outer(relay(relay((string)($_GET["b"] ?? ""))));
+                    exec($b);
+                    $c = outer("safe");
+                    exec($c);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ passthru($s); }',
+                    'TaintedShell{ passthru($s); }',
+                    'TaintedShell{ passthru($s); }',
+                    'TaintedShell{ exec($a); }',
+                    'TaintedShell{ exec($b); }',
+                ],
+                'expectedSourceLines' => [14, 15, 17, 15, 17],
+            ],
+            'specializedFunctionThroughSharedHelperReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    function helper(string $x): string { return $x; }
+
+                    /** @psalm-taint-specialize */
+                    function f(string $s): string { return helper($s); }
+
+                    $a = f((string)($_GET["a"] ?? ""));
+                    exec($a);
+                    $b = f(relay(relay((string)($_GET["b"] ?? ""))));
+                    exec($b);
+                    $c = f("safe");
+                    exec($c);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec($a); }',
+                    'TaintedShell{ exec($b); }',
+                ],
+                'expectedSourceLines' => [10, 12],
+            ],
+            'sinkInHelperOfSpecializedFunctionReachedByLaterCall' => [
+                // The sink is past the specialized function, in an unspecialized one it calls.
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    function helper(string $x): void { exec($x); }
+
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): void { helper($s); }
+
+                    wrap((string)($_GET["a"] ?? ""));
+                    wrap(relay((string)($_GET["b"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ function helper(string $x): void { exec($x); } }',
+                    'TaintedShell{ function helper(string $x): void { exec($x); } }',
+                ],
+                'expectedSourceLines' => [10, 11],
+            ],
+            'recursiveSpecializedFunctionReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    /** @psalm-taint-specialize */
+                    function rec(string $s, int $n): string {
+                        if ($n > 0) {
+                            return rec($s . "x", $n - 1);
+                        }
+                        exec($s);
+                        return $s;
+                    }
+
+                    echo rec((string)($_GET["a"] ?? ""), 3);
+                    echo rec("safe", 3);
+                    echo rec(relay((string)($_GET["b"] ?? "")), 2);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec($s); }',
+                    'TaintedHtml{ echo rec((string)($_GET["a"] ?? ""), 3); }',
+                    'TaintedTextWithQuotes{ echo rec((string)($_GET["a"] ?? ""), 3); }',
+                    'TaintedShell{ exec($s); }',
+                    'TaintedHtml{ echo rec(relay((string)($_GET["b"] ?? "")), 2); }',
+                    'TaintedTextWithQuotes{ echo rec(relay((string)($_GET["b"] ?? "")), 2); }',
+                ],
+                'expectedSourceLines' => [14, 14, 14, 16, 16, 16],
+            ],
+            'mutuallyRecursiveSpecializedFunctionsReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    /** @psalm-taint-specialize */
+                    function ping(string $s, int $n): string { return $n > 0 ? pong($s, $n - 1) : $s; }
+
+                    /** @psalm-taint-specialize */
+                    function pong(string $s, int $n): string {
+                        system($s);
+                        return ping($s . "!", $n);
+                    }
+
+                    echo ping((string)($_GET["a"] ?? ""), 3);
+                    echo ping("safe", 3);
+                    echo pong(relay((string)($_GET["b"] ?? "")), 2);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo ping((string)($_GET["a"] ?? ""), 3); }',
+                    'TaintedTextWithQuotes{ echo ping((string)($_GET["a"] ?? ""), 3); }',
+                    'TaintedShell{ system($s); }',
+                    'TaintedShell{ system($s); }',
+                    'TaintedHtml{ echo pong(relay((string)($_GET["b"] ?? "")), 2); }',
+                    'TaintedTextWithQuotes{ echo pong(relay((string)($_GET["b"] ?? "")), 2); }',
+                ],
+                'expectedSourceLines' => [14, 14, 14, 16, 16, 16],
+            ],
+            'specializedCallsThroughStaticPropertyReachedByLaterCall' => [
+                // The flow leaves inner() through the static property, not through its return, and outer() returns
+                // it.
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    final class Store { public static string $value = ""; }
+
+                    /** @psalm-taint-specialize */
+                    function inner(string $s): void { Store::$value = $s; }
+
+                    /** @psalm-taint-specialize */
+                    function outer(string $s): string {
+                        inner($s);
+                        return Store::$value;
+                    }
+
+                    exec(outer((string)($_GET["a"] ?? "")));
+                    exec(outer(relay((string)($_GET["b"] ?? ""))));
+                    exec(outer("safe"));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec(outer((string)($_GET["a"] ?? ""))); }',
+                    'TaintedShell{ exec(outer(relay((string)($_GET["b"] ?? "")))); }',
+                ],
+                'expectedSourceLines' => [16, 17],
+            ],
+            'arrayReturnedBySpecializedFunctionToLaterCall' => [
+                // Array keys stay apart through a specialized function for a call arriving after the first one
+                // (each call is relayed through a function of its own, which would merge the flows otherwise).
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+                    /** @psalm-flow ($v) -> return */ function relay2(string $v): string { return $v; }
+                    /** @psalm-taint-specialize */
+                    function wrapX(string $s): array { return ["x" => $s]; }
+
+                    /** @psalm-taint-specialize */
+                    function getX(array $p): array { return (array) $p["x"]; }
+
+                    $a = wrapX((string)($_GET["a"] ?? ""));
+                    exec((string) $a["x"]);
+                    exec((string) $a["y"]);
+                    $b = wrapX(relay((string)($_GET["b"] ?? "")));
+                    exec((string) $b["x"]);
+                    exec((string) $b["y"]);
+
+                    $c = getX(["x" => ["y" => (string)($_GET["c"] ?? "")]]);
+                    exec((string) $c["y"]);
+                    exec((string) $c["z"]);
+                    $d = getX(["x" => ["y" => relay2(relay2((string)($_GET["d"] ?? "")))]]);
+                    exec((string) $d["y"]);
+                    exec((string) $d["z"]);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec((string) $a["x"]); }',
+                    'TaintedShell{ exec((string) $b["x"]); }',
+                    'TaintedShell{ exec((string) $d["y"]); }',
+                    'TaintedShell{ exec((string) $c["y"]); }',
+                ],
+                'expectedSourceLines' => [11, 14, 18, 21],
+            ],
+            'specializedCallsKeepArrayKeysApart' => [
+                // What a specialized body does with a flow depends on the array keys it was assigned to.
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function getX(array $p): string { return (string) $p["x"]; }
+
+                    exec(getX(["x" => (string)($_GET["a"] ?? ""), "y" => "safe"]));
+                    exec(getX(["x" => "safe", "y" => (string)($_GET["b"] ?? "")]));
+                    exec(getX(["x" => (string)($_GET["c"] ?? ""), "y" => "safe"]));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ exec(getX(["x" => (string)($_GET["a"] ?? ""), "y" => "safe"])); }',
+                    'TaintedShell{ exec(getX(["x" => (string)($_GET["c"] ?? ""), "y" => "safe"])); }',
+                ],
+                'expectedSourceLines' => [5, 7],
+            ],
+            'specializedMethodCallSitesStayApart' => [
+                // With unused-variable tracking on, as in the CLI. Fresh instances, so no taint is carried over
+                // through the receiver.
+                'code' => '<?php
+                    class Renderer {
+                        /** @psalm-taint-specialize */
+                        public function render(string $s): string { return $s; }
+                    }
+
+                    class ChildRenderer extends Renderer {}
+
+                    echo (new Renderer())->render((string)($_GET["a"] ?? ""));
+                    echo (new Renderer())->render("safe");
+                    echo (new ChildRenderer())->render((string)($_GET["b"] ?? ""));
+                    echo (new ChildRenderer())->render("safe");
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo (new Renderer())->render((string)($_GET["a"] ?? "")); }',
+                    'TaintedTextWithQuotes{ echo (new Renderer())->render((string)($_GET["a"] ?? "")); }',
+                    'TaintedHtml{ echo (new ChildRenderer())->render((string)($_GET["b"] ?? "")); }',
+                    'TaintedTextWithQuotes{ echo (new ChildRenderer())->render((string)($_GET["b"] ?? "")); }',
+                ],
+                'expectedSourceLines' => [9, 9, 11, 11],
+                'findUnusedVariables' => true,
+            ],
+            'inheritedSpecializedMethodReachedByLaterCall' => [
+                'code' => '<?php
+                    /** @psalm-flow ($v) -> return */
+                    function relay(string $v): string { return $v; }
+
+                    class Db {
+                        /**
+                         * @psalm-taint-sink sql $sql
+                         * @psalm-taint-specialize
+                         */
+                        public function query(string $sql): string { return $sql; }
+                    }
+
+                    class ChildDb extends Db {}
+
+                    $db = new ChildDb();
+                    $db->query((string)($_GET["a"] ?? ""));
+                    echo $db->query(relay((string)($_GET["b"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedSql{ public function query(string $sql): string { return $sql; } }',
+                    'TaintedSql{ public function query(string $sql): string { return $sql; } }',
+                    'TaintedHtml{ echo $db->query(relay((string)($_GET["b"] ?? ""))); }',
+                    'TaintedTextWithQuotes{ echo $db->query(relay((string)($_GET["b"] ?? ""))); }',
+                ],
+                'expectedSourceLines' => [16, 17, 17, 17],
+                'findUnusedVariables' => true,
             ],
             'specializedMethodWithFlowAnnotation' => [
                 'code' => '<?php

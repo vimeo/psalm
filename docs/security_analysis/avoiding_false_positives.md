@@ -132,6 +132,22 @@ echo htmlentities(takesInput($_GET["name"]));
 echo takesInput("hello"); // No error
 ```
 
+Since each invocation is treated separately, a sink the input reaches through a specialized function – in its body or in a function it calls – is reported for every call that passes tainted input to it:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-specialize
+ */
+function run(string $command) : void {
+    exec($command); // Reported twice: once for each call below
+}
+
+run($_GET["first"]);
+run($_GET["second"]);
+```
+
 ## Specializing taints in classes
 
 Just as taints can be specialized in function calls, tainted properties can also be specialized to a given class.

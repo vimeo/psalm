@@ -60,9 +60,10 @@ final class DataFlowNode implements Stringable
         /** @var list<string> */
         public readonly array $path_types = [],
         /**
-         * @var array<string, array<string, string>>
+         * Taint resolution only: the specialized call entry (see TaintFlowGraph) whose
+         * body the flow is currently in, or null outside of any specialized call.
          */
-        public readonly array $specialized_calls = [],
+        public readonly ?int $context = null,
     ) {
     }
 
@@ -433,7 +434,7 @@ final class DataFlowNode implements Stringable
             $taints,
             $this->taintSource,
             $this->path_types,
-            $this->specialized_calls,
+            $this->context,
         );
     }
 
@@ -443,14 +444,13 @@ final class DataFlowNode implements Stringable
      * re-specializes a node it already holds. The location is copied from $this, so it can never
      * diverge from the id -- see the class invariant.
      *
-     * @param array<string, array<string, string>> $specialized_calls
      * @psalm-mutation-free
      */
     public function withSpecialization(
         string $id,
         ?string $unspecialized_id,
         ?string $specialization_key,
-        array $specialized_calls,
+        ?int $context,
     ): self {
         return new self(
             $id,
@@ -461,7 +461,7 @@ final class DataFlowNode implements Stringable
             $this->taints,
             $this->taintSource,
             $this->path_types,
-            $specialized_calls,
+            $context,
         );
     }
 
@@ -472,14 +472,13 @@ final class DataFlowNode implements Stringable
      * invariant.
      *
      * @param list<string> $path_types
-     * @param array<string, array<string, string>> $specialized_calls
      * @psalm-mutation-free
      */
     public function withFlow(
         int $taints,
         self $taintSource,
         array $path_types,
-        array $specialized_calls,
+        ?int $context,
     ): self {
         return new self(
             $this->id,
@@ -490,7 +489,7 @@ final class DataFlowNode implements Stringable
             $taints,
             $taintSource,
             $path_types,
-            $specialized_calls,
+            $context,
         );
     }
 
