@@ -361,6 +361,24 @@ final class PurityTemplateTest extends TestCase
                         $deferred->run();
                     }',
             ],
+            'nestedClosureCarriesOuterPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](int): string
+                     */
+                    function escape(Closure $val): Closure {
+                        return static fn(int $item): string => htmlspecialchars($val($item));
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        $f = escape(function (int $i): string { echo $i; return (string) $i; }); // not called
+                        return escape(fn(int $i): string => (string) $i)(1);
+                    }',
+            ],
             'purityTemplateWithoutParams' => [
                 'code' => '<?php
                     /**
@@ -1250,6 +1268,37 @@ final class PurityTemplateTest extends TestCase
                         return $t;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'nestedClosureCarryingOuterPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](int): string
+                     */
+                    function escape(Closure $val): Closure {
+                        return static fn(int $item): string => htmlspecialchars($val($item));
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return escape(function (int $i): string { echo $i; return (string) $i; })(1);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'callingNestedClosureWithOuterPurityTemplateCostsItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     */
+                    function callsIt(Closure $f): int {
+                        $g = fn(): int => $f();
+                        return $g();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
             'closurePurityMustBeAPurityType' => [
                 'code' => '<?php

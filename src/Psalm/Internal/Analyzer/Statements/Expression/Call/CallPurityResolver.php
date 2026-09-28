@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -64,6 +65,43 @@ final class CallPurityResolver
     }
 
     /**
+     * The purity templates of the function-likes a closure is nested in: a closure calling a closure
+     * whose purity is one of them has that purity itself, which its type carries, whether or not
+     * the function-like inherits its purity from the template (a function returning a
+     * `Closure[P](): int` that calls a parameter typed `Closure[P](): int` does not call it itself).
+     *
+     * @return list<string>
+     * @psalm-mutation-free
+     */
+    private static function getOuterPurityTemplates(StatementsAnalyzer $statements_analyzer): array
+    {
+        $templates = [];
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof ClosureAnalyzer) {
+            return [];
+        }
+
+        while ($source instanceof FunctionLikeAnalyzer) {
+            foreach ($source->getStorage()->template_types ?? [] as $template_name => $bounds) {
+                foreach ($bounds as $bound) {
+                    if (Capabilities::isPurityType($bound)) {
+                        $templates[] = $template_name;
+                    }
+                }
+            }
+
+            $source = $source->getSource();
+
+            if ($source instanceof StatementsAnalyzer) {
+                $source = $source->getSource();
+            }
+        }
+
+        return $templates;
+    }
+
+    /**
      * The capabilities a purity type (e.g. the purity of a closure being called) requires from
      * the function-like being analysed. Purity templates that function-like inherits its purity
      * from require nothing here; other unresolved templates count as their upper bound.
@@ -73,7 +111,10 @@ final class CallPurityResolver
      */
     public static function resolvePurity(Union $purity, StatementsAnalyzer $statements_analyzer): int
     {
-        $exempt = self::getEnclosingPurityTemplates($statements_analyzer);
+        $exempt = [
+            ...self::getEnclosingPurityTemplates($statements_analyzer),
+            ...self::getOuterPurityTemplates($statements_analyzer),
+        ];
 
         if ($exempt !== []) {
             $source = $statements_analyzer->getSource();
