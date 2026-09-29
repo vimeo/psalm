@@ -1148,6 +1148,76 @@ final class TaintTest extends TestCase
                     $seconds = my_escaping_function_for_seconds($_GET["seconds"]);
                     sleep($seconds);',
             ],
+            'specializeInferredPureFunction' => [
+                'code' => '<?php
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $notEchoed = id($_GET["a"]);
+                    echo id("safe");',
+            ],
+            'specializeInferredPureFunctionCallingInferredPureFunction' => [
+                'code' => '<?php
+                    function wrap(string $s): string {
+                        return id($s);
+                    }
+
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $notEchoed = wrap($_GET["a"]);
+                    echo wrap("safe");',
+            ],
+            'specializeInferredPureRecursiveFunction' => [
+                'code' => '<?php
+                    function repeat(string $s, int $n): string {
+                        return $n > 0 ? repeat($s, $n - 1) : $s;
+                    }
+
+                    $notEchoed = repeat($_GET["a"], 3);
+                    echo repeat("safe", 3);',
+            ],
+            'specializeInferredPureCallableString' => [
+                'code' => '<?php
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $f = "id";
+                    $notEchoed = $f($_GET["a"]);
+                    echo $f("safe");',
+            ],
+            'specializeInferredPureMethodsThatCannotBeOverridden' => [
+                'code' => '<?php
+                    final class FinalClass {
+                        public function method(string $s): string {
+                            return $s;
+                        }
+
+                        public static function staticMethod(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    class NonFinalClass {
+                        final public function finalMethod(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new FinalClass();
+                    $notEchoed = $a->method($_GET["a"]);
+                    echo $a->method("safe");
+
+                    $notEchoed = FinalClass::staticMethod($_GET["b"]);
+                    echo FinalClass::staticMethod("safe");
+
+                    $b = new NonFinalClass();
+                    $notEchoed = $b->finalMethod($_GET["c"]);
+                    echo $b->finalMethod("safe");',
+            ],
         ];
     }
 
@@ -2507,6 +2577,60 @@ final class TaintTest extends TestCase
                     }
                     $a = new Unsafe();
                     echo $a->isUnsafe();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintInferredPureFunction' => [
+                'code' => '<?php
+                    function wrap(string $s): string {
+                        return id($s);
+                    }
+
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $notEchoed = wrap("safe");
+                    echo wrap($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'dontSpecializeImpureFunction' => [
+                'code' => '<?php
+                    function remember(string $s): string {
+                        $GLOBALS["last"] = $s;
+                        return $s;
+                    }
+
+                    $notEchoed = remember($_GET["a"]);
+                    echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'dontSpecializeImpureFunctionCalledFromSpecializedFunction' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): string {
+                        return remember($s);
+                    }
+
+                    function remember(string $s): string {
+                        $GLOBALS["last"] = $s;
+                        return $s;
+                    }
+
+                    $notEchoed = remember($_GET["a"]);
+                    echo wrap("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'dontSpecializeInferredPureOverridableMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new A();
+                    $notEchoed = $a->id($_GET["a"]);
+                    echo $a->id("safe");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSpecializedMethodForAnonymousInstance' => [

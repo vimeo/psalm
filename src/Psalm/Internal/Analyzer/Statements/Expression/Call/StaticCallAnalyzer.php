@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStatic
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -279,6 +280,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+        $specialization_location = $method_storage && TaintFlowGraph::isCallSpecialized(
+            $statements_analyzer->getTaintFlowGraphWithSuppressed(),
+            $statements_analyzer->getCodebase(),
+            $method_storage,
+            $node_location,
+        ) ? $node_location : null;
+
         $method_location = $method_storage
             ? ($graph instanceof VariableUseGraph
                 ? ($method_storage->return_type_location ?: $method_storage->location)
@@ -290,16 +298,11 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 'builtin',
                 $cased_method_id,
             );
-        } elseif ($method_storage->specialize_call) {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $method_storage,
-                $node_location,
-            );
         } else {
             $method_source = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
                 $method_storage,
+                $specialization_location,
             );
         }
 
@@ -390,7 +393,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $taint_flow_graph,
                 (string) $method_id,
                 $stmt->getArgs(),
-                $node_location,
+                $specialization_location,
                 $method_source,
                 $method_storage->removed_taints | $removed_taints,
                 $added_taints,

@@ -8,6 +8,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\TaintedCallable;
@@ -34,6 +35,9 @@ use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
+use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type\TaintKind;
 use Webmozart\Assert\Assert;
 
@@ -143,6 +147,101 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $reported_flows = [];
 
     /**
+     * Call sites specialized speculatively, before knowing whether the callee is pure:
+     * specialization key => (function-like node of the callee => true)
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $speculative_calls = [];
+
+    /**
+     * Speculatively specialized call sites of a callee that turned out not to be pure,
+     * which are resolved as if they were not specialized: specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $despecialized_calls = [];
+
+    /**
+     * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
+     * so that taint flowing into one call does not flow out of the other calls.
+     *
+     * This is sound only for callees that are pure: a function-like with a side effect could store the
+     * taint somewhere it is read back by another call. Function-likes marked pure (or with
+     * `@psalm-taint-specialize`) are always specialized. The purity of an unannotated project
+     * function-like is only known once the whole codebase has been analysed (see
+     * {@see MutationLevelResolver}), so its calls are specialized speculatively when it cannot be
+     * overridden, and resolved as unspecialized calls if it turns out not to be pure
+     * (see {@see self::despecializeImpureCalls()}).
+     */
+    public static function isCallSpecialized(
+        ?self $graph,
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        CodeLocation $call_location,
+    ): bool {
+        if ($storage->specialize_call) {
+            return true;
+        }
+
+        if ($graph === null
+            || $storage->has_mutations_annotation
+            || $storage->location === null
+            || !$codebase->config->isInProjectDirs($storage->location->file_path)
+        ) {
+            return false;
+        }
+
+        if ($storage instanceof MethodStorage) {
+            if ($storage->cased_name === '__construct' || $storage->defining_fqcln === null) {
+                return false;
+            }
+
+            // an override could have side effects even if this implementation doesn't
+            if ($storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && !$storage->final
+                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
+            ) {
+                return false;
+            }
+        }
+
+        $function_node_id = CodeUseGraph::functionLikeNodeForStorage($storage);
+
+        if ($function_node_id === null) {
+            return false;
+        }
+
+        $graph->speculative_calls[DataFlowNode::getSpecializationKey($call_location)][$function_node_id] = true;
+
+        return true;
+    }
+
+    /**
+     * Resolves the speculatively specialized call sites of callees that turned out not to be pure
+     * (or whose purity is unknown) as unspecialized calls.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function despecializeImpureCalls(Codebase $codebase): void
+    {
+        if (!$this->speculative_calls) {
+            return;
+        }
+
+        $mutation_levels = MutationLevelResolver::resolveLevels($codebase->code_use_graph->getMutationInfo());
+
+        foreach ($this->speculative_calls as $specialization_key => $callees) {
+            foreach ($callees as $function_node_id => $_) {
+                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                    $this->despecialized_calls[$specialization_key] = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -184,6 +283,10 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks += $other->sinks;
         $this->nodes += $other->nodes;
         $this->specialized_calls += $other->specialized_calls;
+
+        foreach ($other->speculative_calls as $key => $map) {
+            $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
+        }
 
         foreach ($other->forward_edges as $key => $map) {
             if (!isset($this->forward_edges[$key])) {
@@ -328,6 +431,8 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $codebase = $project_analyzer->getCodebase();
 
+        $this->despecializeImpureCalls($codebase);
+
         // Remove all specializations without an outgoing edge
         foreach ($this->specializations as $k => &$map) {
             foreach ($map as $kk => $specialized_id) {
@@ -437,6 +542,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 return [];
             }
 
+            // A despecialized call is entered like an unspecialized one: the body is walked
+            // in the context of the flow, and it is exited through all of its call sites.
+            if (isset($this->despecialized_calls[$source->specialization_key])) {
+                return [$source->withSpecialization($source->unspecialized_id, null, null, $source->context)];
+            }
+
             return $this->enterSpecializedCall(
                 $source,
                 $source->unspecialized_id,
@@ -453,14 +564,33 @@ final class TaintFlowGraph extends DataFlowGraph
         // Assert that we're unspecialized.
         Assert::null($source->specialization_key);
 
+        $nodes = [];
+        $specializations = $this->specializations[$source->id];
+
+        // The call sites of despecialized calls are all exited, keeping the context of the flow.
+        foreach ($specializations as $specialization => $specialized_id) {
+            if (isset($this->despecialized_calls[$specialization])) {
+                $nodes[] = $source->withSpecialization(
+                    $specialized_id,
+                    $source->id,
+                    $specialization,
+                    $source->context,
+                );
+
+                unset($specializations[$specialization]);
+            }
+        }
+
+        if (!$specializations) {
+            return $nodes;
+        }
+
         if ($source->context !== null) {
-            return $this->addEntryExit($source->context, $source);
+            return [...$nodes, ...$this->addEntryExit($source->context, $source)];
         }
 
         // Outside of a specialized call, accept all specializations.
-        $nodes = [];
-
-        foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
+        foreach ($specializations as $specialization => $specialized_id) {
             $nodes[] = $source->withSpecialization($specialized_id, $source->id, $specialization, null);
         }
 

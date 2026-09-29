@@ -101,6 +101,16 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The key identifying a call site among the specializations of a callee's taint nodes.
+     *
+     * @psalm-pure
+     */
+    public static function getSpecializationKey(CodeLocation $specialization_location): string
+    {
+        return strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function getForPropertyFetch(
@@ -108,7 +118,7 @@ final class DataFlowNode implements Stringable
         ?CodeLocation $specialization_location = null,
     ): self {
         $specialization_key = $specialization_location
-            ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+            ? self::getSpecializationKey($specialization_location)
             : null;
 
         return self::make($property_id, $property_id, null, $specialization_key);
@@ -130,7 +140,7 @@ final class DataFlowNode implements Stringable
         // specialization key and is thereby folded into the id: id -> location is a pure function
         // (see the class invariant). There is deliberately no independent location parameter -- a
         // caller cannot give the same id two different locations.
-        $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
+        $specialization_key = self::getSpecializationKey($code_location);
 
         return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
     }
@@ -161,12 +171,9 @@ final class DataFlowNode implements Stringable
 
         $label = $kind . ' ' . $cased_function_id . '#' . ($argument_offset + 1);
 
-        $specialization_key = null;
-
-        if ($specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
-        }
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
 
         return self::make($arg_id, $label, $specialization_location, $specialization_key, $taints);
     }
@@ -186,8 +193,7 @@ final class DataFlowNode implements Stringable
         ?string $specialization_key = null,
     ): self {
         if ($specialization_key === null && $specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
+            $specialization_key = self::getSpecializationKey($specialization_location);
         }
 
         return self::make(
@@ -218,12 +224,9 @@ final class DataFlowNode implements Stringable
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
 
-        $specialization_key = null;
-
-        if ($specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
-        }
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
 
         $param = self::getParameter($storage, $argument_offset);
 
@@ -348,8 +351,7 @@ final class DataFlowNode implements Stringable
         ?string $specialization_key = null,
     ): self {
         if ($specialization_key === null && $specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
+            $specialization_key = self::getSpecializationKey($specialization_location);
         }
 
         return self::make(

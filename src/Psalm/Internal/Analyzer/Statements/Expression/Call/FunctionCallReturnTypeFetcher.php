@@ -610,6 +610,15 @@ final class FunctionCallReturnTypeFetcher
 
         $args = $stmt->getArgs();
 
+        $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $specialization_location = TaintFlowGraph::isCallSpecialized(
+            $graph,
+            $statements_analyzer->getCodebase(),
+            $storage,
+            $node_location,
+        ) ? $node_location : null;
+
         // Return value: taint sources (@psalm-taint-source), argument-to-return flows
         // (@psalm-flow), and the implicit param->return flow of an analyzed function body.
         // The body links its per-argument entry nodes (getForMethodArgument) to this return
@@ -617,7 +626,7 @@ final class FunctionCallReturnTypeFetcher
         $return_node = DataFlowNode::getForMethodReturn(
             $callable_id,
             $storage,
-            $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+            $specialization_location,
         );
         $graph->addNode($return_node);
 
@@ -662,7 +671,7 @@ final class FunctionCallReturnTypeFetcher
                     $callable_id,
                     $i,
                     $storage,
-                    $storage->specialize_call ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null,
+                    $specialization_location,
                 );
                 $graph->addNode($param_node);
 
@@ -833,10 +842,17 @@ final class FunctionCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+        $specialization_location = TaintFlowGraph::isCallSpecialized(
+            $taint_flow_graph,
+            $codebase,
+            $function_storage,
+            $node_location,
+        ) ? $node_location : null;
+
         $function_call_node = DataFlowNode::getForMethodReturn(
             $cased_function_id,
             $function_storage,
-            $function_storage->specialize_call ? $node_location : null,
+            $specialization_location,
         );
         $graph->addNode($function_call_node);
 
@@ -946,7 +962,7 @@ final class FunctionCallReturnTypeFetcher
                 $taint_flow_graph,
                 $function_id,
                 $args,
-                $node_location,
+                $specialization_location,
                 $function_call_node,
                 $removed_taints | $conditionally_removed_taints,
                 $added_taints,
@@ -967,7 +983,7 @@ final class FunctionCallReturnTypeFetcher
         TaintFlowGraph $graph,
         string $function_id,
         array $args,
-        CodeLocation $node_location,
+        ?CodeLocation $specialization_location,
         DataFlowNode $function_call_node,
         int $removed_taints,
         int $added_taints = 0,
@@ -991,7 +1007,7 @@ final class FunctionCallReturnTypeFetcher
                     $function_id,
                     $arg_index,
                     $function_storage,
-                    $function_storage->specialize_call ? $node_location : null,
+                    $specialization_location,
                 );
 
                 $graph->addNode($function_param_sink);
