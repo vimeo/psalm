@@ -831,7 +831,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     }
 
                     if (!$template_type->isMixed()) {
-                        $template_result = new TemplateResult(
+                        $template_result = TemplateResult::make(
                             $previous_extended ?: [],
                             [],
                         );

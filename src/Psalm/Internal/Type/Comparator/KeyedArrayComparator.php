@@ -391,7 +391,7 @@ final class KeyedArrayComparator
             new Union([
                 new TObjectWithProperties($properties),
             ]),
-            new TemplateResult(
+            TemplateResult::make(
                 $storage->template_types ?? [],
                 $inferred_lower_bounds,
             ),

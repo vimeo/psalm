@@ -2527,7 +2527,8 @@ final class ConditionalTest extends TestCase
 
                                 if ($remaining) {
                                     /** @var array<string> */
-                                    return array_merge([rtrim($type)], preg_split(\'/\s+/\', $remaining));
+                                    $v = preg_split(\'/\s+/\', $remaining);
+                                    return array_merge([rtrim($type)], $v);
                                 }
 
                                 return [$type];

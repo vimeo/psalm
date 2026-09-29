@@ -943,7 +943,7 @@ final class ReturnTypeAnalyzer
             $class_template_params = $class_template_params ?: [];
 
             if ($class_template_params) {
-                $template_result = new TemplateResult(
+                $template_result = TemplateResult::make(
                     $class_template_params,
                     [],
                 );

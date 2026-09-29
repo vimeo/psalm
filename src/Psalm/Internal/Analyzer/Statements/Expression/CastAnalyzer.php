@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -868,6 +869,18 @@ final class CastAnalyzer
 
             if ($atomic_type instanceof TTemplateParam) {
                 $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+
+                continue;
+            }
+
+            // the value is one of the conditional's branch types; as_type is only the type the
+            // condition tests
+            if ($atomic_type instanceof TConditional) {
+                $atomic_types = array_merge(
+                    $atomic_types,
+                    $atomic_type->if_type->getAtomicTypes(),
+                    $atomic_type->else_type->getAtomicTypes(),
+                );
 
                 continue;
             }

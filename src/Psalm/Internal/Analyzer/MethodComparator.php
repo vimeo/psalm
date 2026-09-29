@@ -1238,7 +1238,7 @@ final class MethodComparator
                 $template_types[$key][$base_class_name] = $mapped_type;
             }
 
-            $template_result = new TemplateResult([], $template_types);
+            $template_result = TemplateResult::make([], $template_types);
 
             $templated_type = TemplateInferredTypeReplacer::replace(
                 $templated_type,

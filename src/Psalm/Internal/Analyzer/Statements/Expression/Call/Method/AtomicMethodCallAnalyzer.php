@@ -879,7 +879,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 $lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
-                    new TemplateResult([], $mixin_class_template_params ?: []),
+                    TemplateResult::make([], $mixin_class_template_params ?: []),
                     $codebase,
                 );
 

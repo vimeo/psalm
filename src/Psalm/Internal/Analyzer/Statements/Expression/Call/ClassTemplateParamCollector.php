@@ -120,7 +120,7 @@ final class ClassTemplateParamCollector
                 if ($templates === null) {
                     throw new AssertionError("Could not collect templates!");
                 }
-                $template_result = new TemplateResult(
+                $template_result = TemplateResult::make(
                     $static_class_storage->template_types,
                     $templates,
                 );
