@@ -115,6 +115,39 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipeOperatorEvaluatesLeftHandSideFirst' => [
+                'code' => '<?php
+                    final class A
+                    {
+                        public function id(self $a): self
+                        {
+                            return $a;
+                        }
+                    }
+
+                    $x = ($o = new A()) |> $o->id(...);',
+                'assertions' => [
+                    '$x===' => 'A',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorByRefParameterDoesNotModifyLeftHandSide' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $a
+                     * @return non-empty-list<int>
+                     */
+                    function f(array $a): array
+                    {
+                        /** @psalm-suppress InvalidPassByReference */
+                        $a |> array_pop(...);
+                        return $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -159,6 +192,13 @@ final class Php85Test extends TestCase
                     $b = $a |> sort(...);',
                 'error_message' => 'InvalidPassByReference',
                 'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorByRefParameterUndefinedLeftHandSide' => [
+                'code' => '<?php
+                    $b = $undefined |> sort(...);',
+                'error_message' => 'UndefinedGlobalVariable',
+                'ignored_issues' => ['InvalidPassByReference'],
                 'php_version' => '8.5',
             ],
             'pipeOperatorRequiresPhp85' => [
