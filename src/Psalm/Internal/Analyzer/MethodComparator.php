@@ -18,6 +18,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\ConstructorSignatureMismatch;
 use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementedParamTypeMismatch;
@@ -892,34 +893,12 @@ final class MethodComparator
             }
         }
 
-        $builder = $implementer_method_storage_param_type->getBuilder();
-        foreach ($builder->getAtomicTypes() as $k => $t) {
-            if ($t instanceof TTemplateParam
-                && str_starts_with($t->defining_class, 'fn-')
-            ) {
-                $builder->removeType($k);
-
-                foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $builder->addType($as_t);
-                }
-            }
-        }
-        $implementer_method_storage_param_type = $builder->freeze();
-
-        $builder = $guide_method_storage_param_type->getBuilder();
-        foreach ($builder->getAtomicTypes() as $k => $t) {
-            if ($t instanceof TTemplateParam
-                && str_starts_with($t->defining_class, 'fn-')
-            ) {
-                $builder->removeType($k);
-
-                foreach ($t->as->getAtomicTypes() as $as_t) {
-                    $builder->addType($as_t);
-                }
-            }
-        }
-        $guide_method_storage_param_type = $builder->freeze();
-        unset($builder);
+        $implementer_method_storage_param_type = self::replaceFunctionTemplatesWithBounds(
+            $implementer_method_storage_param_type,
+        );
+        $guide_method_storage_param_type = self::replaceFunctionTemplatesWithBounds(
+            $guide_method_storage_param_type,
+        );
 
         if ($implementer_classlike_storage->template_extended_params) {
             self::transformTemplates(
@@ -1247,6 +1226,34 @@ final class MethodComparator
                 );
             }
         }
+    }
+
+    /**
+     * The type with the templates of the method, including its purity templates at any depth
+     * (`Closure[_](): int`, `list<Closure[P](): int>`, `Traversable[_]<int, int>`), replaced by
+     * their bounds: the method accepts whatever they may be bound to.
+     */
+    private static function replaceFunctionTemplatesWithBounds(Union $type): Union
+    {
+        $builder = $type->getBuilder();
+
+        foreach ($builder->getAtomicTypes() as $k => $t) {
+            if ($t instanceof TTemplateParam
+                && str_starts_with($t->defining_class, 'fn-')
+            ) {
+                $builder->removeType($k);
+
+                foreach ($t->as->getAtomicTypes() as $as_t) {
+                    $builder->addType($as_t);
+                }
+            }
+        }
+
+        $type = $builder->freeze();
+
+        (new FunctionPurityTemplateReplacer())->traverse($type);
+
+        return $type;
     }
 
     /**
