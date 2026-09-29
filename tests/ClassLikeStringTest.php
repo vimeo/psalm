@@ -60,6 +60,31 @@ final class ClassLikeStringTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAllowBuiltinClassStringStandInForStaticPropertyFetch(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        Config::getInstance()->allow_string_standin_for_class = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                class UsesBuiltinClassString
+                {
+                    public function run(): void
+                    {
+                        $throwable_class = "\\AssertionError";
+                        /** @psalm-suppress UndefinedPropertyFetch, MixedAssignment, UnusedVariable */
+                        $value = $throwable_class::$prop;
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
