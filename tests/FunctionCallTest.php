@@ -3014,6 +3014,13 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidLiteralArgument',
             ],
+            'strposMultibyteLiteralFirstParam' => [
+                'code' => '<?php
+                    function sayHello(string $format): void {
+                        if (strpos("здравствуй мир", $format)) {}
+                    }',
+                'error_message' => 'InvalidLiteralArgument',
+            ],
             'curlInitIsResourceFailsIn8x' => [
                 'code' => '<?php
                     $ch = curl_init();
