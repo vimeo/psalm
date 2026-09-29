@@ -916,18 +916,45 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'callOfNullableTypeTemplateKeepsTheNull' => [
+            'callOfTypeTemplateBoundToClosureChecksThePurityOfWhatIsDoneWithTheResult' => [
                 'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): int {
+                            return ++$this->n;
+                        }
+                    }
+
                     /**
                      * @psalm-pure
-                     * @template TCallback as (Closure(int): string)|null
+                     * @template TCallback as Closure(int): Counter
                      * @param TCallback $cb
                      * @psalm-purity-from-template TCallback
                      */
-                    function apply(?Closure $cb = null): string {
-                        return $cb(1);
+                    function apply(Closure $cb): int {
+                        return $cb(1)->inc();
                     }',
-                'error_message' => 'PossiblyNullFunctionCall',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'callOfTypeTemplateBoundToClosureInAMutationFreeMethodChecksThePurityOfWhatIsDoneWithTheResult' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    final class Runner {
+                        /**
+                         * @psalm-mutation-free
+                         * @template TCallback as Closure(int): Counter
+                         * @param TCallback $cb
+                         * @psalm-purity-from-template TCallback
+                         */
+                        public function run(Closure $cb): void {
+                            $cb(1)->n = 2;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
             'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
                 'code' => '<?php
