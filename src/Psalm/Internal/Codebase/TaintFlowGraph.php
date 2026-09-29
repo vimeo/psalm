@@ -240,7 +240,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * Resolves the speculatively specialized call sites of callees that turned out not to be pure
      * (or whose purity is unknown) as unspecialized calls.
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function despecializeImpureCalls(Codebase $codebase): void
     {
@@ -248,7 +248,7 @@ final class TaintFlowGraph extends DataFlowGraph
             return;
         }
 
-        $mutation_levels = MutationLevelResolver::resolveLevels($codebase->code_use_graph->getMutationInfo());
+        $mutation_levels = $codebase->code_use_graph->getMutationLevels();
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
             foreach ($callees as $function_node_id => $_) {
