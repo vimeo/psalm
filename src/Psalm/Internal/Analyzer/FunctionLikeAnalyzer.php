@@ -625,7 +625,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->function->getStmts() === null) {
-                if (!$storage->has_mutations_annotation && $storage->location) {
+                // a purity annotation on the declaring class applies to its methods too
+                if (!$storage->has_mutations_annotation
+                    && $storage->location
+                    && !($storage instanceof MethodStorage
+                        && $storage->defining_fqcln !== null
+                        && $codebase->classlike_storage_provider->get($storage->defining_fqcln)
+                            ->has_mutations_annotation)
+                ) {
                     IssueBuffer::maybeAdd(
                         new MissingAbstractPureAnnotation(
                             $storage->cased_name . ' must be marked with one of @psalm-pure,'

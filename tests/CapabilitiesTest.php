@@ -974,6 +974,69 @@ final class CapabilitiesTest extends TestCase
                         return $b;
                     }',
             ],
+            'overrideOfAbstractMayRequireFewerCapabilities' => [
+                'code' => '<?php
+                    final class Box { public int $x = 0; }
+
+                    abstract class P {
+                        /** @psalm-capabilities read-props|write-props */
+                        abstract public function m(Box $b): int;
+
+                        /** @psalm-impure */
+                        abstract public function n(): int;
+                    }
+
+                    final class C extends P {
+                        /** @psalm-capabilities read-props */
+                        public function m(Box $b): int {
+                            return $b->x;
+                        }
+
+                        /** @psalm-pure */
+                        public function n(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-mutable */
+                    interface I {
+                        /** @psalm-impure */
+                        public function m(): int;
+                    }
+
+                    final class D implements I {
+                        /** @psalm-pure */
+                        public function m(): int {
+                            return 1;
+                        }
+                    }',
+            ],
+            'unannotatedAbstractMethodsMayBeImplementedImpurely' => [
+                'code' => '<?php
+                    abstract class P {
+                        abstract public function m(): int;
+                    }
+
+                    final class C extends P {
+                        public function m(): int {
+                            echo "x";
+                            return 1;
+                        }
+                    }
+
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    final class D implements I {
+                        public function m(): int {
+                            echo "x";
+                            return 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingAbstractPureAnnotation', 'MissingInterfaceImmutableAnnotation'],
+            ],
         ];
     }
 
@@ -1198,6 +1261,52 @@ final class CapabilitiesTest extends TestCase
 
                     final class C extends P {
                         /** @psalm-capabilities write-props */
+                        public function m(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'overrideOfAbstractMayNotAddWriteProps' => [
+                'code' => '<?php
+                    final class Box { public int $x = 0; }
+
+                    abstract class P {
+                        /** @psalm-capabilities read-props */
+                        abstract public function m(Box $b): int;
+                    }
+
+                    final class C extends P {
+                        /** @psalm-capabilities read-props|write-props */
+                        public function m(Box $b): int {
+                            $b->x = 1;
+                            return $b->x;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'unannotatedOverrideOfPureAbstractIsImpure' => [
+                'code' => '<?php
+                    abstract class P {
+                        /** @psalm-pure */
+                        abstract public function m(): int;
+                    }
+
+                    final class C extends P {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'unannotatedImplementationOfPureInterfaceIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    final class D implements I {
                         public function m(): int {
                             return 1;
                         }
