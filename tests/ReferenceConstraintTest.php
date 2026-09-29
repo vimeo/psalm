@@ -136,7 +136,7 @@ final class ReferenceConstraintTest extends TestCase
 
                     makeClosure($a);',
                 'assertions' => [
-                    '$a' => 'pure-Closure():int',
+                    '$a' => 'Closure[pure]():int',
                 ],
             ],
             'paramOutReturn' => [

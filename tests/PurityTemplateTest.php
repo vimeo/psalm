@@ -809,7 +809,7 @@ final class PurityTemplateTest extends TestCase
 
                     $f = make()->f;',
                 'assertions' => [
-                    '$f' => 'impure-Closure():int',
+                    '$f' => 'Closure[impure]():int',
                 ],
             ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
@@ -1248,7 +1248,7 @@ final class PurityTemplateTest extends TestCase
                     $apply = apply(...);
                     $r = $apply(fn(int $x): int => $x);',
                 'assertions' => [
-                    '$apply' => 'impure-Closure(impure-Closure(int):int):int',
+                    '$apply' => 'Closure[impure](Closure[impure](int):int):int',
                 ],
             ],
             'splWrapperIteratorsInheritTheirPurity' => [
@@ -1324,7 +1324,7 @@ final class PurityTemplateTest extends TestCase
                             return $g(2);
                         }
                     }',
-                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:12:53 - Argument 1 of Child::run has the more specific type \'pure-Closure(int):int\', expecting \'impure-Closure(int):int\' as defined by Base::run',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:12:53 - Argument 1 of Child::run has the more specific type \'Closure[pure](int):int\', expecting \'Closure[impure](int):int\' as defined by Base::run',
             ],
             'pureClosureParamInOverrideOfPurityTemplateOneIsComparedWithTheTemplatesBound' => [
                 'code' => '<?php
@@ -1345,7 +1345,7 @@ final class PurityTemplateTest extends TestCase
                             return $g(2);
                         }
                     }',
-                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:15:53 - Argument 1 of Child::run has the more specific type \'pure-Closure(int):int\', expecting \'impure-Closure(int):int\' as defined by Base::run',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:15:53 - Argument 1 of Child::run has the more specific type \'Closure[pure](int):int\', expecting \'Closure[impure](int):int\' as defined by Base::run',
             ],
             'callOfTypeTemplateBoundToClosureChecksArguments' => [
                 'code' => '<?php

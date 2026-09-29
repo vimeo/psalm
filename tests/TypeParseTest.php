@@ -100,12 +100,12 @@ final class TypeParseTest extends TestCase
 
     public function testThisAsCallableReturnType(): void
     {
-        $this->assertSame('impure-Closure(Foo):static', (string) Type::parseString('Closure(Foo): $this'));
+        $this->assertSame('Closure[impure](Foo):static', (string) Type::parseString('Closure(Foo): $this'));
     }
 
     public function testThisModelVariableNotTreatedAsThis(): void
     {
-        $this->assertSame('impure-Closure(string):void', (string) Type::parseString('Closure(string $thisModel): void'));
+        $this->assertSame('Closure[impure](string):void', (string) Type::parseString('Closure(string $thisModel): void'));
     }
 
     public function testIntOrString(): void
@@ -728,7 +728,7 @@ final class TypeParseTest extends TestCase
     public function testSimpleCallable(): void
     {
         $this->assertSame(
-            'impure-callable(int, string):void',
+            'callable[impure](int, string):void',
             (string)Type::parseString('callable(int, string) : void'),
         );
     }
@@ -742,7 +742,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithParamNames(): void
     {
         $this->assertSame(
-            'impure-callable(int, string):void',
+            'callable[impure](int, string):void',
             (string)Type::parseString('callable(int $foo, string $bar) : void'),
         );
     }
@@ -750,7 +750,7 @@ final class TypeParseTest extends TestCase
     public function testCallableReturningIntersection(): void
     {
         $this->assertSame(
-            'impure-callable(int, string):I1&I2',
+            'callable[impure](int, string):I1&I2',
             (string)Type::parseString('callable(int, string) : (I1&I2)'),
         );
     }
@@ -758,7 +758,7 @@ final class TypeParseTest extends TestCase
     public function testEmptyCallable(): void
     {
         $this->assertSame(
-            'impure-callable():void',
+            'callable[impure]():void',
             (string)Type::parseString('callable() : void'),
         );
     }
@@ -766,7 +766,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithUnionLastType(): void
     {
         $this->assertSame(
-            'impure-callable(int, int|string):void',
+            'callable[impure](int, int|string):void',
             (string)Type::parseString('callable(int, int|string) : void'),
         );
     }
@@ -774,7 +774,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithVariadic(): void
     {
         $this->assertSame(
-            'impure-callable(int, string...):void',
+            'callable[impure](int, string...):void',
             (string)Type::parseString('callable(int, string...) : void'),
         );
     }
@@ -782,7 +782,7 @@ final class TypeParseTest extends TestCase
     public function testCallableThatReturnsACallable(): void
     {
         $this->assertSame(
-            'impure-callable():impure-callable():string',
+            'callable[impure]():callable[impure]():string',
             (string)Type::parseString('callable() : callable() : string'),
         );
     }
@@ -790,7 +790,7 @@ final class TypeParseTest extends TestCase
     public function testCallableThatReturnsACallableThatReturnsACallable(): void
     {
         $this->assertSame(
-            'impure-callable():impure-callable():impure-callable():string',
+            'callable[impure]():callable[impure]():callable[impure]():string',
             (string)Type::parseString('callable() : callable() : callable() : string'),
         );
     }
@@ -798,7 +798,7 @@ final class TypeParseTest extends TestCase
     public function testCallableOrInt(): void
     {
         $this->assertSame(
-            'impure-callable(string):void|int',
+            'callable[impure](string):void|int',
             (string)Type::parseString('callable(string):void|int'),
         );
     }
@@ -812,7 +812,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithSpreadBefore(): void
     {
         $this->assertSame(
-            'impure-callable(int, string...):void',
+            'callable[impure](int, string...):void',
             (string)Type::parseString('callable(int, ...string):void'),
         );
     }
@@ -886,7 +886,7 @@ final class TypeParseTest extends TestCase
     public function testConditionalTypeWithCallableReturningBoolElseBool(): void
     {
         $this->assertSame(
-            '(T is string ? impure-callable():bool : bool)',
+            '(T is string ? callable[impure]():bool : bool)',
             (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
@@ -906,7 +906,7 @@ final class TypeParseTest extends TestCase
     public function testConditionalTypeWithCallableBracketed(): void
     {
         $this->assertSame(
-            '(T is string ? impure-callable(string, string):string : impure-callable(mixed...):mixed)',
+            '(T is string ? callable[impure](string, string):string : callable[impure](mixed...):mixed)',
             (string) Type::parseString(
                 '(T is string ? (callable(string, string):string) : (callable(mixed...):mixed))',
                 null,
@@ -918,7 +918,7 @@ final class TypeParseTest extends TestCase
     public function testConditionalTypeWithCallableNotBracketed(): void
     {
         $this->assertSame(
-            '(T is string ? impure-callable(string, string):string : impure-callable(mixed...):mixed)',
+            '(T is string ? callable[impure](string, string):string : callable[impure](mixed...):mixed)',
             (string) Type::parseString(
                 '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
                 null,
@@ -942,7 +942,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithMissingVariadicType(): void
     {
         $this->assertSame(
-            'impure-callable(mixed...):void',
+            'callable[impure](mixed...):void',
             (string) Type::parseString('callable(...): void'),
         );
     }
@@ -1034,7 +1034,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithDefault(): void
     {
         $this->assertSame(
-            'impure-callable(int, string=):void',
+            'callable[impure](int, string=):void',
             (string)Type::parseString('callable(int, string=) : void'),
         );
     }
@@ -1042,7 +1042,7 @@ final class TypeParseTest extends TestCase
     public function testNestedCallable(): void
     {
         $this->assertSame(
-            'impure-callable(impure-callable(A):B):C',
+            'callable[impure](callable[impure](A):B):C',
             (string)Type::parseString('callable(callable(A):B):C'),
         );
     }
@@ -1050,7 +1050,7 @@ final class TypeParseTest extends TestCase
     public function testCallableWithoutReturn(): void
     {
         $this->assertSame(
-            'impure-callable(int, string)',
+            'callable[impure](int, string)',
             (string)Type::parseString('callable(int, string)'),
         );
     }
@@ -1138,7 +1138,7 @@ final class TypeParseTest extends TestCase
 
     public function testVeryLargeType(): void
     {
-        $very_large_type = 'array{a: impure-Closure():(array<array-key, mixed>|null), b?: impure-Closure():array<array-key, mixed>, c?: impure-Closure():array<array-key, mixed>, d?: impure-Closure():array<array-key, mixed>, e?: impure-Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: impure-Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: impure-Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
+        $very_large_type = 'array{a: Closure[impure]():(array<array-key, mixed>|null), b?: Closure[impure]():array<array-key, mixed>, c?: Closure[impure]():array<array-key, mixed>, d?: Closure[impure]():array<array-key, mixed>, e?: Closure[impure]():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure[impure]():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure[impure]():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
 
         $this->assertSame(
             $very_large_type,
@@ -1382,7 +1382,7 @@ final class TypeParseTest extends TestCase
     {
         $this->assertSame('Closure[io](int):void', (string) Type::parseString('Closure[io](int): void'));
         $this->assertSame('callable[read-props]():int', (string) Type::parseString('callable[read-props](): int'));
-        $this->assertSame('pure-Closure():void', (string) Type::parseString('Closure[pure](): void'));
+        $this->assertSame('Closure[pure]():void', (string) Type::parseString('Closure[pure](): void'));
         $this->assertSame('Closure[io]', (string) Type::parseString('Closure[io]'));
     }
 
