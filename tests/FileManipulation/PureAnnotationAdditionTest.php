@@ -181,6 +181,389 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addNestedPurityWildcardToCalledClosures' => [
+                'input' => '<?php
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function sumLoop(array $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{run: Closure(int): int, other: int} $opts
+                     */
+                    function viaShape(array $opts): int {
+                        return $opts["run"]($opts["other"]);
+                    }
+
+                    /**
+                     * @param Closure(): Closure(): int $make
+                     */
+                    function curry(Closure $make): int {
+                        return $make()();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param list<Closure[_](): int> $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumLoop(array $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{run: Closure[_](int): int, other: int} $opts
+                     *
+                     * @psalm-pure
+                     */
+                    function viaShape(array $opts): int {
+                        return $opts["run"]($opts["other"]);
+                    }
+
+                    /**
+                     * @param Closure[_](): Closure[_](): int $make
+                     *
+                     * @psalm-pure
+                     */
+                    function curry(Closure $make): int {
+                        return $make()();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToIteratedParams' => [
+                'input' => '<?php
+                    /**
+                     * @param Traversable<int, int> $t
+                     */
+                    function sumTraversable(Traversable $t): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    function countAll(Traversable $t): int {
+                        $n = 0;
+                        foreach ($t as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+
+                    /**
+                     * @param iterable<int, Closure(): int> $fs
+                     */
+                    function sumIterable(iterable $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param IteratorAggregate<int, int> $a
+                     */
+                    function sumAggregate(IteratorAggregate $a): int {
+                        $s = 0;
+                        foreach ($a as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Traversable[_]<int, int> $t
+                     *
+                     * @psalm-pure
+                     */
+                    function sumTraversable(Traversable $t): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param Traversable[_] $t
+                     *
+                     * @psalm-pure
+                     */
+                    function countAll(Traversable $t): int {
+                        $n = 0;
+                        foreach ($t as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+
+                    /**
+                     * @param iterable[_]<int, Closure[_](): int> $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumIterable(iterable $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param IteratorAggregate[_]<int, int> $a
+                     *
+                     * @psalm-pure
+                     */
+                    function sumAggregate(IteratorAggregate $a): int {
+                        $s = 0;
+                        foreach ($a as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToReceiverPurityArguments' => [
+                'input' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /**
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Two {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function b(): int;
+                    }
+
+                    function callDoer(Doer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Doer> $ds
+                     */
+                    function callDoers(array $ds): int {
+                        $s = 0;
+                        foreach ($ds as $d) {
+                            $s += $d->run();
+                        }
+                        return $s;
+                    }
+
+                    function useTwo(Two $t): int {
+                        return $t->b();
+                    }',
+                'output' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /**
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Two {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function b(): int;
+                    }
+
+                    /**
+                     * @param Doer[_] $d
+                     *
+                     * @psalm-pure
+                     */
+                    function callDoer(Doer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Doer[_]> $ds
+                     *
+                     * @psalm-pure
+                     */
+                    function callDoers(array $ds): int {
+                        $s = 0;
+                        foreach ($ds as $d) {
+                            $s += $d->run();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param Two[impure, _] $t
+                     *
+                     * @psalm-pure
+                     */
+                    function useTwo(Two $t): int {
+                        return $t->b();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToTheTypePsalmReads' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-param list<Closure(): int> $fs
+                     * @param array $fs
+                     */
+                    function first(array $fs): int {
+                        return $fs[0]();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-param list<Closure[_](): int> $fs
+                     *
+                     * @param array $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function first(array $fs): int {
+                        return $fs[0]();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPurityWildcardWhereItCannotStand' => [
+                'input' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /** @extends Doer[impure] */
+                    interface ImpureDoer extends Doer {}
+
+                    /** @psalm-type Fns = list<Closure(): int> */
+                    final class Aliased {
+                        /**
+                         * @param Fns $fs
+                         */
+                        public static function first(array $fs): int {
+                            return $fs[0]();
+                        }
+                    }
+
+                    function useImpureDoer(ImpureDoer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function viaVariable(array $fs): int {
+                        $g = $fs[0];
+                        return $g();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function reassigned(array $fs): int {
+                        $fs[] = fn(): int => 1;
+                        return $fs[0]();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function inClosure(array $fs): array {
+                        return array_map(fn(Closure $f): int => $f(), $fs);
+                    }',
+                'output' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /** @extends Doer[impure] */
+                    interface ImpureDoer extends Doer {}
+
+                    /** @psalm-type Fns = list<Closure(): int> */
+                    final class Aliased {
+                        /**
+                         * @param Fns $fs
+                         */
+                        public static function first(array $fs): int {
+                            return $fs[0]();
+                        }
+                    }
+
+                    function useImpureDoer(ImpureDoer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function viaVariable(array $fs): int {
+                        $g = $fs[0];
+                        return $g();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function reassigned(array $fs): int {
+                        $fs[] = fn(): int => 1;
+                        return $fs[0]();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function inClosure(array $fs): array {
+                        return array_map(fn(Closure $f): int => $f(), $fs);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'callsPureFunctionDeclaredLater' => [
                 'input' => '<?php
                     function foo(string $s): string {

@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -147,18 +148,45 @@ final class MethodCallPurityAnalyzer
             $method_storage,
         );
 
+        $receiver_capabilities = $method_capabilities;
+
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
         $method_capabilities = CallPurityResolver::getCallCapabilities(
             $statements_analyzer,
             $codebase,
             $method_storage,
-            $method_capabilities,
+            $receiver_capabilities,
             $template_result,
             $class_template_params,
             self::isThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
+
+        // what depends on a purity argument of a receiver found in a parameter, which the
+        // parameter's `_` would charge to the callers, is left out of the inferred purity
+        $inferred_template_capabilities = $method_capabilities;
+
+        $marked_class_template_params = PurityWildcardInference::markReceiverTemplates(
+            $statements_analyzer,
+            $codebase,
+            $stmt->var,
+            $class_storage->name,
+            $class_template_params,
+        );
+
+        if ($marked_class_template_params !== null) {
+            $inferred_template_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $method_storage,
+                $receiver_capabilities,
+                $template_result,
+                $marked_class_template_params,
+                self::isThis($stmt->var),
+                self::isFromGlobalState($statements_analyzer, $stmt->var),
+            );
+        }
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -186,7 +214,7 @@ final class MethodCallPurityAnalyzer
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
             // mutating a receiver other than `$this` writes another object's properties
-            $method_storage->capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
+            $method_storage->capabilities | ($inferred_template_capabilities & Capabilities::WRITE_PROPS),
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere

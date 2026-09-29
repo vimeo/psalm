@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
@@ -1317,60 +1319,31 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * A call of a closure or callable parameter of the function or method being analysed whose
-     * purity is the default one (`impure`): with a `_` purity (`Closure[_]`), the call would be
-     * charged to the callers, so it is left out of the purity inferred for the function-like, which
-     * records the parameter for `--alter` to add the `_` along with the purity annotation.
-     *
-     * Not for closures: the purity inferred for a closure is also the purity of its type, which
-     * must keep what calling its parameters does.
+     * A call of a closure or callable with the default purity (`impure`) found in a parameter of
+     * the function or method being analysed (`$f()`, `$fs[0]()`, `foreach ($fs as $f) { $f(); }`):
+     * with a `_` purity there (`Closure[_]`), the call would be charged to the callers, so it is left
+     * out of the purity inferred for the function-like, which records where `--alter` adds the `_`
+     * along with the purity annotation ({@see PurityWildcardInference}).
      */
     private static function isPurityWildcardCandidate(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $function_name,
         TClosure|TCallable $var_type_part,
     ): bool {
-        $source = $statements_analyzer->getSource();
-
-        if (!$function_name instanceof PhpParser\Node\Expr\Variable
-            || !is_string($function_name->name)
-            || !$source instanceof FunctionLikeAnalyzer
-            || $source instanceof ClosureAnalyzer
-            || !$source->track_mutations
-            // only the default purity of a closure type: one written out was chosen deliberately
-            || !$var_type_part->hasFixedPurity()
-            || $var_type_part->getCapabilities() !== Capabilities::ALL
-        ) {
+        // only the default purity of a closure type: one written out was chosen deliberately
+        if (!$var_type_part->hasFixedPurity() || $var_type_part->getCapabilities() !== Capabilities::ALL) {
             return false;
         }
 
-        foreach ($source->getStorage()->params as $param) {
-            if ($param->name !== $function_name->name) {
-                continue;
-            }
+        $found = PurityWildcardInference::getParamPath($statements_analyzer, $function_name);
 
-            if ($param->by_ref
-                || $param->type === null
-                || $source->isParamReassigned($param->name)
-            ) {
-                return false;
-            }
-
-            foreach ($param->type->getAtomicTypes() as $atomic) {
-                if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                    && $atomic->hasFixedPurity()
-                    && $atomic->getCapabilities() === Capabilities::ALL
-                ) {
-                    $source->purity_wildcard_candidates[$param->name] = true;
-
-                    return true;
-                }
-            }
-
+        if ($found === null) {
             return false;
         }
 
-        return false;
+        [$source, $param_name, $steps] = $found;
+
+        return PurityWildcardInference::record($source, $param_name, PurityWildcardPaths::closure($steps));
     }
 
     /**

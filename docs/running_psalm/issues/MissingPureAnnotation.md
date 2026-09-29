@@ -14,17 +14,22 @@ function couldBePure(int $a): int {
 }
 ```
 
-A function or method (not a closure) that calls one of its closure or callable parameters with the default purity is inferred without those calls when giving the parameter the `_` purity (`Closure[_]`, `callable[_]`, see [`@psalm-purity-template`](../../annotating_code/supported_annotations.md#psalm-purity-template)) would charge them to its callers: the issue then names the parameters, and `--alter` adds the `_` to their types along with the purity annotation.
+A function or method (not a closure) is inferred without what the `_` purity of its parameters (`Closure[_]`, `Traversable[_]`, see [`@psalm-purity-template`](../../annotating_code/supported_annotations.md#psalm-purity-template)) would charge to its callers: calling the closures and callables found in a parameter with the default purity, directly (`$f()`), in its elements (`$fs[0]()`, `foreach ($fs as $f) { $f(); }`) or in what they return (`$f()()`); iterating over an iterable parameter; and calling a method whose purity depends on a purity argument of a parameter (`Doer[_]` for a `Doer` with a `@psalm-purity-template`). The issue then names the parameters, and `--alter` adds the `_` where it stands, along with the purity annotation.
 
 ```php
 <?php
 
 /**
- * @param Closure(int): int $f
+ * @param list<Closure(int): int> $fs
  */
-function apply(Closure $f): int {
-    return $f(1); // with --alter, $f becomes Closure[_](int): int and apply @psalm-pure
+function applyAll(array $fs, int $x): int {
+    foreach ($fs as $f) {
+        $x = $f($x); // with --alter, $fs becomes list<Closure[_](int): int> and applyAll @psalm-pure
+    }
+    return $x;
 }
 ```
+
+Only what the function-like's own body does counts, not what the closures it creates do: those may be returned or stored rather than called. The parameter must not be assigned in the body, and the `_` must be writable where the parameter's type is written (not behind a `@psalm-type` alias, and not where another purity is written).
 
 Purity is inferred as a fixpoint over the call graph after the whole codebase has been analysed: a function-like that only calls other pure (or as-yet-unannotated but inferred-pure) function-likes is itself reported, regardless of the order in which they are declared, and mutual recursion, recursive closures and closures assigned to a variable are handled.

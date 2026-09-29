@@ -14,7 +14,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
-use Psalm\Internal\Type\PurityWildcard;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Storage\Capabilities;
 
 use function array_key_exists;
@@ -92,9 +92,9 @@ final class FunctionDocblockManipulator
     private array $throwsExceptions = [];
 
     /**
-     * The parameters to give the `_` purity ({@see PurityWildcard})
+     * Where to give the parameters the `_` purity (param name => paths, {@see PurityWildcardPaths})
      *
-     * @var list<string>
+     * @var array<string, list<string>>
      */
     private array $purity_wildcards = [];
 
@@ -415,7 +415,7 @@ final class FunctionDocblockManipulator
             }
         }
 
-        foreach ($this->purity_wildcards as $param_name) {
+        foreach ($this->purity_wildcards as $param_name => $paths) {
             $found_in_params = false;
 
             foreach (['psalm-param', 'phpstan-param', 'param'] as $tag) {
@@ -429,7 +429,7 @@ final class FunctionDocblockManipulator
                     }
 
                     $found_in_params = true;
-                    $new_type = PurityWildcard::addToTypeString($doc_parts[0]);
+                    $new_type = PurityWildcardPaths::addToTypeString($doc_parts[0], $paths);
 
                     if ($new_type !== null) {
                         $modified_docblock = true;
@@ -441,7 +441,7 @@ final class FunctionDocblockManipulator
             }
 
             if (!$found_in_params) {
-                $new_type = PurityWildcard::addToTypeString($this->getNativeParamType($param_name) ?? '');
+                $new_type = PurityWildcardPaths::addToTypeString($this->getNativeParamType($param_name) ?? '', $paths);
 
                 if ($new_type !== null) {
                     $modified_docblock = true;
@@ -621,14 +621,15 @@ final class FunctionDocblockManipulator
     }
 
     /**
-     * Gives the closure and callable types of the parameters the `_` purity (`Closure[_]`).
+     * Gives the parameters the `_` purity (`Closure[_]`, `list<Closure[_]>`, `Traversable[_]`) where
+     * the paths say ({@see PurityWildcardPaths}).
      *
-     * @param list<string> $param_names
+     * @param array<string, list<string>> $paths_by_param
      * @psalm-external-mutation-free
      */
-    public function addPurityWildcards(array $param_names): void
+    public function addPurityWildcards(array $paths_by_param): void
     {
-        $this->purity_wildcards = $param_names;
+        $this->purity_wildcards = $paths_by_param;
     }
 
     /**
@@ -641,43 +642,8 @@ final class FunctionDocblockManipulator
                 && $param->var->name === $param_name
                 && $param->type !== null
             ) {
-                return self::getNativeTypeString($param->type);
+                return PurityWildcardPaths::getNativeTypeString($param->type);
             }
-        }
-
-        return null;
-    }
-
-    private static function getNativeTypeString(PhpParser\Node $type): ?string
-    {
-        if ($type instanceof PhpParser\Node\Identifier) {
-            return $type->toString();
-        }
-
-        if ($type instanceof PhpParser\Node\Name) {
-            return $type->toCodeString();
-        }
-
-        if ($type instanceof PhpParser\Node\NullableType) {
-            $inner = self::getNativeTypeString($type->type);
-
-            return $inner === null ? null : '?' . $inner;
-        }
-
-        if ($type instanceof PhpParser\Node\UnionType) {
-            $types = [];
-
-            foreach ($type->types as $inner_type) {
-                $inner = self::getNativeTypeString($inner_type);
-
-                if ($inner === null) {
-                    return null;
-                }
-
-                $types[] = $inner;
-            }
-
-            return implode('|', $types);
         }
 
         return null;

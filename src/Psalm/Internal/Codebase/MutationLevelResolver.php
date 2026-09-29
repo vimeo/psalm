@@ -48,7 +48,7 @@ use function implode;
  *     start: int,
  *     fresh: bool,
  *     report: bool,
- *     wildcards?: list<string>
+ *     wildcards?: array<string, list<string>>
  * }
  * @internal
  */
@@ -153,7 +153,8 @@ final class MutationLevelResolver
                 continue;
             }
 
-            // the closure and callable parameters it calls, whose purity it may inherit
+            // the parameters whose closures it calls, and whose iterables and objects it uses,
+            // that would take the `_` purity: where, by parameter
             $wildcards = $info['wildcards'] ?? [];
 
             IssueBuffer::maybeAdd(
@@ -162,8 +163,8 @@ final class MutationLevelResolver
                     . ($wildcards
                         ? ', with the _ purity for ' . implode(', ', array_map(
                             static fn(string $param): string => '$' . $param,
-                            $wildcards,
-                        )) . ' (Closure[_], callable[_]),'
+                            array_keys($wildcards),
+                        )) . ' (Closure[_], Traversable[_], ...),'
                         : '')
                     . ' to aid security analysis'
                     . ', run with --alter --issues=MissingPureAnnotation to fix this',
