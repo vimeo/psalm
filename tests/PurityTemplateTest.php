@@ -379,6 +379,74 @@ final class PurityTemplateTest extends TestCase
                         return escape(fn(int $i): string => (string) $i)(1);
                     }',
             ],
+            'nestedClosurePassingOnOuterPurityTemplateCarriesIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](): string
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        return later(fn(int $i): string => (string) $i)();
+                    }',
+            ],
+            'nestedClosureCarriesClassPurityTemplate' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function wrap(): Closure {
+                            return fn(): int => ($this->cb)() + 1;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function later(): Closure {
+                            return fn(): int => $this->fire();
+                        }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function useMutationFree(): int {
+                        $box = new Box(fn(): int => 1);
+                        return $box->wrap()() + $box->later()();
+                    }',
+            ],
             'purityTemplateWithoutParams' => [
                 'code' => '<?php
                     /**
@@ -1625,6 +1693,83 @@ final class PurityTemplateTest extends TestCase
                     function callsIt(Closure $f): int {
                         $g = fn(): int => $f();
                         return $g();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'nestedClosurePassingOnOuterPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](): string
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return later(function (int $i): string { echo $i; return (string) $i; })();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'nestedClosurePassingOnPurityFromTemplateIsNotPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return pure-Closure(): string
+                     * @psalm-purity-from-template P
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'nestedClosureCarryingClassPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function wrap(): Closure {
+                            return fn(): int => ($this->cb)() + 1;
+                        }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function useImpure(): int {
+                        return (new Box(function (): int { echo "x"; return 1; }))->wrap()();
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
