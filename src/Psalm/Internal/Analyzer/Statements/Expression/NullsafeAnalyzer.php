@@ -17,6 +17,8 @@ use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
 
+use function is_string;
+
 /**
  * @internal
  */
@@ -40,6 +42,7 @@ final class NullsafeAnalyzer
             $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
 
             $condition_type = $statements_analyzer->node_data->getType($stmt->var);
+            $var_type = $condition_type;
 
             if ($condition_type) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
@@ -50,6 +53,7 @@ final class NullsafeAnalyzer
             }
         } else {
             $tmp_var = $stmt->var;
+            $var_type = is_string($stmt->var->name) ? $context->vars_in_scope['$' . $stmt->var->name] ?? null : null;
         }
 
         $old_node_data = $statements_analyzer->node_data;
@@ -91,7 +95,16 @@ final class NullsafeAnalyzer
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
+        // every null of the result is the short-circuit unless the call/fetch on the non-null receiver is nullable too
+        $chain_state = $var_type && $var_type->isNullable()
+            ? (($statements_analyzer->node_data->getType($ternary->else)?->isNullable() ?? false)
+                ? NullsafeChainState::ShortCircuitAndNull
+                : NullsafeChainState::ShortCircuit)
+            : NullsafeChainState::None;
+
         $statements_analyzer->node_data = $old_node_data;
+
+        $chain_state->markOn($stmt);
 
         $statements_analyzer->node_data->setType($stmt, $ternary_type ?? Type::getMixed());
 

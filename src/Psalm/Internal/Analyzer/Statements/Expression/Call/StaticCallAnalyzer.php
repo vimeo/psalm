@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -27,7 +28,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -47,6 +47,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
         Context $context,
         ?TemplateResult $template_result = null,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $method_id = null;
 
         $lhs_type = null;
@@ -228,9 +230,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $has_existing_method = false;
 
         // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
-        $nullsafe_short_circuit = $stmt->class instanceof PhpParser\Node\Expr
-            && $lhs_type->isNullable()
-            && MethodCallAnalyzer::hasNullsafe($stmt->class);
+        $class_state = $stmt->class instanceof PhpParser\Node\Expr && $lhs_type->isNullable()
+            ? NullsafeChainState::of($stmt->class)
+            : NullsafeChainState::None;
 
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
@@ -238,7 +240,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues || $nullsafe_short_circuit,
+                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
@@ -246,13 +248,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($nullsafe_short_circuit) {
+        if ($class_state !== NullsafeChainState::None) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    $stmt_type->getBuilder()->addType(new TNull)->freeze(),
+                    Type::combineUnionTypes($stmt_type, Type::getNull()),
                 );
             }
         }
