@@ -218,6 +218,25 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * The node as it would be without a speculative specialization: speculative specializations
+     * only concern taints, so the variable use graph (see {@see CombinedFlowGraph}) keeps the nodes
+     * it had before.
+     *
+     * @psalm-mutation-free
+     */
+    public function withoutSpeculativeSpecialization(DataFlowNode $node): DataFlowNode
+    {
+        if ($node->unspecialized_id === null
+            || $node->specialization_key === null
+            || !isset($this->speculative_calls[$node->specialization_key])
+        ) {
+            return $node;
+        }
+
+        return $node->withSpecialization($node->unspecialized_id, null, null, $node->specialized_calls);
+    }
+
+    /**
      * Resolves the speculatively specialized call sites of callees that turned out not to be pure
      * (or whose purity is unknown) as unspecialized calls.
      *
