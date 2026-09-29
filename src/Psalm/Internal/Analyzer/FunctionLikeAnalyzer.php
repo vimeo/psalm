@@ -16,6 +16,8 @@ use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\DocComment;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
@@ -33,6 +35,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IterationPurity;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -82,6 +85,7 @@ use function array_combine;
 use function array_diff_key;
 use function array_key_exists;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_search;
 use function array_values;
@@ -93,6 +97,7 @@ use function krsort;
 use function mb_strpos;
 use function md5;
 use function microtime;
+use function preg_match;
 use function reset;
 use function str_ends_with;
 use function str_starts_with;
@@ -180,20 +185,46 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public array $used_purity_templates = [];
 
     /**
-     * The closure and callable parameters this function-like calls although their purity is fixed:
-     * with a `_` purity (`Closure[_]`), those calls would be charged to its callers instead, so its
-     * purity is inferred without them and `--alter` adds the `_` (param name => true).
+     * Where the parameters of this function-like would take the `_` purity (`Closure[_]`,
+     * `Traversable[_]`): what it does by calling the closures, iterating the iterables and calling
+     * the methods found there, which the `_` would charge to its callers instead. Its purity is
+     * inferred without those, and `--alter` adds the `_` (param name => paths =>
+     * true, {@see PurityWildcardPaths}).
      *
-     * @var array<string, true>
+     * @var array<string, array<string, true>>
      */
     public array $purity_wildcard_candidates = [];
 
     /**
-     * The parameters the body may assign, lazily computed (param name => true).
+     * The purity templates standing for the purity arguments of receivers a parameter's `_` could
+     * take, while the purity of a call on them is inferred (marker name => param name and path,
+     * {@see PurityWildcardInference}).
+     *
+     * @var array<string, array{string, string}>
+     */
+    public array $purity_wildcard_markers = [];
+
+    /**
+     * The variables the body may assign, lazily computed (variable name => true), besides the
+     * value variables of foreach loops, which are in $foreach_values.
      *
      * @var array<string, true>|null
      */
     private ?array $reassigned_params = null;
+
+    /**
+     * What the value variables of the foreach loops of the body iterate over, lazily computed.
+     *
+     * @var array<string, list<PhpParser\Node\Expr>>|null
+     */
+    private ?array $foreach_values = null;
+
+    /**
+     * The docblock types of the parameters as written, or their native types, lazily computed.
+     *
+     * @var array<string, list<string>>|null
+     */
+    private ?array $param_type_strings = null;
 
     /**
      * Holds param nodes for functions with func_get_args calls
@@ -702,7 +733,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         && !($storage->has_mutations_annotation
                             && ($storage->capabilities === Capabilities::ALL
                                 || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
-                    'wildcards' => array_keys($this->purity_wildcard_candidates),
+                    'wildcards' => array_map(
+                        static fn(array $paths): array => array_keys($paths),
+                        $this->purity_wildcard_candidates,
+                    ),
                 ]);
             }
         }
@@ -1898,47 +1932,129 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public function isParamReassigned(string $param_name): bool
     {
-        if ($this->reassigned_params === null) {
-            $this->reassigned_params = [];
+        $this->findAssignments();
 
-            $finder = new NodeFinder();
+        return isset($this->reassigned_params[$param_name]) || isset($this->foreach_values[$param_name]);
+    }
 
-            $targets = [];
+    /**
+     * What a variable of the body holds an element of, if it is only ever assigned as the value
+     * variable of one foreach loop (`foreach ($fs as $f)`).
+     */
+    public function getForeachSource(string $var_name): ?PhpParser\Node\Expr
+    {
+        $this->findAssignments();
 
-            foreach ($finder->find(
-                $this->function->getStmts(),
-                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
-                    || $node instanceof PhpParser\Node\Expr\AssignRef
-                    || $node instanceof PhpParser\Node\Expr\AssignOp
-                    || $node instanceof PhpParser\Node\Stmt\Foreach_
-                    || $node instanceof PhpParser\Node\Stmt\Unset_
-                    || ($node instanceof PhpParser\Node\ClosureUse && $node->byRef),
-            ) as $node) {
-                if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
-                    $targets[] = $node->valueVar;
+        $sources = $this->foreach_values[$var_name] ?? [];
 
-                    if ($node->keyVar !== null) {
-                        $targets[] = $node->keyVar;
+        return count($sources) === 1 && !isset($this->reassigned_params[$var_name]) ? $sources[0] : null;
+    }
+
+    /**
+     * The types of a parameter as written in the docblock (every `@param`, `@psalm-param` and
+     * `@phpstan-param` of it), or its native type if it has none there.
+     *
+     * @return list<string>
+     */
+    public function getParamTypeStrings(string $param_name): array
+    {
+        if ($this->param_type_strings === null) {
+            $this->param_type_strings = [];
+
+            $doc_comment = $this->function->getDocComment();
+
+            if ($doc_comment !== null) {
+                $parsed_docblock = DocComment::parsePreservingLength($doc_comment);
+
+                foreach (['psalm-param', 'phpstan-param', 'param'] as $tag) {
+                    foreach ($parsed_docblock->tags[$tag] ?? [] as $param_block) {
+                        try {
+                            $doc_parts = CommentAnalyzer::splitDocLine($param_block);
+                        } catch (DocblockParseException) {
+                            continue;
+                        }
+
+                        if (isset($doc_parts[1])
+                            && preg_match('/^(?:\.\.\.)?&?\$(\w+)/', $doc_parts[1], $matches)
+                            && isset($matches[1])
+                        ) {
+                            $this->param_type_strings[$matches[1]][] = $doc_parts[0];
+                        }
                     }
-                } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
-                    $targets = [...$targets, ...$node->vars];
-                } elseif ($node instanceof PhpParser\Node\Expr\Assign
-                    || $node instanceof PhpParser\Node\Expr\AssignRef
-                    || $node instanceof PhpParser\Node\Expr\AssignOp
-                    || $node instanceof PhpParser\Node\ClosureUse
-                ) {
-                    $targets[] = $node->var;
                 }
             }
 
-            foreach ($finder->findInstanceOf($targets, PhpParser\Node\Expr\Variable::class) as $variable) {
-                if (is_string($variable->name)) {
-                    $this->reassigned_params[$variable->name] = true;
+            foreach ($this->function->getParams() as $param) {
+                if ($param->var instanceof PhpParser\Node\Expr\Variable
+                    && is_string($param->var->name)
+                    && !isset($this->param_type_strings[$param->var->name])
+                    && $param->type !== null
+                    && ($native_type = PurityWildcardPaths::getNativeTypeString($param->type)) !== null
+                ) {
+                    $this->param_type_strings[$param->var->name] = [$native_type];
                 }
             }
         }
 
-        return isset($this->reassigned_params[$param_name]);
+        return $this->param_type_strings[$param_name] ?? [];
+    }
+
+    private function findAssignments(): void
+    {
+        if ($this->reassigned_params !== null) {
+            return;
+        }
+
+        $this->reassigned_params = [];
+        $this->foreach_values = [];
+
+        $finder = new NodeFinder();
+
+        $targets = [];
+
+        foreach ($finder->find(
+            $this->function->getStmts(),
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Stmt\Foreach_
+                || $node instanceof PhpParser\Node\Stmt\Unset_
+                || ($node instanceof PhpParser\Node\ClosureUse && $node->byRef),
+        ) as $node) {
+            if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
+                if ($node->valueVar instanceof PhpParser\Node\Expr\Variable
+                    && is_string($node->valueVar->name)
+                    && !$node->byRef
+                ) {
+                    $this->foreach_values[$node->valueVar->name][] = $node->expr;
+                } else {
+                    // by reference, the loop may also change what it iterates over
+                    $targets[] = $node->valueVar;
+
+                    if ($node->byRef) {
+                        $targets[] = $node->expr;
+                    }
+                }
+
+                if ($node->keyVar !== null) {
+                    $targets[] = $node->keyVar;
+                }
+            } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                $targets = [...$targets, ...$node->vars];
+            } elseif ($node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\ClosureUse
+            ) {
+                $targets[] = $node->var;
+            }
+        }
+
+        foreach ($finder->findInstanceOf($targets, PhpParser\Node\Expr\Variable::class) as $variable) {
+            if (is_string($variable->name)) {
+                $this->reassigned_params[$variable->name] = true;
+            }
+        }
     }
 
     /**

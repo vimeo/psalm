@@ -13,6 +13,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -28,6 +29,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -52,6 +54,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -555,6 +558,9 @@ final class ForeachAnalyzer
                 $intersection_key_type = null;
                 // each part of an intersection bounds what iterating over the value may do
                 $iteration_capabilities = Capabilities::ALL;
+                // without what the `_` of a parameter iterated here would charge to the callers
+                $inferred_iteration_capabilities = Capabilities::ALL;
+                $wildcard_path = PurityWildcardInference::getParamPath($statements_analyzer, $expr);
 
                 foreach ($iterator_atomic_types as $iat) {
                     if (!$iat instanceof TIterable) {
@@ -563,7 +569,18 @@ final class ForeachAnalyzer
 
                     [$key_type_part, $value_type_part] = $iat->type_params;
 
-                    $iteration_capabilities &= CallPurityResolver::resolvePurity($iat->purity, $statements_analyzer);
+                    $part_capabilities = CallPurityResolver::resolvePurity($iat->purity, $statements_analyzer);
+                    $iteration_capabilities &= $part_capabilities;
+
+                    $inferred_iteration_capabilities &= $wildcard_path !== null
+                        && PurityWildcardInference::isDefaultPurity($iat->purity)
+                        && PurityWildcardInference::record(
+                            $wildcard_path[0],
+                            $wildcard_path[1],
+                            PurityWildcardPaths::purityArgument($wildcard_path[2], 'iterable', 0, ['impure']),
+                        )
+                            ? Capabilities::NONE
+                            : $part_capabilities;
 
                     if (!$intersection_value_type) {
                         $intersection_value_type = $value_type_part;
@@ -610,6 +627,7 @@ final class ForeachAnalyzer
                     'iterating over ' . $iterator_atomic_type->getId(),
                     ImpureMethodCall::class,
                     $expr,
+                    $inferred_iteration_capabilities,
                 );
             } elseif ($iterator_atomic_type instanceof TNamedObject) {
                 if ($iterator_atomic_type->value !== 'Traversable' &&
@@ -664,6 +682,17 @@ final class ForeachAnalyzer
                     'iterating over ' . $iterator_atomic_type->getId(),
                     ImpureMethodCall::class,
                     $expr,
+                    // without what the `_` of a parameter iterated here would charge to the callers
+                    self::getIterationCapabilities(
+                        $statements_analyzer,
+                        $codebase,
+                        $iterator_atomic_type,
+                        $expr,
+                        $context,
+                        false,
+                        0,
+                        true,
+                    ),
                 );
             }
         }
@@ -1098,6 +1127,7 @@ final class ForeachAnalyzer
         Context $context,
         bool $receiver_is_fresh,
         int $depth = 0,
+        bool $without_purity_wildcards = false,
     ): int {
         if (!$iterator_atomic_type instanceof TNamedObject
             || $depth > 3
@@ -1119,14 +1149,22 @@ final class ForeachAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-            $capabilities = self::getImplicitMethodCapabilities(
+            $class_template_params = self::collectClassTemplateParams(
                 $statements_analyzer,
                 $codebase,
                 $iterator_atomic_type,
                 $expr,
                 $declaring_method_id,
+                $without_purity_wildcards,
+            );
+
+            $capabilities = self::getImplicitMethodCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $expr,
                 $method_storage,
                 $receiver_is_fresh,
+                $class_template_params,
             );
 
             $iterator_type = $method_storage->return_type ?? $method_storage->signature_return_type;
@@ -1135,15 +1173,11 @@ final class ForeachAnalyzer
                 return Capabilities::ALL;
             }
 
-            // `Traversable[TPurity]<TKey, TValue>` as bound by the aggregate
+            // `Traversable[TPurity]<TKey, TValue>` as bound by the aggregate (with the aggregate's
+            // `_` marked, when inferring without it)
             $iterator_type = TemplateInferredTypeReplacer::replace(
                 $iterator_type,
-                new TemplateResult([], self::collectClassTemplateParams(
-                    $codebase,
-                    $iterator_atomic_type,
-                    $expr,
-                    $declaring_method_id,
-                )),
+                new TemplateResult([], $class_template_params),
                 $codebase,
             );
 
@@ -1180,11 +1214,17 @@ final class ForeachAnalyzer
                 $capabilities |= self::getImplicitMethodCapabilities(
                     $statements_analyzer,
                     $codebase,
-                    $iterator_atomic_type,
                     $expr,
-                    $declaring_method_id,
                     $codebase->methods->getStorage($declaring_method_id),
                     $receiver_is_fresh,
+                    self::collectClassTemplateParams(
+                        $statements_analyzer,
+                        $codebase,
+                        $iterator_atomic_type,
+                        $expr,
+                        $declaring_method_id,
+                        $without_purity_wildcards,
+                    ),
                 );
             }
 
@@ -1196,17 +1236,31 @@ final class ForeachAnalyzer
             $traversable_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             $purity_index = array_search('TPurity', array_keys($traversable_storage->template_types ?? []), true);
 
-            if ($purity_index === false
-                || !$iterator_atomic_type instanceof TGenericObject
-                || !isset($iterator_atomic_type->type_params[$purity_index])
-            ) {
+            if ($purity_index === false) {
                 return Capabilities::ALL;
             }
 
-            return CallPurityResolver::resolvePurity(
-                $iterator_atomic_type->type_params[$purity_index],
-                $statements_analyzer,
-            );
+            // without a purity argument, the default one
+            $purity = $iterator_atomic_type instanceof TGenericObject
+                && isset($iterator_atomic_type->type_params[$purity_index])
+                ? $iterator_atomic_type->type_params[$purity_index]
+                : new Union([new TCapabilities(Capabilities::ALL)]);
+
+            if ($without_purity_wildcards) {
+                $purity = PurityWildcardInference::markReceiverTemplates(
+                    $statements_analyzer,
+                    $codebase,
+                    $expr,
+                    $traversable_storage->name,
+                    ['TPurity' => [$traversable_storage->name => $purity]],
+                )['TPurity'][$traversable_storage->name] ?? $purity;
+            }
+
+            if (!Capabilities::isPurityType($purity)) {
+                return Capabilities::ALL;
+            }
+
+            return CallPurityResolver::resolvePurity($purity, $statements_analyzer);
         }
 
         // a Traversable implemented by the engine
@@ -1219,14 +1273,16 @@ final class ForeachAnalyzer
      * purity template (`Iterator[pure]<int, int>`, `Generator[io]<int, int, mixed, void>`) when
      * the method depends on it.
      */
+    /**
+     * @param array<string, array<string, Union>> $class_template_params
+     */
     private static function getImplicitMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        TNamedObject $iterator_atomic_type,
         PhpParser\Node\Expr $expr,
-        MethodIdentifier $declaring_method_id,
         MethodStorage $method_storage,
         bool $receiver_is_fresh,
+        array $class_template_params,
     ): int {
         // foreach passes no arguments, so writing by-reference parameters costs nothing
         $capabilities = MethodCallPurityAnalyzer::getMethodCapabilities(
@@ -1242,7 +1298,7 @@ final class ForeachAnalyzer
             $method_storage,
             $capabilities,
             null,
-            self::collectClassTemplateParams($codebase, $iterator_atomic_type, $expr, $declaring_method_id),
+            $class_template_params,
             MethodCallPurityAnalyzer::isThis($expr),
             MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $expr),
         );
@@ -1254,12 +1310,14 @@ final class ForeachAnalyzer
      * @return array<string, array<string, Union>>
      */
     private static function collectClassTemplateParams(
+        StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         TNamedObject $iterator_atomic_type,
         PhpParser\Node\Expr $expr,
         MethodIdentifier $declaring_method_id,
+        bool $without_purity_wildcards,
     ): array {
-        return ClassTemplateParamCollector::collect(
+        $class_template_params = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
             $codebase->classlike_storage_provider->get($iterator_atomic_type->value),
@@ -1267,6 +1325,19 @@ final class ForeachAnalyzer
             $iterator_atomic_type,
             $expr instanceof PhpParser\Node\Expr\Variable && $expr->name === 'this',
         ) ?? [];
+
+        // the iterator's purity arguments a parameter's `_` would take, when inferring without it
+        if ($without_purity_wildcards) {
+            return PurityWildcardInference::markReceiverTemplates(
+                $statements_analyzer,
+                $codebase,
+                $expr,
+                $iterator_atomic_type->value,
+                $class_template_params,
+            ) ?? $class_template_params;
+        }
+
+        return $class_template_params;
     }
 
     /**

@@ -15,6 +15,13 @@ final class GenericTree extends ParseTree
     public bool $terminated = false;
 
     /**
+     * Where the keyword starts and ends in the type string, if known.
+     */
+    public ?int $offset_start = null;
+
+    public ?int $offset_end = null;
+
+    /**
      * The purity arguments given in brackets before the type parameters, if any
      * (`Traversable[pure]<int, string>`).
      */
