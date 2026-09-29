@@ -614,6 +614,38 @@ final class PurityTemplateTest extends TestCase
                         return $d->run($b);
                     }',
             ],
+            'callOfTypeTemplateBoundToClosureIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return "";
+                    }',
+            ],
+            'callOfTypeTemplateBoundToCallableIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as callable(int): string
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(callable $cb): string {
+                        return $cb(1);
+                    }
+
+                    /** @psalm-pure */
+                    function caller(): string {
+                        return apply(static fn(int $i): string => (string) $i);
+                    }',
+            ],
             'builtinSortsInheritTheComparatorsPurity' => [
                 'code' => '<?php
                     /**
@@ -906,6 +938,78 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'callOfTypeTemplateBoundToClosureChecksArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb("x");
+                        }
+                        return "";
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callOfTypeTemplateBoundToClosureReturnsTheClosuresType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): int {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'callOfTypeTemplateBoundToClosureChecksThePurityOfWhatIsDoneWithTheResult' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): int {
+                            return ++$this->n;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as Closure(int): Counter
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(Closure $cb): int {
+                        return $cb(1)->inc();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'callOfTypeTemplateBoundToClosureInAMutationFreeMethodChecksThePurityOfWhatIsDoneWithTheResult' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    final class Runner {
+                        /**
+                         * @psalm-mutation-free
+                         * @template TCallback as Closure(int): Counter
+                         * @param TCallback $cb
+                         * @psalm-purity-from-template TCallback
+                         */
+                        public function run(Closure $cb): void {
+                            $cb(1)->n = 2;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */
