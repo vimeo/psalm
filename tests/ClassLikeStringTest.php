@@ -60,6 +60,44 @@ final class ClassLikeStringTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testCheckConstructorArgsForLeadingBackslashClassStringStandIn(): void
+    {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->allow_string_standin_for_class = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A {
+                    public function __construct(int $i) {}
+                }
+
+                $a = "\\A";
+
+                new $a("x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDisallowInterfaceInstantiationForLeadingBackslashClassStringStandIn(): void
+    {
+        $this->expectExceptionMessage('InterfaceInstantiation');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->allow_string_standin_for_class = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $a = "\\Countable";
+
+                new $a();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testDontAllowStringStandInForStaticMethodCall(): void
     {
         $this->expectExceptionMessage('InvalidStringClass');
