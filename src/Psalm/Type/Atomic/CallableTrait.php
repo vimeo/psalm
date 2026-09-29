@@ -108,25 +108,14 @@ trait CallableTrait
     }
 
     /**
-     * The `pure-`/`impure-` prefix or `[...]` purity suffix of the callable keyword.
+     * The callable keyword with its `[...]` purity suffix (`Closure[pure]`, `callable[impure]`).
+     * The `pure-`/`impure-` prefixes are only parsed.
      *
      * @param ?string $purity the purity as it should be printed, if not by its id
      * @psalm-mutation-free
      */
     private function getPurityString(?string $purity = null): string
     {
-        if ($this->hasFixedPurity()) {
-            $capabilities = $this->getCapabilities();
-
-            if ($capabilities === Capabilities::NONE) {
-                return 'pure-' . $this->value;
-            }
-
-            if ($capabilities === Capabilities::ALL) {
-                return 'impure-' . $this->value;
-            }
-        }
-
         return $this->value . '[' . ($purity ?? $this->purity->getId()) . ']';
     }
 
