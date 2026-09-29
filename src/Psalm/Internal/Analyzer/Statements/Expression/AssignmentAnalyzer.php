@@ -17,8 +17,8 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
-use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -683,9 +683,7 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
             );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write
             $capabilities = $context->capabilities;
             $context->capabilities |= Capabilities::READ_GLOBALS;
@@ -1173,7 +1171,7 @@ final class AssignmentAnalyzer
             );
 
             if ($property_id !== null
-                && $statements_analyzer->getCodebase()->properties->propertyExists($property_id, false)
+                && $statements_analyzer->getCodebase()->propertyExists($property_id, false)
             ) {
                 ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
