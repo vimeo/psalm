@@ -39,7 +39,6 @@ use function count;
 use function explode;
 use function in_array;
 use function ltrim;
-use function md5;
 use function strtolower;
 
 /**
@@ -554,6 +553,7 @@ final class StaticPropertyFetchAnalyzer
      * or null when the type does not name specific classes.
      *
      * @return non-empty-list<string>|null
+     * @psalm-capabilities read-props
      */
     public static function getClassNamesFromClassStringType(Atomic $class_type): ?array
     {
