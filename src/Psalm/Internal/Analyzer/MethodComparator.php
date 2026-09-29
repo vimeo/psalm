@@ -18,6 +18,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\ConstructorSignatureMismatch;
 use Psalm\Issue\ImmutableDependency;
 use Psalm\Issue\ImplementedParamTypeMismatch;
@@ -38,8 +39,6 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -1230,11 +1229,9 @@ final class MethodComparator
     }
 
     /**
-     * The type with the templates of the method, including the purity templates of its closure
-     * and callable types (`Closure[_](): int`), replaced by their bounds: the method accepts
-     * whatever they may be bound to.
-     *
-     * @psalm-capabilities write-props
+     * The type with the templates of the method, including its purity templates at any depth
+     * (`Closure[_](): int`, `list<Closure[P](): int>`, `Traversable[_]<int, int>`), replaced by
+     * their bounds: the method accepts whatever they may be bound to.
      */
     private static function replaceFunctionTemplatesWithBounds(Union $type): Union
     {
@@ -1249,17 +1246,14 @@ final class MethodComparator
                 foreach ($t->as->getAtomicTypes() as $as_t) {
                     $builder->addType($as_t);
                 }
-            } elseif ($t instanceof TClosure || $t instanceof TCallable) {
-                $purity = self::replaceFunctionTemplatesWithBounds($t->purity);
-
-                if ($purity !== $t->purity) {
-                    $builder->removeType($k);
-                    $builder->addType($t->setPurity($purity));
-                }
             }
         }
 
-        return $builder->freeze();
+        $type = $builder->freeze();
+
+        (new FunctionPurityTemplateReplacer())->traverse($type);
+
+        return $type;
     }
 
     /**

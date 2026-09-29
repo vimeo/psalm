@@ -769,6 +769,40 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'nestedWildcardPurityInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param list<Closure(int): int> $gs */
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param list<Closure[_](int): int> $gs */
+                        #[Override]
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }',
+            ],
+            'wildcardPurityOnGenericInOverrideOfImpureGenericParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Traversable<int, int> $t */
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Traversable[_]<int, int> $t */
+                        #[Override]
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }',
+            ],
             'purityTemplateInOverrideOfImpureClosureParam' => [
                 'code' => '<?php
                     abstract class Base {
