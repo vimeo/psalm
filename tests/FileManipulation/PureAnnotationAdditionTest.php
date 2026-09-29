@@ -71,6 +71,27 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPureAnnotationToFunctionCreatingArrowFunction' => [
+                'input' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     */
+                    function foo(Closure $f): Closure {
+                        return fn(int $i): string => $f($i);
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     *
+                     * @psalm-pure
+                     */
+                    function foo(Closure $f): Closure {
+                        return fn(int $i): string => $f($i);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'selfCall' => [
                 'input' => '<?php
                     function foo(string $s, int $v): string {

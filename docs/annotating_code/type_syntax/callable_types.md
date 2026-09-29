@@ -34,7 +34,7 @@ the callable may use, given in angle brackets after the keyword:
 * `Closure[pure](int): int` / `callable[pure](int): int` - a pure callable, also written `pure-Closure(int): int` / `pure-callable(int): int`
 * `Closure[write-props|io](): void` - any combination of capabilities
 * `Closure[P](): void` - a purity template declared with `@psalm-purity-template`
-* `Closure[_](): void` - in a parameter's type only: the function inherits its purity from that parameter (see [`@psalm-purity-template`](../supported_annotations.md#psalm-purity-template))
+* `Closure[_](): void` - in a parameter's type only, at any depth: the function inherits its purity from that parameter (see [`@psalm-purity-template`](../supported_annotations.md#psalm-purity-template))
 * `Closure(): void` / `callable(): void` - an impure callable (the default), also written `impure-Closure(): void` / `impure-callable(): void`
 
 The parameter list may be left out: `Closure[pure]` is any pure closure.
