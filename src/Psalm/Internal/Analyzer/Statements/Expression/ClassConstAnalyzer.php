@@ -116,7 +116,7 @@ final class ClassConstAnalyzer
                             new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                             $context,
                             $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true),
+                            new ClassLikeNameOptions(false, true, context: $context),
                         ) === false) {
                             return true;
                         }

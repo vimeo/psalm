@@ -24,6 +24,15 @@ final class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'multibyteLiteralArgument' => [
+                'code' => '<?php
+                    function startsWithGreeting(string $s): bool {
+                        return str_starts_with($s, "здравствуй");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
                     $error = error_get_last();',

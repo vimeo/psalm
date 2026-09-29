@@ -16,19 +16,33 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_fill_keys;
+use function array_keys;
 use function array_shift;
 use function assert;
+use function class_exists;
 use function count;
 use function dirname;
+use function explode;
+use function file_exists;
+use function function_exists;
+use function intdiv;
+use function interface_exists;
 use function max;
 use function min;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const PHP_VERSION;
 
 /**
  * @internal
@@ -57,6 +71,13 @@ final class InternalCallMapHandler
      * @var non-empty-array<string, non-empty-list<int>>|null
      */
     private static ?array $taint_sink_map = null;
+
+    /**
+     * The callmap version (e.g. 80) each function/method first appears in, across all callmaps.
+     *
+     * @var ?array<lowercase-string, int>
+     */
+    private static ?array $first_callmap_versions = null;
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
@@ -388,6 +409,76 @@ final class InternalCallMapHandler
     public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
+    }
+
+    /**
+     * The `analysis_php_version_id` that introduced a native function or method (`class::method`)
+     * which is missing from the callmap of the analysed version, or null when it is available there
+     * or its introduction cannot be dated.
+     *
+     * The callmaps are versioned, so the version is the first callmap the key appears in. Only
+     * symbols of extensions bundled with PHP are dated: the callmaps are generated with PECL
+     * extensions (swoole, redis, mongodb, ...) whose versions are unrelated to the PHP version.
+     * Such symbols are only reachable through the runtime's reflection, which tells a bundled
+     * extension apart by its version matching PHP's own.
+     */
+    public static function getIntroducingPhpVersionId(string $key): ?int
+    {
+        $key = strtolower($key);
+
+        if (isset(self::getCallMap()[$key]) || !self::isBundledWithPhp($key)) {
+            return null;
+        }
+
+        if (self::$first_callmap_versions === null) {
+            self::$first_callmap_versions = [];
+            for ($version = self::MIN_CALLMAP_VERSION; $version <= self::MAX_CALLMAP_VERSION; ++$version) {
+                $file = dirname(__DIR__, 4) . "/dictionaries/CallMap_$version.php";
+                if (!file_exists($file)) { // e.g. 75 to 79
+                    continue;
+                }
+
+                /** @var array<lowercase-string, mixed> */
+                $call_map = require($file);
+                self::$first_callmap_versions += array_fill_keys(array_keys($call_map), $version);
+            }
+        }
+
+        $version = self::$first_callmap_versions[$key] ?? null;
+
+        // a key already in the oldest callmap predates the callmaps and cannot be dated
+        if ($version === null || $version <= self::MIN_CALLMAP_VERSION) {
+            return null;
+        }
+
+        $php_version_id = intdiv($version, 10) * 10_000 + ($version % 10) * 100;
+
+        return ProjectAnalyzer::getInstance()->getCodebase()->analysis_php_version_id < $php_version_id
+            ? $php_version_id
+            : null;
+    }
+
+    private static function isBundledWithPhp(string $key): bool
+    {
+        try {
+            if (str_contains($key, '::')) {
+                $class = explode('::', $key)[0];
+                // don't autoload (and so run) project code
+                if (!class_exists($class, false) && !interface_exists($class, false)) {
+                    return false;
+                }
+                $extension = (new ReflectionClass($class))->getExtension();
+            } else {
+                if (!function_exists($key)) {
+                    return false;
+                }
+                $extension = (new ReflectionFunction($key))->getExtension();
+            }
+        } catch (ReflectionException) {
+            return false;
+        }
+
+        return $extension !== null && $extension->getVersion() === PHP_VERSION;
     }
 
     /**

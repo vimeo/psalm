@@ -763,6 +763,53 @@ function apply(Closure $callback): int {
 }
 ```
 
+The closure may also be nested in the parameter's type, as in `@param list<Closure[_](int): int> $callbacks`,
+and `_` can also be the purity of an iterable or generic object: `@param Traversable[_]<int, string> $items`
+(see [Iterators and generators](#iterators-and-generators)). Every `_` in one parameter's type stands for the
+same template, which has no name of its own, so it never clashes with a template declared in the docblock.
+`_` can't be used outside `@param` types (`@return`, `@param-out`, `@psalm-assert`, `@var`, `@property`,
+`@template` bounds, ...), where it has no parameter to stand for.
+
+On a promoted constructor parameter, `_` makes `new` inherit the purity of the closure passed for
+it, as for any other parameter. The property, though, outlives that call, so its type uses the
+template's bound: here `$f` is an `impure-Closure(): int`, and calling it needs every capability,
+whatever closure was passed.
+
+```php
+<?php
+final class Holder {
+    /**
+     * @psalm-pure
+     * @param Closure[_](): int $f
+     */
+    public function __construct(public Closure $f) {}
+}
+```
+
+To keep the closure's purity in the property, make it a class purity template instead
+(`@psalm-purity-template P` on the class, `@param Closure[P](): int $f` on the constructor): then
+`new Holder(fn(): int => 1)` is a `Holder[pure]`, whose `$f` is a pure closure (see
+[`@psalm-purity-from-template`](#psalm-purity-from-template)).
+
+The parameters of an `@method` may use `_` too. A call to such a method needs what `__call` (or
+`__callStatic`) does, plus the capabilities of the closures passed for its `_` parameters:
+
+```php
+<?php
+/**
+ * @method int run(Closure[_](): int $callback)
+ */
+final class Runner {
+    /** @psalm-pure */
+    public function __call(string $name, array $args): int { return 1; }
+}
+
+/** @psalm-pure */
+function usePure(Runner $r): int {
+    return $r->run(fn(): int => 1); // fine: the closure is pure
+}
+```
+
 ### Iterators and generators
 
 `Traversable`, `Iterator`, `IteratorAggregate` and `Generator` carry a purity template besides

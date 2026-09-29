@@ -29,6 +29,25 @@ final class UnusedVariableTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'callOfCallableNarrowedFromClassStringOrCallable' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string|(callable(int, int): int)|array{0: class-string|(callable(int, int): int)} $item
+                     */
+                    function process(string|callable|array $item): mixed {
+                        if (!is_array($item)) {
+                            $item = [$item];
+                        }
+                        if (is_callable($item[0])) {
+                            $func = $item[0];
+                            return $func(1, 2);
+                        }
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayOffset' => [
                 'code' => '<?php
                     $a = 0;

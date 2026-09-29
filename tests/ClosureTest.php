@@ -22,6 +22,16 @@ final class ClosureTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'byRefUseVarUnsetInClosure' => [
+                'code' => '<?php
+                    function reserve(): Closure {
+                        $reserved = str_repeat("x", 10);
+                        return function () use (&$reserved): void {
+                            $reserved = "";
+                            unset($reserved);
+                        };
+                    }',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     $doNotContaminate = 123;

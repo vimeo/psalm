@@ -27,11 +27,13 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
@@ -462,17 +464,11 @@ final class FunctionLikeNodeScanner
 
             if ($docblock_info) {
                 if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
-                    $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
-                    if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
-                        return false;
-                    }
-
-                    if ($docblock_info->since_php_major_version === $analysis_major_php_version
-                        && $docblock_info->since_php_minor_version > $analysis_minor_php_version
-                    ) {
-                        return false;
-                    }
+                    // Keep the stubbed signature loaded on every version for analysis, but record
+                    // the version that introduced the function so its use is reported as undefined
+                    // when analysing an older PHP version without a polyfill.
+                    $storage->since_php_version_id = $docblock_info->since_php_major_version * 10_000
+                        + $docblock_info->since_php_minor_version * 100;
                 }
 
                 if ($stmt instanceof PhpParser\Node\Expr\Closure
@@ -510,10 +506,13 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            if ($this->codebase->all_functions_global
-                || $this->codebase->register_stub_files
-                || ($this->codebase->register_autoload_files
-                    && !$this->codebase->functions->hasStubbedFunction($function_id))
+            // A polyfill of a native function the analysed version predates must not replace the
+            // native signature (and its purity); the polyfill is still known through this file.
+            if ($this->codebase->register_stub_files
+                || (($this->codebase->all_functions_global
+                        || ($this->codebase->register_autoload_files
+                            && !$this->codebase->functions->hasStubbedFunction($function_id)))
+                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null)
             ) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
             }
@@ -636,6 +635,12 @@ final class FunctionLikeNodeScanner
                 $property_storage = $classlike_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
                 $property_storage->type = $param_storage->type;
+
+                if ($property_storage->type) {
+                    // `@param Closure[P](): int $f`: the property holds closures of any purity P allows
+                    (new FunctionPurityTemplateReplacer())->traverse($property_storage->type);
+                }
+
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
@@ -995,10 +1000,15 @@ final class FunctionLikeNodeScanner
                     && ($this->codebase->register_stub_files
                         || !$this->codebase->functions->hasStubbedFunction($function_id))
                 ) {
-                    $this->codebase->functions->addGlobalFunction(
-                        $function_id,
-                        $this->file_storage->functions[$function_id],
-                    );
+                    // see the polyfill rule where the function is first registered
+                    if ($this->codebase->register_stub_files
+                        || InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                    ) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_id,
+                            $this->file_storage->functions[$function_id],
+                        );
+                    }
 
                     $storage = $this->storage = $this->file_storage->functions[$function_id];
 
@@ -1035,7 +1045,10 @@ final class FunctionLikeNodeScanner
                     return [$function_id, $storage, null, null, null, null, false, null, true];
                 }
 
-                if (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                // a core function the analysed PHP version predates can be polyfilled
+                if (isset($this->config->getPredefinedFunctions()[$function_id])
+                    && InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                ) {
                     /** @psalm-suppress ArgumentTypeCoercion */
                     $reflection_function = new ReflectionFunction($function_id);
 
@@ -1086,7 +1099,11 @@ final class FunctionLikeNodeScanner
                     return false;
                 }
 
-                // skip methods based on @since docblock tag
+                // skip methods based on @since docblock tag: version-specific stubs declare the
+                // same method more than once with per-version signatures, and only the one whose
+                // @since matches the analysed version must be registered (registering the others
+                // would collide). Unlike classes/functions, this is signature selection rather
+                // than an availability gate.
                 $doc_comment = $stmt->getDocComment();
 
                 if ($doc_comment) {

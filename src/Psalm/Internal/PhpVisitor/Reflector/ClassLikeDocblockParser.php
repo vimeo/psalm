@@ -27,6 +27,8 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
@@ -228,6 +230,19 @@ final class ClassLikeDocblockParser
             $info->deprecated = true;
         }
 
+        if (isset($parsed_docblock->tags['since'])) {
+            $since = trim((string) reset($parsed_docblock->tags['since']));
+            // Only a PHP-version `@since` (major in 4/5/7/8, e.g. `8.5`) is meaningful here; the
+            // caller additionally restricts this to stub files, since `@since` is commonly used
+            // with a project version rather than the PHP version.
+            if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $since_match)
+                && isset($since_match[1], $since_match[2])
+            ) {
+                $info->since_php_major_version = (int) $since_match[1];
+                $info->since_php_minor_version = (int) $since_match[2];
+            }
+        }
+
         if (isset($parsed_docblock->tags['internal'])) {
             $info->internal = true;
         }
@@ -360,6 +375,14 @@ final class ClassLikeDocblockParser
             if ($info->sealed_methods === null) {
                 $info->sealed_methods = true;
             }
+            // the purity templates of the class, for `Closure[P]` in a signature: only their names
+            // matter here, the types are printed back into the docblock of a pseudo-method
+            $purity_template_map = [];
+
+            foreach ($info->purity_templates as $purity_template) {
+                $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
+            }
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -381,8 +404,13 @@ final class ClassLikeDocblockParser
                     $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
                 }
 
+                // `static` before the name is either the return type or, if the method has a
+                // return type after its parameters (`static foo(): int`), the modifier
+                $leading_static = false;
+
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     if (count($doc_line_parts) > 1) {
+                        $leading_static = $doc_line_parts[0] === 'static';
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
                         $has_return = true;
 
@@ -426,14 +454,14 @@ final class ClassLikeDocblockParser
 
                     if ($method_close_paren !== null) {
                         $after_paren = substr($method_entry, $method_close_paren + 1);
-                        // Optionally consume return type annotation after the closing paren
-                        if (preg_match('/^ ?(\: ?(\??[\\\\a-zA-Z0-9_]+))/', $after_paren, $return_matches)
-                            && isset($return_matches[0])
+                        $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+
+                        // Optionally consume return type annotation after the closing paren, which
+                        // is a whole type (`: Closure[pure](): int`), and may be followed by a description
+                        if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
+                            && isset($return_matches[1])
                         ) {
-                            $end = $method_close_paren + 1 + strlen($return_matches[0]);
-                            $method_entry = substr($method_entry, 0, $end);
-                        } else {
-                            $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+                            $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
                         }
                     }
                 }
@@ -441,9 +469,9 @@ final class ClassLikeDocblockParser
                 $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);
                 $method_entry = (string) preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
-                // replace array bracket contents
+                // replace array bracket contents, but not the purity of a type (`Closure[pure]`)
                 $method_entry = (string) preg_replace(
-                    '/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/',
+                    '/(?<!\w)\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/',
                     '[]',
                     $method_entry,
                 );
@@ -457,7 +485,7 @@ final class ClassLikeDocblockParser
                         TypeTokenizer::getFullyQualifiedTokens(
                             $method_entry,
                             $aliases,
-                            null,
+                            $purity_template_map,
                         ),
                     );
 
@@ -477,10 +505,18 @@ final class ClassLikeDocblockParser
                 }
 
                 if ($method_tree instanceof MethodWithReturnTypeTree) {
+                    if ($leading_static) {
+                        $is_static = true;
+                        $has_return = false;
+                        $docblock_lines = [];
+                    }
+
                     if (!$has_return) {
                         $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                             $method_tree->children[1],
                             $codebase,
+                            null,
+                            $purity_template_map,
                         )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
@@ -506,7 +542,12 @@ final class ClassLikeDocblockParser
 
                     if ($method_tree_child->children) {
                         try {
-                            $param_type = TypeParser::getTypeFromTree($method_tree_child->children[0], $codebase);
+                            $param_type = TypeParser::getTypeFromTree(
+                                $method_tree_child->children[0],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
                         } catch (Exception $e) {
                             throw new DocblockParseException(
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e,
