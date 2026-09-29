@@ -96,13 +96,13 @@ return array (
     'ziparchive::registercancelcallback' => 
     array (
       0 => 'bool',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'ziparchive::registerprogresscallback' => 
     array (
       0 => 'bool',
       'rate' => 'float',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'ziparchive::replacefile' => 
     array (
@@ -357,14 +357,14 @@ return array (
       array (
         0 => 'array<array-key, mixed>',
         'arg' => 'array<array-key, mixed>',
-        'callback=' => 'impure-callable(mixed, array-key=):mixed',
+        'callback=' => 'callable[impure](mixed, array-key=):mixed',
         'use_keys=' => 'int',
       ),
       'new' => 
       array (
         0 => 'array<array-key, mixed>',
         'array' => 'array<array-key, mixed>',
-        'callback=' => 'impure-callable(mixed, array-key=):mixed|null',
+        'callback=' => 'callable[impure](mixed, array-key=):mixed|null',
         'mode=' => 'int',
       ),
     ),
@@ -489,13 +489,13 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>',
-        'callback' => 'impure-callable|null',
+        'callback' => 'callable[impure]|null',
         '...arrays' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'array<array-key, mixed>',
-        'callback' => 'impure-callable|null',
+        'callback' => 'callable[impure]|null',
         'array' => 'array<array-key, mixed>',
         '...arrays=' => 'array<array-key, mixed>',
       ),
@@ -596,14 +596,14 @@ return array (
       array (
         0 => 'mixed',
         'arg' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable(mixed, mixed):mixed',
+        'callback' => 'callable[impure](mixed, mixed):mixed',
         'initial=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'mixed',
         'array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable(mixed, mixed):mixed',
+        'callback' => 'callable[impure](mixed, mixed):mixed',
         'initial=' => 'mixed',
       ),
     ),
@@ -765,14 +765,14 @@ return array (
       array (
         0 => 'bool',
         '&input' => 'array<array-key, mixed>',
-        'funcname' => 'impure-callable',
+        'funcname' => 'callable[impure]',
         'userdata=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'arg=' => 'mixed',
       ),
     ),
@@ -782,14 +782,14 @@ return array (
       array (
         0 => 'bool',
         '&input' => 'array<array-key, mixed>',
-        'funcname' => 'impure-callable',
+        'funcname' => 'callable[impure]',
         'userdata=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'arg=' => 'mixed',
       ),
     ),
@@ -889,12 +889,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'arrayiterator::uksort' => 
@@ -902,12 +902,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'arrayiterator::unserialize' => 
@@ -1036,12 +1036,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'arrayobject::uksort' => 
@@ -1049,12 +1049,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'arrayobject::unserialize' => 
@@ -1538,13 +1538,13 @@ return array (
       'old' => 
       array (
         0 => 'false|mixed',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
         '...parameters=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'false|mixed',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...args=' => 'mixed',
       ),
     ),
@@ -1553,13 +1553,13 @@ return array (
       'old' => 
       array (
         0 => 'false|mixed',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
         'parameters' => 'list<mixed>',
       ),
       'new' => 
       array (
         0 => 'false|mixed',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'args' => 'list<mixed>',
       ),
     ),
@@ -1719,15 +1719,15 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-Closure|null',
-        'closure' => 'impure-Closure',
+        0 => 'Closure[impure]|null',
+        'closure' => 'Closure[impure]',
         'newthis' => 'null|object',
         'newscope=' => 'null|object|string',
       ),
       'new' => 
       array (
-        0 => 'impure-Closure|null',
-        'closure' => 'impure-Closure',
+        0 => 'Closure[impure]|null',
+        'closure' => 'Closure[impure]',
         'newThis' => 'null|object',
         'newScope=' => 'null|object|string',
       ),
@@ -1736,13 +1736,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-Closure|null',
+        0 => 'Closure[impure]|null',
         'newthis' => 'null|object',
         'newscope=' => 'null|object|string',
       ),
       'new' => 
       array (
-        0 => 'impure-Closure|null',
+        0 => 'Closure[impure]|null',
         'newThis' => 'null|object',
         'newScope=' => 'null|object|string',
       ),
@@ -1766,13 +1766,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-Closure',
-        'callable' => 'impure-callable',
+        0 => 'Closure[impure]',
+        'callable' => 'callable[impure]',
       ),
       'new' => 
       array (
-        0 => 'impure-Closure',
-        'callback' => 'impure-callable',
+        0 => 'Closure[impure]',
+        'callback' => 'callable[impure]',
       ),
     ),
     'collator::__construct' => 
@@ -2605,14 +2605,14 @@ return array (
         0 => 'bool',
         'ch' => 'resource',
         'option' => 'int',
-        'value' => 'impure-callable|mixed',
+        'value' => 'callable[impure]|mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
         'handle' => 'CurlHandle',
         'option' => 'int',
-        'value' => 'impure-callable|mixed',
+        'value' => 'callable[impure]|mixed',
       ),
     ),
     'curl_setopt_array' => 
@@ -5516,7 +5516,7 @@ return array (
       array (
         0 => 'void',
         'other' => 'object',
-        'callback=' => 'impure-callable',
+        'callback=' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -5524,7 +5524,7 @@ return array (
       array (
         0 => 'void',
         'other' => 'EvLoop',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -5535,7 +5535,7 @@ return array (
       array (
         0 => 'EvEmbed',
         'other' => 'object',
-        'callback=' => 'impure-callable',
+        'callback=' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -5543,7 +5543,7 @@ return array (
       array (
         0 => 'EvEmbed',
         'other' => 'EvLoop',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -5593,7 +5593,7 @@ return array (
         'base' => 'EventBase',
         'fd' => 'mixed',
         'what=' => 'int',
-        'cb=' => 'impure-callable',
+        'cb=' => 'callable[impure]',
         'arg=' => 'mixed',
       ),
       'new' => 
@@ -5602,7 +5602,7 @@ return array (
         'base' => 'EventBase',
         'fd' => 'mixed',
         'what=' => 'int',
-        'cb=' => 'impure-callable|null',
+        'cb=' => 'callable[impure]|null',
         'arg=' => 'mixed',
       ),
     ),
@@ -5720,9 +5720,9 @@ return array (
         'base' => 'EventBase',
         'socket=' => 'mixed',
         'options=' => 'int',
-        'readcb=' => 'impure-callable',
-        'writecb=' => 'impure-callable',
-        'eventcb=' => 'impure-callable',
+        'readcb=' => 'callable[impure]',
+        'writecb=' => 'callable[impure]',
+        'eventcb=' => 'callable[impure]',
       ),
       'new' => 
       array (
@@ -5730,9 +5730,9 @@ return array (
         'base' => 'EventBase',
         'socket=' => 'mixed',
         'options=' => 'int',
-        'readcb=' => 'impure-callable|null',
-        'writecb=' => 'impure-callable|null',
-        'eventcb=' => 'impure-callable|null',
+        'readcb=' => 'callable[impure]|null',
+        'writecb=' => 'callable[impure]|null',
+        'eventcb=' => 'callable[impure]|null',
         'arg=' => 'mixed',
       ),
     ),
@@ -5773,17 +5773,17 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'readcb' => 'impure-callable',
-        'writecb' => 'impure-callable',
-        'eventcb' => 'impure-callable',
+        'readcb' => 'callable[impure]',
+        'writecb' => 'callable[impure]',
+        'eventcb' => 'callable[impure]',
         'arg=' => 'string',
       ),
       'new' => 
       array (
         0 => 'void',
-        'readcb' => 'impure-callable|null',
-        'writecb' => 'impure-callable|null',
-        'eventcb' => 'impure-callable|null',
+        'readcb' => 'callable[impure]|null',
+        'writecb' => 'callable[impure]|null',
+        'eventcb' => 'callable[impure]|null',
         'arg=' => 'string',
       ),
     ),
@@ -5828,7 +5828,7 @@ return array (
       array (
         0 => 'bool',
         'path' => 'string',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
         'arg=' => 'string',
       ),
     ),
@@ -5843,7 +5843,7 @@ return array (
       'new' => 
       array (
         0 => 'void',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
         'arg=' => 'string',
       ),
     ),
@@ -6053,7 +6053,7 @@ return array (
       'new' => 
       array (
         0 => 'void',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
       ),
     ),
     'eventsslcontext::__construct' => 
@@ -6100,7 +6100,7 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -6108,7 +6108,7 @@ return array (
       array (
         0 => 'void',
         'loop' => 'EvLoop',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -6118,7 +6118,7 @@ return array (
       'old' => 
       array (
         0 => 'EvFork',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'string',
         'priority=' => 'string',
       ),
@@ -6126,7 +6126,7 @@ return array (
       array (
         0 => 'EvFork',
         'loop' => 'EvLoop',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'string',
         'priority=' => 'int',
       ),
@@ -6210,7 +6210,7 @@ return array (
         0 => 'EvPeriodic',
         'offset' => 'float',
         'interval' => 'float',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -6219,8 +6219,8 @@ return array (
         0 => 'EvPeriodic',
         'offset' => 'float',
         'interval' => 'float',
-        'reschedule_cb' => 'impure-callable',
-        'callback' => 'impure-callable',
+        'reschedule_cb' => 'callable[impure]',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -6232,8 +6232,8 @@ return array (
         0 => 'void',
         'offset' => 'float',
         'interval' => 'string',
-        'reschedule_cb' => 'impure-callable',
-        'callback' => 'impure-callable',
+        'reschedule_cb' => 'callable[impure]',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -6242,8 +6242,8 @@ return array (
         0 => 'void',
         'offset' => 'float',
         'interval' => 'float',
-        'reschedule_cb' => 'impure-callable',
-        'callback' => 'impure-callable',
+        'reschedule_cb' => 'callable[impure]',
+        'callback' => 'callable[impure]',
         'data=' => 'mixed',
         'priority=' => 'int',
       ),
@@ -7016,13 +7016,13 @@ return array (
       'old' => 
       array (
         0 => 'false|mixed',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
         '...parameters=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'false|mixed',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...args=' => 'mixed',
       ),
     ),
@@ -7031,13 +7031,13 @@ return array (
       'old' => 
       array (
         0 => 'false|mixed',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
         'parameters' => 'list<mixed>',
       ),
       'new' => 
       array (
         0 => 'false|mixed',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'args' => 'list<mixed>',
       ),
     ),
@@ -12353,12 +12353,12 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'imagick::setregistry' => 
@@ -13855,7 +13855,7 @@ return array (
         0 => 'bool|null',
         'start' => 'int|string',
         'limit' => 'int|string',
-        'callback' => 'impure-callable(int, int, int):void',
+        'callback' => 'callable[impure](int, int, int):void',
         'nameChoice=' => 'int',
       ),
       'new' => 
@@ -13863,7 +13863,7 @@ return array (
         0 => 'bool|null',
         'start' => 'int|string',
         'end' => 'int|string',
-        'callback' => 'impure-callable(int, int, int):void',
+        'callback' => 'callable[impure](int, int, int):void',
         'type=' => 'int',
       ),
     ),
@@ -13872,12 +13872,12 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'callback=' => 'impure-callable(int, int, int):void',
+        'callback=' => 'callable[impure](int, int, int):void',
       ),
       'new' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable(int, int, int):void',
+        'callback' => 'callable[impure](int, int, int):void',
       ),
     ),
     'intlchar::fordigit' => 
@@ -15036,14 +15036,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'var' => 'impure-callable|mixed',
+        'var' => 'callable[impure]|mixed',
         'syntax_only=' => 'bool',
         '&w callable_name=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'value' => 'impure-callable|mixed',
+        'value' => 'callable[impure]|mixed',
         'syntax_only=' => 'bool',
         '&w callable_name=' => 'string',
       ),
@@ -15266,14 +15266,14 @@ return array (
       array (
         0 => 'int<0, max>',
         'iterator' => 'Traversable',
-        'function' => 'impure-callable(mixed):bool',
+        'function' => 'callable[impure](mixed):bool',
         'args=' => 'array<array-key, mixed>|null',
       ),
       'new' => 
       array (
         0 => 'int<0, max>',
         'iterator' => 'Traversable',
-        'callback' => 'impure-callable(mixed):bool',
+        'callback' => 'callable[impure](mixed):bool',
         'args=' => 'array<array-key, mixed>|null',
       ),
     ),
@@ -15878,13 +15878,13 @@ return array (
       array (
         0 => 'bool',
         'ldap' => 'resource',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ldap' => 'resource',
-        'callback' => 'impure-callable|null',
+        'callback' => 'callable[impure]|null',
       ),
     ),
     'levenshtein' => 
@@ -16679,7 +16679,7 @@ return array (
       array (
         0 => 'false|null|string',
         'pattern' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'string' => 'string',
         'option=' => 'string',
       ),
@@ -16687,7 +16687,7 @@ return array (
       array (
         0 => 'false|null|string',
         'pattern' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'string' => 'string',
         'options=' => 'null|string',
       ),
@@ -18618,14 +18618,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'user_function=' => 'array<array-key, mixed>|impure-callable|null|string',
+        'user_function=' => 'array<array-key, mixed>|callable[impure]|null|string',
         'chunk_size=' => 'int',
         'flags=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback=' => 'array<array-key, mixed>|impure-callable|null|string',
+        'callback=' => 'array<array-key, mixed>|callable[impure]|null|string',
         'chunk_size=' => 'int',
         'flags=' => 'int',
       ),
@@ -19841,14 +19841,14 @@ return array (
       array (
         0 => 'bool',
         'signo' => 'int',
-        'handler' => 'impure-callable():void|impure-callable(int):void|impure-callable(int, array<array-key, mixed>):void|int',
+        'handler' => 'callable[impure]():void|callable[impure](int):void|callable[impure](int, array<array-key, mixed>):void|int',
         'restart_syscalls=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'bool',
         'signal' => 'int',
-        'handler' => 'impure-callable():void|impure-callable(int):void|impure-callable(int, array<array-key, mixed>):void|int',
+        'handler' => 'callable[impure]():void|callable[impure](int):void|callable[impure](int, array<array-key, mixed>):void|int',
         'restart_syscalls=' => 'bool',
       ),
     ),
@@ -20171,7 +20171,7 @@ return array (
       array (
         0 => 'array<array-key, mixed>|false',
         'how=' => 'int',
-        'class_name=' => 'impure-callable|int|string',
+        'class_name=' => 'callable[impure]|int|string',
         'ctor_args=' => 'array<array-key, mixed>|null',
       ),
       'new' => 
@@ -21780,7 +21780,7 @@ return array (
         'index=' => 'null|string',
         'f404=' => 'string',
         'mimetypes=' => 'array<array-key, mixed>',
-        'rewrites=' => 'impure-callable',
+        'rewrites=' => 'callable[impure]',
       ),
       'new' => 
       array (
@@ -21789,7 +21789,7 @@ return array (
         'index=' => 'null|string',
         'fileNotFoundScript=' => 'null|string',
         'mimeTypes=' => 'array<array-key, mixed>',
-        'rewrite=' => 'impure-callable|null',
+        'rewrite=' => 'callable[impure]|null',
       ),
     ),
     'phardata::__construct' => 
@@ -22585,7 +22585,7 @@ return array (
       array (
         0 => 'null|string',
         'regex' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -22595,7 +22595,7 @@ return array (
       array (
         0 => 'null|string',
         'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -22845,12 +22845,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'funcname' => 'impure-callable(string):array<array-key, string>',
+        'funcname' => 'callable[impure](string):array<array-key, string>',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'impure-callable(string):array<array-key, string>',
+        'callback' => 'callable[impure](string):array<array-key, string>',
       ),
     ),
     'readline_info' => 
@@ -23003,12 +23003,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'recursivearrayiterator::uksort' => 
@@ -23016,12 +23016,12 @@ return array (
       'old' => 
       array (
         0 => 'true',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'recursivearrayiterator::unserialize' => 
@@ -23886,7 +23886,7 @@ return array (
       array (
         0 => 'bool',
         'patterns' => 'array<array-key, mixed>',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
       ),
     ),
     'redis::punsubscribe' => 
@@ -24172,7 +24172,7 @@ return array (
       array (
         0 => 'bool',
         'channels' => 'array<array-key, mixed>',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
       ),
     ),
     'redis::unsubscribe' => 
@@ -24618,7 +24618,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'bool|impure-callable',
+        0 => 'bool|callable[impure]',
       ),
     ),
     'redisarray::_rehash' => 
@@ -24626,12 +24626,12 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'fn=' => 'impure-callable',
+        'fn=' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool|null',
-        'fn=' => 'impure-callable|null',
+        'fn=' => 'callable[impure]|null',
       ),
     ),
     'redisarray::_target' => 
@@ -25109,7 +25109,7 @@ return array (
       array (
         0 => 'void',
         'patterns' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'rediscluster::restore' => 
@@ -25273,7 +25273,7 @@ return array (
       array (
         0 => 'void',
         'channels' => 'array<array-key, mixed>',
-        'cb' => 'impure-callable',
+        'cb' => 'callable[impure]',
       ),
     ),
     'rediscluster::time' => 
@@ -25866,12 +25866,12 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'name' => 'callable-string|impure-Closure',
+        'name' => 'Closure[impure]|callable-string',
       ),
       'new' => 
       array (
         0 => 'void',
-        'function' => 'callable-string|impure-Closure',
+        'function' => 'Closure[impure]|callable-string',
       ),
     ),
     'reflectionmethod::__construct' => 
@@ -25893,12 +25893,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-Closure|null',
+        0 => 'Closure[impure]|null',
         'object=' => 'object',
       ),
       'new' => 
       array (
-        0 => 'impure-Closure',
+        0 => 'Closure[impure]',
         'object=' => 'null|object',
       ),
     ),
@@ -26116,13 +26116,13 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
         '...parameters=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool|null',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...args=' => 'mixed',
       ),
     ),
@@ -26131,13 +26131,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'function_name' => 'impure-callable():void',
+        'function_name' => 'callable[impure]():void',
         '...parameters=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'impure-callable():void',
+        'callback' => 'callable[impure]():void',
         '...args=' => 'mixed',
       ),
     ),
@@ -26600,14 +26600,14 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-callable(int, string, string=, int=, array<array-key, mixed>=):bool|null',
-        'error_handler' => 'impure-callable(int, string, string=, int=, array<array-key, mixed>=):bool|null',
+        0 => 'callable[impure](int, string, string=, int=, array<array-key, mixed>=):bool|null',
+        'error_handler' => 'callable[impure](int, string, string=, int=, array<array-key, mixed>=):bool|null',
         'error_types=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'impure-callable(int, string, string=, int=, array<array-key, mixed>=):bool|null',
-        'callback' => 'impure-callable(int, string, string=, int=, array<array-key, mixed>=):bool|null',
+        0 => 'callable[impure](int, string, string=, int=, array<array-key, mixed>=):bool|null',
+        'callback' => 'callable[impure](int, string, string=, int=, array<array-key, mixed>=):bool|null',
         'error_levels=' => 'int',
       ),
     ),
@@ -26615,13 +26615,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-callable(Throwable):void|null',
-        'exception_handler' => 'impure-callable(Throwable):void|null',
+        0 => 'callable[impure](Throwable):void|null',
+        'exception_handler' => 'callable[impure](Throwable):void|null',
       ),
       'new' => 
       array (
-        0 => 'impure-callable(Throwable):void|null',
-        'callback' => 'impure-callable(Throwable):void|null',
+        0 => 'callable[impure](Throwable):void|null',
+        'callback' => 'callable[impure](Throwable):void|null',
       ),
     ),
     'set_file_buffer' => 
@@ -28889,11 +28889,11 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'false|list<impure-callable(string):void>',
+        0 => 'false|list<callable[impure](string):void>',
       ),
       'new' => 
       array (
-        0 => 'list<impure-callable(string):void>',
+        0 => 'list<callable[impure](string):void>',
       ),
     ),
     'spl_autoload_register' => 
@@ -28901,14 +28901,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'autoload_function=' => 'impure-callable(string):void',
+        'autoload_function=' => 'callable[impure](string):void',
         'throw=' => 'bool',
         'prepend=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback=' => 'impure-callable(string):void|null',
+        'callback=' => 'callable[impure](string):void|null',
         'throw=' => 'bool',
         'prepend=' => 'bool',
       ),
@@ -28918,12 +28918,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'autoload_function' => 'impure-callable(string):void',
+        'autoload_function' => 'callable[impure](string):void',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'impure-callable(string):void',
+        'callback' => 'callable[impure](string):void',
       ),
     ),
     'spl_object_hash' => 
@@ -29849,16 +29849,16 @@ return array (
       array (
         0 => 'bool',
         'name' => 'string',
-        'step_callback' => 'impure-callable',
-        'final_callback' => 'impure-callable',
+        'step_callback' => 'callable[impure]',
+        'final_callback' => 'callable[impure]',
         'argument_count=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
         'name' => 'string',
-        'stepCallback' => 'impure-callable',
-        'finalCallback' => 'impure-callable',
+        'stepCallback' => 'callable[impure]',
+        'finalCallback' => 'callable[impure]',
         'argCount=' => 'int',
       ),
     ),
@@ -29868,7 +29868,7 @@ return array (
       array (
         0 => 'bool',
         'name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'argument_count=' => 'int',
         'flags=' => 'int',
       ),
@@ -29876,7 +29876,7 @@ return array (
       array (
         0 => 'bool',
         'name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'argCount=' => 'int',
         'flags=' => 'int',
       ),
@@ -31367,13 +31367,13 @@ return array (
       'old' => 
       array (
         0 => 'ReturnType',
-        'func' => 'impure-callable',
+        'func' => 'callable[impure]',
         '...params=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'false|int',
-        'func' => 'impure-callable',
+        'func' => 'callable[impure]',
         '...param=' => 'mixed',
       ),
     ),
@@ -31732,16 +31732,16 @@ return array (
       array (
         0 => 'bool',
         'fd' => 'int',
-        'read_callback' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'string',
       ),
       'new' => 
       array (
         0 => 'false|int',
         'fd' => 'int',
-        'read_callback=' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback=' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'int',
       ),
     ),
@@ -31750,12 +31750,12 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\event::set' => 
@@ -31764,16 +31764,16 @@ return array (
       array (
         0 => 'bool',
         'fd' => 'int',
-        'read_callback=' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback=' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'fd' => 'int',
-        'read_callback=' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback=' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'int',
       ),
     ),
@@ -31942,13 +31942,13 @@ return array (
       array (
         0 => 'void',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\http\\server::start' => 
@@ -32147,13 +32147,13 @@ return array (
       array (
         0 => 'void',
         'signal_no' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'signal_no' => 'int',
-        'callback=' => 'impure-callable|null',
+        'callback=' => 'callable[impure]|null',
       ),
     ),
     'swoole\\process::start' => 
@@ -32205,13 +32205,13 @@ return array (
       array (
         0 => 'ReturnType',
         'command' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'command' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\redis\\server::start' => 
@@ -32366,13 +32366,13 @@ return array (
       array (
         0 => 'void',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\server::pause' => 
@@ -32554,14 +32554,14 @@ return array (
         0 => 'mixed',
         'data' => 'string',
         'task_worker_index=' => 'int',
-        'finish_callback=' => 'impure-callable|null',
+        'finish_callback=' => 'callable[impure]|null',
       ),
       'new' => 
       array (
         0 => 'false|int',
         'data' => 'string',
         'taskWorkerIndex=' => 'int',
-        'finishCallback=' => 'impure-callable|null',
+        'finishCallback=' => 'callable[impure]|null',
       ),
     ),
     'swoole\\server::taskwait' => 
@@ -32602,13 +32602,13 @@ return array (
       array (
         0 => 'ReturnType',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\table::column' => 
@@ -32733,14 +32733,14 @@ return array (
       array (
         0 => 'void',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'false|int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'mixed',
       ),
     ),
@@ -32763,14 +32763,14 @@ return array (
       array (
         0 => 'void',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'string',
       ),
       'new' => 
       array (
         0 => 'false|int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'string',
       ),
     ),
@@ -32780,13 +32780,13 @@ return array (
       array (
         0 => 'ReturnType',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'bool',
         'event_name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\websocket\\server::pack' => 
@@ -32844,16 +32844,16 @@ return array (
       array (
         0 => 'int',
         'fd' => 'int',
-        'read_callback' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'int',
       ),
       'new' => 
       array (
         0 => 'int',
         'fd' => 'int',
-        'read_callback=' => 'impure-callable|null',
-        'write_callback=' => 'impure-callable|null',
+        'read_callback=' => 'callable[impure]|null',
+        'write_callback=' => 'callable[impure]|null',
         'events=' => 'int',
       ),
     ),
@@ -33324,13 +33324,13 @@ return array (
       array (
         0 => 'true',
         '&arg' => 'array<array-key, mixed>',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'ucfirst' => 
@@ -33380,13 +33380,13 @@ return array (
       array (
         0 => 'true',
         '&arg' => 'array<array-key, mixed>',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'umask' => 
@@ -33437,12 +33437,12 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'function_name' => 'impure-callable',
+        'function_name' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'unserialize' => 
@@ -33533,13 +33533,13 @@ return array (
       array (
         0 => 'true',
         '&arg' => 'array<array-key, mixed>',
-        'cmp_function' => 'impure-callable(mixed, mixed):int',
+        'cmp_function' => 'callable[impure](mixed, mixed):int',
       ),
       'new' => 
       array (
         0 => 'true',
         '&array' => 'array<array-key, mixed>',
-        'callback' => 'impure-callable(mixed, mixed):int',
+        'callback' => 'callable[impure](mixed, mixed):int',
       ),
     ),
     'utf8_decode' => 
@@ -33860,13 +33860,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_default_handler' => 
@@ -33875,13 +33875,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_element_handler' => 
@@ -33890,15 +33890,15 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'shdl' => 'impure-callable',
-        'ehdl' => 'impure-callable',
+        'shdl' => 'callable[impure]',
+        'ehdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'start_handler' => 'impure-callable',
-        'end_handler' => 'impure-callable',
+        'start_handler' => 'callable[impure]',
+        'end_handler' => 'callable[impure]',
       ),
     ),
     'xml_set_end_namespace_decl_handler' => 
@@ -33907,13 +33907,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_external_entity_ref_handler' => 
@@ -33922,13 +33922,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_notation_decl_handler' => 
@@ -33937,13 +33937,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_object' => 
@@ -33967,13 +33967,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_start_namespace_decl_handler' => 
@@ -33982,13 +33982,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xml_set_unparsed_entity_decl_handler' => 
@@ -33997,13 +33997,13 @@ return array (
       array (
         0 => 'true',
         'parser' => 'resource',
-        'hdl' => 'impure-callable',
+        'hdl' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'handler' => 'impure-callable',
+        'handler' => 'callable[impure]',
       ),
     ),
     'xmlreader::expand' => 
@@ -35624,18 +35624,18 @@ return array (
     array (
       0 => 'ReturnType',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\server::defer' => 
     array (
       0 => 'void',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\server::tick' => 
     array (
       0 => 'void',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'typeerror::__clone' => 
     array (
