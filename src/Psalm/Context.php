@@ -43,6 +43,13 @@ use const JSON_THROW_ON_ERROR;
 final class Context
 {
     /**
+     * The pseudo-variable through which comparisons of the PHP_VERSION_ID constant narrow it, so a
+     * branch knows the PHP version it runs on (e.g. `if (PHP_VERSION_ID >= 80100)`). Checks for
+     * native symbols newer than the analysed version use it; it can't clash with a variable name.
+     */
+    public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
+
+    /**
      * @var array<string, Union>
      */
     public array $vars_in_scope = [];

@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Internal\TypeVisitor\PurityWildcardBinder;
+use Psalm\Internal\TypeVisitor\PurityWildcardFinder;
 use Psalm\Storage\Capabilities;
-use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 /**
- * The `_` purity of a closure type in a parameter (`Closure[_](): int $f`): shorthand for a
- * purity template of the function-like, which inherits its purity from that parameter, like
- * Hack's `(function()[_]: int) $f` with `[ctx $f]`.
+ * The `_` purity in a parameter's type (`Closure[_](): int $f`, `array<Closure[_](): int> $fs`,
+ * `Traversable[_]<int, int> $t`): shorthand for a purity template of the function-like, which
+ * inherits its purity from that parameter, like Hack's `(function()[_]: int) $f` with `[ctx $f]`.
  *
  * @internal
  */
@@ -37,96 +38,47 @@ final class PurityWildcard
     }
 
     /**
-     * The name of the purity template a parameter's wildcard stands for.
+     * The name of the purity template a parameter's wildcard stands for: not a valid template
+     * name, so that it can't clash with one declared in the docblock.
      *
      * @psalm-pure
      */
     public static function templateName(string $param_name): string
     {
-        return '_' . $param_name;
+        return '_$' . $param_name;
     }
 
     /**
      * @psalm-pure
      */
-    public static function isPlaceholder(Union $purity): bool
+    public static function isPlaceholder(Atomic $atomic): bool
     {
-        foreach ($purity->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TTemplateParam
-                && $atomic->param_name === self::NAME
-                && $atomic->defining_class === ''
-            ) {
-                return true;
-            }
-        }
-
-        return false;
+        return $atomic instanceof TTemplateParam
+            && $atomic->param_name === self::NAME
+            && $atomic->defining_class === '';
     }
 
     /**
-     * Whether a closure or callable in the type has the `_` purity.
-     *
-     * @psalm-pure
+     * Whether the type has the `_` purity anywhere.
      */
     public static function contains(Union $type): bool
     {
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                return true;
-            }
-        }
+        $finder = new PurityWildcardFinder();
+        $finder->traverse($type);
 
-        return false;
+        return $finder->matches();
     }
 
     /**
-     * The type with every `_` purity replaced by `impure`, where `_` has no parameter to stand for.
-     *
-     * @psalm-pure
-     */
-    public static function strip(Union $type): Union
-    {
-        $atomics = [];
-
-        foreach ($type->getAtomicTypes() as $key => $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                $atomic = $atomic->setPurity(Capabilities::ALL);
-            }
-
-            $atomics[$key] = $atomic;
-        }
-
-        return $type->setTypes($atomics);
-    }
-
-    /**
-     * The type with every `_` purity replaced by the template $template (already declared on
-     * the function-like $defining_id).
-     *
-     * @psalm-pure
+     * The type with every `_` purity replaced by the template $template (already declared on the
+     * function-like $defining_id).
      */
     public static function bind(Union $type, string $template, string $defining_id): Union
     {
-        $template_type = new Union([
+        (new PurityWildcardBinder(
             new TTemplateParam($template, new Union([new TCapabilities(Capabilities::ALL)]), $defining_id),
-        ]);
+        ))->traverse($type);
 
-        $atomics = [];
-
-        foreach ($type->getAtomicTypes() as $key => $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                $atomic = $atomic->setPurity($template_type);
-            }
-
-            $atomics[$key] = $atomic;
-        }
-
-        return $type->setTypes($atomics);
+        return $type;
     }
 }

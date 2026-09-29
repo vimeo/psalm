@@ -453,6 +453,14 @@ final class TypeTokenizer
                 continue;
             }
 
+            // the `_` purity of a closure type (`Closure[_](): int`) is not a class name
+            if ($string_type_token[0] === PurityWildcard::NAME
+                && $i > 0
+                && $type_tokens[$i - 1][0] === '['
+            ) {
+                continue;
+            }
+
             if ($i > 1
                 && ($type_tokens[$i - 2][0] === 'class-string-map')
                 && ($type_tokens[$i - 1][0] === '<')

@@ -394,6 +394,9 @@ final class TypeVariableTest extends TestCase
                         /** @psalm-check-type-exact $ctx = array{a: array<int, int>, b: array<string, string>} */;
                         return "";
                     });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'unboundConstructorTemplate' => [
                 'code' => '<?php

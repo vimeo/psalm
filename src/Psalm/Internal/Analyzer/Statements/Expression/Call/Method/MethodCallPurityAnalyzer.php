@@ -164,6 +164,9 @@ final class MethodCallPurityAnalyzer
         // not on what it writes through its by-reference arguments
         $reads_globals = ($method_capabilities & Capabilities::READ_GLOBALS) !== 0;
 
+        // a mutation-free method called with closures that are not is not mutation-free here
+        $call_is_mutation_free = Capabilities::allows(Capabilities::MUTATION_FREE, $method_capabilities);
+
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
         $method_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
@@ -211,6 +214,7 @@ final class MethodCallPurityAnalyzer
         
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
+            && $call_is_mutation_free
         ) {
             if ((!$method_storage->mutation_free_assumed
                     || $method_storage->final
@@ -263,7 +267,6 @@ final class MethodCallPurityAnalyzer
         }
 
         if (NoDiscardAnalyzer::isDiscardReported(
-            $codebase,
             $context,
             $method_storage,
             $stmt->isFirstClassCallable(),
