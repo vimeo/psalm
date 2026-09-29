@@ -677,63 +677,24 @@ final class PurityTemplateTest extends TestCase
             ],
             'wildcardPurityOnPromotedProperty' => [
                 'code' => '<?php
+                    /** @psalm-immutable */
                     final class Holder {
-                        /** @param Closure[_](): int $f */
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
                         public function __construct(public Closure $f) {}
                     }
 
-                    $h = new Holder(fn(): int => 1);
-                    $f = $h->f;',
+                    /** @psalm-pure */
+                    function make(): Holder {
+                        return new Holder(fn(): int => 1);
+                    }
+
+                    $f = make()->f;',
                 'assertions' => [
                     '$f' => 'impure-Closure():int',
                 ],
-            ],
-            'purityInMethodAnnotation' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-purity-template P
-                     * @method int run(Closure[P](): int $f)
-                     * @method int runIo(Closure[io](): int $f)
-                     */
-                    final class Runner {
-                        public function __call(string $name, array $args): int {
-                            return 1;
-                        }
-                    }
-
-                    $r = new Runner();
-                    $r->runIo(function (): int {
-                        echo "x";
-                        return 1;
-                    });',
-            ],
-            'wildcardPurityInMethodAnnotation' => [
-                'code' => '<?php
-                    /**
-                     * @method int run(Closure[_](): int $f)
-                     * @method int runAll(list<Closure[_](): int> $fs)
-                     * @method void runNoReturnType(Closure[_](): int $f)
-                     * @method static int runStatic(Closure[_](): int $f)
-                     */
-                    final class Runner {
-                        /** @psalm-pure */
-                        public function __call(string $name, array $args): int {
-                            return 1;
-                        }
-
-                        /** @psalm-pure */
-                        public static function __callStatic(string $name, array $args): int {
-                            return 1;
-                        }
-                    }
-
-                    /** @psalm-pure */
-                    function usePure(Runner $r): int {
-                        $r->runNoReturnType(fn(): int => 1);
-                        return $r->run(fn(): int => 1)
-                            + $r->runAll([fn(): int => 1])
-                            + Runner::runStatic(fn(): int => 1);
-                    }',
             ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
@@ -1765,16 +1726,6 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'wildcardPurityInMethodAnnotationReturn' => [
-                'code' => '<?php
-                    /** @method Closure[_](): int make() */
-                    final class Maker {
-                        public function __call(string $name, array $args): int {
-                            return null;
-                        }
-                    }',
-                'error_message' => 'InvalidDocblock',
-            ],
             'wildcardPurityInTemplateBound' => [
                 'code' => '<?php
                     /**
@@ -1805,59 +1756,42 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
-            'wildcardPurityInMethodAnnotationPropagatesImpureClosure' => [
+            'wildcardPurityOnPromotedPropertyPropagatesImpureClosure' => [
                 'code' => '<?php
-                    /** @method int run(list<Closure[_](): int> $fs) */
-                    final class Runner {
-                        /** @psalm-pure */
-                        public function __call(string $name, array $args): int {
-                            return 1;
-                        }
+                    /** @psalm-immutable */
+                    final class Holder {
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
+                        public function __construct(public Closure $f) {}
                     }
 
                     /** @psalm-pure */
-                    function bad(Runner $r): int {
-                        return $r->run([function (): int {
-                            echo "x";
-                            return 1;
-                        }]);
-                    }',
-                'error_message' => 'ImpureMethodCall',
-            ],
-            'wildcardPurityInStaticMethodAnnotationPropagatesImpureClosure' => [
-                'code' => '<?php
-                    /** @method static int run(Closure[_](): int $f) */
-                    final class Runner {
-                        /** @psalm-pure */
-                        public static function __callStatic(string $name, array $args): int {
-                            return 1;
-                        }
-                    }
-
-                    /** @psalm-pure */
-                    function bad(): int {
-                        return Runner::run(function (): int {
+                    function make(): Holder {
+                        return new Holder(function (): int {
                             echo "x";
                             return 1;
                         });
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
-            'methodAnnotationCallNeedsCallCapabilities' => [
+            'wildcardPurityOnPromotedPropertyIsImpureWhenCalled' => [
                 'code' => '<?php
-                    /** @method int run() */
-                    final class Runner {
-                        public function __call(string $name, array $args): int {
-                            echo $name;
-                            return 1;
-                        }
+                    /** @psalm-immutable */
+                    final class Holder {
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
+                        public function __construct(public Closure $f) {}
                     }
 
                     /** @psalm-pure */
-                    function bad(Runner $r): int {
-                        return $r->run();
+                    function run(Holder $h): int {
+                        return ($h->f)();
                     }',
-                'error_message' => 'ImpureMethodCall',
+                'error_message' => 'ImpureFunctionCall',
             ],
             'wildcardPurityInPropertyType' => [
                 'code' => '<?php

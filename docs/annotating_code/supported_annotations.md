@@ -770,6 +770,27 @@ same template, which has no name of its own, so it never clashes with a template
 `_` can't be used outside `@param` types (`@return`, `@param-out`, `@psalm-assert`, `@var`, `@property`,
 `@template` bounds, ...), where it has no parameter to stand for.
 
+On a promoted constructor parameter, `_` makes `new` inherit the purity of the closure passed for
+it, as for any other parameter. The property, though, outlives that call, so its type uses the
+template's bound: here `$f` is an `impure-Closure(): int`, and calling it needs every capability,
+whatever closure was passed.
+
+```php
+<?php
+final class Holder {
+    /**
+     * @psalm-pure
+     * @param Closure[_](): int $f
+     */
+    public function __construct(public Closure $f) {}
+}
+```
+
+To keep the closure's purity in the property, make it a class purity template instead
+(`@psalm-purity-template P` on the class, `@param Closure[P](): int $f` on the constructor): then
+`new Holder(fn(): int => 1)` is a `Holder[pure]`, whose `$f` is a pure closure (see
+[`@psalm-purity-from-template`](#psalm-purity-from-template)).
+
 The parameters of an `@method` may use `_` too. A call to such a method needs what `__call` (or
 `__callStatic`) does, plus the capabilities of the closures passed for its `_` parameters:
 
