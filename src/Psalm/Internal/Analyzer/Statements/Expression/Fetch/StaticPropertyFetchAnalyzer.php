@@ -34,6 +34,7 @@ use Psalm\Type\Union;
 use function count;
 use function explode;
 use function in_array;
+use function ltrim;
 use function md5;
 use function strtolower;
 
@@ -479,7 +480,8 @@ final class StaticPropertyFetchAnalyzer
                     && $class_atomic_type->as_type !== null)
                 ? $class_atomic_type->as_type->value
                 : ($class_atomic_type instanceof TLiteralString
-                    ? $class_atomic_type->value
+                    // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
+                    ? ltrim($class_atomic_type->value, '\\')
                     : null);
 
             if ($string_type) {
