@@ -763,9 +763,12 @@ function apply(Closure $callback): int {
 }
 ```
 
-The closure may also be nested in the parameter's type, as in `@param list<Closure[_](int): int> $callbacks`;
-every `_` in one parameter's type stands for the same template. `_` can't be used outside `@param` types
-(`@return`, `@param-out`, `@psalm-assert`, `@var`, ...), where it has no parameter to stand for.
+The closure may also be nested in the parameter's type, as in `@param list<Closure[_](int): int> $callbacks`,
+and `_` can also be the purity of an iterable or generic object: `@param Traversable[_]<int, string> $items`
+(see [Iterators and generators](#iterators-and-generators)). Every `_` in one parameter's type stands for the
+same template, which has no name of its own, so it never clashes with a template declared in the docblock.
+`_` can't be used outside `@param` types (`@return`, `@param-out`, `@psalm-assert`, `@var`, `@property`,
+`@template` bounds, ...), where it has no parameter to stand for.
 
 ### Iterators and generators
 

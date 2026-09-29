@@ -624,6 +624,91 @@ final class PurityTemplateTest extends TestCase
                         }]);
                     }',
             ],
+            'wildcardPurityOnGenerics' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Traversable[_]<int, int> $t
+                     * @param iterable[_]<int, int> $i
+                     */
+                    function sum(Traversable $t, iterable $i): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        foreach ($i as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        return 1;
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return sum(gen(), [1]);
+                    }',
+            ],
+            'pureClosureFitsPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param pure-Closure(Closure[P](): int): int $f
+                     */
+                    function apply(Closure $f): int {
+                        return $f(fn(): int => 1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param pure-Closure(Closure[_](): int): int $f
+                     */
+                    function applyWildcard(Closure $f): int {
+                        return $f(fn(): int => 1);
+                    }',
+            ],
+            'wildcardPurityOnPromotedProperty' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @param Closure[_](): int $f */
+                        public function __construct(public Closure $f) {}
+                    }
+
+                    $h = new Holder(fn(): int => 1);
+                    $f = $h->f;',
+                'assertions' => [
+                    '$f' => 'impure-Closure():int',
+                ],
+            ],
+            'purityInMethodAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @method int run(Closure[P](): int $f)
+                     * @method int runIo(Closure[io](): int $f)
+                     * @method int runAll(list<Closure[_](): int> $fs)
+                     */
+                    final class Runner {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    $r = new Runner();
+                    $r->runIo(function (): int {
+                        echo "x";
+                        return 1;
+                    });
+                    $r->runAll([fn(): int => 1]);',
+            ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1635,6 +1720,64 @@ final class PurityTemplateTest extends TestCase
                         public function set(): void {}
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityOnGenericReturnType' => [
+                'code' => '<?php
+                    /** @return Traversable[_]<int, int> */
+                    function make(): Traversable {
+                        return new ArrayIterator([]);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInMagicProperty' => [
+                'code' => '<?php
+                    /** @property Closure[_](): int $f */
+                    final class Holder {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInMethodAnnotationReturn' => [
+                'code' => '<?php
+                    /** @method Closure[_](): int make() */
+                    final class Maker {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of Closure[_](): int
+                     * @param T $f
+                     */
+                    function apply(Closure $f): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityKeepsSameNamedTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template _fs <= read-globals
+                     * @param Closure[_fs](): int $g
+                     * @param list<Closure[_](): int> $fs
+                     * @psalm-purity-from-template _fs
+                     */
+                    function run(Closure $g, array $fs): int {
+                        return $g() + count($fs);
+                    }
+
+                    function useIo(): int {
+                        return run(function (): int {
+                            echo "x";
+                            return 1;
+                        }, []);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'wildcardPurityInPropertyType' => [
                 'code' => '<?php

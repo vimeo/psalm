@@ -146,6 +146,18 @@ final class AtomicTypeComparator
                 return true;
             }
 
+            // a capability set fits a purity template if every value of the template allows it,
+            // i.e. its lower bound does: `pure` fits `Closure[P]` for any P
+            if ($input_type_part instanceof TCapabilities
+                && $container_type_part instanceof TTemplateParam
+                && Capabilities::isPurityType($container_type_part->as)
+            ) {
+                return Capabilities::allows(
+                    self::getPurityTemplateLowerBound($codebase, $container_type_part),
+                    $input_type_part->capabilities,
+                );
+            }
+
             // a capability set is a subtype of every superset: pure fits anywhere, impure only in impure
             return $input_type_part instanceof TCapabilities
                 && $container_type_part instanceof TCapabilities
@@ -887,5 +899,21 @@ final class AtomicTypeComparator
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
         );
+    }
+
+    /**
+     * The capabilities every value of a purity template has: its lower bound
+     * (`@psalm-purity-template write-props <= C`), which only a class purity template can declare.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getPurityTemplateLowerBound(Codebase $codebase, TTemplateParam $template): int
+    {
+        if (!$codebase->classlike_storage_provider->has($template->defining_class)) {
+            return Capabilities::NONE;
+        }
+
+        return $codebase->classlike_storage_provider->get($template->defining_class)
+            ->template_lower_bounds[$template->param_name] ?? Capabilities::NONE;
     }
 }

@@ -110,9 +110,10 @@ trait CallableTrait
     /**
      * The `pure-`/`impure-` prefix or `[...]` purity suffix of the callable keyword.
      *
+     * @param ?string $purity the purity as it should be printed, if not by its id
      * @psalm-mutation-free
      */
-    private function getPurityString(): string
+    private function getPurityString(?string $purity = null): string
     {
         if ($this->hasFixedPurity()) {
             $capabilities = $this->getCapabilities();
@@ -126,7 +127,7 @@ trait CallableTrait
             }
         }
 
-        return $this->value . '[' . $this->purity->getId() . ']';
+        return $this->value . '[' . ($purity ?? $this->purity->getId()) . ']';
     }
 
     public function getParamString(): string
@@ -184,7 +185,9 @@ trait CallableTrait
             return $this->value;
         }
 
-        $prefix = $this->getPurityString();
+        $prefix = $this->getPurityString(
+            $this->purity->toNamespacedString($namespace, $aliased_classes, $this_class, false),
+        );
 
         $param_string = '';
         $return_type_string = '';

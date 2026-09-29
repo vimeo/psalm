@@ -27,6 +27,8 @@ use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
@@ -373,6 +375,14 @@ final class ClassLikeDocblockParser
             if ($info->sealed_methods === null) {
                 $info->sealed_methods = true;
             }
+            // the purity templates of the class, for `Closure[P]` in a signature: only their names
+            // matter here, the types are printed back into the docblock of a pseudo-method
+            $purity_template_map = [];
+
+            foreach ($info->purity_templates as $purity_template) {
+                $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
+            }
+
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -454,9 +464,9 @@ final class ClassLikeDocblockParser
                 $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);
                 $method_entry = (string) preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
-                // replace array bracket contents
+                // replace array bracket contents, but not the purity of a type (`Closure[pure]`)
                 $method_entry = (string) preg_replace(
-                    '/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/',
+                    '/(?<!\w)\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/',
                     '[]',
                     $method_entry,
                 );
@@ -470,7 +480,7 @@ final class ClassLikeDocblockParser
                         TypeTokenizer::getFullyQualifiedTokens(
                             $method_entry,
                             $aliases,
-                            null,
+                            $purity_template_map,
                         ),
                     );
 
@@ -494,6 +504,8 @@ final class ClassLikeDocblockParser
                         $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                             $method_tree->children[1],
                             $codebase,
+                            null,
+                            $purity_template_map,
                         )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
@@ -519,7 +531,12 @@ final class ClassLikeDocblockParser
 
                     if ($method_tree_child->children) {
                         try {
-                            $param_type = TypeParser::getTypeFromTree($method_tree_child->children[0], $codebase);
+                            $param_type = TypeParser::getTypeFromTree(
+                                $method_tree_child->children[0],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
                         } catch (Exception $e) {
                             throw new DocblockParseException(
                                 'Badly-formatted @method string ' . $method_entry . ' - ' . $e,

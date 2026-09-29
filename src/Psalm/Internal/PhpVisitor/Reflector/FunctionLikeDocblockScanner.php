@@ -298,7 +298,6 @@ final class FunctionLikeDocblockScanner
             $function_template_types,
             $type_aliases,
             $classlike_storage,
-            $cased_function_id,
         );
 
         foreach ($docblock_info->globals as $global) {
@@ -631,7 +630,6 @@ final class FunctionLikeDocblockScanner
         array $function_template_types,
         array $type_aliases,
         ?string $self_fqcln,
-        string $cased_function_id,
     ): ?array {
         $is_negation = false;
         $is_loose_equality = false;
@@ -704,13 +702,6 @@ final class FunctionLikeDocblockScanner
 
             return null;
         }
-
-        $namespaced_type = self::rejectPurityWildcard(
-            $namespaced_type,
-            $storage,
-            $cased_function_id,
-            new CodeLocation($file_scanner, $stmt, null, true),
-        );
 
         /** @psalm-suppress UnusedMethodCall */
         $namespaced_type->queueClassLikesForScanning(
@@ -869,6 +860,7 @@ final class FunctionLikeDocblockScanner
                     $function_template_types + $class_template_types,
                     $type_aliases,
                     true,
+                    true,
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -884,28 +876,16 @@ final class FunctionLikeDocblockScanner
                 // inherits its purity from this parameter, through a purity template of its own
                 $wildcard_template = PurityWildcard::templateName($param_name);
                 $defining_id = 'fn-' . strtolower($cased_method_id);
+                $wildcard_bound = new Union([new TCapabilities(Capabilities::ALL)]);
 
-                if (isset($storage->template_types[$wildcard_template])
-                    && !isset($storage->template_types[$wildcard_template][$defining_id])
-                ) {
-                    $storage->docblock_issues[] = new InvalidDocblock(
-                        'The template ' . $wildcard_template . ' clashes with the purity of $' . $param_name
-                        . ' in docblock for ' . $cased_method_id,
-                        $docblock_type_location,
-                    );
+                $storage->template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
+                $function_template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
 
-                    $new_param_type = PurityWildcard::strip($new_param_type);
-                } else {
-                    $wildcard_bound = new Union([new TCapabilities(Capabilities::ALL)]);
-                    $storage->template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
-                    $function_template_types[$wildcard_template] = [$defining_id => $wildcard_bound];
-
-                    if (!in_array($wildcard_template, $storage->purity_from_templates, true)) {
-                        $storage->purity_from_templates[] = $wildcard_template;
-                    }
-
-                    $new_param_type = PurityWildcard::bind($new_param_type, $wildcard_template, $defining_id);
+                if (!in_array($wildcard_template, $storage->purity_from_templates, true)) {
+                    $storage->purity_from_templates[] = $wildcard_template;
                 }
+
+                $new_param_type = PurityWildcard::bind($new_param_type, $wildcard_template, $defining_id);
             }
 
             $storage_param->has_docblock_type = true;
@@ -1082,13 +1062,6 @@ final class FunctionLikeDocblockScanner
                 $function_template_types + $class_template_types,
                 $type_aliases,
                 true,
-            );
-
-            $storage->return_type = self::rejectPurityWildcard(
-                $storage->return_type,
-                $storage,
-                $cased_function_id,
-                new CodeLocation($file_scanner, $stmt, null, true),
             );
 
             if ($storage instanceof MethodStorage) {
@@ -1322,7 +1295,6 @@ final class FunctionLikeDocblockScanner
         array $function_template_types,
         array $type_aliases,
         ?ClassLikeStorage $classlike_storage,
-        string $cased_function_id,
     ): void {
         if ($docblock_info->assertions) {
             $storage->assertions = [];
@@ -1340,7 +1312,6 @@ final class FunctionLikeDocblockScanner
                     $function_template_types,
                     $type_aliases,
                     $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
-                    $cased_function_id,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1388,7 +1359,6 @@ final class FunctionLikeDocblockScanner
                     $function_template_types,
                     $type_aliases,
                     $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
-                    $cased_function_id,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1436,7 +1406,6 @@ final class FunctionLikeDocblockScanner
                     $function_template_types,
                     $type_aliases,
                     $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
-                    $cased_function_id,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1543,16 +1512,11 @@ final class FunctionLikeDocblockScanner
                     $function_template_types,
                 );
 
-                $storage->self_out_type = self::rejectPurityWildcard(
-                    TypeParser::parseTokens(
-                        array_values($fixed_type_tokens),
-                        null,
-                        $function_template_types + $class_template_types,
-                        $type_aliases,
-                    ),
-                    $storage,
-                    $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
+                $storage->self_out_type = TypeParser::parseTokens(
+                    array_values($fixed_type_tokens),
+                    null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -1564,22 +1528,17 @@ final class FunctionLikeDocblockScanner
 
         if ($docblock_info->if_this_is) {
             try {
-                $storage->if_this_is_type = self::rejectPurityWildcard(
-                    TypeParser::parseTokens(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $docblock_info->if_this_is['type'],
-                            $aliases,
-                            $function_template_types + $class_template_types,
-                            $type_aliases,
-                            $classlike_storage ? $classlike_storage->name : null,
-                        ),
-                        null,
+                $storage->if_this_is_type = TypeParser::parseTokens(
+                    TypeTokenizer::getFullyQualifiedTokens(
+                        $docblock_info->if_this_is['type'],
+                        $aliases,
                         $function_template_types + $class_template_types,
                         $type_aliases,
+                        $classlike_storage ? $classlike_storage->name : null,
                     ),
-                    $storage,
-                    $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
+                    null,
+                    $function_template_types + $class_template_types,
+                    $type_aliases,
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -1590,28 +1549,6 @@ final class FunctionLikeDocblockScanner
         }
 
         return $function_template_types;
-    }
-
-    /**
-     * The `_` purity stands for the purity of a parameter only in that parameter's `@param` type:
-     * anywhere else it is reported and replaced by `impure`.
-     */
-    private static function rejectPurityWildcard(
-        Union $type,
-        FunctionLikeStorage $storage,
-        string $cased_function_id,
-        CodeLocation $location,
-    ): Union {
-        if (!PurityWildcard::contains($type)) {
-            return $type;
-        }
-
-        $storage->docblock_issues[] = new InvalidDocblock(
-            'The purity `_` can only be used in the type of a parameter, in docblock for ' . $cased_function_id,
-            $location,
-        );
-
-        return PurityWildcard::strip($type);
     }
 
     /**
@@ -1659,13 +1596,6 @@ final class FunctionLikeDocblockScanner
 
             return;
         }
-
-        $param_type = self::rejectPurityWildcard(
-            $param_type,
-            $storage,
-            $cased_function_id,
-            new CodeLocation($file_scanner, $stmt, null, true),
-        );
 
         /** @psalm-suppress UnusedMethodCall */
         $param_type->queueClassLikesForScanning(

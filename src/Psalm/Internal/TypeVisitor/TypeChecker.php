@@ -14,14 +14,12 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
-use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -379,19 +377,6 @@ final class TypeChecker extends TypeVisitor
 
     public function checkTemplateParam(TTemplateParam $atomic): void
     {
-        // an unbound `_` purity (`Closure[_]` outside a parameter type) belongs to no class-like
-        if ($atomic->param_name === PurityWildcard::NAME && $atomic->defining_class === '') {
-            IssueBuffer::maybeAdd(
-                new InvalidDocblock(
-                    'The purity `_` can only be used on a closure or callable that is the type of a parameter',
-                    $this->code_location,
-                ),
-                $this->suppressed_issues,
-            );
-
-            return;
-        }
-
         if ($this->prevent_template_covariance
             && !str_starts_with($atomic->defining_class, 'fn-')
             && $atomic->defining_class !== 'class-string-map'
