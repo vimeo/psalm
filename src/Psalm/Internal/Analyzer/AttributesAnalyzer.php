@@ -313,8 +313,9 @@ final class AttributesAnalyzer
     }
 
     /**
-     * @param iterable<AttributeGroup> $attribute_groups
+     * @param iterable[_]<AttributeGroup> $attribute_groups
      * @return Generator<int, Attribute>
+     * @psalm-capabilities read-props
      */
     private static function iterateAttributeNodes(iterable $attribute_groups): Generator
     {
