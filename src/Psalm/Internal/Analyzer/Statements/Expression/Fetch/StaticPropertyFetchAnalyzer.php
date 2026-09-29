@@ -480,7 +480,11 @@ final class StaticPropertyFetchAnalyzer
         foreach ($stmt_class_type->getAtomicTypes() as $class_atomic_type) {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $fq_class_names = self::getClassNamesFromClassStringType($class_atomic_type);
+            // `$object::$prop` is a static fetch on the object's class, so instance-only rules
+            // (dynamic properties, __get, @property) don't apply
+            $fq_class_names = $class_atomic_type instanceof TNamedObject
+                ? [$class_atomic_type->value]
+                : self::getClassNamesFromClassStringType($class_atomic_type);
 
             if ($fq_class_names !== null) {
                 $fake_stmt_type = null;
