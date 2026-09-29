@@ -189,7 +189,7 @@ final class InstancePropertyFetchAnalyzer
             // we can only be sure that the variable is possibly null if we know the var_id
             if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
                 // the null of a `?->` short-circuit is added to the result below, it is not a fetch on null
-                if (!$receiver_state->hidesNullReports()) {
+                if ($receiver_state !== NullsafeChainState::ShortCircuit) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
                             rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
@@ -199,7 +199,7 @@ final class InstancePropertyFetchAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
-            } elseif (!$receiver_state->carriesNull()) {
+            } elseif ($receiver_state === NullsafeChainState::None) {
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
             }
         }
@@ -261,11 +261,11 @@ final class InstancePropertyFetchAnalyzer
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-        if ($receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable()) {
+        $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
+
+        if ($short_circuit_null) {
             $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
         }
-
-        $short_circuit_null = $receiver_state->carriesNull() && $stmt_var_type->isNullable();
 
         // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result
         if ($stmt_var_type->isNullable()

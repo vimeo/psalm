@@ -236,7 +236,7 @@ final class ArrayFetchAnalyzer
 
             $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
 
-            if ($chain_state->hidesNullReports()) {
+            if ($chain_state === NullsafeChainState::ShortCircuit) {
                 // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
                 $non_null_var_type = $stmt_var_type->getBuilder();
                 $non_null_var_type->removeType('null');
@@ -364,10 +364,7 @@ final class ArrayFetchAnalyzer
 
         if ($chain_state !== NullsafeChainState::None) {
             $chain_state->afterLink($own_nullable)->markOn($stmt);
-
-            if ($chain_state->carriesNull()) {
-                $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
-            }
+            $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {

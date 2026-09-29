@@ -1336,19 +1336,24 @@ final class MethodCallTest extends TestCase
                     interface A {
                         public function b(): B;
                     }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
 
-                    function f(?A $a): void {
-                        $empty = empty($a?->b()->prop);
-                        $emptyFlag = empty($a?->b()->flag);
-                        $coalesced = $a?->b()->prop?->c() ?? 0;
-                        $coalescedFlag = $a?->b()->flag ?? true;
-                        echo $empty, $emptyFlag, $coalesced, $coalescedFlag;
-                    }',
-                'assertions' => [],
+                    $empty = empty(aOrNull()?->b()->prop);
+                    $emptyFlag = empty(aOrNull()?->b()->flag);
+                    $coalesced = aOrNull()?->b()->prop?->c() ?? 0;
+                    $coalescedFlag = aOrNull()?->b()->flag ?? true;',
+                'assertions' => [
+                    '$empty' => 'bool',
+                    '$emptyFlag' => 'bool',
+                    '$coalesced' => 'int',
+                    '$coalescedFlag' => 'bool',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
-            'nullsafeOnNonNullableReceiverDoesNotReportPossiblyNullReference' => [
+            'nullsafeOnNonNullableReceiverNeverShortCircuits' => [
                 'code' => '<?php
                     interface B {
                         public function c(): int;
@@ -1364,12 +1369,104 @@ final class MethodCallTest extends TestCase
                             return $this?->b()->c();
                         }
                     }
+                    function a(): A {
+                        throw new Exception();
+                    }
 
-                    function f(A $a): int {
-                        return $a?->b()->c();
-                    }',
-                'assertions' => [],
+                    $a = a();
+                    $viaVariable = $a?->b();
+                    $viaVariableCall = $a?->b()->c();
+                    $viaCall = a()?->b()->c();',
+                'assertions' => [
+                    '$viaVariable' => 'B',
+                    '$viaVariableCall' => 'int',
+                    '$viaCall' => 'int',
+                ],
                 'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeConsecutiveHopsOnNonNullableReceiver' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        public C $prop { get; }
+                        public function next(): self;
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+                    function guarded(?A $a): int {
+                        if ($a === null) {
+                            return 0;
+                        }
+
+                        return $a?->b()?->next()->c();
+                    }
+
+                    $a = a();
+                    $methods = $a?->b()?->next()->c();
+                    $property = $a?->b()?->prop->c();',
+                'assertions' => [
+                    '$methods' => 'int',
+                    '$property' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.4',
+            ],
+            'nullsafeOnNonNullableReceiverKeepsLaterPropertyFetchesClean' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public C $prop;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+
+                    $key = "prop";
+                    $named = a()?->b()->prop->c() ?? 0;
+                    $dynamic = a()?->b()->{$key}->c();',
+                'assertions' => [
+                    '$named' => 'int',
+                    '$dynamic' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainThroughStaticPropertyFetch' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public static C $item;
+                        abstract public function next(): self;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $fetched = aOrNull()?->b()->next()::$item->c();
+                    $coalesced = aOrNull()?->b()->next()::$item->c() ?? 0;',
+                'assertions' => [
+                    '$fetched' => 'int|null',
+                    '$coalesced' => 'int',
+                ],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainNormalizesNullWithNever' => [

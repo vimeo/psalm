@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -32,6 +33,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
@@ -52,6 +54,8 @@ final class StaticPropertyFetchAnalyzer
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         if (!$stmt->class instanceof PhpParser\Node\Name) {
             self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
             return true;
@@ -471,6 +475,8 @@ final class StaticPropertyFetchAnalyzer
 
         $stmt_class_type = $statements_analyzer->node_data->getType($stmt_class) ?? Type::getMixed();
 
+        $class_state = $stmt_class_type->isNullable() ? NullsafeChainState::of($stmt_class) : NullsafeChainState::None;
+
         $old_data_provider = $statements_analyzer->node_data;
 
         $stmt_type = null;
@@ -478,6 +484,11 @@ final class StaticPropertyFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($stmt_class_type->getAtomicTypes() as $class_atomic_type) {
+            // the null of a `?->` short-circuit is not a class to fetch from, it is added to the result below
+            if ($class_atomic_type instanceof TNull && $class_state === NullsafeChainState::ShortCircuit) {
+                continue;
+            }
+
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
             $fq_class_names = self::getClassNamesFromClassStringType($class_atomic_type);
@@ -555,7 +566,13 @@ final class StaticPropertyFetchAnalyzer
             $statements_analyzer->node_data = $old_data_provider;
         }
 
-        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        if ($class_state !== NullsafeChainState::None) {
+            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+
+            $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+        }
+
+        $statements_analyzer->node_data->setType($stmt, $stmt_type ?? Type::getMixed());
     }
 
     /**
