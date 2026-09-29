@@ -379,6 +379,36 @@ final class PurityTemplateTest extends TestCase
                         return escape(fn(int $i): string => (string) $i)(1);
                     }',
             ],
+            'functionLikeInheritingThePurityOfAParamItCallsAndReturnsAClosureCalling' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     * @psalm-purity-from-template P
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        [$first, $rest] = both(fn(int $i): string => (string) $i);
+                        return $first . $rest(1);
+                    }',
+            ],
+            'impureFunctionLikeCallingAParamAndReturningAClosureCallingIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }',
+            ],
             'nestedClosurePassingOnOuterPurityTemplateCarriesIt' => [
                 'code' => '<?php
                     /**
@@ -1693,6 +1723,38 @@ final class PurityTemplateTest extends TestCase
                     function callsIt(Closure $f): int {
                         $g = fn(): int => $f();
                         return $g();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'pureFunctionLikeCallingAParamAndReturningAClosureCallingItPaysForItsOwnCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'functionLikeInheritingThePurityOfAParamItCallsAndReturnsAClosureCallingIsChargedForItsOwnCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     * @psalm-purity-from-template P
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return both(function (int $i): string { echo $i; return (string) $i; })[0];
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
