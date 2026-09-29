@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Internal\TypeVisitor\PurityWildcardBinder;
 use Psalm\Internal\TypeVisitor\PurityWildcardFinder;
-use Psalm\Internal\TypeVisitor\PurityWildcardStripper;
 use Psalm\Storage\Capabilities;
-use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 /**
- * The `_` purity of a closure type in a parameter (`Closure[_](): int $f`): shorthand for a
- * purity template of the function-like, which inherits its purity from that parameter, like
- * Hack's `(function()[_]: int) $f` with `[ctx $f]`.
+ * The `_` purity of a closure type in a parameter (`Closure[_](): int $f`, or nested:
+ * `array<Closure[_](): int> $fs`): shorthand for a purity template of the function-like, which
+ * inherits its purity from that parameter, like Hack's `(function()[_]: int) $f` with `[ctx $f]`.
  *
  * @internal
  */
@@ -66,28 +64,9 @@ final class PurityWildcard
     }
 
     /**
-     * Whether a closure or callable in the type has the `_` purity.
-     *
-     * @psalm-pure
+     * Whether a closure or callable anywhere in the type has the `_` purity.
      */
     public static function contains(Union $type): bool
-    {
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Whether a closure or callable anywhere in the type, not only at the top level, has the `_`
-     * purity.
-     */
-    public static function containsAnywhere(Union $type): bool
     {
         $finder = new PurityWildcardFinder();
         $finder->traverse($type);
@@ -96,40 +75,29 @@ final class PurityWildcard
     }
 
     /**
-     * The type with every `_` purity at any depth replaced by `impure`, where `_` has no parameter
-     * to stand for (`_` is only bound when the closure or callable is the parameter's type).
-     */
-    public static function stripAnywhere(Union $type): Union
-    {
-        (new PurityWildcardStripper())->traverse($type);
-
-        return $type;
-    }
-
-    /**
-     * The type with every `_` purity replaced by the template $template (already declared on
-     * the function-like $defining_id).
-     *
-     * @psalm-pure
+     * The type with every `_` purity, at any depth, replaced by the template $template (already
+     * declared on the function-like $defining_id).
      */
     public static function bind(Union $type, string $template, string $defining_id): Union
     {
-        $template_type = new Union([
+        return self::replace($type, new Union([
             new TTemplateParam($template, new Union([new TCapabilities(Capabilities::ALL)]), $defining_id),
-        ]);
+        ]));
+    }
 
-        $atomics = [];
+    /**
+     * The type with every `_` purity, at any depth, replaced by `impure`, where `_` has no
+     * parameter to stand for.
+     */
+    public static function strip(Union $type): Union
+    {
+        return self::replace($type, new Union([new TCapabilities(Capabilities::ALL)]));
+    }
 
-        foreach ($type->getAtomicTypes() as $key => $atomic) {
-            if (($atomic instanceof TClosure || $atomic instanceof TCallable)
-                && self::isPlaceholder($atomic->purity)
-            ) {
-                $atomic = $atomic->setPurity($template_type);
-            }
+    private static function replace(Union $type, Union $purity): Union
+    {
+        (new PurityWildcardBinder($purity))->traverse($type);
 
-            $atomics[$key] = $atomic;
-        }
-
-        return $type->setTypes($atomics);
+        return $type;
     }
 }

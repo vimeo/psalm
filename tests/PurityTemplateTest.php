@@ -564,6 +564,66 @@ final class PurityTemplateTest extends TestCase
                         return apply(fn(): int => 1, fn(): int => 2);
                     }',
             ],
+            'wildcardPurityNested' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<Closure[_](int): int> $fs
+                     * @return list<int>
+                     */
+                    function runAll(array $fs): array {
+                        $r = [];
+                        foreach ($fs as $f) {
+                            $r[] = $f(1);
+                        }
+                        return $r;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{Closure[_](): int, ?callable[_](): int} $fs
+                     */
+                    function runPair(array $fs): int {
+                        return $fs[0]() + ($fs[1] !== null ? $fs[1]() : 0);
+                    }
+
+                    abstract class Runner {
+                        /**
+                         * @psalm-mutation-free
+                         * @param list<Closure[_](int): int> $fs
+                         */
+                        public function runAll(array $fs): int {
+                            $sum = 0;
+                            foreach ($fs as $f) {
+                                $sum += $f(1);
+                            }
+                            return $sum;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return list<int>
+                     */
+                    function usePure(Runner $r): array {
+                        return [
+                            ...runAll([fn(int $x): int => $x + 1]),
+                            runPair([fn(): int => 1, fn(): int => 2]),
+                            $r->runAll([fn(int $x): int => $x]),
+                        ];
+                    }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @return list<int>
+                     */
+                    function useIo(): array {
+                        return runAll([function (int $x): int {
+                            echo "x";
+                            return $x;
+                        }]);
+                    }',
+            ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
                     abstract class Base {
@@ -1512,29 +1572,67 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'wildcardPurityNestedInMethodParam' => [
+            'wildcardPurityNestedPropagatesImpureClosure' => [
                 'code' => '<?php
-                    abstract class Runner {
-                        /** @param array<Closure[_](int): int> $fs */
-                        public function runAll(array $fs): int {
-                            return count($fs);
+                    /**
+                     * @psalm-pure
+                     * @param array<Closure[_](int): int> $fs
+                     * @return list<int>
+                     */
+                    function runAll(array $fs): array {
+                        $r = [];
+                        foreach ($fs as $f) {
+                            $r[] = $f(1);
                         }
+                        return $r;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return list<int>
+                     */
+                    function bad(): array {
+                        return runAll([function (int $x): int {
+                            echo "x";
+                            return $x;
+                        }]);
                     }',
-                'error_message' => 'InvalidDocblock',
-            ],
-            'wildcardPurityInParamOfClosureParam' => [
-                'code' => '<?php
-                    /** @param Closure(Closure[_](): int): int $f */
-                    function apply(Closure $f): int {
-                        return $f(fn(): int => 1);
-                    }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'ImpureFunctionCall',
             ],
             'wildcardPurityNestedInReturnType' => [
                 'code' => '<?php
                     /** @return list<Closure[_](): int> */
                     function make(): array {
                         return [fn(): int => 1];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInParamOut' => [
+                'code' => '<?php
+                    /**
+                     * @param-out Closure[_](): int $f
+                     */
+                    function make(?Closure &$f): void {
+                        $f = fn(): int => 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert Closure[_](): int $f */
+                    function assertClosure(?Closure $f): void {
+                        if (!$f instanceof Closure) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInSelfOut' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @psalm-self-out Box<Closure[_](): int> */
+                        public function set(): void {}
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
