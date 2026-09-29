@@ -20,6 +20,7 @@ use function count;
  * Algorithmica 1.1 (1986): 251-266.
  *
  * @internal
+ * @psalm-suppress MissingImmutableAnnotation the statement differs extending it read the AST they compare
  */
 abstract class AstDiffer
 {
