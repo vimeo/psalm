@@ -33,6 +33,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -362,6 +363,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         $stmt_type = $result->return_type;
+
+        // `$a?->b->c()` short-circuits the whole chain, so null from the nullsafe hop survives the call
+        if ($stmt_type
+            && $class_type->isNullable()
+            && !$stmt_type->isNullable()
+            && self::hasNullsafe($stmt->var)
+        ) {
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+        }
 
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);

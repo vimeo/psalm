@@ -1207,6 +1207,45 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeShortCircuitKeepsNullThroughMethodCalls' => [
+                'code' => '<?php
+                    final class Bar {
+                        public function getId(): int {
+                            return 1;
+                        }
+                        public function getTags(): array {
+                            return [];
+                        }
+                    }
+                    final class Foo {
+                        public Bar $bar;
+                        public function __construct() {
+                            $this->bar = new Bar();
+                        }
+                        public function getBar(): Bar {
+                            return $this->bar;
+                        }
+                    }
+                    function fooOrNull(): ?Foo {
+                        return rand(0, 1) ? new Foo() : null;
+                    }
+                    $foo = fooOrNull();
+
+                    $a = fooOrNull()?->bar->getId();
+                    $b = fooOrNull()?->getBar()->getId();
+                    $c = $foo?->bar->getId();
+                    $d = fooOrNull()?->getBar()->getTags() ?? [];
+                    $e = is_int($a) ? $a : null;',
+                'assertions' => [
+                    '$a' => 'int|null',
+                    '$b' => 'int|null',
+                    '$c' => 'int|null',
+                    '$d' => 'array<array-key, mixed>',
+                    '$e' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
                     /** @psalm-no-seal-methods */
