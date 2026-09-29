@@ -95,12 +95,20 @@ final class NullsafeAnalyzer
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
-        // every null of the result is the short-circuit unless the call/fetch on the non-null receiver is nullable too
-        $chain_state = $var_type && $var_type->isNullable()
-            ? (($statements_analyzer->node_data->getType($ternary->else)?->isNullable() ?? false)
-                ? NullsafeChainState::ShortCircuitAndNull
-                : NullsafeChainState::ShortCircuit)
-            : NullsafeChainState::None;
+        // the null branch is the short-circuit, so any null the call/fetch on the non-null receiver adds is a real one
+        $chain_state = NullsafeChainState::None;
+
+        if ($ternary_type && $ternary_type->isNullable()) {
+            $own_nullable = $statements_analyzer->node_data->getType($ternary->else)?->isNullable() ?? false;
+
+            if ($var_type && !$var_type->isNullable()) {
+                $chain_state = $own_nullable ? NullsafeChainState::None : NullsafeChainState::NeverShortCircuits;
+            } else {
+                $chain_state = $own_nullable
+                    ? NullsafeChainState::ShortCircuitAndNull
+                    : NullsafeChainState::ShortCircuit;
+            }
+        }
 
         $statements_analyzer->node_data = $old_node_data;
 

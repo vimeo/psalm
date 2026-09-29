@@ -151,7 +151,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
-            && $receiver_state !== NullsafeChainState::ShortCircuit
+            && !$receiver_state->hidesNullReports()
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
@@ -372,7 +372,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if ($receiver_state !== NullsafeChainState::None && $class_type->isNullable()) {
             $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
 
-            if ($stmt_type && !$stmt_type->isNullable()) {
+            if ($receiver_state->carriesNull() && $stmt_type && !$stmt_type->isNullable()) {
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
             }
         }

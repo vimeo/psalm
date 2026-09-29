@@ -29,6 +29,12 @@ enum NullsafeChainState
     /** A `?->` short-circuit may have happened, and the node's type has other nulls too. */
     case ShortCircuitAndNull;
 
+    /**
+     * `?->` on a receiver that is never null: nothing short-circuits, the null in the node's type is spurious
+     * and is neither reported nor carried on to later links.
+     */
+    case NeverShortCircuits;
+
     private const ATTRIBUTE = 'psalm-nullsafe-chain';
 
     public static function of(Expr $node): self
@@ -45,16 +51,32 @@ enum NullsafeChainState
     }
 
     /**
+     * Whether the null in a receiver in this state is not worth a PossiblyNull* report on the next link.
+     */
+    public function hidesNullReports(): bool
+    {
+        return $this === self::ShortCircuit || $this === self::NeverShortCircuits;
+    }
+
+    /**
+     * Whether the next link has to add the short-circuit null to its own result.
+     */
+    public function carriesNull(): bool
+    {
+        return $this === self::ShortCircuit || $this === self::ShortCircuitAndNull;
+    }
+
+    /**
      * The state of a link (method call, property/array fetch, static call) whose receiver is in this state.
      *
      * @param bool $own_nullable whether the link's own result, analysed on the non-null receiver parts, is nullable
      */
     public function afterLink(bool $own_nullable): self
     {
-        if ($this === self::None) {
-            return self::None;
-        }
-
-        return $own_nullable ? self::ShortCircuitAndNull : $this;
+        return match ($this) {
+            self::None => self::None,
+            self::NeverShortCircuits => $own_nullable ? self::None : $this,
+            self::ShortCircuit, self::ShortCircuitAndNull => $own_nullable ? self::ShortCircuitAndNull : $this,
+        };
     }
 }

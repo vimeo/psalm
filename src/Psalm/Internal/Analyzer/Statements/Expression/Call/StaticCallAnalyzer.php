@@ -240,7 +240,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
+                $lhs_type->ignore_nullable_issues || $class_state->hidesNullReports(),
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
@@ -253,7 +253,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
 
-            if ($stmt_type && !$stmt_type->isNullable()) {
+            if ($class_state->carriesNull() && $stmt_type && !$stmt_type->isNullable()) {
                 $statements_analyzer->node_data->setType(
                     $stmt,
                     Type::combineUnionTypes($stmt_type, Type::getNull()),

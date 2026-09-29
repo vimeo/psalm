@@ -1324,6 +1324,54 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nullsafeChainKeepsShortCircuitNullInsideIssetEmptyAndCoalesce' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        public C $prop { get; }
+                        public bool $flag { get; }
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+
+                    function f(?A $a): void {
+                        $empty = empty($a?->b()->prop);
+                        $emptyFlag = empty($a?->b()->flag);
+                        $coalesced = $a?->b()->prop?->c() ?? 0;
+                        $coalescedFlag = $a?->b()->flag ?? true;
+                        echo $empty, $emptyFlag, $coalesced, $coalescedFlag;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeOnNonNullableReceiverDoesNotReportPossiblyNullReference' => [
+                'code' => '<?php
+                    interface B {
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    final class Holder {
+                        public function b(): B {
+                            throw new Exception();
+                        }
+                        public function viaThis(): int {
+                            return $this?->b()->c();
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a?->b()->c();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainNormalizesNullWithNever' => [
                 'code' => '<?php
                     interface B {
@@ -2169,6 +2217,26 @@ final class MethodCallTest extends TestCase
                 'error_message' => 'UndefinedClass',
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsPossiblyUndefinedArrayElementInCoalesce' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        /** @return array{0?: C} */
+                        public function optionalItems(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+
+                    function f(?A $a): int {
+                        return $a?->b()->optionalItems()[0]->c() ?? 0;
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [
                 'code' => '<?php
