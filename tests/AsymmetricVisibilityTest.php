@@ -220,6 +220,65 @@ final class AsymmetricVisibilityTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'staticPrivateSetWrittenInsideClassOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        public private(set) static ?string $model = null;
+
+                        /** @var array<int, int> */
+                        public private(set) static array $list = [];
+
+                        public static function set(string $model): void {
+                            self::$model = $model;
+                            self::$list[] = 1;
+                            sort(self::$list);
+                            unset(self::$list[0]);
+                        }
+                    }
+
+                    A::set("b");
+                    echo A::$model ?? "";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'privateStaticInTraitPassedByReference' => [
+                'code' => '<?php
+                    trait Registry {
+                        /** @var list<int> */
+                        private static array $queue = [];
+
+                        public static function push(int $i): void {
+                            self::$queue[] = $i;
+                            sort(self::$queue);
+                        }
+                    }
+
+                    final class C { use Registry; }
+                    C::push(1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'staticProtectedSetWrittenFromChildOnPhp85' => [
+                'code' => '<?php
+                    abstract class A {
+                        public protected(set) static int $count = 0;
+                    }
+
+                    final class B extends A {
+                        public static function bump(): void {
+                            self::$count++;
+                            parent::$count += 2;
+                        }
+                    }
+
+                    B::bump();
+                    echo A::$count;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -416,14 +475,75 @@ final class AsymmetricVisibilityTest extends TestCase
                 'ignored_issues' => ['MissingPropertyType'],
                 'php_version' => '8.4',
             ],
-            'asymmetricVisibilityOnStaticProperty' => [
+            'asymmetricVisibilityOnStaticPropertyBeforePhp85' => [
                 'code' => '<?php
                     final class A {
                         public static private(set) int $foo = 1;
                     }',
-                'error_message' => 'ParseError',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - '
+                    . 'Asymmetric visibility on static properties is only available in PHP 8.5 and later, '
+                    . 'but A::$foo uses it',
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'staticPrivateSetWrittenFromOutsideOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        public private(set) static ?string $model = null;
+                    }
+
+                    A::$model = "b";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
+                    . 'Cannot modify private(set) property A::$model',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticProtectedSetIncrementFromOutsideOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        public protected(set) static int $count = 0;
+                    }
+
+                    A::$count++;',
+                'error_message' => 'InaccessibleProperty',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticPrivateSetArrayPushFromOutsideOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public private(set) static array $list = [];
+                    }
+
+                    A::$list[] = 1;',
+                'error_message' => 'InaccessibleProperty',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticPrivateSetPassedByReferenceFromOutsideOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public private(set) static array $list = [];
+                    }
+
+                    sort(A::$list);',
+                'error_message' => 'InaccessibleProperty',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'staticPrivateSetUnsetElementFromOutsideOnPhp85' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<int, int> */
+                        public private(set) static array $list = [];
+                    }
+
+                    unset(A::$list[0]);',
+                'error_message' => 'InaccessibleProperty',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
             'setVisibilityWiderThanGetVisibility' => [
                 'code' => '<?php

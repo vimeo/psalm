@@ -1,7 +1,7 @@
 <?php
 namespace {
     /**
-     * @template T of object
+     * @template-covariant T as object
      */
     class ReflectionClass implements Reflector {
         /**
