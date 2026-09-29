@@ -693,7 +693,7 @@ final class PurityTemplateTest extends TestCase
 
                     $f = make()->f;',
                 'assertions' => [
-                    '$f' => 'impure-Closure():int',
+                    '$f' => 'Closure[impure]():int',
                 ],
             ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
@@ -1010,7 +1010,7 @@ final class PurityTemplateTest extends TestCase
                     $apply = apply(...);
                     $r = $apply(fn(int $x): int => $x);',
                 'assertions' => [
-                    '$apply' => 'impure-Closure(impure-Closure(int):int):int',
+                    '$apply' => 'Closure[impure](Closure[impure](int):int):int',
                 ],
             ],
             'splWrapperIteratorsInheritTheirPurity' => [

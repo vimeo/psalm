@@ -840,7 +840,7 @@ final class ReturnTypeTest extends TestCase
                     $res = reflexive(fn(int $a, int $b): bool => $a === $b);
                 ',
                 'assertions' => [
-                    '$res' => 'impure-Closure(int):bool',
+                    '$res' => 'Closure[impure](int):bool',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '7.4',
@@ -1769,7 +1769,7 @@ final class ReturnTypeTest extends TestCase
                         return 1;
                     };
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'pure-Closure(iterable<int, T:fn-map as mixed>):1\' does not match the declared return type \'impure-callable(iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - The inferred type \'Closure[pure](iterable<int, T:fn-map as mixed>):1\' does not match the declared return type \'callable[impure](iterable<int, T:fn-map as mixed>):iterable<int, U:fn-map as mixed>\' for map',
             ],
             'cannotInferReturnClosureWithDifferentTypes' => [
                 'code' => '<?php
@@ -1781,7 +1781,7 @@ final class ReturnTypeTest extends TestCase
                 function map(): callable {
                     return function(B $v): void {};
                 }',
-                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'pure-Closure(B):void\' does not match the declared return type \'impure-callable(A):void\' for map',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - The inferred type \'Closure[pure](B):void\' does not match the declared return type \'callable[impure](A):void\' for map',
             ],
             'compareTKeyedArrayToAlwaysFilledArray' => [
                 'code' => '<?php

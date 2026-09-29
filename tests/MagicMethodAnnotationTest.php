@@ -286,7 +286,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     $e = Child::getStatic();
                     $f = Child::getInstance();',
                 'assertions' => [
-                    '$a' => 'pure-Closure(int):string',
+                    '$a' => 'Closure[pure](int):string',
                     '$b' => 'list<int>',
                     '$c' => 'array{a: int, b: string}',
                     '$d' => 'int|string',
@@ -402,7 +402,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'impure-callable():string',
+                    '$e' => 'callable[impure]():string',
                 ],
             ],
             'validSimpleAnnotationsWithStatic' => [
@@ -443,7 +443,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'impure-callable():string',
+                    '$e' => 'callable[impure]():string',
                     '$f' => 'Child',
                 ],
             ],
