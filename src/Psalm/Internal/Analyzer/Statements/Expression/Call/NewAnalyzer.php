@@ -72,6 +72,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
+use function ltrim;
 use function md5;
 use function preg_match;
 use function reset;
@@ -825,7 +826,8 @@ final class NewAnalyzer extends CallAnalyzer
         $has_single_class = $stmt_class_type->isSingleStringLiteral();
 
         if ($has_single_class) {
-            $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
+            // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
+            $fq_class_name = ltrim($stmt_class_type->getSingleStringLiteral()->value, '\\');
         } else {
             if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 && $stmt_class_type->parent_nodes
