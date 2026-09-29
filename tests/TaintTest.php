@@ -1148,6 +1148,15 @@ final class TaintTest extends TestCase
                     $seconds = my_escaping_function_for_seconds($_GET["seconds"]);
                     sleep($seconds);',
             ],
+            'pseudoMethodOfInterface' => [
+                'code' => '<?php
+                    /** @method string label(string $s) */
+                    interface Labeller {}
+
+                    function f(Labeller $l): string {
+                        return $l->label("a");
+                    }',
+            ],
             'specializeInferredPureFunction' => [
                 'code' => '<?php
                     function id(string $s): string {

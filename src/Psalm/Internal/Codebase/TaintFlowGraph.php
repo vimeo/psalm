@@ -193,7 +193,11 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         if ($storage instanceof MethodStorage) {
-            if ($storage->cased_name === '__construct' || $storage->defining_fqcln === null) {
+            // `@method` pseudo-methods have no defining class, nor a body whose purity could be inferred
+            if ($storage->cased_name === '__construct'
+                || $storage->defining_fqcln === null
+                || $storage->defining_fqcln === ''
+            ) {
                 return false;
             }
 
