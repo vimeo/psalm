@@ -834,6 +834,128 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'wildcardPurityInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[_](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'wildcardPurityInOverrideOfPureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[pure](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[_](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'wildcardPurityInOverrideOfNullableCallableParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param callable(int): bool|null $f */
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(1) ? 1 : 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param callable[_](int): bool|null $f */
+                        #[Override]
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(2) ? 1 : 0;
+                        }
+                    }',
+            ],
+            'nestedWildcardPurityInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param list<Closure(int): int> $gs */
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param list<Closure[_](int): int> $gs */
+                        #[Override]
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }',
+            ],
+            'wildcardPurityOnGenericInOverrideOfImpureGenericParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Traversable<int, int> $t */
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Traversable[_]<int, int> $t */
+                        #[Override]
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }',
+            ],
+            'purityTemplateInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /**
+                         * @psalm-purity-template P
+                         * @param Closure[P](int): int $g
+                         */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'impureClosureParamInOverrideOfWildcardOne' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[_](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure(int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
             'classPurityTemplateLowerBound' => [
                 'code' => '<?php
                     final class Box {
@@ -1186,6 +1308,45 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'pureClosureParamInOverrideOfWildcardOneIsComparedWithTheWildcardsBound' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[_](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:12:53 - Argument 1 of Child::run has the more specific type \'pure-Closure(int):int\', expecting \'impure-Closure(int):int\' as defined by Base::run',
+            ],
+            'pureClosureParamInOverrideOfPurityTemplateOneIsComparedWithTheTemplatesBound' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /**
+                         * @psalm-purity-template P
+                         * @param Closure[P](int): int $g
+                         */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:15:53 - Argument 1 of Child::run has the more specific type \'pure-Closure(int):int\', expecting \'impure-Closure(int):int\' as defined by Base::run',
+            ],
             'callOfTypeTemplateBoundToClosureChecksArguments' => [
                 'code' => '<?php
                     /**
