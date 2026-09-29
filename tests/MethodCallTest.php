@@ -1246,6 +1246,37 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeShortCircuitKeepsNullThroughArrayAccessAndStaticCalls' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        /** @return array{C} */
+                        public function items(): array;
+                        public function next(): self;
+                        public static function done(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $x = aOrNull()?->b()->items()[0]->c();
+                    $y = aOrNull()?->b()->next()::done();
+                    $z = aOrNull()?->b()::done();
+                    $w = aOrNull()?->b()->items()[0]->c() ?? 0;',
+                'assertions' => [
+                    '$x' => 'int|null',
+                    '$y' => 'int|null',
+                    '$z' => 'int|null',
+                    '$w' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
                     /** @psalm-no-seal-methods */

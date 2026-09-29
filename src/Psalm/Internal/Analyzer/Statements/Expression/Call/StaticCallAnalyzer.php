@@ -27,6 +27,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -226,18 +227,34 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $moved_call = false;
         $has_existing_method = false;
 
+        // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
+        $nullsafe_short_circuit = $stmt->class instanceof PhpParser\Node\Expr
+            && $lhs_type->isNullable()
+            && MethodCallAnalyzer::hasNullsafe($stmt->class);
+
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues,
+                $lhs_type->ignore_nullable_issues || $nullsafe_short_circuit,
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
                 $template_result,
             );
+        }
+
+        if ($nullsafe_short_circuit) {
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            if ($stmt_type && !$stmt_type->isNullable()) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    $stmt_type->getBuilder()->addType(new TNull)->freeze(),
+                );
+            }
         }
 
         if (!$stmt->isFirstClassCallable() && !$has_existing_method) {

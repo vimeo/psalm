@@ -459,8 +459,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
     {
         if ($expr instanceof PhpParser\Node\Expr\MethodCall
             || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\ArrayDimFetch
         ) {
             return self::hasNullsafe($expr->var);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\StaticCall
+            || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return $expr->class instanceof PhpParser\Node\Expr && self::hasNullsafe($expr->class);
         }
 
         return $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
