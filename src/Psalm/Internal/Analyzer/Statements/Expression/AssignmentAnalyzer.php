@@ -573,9 +573,7 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
             );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
                 return false;
             }
