@@ -1385,6 +1385,49 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
                 'php_version' => '8.0',
             ],
+            'nullsafeOnReceiverThatMayBeNullKeepsTheShortCircuit' => [
+                'code' => '<?php
+                    interface B {
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+                    /**
+                     * @template T of A
+                     * @param T $a
+                     */
+                    function boundedTemplate(A $a): int {
+                        return $a?->b()->c();
+                    }
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @return mixed
+                     */
+                    function unboundedTemplate($a) {
+                        /** @psalm-suppress MixedMethodCall */
+                        return $a?->b()->c();
+                    }
+                    try {
+                        $a = a();
+                    } catch (Exception) {}
+                    $fromTry = $a?->b()->c();',
+                'assertions' => [
+                    '$fromTry' => 'int|null',
+                ],
+                'ignored_issues' => [
+                    'RedundantCondition',
+                    'TypeDoesNotContainNull',
+                    'RedundantConditionGivenDocblockType',
+                    'DocblockTypeContradiction',
+                    'PossiblyUndefinedGlobalVariable',
+                ],
+                'php_version' => '8.0',
+            ],
             'nullsafeConsecutiveHopsOnNonNullableReceiver' => [
                 'code' => '<?php
                     interface C {

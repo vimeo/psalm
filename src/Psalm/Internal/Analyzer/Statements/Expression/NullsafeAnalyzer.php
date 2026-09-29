@@ -16,6 +16,8 @@ use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function is_string;
 
@@ -100,12 +102,7 @@ final class NullsafeAnalyzer
         $statements_analyzer->node_data = $old_node_data;
 
         // a receiver that can't be null never short-circuits: the null branch is dead, so it is not in the result
-        if ($call_type
-            && $var_type
-            && !$var_type->isNullable()
-            && !$var_type->hasMixed()
-            && !$var_type->hasTemplate()
-        ) {
+        if ($call_type && $var_type && !self::canBeNull($var_type)) {
             NullsafeChainState::None->markOn($stmt);
             $statements_analyzer->node_data->setType($stmt, $call_type);
 
@@ -126,5 +123,28 @@ final class NullsafeAnalyzer
         $statements_analyzer->node_data->setType($stmt, $ternary_type ?? Type::getMixed());
 
         return true;
+    }
+
+    /**
+     * Whether the receiver of a `?->` may be null at runtime, including through mixed or nullable template bounds
+     * and a variable that may be undefined (an undefined variable reads as null).
+     */
+    private static function canBeNull(Union $type): bool
+    {
+        if ($type->isNullable()
+            || $type->hasMixed()
+            || $type->possibly_undefined
+            || $type->possibly_undefined_from_try
+        ) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TTemplateParam && self::canBeNull($atomic->as)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
