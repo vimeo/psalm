@@ -404,8 +404,13 @@ final class ClassLikeDocblockParser
                     $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
                 }
 
+                // `static` before the name is either the return type or, if the method has a
+                // return type after its parameters (`static foo(): int`), the modifier
+                $leading_static = false;
+
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     if (count($doc_line_parts) > 1) {
+                        $leading_static = $doc_line_parts[0] === 'static';
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
                         $has_return = true;
 
@@ -449,14 +454,14 @@ final class ClassLikeDocblockParser
 
                     if ($method_close_paren !== null) {
                         $after_paren = substr($method_entry, $method_close_paren + 1);
-                        // Optionally consume return type annotation after the closing paren
-                        if (preg_match('/^ ?(\: ?(\??[\\\\a-zA-Z0-9_]+))/', $after_paren, $return_matches)
-                            && isset($return_matches[0])
+                        $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+
+                        // Optionally consume return type annotation after the closing paren, which
+                        // is a whole type (`: Closure[pure](): int`), and may be followed by a description
+                        if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
+                            && isset($return_matches[1])
                         ) {
-                            $end = $method_close_paren + 1 + strlen($return_matches[0]);
-                            $method_entry = substr($method_entry, 0, $end);
-                        } else {
-                            $method_entry = substr($method_entry, 0, $method_close_paren + 1);
+                            $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
                         }
                     }
                 }
@@ -500,6 +505,12 @@ final class ClassLikeDocblockParser
                 }
 
                 if ($method_tree instanceof MethodWithReturnTypeTree) {
+                    if ($leading_static) {
+                        $is_static = true;
+                        $has_return = false;
+                        $docblock_lines = [];
+                    }
+
                     if (!$has_return) {
                         $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
                             $method_tree->children[1],

@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -17,10 +18,12 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualArrayItem;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -48,6 +51,7 @@ final class MissingMethodCallHandler
         ?Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result,
         ?Atomic $lhs_type_part,
+        ?string $lhs_var_id,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -134,6 +138,12 @@ final class MissingMethodCallHandler
                 !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
             );
 
+            // the pseudo-method's own templates are the purity templates of its `_` params
+            $template_result = new TemplateResult(
+                $pseudo_method_storage->template_types ?? [],
+                $found_generic_params ?? [],
+            );
+
             ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->getArgs(),
@@ -141,7 +151,9 @@ final class MissingMethodCallHandler
                 (string) $method_id,
                 true,
                 $context,
-                $found_generic_params ? new TemplateResult([], $found_generic_params) : null,
+                $template_result->template_types !== [] || $template_result->lower_bounds !== []
+                    ? $template_result
+                    : null,
             );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
@@ -151,9 +163,24 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage->params,
                 $pseudo_method_storage,
                 null,
-                new TemplateResult([], $found_generic_params ?: []),
+                $template_result,
                 new CodeLocation($statements_analyzer, $stmt),
                 $context,
+            );
+
+            self::analyzePseudoMethodPurity(
+                $statements_analyzer,
+                $codebase,
+                $stmt,
+                $lhs_var_id,
+                $method_id,
+                $pseudo_method_storage,
+                $class_storage,
+                $context,
+                $config,
+                $result,
+                $template_result,
+                $found_generic_params ?? [],
             );
 
             if ($pseudo_method_storage->return_type) {
@@ -242,6 +269,78 @@ final class MissingMethodCallHandler
                     $stmt->getAttributes(),
                 ),
             ],
+        );
+    }
+
+    /**
+     * A pseudo-method is implemented by `__call`: a call to it needs what `__call` does, and what
+     * its purity templates (`@method int run(Closure[_](): int $f)`) are bound to by the arguments.
+     * Without a return type, the call is then analysed as a call to `__call`, which is charged for
+     * `__call` itself.
+     *
+     * @param array<string, array<string, Union>> $found_generic_params
+     */
+    private static function analyzePseudoMethodPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        ?string $lhs_var_id,
+        MethodIdentifier $method_id,
+        MethodStorage $pseudo_method_storage,
+        ClassLikeStorage $class_storage,
+        Context $context,
+        Config $config,
+        AtomicMethodCallAnalysisResult $result,
+        TemplateResult $template_result,
+        array $found_generic_params,
+    ): void {
+        $cased_method_id = $class_storage->name . '::'
+            . ($pseudo_method_storage->cased_name ?? $method_id->method_name);
+
+        if (!$pseudo_method_storage->return_type) {
+            $statements_analyzer->signalMutation(
+                CallPurityResolver::getCallCapabilities(
+                    $statements_analyzer,
+                    $codebase,
+                    $pseudo_method_storage,
+                    Capabilities::NONE,
+                    $template_result,
+                ),
+                $context,
+                'method ' . $cased_method_id,
+                ImpureMethodCall::class,
+                $stmt->name,
+            );
+
+            return;
+        }
+
+        $magic_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($class_storage->name, '__call'),
+        );
+
+        if ($magic_method_id === null) {
+            return;
+        }
+
+        $call_storage = clone $codebase->methods->getStorage($magic_method_id);
+        $call_storage->setParams($pseudo_method_storage->params);
+        $call_storage->purity_from_templates = $pseudo_method_storage->purity_from_templates;
+
+        MethodCallPurityAnalyzer::analyze(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $lhs_var_id,
+            $cased_method_id,
+            $method_id,
+            $call_storage,
+            $class_storage,
+            $context,
+            $config,
+            $result,
+            $template_result,
+            $found_generic_params,
         );
     }
 

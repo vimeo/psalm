@@ -770,6 +770,25 @@ same template, which has no name of its own, so it never clashes with a template
 `_` can't be used outside `@param` types (`@return`, `@param-out`, `@psalm-assert`, `@var`, `@property`,
 `@template` bounds, ...), where it has no parameter to stand for.
 
+The parameters of an `@method` may use `_` too. A call to such a method needs what `__call` (or
+`__callStatic`) does, plus the capabilities of the closures passed for its `_` parameters:
+
+```php
+<?php
+/**
+ * @method int run(Closure[_](): int $callback)
+ */
+final class Runner {
+    /** @psalm-pure */
+    public function __call(string $name, array $args): int { return 1; }
+}
+
+/** @psalm-pure */
+function usePure(Runner $r): int {
+    return $r->run(fn(): int => 1); // fine: the closure is pure
+}
+```
+
 ### Iterators and generators
 
 `Traversable`, `Iterator`, `IteratorAggregate` and `Generator` carry a purity template besides

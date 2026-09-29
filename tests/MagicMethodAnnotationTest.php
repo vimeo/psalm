@@ -260,6 +260,56 @@ final class MagicMethodAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'trailingReturnTypes' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                        public static function __callStatic(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method getClosure(): Closure[pure](int): string
+                     * @method getList(): list<int> with some text
+                     * @method getShape(): array{a: int, b: string}
+                     * @method getUnion(int $x): int|string with some text
+                     * @method static getStatic(): ?string
+                     * @method static getInstance(): static
+                     */
+                    class Child extends ParentClass {}
+
+                    $child = new Child();
+
+                    $a = $child->getClosure();
+                    $b = $child->getList();
+                    $c = $child->getShape();
+                    $d = $child->getUnion(1);
+                    $e = Child::getStatic();
+                    $f = Child::getInstance();',
+                'assertions' => [
+                    '$a' => 'pure-Closure(int):string',
+                    '$b' => 'list<int>',
+                    '$c' => 'array{a: int, b: string}',
+                    '$d' => 'int|string',
+                    '$e' => 'null|string',
+                    '$f' => 'Child',
+                ],
+            ],
+            'purityInParams' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method void run(Closure[io](): int $f, array $defaults = [1, 2])
+                     */
+                    class Child extends ParentClass {}
+
+                    (new Child())->run(function (): int {
+                        echo "x";
+                        return 1;
+                    });',
+            ],
             'validSimpleAnnotations' => [
                 'code' => '<?php
                     class ParentClass {
