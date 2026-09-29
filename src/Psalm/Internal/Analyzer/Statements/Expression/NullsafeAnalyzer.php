@@ -16,6 +16,7 @@ use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -126,8 +127,8 @@ final class NullsafeAnalyzer
     }
 
     /**
-     * Whether the receiver of a `?->` may be null at runtime, including through mixed or nullable template bounds
-     * and a variable that may be undefined (an undefined variable reads as null).
+     * Whether the receiver of a `?->` may be null at runtime, including through mixed or nullable template bounds,
+     * either branch of a conditional type, and a variable that may be undefined (an undefined variable reads as null).
      */
     private static function canBeNull(Union $type): bool
     {
@@ -141,6 +142,12 @@ final class NullsafeAnalyzer
 
         foreach ($type->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TTemplateParam && self::canBeNull($atomic->as)) {
+                return true;
+            }
+
+            if ($atomic instanceof TConditional
+                && (self::canBeNull($atomic->if_type) || self::canBeNull($atomic->else_type))
+            ) {
                 return true;
             }
         }

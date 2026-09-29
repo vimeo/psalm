@@ -1412,6 +1412,14 @@ final class MethodCallTest extends TestCase
                         /** @psalm-suppress MixedMethodCall */
                         return $a?->b()->c();
                     }
+                    /**
+                     * @template T of bool
+                     * @param T $flag
+                     * @param (T is true ? A : null) $a
+                     */
+                    function conditionalReceiver(bool $flag, $a): ?B {
+                        return $a?->b();
+                    }
                     try {
                         $a = a();
                     } catch (Exception) {}
