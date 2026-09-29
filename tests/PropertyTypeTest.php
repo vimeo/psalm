@@ -2411,6 +2411,45 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyFetchViaGetClass' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+            ],
+            'staticPropertyFetchViaGetClassOfUnion' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    final class B {
+                        public static string $p = "b";
+                    }
+
+                    function f(A|B $a): int|string {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyFetchViaClassStringOfUnknownClass' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function f(string $class): mixed {
+                        return $class::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'promotedPublicPropertyWithDefault' => [
                 'code' => '<?php
                     class A {
@@ -2793,6 +2832,27 @@ final class PropertyTypeTest extends TestCase
 
                     (new A)->foo = "cool";',
                 'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'staticPropertyFetchViaPlainString' => [
+                'code' => '<?php
+                    function f(string $class): mixed {
+                        return $class::$p;
+                    }',
+                'error_message' => 'InvalidStringClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'privateStaticPropertyFetchViaGetClass' => [
+                'code' => '<?php
+                    final class A {
+                        private static int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+                'error_message' => 'InaccessibleProperty',
             ],
             'nullsafePropertyFetchLooselyEqualDoesNotAssertNotNull' => [
                 'code' => '<?php
