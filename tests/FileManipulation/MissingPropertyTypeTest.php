@@ -324,14 +324,14 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
                         /**
                          * @var callable|null
                          *
-                         * @psalm-var impure-callable|null
+                         * @psalm-var callable[impure]|null
                          */
                         public $u;
 
                         /**
                          * @var callable
                          *
-                         * @psalm-var impure-callable
+                         * @psalm-var callable[impure]
                          */
                         public $v;
 

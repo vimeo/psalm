@@ -19,15 +19,20 @@ use function count;
  * Myers, Eugene W. "An O (ND) difference algorithm and its variations."
  * Algorithmica 1.1 (1986): 251-266.
  *
+ * Its own methods are pure, but its subclasses read the statements they diff through mutable
+ * php-parser nodes, so it is not marked pure.
+ *
  * @internal
+ * @psalm-mutable
  */
 abstract class AstDiffer
 {
     /**
-     * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
+     * @param Closure[_](Stmt, Stmt, string, string, bool=): bool $is_equal
      * @param array<int, Stmt> $a
      * @param array<int, Stmt> $b
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
+     * @psalm-pure
      */
     protected static function calculateTrace(
         Closure $is_equal,

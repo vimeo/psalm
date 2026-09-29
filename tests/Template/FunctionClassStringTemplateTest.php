@@ -888,7 +888,7 @@ final class FunctionClassStringTemplateTest extends TestCase
                         /** @psalm-trace $i */
                         $i = createInitializer($className, $realInstance);
                     }',
-                'error_message' => 'Closure(object):void',
+                'error_message' => 'Closure[impure](object):void',
             ],
             'preventClassStringInPlaceOfTemplatedClassString' => [
                 'code' => '<?php

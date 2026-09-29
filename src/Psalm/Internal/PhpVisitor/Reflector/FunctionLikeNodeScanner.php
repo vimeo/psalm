@@ -33,6 +33,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
@@ -634,6 +635,12 @@ final class FunctionLikeNodeScanner
                 $property_storage = $classlike_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
                 $property_storage->type = $param_storage->type;
+
+                if ($property_storage->type) {
+                    // `@param Closure[P](): int $f`: the property holds closures of any purity P allows
+                    (new FunctionPurityTemplateReplacer())->traverse($property_storage->type);
+                }
+
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
@@ -993,10 +1000,15 @@ final class FunctionLikeNodeScanner
                     && ($this->codebase->register_stub_files
                         || !$this->codebase->functions->hasStubbedFunction($function_id))
                 ) {
-                    $this->codebase->functions->addGlobalFunction(
-                        $function_id,
-                        $this->file_storage->functions[$function_id],
-                    );
+                    // see the polyfill rule where the function is first registered
+                    if ($this->codebase->register_stub_files
+                        || InternalCallMapHandler::getIntroducingPhpVersionId($function_id) === null
+                    ) {
+                        $this->codebase->functions->addGlobalFunction(
+                            $function_id,
+                            $this->file_storage->functions[$function_id],
+                        );
+                    }
 
                     $storage = $this->storage = $this->file_storage->functions[$function_id];
 

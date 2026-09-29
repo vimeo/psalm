@@ -357,8 +357,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($line_parts) > 1) {
-                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
-                        && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
@@ -856,8 +855,7 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (preg_match('/\[[^\]]+\]/', $line_parts[0])
-            || !preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
             || $line_parts[0][0] === '{'
         ) {
             return null;

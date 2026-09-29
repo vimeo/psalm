@@ -125,6 +125,20 @@ final class ReferenceConstraintTest extends TestCase
                     '$a' => 'int',
                 ],
             ],
+            'paramOutWithPurity' => [
+                'code' => '<?php
+                    /**
+                     * @param-out Closure[pure](): int $f
+                     */
+                    function makeClosure(?Closure &$f) : void {
+                        $f = fn(): int => 1;
+                    }
+
+                    makeClosure($a);',
+                'assertions' => [
+                    '$a' => 'Closure[pure]():int',
+                ],
+            ],
             'paramOutReturn' => [
                 'code' => '<?php
                     /**

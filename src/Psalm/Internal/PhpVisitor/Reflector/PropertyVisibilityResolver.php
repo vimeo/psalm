@@ -79,9 +79,10 @@ final class PropertyVisibilityResolver
             );
         }
 
-        if ($flags & Modifiers::STATIC) {
+        if (($flags & Modifiers::STATIC) && $codebase->analysis_php_version_id < 8_05_00) {
             $class_storage->docblock_issues[] = new ParseError(
-                'Static property ' . $property_id . ' cannot have asymmetric visibility',
+                'Asymmetric visibility on static properties is only available in PHP 8.5 and later, but '
+                    . $property_id . ' uses it',
                 $location,
             );
         }

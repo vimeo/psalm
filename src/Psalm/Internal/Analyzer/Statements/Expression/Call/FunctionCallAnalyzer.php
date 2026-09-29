@@ -799,6 +799,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
                         true,
                     )) {
+                        // the call is still checked and typed like a call of the closure it is bound to
+                        foreach ($var_type_part->as->getAtomicTypes() as $as_type_part) {
+                            $var_atomic_types[] = $as_type_part instanceof TClosure
+                                || $as_type_part instanceof TCallable
+                                ? $as_type_part->setPurity(Capabilities::NONE)
+                                : $as_type_part;
+                        }
+
                         continue;
                     }
 

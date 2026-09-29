@@ -71,7 +71,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
-use function ord;
+use function mb_ord;
 use function preg_split;
 use function reset;
 use function str_contains;
@@ -218,7 +218,7 @@ final class ArgumentAnalyzer
                 $gt_count = 0;
 
                 foreach ($values as $value) {
-                    $ord = ord($value);
+                    $ord = (int) mb_ord($value, 'UTF-8');
 
                     if ($ord > $prev_ord) {
                         $gt_count++;

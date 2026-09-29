@@ -22,6 +22,16 @@ final class ClosureTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'byRefUseVarUnsetInClosure' => [
+                'code' => '<?php
+                    function reserve(): Closure {
+                        $reserved = str_repeat("x", 10);
+                        return function () use (&$reserved): void {
+                            $reserved = "";
+                            unset($reserved);
+                        };
+                    }',
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     $doNotContaminate = 123;
@@ -383,7 +393,7 @@ final class ClosureTest extends TestCase
                     $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
-                    '$a' => 'pure-Closure():pure-Closure():string',
+                    '$a' => 'Closure[pure]():Closure[pure]():string',
                     '$b' => 'string',
                 ],
             ],
@@ -457,7 +467,7 @@ final class ClosureTest extends TestCase
                     $closure = Closure::fromCallable("strlen");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                 ],
             ],
             'allowClosureWithNarrowerReturn' => [
@@ -689,7 +699,7 @@ final class ClosureTest extends TestCase
                     $result = $closure(1);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(mixed):bool',
+                    '$closure' => 'Closure[pure](mixed):bool',
                     '$result' => 'bool',
                 ],
                 'ignored_issues' => [],
@@ -701,7 +711,7 @@ final class ClosureTest extends TestCase
                     $result = $closure("test");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                     '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
@@ -816,7 +826,7 @@ final class ClosureTest extends TestCase
                     $closure = $closure(...);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -969,7 +979,7 @@ final class ClosureTest extends TestCase
                     $handlers = $test->handlers;
                 ',
                 'assertions' => [
-                    '$handlers' => 'list<impure-Closure():void>',
+                    '$handlers' => 'list<Closure[impure]():void>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -984,7 +994,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'assertions' => [
-                    '$r===' => 'false|impure-Closure',
+                    '$r===' => 'Closure[impure]|false',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

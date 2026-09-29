@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\DataFlow;
 
+use InvalidArgumentException;
 use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Codebase\Methods;
@@ -267,7 +268,12 @@ final class DataFlowNode implements Stringable
             strtolower(substr($cased_method_id, $separator_pos + 2)),
         );
 
-        $declaring_id = $methods->getDeclaringMethodId($method_id);
+        try {
+            $declaring_id = $methods->getDeclaringMethodId($method_id);
+        } catch (InvalidArgumentException) {
+            // not a class, e.g. `object::__invoke` for a callable object
+            return null;
+        }
 
         if ($declaring_id === null || !$methods->hasStorage($declaring_id)) {
             return null;

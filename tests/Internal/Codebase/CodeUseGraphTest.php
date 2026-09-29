@@ -13,6 +13,7 @@ final class CodeUseGraphTest extends TestCase
 {
     /**
      * @return pure-Closure(string): bool
+     * @psalm-pure
      */
     private static function noExtraRoots(): Closure
     {

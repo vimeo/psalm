@@ -361,6 +361,122 @@ final class PurityTemplateTest extends TestCase
                         $deferred->run();
                     }',
             ],
+            'nestedClosureCarriesOuterPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](int): string
+                     */
+                    function escape(Closure $val): Closure {
+                        return static fn(int $item): string => htmlspecialchars($val($item));
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        $f = escape(function (int $i): string { echo $i; return (string) $i; }); // not called
+                        return escape(fn(int $i): string => (string) $i)(1);
+                    }',
+            ],
+            'functionLikeInheritingThePurityOfAParamItCallsAndReturnsAClosureCalling' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     * @psalm-purity-from-template P
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        [$first, $rest] = both(fn(int $i): string => (string) $i);
+                        return $first . $rest(1);
+                    }',
+            ],
+            'impureFunctionLikeCallingAParamAndReturningAClosureCallingIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }',
+            ],
+            'nestedClosurePassingOnOuterPurityTemplateCarriesIt' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](): string
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): string {
+                        return later(fn(int $i): string => (string) $i)();
+                    }',
+            ],
+            'nestedClosureCarriesClassPurityTemplate' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function wrap(): Closure {
+                            return fn(): int => ($this->cb)() + 1;
+                        }
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function later(): Closure {
+                            return fn(): int => $this->fire();
+                        }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function useMutationFree(): int {
+                        $box = new Box(fn(): int => 1);
+                        return $box->wrap()() + $box->later()();
+                    }',
+            ],
             'purityTemplateWithoutParams' => [
                 'code' => '<?php
                     /**
@@ -398,6 +514,40 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-capabilities read-globals */
                     function total(): int {
                         return apply(fn(): int => Counter::$n) + apply(fn(): int => 1);
+                    }',
+            ],
+            'classPurityTemplateBoundByFunctionPurityTemplate' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     * @return Box[P]
+                     */
+                    function makeBox(Closure $f): Box {
+                        return new Box($f);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return makeBox(fn(): int => 1)->fire();
                     }',
             ],
             'classPurityTemplateDefault' => [
@@ -510,6 +660,158 @@ final class PurityTemplateTest extends TestCase
                         });
                     }',
             ],
+            'wildcardPurityInNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use Closure;
+
+                    /**
+                     * @psalm-pure
+                     * @param Closure[_](): int $f
+                     * @param ?callable[_](): int $g
+                     */
+                    function apply(Closure $f, ?callable $g = null): int {
+                        return $f() + ($g !== null ? $g() : 0);
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return apply(fn(): int => 1, fn(): int => 2);
+                    }',
+            ],
+            'wildcardPurityNested' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<Closure[_](int): int> $fs
+                     * @return list<int>
+                     */
+                    function runAll(array $fs): array {
+                        $r = [];
+                        foreach ($fs as $f) {
+                            $r[] = $f(1);
+                        }
+                        return $r;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{Closure[_](): int, ?callable[_](): int} $fs
+                     */
+                    function runPair(array $fs): int {
+                        return $fs[0]() + ($fs[1] !== null ? $fs[1]() : 0);
+                    }
+
+                    abstract class Runner {
+                        /**
+                         * @psalm-mutation-free
+                         * @param list<Closure[_](int): int> $fs
+                         */
+                        public function runAll(array $fs): int {
+                            $sum = 0;
+                            foreach ($fs as $f) {
+                                $sum += $f(1);
+                            }
+                            return $sum;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return list<int>
+                     */
+                    function usePure(Runner $r): array {
+                        return [
+                            ...runAll([fn(int $x): int => $x + 1]),
+                            runPair([fn(): int => 1, fn(): int => 2]),
+                            $r->runAll([fn(int $x): int => $x]),
+                        ];
+                    }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @return list<int>
+                     */
+                    function useIo(): array {
+                        return runAll([function (int $x): int {
+                            echo "x";
+                            return $x;
+                        }]);
+                    }',
+            ],
+            'wildcardPurityOnGenerics' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param Traversable[_]<int, int> $t
+                     * @param iterable[_]<int, int> $i
+                     */
+                    function sum(Traversable $t, iterable $i): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        foreach ($i as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Generator<int, int, mixed, int>
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                        return 1;
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        return sum(gen(), [1]);
+                    }',
+            ],
+            'pureClosureFitsPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param pure-Closure(Closure[P](): int): int $f
+                     */
+                    function apply(Closure $f): int {
+                        return $f(fn(): int => 1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param pure-Closure(Closure[_](): int): int $f
+                     */
+                    function applyWildcard(Closure $f): int {
+                        return $f(fn(): int => 1);
+                    }',
+            ],
+            'wildcardPurityOnPromotedProperty' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Holder {
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
+                        public function __construct(public Closure $f) {}
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Holder {
+                        return new Holder(fn(): int => 1);
+                    }
+
+                    $f = make()->f;',
+                'assertions' => [
+                    '$f' => 'Closure[impure]():int',
+                ],
+            ],
             'overrideWithFewerCapabilitiesThanDependentParent' => [
                 'code' => '<?php
                     abstract class Base {
@@ -529,6 +831,128 @@ final class PurityTemplateTest extends TestCase
                          */
                         public function run(Closure $f): int {
                             return 1;
+                        }
+                    }',
+            ],
+            'wildcardPurityInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[_](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'wildcardPurityInOverrideOfPureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[pure](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[_](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'wildcardPurityInOverrideOfNullableCallableParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param callable(int): bool|null $f */
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(1) ? 1 : 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param callable[_](int): bool|null $f */
+                        #[Override]
+                        public function filter(?callable $f = null): int {
+                            return $f !== null && $f(2) ? 1 : 0;
+                        }
+                    }',
+            ],
+            'nestedWildcardPurityInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param list<Closure(int): int> $gs */
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param list<Closure[_](int): int> $gs */
+                        #[Override]
+                        public function runAll(array $gs): int {
+                            return count($gs);
+                        }
+                    }',
+            ],
+            'wildcardPurityOnGenericInOverrideOfImpureGenericParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Traversable<int, int> $t */
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Traversable[_]<int, int> $t */
+                        #[Override]
+                        public function sum(Traversable $t): int {
+                            return 0;
+                        }
+                    }',
+            ],
+            'purityTemplateInOverrideOfImpureClosureParam' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure(int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /**
+                         * @psalm-purity-template P
+                         * @param Closure[P](int): int $g
+                         */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+            ],
+            'impureClosureParamInOverrideOfWildcardOne' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[_](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure(int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
                         }
                     }',
             ],
@@ -558,6 +982,38 @@ final class PurityTemplateTest extends TestCase
                     /** @psalm-capabilities write-props */
                     function useDefault(DefaultDoer $d, Box $b): int {
                         return $d->run($b);
+                    }',
+            ],
+            'callOfTypeTemplateBoundToClosureIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return "";
+                    }',
+            ],
+            'callOfTypeTemplateBoundToCallableIsTyped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as callable(int): string
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(callable $cb): string {
+                        return $cb(1);
+                    }
+
+                    /** @psalm-pure */
+                    function caller(): string {
+                        return apply(static fn(int $i): string => (string) $i);
                     }',
             ],
             'builtinSortsInheritTheComparatorsPurity' => [
@@ -792,7 +1248,7 @@ final class PurityTemplateTest extends TestCase
                     $apply = apply(...);
                     $r = $apply(fn(int $x): int => $x);',
                 'assertions' => [
-                    '$apply' => 'impure-Closure(impure-Closure(int):int):int',
+                    '$apply' => 'Closure[impure](Closure[impure](int):int):int',
                 ],
             ],
             'splWrapperIteratorsInheritTheirPurity' => [
@@ -852,6 +1308,117 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'pureClosureParamInOverrideOfWildcardOneIsComparedWithTheWildcardsBound' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @param Closure[_](int): int $g */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:12:53 - Argument 1 of Child::run has the more specific type \'Closure[pure](int):int\', expecting \'Closure[impure](int):int\' as defined by Base::run',
+            ],
+            'pureClosureParamInOverrideOfPurityTemplateOneIsComparedWithTheTemplatesBound' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /**
+                         * @psalm-purity-template P
+                         * @param Closure[P](int): int $g
+                         */
+                        public function run(Closure $g): int {
+                            return $g(1);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @param Closure[pure](int): int $g */
+                        #[Override]
+                        public function run(Closure $g): int {
+                            return $g(2);
+                        }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType - src/somefile.php:15:53 - Argument 1 of Child::run has the more specific type \'Closure[pure](int):int\', expecting \'Closure[impure](int):int\' as defined by Base::run',
+            ],
+            'callOfTypeTemplateBoundToClosureChecksArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): string {
+                        if ($cb !== null) {
+                            return $cb("x");
+                        }
+                        return "";
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callOfTypeTemplateBoundToClosureReturnsTheClosuresType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as (Closure(int): string)|null
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(?Closure $cb = null): int {
+                        if ($cb !== null) {
+                            return $cb(1);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'callOfTypeTemplateBoundToClosureChecksThePurityOfWhatIsDoneWithTheResult' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): int {
+                            return ++$this->n;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template TCallback as Closure(int): Counter
+                     * @param TCallback $cb
+                     * @psalm-purity-from-template TCallback
+                     */
+                    function apply(Closure $cb): int {
+                        return $cb(1)->inc();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'callOfTypeTemplateBoundToClosureInAMutationFreeMethodChecksThePurityOfWhatIsDoneWithTheResult' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    final class Runner {
+                        /**
+                         * @psalm-mutation-free
+                         * @template TCallback as Closure(int): Counter
+                         * @param TCallback $cb
+                         * @psalm-purity-from-template TCallback
+                         */
+                        public function run(Closure $cb): void {
+                            $cb(1)->n = 2;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'classPurityTemplateWritingThisOfAGlobalReceiverNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */
@@ -1107,6 +1674,44 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
+            'classPurityTemplateBoundByFunctionPurityTemplateIsCharged' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-purity-from-template C
+                         */
+                        public function fire(): int {
+                            return ($this->cb)();
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     * @return Box[P]
+                     */
+                    function makeBox(Closure $f): Box {
+                        return new Box($f);
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): int {
+                        return makeBox(function (): int {
+                            echo "x";
+                            return 1;
+                        })->fire();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'classPurityTemplateBoundToImpure' => [
                 'code' => '<?php
                     /** @psalm-purity-template C */
@@ -1250,6 +1855,146 @@ final class PurityTemplateTest extends TestCase
                         return $t;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'nestedClosureCarryingOuterPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](int): string
+                     */
+                    function escape(Closure $val): Closure {
+                        return static fn(int $item): string => htmlspecialchars($val($item));
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return escape(function (int $i): string { echo $i; return (string) $i; })(1);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'callingNestedClosureWithOuterPurityTemplateCostsItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](): int $f
+                     */
+                    function callsIt(Closure $f): int {
+                        $g = fn(): int => $f();
+                        return $g();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'pureFunctionLikeCallingAParamAndReturningAClosureCallingItPaysForItsOwnCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'functionLikeInheritingThePurityOfAParamItCallsAndReturnsAClosureCallingIsChargedForItsOwnCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return list{string, Closure[P](int): string}
+                     * @psalm-purity-from-template P
+                     */
+                    function both(Closure $val): array {
+                        return [$val(0), static fn(int $item): string => $val($item)];
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return both(function (int $i): string { echo $i; return (string) $i; })[0];
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'nestedClosurePassingOnOuterPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return Closure[P](): string
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }
+
+                    /** @psalm-pure */
+                    function useImpure(): string {
+                        return later(function (int $i): string { echo $i; return (string) $i; })();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'nestedClosurePassingOnPurityFromTemplateIsNotPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](int): string $f
+                     * @psalm-purity-from-template Q
+                     */
+                    function apply(Closure $f): string {
+                        return $f(1);
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template P
+                     * @param Closure[P](int): string $val
+                     * @return pure-Closure(): string
+                     * @psalm-purity-from-template P
+                     */
+                    function later(Closure $val): Closure {
+                        return static fn(): string => apply($val);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'nestedClosureCarryingClassPurityTemplateIsChargedWhenCalled' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    final class Box {
+                        /**
+                         * @param Closure[C](): int $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(private Closure $cb) {}
+
+                        /**
+                         * @psalm-mutation-free
+                         * @return Closure[C|read-props](): int
+                         */
+                        public function wrap(): Closure {
+                            return fn(): int => ($this->cb)() + 1;
+                        }
+                    }
+
+                    /** @psalm-mutation-free */
+                    function useImpure(): int {
+                        return (new Box(function (): int { echo "x"; return 1; }))->wrap()();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
             'closurePurityMustBeAPurityType' => [
                 'code' => '<?php
@@ -1417,6 +2162,163 @@ final class PurityTemplateTest extends TestCase
                      */
                     function make(): Closure {
                         return fn(): int => 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityNestedPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<Closure[_](int): int> $fs
+                     * @return list<int>
+                     */
+                    function runAll(array $fs): array {
+                        $r = [];
+                        foreach ($fs as $f) {
+                            $r[] = $f(1);
+                        }
+                        return $r;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return list<int>
+                     */
+                    function bad(): array {
+                        return runAll([function (int $x): int {
+                            echo "x";
+                            return $x;
+                        }]);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'wildcardPurityNestedInReturnType' => [
+                'code' => '<?php
+                    /** @return list<Closure[_](): int> */
+                    function make(): array {
+                        return [fn(): int => 1];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInParamOut' => [
+                'code' => '<?php
+                    /**
+                     * @param-out Closure[_](): int $f
+                     */
+                    function make(?Closure &$f): void {
+                        $f = fn(): int => 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert Closure[_](): int $f */
+                    function assertClosure(?Closure $f): void {
+                        if (!$f instanceof Closure) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInSelfOut' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @psalm-self-out Box<Closure[_](): int> */
+                        public function set(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityOnGenericReturnType' => [
+                'code' => '<?php
+                    /** @return Traversable[_]<int, int> */
+                    function make(): Traversable {
+                        return new ArrayIterator([]);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInMagicProperty' => [
+                'code' => '<?php
+                    /** @property Closure[_](): int $f */
+                    final class Holder {
+                        public function __get(string $name): ?int {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityInTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of Closure[_](): int
+                     * @param T $f
+                     */
+                    function apply(Closure $f): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'wildcardPurityKeepsSameNamedTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-template _fs <= read-globals
+                     * @param Closure[_fs](): int $g
+                     * @param list<Closure[_](): int> $fs
+                     * @psalm-purity-from-template _fs
+                     */
+                    function run(Closure $g, array $fs): int {
+                        return $g() + count($fs);
+                    }
+
+                    function useIo(): int {
+                        return run(function (): int {
+                            echo "x";
+                            return 1;
+                        }, []);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'wildcardPurityOnPromotedPropertyPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Holder {
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
+                        public function __construct(public Closure $f) {}
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Holder {
+                        return new Holder(function (): int {
+                            echo "x";
+                            return 1;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityOnPromotedPropertyIsImpureWhenCalled' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Holder {
+                        /**
+                         * @psalm-pure
+                         * @param Closure[_](): int $f
+                         */
+                        public function __construct(public Closure $f) {}
+                    }
+
+                    /** @psalm-pure */
+                    function run(Holder $h): int {
+                        return ($h->f)();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'wildcardPurityInPropertyType' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var Closure[_](): int|null */
+                        public ?Closure $f = null;
                     }',
                 'error_message' => 'InvalidDocblock',
             ],

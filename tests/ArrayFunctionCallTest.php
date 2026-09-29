@@ -1016,7 +1016,7 @@ final class ArrayFunctionCallTest extends TestCase
                         ARRAY_FILTER_USE_KEY
                     );',
                 'assertions' => [
-                    '$foo' => 'array<string, pure-Closure():string>',
+                    '$foo' => 'array<string, Closure[pure]():string>',
                 ],
             ],
             'ignoreFalsableCurrent' => [
