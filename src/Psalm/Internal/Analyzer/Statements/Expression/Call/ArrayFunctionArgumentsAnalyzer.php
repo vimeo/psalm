@@ -728,7 +728,8 @@ final class ArrayFunctionArgumentsAnalyzer
                 if (!$array_atomic_types) {
                     throw new AssertionError("We must have some types here!");
                 }
-                $array_type = new Union($array_atomic_types);
+                // combine rather than index by key: expanded template bounds may hold several arrays
+                $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }

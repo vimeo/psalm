@@ -2966,8 +2966,8 @@ final class ArrayFunctionCallTest extends TestCase
                     $empty_args = [[]];
                     $c = array_pop(...$empty_args);',
                 'assertions' => [
-                    '$a===' => '\'a\'',
-                    '$b===' => '1',
+                    '$a===' => '\'a\'|1',
+                    '$b===' => '\'a\'|1',
                     '$c===' => 'null',
                 ],
                 'ignored_issues' => [],
@@ -3161,6 +3161,47 @@ final class ArrayFunctionCallTest extends TestCase
                         $second = array_shift($arr);
                         /** @psalm-check-type-exact $second = int|null */
                         return $second;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftOnArrayOffsetStaysConservative' => [
+                'code' => '<?php
+                    $pop = ["k" => [1, "a"]];
+                    $a = array_pop($pop["k"]);
+                    $b = array_pop($pop["k"]);
+
+                    $shift = ["k" => [1, "a"]];
+                    $c = array_shift($shift["k"]);
+                    $d = array_shift($shift["k"]);',
+                'assertions' => [
+                    '$a===' => '\'a\'|1',
+                    '$b===' => '\'a\'|1',
+                    '$c===' => '\'a\'|1',
+                    '$d===' => '\'a\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftTwiceTemplateAndEmptiedArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{string} $arr
+                     */
+                    function popTwice(array $arr): ?int {
+                        array_pop($arr);
+                        return array_pop($arr);
+                    }
+
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{string} $arr
+                     */
+                    function shiftTwice(array $arr): ?int {
+                        array_shift($arr);
+                        return array_shift($arr);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -3758,6 +3799,116 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(array $arr): string {
                         array_pop($arr);
                         return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_pop($arr);
+                        return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceMultipleNonListTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, string>
+                     * @template U of non-empty-array<string, int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_pop($arr);
+                        return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceTemplateAndConcreteArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{string, string} $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_pop($arr);
+                        return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceOnArrayOffset' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["k" => [1, "a"]];
+                        array_pop($a["k"]);
+                        return array_pop($a["k"]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftTwiceMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_shift($arr);
+                        return array_shift($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftTwiceMultipleNonListTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, string>
+                     * @template U of non-empty-array<string, int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_shift($arr);
+                        return array_shift($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftTwiceTemplateAndConcreteArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{string, string} $arr
+                     */
+                    function f(array $arr): ?int {
+                        array_shift($arr);
+                        return array_shift($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftTwiceOnArrayOffset' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["k" => [1, "a"]];
+                        array_shift($a["k"]);
+                        return array_shift($a["k"]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
