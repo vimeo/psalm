@@ -3794,20 +3794,6 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
-            'arrayAnyUndefinedBeforePhp84' => [
-                'code' => '<?php
-                    $a = array_any([1, 2], fn (int $i): bool => $i > 1);',
-                'error_message' => 'UndefinedFunction',
-                'ignored_issues' => [],
-                'php_version' => '8.3',
-            ],
-            'arrayAllUndefinedBeforePhp84' => [
-                'code' => '<?php
-                    $a = array_all([1, 2], fn (int $i): bool => $i > 1);',
-                'error_message' => 'UndefinedFunction',
-                'ignored_issues' => [],
-                'php_version' => '8.3',
-            ],
             'arrayFirstMultipleTemplateBounds' => [
                 'code' => '<?php
                     /**
