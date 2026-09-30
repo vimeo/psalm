@@ -2793,6 +2793,151 @@ final class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_array($flipped);
                 ',
             ],
+            'arrayFirstLastGenericArrays' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array { return []; }
+                    /** @return non-empty-list<int> */
+                    function getNonEmptyList(): array { return [1]; }
+                    /** @return array<string, int> */
+                    function getMap(): array { return []; }
+                    /** @return non-empty-array<string, int> */
+                    function getNonEmptyMap(): array { return ["a" => 1]; }
+
+                    $a = array_first(getList());
+                    $b = array_last(getList());
+                    $c = array_first(getNonEmptyList());
+                    $d = array_last(getNonEmptyList());
+                    $e = array_first(getMap());
+                    $f = array_last(getMap());
+                    $g = array_first(getNonEmptyMap());
+                    $h = array_last(getNonEmptyMap());
+                    $i = array_first([]);
+                    $j = array_last([]);',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int|null',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int|null',
+                    '$f===' => 'int|null',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$i===' => 'null',
+                    '$j===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastSealedList' => [
+                'code' => '<?php
+                    /** @return list{0: int, 1: string, 2?: float, 3?: bool} */
+                    function getList(): array { return [1, "a"]; }
+                    /** @return list{0?: int, 1?: string} */
+                    function getOptionalList(): array { return []; }
+
+                    $a = array_first([1, "a"]);
+                    $b = array_last([1, "a"]);
+                    $c = array_first(getList());
+                    $d = array_last(getList());
+                    $e = array_first(getOptionalList());
+                    $f = array_last(getOptionalList());',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'a\'',
+                    '$c===' => 'int',
+                    '$d===' => 'bool|float|string',
+                    '$e===' => 'int|null',
+                    '$f===' => 'int|null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastUnsealedList' => [
+                'code' => '<?php
+                    /** @return list{int, ...<string>} */
+                    function getList(): array { return [1]; }
+
+                    $a = array_first(getList());
+                    $b = array_last(getList());',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastShapeUsesAllValues' => [
+                'code' => '<?php
+                    /** @return array{a: int, b: string} */
+                    function getShape(): array { return ["a" => 1, "b" => "b"]; }
+                    /** @return array{a?: int, b?: string} */
+                    function getOptionalShape(): array { return []; }
+                    /** @return array{a: int, ...<string, float>} */
+                    function getUnsealedShape(): array { return ["a" => 1]; }
+
+                    $a = array_first(getShape());
+                    $b = array_last(getShape());
+                    $c = array_first(getOptionalShape());
+                    $d = array_last(getOptionalShape());
+                    $e = array_first(getUnsealedShape());
+                    $f = array_last(getUnsealedShape());',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                    '$b===' => 'int|string',
+                    '$c===' => 'int|null|string',
+                    '$d===' => 'int|null|string',
+                    '$e===' => 'float|int',
+                    '$f===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastUnionOfArrays' => [
+                'code' => '<?php
+                    /** @return non-empty-list<int>|array<string, string> */
+                    function getMaybeEmpty(): array { return []; }
+                    /** @return non-empty-list<int>|list{string} */
+                    function getNonEmpty(): array { return ["a"]; }
+
+                    $a = array_first(getMaybeEmpty());
+                    $b = array_last(getMaybeEmpty());
+                    $c = array_first(getNonEmpty());
+                    $d = array_last(getNonEmpty());',
+                'assertions' => [
+                    '$a===' => 'int|null|string',
+                    '$b===' => 'int|null|string',
+                    '$c===' => 'int|string',
+                    '$d===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastDoesNotModifyArgument' => [
+                'code' => '<?php
+                    $arr = [1, 2, 3];
+                    $a = array_first($arr);
+                    $b = array_last($arr);',
+                'assertions' => [
+                    '$arr===' => 'list{1, 2, 3}',
+                    '$a===' => '1',
+                    '$b===' => '3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastMixedArgument' => [
+                'code' => '<?php
+                    function getMixed(): mixed { return []; }
+
+                    /** @psalm-suppress MixedAssignment, MixedArgument */
+                    $a = array_first(getMixed());',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -3247,6 +3392,20 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayFirstUndefinedBeforePhp85' => [
+                'code' => '<?php
+                    $a = array_first([1, 2]);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayLastUndefinedBeforePhp85' => [
+                'code' => '<?php
+                    $a = array_last([1, 2]);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
         ];
     }
