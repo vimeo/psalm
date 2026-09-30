@@ -237,7 +237,7 @@ final class TaintFlowGraph extends DataFlowGraph
             return $node;
         }
 
-        return $node->withSpecialization($node->unspecialized_id, null, null, $node->specialized_calls);
+        return $node->withSpecialization($node->unspecialized_id, null, null, $node->context);
     }
 
     /**
