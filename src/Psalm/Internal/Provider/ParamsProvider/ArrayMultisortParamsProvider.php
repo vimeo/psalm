@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
 use Psalm\IssueBuffer;
+use Psalm\Node\VirtualPipeArg;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
@@ -92,7 +93,11 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
             // @todo currently assumes any function calls are for array types not for sort order/flags
             // actually need to check the return type
             // which isn't possible atm due to https://github.com/vimeo/psalm/issues/8905
-            if (!$param_type && ($call_arg->value instanceof FuncCall || $call_arg->value instanceof MethodCall)) {
+            // the pipe operator passes its left-hand side by value, like a function call result
+            if (!$param_type && ($call_arg->value instanceof FuncCall
+                || $call_arg->value instanceof MethodCall
+                || $call_arg instanceof VirtualPipeArg)
+            ) {
                 if ($first_non_ref_index_after_by_ref < $last_by_ref_index) {
                     $first_non_ref_index_after_by_ref = $key;
                 }

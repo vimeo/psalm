@@ -38,6 +38,7 @@ use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualPipeArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -178,8 +179,10 @@ final class ArgumentsAnalyzer
                 $by_ref_type = $param->type ?: Type::getMixed();
             }
 
+            // the pipe operator passes its left-hand side by value; handlePossiblyMatchingByRefParam() rejects it
             if ($by_ref
                 && $by_ref_type
+                && !$arg instanceof VirtualPipeArg
                 && !($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -1151,11 +1154,13 @@ final class ArgumentsAnalyzer
         Context $context,
         ?TemplateResult $template_result,
     ): ?bool {
-        if ($arg->value instanceof PhpParser\Node\Scalar
+        if ($arg instanceof VirtualPipeArg
+            || $arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+            || ($arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                && !$arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe)
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || (
                 (
@@ -1163,6 +1168,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                     || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    || $arg->value instanceof PhpParser\Node\Expr\BinaryOp\Pipe
                 ) && (
                     !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     || !$arg_value_type->by_ref
@@ -1171,7 +1177,10 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ($arg instanceof VirtualPipeArg
+                            ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                            : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
