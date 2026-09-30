@@ -3970,6 +3970,64 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayPopThroughArrayOffsetReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $arrays = [[1, "a"]];
+                        $alias = &$arrays[0];
+                        array_pop($arrays[0]);
+                        return array_pop($alias);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopThroughChainedArrayOffsetReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $arrays = [[1, "a"]];
+                        $x = &$arrays[0];
+                        $y = &$x;
+                        array_pop($arrays[0]);
+                        return array_pop($y);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftThroughArrayOffsetReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function f(array $arr): int {
+                        $arrays = [$arr];
+                        $alias = &$arrays[0];
+                        array_shift($arrays[0]);
+                        return array_shift($alias);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftThroughChainedArrayOffsetReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function f(array $arr): int {
+                        $arrays = [$arr];
+                        $x = &$arrays[0];
+                        $alias = &$x;
+                        array_shift($arrays[0]);
+                        return array_shift($alias);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }
