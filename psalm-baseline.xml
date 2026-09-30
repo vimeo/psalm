@@ -788,17 +788,11 @@
       <code><![CDATA[$right_type_part]]></code>
     </ImplicitToStringCast>
     <InvalidOperand>
-      <code><![CDATA[$operand1 % $operand2]]></code>
-      <code><![CDATA[$operand1 & $operand2]]></code>
       <code><![CDATA[$operand1 * $operand2]]></code>
       <code><![CDATA[$operand1 ** $operand2]]></code>
       <code><![CDATA[$operand1 + $operand2]]></code>
       <code><![CDATA[$operand1 - $operand2]]></code>
       <code><![CDATA[$operand1 / $operand2]]></code>
-      <code><![CDATA[$operand1 << $operand2]]></code>
-      <code><![CDATA[$operand1 >> $operand2]]></code>
-      <code><![CDATA[$operand1 ^ $operand2]]></code>
-      <code><![CDATA[$operand1 | $operand2]]></code>
     </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$invalid_left_messages[0]]]></code>
@@ -1169,11 +1163,6 @@
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/EncapsulatedStringAnalyzer.php">
-    <PossiblyInvalidOperand>
-      <code><![CDATA[$casted_part_type->getSingleLiteral()->value]]></code>
-    </PossiblyInvalidOperand>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ExpressionIdentifier.php">
     <ImplicitToStringCast>
