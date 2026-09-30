@@ -421,20 +421,6 @@ final class TaintFlowGraph extends DataFlowGraph
         return $out;
     }
 
-    /**
-     * Returns the id of the node the flow into $node started at: the root of its taintSource chain.
-     *
-     * @psalm-pure
-     */
-    private static function getFlowOrigin(DataFlowNode $node): string
-    {
-        while (($previous = $node->taintSource) !== null && $previous !== $node) {
-            $node = $previous;
-        }
-
-        return $node->id;
-    }
-
     public function connectSinksAndSources(Progress $progress): void
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
@@ -502,7 +488,80 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($sources as $source) {
                 $visited_source_ids[$source->id][self::getStateKey($source->taints, $source->context)] = true;
 
-                foreach ($this->getPropagatingNodes($source, $config, $codebase) as $generated_source) {
+                // If we have one or more edges starting at this node,
+                // process destinations of those edges.
+                if (isset($this->forward_edges[$source->id])) {
+                    $generated_sources = [$source];
+                } elseif ($source->specialization_key !== null
+                    && isset($this->specialized_calls[$source->specialization_key])
+                ) {
+                    // If this is a specialized node, de-specialize: enter its shared body
+                    // (see enterSpecializedCall()).
+                    /** @var string $source->unspecialized_id */
+                    if (!isset($this->forward_edges[$source->unspecialized_id])) {
+                        continue;
+                    }
+
+                    if (isset($this->despecialized_calls[$source->specialization_key])) {
+                        // A despecialized call is entered like an unspecialized one: the body is walked
+                        // in the context of the flow, and it is exited through all of its call sites.
+                        $generated_sources = [
+                            $source->withSpecialization($source->unspecialized_id, null, null, $source->context),
+                        ];
+                    } else {
+                        $generated_sources = $this->enterSpecializedCall(
+                            $source,
+                            $source->unspecialized_id,
+                            $source->specialization_key,
+                            $config,
+                            $codebase,
+                        );
+                    }
+                } elseif (isset($this->specializations[$source->id])) {
+                    // If this node has first level specializations (=> is first-level & unspecialized),
+                    // process them: all of them outside of any specialized call, else only those of
+                    // the calls the flow's body was entered through (see addEntryExit()).
+                    Assert::null($source->specialization_key);
+
+                    $generated_sources = [];
+                    $specializations = $this->specializations[$source->id];
+
+                    // The call sites of despecialized calls are all exited, keeping the context of the flow.
+                    foreach ($specializations as $specialization => $specialized_id) {
+                        if (isset($this->despecialized_calls[$specialization])) {
+                            $generated_sources[] = $source->withSpecialization(
+                                $specialized_id,
+                                $source->id,
+                                $specialization,
+                                $source->context,
+                            );
+
+                            unset($specializations[$specialization]);
+                        }
+                    }
+
+                    if ($specializations) {
+                        if ($source->context !== null) {
+                            $generated_sources = [
+                                ...$generated_sources,
+                                ...$this->addEntryExit($source->context, $source),
+                            ];
+                        } else {
+                            foreach ($specializations as $specialization => $specialized_id) {
+                                $generated_sources[] = $source->withSpecialization(
+                                    $specialized_id,
+                                    $source->id,
+                                    $specialization,
+                                    null,
+                                );
+                            }
+                        }
+                    }
+                } else {
+                    continue;
+                }
+
+                foreach ($generated_sources as $generated_source) {
                     $this->getChildNodes(
                         $new_sources,
                         $generated_source,
@@ -537,87 +596,6 @@ final class TaintFlowGraph extends DataFlowGraph
     private static function getStateKey(int $taints, ?int $context): string
     {
         return $context === null ? (string) $taints : $taints . '@' . $context;
-    }
-
-    /**
-     * Returns the nodes whose outgoing edges carry the taint of $source onward.
-     *
-     * That is $source itself if it has outgoing edges. Otherwise a specialized
-     * node enters its shared, de-specialized body (see enterSpecializedCall()),
-     * and an unspecialized node continues as its applicable specializations:
-     * all of them outside of any specialized call, else only those of the calls
-     * the flow's body was entered through (see addEntryExit()).
-     *
-     * @return list<DataFlowNode>
-     */
-    private function getPropagatingNodes(DataFlowNode $source, Config $config, Codebase $codebase): array
-    {
-        if (isset($this->forward_edges[$source->id])) {
-            return [$source];
-        }
-
-        // If this is a specialized node, de-specialize.
-        if ($source->specialization_key !== null
-            && isset($this->specialized_calls[$source->specialization_key])
-        ) {
-            /** @var string $source->unspecialized_id */
-            if (!isset($this->forward_edges[$source->unspecialized_id])) {
-                return [];
-            }
-
-            // A despecialized call is entered like an unspecialized one: the body is walked
-            // in the context of the flow, and it is exited through all of its call sites.
-            if (isset($this->despecialized_calls[$source->specialization_key])) {
-                return [$source->withSpecialization($source->unspecialized_id, null, null, $source->context)];
-            }
-
-            return $this->enterSpecializedCall(
-                $source,
-                $source->unspecialized_id,
-                $source->specialization_key,
-                $config,
-                $codebase,
-            );
-        }
-
-        if (!isset($this->specializations[$source->id])) {
-            return [];
-        }
-
-        // Assert that we're unspecialized.
-        Assert::null($source->specialization_key);
-
-        $nodes = [];
-        $specializations = $this->specializations[$source->id];
-
-        // The call sites of despecialized calls are all exited, keeping the context of the flow.
-        foreach ($specializations as $specialization => $specialized_id) {
-            if (isset($this->despecialized_calls[$specialization])) {
-                $nodes[] = $source->withSpecialization(
-                    $specialized_id,
-                    $source->id,
-                    $specialization,
-                    $source->context,
-                );
-
-                unset($specializations[$specialization]);
-            }
-        }
-
-        if (!$specializations) {
-            return $nodes;
-        }
-
-        if ($source->context !== null) {
-            return [...$nodes, ...$this->addEntryExit($source->context, $source)];
-        }
-
-        // Outside of a specialized call, accept all specializations.
-        foreach ($specializations as $specialization => $specialized_id) {
-            $nodes[] = $source->withSpecialization($specialized_id, $source->id, $specialization, null);
-        }
-
-        return $nodes;
     }
 
     /**
@@ -1220,7 +1198,12 @@ final class TaintFlowGraph extends DataFlowGraph
             return;
         }
 
-        $origin = self::getFlowOrigin($predecessor);
+        // the node the flow started at: the root of its taintSource chain
+        $origin_node = $predecessor;
+        while (($previous = $origin_node->taintSource) !== null && $previous !== $origin_node) {
+            $origin_node = $previous;
+        }
+        $origin = $origin_node->id;
         $reported_taints = $this->reported_flows[$sink->id][$predecessor->id][$origin] ?? 0;
         $unreported_taints = $matching_taints & ~$reported_taints;
 
@@ -1230,40 +1213,22 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
 
-        $this->reportTaintedFlow(
-            $predecessor,
-            $predecessor->code_location,
-            $sink,
-            $unreported_taints,
-            $config,
-            $codebase,
-        );
-    }
-
-    private function reportTaintedFlow(
-        DataFlowNode $generated_source,
-        CodeLocation $source_location,
-        DataFlowNode $sink,
-        int $matching_taints,
-        Config $config,
-        Codebase $codebase,
-    ): void {
         if ($sink->code_location
             && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
         ) {
             $issue_location = $sink->code_location;
         } else {
-            $issue_location = $source_location;
+            $issue_location = $predecessor->code_location;
         }
 
-        $issue_trace = $this->getIssueTrace($generated_source);
-        $path = $this->getPredecessorPath($generated_source)
+        $issue_trace = $this->getIssueTrace($predecessor);
+        $path = $this->getPredecessorPath($predecessor)
             . ' -> ' . $this->getSuccessorPath($sink);
 
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
-            if (!($matching_taints & $t)) {
+            if (!($unreported_taints & $t)) {
                 continue;
             }
             $issue = match ($t) {
