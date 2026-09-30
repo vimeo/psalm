@@ -2742,6 +2742,96 @@ final class TaintTest extends TestCase
                     echo spec(spec($_GET["a"]));',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintLateArrayThroughSpecializedFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getV(array $a): mixed {
+                        return $a["v"];
+                    }
+
+                    $notEchoed = getV(["k" => $_GET["a"]]);
+                    $b1 = $_GET["b"];
+                    $b2 = $b1;
+                    $b3 = $b2;
+                    echo (string) getV(["v" => $b3]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOnAnotherInstanceOfSpecializedClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Box {
+                        public function take(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new Box();
+                    $b = new Box();
+                    $notEchoed = $a->take($_GET["a"]);
+                    echo $b->take($b->take($_GET["b"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'SKIPPED-taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
+                // A specialized body is walked once per entry, keyed by the 4 outermost open array assignments: calls differing deeper share the first walk
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function get5(array $a): mixed {
+                        return $a["a"]["b"]["c"]["d"]["e"];
+                    }
+
+                    $notEchoed = get5(["a" => ["b" => ["c" => ["d" => ["x" => $_GET["a"]]]]]]);
+                    echo (string) get5(["a" => ["b" => ["c" => ["d" => ["e" => $_GET["b"]]]]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'SKIPPED-taintLateArrayThroughImpureFunction' => [
+                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+                'code' => '<?php
+                    function pass(array $a): array {
+                        $GLOBALS["n"] = 1;
+                        return $a;
+                    }
+
+                    $notEchoed = pass(["k" => $_GET["a"]]);
+                    $b1 = $_GET["b"];
+                    $b2 = $b1;
+                    $b3 = $b2;
+                    $y = pass(["v" => $b3]);
+                    echo (string) $y["v"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'SKIPPED-taintLateArrayThroughStaticProperty' => [
+                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, mixed> */
+                        public static array $p = [];
+                    }
+
+                    C::$p = ["k" => $_GET["a"]];
+                    $b1 = $_GET["b"];
+                    $b2 = $b1;
+                    $b3 = $b2;
+                    C::$p = ["v" => $b3];
+                    echo (string) C::$p["v"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'SKIPPED-taintLateArrayThroughInstanceProperty' => [
+                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, mixed> */
+                        public array $p = [];
+                    }
+
+                    $c = new C();
+                    $c->p = ["k" => $_GET["a"]];
+                    $b1 = $_GET["b"];
+                    $b2 = $b1;
+                    $b3 = $b2;
+                    $c->p = ["v" => $b3];
+                    echo (string) $c->p["v"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSpecializedMethodCallOnInstanceTaintedByAPreviousCall' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -3868,6 +3958,24 @@ final class TaintTest extends TestCase
                 'expectedIssueTypes' => [
                     'TaintedShell{ function runCmd(string $cmd): void {} }',
                     'TaintedShell{ function runCmd(string $cmd): void {} }',
+                ],
+                'expectedSourceLines' => [7, 8],
+            ],
+            'lateFlowIntoSinkOfClassLevelSpecializedMethod' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Runner {
+                        public function run(string $cmd): void { exec($cmd); }
+                    }
+
+                    (new Runner())->run((string) ($_GET["a"] ?? ""));
+                    $b1 = (string) ($_GET["b"] ?? "");
+                    $b2 = $b1;
+                    (new Runner())->run($b2);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedShell{ public function run(string $cmd): void { exec($cmd); } }',
+                    'TaintedShell{ public function run(string $cmd): void { exec($cmd); } }',
                 ],
                 'expectedSourceLines' => [7, 8],
             ],
