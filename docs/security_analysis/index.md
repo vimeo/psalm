@@ -84,6 +84,18 @@ $html = "
 
 To avoid these issues, use Parameterised Queries for SQL and Commands (e.g. `exec`); and a context-aware templating engine for HTML. Then use the [literal-string](https://psalm.dev/docs/annotating_code/type_syntax/scalar_types/#literal-string) type to ensure sensitive strings are defined in your application (i.e. have been written by a developer).
 
+## Security Issues
+
+The issues of security analysis (`TaintedHtml`, `TaintedSql`, ...) flag potential vulnerabilities rather than type errors or code-quality problems. To tell them apart, Psalm's human-readable reports (`console`, `compact`, `table`, `by-issue-level` and `phpstorm`) show them under a `SECURITY` header instead of `ERROR`:
+
+```
+SECURITY: TaintedHtml - src/index.php:2:1 - Detected tainted HTML
+```
+
+A security issue configured with `errorLevel="info"` is still shown as `INFO`. Machine-readable reports (JSON, checkstyle, SARIF, ...) keep their usual severities; the JSON and XML reports also include an `is_security` field.
+
+Plugins can mark their own issues the same way by implementing the `Psalm\Issue\SecurityIssue` interface.
+
 ## Using Baseline With Taint Analysis
 
 Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.

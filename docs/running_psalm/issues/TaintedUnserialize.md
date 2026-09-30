@@ -1,5 +1,7 @@
 # TaintedUnserialize
 
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+
 Tainted input detected to an `unserialize` call.
 
 Passing untrusted user input to `unserialize` calls is dangerous – from the [PHP documentation on unserialize](https://www.php.net/manual/en/function.unserialize.php):

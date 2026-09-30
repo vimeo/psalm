@@ -1315,6 +1315,7 @@ final class PreloaderList {
         \Psalm\Issue\ReservedWord::class,
         \Psalm\Issue\RiskyCast::class,
         \Psalm\Issue\RiskyTruthyFalsyComparison::class,
+        \Psalm\Issue\SecurityIssue::class,
         \Psalm\Issue\StringIncrement::class,
         \Psalm\Issue\TaintedCallable::class,
         \Psalm\Issue\TaintedCookie::class,
