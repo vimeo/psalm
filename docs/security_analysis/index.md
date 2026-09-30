@@ -92,7 +92,7 @@ The issues of security analysis (`TaintedHtml`, `TaintedSql`, ...) flag potentia
 SECURITY: TaintedHtml - src/index.php:2:1 - Detected tainted HTML
 ```
 
-A security issue configured with `errorLevel="info"` is still shown as `INFO`. Machine-readable reports (JSON, checkstyle, SARIF, ...) keep their usual severities.
+A security issue configured with `errorLevel="info"` is still shown as `INFO`. Machine-readable reports (JSON, checkstyle, SARIF, ...) keep their usual severities; the JSON and XML reports also include an `is_security` field.
 
 Plugins can mark their own issues the same way by implementing the `Psalm\Issue\SecurityIssue` interface.
 

@@ -175,6 +175,7 @@ final class ReportOutputTest extends TestCase
                 'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
+                'is_security' => false,
             ],
             [
                 'link' => 'https://psalm.dev/138',
@@ -197,6 +198,7 @@ final class ReportOutputTest extends TestCase
                 'error_level' => 1,
                 'taint_trace' => null,
                 'other_references' => null,
+                'is_security' => false,
             ],
             [
                 'link' => 'https://psalm.dev/020',
@@ -219,6 +221,7 @@ final class ReportOutputTest extends TestCase
                 'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
+                'is_security' => false,
             ],
             [
                 'link' => 'https://psalm.dev/126',
@@ -241,6 +244,7 @@ final class ReportOutputTest extends TestCase
                 'error_level' => 3,
                 'taint_trace' => null,
                 'other_references' => null,
+                'is_security' => false,
             ],
         ];
 
