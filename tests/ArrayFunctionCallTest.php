@@ -2938,6 +2938,112 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayFirstLastSpreadArgument' => [
+                'code' => '<?php
+                    $a = array_first(...[[1, "a"]]);
+                    $b = array_last(...[[1, "a"]]);
+                    $c = array_first(...[[]]);
+                    $d = array_last(...[[]]);
+                    $e = array_first(...["array" => [1, "a"]]);
+                    $f = array_last(...["array" => [1, "a"]]);',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'a\'',
+                    '$c===' => 'null',
+                    '$d===' => 'null',
+                    '$e===' => '1',
+                    '$f===' => '\'a\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftSpreadArgument' => [
+                'code' => '<?php
+                    $pop_args = [[1, "a"]];
+                    $a = array_pop(...$pop_args);
+                    $shift_args = [[1, "a"]];
+                    $b = array_shift(...$shift_args);
+                    $empty_args = [[]];
+                    $c = array_pop(...$empty_args);',
+                'assertions' => [
+                    '$a===' => '\'a\'',
+                    '$b===' => '1',
+                    '$c===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-array<string, int>
+                     * @param T $arr
+                     */
+                    function firstOfBound(array $arr): int {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T of list<int>
+                     * @param T $arr
+                     */
+                    function lastOfBound(array $arr): ?int {
+                        return array_last($arr);
+                    }
+
+                    /**
+                     * @template T
+                     * @param non-empty-list<T> $arr
+                     * @return T
+                     */
+                    function firstElement(array $arr) {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<string, T> $arr
+                     * @return T|null
+                     */
+                    function lastElement(array $arr) {
+                        return array_last($arr);
+                    }
+
+                    $a = firstElement([new DateTime()]);
+                    $b = lastElement(["a" => 1]);',
+                'assertions' => [
+                    '$a===' => 'DateTime',
+                    '$b===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftKnownListElements' => [
+                'code' => '<?php
+                    $list = [1, "a", 2.5];
+                    $a = array_pop($list);
+                    $b = array_shift($list);
+
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getList(): array { return [1, "a"]; }
+                    $list2 = getList();
+                    $c = array_pop($list2);
+
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function popBound(array $arr): int {
+                        return array_pop($arr);
+                    }',
+                'assertions' => [
+                    '$a===' => 'float(2.5)',
+                    '$b===' => '1',
+                    '$c===' => 'float|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -3406,6 +3512,15 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'UndefinedFunction',
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'arrayFirstTraversableArgument' => [
+                'code' => '<?php
+                    function f(Traversable $t): void {
+                        array_first($t);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

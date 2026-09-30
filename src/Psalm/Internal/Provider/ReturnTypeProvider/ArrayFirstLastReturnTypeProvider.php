@@ -5,23 +5,28 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
+use PhpParser\Node\Arg;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_merge;
+use function array_shift;
 use function array_values;
 use function count;
 
 /**
  * Infers the return type of array_first() and array_last() (PHP 8.5+).
  *
- * Neither function modifies its argument, so unlike array_shift() and array_pop()
- * there is nothing to do with the passed array itself.
+ * The inference is shared with array_shift() and array_pop(), which return the same
+ * element. Neither array_first() nor array_last() modifies its argument.
  *
  * @internal
  */
@@ -40,24 +45,53 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
-        $call_args = $event->getCallArgs();
 
-        if (!$statements_source instanceof StatementsAnalyzer || count($call_args) !== 1) {
+        if (!$statements_source instanceof StatementsAnalyzer) {
             return null;
         }
 
-        $first_arg_type = $statements_source->node_data->getType($call_args[0]->value);
+        return self::getElementType(
+            $statements_source,
+            $event->getCallArgs(),
+            $event->getFunctionId() === 'array_first',
+        );
+    }
 
-        if (!$first_arg_type || $first_arg_type->hasMixed()) {
+    /**
+     * Returns the type of the first or last element of the array passed as the only argument,
+     * or null when it cannot be inferred.
+     *
+     * @param list<Arg> $call_args
+     */
+    public static function getElementType(
+        StatementsAnalyzer $statements_analyzer,
+        array $call_args,
+        bool $is_first,
+    ): ?Union {
+        $array_arg_type = self::getArrayArgType($statements_analyzer, $call_args);
+
+        if (!$array_arg_type) {
             return null;
         }
 
-        $is_first = $event->getFunctionId() === 'array_first';
+        $atomic_types = $array_arg_type->getAtomicTypes();
         $return_type = null;
+        $has_array = false;
         $nullable = false;
 
-        foreach ($first_arg_type->getAtomicTypes() as $atomic_type) {
+        while ($atomic_type = array_shift($atomic_types)) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                continue;
+            }
+
+            if ($atomic_type instanceof TMixed) {
+                return null;
+            }
+
             if ($atomic_type instanceof TArray) {
+                $has_array = true;
+
                 if ($atomic_type->isEmptyArray()) {
                     $nullable = true;
                     continue;
@@ -69,21 +103,28 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                     $nullable = true;
                 }
             } elseif ($atomic_type instanceof TKeyedArray) {
-                [$value_type, $possibly_empty] = self::getKeyedArrayValueType($atomic_type, $is_first);
+                $has_array = true;
+
+                [$value_type, $possibly_empty] = self::getKeyedArrayElementType($atomic_type, $is_first);
 
                 if ($possibly_empty) {
                     $nullable = true;
                 }
             } else {
-                // Not an array we understand (e.g. a template or iterable), use the callmap signature
-                return null;
+                // Any other type (e.g. iterable or null) makes the call throw a TypeError,
+                // which the callmap signature reports as an invalid argument
+                continue;
             }
 
             $return_type = Type::combineUnionTypes($return_type, $value_type);
         }
 
+        if (!$has_array) {
+            return null;
+        }
+
         if ($return_type === null) {
-            return $nullable ? Type::getNull() : null;
+            return Type::getNull();
         }
 
         if (!$nullable) {
@@ -92,7 +133,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
 
         $return_type = $return_type->getBuilder()->addType(Type::getNull()->getSingleAtomic());
 
-        if ($statements_source->getCodebase()->config->ignore_internal_nullable_issues) {
+        if ($statements_analyzer->getCodebase()->config->ignore_internal_nullable_issues) {
             $return_type->ignore_nullable_issues = true;
         }
 
@@ -100,12 +141,47 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
     }
 
     /**
+     * @param list<Arg> $call_args
+     */
+    private static function getArrayArgType(StatementsAnalyzer $statements_analyzer, array $call_args): ?Union
+    {
+        if (count($call_args) !== 1) {
+            return null;
+        }
+
+        $arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
+
+        if (!$arg_type || !$call_args[0]->unpack) {
+            return $arg_type;
+        }
+
+        // With f(...$args), the array argument is the first element of $args, or its "array" key
+        if (!$arg_type->isSingle()) {
+            return null;
+        }
+
+        $unpacked = $arg_type->getSingleAtomic();
+
+        if (!$unpacked instanceof TKeyedArray) {
+            return null;
+        }
+
+        $array_arg_type = $unpacked->properties[0] ?? $unpacked->properties['array'] ?? null;
+
+        if (!$array_arg_type || $array_arg_type->possibly_undefined) {
+            return null;
+        }
+
+        return $array_arg_type;
+    }
+
+    /**
      * Only lists have a known key order: the key order of other shapes is not
      * guaranteed, so for them every value is a candidate.
      *
-     * @return array{Union, bool} the value type, and whether the array may be empty
+     * @return array{Union, bool} the element type, and whether the array may be empty
      */
-    private static function getKeyedArrayValueType(TKeyedArray $array, bool $is_first): array
+    private static function getKeyedArrayElementType(TKeyedArray $array, bool $is_first): array
     {
         $possibly_empty = !$array->isNonEmpty();
 
