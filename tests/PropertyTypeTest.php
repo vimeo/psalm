@@ -2468,6 +2468,42 @@ final class PropertyTypeTest extends TestCase
                         $class::$p = 2;
                     }',
             ],
+            'staticPropertyFetchViaThis' => [
+                'code' => '<?php
+                    trait T {
+                        public function fromTrait(): int {
+                            return $this::$declared_in_user;
+                        }
+                    }
+
+                    class Base {
+                        public static int $public_prop = 1;
+                        private static int $private_prop = 2;
+                        protected static int $protected_prop = 3;
+
+                        public function fromBase(): int {
+                            return $this::$private_prop + $this::$protected_prop;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        use T;
+
+                        public static int $declared_in_user = 4;
+
+                        public function fromChild(): int {
+                            return $this::$public_prop + $this::$protected_prop;
+                        }
+                    }',
+            ],
+            'staticPropertyFetchViaObjectOfUnknownClass' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        /** @psalm-suppress MixedAssignment */
+                        $x = $o::$p;
+                        echo gettype($x);
+                    }',
+            ],
             'promotedPublicPropertyWithDefault' => [
                 'code' => '<?php
                     class A {
@@ -2960,6 +2996,37 @@ final class PropertyTypeTest extends TestCase
                         $class::$p = 2;
                     }',
                 'error_message' => 'InvalidStringClass',
+            ],
+            'undefinedStaticPropertyFetchViaStdClassObject' => [
+                'code' => '<?php
+                    function f(stdClass $o): void {
+                        echo (string) $o::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src/somefile.php:3:39 - Static property stdClass::$p is not defined',
+            ],
+            'undefinedStaticPropertyFetchViaObjectWithMagicGetter' => [
+                'code' => '<?php
+                    final class A {
+                        public function __get(string $name): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src/somefile.php:9:32 - Static property A::$p is not defined',
+            ],
+            'instancePropertyFetchedStaticallyViaObject' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        return $a::$p;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch - src/somefile.php:7:32 - Static property A::$p is not defined',
             ],
             'nullsafePropertyFetchLooselyEqualDoesNotAssertNotNull' => [
                 'code' => '<?php
