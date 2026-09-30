@@ -491,7 +491,16 @@ final class TaintFlowGraph extends DataFlowGraph
                 // If we have one or more edges starting at this node,
                 // process destinations of those edges.
                 if (isset($this->forward_edges[$source->id])) {
-                    $generated_sources = [$source];
+                    $this->getChildNodes(
+                        $new_sources,
+                        $source,
+                        $visited_source_ids,
+                        $sinks,
+                        $sink_reachable,
+                        $config,
+                        $project_analyzer,
+                        $codebase,
+                    );
                 } elseif ($source->specialization_key !== null
                     && isset($this->specialized_calls[$source->specialization_key])
                 ) {
@@ -505,17 +514,35 @@ final class TaintFlowGraph extends DataFlowGraph
                     if (isset($this->despecialized_calls[$source->specialization_key])) {
                         // A despecialized call is entered like an unspecialized one: the body is walked
                         // in the context of the flow, and it is exited through all of its call sites.
-                        $generated_sources = [
+                        $this->getChildNodes(
+                            $new_sources,
                             $source->withSpecialization($source->unspecialized_id, null, null, $source->context),
-                        ];
+                            $visited_source_ids,
+                            $sinks,
+                            $sink_reachable,
+                            $config,
+                            $project_analyzer,
+                            $codebase,
+                        );
                     } else {
-                        $generated_sources = $this->enterSpecializedCall(
+                        foreach ($this->enterSpecializedCall(
                             $source,
                             $source->unspecialized_id,
                             $source->specialization_key,
                             $config,
                             $codebase,
-                        );
+                        ) as $generated_source) {
+                            $this->getChildNodes(
+                                $new_sources,
+                                $generated_source,
+                                $visited_source_ids,
+                                $sinks,
+                                $sink_reachable,
+                                $config,
+                                $project_analyzer,
+                                $codebase,
+                            );
+                        }
                     }
                 } elseif (isset($this->specializations[$source->id])) {
                     // If this node has first level specializations (=> is first-level & unspecialized),
@@ -523,55 +550,74 @@ final class TaintFlowGraph extends DataFlowGraph
                     // the calls the flow's body was entered through (see addEntryExit()).
                     Assert::null($source->specialization_key);
 
-                    $generated_sources = [];
-                    $specializations = $this->specializations[$source->id];
+                    $has_specialized_calls = false;
 
-                    // The call sites of despecialized calls are all exited, keeping the context of the flow.
-                    foreach ($specializations as $specialization => $specialized_id) {
-                        if (isset($this->despecialized_calls[$specialization])) {
-                            $generated_sources[] = $source->withSpecialization(
-                                $specialized_id,
-                                $source->id,
-                                $specialization,
-                                $source->context,
-                            );
-
-                            unset($specializations[$specialization]);
+                    foreach ($this->specializations[$source->id] as $specialization => $_) {
+                        if (!isset($this->despecialized_calls[$specialization])) {
+                            $has_specialized_calls = true;
+                            break;
                         }
                     }
 
-                    if ($specializations) {
-                        if ($source->context !== null) {
-                            $generated_sources = [
-                                ...$generated_sources,
-                                ...$this->addEntryExit($source->context, $source),
-                            ];
-                        } else {
-                            foreach ($specializations as $specialization => $specialized_id) {
-                                $generated_sources[] = $source->withSpecialization(
+                    $exits = $has_specialized_calls && $source->context !== null
+                        ? $this->addEntryExit($source->context, $source)
+                        : [];
+
+                    // The call sites of despecialized calls are all exited, keeping the context of the flow.
+                    foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
+                        if (isset($this->despecialized_calls[$specialization])) {
+                            $this->getChildNodes(
+                                $new_sources,
+                                $source->withSpecialization(
                                     $specialized_id,
                                     $source->id,
                                     $specialization,
-                                    null,
+                                    $source->context,
+                                ),
+                                $visited_source_ids,
+                                $sinks,
+                                $sink_reachable,
+                                $config,
+                                $project_analyzer,
+                                $codebase,
+                            );
+                        }
+                    }
+
+                    if ($has_specialized_calls && $source->context !== null) {
+                        foreach ($exits as $generated_source) {
+                            $this->getChildNodes(
+                                $new_sources,
+                                $generated_source,
+                                $visited_source_ids,
+                                $sinks,
+                                $sink_reachable,
+                                $config,
+                                $project_analyzer,
+                                $codebase,
+                            );
+                        }
+                    } elseif ($has_specialized_calls) {
+                        foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
+                            if (!isset($this->despecialized_calls[$specialization])) {
+                                $this->getChildNodes(
+                                    $new_sources,
+                                    $source->withSpecialization(
+                                        $specialized_id,
+                                        $source->id,
+                                        $specialization,
+                                        null,
+                                    ),
+                                    $visited_source_ids,
+                                    $sinks,
+                                    $sink_reachable,
+                                    $config,
+                                    $project_analyzer,
+                                    $codebase,
                                 );
                             }
                         }
                     }
-                } else {
-                    continue;
-                }
-
-                foreach ($generated_sources as $generated_source) {
-                    $this->getChildNodes(
-                        $new_sources,
-                        $generated_source,
-                        $visited_source_ids,
-                        $sinks,
-                        $sink_reachable,
-                        $config,
-                        $project_analyzer,
-                        $codebase,
-                    );
                 }
             }
 
