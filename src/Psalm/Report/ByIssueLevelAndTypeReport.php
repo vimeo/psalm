@@ -69,11 +69,7 @@ HEADING;
 
         $is_error = $issue_data->severity === Config::REPORT_ERROR;
 
-        if ($is_error) {
-            $issue_string .= ($this->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
-        } else {
-            $issue_string .= 'INFO';
-        }
+        $issue_string .= $this->getSeverityLabel($issue_data);
 
         $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 

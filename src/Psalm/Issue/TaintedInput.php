@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 /**
  * @api
  */
-abstract class TaintedInput extends CodeIssue
+abstract class TaintedInput extends CodeIssue implements SecurityIssue
 {
     public const ERROR_LEVEL = -2;
     /** @var int<0, max> */

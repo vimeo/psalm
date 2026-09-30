@@ -1,5 +1,7 @@
 # TaintedHeader
 
+This is a **security issue**, reported by [security analysis](../../security_analysis/index.md): it flags a potential vulnerability rather than a type error or a code-quality problem.
+
 Potential header injection. This rule is emitted when user-controlled input can be passed into an HTTP header.
 
 ## Risk
