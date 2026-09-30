@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\InvalidCast;
@@ -368,7 +369,13 @@ final class CastAnalyzer
 
             if ($atomic_type instanceof TFloat) {
                 if ($atomic_type instanceof TLiteralFloat) {
-                    $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
+                    $int = LiteralCast::toInt($atomic_type->value);
+
+                    if ($int === null) {
+                        $castable_types[] = new TInt();
+                    } else {
+                        $valid_ints[] = new TLiteralInt($int);
+                    }
                 } else {
                     $castable_types[] = new TInt();
                 }
@@ -748,7 +755,7 @@ final class CastAnalyzer
                 || $atomic_type instanceof TNumeric
             ) {
                 if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
+                    $valid_strings[] = Type::getAtomicStringFromLiteral(LiteralCast::toString($atomic_type->value));
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
                 } elseif ($atomic_type instanceof TIntRange
