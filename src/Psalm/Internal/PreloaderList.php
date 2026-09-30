@@ -1386,6 +1386,7 @@ final class PreloaderList {
         \Psalm\Issue\UnusedConstructor::class,
         \Psalm\Issue\UnusedDocblockParam::class,
         \Psalm\Issue\UnusedForeachValue::class,
+        \Psalm\Issue\UnusedFunction::class,
         \Psalm\Issue\UnusedFunctionCall::class,
         \Psalm\Issue\UnusedIssueHandlerSuppression::class,
         \Psalm\Issue\UnusedMethod::class,
