@@ -6,6 +6,8 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser\Node\Arg;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -49,9 +51,25 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
+        $call_args = $event->getCallArgs();
+
+        // If an offset or property of the array is tracked on its own (e.g. changed through a reference),
+        // the type of the array itself may be stale
+        $var_id = isset($call_args[0]) ? ExpressionIdentifier::getExtendedVarId(
+            $call_args[0]->value,
+            $statements_source->getFQCLN(),
+            $statements_source,
+        ) : null;
+
+        if ($var_id !== null
+            && ArrayFunctionArgumentsAnalyzer::hasTrackedDescendant($var_id, $event->getContext())
+        ) {
+            return null;
+        }
+
         return self::getElementType(
             $statements_source,
-            $event->getCallArgs(),
+            $call_args,
             $event->getFunctionId() === 'array_first',
         );
     }

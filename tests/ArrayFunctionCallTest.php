@@ -3268,6 +3268,18 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayFirstLastExactWithoutTrackedOffsets' => [
+                'code' => '<?php
+                    $a = ["first", "last"];
+                    $first = array_first($a);
+                    $last = array_last($a);',
+                'assertions' => [
+                    '$first===' => '\'first\'',
+                    '$last===' => '\'last\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -4074,6 +4086,42 @@ final class ArrayFunctionCallTest extends TestCase
                         $x = &$a[0];
                         $x = "s";
                         return array_shift($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayLastWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["first", "last"];
+                        $x = &$a[1];
+                        $x = new stdClass();
+                        return array_last($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["first", "last"];
+                        $x = &$a[0];
+                        $x = new stdClass();
+                        return array_first($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstSpreadWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $args = [["first", "last"]];
+                        $x = &$args[0][0];
+                        $x = new stdClass();
+                        return array_first(...$args);
                     }',
                 'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],

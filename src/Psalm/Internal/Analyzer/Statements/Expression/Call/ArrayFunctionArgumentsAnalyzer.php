@@ -754,7 +754,7 @@ final class ArrayFunctionArgumentsAnalyzer
      * Whether an offset or property of the variable is tracked on its own (e.g. $a[1] after $x = &$a[1]),
      * in which case the type of the variable itself may be stale.
      */
-    private static function hasTrackedDescendant(string $var_id, Context $context): bool
+    public static function hasTrackedDescendant(string $var_id, Context $context): bool
     {
         $tracked_ids = [
             ...array_keys($context->vars_in_scope),
