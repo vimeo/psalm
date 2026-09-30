@@ -1207,6 +1207,340 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeShortCircuitKeepsNullThroughMethodCalls' => [
+                'code' => '<?php
+                    final class Bar {
+                        public function getId(): int {
+                            return 1;
+                        }
+                        public function getTags(): array {
+                            return [];
+                        }
+                    }
+                    final class Foo {
+                        public Bar $bar;
+                        public function __construct() {
+                            $this->bar = new Bar();
+                        }
+                        public function getBar(): Bar {
+                            return $this->bar;
+                        }
+                    }
+                    function fooOrNull(): ?Foo {
+                        return rand(0, 1) ? new Foo() : null;
+                    }
+                    $foo = fooOrNull();
+
+                    $a = fooOrNull()?->bar->getId();
+                    $b = fooOrNull()?->getBar()->getId();
+                    $c = $foo?->bar->getId();
+                    $d = fooOrNull()?->getBar()->getTags() ?? [];
+                    $e = is_int($a) ? $a : null;',
+                'assertions' => [
+                    '$a' => 'int|null',
+                    '$b' => 'int|null',
+                    '$c' => 'int|null',
+                    '$d' => 'array<array-key, mixed>',
+                    '$e' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeShortCircuitKeepsNullThroughArrayAccessAndStaticCalls' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        /** @return array{C} */
+                        public function items(): array;
+                        public function next(): self;
+                        public static function done(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $x = aOrNull()?->b()->items()[0]->c();
+                    $y = aOrNull()?->b()->next()::done();
+                    $z = aOrNull()?->b()::done();
+                    $w = aOrNull()?->b()->items()[0]->c() ?? 0;',
+                'assertions' => [
+                    '$x' => 'int|null',
+                    '$y' => 'int|null',
+                    '$z' => 'int|null',
+                    '$w' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainKeepsNullOnlyForTheShortCircuit' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public C $prop { get; }
+                        public ?C $nullableProp { get; }
+                        /** @return array{C} */
+                        public function items(): array;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $method = aOrNull()?->b()->next()->items()[0]->c();
+                    $property = aOrNull()?->b()->prop->id;
+                    $array = aOrNull()?->b()->items()[0]->id;
+                    $static = aOrNull()?->b()->prop::done();
+                    $nested = aOrNull()?->b()->maybe()?->c();
+                    $nestedProperty = aOrNull()?->b()->nullableProp?->id;
+                    $inIsset = isset(aOrNull()?->b()->nullableItems()[0]->id);
+                    $coalesced = aOrNull()?->b()->nullableItems()[0]?->c() ?? 0;
+                    $coalescedProperty = aOrNull()?->b()->nullableProp->id ?? 0;',
+                'assertions' => [
+                    '$method' => 'int|null',
+                    '$property' => 'int|null',
+                    '$array' => 'int|null',
+                    '$static' => 'int|null',
+                    '$nested' => 'int|null',
+                    '$nestedProperty' => 'int|null',
+                    '$inIsset' => 'bool',
+                    '$coalesced' => 'int',
+                    '$coalescedProperty' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainKeepsShortCircuitNullInsideIssetEmptyAndCoalesce' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        public C $prop { get; }
+                        public bool $flag { get; }
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $empty = empty(aOrNull()?->b()->prop);
+                    $emptyFlag = empty(aOrNull()?->b()->flag);
+                    $coalesced = aOrNull()?->b()->prop?->c() ?? 0;
+                    $coalescedFlag = aOrNull()?->b()->flag ?? true;',
+                'assertions' => [
+                    '$empty' => 'bool',
+                    '$emptyFlag' => 'bool',
+                    '$coalesced' => 'int',
+                    '$coalescedFlag' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeOnNonNullableReceiverNeverShortCircuits' => [
+                'code' => '<?php
+                    interface B {
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    final class Holder {
+                        public function b(): B {
+                            throw new Exception();
+                        }
+                        public function viaThis(): int {
+                            return $this?->b()->c();
+                        }
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+
+                    $a = a();
+                    $viaVariable = $a?->b();
+                    $viaVariableCall = $a?->b()->c();
+                    $viaCall = a()?->b()->c();',
+                'assertions' => [
+                    '$viaVariable' => 'B',
+                    '$viaVariableCall' => 'int',
+                    '$viaCall' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeOnReceiverThatMayBeNullKeepsTheShortCircuit' => [
+                'code' => '<?php
+                    interface B {
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+                    /**
+                     * @template T of A
+                     * @param T $a
+                     */
+                    function boundedTemplate(A $a): int {
+                        return $a?->b()->c();
+                    }
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @return mixed
+                     */
+                    function unboundedTemplate($a) {
+                        /** @psalm-suppress MixedMethodCall */
+                        return $a?->b()->c();
+                    }
+                    /**
+                     * @template T of bool
+                     * @param T $flag
+                     * @param (T is true ? A : null) $a
+                     */
+                    function conditionalReceiver(bool $flag, $a): ?B {
+                        return $a?->b();
+                    }
+                    try {
+                        $a = a();
+                    } catch (Exception) {}
+                    $fromTry = $a?->b()->c();',
+                'assertions' => [
+                    '$fromTry' => 'int|null',
+                ],
+                'ignored_issues' => [
+                    'RedundantCondition',
+                    'TypeDoesNotContainNull',
+                    'RedundantConditionGivenDocblockType',
+                    'DocblockTypeContradiction',
+                    'PossiblyUndefinedGlobalVariable',
+                ],
+                'php_version' => '8.0',
+            ],
+            'nullsafeConsecutiveHopsOnNonNullableReceiver' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        public C $prop { get; }
+                        public function next(): self;
+                        public function c(): int;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+                    function guarded(?A $a): int {
+                        if ($a === null) {
+                            return 0;
+                        }
+
+                        return $a?->b()?->next()->c();
+                    }
+
+                    $a = a();
+                    $methods = $a?->b()?->next()->c();
+                    $property = $a?->b()?->prop->c();',
+                'assertions' => [
+                    '$methods' => 'int',
+                    '$property' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.4',
+            ],
+            'nullsafeOnNonNullableReceiverKeepsLaterPropertyFetchesClean' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public C $prop;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+
+                    $key = "prop";
+                    $named = a()?->b()->prop->c() ?? 0;
+                    $dynamic = a()?->b()->{$key}->c();',
+                'assertions' => [
+                    '$named' => 'int',
+                    '$dynamic' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainThroughStaticPropertyFetch' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public static C $item;
+                        abstract public function next(): self;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $fetched = aOrNull()?->b()->next()::$item->c();
+                    $coalesced = aOrNull()?->b()->next()::$item->c() ?? 0;',
+                'assertions' => [
+                    '$fetched' => 'int|null',
+                    '$coalesced' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainNormalizesNullWithNever' => [
+                'code' => '<?php
+                    interface B {
+                        public function stop(): never;
+                        public static function halt(): never;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+
+                    function callsStop(?A $a): bool {
+                        return !$a?->b()->stop();
+                    }
+
+                    function callsHalt(?A $a): bool {
+                        return !$a?->b()::halt();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
                     /** @psalm-no-seal-methods */
@@ -1818,6 +2152,236 @@ final class MethodCallTest extends TestCase
                     }
                     $a = fooOrNull()?->getBar();
                     $a->doBaz();',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullReturnedByLaterMethod' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(A $a): void {
+                        $a->nullableB()?->maybeB()->next();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullReturnedByMethodAfterShortCircuit' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->maybe()->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullArrayElementMethodCall' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableItems()[0]->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullArrayElementPropertyFetch' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableItems()[0]->id;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullPropertyFetch' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableProp->id;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullNestedArrayAccess' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableNested()[0][0];
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsNullReturnedByMethodUsedAsClass' => [
+                'code' => '<?php
+                    interface C {
+                        public int $id { get; }
+                        public function c(): int;
+                        public static function done(): int;
+                    }
+                    interface B {
+                        public ?C $nullableProp { get; }
+                        public function maybeB(): ?B;
+                        public function next(): self;
+                        public function maybe(): ?C;
+                        /** @return array{C|null} */
+                        public function nullableItems(): array;
+                        /** @return array{array{int}|null} */
+                        public function nullableNested(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                        public function maybe(): ?C;
+                        public function nullableB(): ?B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->maybe()::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'nullsafeChainReportsPossiblyUndefinedArrayElementInCoalesce' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        /** @return array{0?: C} */
+                        public function optionalItems(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+
+                    function f(?A $a): int {
+                        return $a?->b()->optionalItems()[0]->c() ?? 0;
+                    }',
                 'error_message' => 'PossiblyNullReference',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
