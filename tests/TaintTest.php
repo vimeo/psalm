@@ -2648,6 +2648,100 @@ final class TaintTest extends TestCase
                     echo wrap(wrap($_GET["a"]));',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSuccessiveCallsOfInferredPureFunction' => [
+                'code' => '<?php
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $a = id($_GET["a"]);
+                    $b = id($a);
+                    echo $b;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInferredPureFunctionCallingInferredPureFunction' => [
+                'code' => '<?php
+                    function wrap(string $s): string {
+                        return id($s);
+                    }
+
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    echo wrap(wrap($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInferredPureFinalClassMethod' => [
+                'code' => '<?php
+                    final class Str {
+                        public function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $str = new Str();
+                    echo $str->id($str->id($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInferredPureStaticMethod' => [
+                'code' => '<?php
+                    final class Str {
+                        public static function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    echo Str::id(Str::id($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInheritedInferredPureFinalMethod' => [
+                'code' => '<?php
+                    class Base {
+                        final public function id(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    class Child extends Base {}
+
+                    $c = new Child();
+                    echo $c->id($c->id($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInferredPureFunctionThroughCallableString' => [
+                'code' => '<?php
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $f = "id";
+                    echo $f($f($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfMutuallyRecursiveInferredPureFunctions' => [
+                'code' => '<?php
+                    function even(string $s, int $n): string {
+                        return $n > 0 ? odd($s, $n - 1) : $s;
+                    }
+
+                    function odd(string $s, int $n): string {
+                        return $n > 0 ? even($s, $n - 1) : $s;
+                    }
+
+                    echo even(even($_GET["a"], 2), 2);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfTaintSpecializedFunction' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function spec(string $s): string {
+                        return $s;
+                    }
+
+                    echo spec(spec($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSpecializedMethodCallOnInstanceTaintedByAPreviousCall' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
