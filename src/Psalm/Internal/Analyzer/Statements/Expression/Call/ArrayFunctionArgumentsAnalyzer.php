@@ -39,19 +39,23 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_keys;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
 use function in_array;
 use function is_numeric;
 use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -60,6 +64,12 @@ use function substr;
  */
 final class ArrayFunctionArgumentsAnalyzer
 {
+    /**
+     * Node attribute set on the argument of array_pop()/array_shift() when an offset or property of it
+     * was tracked separately before the call, so the type of the variable itself may be stale.
+     */
+    public const HAS_TRACKED_DESCENDANTS = 'psalmByRefArrayHasTrackedDescendants';
+
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
      */
@@ -628,12 +638,17 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
+            // checked before the descendants are removed below
+            if (self::hasTrackedDescendant($var_id, $context)) {
+                $arg->value->setAttribute(self::HAS_TRACKED_DESCENDANTS, true);
+            }
+
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
+                foreach (self::expandArrayTemplates($context->vars_in_scope[$var_id]) as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -661,6 +676,14 @@ final class ArrayFunctionArgumentsAnalyzer
                             if (!$array_properties) {
                                 $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
+                                // if the popped element was optional, the last required one may be gone instead
+                                $min_count = $array_atomic_type->getMinCount() - 1;
+                                foreach ($array_properties as $offset => $property) {
+                                    if ($offset >= $min_count && !$property->possibly_undefined) {
+                                        $array_properties[$offset] = $property->setPossiblyUndefined(true);
+                                    }
+                                }
+
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
@@ -719,11 +742,56 @@ final class ArrayFunctionArgumentsAnalyzer
                 if (!$array_atomic_types) {
                     throw new AssertionError("We must have some types here!");
                 }
-                $array_type = new Union($array_atomic_types);
+                // combine rather than index by key: expanded template bounds may hold several arrays
+                $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
+    }
+
+    /**
+     * Whether an offset or property of the variable is tracked on its own (e.g. $a[1] after $x = &$a[1]),
+     * in which case the type of the variable itself may be stale.
+     */
+    public static function hasTrackedDescendant(string $var_id, Context $context): bool
+    {
+        $tracked_ids = [
+            ...array_keys($context->vars_in_scope),
+            ...array_keys($context->references_in_scope),
+            ...array_values($context->references_in_scope),
+            ...array_keys($context->references_to_external_scope),
+            ...array_keys($context->referenced_counts),
+        ];
+
+        foreach ($tracked_ids as $tracked_id) {
+            if (str_starts_with($tracked_id, $var_id . '[') || str_starts_with($tracked_id, $var_id . '->')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Replaces template params with their (non-mixed) bounds: once an element is removed,
+     * the variable no longer holds a value of the template type.
+     *
+     * @return list<Atomic>
+     */
+    private static function expandArrayTemplates(Union $type): array
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && !$atomic_type->as->hasMixed()) {
+                $atomic_types = [...$atomic_types, ...self::expandArrayTemplates($atomic_type->as)];
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $atomic_types;
     }
 
     /**

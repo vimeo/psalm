@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
+use PhpParser\Node\Expr\Variable;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
+use function in_array;
+use function is_string;
+
 /**
+ * The by-reference effect on the argument is handled by ArrayFunctionArgumentsAnalyzer.
+ *
  * @internal
  */
 final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
@@ -33,68 +37,47 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
         $statements_source = $event->getStatementsSource();
-        $call_args = $event->getCallArgs();
-        $function_id = $event->getFunctionId();
+
         if (!$statements_source instanceof StatementsAnalyzer) {
             return Type::getMixed();
         }
 
-        $first_arg = $call_args[0]->value ?? null;
+        $call_args = $event->getCallArgs();
 
-        $first_arg_array = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && !$first_arg_type->hasMixed()
-            && (($array_atomic_type = $first_arg_type->getArray()) instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray)
-        ? $array_atomic_type
-        : null;
+        // The by-reference adjustment is only reliable for plain variables that take no part in a
+        // reference: it doesn't track array offsets or unpacked arguments, a property may be shared
+        // with an object alias, and a reference may have been changed through another name. For
+        // anything else, keep the historical inference (the first element of a list for array_shift,
+        // the generic value type otherwise).
+        $first_arg = $call_args[0] ?? null;
+        $is_tracked = $first_arg
+            && !$first_arg->unpack
+            && $first_arg->value instanceof Variable
+            && is_string($first_arg->value->name)
+            && !$first_arg->value->getAttribute(ArrayFunctionArgumentsAnalyzer::HAS_TRACKED_DESCENDANTS, false)
+            && !self::isReferenced('$' . $first_arg->value->name, $event->getContext(), $statements_source);
 
-        if (!$first_arg_array) {
-            return Type::getMixed();
-        }
+        return ArrayFirstLastReturnTypeProvider::getElementType(
+            $statements_source,
+            $call_args,
+            $event->getFunctionId() === 'array_shift',
+            $is_tracked,
+        ) ?? Type::getMixed();
+    }
 
-        $nullable = false;
-
-        if ($first_arg_array instanceof TArray) {
-            $value_type = $first_arg_array->type_params[1];
-
-            if ($first_arg_array->isEmptyArray()) {
-                return Type::getNull();
-            }
-
-            if (!$first_arg_array instanceof TNonEmptyArray) {
-                $nullable = true;
-            }
-        } else {
-            // special case where we know the type of the first element
-            if ($function_id === 'array_shift' && $first_arg_array->is_list && isset($first_arg_array->properties[0])) {
-                $value_type = $first_arg_array->properties[0];
-                if ($value_type->possibly_undefined) {
-                    $value_type = $value_type->setPossiblyUndefined(false);
-                    $nullable = true;
-                }
-            } else {
-                $value_type = $first_arg_array->getGenericValueType();
-
-                if (!$first_arg_array->isNonEmpty()) {
-                    $nullable = true;
-                }
-            }
-        }
-
-        if ($nullable) {
-            $value_type = $value_type->getBuilder()->addType(new TNull);
-
-            $codebase = $statements_source->getCodebase();
-
-            if ($codebase->config->ignore_internal_nullable_issues) {
-                $value_type->ignore_nullable_issues = true;
-            }
-
-            $value_type = $value_type->freeze();
-        }
-
-        return $value_type;
+    private static function isReferenced(
+        string $var_id,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        return isset($context->references_in_scope[$var_id])
+            || in_array($var_id, $context->references_in_scope, true)
+            || ($context->referenced_counts[$var_id] ?? 0) > 0
+            || isset($context->references_to_external_scope[$var_id])
+            || isset($context->references_possibly_from_confusing_scope[$var_id])
+            || isset($context->referenced_globals[$var_id])
+            || isset($context->byref_constraints[$var_id])
+            || isset($statements_analyzer->byref_uses[$var_id])
+            || ($context->vars_in_scope[$var_id] ?? null)?->by_ref === true;
     }
 }
