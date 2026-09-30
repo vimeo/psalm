@@ -1448,6 +1448,7 @@ final class PreloaderList {
         \Psalm\Node\Expr\VirtualNew::class,
         \Psalm\Node\Expr\VirtualNullsafeMethodCall::class,
         \Psalm\Node\Expr\VirtualNullsafePropertyFetch::class,
+        \Psalm\Node\Expr\VirtualPipeValue::class,
         \Psalm\Node\Expr\VirtualPostDec::class,
         \Psalm\Node\Expr\VirtualPostInc::class,
         \Psalm\Node\Expr\VirtualPreDec::class,

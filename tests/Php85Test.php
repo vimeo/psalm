@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,6 +14,50 @@ final class Php85Test extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * Purity of a call result is only tracked while unused variables are being searched for.
+     */
+    public function testPipeResultIsPureCompatible(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->find_unused_variables = true;
+        $codebase->config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Box
+                {
+                    public int $value = 0;
+
+                    /** @psalm-external-mutation-free */
+                    public function set(int $x): int
+                    {
+                        $this->value = $x;
+                        return $x;
+                    }
+                }
+
+                /** @psalm-pure */
+                function makeBox(int $_x): Box
+                {
+                    return new Box();
+                }
+
+                /** @psalm-pure */
+                function fresh(): int
+                {
+                    return (1 |> makeBox(...))->set(2);
+                }
+            ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $this->assertSame([], IssueBuffer::getIssuesData()['somefile.php'] ?? []);
+    }
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -148,6 +194,78 @@ final class Php85Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'pipeOperatorPreferRefParameterDoesNotModifyLeftHandSide' => [
+                'code' => '<?php
+                    $a = [2, 1];
+                    $sorted = $a |> array_multisort(...);',
+                'assertions' => [
+                    '$a===' => 'list{2, 1}',
+                    '$sorted===' => 'true',
+                ],
+                'ignored_issues' => ['InvalidArgument'],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorReferenceReturningCallToByRefParameter' => [
+                'code' => '<?php
+                    function &refret(int $x): int
+                    {
+                        static $n = 0;
+                        $n = $x;
+                        return $n;
+                    }
+
+                    function set(int &$x): void
+                    {
+                        $x = 3;
+                    }
+
+                    set(1 |> refret(...));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorTypesClosureFromParameter' => [
+                'code' => '<?php
+                    /** @param Closure(int): int $f */
+                    function apply(Closure $f): int
+                    {
+                        return $f(1);
+                    }
+
+                    $x = (fn($i) => $i + 1) |> apply(...);',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorNarrowsPipedVariable' => [
+                'code' => '<?php
+                    /** @psalm-assert string $x */
+                    function assertString(mixed $x): void
+                    {
+                        if (!is_string($x)) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    function checked(?string $s): int
+                    {
+                        if ($s |> is_string(...)) {
+                            return strlen($s);
+                        }
+                        return 0;
+                    }
+
+                    function asserted(mixed $m): int
+                    {
+                        $m |> assertString(...);
+                        return strlen($m);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -199,6 +317,26 @@ final class Php85Test extends TestCase
                     $b = $undefined |> sort(...);',
                 'error_message' => 'UndefinedGlobalVariable',
                 'ignored_issues' => ['InvalidPassByReference'],
+                'php_version' => '8.5',
+            ],
+            'pipeOperatorNoNarrowingWhenRhsReassignsPipedVariable' => [
+                'code' => '<?php
+                    /** @param-out null $s */
+                    function clear(?string &$s): Closure
+                    {
+                        $s = null;
+                        return is_string(...);
+                    }
+
+                    function f(?string $s): int
+                    {
+                        if ($s |> clear($s)) {
+                            return strlen($s);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'NullArgument',
+                'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
             'pipeOperatorRequiresPhp85' => [
