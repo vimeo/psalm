@@ -17,7 +17,6 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function array_shift;
 use function array_values;
 use function count;
@@ -74,14 +73,15 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             return null;
         }
 
-        $atomic_types = $array_arg_type->getAtomicTypes();
+        // numeric keys, so that template bounds appended below don't overwrite pending types
+        $atomic_types = array_values($array_arg_type->getAtomicTypes());
         $return_type = null;
         $has_array = false;
         $nullable = false;
 
         while ($atomic_type = array_shift($atomic_types)) {
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
                 continue;
             }
 

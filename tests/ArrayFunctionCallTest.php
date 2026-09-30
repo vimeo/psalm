@@ -3094,6 +3094,78 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayPopShiftSuccessiveCalls' => [
+                'code' => '<?php
+                    /** @return list{0: int, 1: string, 2?: float} */
+                    function getList(): array { return [1, "a"]; }
+
+                    $pop_list = getList();
+                    $a = array_pop($pop_list);
+                    $b = array_pop($pop_list);
+                    $c = array_pop($pop_list);
+
+                    $shift_list = getList();
+                    $d = array_shift($shift_list);
+                    $e = array_shift($shift_list);
+                    $f = array_shift($shift_list);
+
+                    $fixed_list = [1, "a", 2.5];
+                    $g = array_pop($fixed_list);
+                    $h = array_pop($fixed_list);
+                    $i = array_pop($fixed_list);
+                    $j = array_pop($fixed_list);
+
+                    $fixed_shift_list = [1, "a", 2.5];
+                    $k = array_shift($fixed_shift_list);
+                    $l = array_shift($fixed_shift_list);
+                    $m = array_shift($fixed_shift_list);',
+                'assertions' => [
+                    '$a===' => 'float|string',
+                    '$b===' => 'int|string',
+                    '$c===' => 'int|null',
+                    '$d===' => 'int',
+                    '$e===' => 'string',
+                    '$f===' => 'float|null',
+                    '$g===' => 'float(2.5)',
+                    '$h===' => '\'a\'',
+                    '$i===' => '1',
+                    '$j===' => 'null',
+                    '$k===' => '1',
+                    '$l===' => '\'a\'',
+                    '$m===' => 'float(2.5)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftRepeatedOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function popTwice(array $arr): ?int {
+                        $first = array_pop($arr);
+                        /** @psalm-check-type-exact $first = int */
+                        $second = array_pop($arr);
+                        /** @psalm-check-type-exact $second = int|null */
+                        return $second;
+                    }
+
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function shiftTwice(array $arr): ?int {
+                        $first = array_shift($arr);
+                        /** @psalm-check-type-exact $first = int */
+                        $second = array_shift($arr);
+                        /** @psalm-check-type-exact $second = int|null */
+                        return $second;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -3621,6 +3693,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'UndefinedFunction',
                 'ignored_issues' => [],
                 'php_version' => '8.3',
+            ],
+            'arrayFirstMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): int {
+                        return array_first($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayLastMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): int {
+                        return array_last($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): int {
+                        return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftMultipleTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @template U of non-empty-list<int>
+                     * @param T|U $arr
+                     */
+                    function f(array $arr): int {
+                        return array_shift($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceOptionalTail' => [
+                'code' => '<?php
+                    /**
+                     * @param list{0: int, 1: string, 2?: float} $arr
+                     */
+                    function f(array $arr): string {
+                        array_pop($arr);
+                        return array_pop($arr);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

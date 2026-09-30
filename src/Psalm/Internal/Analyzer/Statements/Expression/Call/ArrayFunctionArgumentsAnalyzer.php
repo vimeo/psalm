@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -633,7 +634,7 @@ final class ArrayFunctionArgumentsAnalyzer
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
+                foreach (self::expandArrayTemplates($context->vars_in_scope[$var_id]) as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -661,6 +662,14 @@ final class ArrayFunctionArgumentsAnalyzer
                             if (!$array_properties) {
                                 $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
+                                // if the popped element was optional, the last required one may be gone instead
+                                $min_count = $array_atomic_type->getMinCount() - 1;
+                                foreach ($array_properties as $offset => $property) {
+                                    if ($offset >= $min_count && !$property->possibly_undefined) {
+                                        $array_properties[$offset] = $property->setPossiblyUndefined(true);
+                                    }
+                                }
+
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
@@ -724,6 +733,27 @@ final class ArrayFunctionArgumentsAnalyzer
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
+    }
+
+    /**
+     * Replaces template params with their (non-mixed) bounds: once an element is removed,
+     * the variable no longer holds a value of the template type.
+     *
+     * @return list<Atomic>
+     */
+    private static function expandArrayTemplates(Union $type): array
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && !$atomic_type->as->hasMixed()) {
+                $atomic_types = [...$atomic_types, ...self::expandArrayTemplates($atomic_type->as)];
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $atomic_types;
     }
 
     /**
