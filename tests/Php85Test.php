@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class Php85Test extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     #[Override]
@@ -185,6 +187,27 @@ final class Php85Test extends TestCase
                     '$h' => 'float',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+        ];
+    }
+
+    #[Override]
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'moduloByZeroOfUnrepresentableFloat' => [
+                'code' => '<?php
+                    $m = 1.0e30 % 0;',
+                'error_message' => 'NoValue',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'moduloByZeroOfNan' => [
+                'code' => '<?php
+                    $n = NAN % 0;',
+                'error_message' => 'NoValue',
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
         ];
