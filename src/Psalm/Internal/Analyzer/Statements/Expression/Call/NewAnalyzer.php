@@ -72,6 +72,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function is_int;
+use function ltrim;
 use function preg_match;
 use function reset;
 use function strtolower;
@@ -219,8 +220,6 @@ final class NewAnalyzer extends CallAnalyzer
 
                     return true;
                 }
-
-                $codebase->scanner->registerReflectedClassLikeStorage($fq_class_name);
 
                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $statements_analyzer,
@@ -958,7 +957,8 @@ final class NewAnalyzer extends CallAnalyzer
         $has_single_class = $stmt_class_type->isSingleStringLiteral();
 
         if ($has_single_class) {
-            $fq_class_name = $stmt_class_type->getSingleStringLiteral()->value;
+            // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
+            $fq_class_name = ltrim($stmt_class_type->getSingleStringLiteral()->value, '\\');
         } else {
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_class_type->parent_nodes

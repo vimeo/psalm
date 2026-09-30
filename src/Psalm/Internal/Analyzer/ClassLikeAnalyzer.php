@@ -377,6 +377,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $fq_class_name,
         );
 
+        // Built-in classlikes only referenced via strings were never queued for scanning
+        $codebase->scanner->registerReflectedClassLikeStorage($aliased_name);
+
         try {
             $class_storage = $codebase->classlike_storage_provider->get($aliased_name);
         } catch (InvalidArgumentException $e) {

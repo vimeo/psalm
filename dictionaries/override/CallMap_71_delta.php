@@ -57,8 +57,8 @@ return array (
     ),
     'closure::fromcallable' => 
     array (
-      0 => 'impure-Closure',
-      'callable' => 'impure-callable',
+      0 => 'Closure[impure]',
+      'callable' => 'callable[impure]',
     ),
     'curl_multi_errno' => 
     array (
@@ -948,14 +948,14 @@ return array (
       array (
         0 => 'bool',
         'name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'argument_count=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
         'name' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'argument_count=' => 'int',
         'flags=' => 'int',
       ),
@@ -1093,14 +1093,14 @@ return array (
       array (
         0 => 'ReturnType',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         'param=' => 'string',
       ),
       'new' => 
       array (
         0 => 'ReturnType',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole\\websocket\\server::pack' => 
@@ -1146,14 +1146,14 @@ return array (
       array (
         0 => 'int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'swoole_timer_tick' => 
@@ -1162,14 +1162,14 @@ return array (
       array (
         0 => 'int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
         '...params=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'int',
         'ms' => 'int',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'timezone_identifiers_list' => 
@@ -1270,7 +1270,7 @@ return array (
     array (
       0 => 'void',
       'event_name' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\client::pause' => 
     array (

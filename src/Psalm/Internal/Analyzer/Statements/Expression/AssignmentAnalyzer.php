@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -682,9 +683,7 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
             );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write
             $capabilities = $context->capabilities;
             $context->capabilities |= Capabilities::READ_GLOBALS;
@@ -1163,6 +1162,28 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $property_id = ExpressionIdentifier::getVarId(
+                $stmt,
+                $context->self ?? $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_id !== null
+                && $statements_analyzer->getCodebase()->propertyExists($property_id, false)
+            ) {
+                ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                );
+            }
+        }
 
         if ($var_id) {
             $var_not_in_scope = false;

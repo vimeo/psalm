@@ -603,7 +603,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineClosures' => [
-                'impure-Closure(A):void|impure-Closure(B):void',
+                'Closure[impure](A):void|Closure[impure](B):void',
                 [
                     'Closure(A):void',
                     'Closure(B):void',
@@ -673,56 +673,56 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineCallableAndCallableString' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable',
                     'callable-string',
                 ],
             ],
             'combineCallableStringAndCallable' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable-string',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableObject' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable',
                     'callable-object',
                 ],
             ],
             'combineCallableObjectAndCallable' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable-object',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableArray' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable',
                     'callable-array',
                 ],
             ],
             'combineCallableArrayAndCallable' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable-array',
                     'callable',
                 ],
             ],
             'combineCallableAndCallableList' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable',
                     'callable-list',
                 ],
             ],
             'combineCallableListAndCallable' => [
-                'impure-callable',
+                'callable[impure]',
                 [
                     'callable-list',
                     'callable',

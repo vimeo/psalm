@@ -771,20 +771,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 // the closure's purity: what its body does, plus the purity templates of the
                 // enclosing scopes it relies on
-                $closure_purity = new Union([
-                    new TCapabilities($this->inferred_capabilities),
-                    ...array_values($this->used_purity_templates),
-                ]);
+                $closure_purity = self::getClosurePurity($this->inferred_capabilities, $this->used_purity_templates);
 
                 // consuming the generator a generator closure returns runs its body; the generator
                 // is a new one at every call
                 if ($storage->has_yield && $new_closure_return_type !== null) {
                     $new_closure_return_type = IterationPurity::bindGenerators(
                         $new_closure_return_type,
-                        new Union([
-                            new TCapabilities($this->inferred_capabilities & ~Capabilities::READ_PROPS),
-                            ...array_values($this->used_purity_templates),
-                        ]),
+                        self::getClosurePurity(
+                            $this->inferred_capabilities & ~Capabilities::READ_PROPS,
+                            $this->used_purity_templates,
+                        ),
                     )->setProperties(['reference_free' => true]);
                 }
 
@@ -1844,6 +1841,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public function getStorage(): FunctionLikeStorage
     {
         return $this->storage;
+    }
+
+    /**
+     * A purity made of capabilities and purity templates, where no capabilities (`pure`) are left
+     * out of a union with templates: `P|pure` is just `P`.
+     *
+     * @param array<string, TTemplateParam> $templates
+     * @psalm-pure
+     */
+    private static function getClosurePurity(int $capabilities, array $templates): Union
+    {
+        if ($capabilities === Capabilities::NONE && $templates !== []) {
+            return new Union(array_values($templates));
+        }
+
+        return new Union([new TCapabilities($capabilities), ...array_values($templates)]);
     }
 
     public function getFunctionLikeStorage(?StatementsAnalyzer $statements_analyzer = null): FunctionLikeStorage

@@ -407,6 +407,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $all_intersection_return_type,
                     $result,
                     $lhs_type_part,
+                    $lhs_var_id,
                 );
 
                 if ($new_call_context) {

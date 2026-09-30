@@ -974,12 +974,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'resolver_function' => 'impure-callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
+        'resolver_function' => 'callable[impure](string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
       ),
       'new' => 
       array (
         0 => 'true',
-        'resolver_function' => 'impure-callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
+        'resolver_function' => 'callable[impure](string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
       ),
     ),
     'openssl_private_decrypt' => 
@@ -1096,13 +1096,13 @@ return array (
       array (
         0 => 'bool',
         'prompt' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
       'new' => 
       array (
         0 => 'true',
         'prompt' => 'string',
-        'callback' => 'impure-callable',
+        'callback' => 'callable[impure]',
       ),
     ),
     'readline_clear_history' => 
@@ -1320,8 +1320,8 @@ return array (
     'amqpchannel::setconfirmcallback' => 
     array (
       0 => 'void',
-      'ackCallback' => 'impure-callable|null',
-      'nackCallback=' => 'impure-callable|null',
+      'ackCallback' => 'callable[impure]|null',
+      'nackCallback=' => 'callable[impure]|null',
     ),
     'amqpchannel::setprefetchcount' => 
     array (
@@ -1336,7 +1336,7 @@ return array (
     'amqpchannel::setreturncallback' => 
     array (
       0 => 'void',
-      'returnCallback' => 'impure-callable|null',
+      'returnCallback' => 'callable[impure]|null',
     ),
     'amqpchannel::starttransaction' => 
     array (
@@ -1719,7 +1719,7 @@ return array (
     'amqpqueue::consume' => 
     array (
       0 => 'void',
-      'callback=' => 'impure-callable|null',
+      'callback=' => 'callable[impure]|null',
       'flags=' => 'int|null',
       'consumerTag=' => 'null|string',
     ),
@@ -1859,7 +1859,7 @@ return array (
     'grpc\\callcredentials::createfromplugin' => 
     array (
       0 => 'Grpc\\CallCredentials',
-      'callback' => 'impure-Closure',
+      'callback' => 'Closure[impure]',
     ),
     'grpc\\channel::__construct' => 
     array (
@@ -3568,7 +3568,7 @@ return array (
     'imagick::setprogressmonitor' => 
     array (
       0 => 'bool',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'imagick::setregistry' => 
     array (
@@ -4756,7 +4756,7 @@ return array (
     array (
       0 => 'void',
       'persistent_id=' => 'null|string',
-      'callback=' => 'impure-callable|null',
+      'callback=' => 'callable[impure]|null',
       'connection_str=' => 'null|string',
     ),
     'memcached::add' => 
@@ -4880,7 +4880,7 @@ return array (
     array (
       0 => 'false|mixed',
       'key' => 'string',
-      'cache_cb=' => 'impure-callable|null',
+      'cache_cb=' => 'callable[impure]|null',
       'get_flags=' => 'int',
     ),
     'memcached::getallkeys' => 
@@ -4892,7 +4892,7 @@ return array (
       0 => 'false|mixed',
       'server_key' => 'string',
       'key' => 'string',
-      'cache_cb=' => 'impure-callable|null',
+      'cache_cb=' => 'callable[impure]|null',
       'get_flags=' => 'int',
     ),
     'memcached::getdelayed' => 
@@ -4900,7 +4900,7 @@ return array (
       0 => 'bool',
       'keys' => 'array<array-key, mixed>',
       'with_cas=' => 'bool',
-      'value_cb=' => 'impure-callable|null',
+      'value_cb=' => 'callable[impure]|null',
     ),
     'memcached::getdelayedbykey' => 
     array (
@@ -4908,7 +4908,7 @@ return array (
       'server_key' => 'string',
       'keys' => 'array<array-key, mixed>',
       'with_cas=' => 'bool',
-      'value_cb=' => 'impure-callable|null',
+      'value_cb=' => 'callable[impure]|null',
     ),
     'memcached::getlastdisconnectedserver' => 
     array (
@@ -5726,7 +5726,7 @@ return array (
     array (
       0 => 'bool',
       'patterns' => 'array<array-key, mixed>',
-      'cb' => 'impure-callable',
+      'cb' => 'callable[impure]',
     ),
     'redis::pttl' => 
     array (
@@ -6026,7 +6026,7 @@ return array (
     array (
       0 => 'bool',
       'channels' => 'array<array-key, mixed>',
-      'cb' => 'impure-callable',
+      'cb' => 'callable[impure]',
     ),
     'redis::sunion' => 
     array (
@@ -6367,7 +6367,7 @@ return array (
     ),
     'redisarray::_function' => 
     array (
-      0 => 'bool|impure-callable',
+      0 => 'bool|callable[impure]',
     ),
     'redisarray::_hosts' => 
     array (
@@ -6376,7 +6376,7 @@ return array (
     'redisarray::_rehash' => 
     array (
       0 => 'bool|null',
-      'fn=' => 'impure-callable|null',
+      'fn=' => 'callable[impure]|null',
     ),
     'redisarray::_target' => 
     array (
@@ -6999,7 +6999,7 @@ return array (
     array (
       0 => 'void',
       'patterns' => 'array<array-key, mixed>',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'rediscluster::pttl' => 
     array (
@@ -7247,7 +7247,7 @@ return array (
     array (
       0 => 'void',
       'channels' => 'array<array-key, mixed>',
-      'cb' => 'impure-callable',
+      'cb' => 'callable[impure]',
     ),
     'rediscluster::sunion' => 
     array (
@@ -7891,7 +7891,7 @@ return array (
     'swoole\\coroutine::create' => 
     array (
       0 => 'false|int',
-      'func' => 'impure-callable',
+      'func' => 'callable[impure]',
       '...param=' => 'mixed',
     ),
     'swoole\\coroutine::getuid' => 
@@ -8042,14 +8042,14 @@ return array (
     array (
       0 => 'false|int',
       'fd' => 'int',
-      'read_callback=' => 'impure-callable|null',
-      'write_callback=' => 'impure-callable|null',
+      'read_callback=' => 'callable[impure]|null',
+      'write_callback=' => 'callable[impure]|null',
       'events=' => 'int',
     ),
     'swoole\\event::defer' => 
     array (
       0 => 'bool',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\event::del' => 
     array (
@@ -8064,8 +8064,8 @@ return array (
     array (
       0 => 'bool',
       'fd' => 'int',
-      'read_callback=' => 'impure-callable|null',
-      'write_callback=' => 'impure-callable|null',
+      'read_callback=' => 'callable[impure]|null',
+      'write_callback=' => 'callable[impure]|null',
       'events=' => 'int',
     ),
     'swoole\\event::wait' => 
@@ -8148,7 +8148,7 @@ return array (
     array (
       0 => 'bool',
       'event_name' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\http\\server::start' => 
     array (
@@ -8231,7 +8231,7 @@ return array (
     array (
       0 => 'bool',
       'signal_no' => 'int',
-      'callback=' => 'impure-callable|null',
+      'callback=' => 'callable[impure]|null',
     ),
     'swoole\\process::start' => 
     array (
@@ -8268,7 +8268,7 @@ return array (
     array (
       0 => 'bool',
       'command' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\redis\\server::start' => 
     array (
@@ -8359,7 +8359,7 @@ return array (
     array (
       0 => 'bool',
       'event_name' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\server::pause' => 
     array (
@@ -8444,7 +8444,7 @@ return array (
       0 => 'false|int',
       'data' => 'string',
       'taskWorkerIndex=' => 'int',
-      'finishCallback=' => 'impure-callable|null',
+      'finishCallback=' => 'callable[impure]|null',
     ),
     'swoole\\server::taskwait' => 
     array (
@@ -8467,7 +8467,7 @@ return array (
     array (
       0 => 'bool',
       'event_name' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\server\\port::set' => 
     array (
@@ -8553,7 +8553,7 @@ return array (
     array (
       0 => 'false|int',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
       '...params=' => 'mixed',
     ),
     'swoole\\timer::clear' => 
@@ -8570,7 +8570,7 @@ return array (
     array (
       0 => 'false|int',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
       '...params=' => 'string',
     ),
     'swoole\\websocket\\server::exist' => 
@@ -8582,7 +8582,7 @@ return array (
     array (
       0 => 'bool',
       'event_name' => 'string',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole\\websocket\\server::pack' => 
     array (
@@ -8629,14 +8629,14 @@ return array (
     array (
       0 => 'int',
       'fd' => 'int',
-      'read_callback=' => 'impure-callable|null',
-      'write_callback=' => 'impure-callable|null',
+      'read_callback=' => 'callable[impure]|null',
+      'write_callback=' => 'callable[impure]|null',
       'events=' => 'int',
     ),
     'swoole_event_defer' => 
     array (
       0 => 'bool',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole_event_del' => 
     array (
@@ -8651,8 +8651,8 @@ return array (
     array (
       0 => 'bool',
       'fd' => 'int',
-      'read_callback=' => 'impure-callable|null',
-      'write_callback=' => 'impure-callable|null',
+      'read_callback=' => 'callable[impure]|null',
+      'write_callback=' => 'callable[impure]|null',
       'events=' => 'int',
     ),
     'swoole_event_wait' => 
@@ -8697,7 +8697,7 @@ return array (
     array (
       0 => 'int',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole_timer_exists' => 
     array (
@@ -8708,7 +8708,7 @@ return array (
     array (
       0 => 'int',
       'ms' => 'int',
-      'callback' => 'impure-callable',
+      'callback' => 'callable[impure]',
     ),
     'swoole_version' => 
     array (
@@ -8730,7 +8730,7 @@ return array (
       0 => 'ZMQSocket',
       'type' => 'int',
       'dsn' => 'string',
-      'on_new_socket=' => 'impure-callable',
+      'on_new_socket=' => 'callable[impure]',
     ),
     'zmqcontext::ispersistent' => 
     array (
@@ -8757,7 +8757,7 @@ return array (
     'zmqdevice::setidlecallback' => 
     array (
       0 => 'ZMQDevice',
-      'idle_callback' => 'impure-callable',
+      'idle_callback' => 'callable[impure]',
       'timeout' => 'int',
       'user_data=' => 'mixed',
     ),
@@ -8769,7 +8769,7 @@ return array (
     'zmqdevice::settimercallback' => 
     array (
       0 => 'ZMQDevice',
-      'idle_callback' => 'impure-callable',
+      'idle_callback' => 'callable[impure]',
       'timeout' => 'int',
       'user_data=' => 'mixed',
     ),
@@ -8814,7 +8814,7 @@ return array (
       'ZMQContext' => 'ZMQContext',
       'type' => 'int',
       'persistent_id=' => 'string',
-      'on_new_socket=' => 'impure-callable',
+      'on_new_socket=' => 'callable[impure]',
     ),
     'zmqsocket::bind' => 
     array (
@@ -8892,7 +8892,7 @@ return array (
       0 => 'bool',
       'scheme' => 'string',
       'cert' => 'string',
-      'completion_cb=' => 'impure-callable',
+      'completion_cb=' => 'callable[impure]',
     ),
     'zookeeper::close' => 
     array (
@@ -8902,7 +8902,7 @@ return array (
     array (
       0 => 'void',
       'host' => 'string',
-      'watcher_cb=' => 'impure-callable',
+      'watcher_cb=' => 'callable[impure]',
       'recv_timeout=' => 'int',
     ),
     'zookeeper::create' => 
@@ -8923,13 +8923,13 @@ return array (
     array (
       0 => 'bool',
       'path' => 'string',
-      'watcher_cb=' => 'impure-callable',
+      'watcher_cb=' => 'callable[impure]',
     ),
     'zookeeper::get' => 
     array (
       0 => 'string',
       'path' => 'string',
-      'watcher_cb=' => 'impure-callable',
+      'watcher_cb=' => 'callable[impure]',
       '&stat_info=' => 'array<array-key, mixed>',
       'max_size=' => 'int',
     ),
@@ -8942,7 +8942,7 @@ return array (
     array (
       0 => 'array<array-key, mixed>|false',
       'path' => 'string',
-      'watcher_cb=' => 'impure-callable',
+      'watcher_cb=' => 'callable[impure]',
     ),
     'zookeeper::getclientid' => 
     array (
@@ -8997,7 +8997,7 @@ return array (
     'zookeeper::setwatcher' => 
     array (
       0 => 'bool',
-      'watcher_cb' => 'impure-callable',
+      'watcher_cb' => 'callable[impure]',
     ),
     'zookeeper_dispatch' => 
     array (
@@ -9013,7 +9013,7 @@ return array (
     'zookeeperconfig::get' => 
     array (
       0 => 'string',
-      'watcher_cb=' => 'impure-callable',
+      'watcher_cb=' => 'callable[impure]',
       '&stat_info=' => 'array<array-key, mixed>',
     ),
     'zookeeperconfig::remove' => 

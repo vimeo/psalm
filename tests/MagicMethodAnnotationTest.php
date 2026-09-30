@@ -260,6 +260,110 @@ final class MagicMethodAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'trailingReturnTypes' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                        public static function __callStatic(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method getClosure(): Closure[pure](int): string
+                     * @method getList(): list<int> with some text
+                     * @method getShape(): array{a: int, b: string}
+                     * @method getUnion(int $x): int|string with some text
+                     * @method static getStatic(): ?string
+                     * @method static getInstance(): static
+                     */
+                    class Child extends ParentClass {}
+
+                    $child = new Child();
+
+                    $a = $child->getClosure();
+                    $b = $child->getList();
+                    $c = $child->getShape();
+                    $d = $child->getUnion(1);
+                    $e = Child::getStatic();
+                    $f = Child::getInstance();',
+                'assertions' => [
+                    '$a' => 'Closure[pure](int):string',
+                    '$b' => 'list<int>',
+                    '$c' => 'array{a: int, b: string}',
+                    '$d' => 'int|string',
+                    '$e' => 'null|string',
+                    '$f' => 'Child',
+                ],
+            ],
+            'purityInParams' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method void run(Closure[io](): int $f, array $defaults = [1, 2])
+                     */
+                    class Child extends ParentClass {}
+
+                    (new Child())->run(function (): int {
+                        echo "x";
+                        return 1;
+                    });',
+            ],
+            'purityTemplateInParams' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @method int run(Closure[P](): int $f)
+                     */
+                    final class Runner {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    (new Runner())->run(fn(): int => 1);',
+            ],
+            'wildcardPurityInParams' => [
+                'code' => '<?php
+                    /**
+                     * @method int run(Closure[_](): int $f)
+                     * @method int runAll(list<Closure[_](): int> $fs)
+                     * @method void runWithoutReturnType(Closure[_](): int $f)
+                     * @method int runBoth(Closure[_](): int $f, Closure[_](): int $g)
+                     * @method int runSecond(int $x, Closure[_](): int $g)
+                     * @method static int runStatic(Closure[_](): int $f, Closure[_](): int $g)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function usePure(Runner $r): int {
+                        $r->runWithoutReturnType(fn(): int => 1);
+                        return $r->run(fn(): int => 1)
+                            + $r->runAll([fn(): int => 1, fn(): int => 2])
+                            + $r->runBoth(fn(): int => 1, fn(): int => 2)
+                            + $r->runSecond(1, fn(): int => 2)
+                            + Runner::runStatic(fn(): int => 1, fn(): int => 2);
+                    }
+
+                    /** @psalm-capabilities io */
+                    function useIo(Runner $r): int {
+                        return $r->runBoth(fn(): int => 1, function (): int {
+                            echo "x";
+                            return 2;
+                        });
+                    }',
+            ],
             'validSimpleAnnotations' => [
                 'code' => '<?php
                     class ParentClass {
@@ -298,7 +402,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'impure-callable():string',
+                    '$e' => 'callable[impure]():string',
                 ],
             ],
             'validSimpleAnnotationsWithStatic' => [
@@ -339,7 +443,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'mixed',
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
-                    '$e' => 'impure-callable():string',
+                    '$e' => 'callable[impure]():string',
                     '$f' => 'Child',
                 ],
             ],
@@ -1192,6 +1296,187 @@ final class MagicMethodAnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'wildcardPurityPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method int run(Closure[_](): int $f)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->run(function (): int {
+                            echo "x";
+                            return 1;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityNestedPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method int runAll(list<Closure[_](): int> $fs)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->runAll([function (): int {
+                            echo "x";
+                            return 1;
+                        }]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityWithoutReturnTypePropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method runWithoutReturnType(Closure[_](): int $f)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->runWithoutReturnType(function (): int {
+                            echo "x";
+                            return 1;
+                        }) ? 1 : 0;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityInFirstOfTwoParamsPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method int runBoth(Closure[_](): int $f, Closure[_](): int $g)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->runBoth(function (): int {
+                            echo "x";
+                            return 1;
+                        }, fn(): int => 2);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityInSecondOfTwoParamsPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method int runBoth(Closure[_](): int $f, Closure[_](): int $g)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->runBoth(fn(): int => 1, function (): int {
+                            echo "x";
+                            return 1;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityOnlyInSecondParamPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method int runSecond(int $x, Closure[_](): int $g)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->runSecond(1, function (): int {
+                            echo "x";
+                            return 1;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'staticWildcardPurityOnlyInSecondParamPropagatesImpureClosure' => [
+                'code' => '<?php
+                    /**
+                     * @method static int runSecond(int $x, Closure[_](): int $g)
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(): int {
+                        return Runner::runSecond(1, function (): int {
+                            echo "x";
+                            return 1;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'wildcardPurityInReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @method Closure[_](): int make()
+                     */
+                    final class Runner {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return 1;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'callNeedsMagicMethodCapabilities' => [
+                'code' => '<?php
+                    /** @method int run() */
+                    final class Runner {
+                        public function __call(string $name, array $args): int {
+                            echo $name;
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function bad(Runner $r): int {
+                        return $r->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'annotationWithBadDocblock' => [
                 'code' => '<?php
                     class ParentClass {

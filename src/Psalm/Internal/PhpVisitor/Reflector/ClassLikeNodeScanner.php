@@ -407,8 +407,8 @@ final class ClassLikeNodeScanner
                 );
 
                 foreach ($type_aliases as $type_alias) {
-                    // finds issues, if there are any
-                    TypeParser::parseTokens($type_alias->replacement_tokens);
+                    // finds issues, if there are any; `_` is checked where the alias is used
+                    TypeParser::parseTokens($type_alias->replacement_tokens, null, [], [], false, true);
                 }
 
                 $this->type_aliases += $type_aliases;
@@ -780,6 +780,12 @@ final class ClassLikeNodeScanner
                 /** @var MethodStorage */
                 $pseudo_method_storage = $functionlike_node_scanner->start($method, true);
                 $lc_method_name = strtolower($method->name->name);
+
+                // a pseudo-method is never analysed: its docblock issues are the class's
+                $storage->docblock_issues = [
+                    ...$storage->docblock_issues,
+                    ...$pseudo_method_storage->docblock_issues,
+                ];
 
                 if ($pseudo_method_storage->is_static) {
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;

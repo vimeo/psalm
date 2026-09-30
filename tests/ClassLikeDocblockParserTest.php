@@ -161,13 +161,13 @@ final class ClassLikeDocblockParserTest extends TestCase
             ],
             '(callable() : string) getCallable()' => [
                 'name' => 'getCallable',
-                'returnType' => 'impure-callable():string',
+                'returnType' => 'callable[impure]():string',
                 'is_static' => false,
                 'params' => [],
             ],
             'static (callable() : string) getCallable()' => [
                 'name' => 'getCallable',
-                'returnType' => 'impure-callable():string',
+                'returnType' => 'callable[impure]():string',
                 'is_static' => true,
                 'params' => [],
             ],

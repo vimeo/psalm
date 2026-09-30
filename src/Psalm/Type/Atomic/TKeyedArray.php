@@ -289,7 +289,12 @@ final class TKeyedArray extends Atomic
                 && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
             ) {
                 $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
-                return "$t<".$this->fallback_params[1]->getId().'>';
+                return "$t<" . $this->fallback_params[1]->toNamespacedString(
+                    $namespace,
+                    $aliased_classes,
+                    $this_class,
+                    false,
+                ) . '>';
             }
             $use_list_syntax = true;
             foreach ($this->properties as $property) {
