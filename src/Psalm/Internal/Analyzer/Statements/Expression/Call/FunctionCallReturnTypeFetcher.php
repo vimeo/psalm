@@ -141,7 +141,11 @@ final class FunctionCallReturnTypeFetcher
                                         ),
                                     ],
                                 ];
-                            } else {
+                            } elseif (!isset($function_storage->template_type_defaults[$template_name])) {
+                                // Templates with a declared default are intentionally left
+                                // unbound here so TemplateInferredTypeReplacer can apply the
+                                // default. Without a default the param has no inferred value,
+                                // so we fall back to never as before.
                                 $template_result->lower_bounds[$template_name] = [
                                     'fn-' . $function_id => [
                                         new TemplateBound(
@@ -165,7 +169,9 @@ final class FunctionCallReturnTypeFetcher
                     if ($function_storage && $function_storage->return_type) {
                         $return_type = $function_storage->return_type;
 
-                        if ($template_result->lower_bounds && $function_storage->template_types) {
+                        if (($template_result->lower_bounds || $template_result->template_type_defaults)
+                            && $function_storage->template_types
+                        ) {
                             $return_type = TypeExpander::expandUnion(
                                 $codebase,
                                 $return_type,

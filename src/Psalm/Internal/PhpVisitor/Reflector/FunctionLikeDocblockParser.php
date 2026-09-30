@@ -468,7 +468,8 @@ final class FunctionLikeDocblockParser
                     throw new AssertionError(preg_last_error_msg());
                 }
 
-                $template_name = array_shift($template_type);
+                [$template_name, $template_type, $default_type_string]
+                    = TemplateTagParser::splitDefault($template_type);
 
                 if (!$template_name) {
                     throw new IncorrectDocblockException('Empty @template tag');
@@ -490,9 +491,16 @@ final class FunctionLikeDocblockParser
                         $template_modifier,
                         implode(' ', $template_type),
                         false,
+                        $default_type_string,
                     ];
                 } else {
-                    $templates[$template_name][$source_prefix] = [$template_name, null, null, false];
+                    $templates[$template_name][$source_prefix] = [
+                        $template_name,
+                        null,
+                        null,
+                        false,
+                        $default_type_string,
+                    ];
                 }
             }
         }

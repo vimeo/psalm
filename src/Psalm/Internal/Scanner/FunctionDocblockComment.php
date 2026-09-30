@@ -144,7 +144,7 @@ final class FunctionDocblockComment
     public array $throws = [];
 
     /**
-     * @var array<int, array{string, ?string, ?string, bool}>
+     * @var array<int, array{string, ?string, ?string, bool, ?string}>
      */
     public array $templates = [];
 
