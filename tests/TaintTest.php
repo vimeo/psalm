@@ -3835,7 +3835,8 @@ final class TaintTest extends TestCase
             static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
             $issues,
         );
-        self::assertSame($expectedIssuesTypes, $actualIssueTypes);
+        // The order issues are reported in depends on the resolution rounds their flows take
+        self::assertEqualsCanonicalizing($expectedIssuesTypes, $actualIssueTypes);
 
         if ($expectedSourceLines !== null) {
             $actualSourceLines = [];
