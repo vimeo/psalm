@@ -86,7 +86,8 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
         while ($atomic_type = array_shift($atomic_types)) {
             if ($atomic_type instanceof TTemplateParam) {
                 if (!$exact) {
-                    return null;
+                    // as before template support: infer from the other (concrete) members only
+                    continue;
                 }
 
                 $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];

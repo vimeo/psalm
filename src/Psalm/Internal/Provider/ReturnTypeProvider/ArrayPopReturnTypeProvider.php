@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -53,6 +54,7 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
             && !$first_arg->unpack
             && $first_arg->value instanceof Variable
             && is_string($first_arg->value->name)
+            && !$first_arg->value->getAttribute(ArrayFunctionArgumentsAnalyzer::HAS_TRACKED_DESCENDANTS, false)
             && !self::isReferenced('$' . $first_arg->value->name, $event->getContext(), $statements_source);
 
         return ArrayFirstLastReturnTypeProvider::getElementType(

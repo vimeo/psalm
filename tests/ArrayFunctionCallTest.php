@@ -3245,6 +3245,29 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayPopShiftTemplateUnionKeepsConcreteMember' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{int} $arr
+                     */
+                    function popReferenced(array $arr): int {
+                        $alias = &$arr;
+                        return array_pop($alias);
+                    }
+
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T|list{int} $arr
+                     */
+                    function shiftReferenced(array $arr): int {
+                        $alias = &$arr;
+                        return array_shift($alias);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -4023,6 +4046,34 @@ final class ArrayFunctionCallTest extends TestCase
                         $alias = &$x;
                         array_shift($arrays[0]);
                         return array_shift($alias);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = [1, "a"];
+                        $x = &$a[1];
+                        $x = new stdClass();
+                        return array_pop($a);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $arr
+                     */
+                    function f(array $arr): int {
+                        $a = $arr;
+                        $x = &$a[0];
+                        $x = "s";
+                        return array_shift($a);
                     }',
                 'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],

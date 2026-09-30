@@ -44,15 +44,18 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_keys;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
 use function in_array;
 use function is_numeric;
 use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -61,6 +64,12 @@ use function substr;
  */
 final class ArrayFunctionArgumentsAnalyzer
 {
+    /**
+     * Node attribute set on the argument of array_pop()/array_shift() when an offset or property of it
+     * was tracked separately before the call, so the type of the variable itself may be stale.
+     */
+    public const HAS_TRACKED_DESCENDANTS = 'psalmByRefArrayHasTrackedDescendants';
+
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
      */
@@ -629,6 +638,11 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
+            // checked before the descendants are removed below
+            if (self::hasTrackedDescendant($var_id, $context)) {
+                $arg->value->setAttribute(self::HAS_TRACKED_DESCENDANTS, true);
+            }
+
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
@@ -734,6 +748,29 @@ final class ArrayFunctionArgumentsAnalyzer
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
+    }
+
+    /**
+     * Whether an offset or property of the variable is tracked on its own (e.g. $a[1] after $x = &$a[1]),
+     * in which case the type of the variable itself may be stale.
+     */
+    private static function hasTrackedDescendant(string $var_id, Context $context): bool
+    {
+        $tracked_ids = [
+            ...array_keys($context->vars_in_scope),
+            ...array_keys($context->references_in_scope),
+            ...array_values($context->references_in_scope),
+            ...array_keys($context->references_to_external_scope),
+            ...array_keys($context->referenced_counts),
+        ];
+
+        foreach ($tracked_ids as $tracked_id) {
+            if (str_starts_with($tracked_id, $var_id . '[') || str_starts_with($tracked_id, $var_id . '->')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
