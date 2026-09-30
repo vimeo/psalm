@@ -26,6 +26,35 @@ final class UnusedVariableTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'pipeResultIsPureCompatible' => [
+                'code' => '<?php
+                    final class Box
+                    {
+                        public int $value = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function set(int $x): int
+                        {
+                            $this->value = $x;
+                            return $x;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makeBox(int $_x): Box
+                    {
+                        return new Box();
+                    }
+
+                    /** @psalm-pure */
+                    function fresh(): int
+                    {
+                        return (1 |> makeBox(...))->set(2);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'arrayOffset' => [
                 'code' => '<?php
                     $a = 0;

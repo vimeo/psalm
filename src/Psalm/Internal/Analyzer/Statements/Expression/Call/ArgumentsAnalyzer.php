@@ -1177,10 +1177,10 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    $arg instanceof VirtualPipeArg
-                        ? 'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                            . ' is passed by reference, but the pipe operator passes its left-hand side by value'
-                        : 'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ($arg instanceof VirtualPipeArg
+                            ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                            : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),

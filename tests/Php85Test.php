@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
-use Psalm\Context;
-use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -14,50 +12,6 @@ final class Php85Test extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
-
-    /**
-     * Purity of a call result is only tracked while unused variables are being searched for.
-     */
-    public function testPipeResultIsPureCompatible(): void
-    {
-        $this->project_analyzer->setPhpVersion('8.5', 'tests');
-        $codebase = $this->project_analyzer->getCodebase();
-        $codebase->find_unused_variables = true;
-        $codebase->config->throw_exception = false;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                final class Box
-                {
-                    public int $value = 0;
-
-                    /** @psalm-external-mutation-free */
-                    public function set(int $x): int
-                    {
-                        $this->value = $x;
-                        return $x;
-                    }
-                }
-
-                /** @psalm-pure */
-                function makeBox(int $_x): Box
-                {
-                    return new Box();
-                }
-
-                /** @psalm-pure */
-                function fresh(): int
-                {
-                    return (1 |> makeBox(...))->set(2);
-                }
-            ',
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-
-        $this->assertSame([], IssueBuffer::getIssuesData()['somefile.php'] ?? []);
-    }
 
     #[Override]
     public function providerValidCodeParse(): iterable
