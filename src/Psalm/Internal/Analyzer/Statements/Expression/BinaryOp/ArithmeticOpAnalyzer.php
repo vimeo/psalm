@@ -1000,6 +1000,10 @@ final class ArithmeticOpAnalyzer
             $operand1 = LiteralCast::toInt($operand1);
             $operand2 = LiteralCast::toInt($operand2);
 
+            if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod && $operand2 === 0) {
+                return Type::getNever();
+            }
+
             if ($operand1 === null || $operand2 === null) {
                 return Type::getInt();
             }
@@ -1010,10 +1014,6 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
             $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            if ($operand2 === 0) {
-                return Type::getNever();
-            }
-
             $result = $operand1 % $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;

@@ -144,15 +144,11 @@ final class ConstantTypeResolver
                             return new TInt();
                         }
 
-                        if ($c instanceof UnresolvedBitwiseOr) {
-                            return self::getLiteralTypeFromScalarValue($left_int | $right_int);
-                        }
-
-                        if ($c instanceof UnresolvedBitwiseXor) {
-                            return self::getLiteralTypeFromScalarValue($left_int ^ $right_int);
-                        }
-
-                        return self::getLiteralTypeFromScalarValue($left_int & $right_int);
+                        return new TLiteralInt(match (true) {
+                            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+                            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+                            default => $left_int & $right_int,
+                        });
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);

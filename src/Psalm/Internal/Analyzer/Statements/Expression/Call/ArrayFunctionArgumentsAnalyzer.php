@@ -454,7 +454,6 @@ final class ArrayFunctionArgumentsAnalyzer
                 && $length_arg_type->hasLiteralValue()
             ) {
                 $length_min = null;
-                // An unrepresentable float length is unknowable.
                 if ($length_arg_type->isSingleLiteral()) {
                     $length_literal =  $length_arg_type->getSingleLiteral();
                     if ($length_literal->isNumericType()) {
@@ -472,7 +471,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         $literal_val = LiteralCast::toInt($literal->value);
 
-                        if ($literal_val === null) {
+                        if ($literal_val === null) { // an unrepresentable float length is unknowable
                             $length_min = null;
                             break;
                         }

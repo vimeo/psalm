@@ -368,16 +368,12 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TFloat) {
-                if ($atomic_type instanceof TLiteralFloat) {
-                    $int = LiteralCast::toInt($atomic_type->value);
+                $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
 
-                    if ($int === null) {
-                        $castable_types[] = new TInt();
-                    } else {
-                        $valid_ints[] = new TLiteralInt($int);
-                    }
-                } else {
+                if ($int === null) {
                     $castable_types[] = new TInt();
+                } else {
+                    $valid_ints[] = new TLiteralInt($int);
                 }
 
                 continue;
