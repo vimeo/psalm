@@ -2967,7 +2967,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $c = array_pop(...$empty_args);',
                 'assertions' => [
                     '$a===' => '\'a\'|1',
-                    '$b===' => '\'a\'|1',
+                    '$b===' => '1',
                     '$c===' => 'null',
                 ],
                 'ignored_issues' => [],
@@ -3178,8 +3178,8 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$a===' => '\'a\'|1',
                     '$b===' => '\'a\'|1',
-                    '$c===' => '\'a\'|1',
-                    '$d===' => '\'a\'|1',
+                    '$c===' => '1',
+                    '$d===' => '1',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
@@ -3204,6 +3204,21 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_shift($arr);
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayShiftOnArrayOffsetKeepsFirstElement' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["k" => [1, "a"]];
+                        return array_shift($a["k"]);
+                    }
+
+                    $args = [[1, "a"]];
+                    $b = array_shift(...$args);',
+                'assertions' => [
+                    '$b===' => '1',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],

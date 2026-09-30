@@ -41,7 +41,8 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         // The by-reference adjustment only tracks plain variables and properties, not e.g. $a['k']
         // or unpacked arguments. For anything else, a previous call may already have removed
-        // elements, so only the generic value type can be trusted.
+        // elements, so keep the historical inference (the first element of a list for array_shift,
+        // the generic value type otherwise).
         $is_tracked = isset($call_args[0])
             && !$call_args[0]->unpack
             && ExpressionIdentifier::getVarId(

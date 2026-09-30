@@ -60,7 +60,8 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
      * Returns the type of the first or last element of the array passed as the only argument,
      * or null when it cannot be inferred.
      *
-     * Without $exact, template bounds are not expanded and only the generic value type of shapes is used.
+     * Without $exact, template bounds are not expanded and the last element of a shape is its generic
+     * value type, which matches the historical array_pop()/array_shift() inference.
      *
      * @param list<Arg> $call_args
      */
@@ -112,7 +113,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $has_array = true;
 
-                [$value_type, $possibly_empty] = $exact
+                [$value_type, $possibly_empty] = $exact || $is_first
                     ? self::getKeyedArrayElementType($atomic_type, $is_first)
                     : [$atomic_type->getGenericValueType(), !$atomic_type->isNonEmpty()];
 
