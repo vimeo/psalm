@@ -2602,6 +2602,66 @@ final class TaintTest extends TestCase
                     echo wrap($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintNestedCallsOfPureFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    echo id(id($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSuccessiveCallsOfPureFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    $a = id($_GET["a"]);
+                    $b = id($a);
+                    echo $b;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfInferredPureFunction' => [
+                'code' => '<?php
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    echo id(id($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallsOfPureFunctionCallingPureFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(string $s): string {
+                        return id($s);
+                    }
+
+                    /** @psalm-pure */
+                    function id(string $s): string {
+                        return $s;
+                    }
+
+                    echo wrap(wrap($_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedMethodCallOnInstanceTaintedByAPreviousCall' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Box {
+                        public function take(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new Box();
+                    $unused = $a->take($_GET["a"]);
+                    echo $a->take("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
             'dontSpecializeImpureFunction' => [
                 'code' => '<?php
                     function remember(string $s): string {
