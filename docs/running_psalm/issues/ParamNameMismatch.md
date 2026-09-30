@@ -73,6 +73,8 @@ This prevents any use of named params in your codebase. Ideal for self-contained
 
 It means the original code above will not emit any errors as long as the class `A` is defined in a directory that Psalm can scan.
 
+You can still require named arguments on specific functions or methods by annotating them with `@only-named-arguments`, which takes priority over this config option.
+
 ### Config allowInternalNamedArgumentCalls="false"
 
 For library authors Psalm supports a more nuanced flag that tells Psalm to prohibit any named parameter calls on `@internal` classes or methods.

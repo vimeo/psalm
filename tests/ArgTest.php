@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -373,7 +374,125 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'onlyNamedArgumentsFunction' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function takesArguments(string $name, int $age): void {}
+
+                    takesArguments(name: "hello", age: 5);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgumentsMethod' => [
+                'code' => '<?php
+                    class CustomerData
+                    {
+                        /** @only-named-arguments */
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    new CustomerData(name: "Alice", email: "alice@example.com", age: 30);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variadicArgumentWithOnlyNamedArgumentsIsStringArray' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @only-named-arguments
+                         * @psalm-return array<string, int>
+                         */
+                        public function foo(int ...$values): array
+                        {
+                            return $values;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgumentsVariadic' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function foo(int ...$args): void {}
+
+                    foo(x: 0, y: 1);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam'],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgumentsCallbackInArrayMap' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function process(string $item): string { return strtoupper($item); }
+
+                    array_map("process", ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgumentsSpreadWithStringKeys' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function foo(int $a, int $b): int { return $a + $b; }
+
+                    foo(...["a" => 0, "b" => 1]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classLevelNoNamedArgumentsWithOnlyNamedArgumentsOnConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @no-named-arguments
+                     */
+                    class Foo {
+                        /** @only-named-arguments */
+                        public function __construct(public string $name, public int $age) {}
+
+                        public function bar(int $a, int $b): int { return $a + $b; }
+                    }
+
+                    $foo = new Foo(name: "Alice", age: 30);
+                    $foo->bar(1, 2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
+    }
+
+    public function testOnlyNamedArgumentsTakesPriorityOverAllowInternalNamedArgCalls(): void
+    {
+        // @only-named-arguments takes priority over the global allowInternalNamedArgumentCalls=false config:
+        // named args must be allowed (allow_named_arg_calls stays true),
+        // and only positional args trigger PositionalArgumentNotAllowed.
+        $this->project_analyzer->getConfig()->allow_internal_named_arg_calls = false;
+
+        $this->addFile(
+            self::$src_dir_path . 'somefile.php',
+            '<?php
+                namespace Foo;
+
+                /**
+                 * @internal
+                 * @only-named-arguments
+                 */
+                function bar(int $a, int $b): int { return $a + $b; }
+
+                bar(a: 1, b: 2);
+            ',
+        );
+
+        $this->analyzeFile(self::$src_dir_path . 'somefile.php', new Context());
+        $this->project_analyzer->getConfig()->allow_internal_named_arg_calls = true;
     }
 
     #[Override]
@@ -691,6 +810,106 @@ final class ArgTest extends TestCase
                     foo(...$test);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgsFunction' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function takesArguments(string $name, int $age): void {}
+
+                    takesArguments("hello", age: 5);',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgsMethod' => [
+                'code' => '<?php
+                    class CustomerData
+                    {
+                        /** @only-named-arguments */
+                        public function __construct(
+                            public string $name,
+                            public string $email,
+                            public int $age,
+                        ) {}
+                    }
+
+                    /**
+                     * @param array{age: int, name: string, email: string} $input
+                     */
+                    function foo(array $input): CustomerData {
+                        return new CustomerData(
+                            $input["name"],
+                            $input["email"],
+                            age: $input["age"],
+                        );
+                    }',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgsVariadic' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress UnusedParam
+                     * @only-named-arguments
+                     */
+                    function foo(int ...$args): void {}
+
+                    foo(0, 1);
+                ',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgsSpreadWithIntKeys' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function foo(int $a, int $b): int { return $a + $b; }
+
+                    foo(...[0, 1]);
+                ',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'onlyNamedArgsSpreadWithArrayKeyKeys' => [
+                'code' => '<?php
+                    /** @only-named-arguments */
+                    function foo(int $a, int $b): int { return $a + $b; }
+
+                    /** @param array<array-key, int> $arr */
+                    function bar(array $arr): void { foo(...$arr); }
+                ',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classLevelNoNamedArgumentsPositionalCall' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    class Foo {
+                        public function bar(int $a, int $b): int { return $a + $b; }
+                    }
+
+                    (new Foo())->bar(a: 1, b: 2);
+                ',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classLevelNoNamedArgumentsOnlyNamedArgumentsConstructorPositionalCall' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    class Foo {
+                        /** @only-named-arguments */
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    new Foo("Alice", 30);
+                ',
+                'error_message' => 'PositionalArgumentNotAllowed',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

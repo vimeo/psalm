@@ -116,4 +116,6 @@ final class ClassLikeDocblockComment
     public ?string $description = null;
 
     public bool $public_api = false;
+
+    public bool $no_named_args = false;
 }
