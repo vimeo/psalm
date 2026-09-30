@@ -3222,6 +3222,29 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayPopShiftThroughReferenceAlias' => [
+                'code' => '<?php
+                    function popAlias(): int {
+                        $a = [1, "a"];
+                        $b = &$a;
+                        array_pop($b);
+                        $result = array_pop($a);
+                        /** @psalm-check-type-exact $result = 1 */
+                        return $result;
+                    }
+
+                    function shiftAlias(): string {
+                        $a = [1, "a"];
+                        $b = &$a;
+                        array_shift($b);
+                        $result = array_shift($a);
+                        /** @psalm-check-type-exact $result = \'a\' */
+                        return $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -3924,6 +3947,24 @@ final class ArrayFunctionCallTest extends TestCase
                         $a = ["k" => [1, "a"]];
                         array_shift($a["k"]);
                         return array_shift($a["k"]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopPropertyThroughObjectAlias' => [
+                'code' => '<?php
+                    class Box {
+                        /** @var list<int|string> */
+                        public array $items = [];
+                    }
+
+                    function f(): string {
+                        $a = new Box();
+                        $a->items = [1, "a"];
+                        $b = $a;
+                        array_pop($b->items);
+                        return array_pop($a->items);
                     }',
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],

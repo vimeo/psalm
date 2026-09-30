@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use PhpParser\Node\Expr\Variable;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Union;
+
+use function is_string;
 
 /**
  * The by-reference effect on the argument is handled by ArrayFunctionArgumentsAnalyzer.
@@ -39,17 +41,14 @@ final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         $call_args = $event->getCallArgs();
 
-        // The by-reference adjustment only tracks plain variables and properties, not e.g. $a['k']
-        // or unpacked arguments. For anything else, a previous call may already have removed
-        // elements, so keep the historical inference (the first element of a list for array_shift,
+        // The by-reference adjustment is only reliable for plain variables: it doesn't track array
+        // offsets or unpacked arguments, and a property may be shared with an object alias. For
+        // anything else, keep the historical inference (the first element of a list for array_shift,
         // the generic value type otherwise).
         $is_tracked = isset($call_args[0])
             && !$call_args[0]->unpack
-            && ExpressionIdentifier::getVarId(
-                $call_args[0]->value,
-                $statements_source->getFQCLN(),
-                $statements_source,
-            ) !== null;
+            && $call_args[0]->value instanceof Variable
+            && is_string($call_args[0]->value->name);
 
         return ArrayFirstLastReturnTypeProvider::getElementType(
             $statements_source,
