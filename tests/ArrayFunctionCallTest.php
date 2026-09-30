@@ -3044,6 +3044,56 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayAnyAllReturnBoolWithTypedCallback' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_any($a, fn (int $value, string $key): bool => $value > 1);
+                    $c = array_all($a, fn (int $value, string $key): bool => $value > 1);',
+                'assertions' => [
+                    '$b===' => 'bool',
+                    '$c===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyAllInferClosureParams' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function getMap(): array { return ["one" => 1]; }
+                    /** @return list<DateTime> */
+                    function getDates(): array { return []; }
+
+                    $map = getMap();
+                    $dates = getDates();
+
+                    $a = array_any($map, fn ($value, $key) => strlen($key) > $value);
+                    $b = array_all($map, function ($value, $key): bool {
+                        return strlen($key) > $value;
+                    });
+                    $c = array_all($dates, fn ($date, $index) => $date->getTimestamp() > $index);
+                    $d = array_find_key($map, fn ($value, $key) => strlen($key) > $value);',
+                'assertions' => [
+                    '$a===' => 'bool',
+                    '$b===' => 'bool',
+                    '$c===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyAllPureCallbackInPureFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $list
+                     */
+                    function hasPositive(array $list): bool {
+                        return array_any($list, fn (int $i): bool => $i > 0)
+                            && !array_all($list, fn (int $i): bool => $i > 10);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -3521,6 +3571,56 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.5',
+            ],
+            'arrayAnyCallbackTypeMismatch' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): bool {
+                        return array_any($list, fn (string $s): bool => $s === "");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAllCallbackKeyTypeMismatch' => [
+                'code' => '<?php
+                    /** @param array<string, int> $map */
+                    function f(array $map): bool {
+                        return array_all($map, fn (int $v, int $k): bool => $v > $k);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyImpureCallbackInPureFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $list
+                     */
+                    function f(array $list): bool {
+                        return array_any($list, function (int $i): bool {
+                            echo $i;
+                            return true;
+                        });
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyUndefinedBeforePhp84' => [
+                'code' => '<?php
+                    $a = array_any([1, 2], fn (int $i): bool => $i > 1);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'arrayAllUndefinedBeforePhp84' => [
+                'code' => '<?php
+                    $a = array_all([1, 2], fn (int $i): bool => $i > 1);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
         ];
     }
