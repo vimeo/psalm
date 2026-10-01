@@ -113,6 +113,31 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureAnnotationWhenParamDefaultIsImpure' => [
+                'input' => '<?php
+                    final class Bus {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }',
+                'output' => '<?php
+                    final class Bus {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {

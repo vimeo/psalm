@@ -4,6 +4,8 @@ Emitted when a potentially pure function or method does not have a `@psalm-pure`
 
 A function-like explicitly marked `@psalm-impure` is left alone: for example a hook that overriding methods may implement freely.  
 
+No annotation is suggested for a function-like whose parameter default values need capabilities the annotation would not give them (see [`@psalm-capabilities`](../../annotating_code/supported_annotations.md#psalm-capabilities)).  
+
 To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`.  
 
 This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly pure functions and methods are marked as pure.  

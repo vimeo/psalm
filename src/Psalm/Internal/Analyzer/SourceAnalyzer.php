@@ -269,6 +269,25 @@ abstract class SourceAnalyzer implements StatementsSource
                 }
             }
 
+            if ($src->tracking_param_defaults) {
+                if ($storage !== null
+                    && !$storage->has_mutations_annotation
+                    && $storage->location !== null
+                    && $src->getCodebase()->config->isInProjectDirs($storage->location->file_path)
+                ) {
+                    $callee_id ??= CodeUseGraph::functionLikeNodeForStorage($storage);
+                }
+
+                if ($callee_id !== null) {
+                    $src->param_default_callees[$callee_id]
+                        = ($src->param_default_callees[$callee_id] ?? true) && $callee_internal_mutations_ok;
+                } else {
+                    $src->param_default_intrinsic_capabilities |= $mutation_level;
+                }
+
+                return;
+            }
+
             // the level known at this point, used for the types of closures
             $src->inferred_capabilities |= $mutation_level;
 

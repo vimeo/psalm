@@ -13,6 +13,7 @@ use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\MissingPureAnnotation;
@@ -39,6 +40,8 @@ use function array_pop;
  *     intrinsic: int,
  *     allowed: int,
  *     callees: array<string, bool>,
+ *     default_intrinsic: int,
+ *     default_callees: array<string, bool>,
  *     location: CodeLocation,
  *     cased_name: string,
  *     suppressed_issues: array<int, string>,
@@ -76,6 +79,57 @@ final class MutationLevelResolver
 
         $queue = array_keys($infos);
 
+        while (true) {
+            self::propagate($infos, $callers, $levels, $queue);
+
+            // the parameter default values of an annotated function-like may only do what its
+            // annotation gives them (see FunctionLikeAnalyzer::getParamDefaultCapabilities()):
+            // one whose defaults need more can't be annotated, so it stays impure
+            foreach ($infos as $node_id => $info) {
+                if ($levels[$node_id] === Capabilities::ALL) {
+                    continue;
+                }
+
+                $default_level = $info['default_intrinsic'];
+
+                foreach ($info['default_callees'] as $callee_id => $internal_mutations_ok) {
+                    $callee_level = $levels[$callee_id] ?? Capabilities::ALL;
+
+                    $default_level |= $internal_mutations_ok
+                        ? $callee_level & ~Capabilities::RECEIVER_LOCAL
+                        : $callee_level;
+                }
+
+                if (!Capabilities::allows(
+                    FunctionLikeAnalyzer::getParamDefaultCapabilities(Capabilities::toNamedLevel($levels[$node_id])),
+                    $default_level,
+                )) {
+                    $levels[$node_id] = Capabilities::ALL;
+
+                    foreach ($callers[$node_id] ?? [] as $caller_id => $_) {
+                        $queue[] = $caller_id;
+                    }
+                }
+            }
+
+            if (!$queue) {
+                return $levels;
+            }
+        }
+    }
+
+    /**
+     * Propagates the levels of the callees to their callers until a fixpoint is reached.
+     *
+     * @param array<string, MutationInfo> $infos
+     * @param array<string, array<string, true>> $callers
+     * @param array<string, int> $levels
+     * @param list<string> $queue
+     * @param-out list<never> $queue
+     * @psalm-capabilities write-refs
+     */
+    private static function propagate(array $infos, array $callers, array &$levels, array &$queue): void
+    {
         while ($queue) {
             $node_id = array_pop($queue);
             $level = $levels[$node_id];
@@ -101,8 +155,6 @@ final class MutationLevelResolver
                 }
             }
         }
-
-        return $levels;
     }
 
     /**
