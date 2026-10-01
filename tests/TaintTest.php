@@ -2840,8 +2840,7 @@ final class TaintTest extends TestCase
                     echo $b->take($b->take($_GET["b"]));',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
-                // A specialized body is walked once per entry, keyed by the 4 outermost open array assignments: calls differing deeper share the first walk
+            'taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
                 'code' => '<?php
                     /** @psalm-pure */
                     function get5(array $a): mixed {
@@ -2850,6 +2849,16 @@ final class TaintTest extends TestCase
 
                     $notEchoed = get5(["a" => ["b" => ["c" => ["d" => ["x" => $_GET["a"]]]]]]);
                     echo (string) get5(["a" => ["b" => ["c" => ["d" => ["e" => $_GET["b"]]]]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionWrappingItsArgumentDeeperOnEveryCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(mixed $a, int $n): mixed {
+                        return $n > 0 ? wrap(["k" => $a], $n - 1) : $a;
+                    }
+
+                    echo (string) wrap($_GET["a"], 3);',
                 'error_message' => 'TaintedHtml',
             ],
             'SKIPPED-taintLateArrayThroughImpureFunction' => [

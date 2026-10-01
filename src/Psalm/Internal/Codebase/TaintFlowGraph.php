@@ -74,9 +74,10 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * How many of the innermost open assignments (see appendPathType()) of a flow
-     * entering a specialized call its entry is keyed on (see enterSpecializedCall()).
+     * entering a specialized call recursively its entry is keyed on (see
+     * enterSpecializedCall()).
      */
-    private const ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
+    private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -754,14 +755,23 @@ final class TaintFlowGraph extends DataFlowGraph
 
         // What the body walk does depends on the entering taints and, through
         // shouldIgnoreFetch(), on the flow's open assignments (see appendPathType()).
-        // Of those only the innermost few are kept, so that recursion wrapping its
-        // argument deeper on every call still makes finitely many entries.
         $entry_key = $unspecialized_id . ' ' . $source->taints;
+        $open_assignments = self::getOpenAssignments($source->path_types);
 
-        foreach (array_slice(
-            self::getOpenAssignments($source->path_types),
-            -self::ENTRY_OPEN_ASSIGNMENT_DEPTH,
-        ) as $path_type) {
+        // A recursive call can wrap its argument deeper on every call: entering a body
+        // the flow is already in (through the first callers of its entries), only the
+        // innermost few open assignments are kept, so that there are finitely many
+        // entries. Every other entry is keyed on all of them: a chain of first callers
+        // only has one such entry per entered node, and finitely many others.
+        for ($context = $source->context; $context !== null; $context = $this->entry_callers[$context][0][0]->context) {
+            if ($this->entry_roots[$context]->id === $unspecialized_id) {
+                $open_assignments = array_slice($open_assignments, -self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH);
+
+                break;
+            }
+        }
+
+        foreach ($open_assignments as $path_type) {
             $entry_key .= ' ' . $path_type;
         }
 
