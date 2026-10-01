@@ -124,9 +124,7 @@ final class ArrayAnalyzer
                 $array_creation_info->all_list,
             );
 
-            $stmt_type = new Union([$atomic_type], [
-                'parent_nodes' => $array_creation_info->parent_taint_nodes,
-            ]);
+            $stmt_type = self::getArrayType($statements_analyzer, $array_creation_info, $atomic_type);
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -146,11 +144,7 @@ final class ArrayAnalyzer
                 $array_type = Type::getNonEmptyListAtomic($item_value_type ?? Type::getMixed());
             }
 
-            $stmt_type = new Union([
-                $array_type,
-            ], [
-                'parent_nodes' => $array_creation_info->parent_taint_nodes,
-            ]);
+            $stmt_type = self::getArrayType($statements_analyzer, $array_creation_info, $array_type);
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -229,11 +223,7 @@ final class ArrayAnalyzer
         ];
         $array_type = $array_creation_info->can_be_empty ? new TArray($array_args) : new TNonEmptyArray($array_args);
 
-        $stmt_type = new Union([
-            $array_type,
-        ], [
-            'parent_nodes' => $array_creation_info->parent_taint_nodes,
-        ]);
+        $stmt_type = self::getArrayType($statements_analyzer, $array_creation_info, $array_type);
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -297,27 +287,31 @@ final class ArrayAnalyzer
                 $codebase,
             );
 
-            if (($variable_use_graph = $statements_analyzer->variable_use_graph)
-                && $unpacked_array_type->parent_nodes
-            ) {
-                $var_location = new CodeLocation($statements_analyzer->getSource(), $item->value);
-
+            if ($statements_analyzer->data_flow_graph) {
                 $new_parent_node = DataFlowNode::getForAssignment(
                     'array',
-                    $var_location,
+                    new CodeLocation($statements_analyzer->getSource(), $item->value),
                 );
 
-                $variable_use_graph->addNode($new_parent_node);
+                // The unpacked items keep their taint paths under the keys they end up at, known
+                // once the array is (see getArrayType()); the variable use graph only needs this.
+                if (($variable_use_graph = $statements_analyzer->variable_use_graph)
+                    && $unpacked_array_type->parent_nodes
+                ) {
+                    $variable_use_graph->addNode($new_parent_node);
 
-                foreach ($unpacked_array_type->parent_nodes as $parent_node) {
-                    $variable_use_graph->addPath(
-                        $parent_node,
-                        $new_parent_node,
-                        'arrayvalue-assignment',
-                    );
+                    foreach ($unpacked_array_type->parent_nodes as $parent_node) {
+                        $variable_use_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'arrayvalue-assignment',
+                        );
+                    }
+
+                    $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
                 }
 
-                $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
+                $array_creation_info->unpacked_nodes[$new_parent_node->id] = $new_parent_node;
             }
 
             return;
@@ -437,12 +431,15 @@ final class ArrayAnalyzer
                         $var_location,
                     );
 
-                    $variable_use_graph?->addNode($new_parent_node);
+                    // literal values carry no taint: their paths only matter to the variable use graph
+                    $value_graph = $taint_value_flow_graph
+                        ? $statements_analyzer->data_flow_graph
+                        : $variable_use_graph;
+                    $value_graph?->addNode($new_parent_node);
 
                     $added_taints = 0;
                     $removed_taints = 0;
                     if ($taint_value_flow_graph) {
-                        $taint_value_flow_graph->addNode($new_parent_node);
                         $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -456,15 +453,7 @@ final class ArrayAnalyzer
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
-                        $taint_value_flow_graph?->addPath(
-                            $parent_node,
-                            $new_parent_node,
-                            'arrayvalue-assignment'
-                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
-                            $added_taints,
-                            $removed_taints,
-                        );
-                        $variable_use_graph?->addPath(
+                        $value_graph?->addPath(
                             $parent_node,
                             $new_parent_node,
                             'arrayvalue-assignment'
@@ -496,12 +485,15 @@ final class ArrayAnalyzer
                         $var_location,
                     );
 
-                    $variable_use_graph?->addNode($new_parent_node);
+                    // literal keys carry no taint: their paths only matter to the variable use graph
+                    $key_graph = $taint_key_flow_graph
+                        ? $statements_analyzer->data_flow_graph
+                        : $variable_use_graph;
+                    $key_graph?->addNode($new_parent_node);
 
                     $added_taints = 0;
                     $removed_taints = 0;
                     if ($taint_key_flow_graph) {
-                        $taint_key_flow_graph->addNode($new_parent_node);
                         $event = new AddRemoveTaintsEvent($item, $context, $statements_analyzer, $codebase);
 
                         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -515,14 +507,7 @@ final class ArrayAnalyzer
                     }
 
                     foreach ($item_key_type->parent_nodes as $parent_node) {
-                        $taint_key_flow_graph?->addPath(
-                            $parent_node,
-                            $new_parent_node,
-                            'arraykey-assignment',
-                            $added_taints,
-                            $removed_taints,
-                        );
-                        $variable_use_graph?->addPath(
+                        $key_graph?->addPath(
                             $parent_node,
                             $new_parent_node,
                             'arraykey-assignment',
@@ -589,6 +574,38 @@ final class ArrayAnalyzer
                 $array_creation_info->item_value_atomic_types[] = new TMixed();
             }
         }
+    }
+
+    /**
+     * The type of the array created, of atomic type $array_type.
+     */
+    private static function getArrayType(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayCreationInfo $array_creation_info,
+        TArray|TKeyedArray $array_type,
+    ): Union {
+        $parent_nodes = $array_creation_info->parent_taint_nodes;
+
+        if ($array_creation_info->unpacked_nodes
+            && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            $type = new Union([$array_type]);
+
+            foreach ($array_creation_info->unpacked_nodes as $unpacked_node_id => $unpacked_node) {
+                if ($unpacked_node->code_location
+                    && $taint_flow_graph->addPathsFromNestedParentNodes(
+                        $unpacked_node,
+                        $type,
+                        $unpacked_node->code_location,
+                    )
+                ) {
+                    $taint_flow_graph->addNode($unpacked_node);
+                    $parent_nodes[$unpacked_node_id] = $unpacked_node;
+                }
+            }
+        }
+
+        return new Union([$array_type], ['parent_nodes' => $parent_nodes]);
     }
 
     private static function handleUnpackedArray(

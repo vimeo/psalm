@@ -1956,7 +1956,7 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function analyzeVariableUse(
         StatementsAnalyzer $statements_analyzer,
@@ -1966,10 +1966,22 @@ final class AssignmentAnalyzer
         Context $context,
     ): Union {
         if ($extended_var_id) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $extended_var_id,
-                new CodeLocation($statements_analyzer->getSource(), $assign_var),
-            );
+            $assignment_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+            $assignment_node = DataFlowNode::getForAssignment($extended_var_id, $assignment_location);
+
+            // Analysing taints too, the new node hides from the taint graph the parent nodes nested
+            // in the assigned value, which carry its taint: lead them to it.
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+            if ($taint_flow_graph
+                && $taint_flow_graph->addPathsFromNestedParentNodes(
+                    $assignment_node,
+                    $assign_value_type,
+                    $assignment_location,
+                )
+            ) {
+                $taint_flow_graph->addNode($assignment_node);
+            }
         } else {
             $assignment_node = DataFlowNode::getForUnknownOrigin();
         }

@@ -1115,6 +1115,7 @@ final class ArrayFetchAnalyzer
         }
 
         if (($variable_use_graph = $statements_analyzer->variable_use_graph)
+            && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
         ) {
             if ($stmt_var_type->parent_nodes) {
@@ -1122,10 +1123,12 @@ final class ArrayFetchAnalyzer
 
                 $new_parent_node = DataFlowNode::getForAssignment('mixed-var-array-access', $var_location);
 
-                $variable_use_graph->addNode($new_parent_node);
+                // The new node replaces the parent nodes of the variable below, also for the taint
+                // graph when analysing taints too: the taint graph needs the paths into it.
+                $graph->addNode($new_parent_node);
 
                 foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                    $variable_use_graph->addPath($parent_node, $new_parent_node, '=');
+                    $graph->addPath($parent_node, $new_parent_node, '=');
 
                     $variable_use_graph->addPath(
                         $parent_node,

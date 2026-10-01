@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
@@ -19,6 +20,7 @@ use function array_map;
 use function array_values;
 use function in_array;
 use function preg_quote;
+use function str_starts_with;
 use function strpos;
 use function trim;
 
@@ -106,6 +108,49 @@ final class TaintTest extends TestCase
         }
 
         $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
+     *
+     * @dataProvider providerValidCodeParse
+     */
+    public function testValidCodeTrackingUnusedVariables(string $code): void
+    {
+        if (strpos($this->getTestName(), 'literalStringCannotCarryTaint') !== false) {
+            // A variable narrowed to a literal keeps its parent nodes for the variable use graph, and
+            // so for the taint graph too: types compare their parent nodes, so these cannot differ
+            // without changing what is inferred.
+            $this->markTestSkipped('Tracking unused variables keeps the taints of narrowed literals');
+        }
+
+        $this->trackUnusedVariables();
+        $this->testValidCode($code);
+    }
+
+    /**
+     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
+     *
+     * @dataProvider providerInvalidCodeParse
+     */
+    public function testInvalidCodeTrackingUnusedVariables(
+        string $code,
+        string $error_message,
+        string $php_version = '8.0',
+    ): void {
+        $this->trackUnusedVariables();
+        $this->testInvalidCode($code, $error_message, $php_version);
+    }
+
+    private function trackUnusedVariables(): void
+    {
+        $this->project_analyzer->getCodebase()->find_unused_variables = true;
+
+        foreach (IssueHandler::getAllIssueTypes() as $issue_name) {
+            if (str_starts_with($issue_name, 'Unused') || str_starts_with($issue_name, 'PossiblyUnused')) {
+                Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+            }
+        }
     }
 
     /**
@@ -1226,6 +1271,13 @@ final class TaintTest extends TestCase
                     $b = new NonFinalClass();
                     $notEchoed = $b->finalMethod($_GET["c"]);
                     echo $b->finalMethod("safe");',
+            ],
+            'taintThroughSpreadKeepsKeys' => [
+                'code' => '<?php
+                    $a = ["x" => $_GET["a"], "y" => "safe"];
+                    $b = ["z" => "safe", ...$a];
+                    echo (string) $b["y"];
+                    echo (string) $b["z"];',
             ],
         ];
     }
@@ -2754,6 +2806,23 @@ final class TaintTest extends TestCase
                     $b2 = $b1;
                     $b3 = $b2;
                     echo (string) getV(["v" => $b3]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughNestedFetchOfMixedArrayInSpecializedFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function get2(array $a): mixed {
+                        return $a["a"]["b"];
+                    }
+
+                    echo (string) get2(["a" => ["b" => $_GET["a"]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpreadAlongOtherItems' => [
+                'code' => '<?php
+                    $a = ["x" => $_GET["a"]];
+                    $b = ["z" => "safe", ...$a];
+                    echo (string) $b["x"];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintNestedCallsOnAnotherInstanceOfSpecializedClass' => [

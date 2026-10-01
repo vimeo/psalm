@@ -204,7 +204,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $this->data_flow_graph = $this->taint_flow_graph = $this->codebase->taint_flow_graph;
         }
         if ($this->codebase->find_unused_variables) {
-            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph();
+            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph($this->taint_flow_graph);
         }
         if ($this->taint_flow_graph && $this->variable_use_graph) {
             $this->data_flow_graph = new CombinedFlowGraph($this->variable_use_graph, $this->taint_flow_graph);

@@ -54,5 +54,12 @@ final class ArrayCreationInfo
      */
     public array $parent_taint_nodes = [];
 
+    /**
+     * The nodes of the unpacked items, whose taint paths follow the keys they end up at
+     *
+     * @var array<string, DataFlowNode>
+     */
+    public array $unpacked_nodes = [];
+
     public bool $can_be_empty = true;
 }
