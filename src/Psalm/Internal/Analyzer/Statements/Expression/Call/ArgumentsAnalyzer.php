@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
@@ -709,6 +710,13 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $specialize_taint = !$function_storage || TaintFlowGraph::isCallSpecialized(
+            $statements_analyzer->getTaintFlowGraphWithSuppressed(),
+            $codebase,
+            $function_storage,
+            $code_location,
+        );
+
         if ($method_id) {
             if ($method_id instanceof MethodIdentifier) {
                 $fq_class_name = $method_id->fq_class_name;
@@ -838,7 +846,7 @@ final class ArgumentsAnalyzer
                             $context,
                             $class_generic_params,
                             $template_result,
-                            $function_storage->specialize_call ?? true,
+                            $specialize_taint,
                             $in_call_map,
                         );
                     }
@@ -1019,7 +1027,7 @@ final class ArgumentsAnalyzer
                     $context,
                     $class_generic_params,
                     $template_result,
-                    $function_storage->specialize_call ?? true,
+                    $specialize_taint,
                     $in_call_map,
                 ) === false) {
                     return false;
@@ -1062,7 +1070,7 @@ final class ArgumentsAnalyzer
                                     $code_location,
                                     $function_param->sinks,
                                 );
-                        } elseif ($function_storage->specialize_call) {
+                        } elseif ($specialize_taint) {
                             $sink = DataFlowNode::getForMethodArgument(
                                 $cased_method_id,
                                 DataFlowNode::getParameterOffset(

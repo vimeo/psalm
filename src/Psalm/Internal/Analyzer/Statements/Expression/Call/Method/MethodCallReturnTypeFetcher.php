@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -317,11 +318,20 @@ final class MethodCallReturnTypeFetcher
             $statements_analyzer,
         );
 
+        $specialize_call = TaintFlowGraph::isCallSpecialized(
+            $taint_flow_graph,
+            $codebase,
+            $method_storage,
+            $node_location,
+        );
+
         $method_call_node = null;
-        if ($method_storage->specialize_call
-            && $taint_flow_graph
-        ) {
-            if ($var_id && isset($context->vars_in_scope[$var_id])) {
+        $specialized = false;
+        if ($specialize_call && $taint_flow_graph) {
+            $specialized = true;
+
+            // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
+            if ($method_storage->specialize_call && $var_id && isset($context->vars_in_scope[$var_id])) {
                 $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
 
                 $unspecialized_parent_nodes = false;
@@ -487,7 +497,7 @@ final class MethodCallReturnTypeFetcher
             $graph = $variable_use_graph;
         }
         if ($graph) {
-            $method_call_node = DataFlowNode::getForMethodReturn(
+            $graph_method_call_node = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
                 $method_storage,
             );
@@ -504,18 +514,25 @@ final class MethodCallReturnTypeFetcher
                 $graph->addNode($declaring_method_call_node);
                 $graph->addPath(
                     $declaring_method_call_node,
-                    $method_call_node,
+                    $graph_method_call_node,
                     'parent',
                     $added_taints,
                     $removed_taints,
                 );
             }
 
-            $graph->addNode($method_call_node);
+            $graph->addNode($graph_method_call_node);
 
-            $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
-            ]);
+            // A specialized call's result keeps its per-call-site nodes set above: the
+            // unspecialized node is the body's own return node, which would connect every
+            // call's result to the taint returned by any call. Usage tracking works through
+            // the specialized nodes just the same.
+            if (!$specialized) {
+                $method_call_node = $graph_method_call_node;
+                $return_type_candidate = $return_type_candidate->setParentNodes([
+                    $method_call_node->id => $method_call_node,
+                ]);
+            }
         }
 
         if (!$taint_flow_graph || !$method_call_node) {
@@ -527,7 +544,7 @@ final class MethodCallReturnTypeFetcher
             $taint_flow_graph,
             (string) $method_id,
             $args,
-            $node_location,
+            $specialize_call ? $node_location : null,
             $method_call_node,
             $method_storage->removed_taints,
         );

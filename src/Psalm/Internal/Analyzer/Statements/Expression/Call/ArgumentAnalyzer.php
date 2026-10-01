@@ -1921,11 +1921,15 @@ final class ArgumentAnalyzer
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                // Specialized like $method_node: that node has an outgoing edge, so it is
+                // propagated from as-is rather than entered as a specialized call. An edge
+                // into the unspecialized declaring parameter would take the flow into the body
+                // with no call-site context, and out of it through every call's return.
                 $new_sink = DataFlowNode::getForMethodArgument(
                     $codebase->methods->getCasedMethodId($declaring_method_id),
                     DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
                     $declaring_storage,
-                    null,
+                    $specialization_location,
                 );
 
                 $taint_flow_graph->addNode($new_sink);

@@ -121,7 +121,7 @@ final class MutationLevelResolver
             return;
         }
 
-        $levels = self::resolveLevels($infos);
+        $levels = $graph->getMutationLevels();
 
         $fix = $codebase->alter_code && isset($project_analyzer->getIssuesToFix()['MissingPureAnnotation']);
 

@@ -75,6 +75,7 @@ For functions, methods and classes you can use the `@psalm-taint-specialize` ann
 <?php
 
 function takesInput(string $s) : string {
+    error_log("Got input");
     return $s;
 }
 
@@ -91,6 +92,7 @@ Adding a `@psalm-taint-specialize` annotation solves the problem, by telling Psa
  * @psalm-taint-specialize
  */
 function takesInput(string $s) : string {
+    error_log("Got input");
     return $s;
 }
 
@@ -131,6 +133,24 @@ function takesInput(string $s) : string {
 echo htmlentities(takesInput($_GET["name"]));
 echo takesInput("hello"); // No error
 ```
+
+Since each invocation is treated separately, a sink the input reaches through a specialized function – in its body or in a function it calls – is reported for every call that passes tainted input to it:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-specialize
+ */
+function run(string $command) : void {
+    exec($command); // Reported twice: once for each call below
+}
+
+run($_GET["first"]);
+run($_GET["second"]);
+```
+
+Psalm also infers the purity of functions without a purity annotation, so an unannotated function is specialized too when it turns out to be pure, as would be the first `takesInput` above without the `error_log` call. Since a method could be overridden by an impure one, this only applies to methods that cannot be overridden: `private` or `final` methods, and methods of `final` classes.
 
 ## Specializing taints in classes
 
