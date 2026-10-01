@@ -32,6 +32,7 @@ use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
+use Psalm\Issue\TooDeeplyNestedTaintedArray;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
@@ -678,11 +679,23 @@ final class TaintFlowGraph extends DataFlowGraph
         // Of those only the innermost few are kept, so that recursion wrapping its
         // argument deeper on every call still makes finitely many entries.
         $entry_key = $unspecialized_id . ' ' . $source->taints;
+        $open_assignments = self::getOpenAssignments($source->path_types);
 
-        foreach (array_slice(
-            self::getOpenAssignments($source->path_types),
-            -self::ENTRY_OPEN_ASSIGNMENT_DEPTH,
-        ) as $path_type) {
+        // Calls differing only past the kept assignments share the walk of the first
+        // of them, which can miss what the others carry deeper: tell the user.
+        $location = $source->taintSource->code_location ?? $source->code_location;
+
+        if ($location !== null && count($open_assignments) > self::ENTRY_OPEN_ASSIGNMENT_DEPTH) {
+            IssueBuffer::maybeAdd(new TooDeeplyNestedTaintedArray(
+                'Tainted data nested more than ' . self::ENTRY_OPEN_ASSIGNMENT_DEPTH . ' levels deep'
+                    . ' is passed to ' . $source->label . ', whose calls taint analysis only tells apart'
+                    . ' by their ' . self::ENTRY_OPEN_ASSIGNMENT_DEPTH . ' outermost levels:'
+                    . ' reduce the nesting to fix taint analysis',
+                $location,
+            ));
+        }
+
+        foreach (array_slice($open_assignments, -self::ENTRY_OPEN_ASSIGNMENT_DEPTH) as $path_type) {
             $entry_key .= ' ' . $path_type;
         }
 

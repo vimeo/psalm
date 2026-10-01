@@ -1339,6 +1339,7 @@ final class PreloaderList {
         \Psalm\Issue\TaintedUnserialize::class,
         \Psalm\Issue\TaintedUserSecret::class,
         \Psalm\Issue\TaintedXpath::class,
+        \Psalm\Issue\TooDeeplyNestedTaintedArray::class,
         \Psalm\Issue\TooFewArguments::class,
         \Psalm\Issue\TooManyArguments::class,
         \Psalm\Issue\TooManyTemplateParams::class,

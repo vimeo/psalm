@@ -266,6 +266,7 @@
  - [TaintedUnserialize](issues/TaintedUnserialize.md)
  - [TaintedUserSecret](issues/TaintedUserSecret.md)
  - [TaintedXpath](issues/TaintedXpath.md)
+ - [TooDeeplyNestedTaintedArray](issues/TooDeeplyNestedTaintedArray.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [TooManyArguments](issues/TooManyArguments.md)
  - [TooManyTemplateParams](issues/TooManyTemplateParams.md)
