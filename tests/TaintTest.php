@@ -1283,10 +1283,10 @@ final class TaintTest extends TestCase
             ],
             'taintThroughSpreadKeepsKeys' => [
                 'code' => '<?php
-                    $a = ["x" => $_GET["a"], "y" => "safe"];
-                    $b = ["z" => "safe", ...$a];
-                    echo (string) $b["y"];
-                    echo (string) $b["z"];',
+                    $a = [$_GET["a"], "safe"];
+                    $b = ["safe", ...$a];
+                    echo (string) $b[0];
+                    echo (string) $b[2];',
             ],
         ];
     }
@@ -2829,9 +2829,9 @@ final class TaintTest extends TestCase
             ],
             'taintThroughSpreadAlongOtherItems' => [
                 'code' => '<?php
-                    $a = ["x" => $_GET["a"]];
-                    $b = ["z" => "safe", ...$a];
-                    echo (string) $b["x"];',
+                    $a = [$_GET["a"]];
+                    $b = ["safe", ...$a];
+                    echo (string) $b[1];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintNestedCallsOnAnotherInstanceOfSpecializedClass' => [
