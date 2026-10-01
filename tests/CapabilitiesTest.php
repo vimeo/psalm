@@ -42,6 +42,32 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'explicitCapabilitiesOnOverriddenGetter' => [
+                'code' => '<?php
+                    interface HasItems {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array;
+                    }
+
+                    abstract class Base implements HasItems {
+                        protected array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[Override]
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    final class Lazy extends Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[Override]
+                        public function items(): array {
+                            $this->items = [1];
+                            return parent::items();
+                        }
+                    }',
+            ],
             'readGlobals' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
