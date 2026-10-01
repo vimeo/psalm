@@ -1033,6 +1033,41 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'fsockopenRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function connect(string $host): bool {
+                        return fsockopen($host, 80) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on fsockopen requires io',
+            ],
+            'socketReadRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param resource $socket
+                     * @psalm-capabilities write-refs
+                     */
+                    function readSome($socket): bool {
+                        return socket_read($socket, 1024) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - The context is write-refs but function call on socket_read requires io',
+            ],
+            'nameResolutionRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function resolve(string $host): string {
+                        return gethostbyname($host);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on gethostbyname requires io',
+            ],
+            'streamWrapperRegistryRequiresGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function unregister(): bool {
+                        return stream_wrapper_unregister("phar");
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on stream_wrapper_unregister requires read-globals|write-globals',
+            ],
             'writeThisPropsDoesNotIncludeReadProps' => [
                 'code' => '<?php
                     final class Obj {
