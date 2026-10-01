@@ -983,6 +983,18 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'instanceofClassStringVarIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string<Traversable> $class
+                     */
+                    function test(Traversable $input, string $class): bool {
+                        if ($input instanceof $class) {
+                            return true;
+                        }
+                        return false;
+                    }',
+            ],
         ];
     }
 
