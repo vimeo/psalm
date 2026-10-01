@@ -55,6 +55,25 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'keepExplicitImpureAnnotation' => [
+                'input' => '<?php
+                    class Hook {
+                        /** @psalm-impure */
+                        public function prepare(): int {
+                            return 1;
+                        }
+                    }',
+                'output' => '<?php
+                    class Hook {
+                        /** @psalm-impure */
+                        public function prepare(): int {
+                            return 1;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {

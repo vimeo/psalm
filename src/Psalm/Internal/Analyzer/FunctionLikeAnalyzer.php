@@ -648,9 +648,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'class' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
                     'start' => (int) $this->function->getAttribute('startFilePos'),
                     'fresh' => true,
-                    // inline callbacks are not worth annotating, closures assigned to a variable are
-                    'report' => !($this->function instanceof Closure || $this->function instanceof ArrowFunction)
-                        || $this->function->getAttribute('assigned_var_id') !== null,
+                    // inline callbacks are not worth annotating, closures assigned to a variable are;
+                    // an explicit `@psalm-impure` is a deliberate choice (e.g. a hook overrides may use
+                    // freely), not a missing annotation
+                    'report' => (!($this->function instanceof Closure || $this->function instanceof ArrowFunction)
+                            || $this->function->getAttribute('assigned_var_id') !== null)
+                        && !($storage->has_mutations_annotation && $storage->capabilities === Capabilities::ALL),
                 ]);
             }
         }
