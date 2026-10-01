@@ -52,6 +52,19 @@ final class CapabilitiesTest extends TestCase
                         return (string) $id . $id->getTimestamp() . $other->__toString();
                     }',
             ],
+            'voidFunctionWithPurityTemplateMayBePure' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $items
+                     * @param Closure[_](int): void $callback
+                     * @psalm-pure
+                     */
+                    function each(array $items, Closure $callback): void {
+                        foreach ($items as $item) {
+                            $callback($item);
+                        }
+                    }',
+            ],
             'explicitCapabilitiesOnOverriddenGetter' => [
                 'code' => '<?php
                     interface HasItems {

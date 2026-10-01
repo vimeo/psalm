@@ -625,6 +625,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $storage->throw_locations
                     || $storage->throws
                 )
+                // its effects may be those of the closures it is given
+                && $storage->purity_from_templates === []
             ) {
                 // a function that may neither read state nor have an effect (no write, no
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
