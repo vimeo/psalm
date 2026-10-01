@@ -117,13 +117,6 @@ final class TaintTest extends TestCase
      */
     public function testValidCodeTrackingUnusedVariables(string $code): void
     {
-        if (strpos($this->getTestName(), 'literalStringCannotCarryTaint') !== false) {
-            // A variable narrowed to a literal keeps its parent nodes for the variable use graph, and
-            // so for the taint graph too: types compare their parent nodes, so these cannot differ
-            // without changing what is inferred.
-            $this->markTestSkipped('Tracking unused variables keeps the taints of narrowed literals');
-        }
-
         $this->trackUnusedVariables();
         $this->testValidCode($code);
     }
@@ -1271,6 +1264,22 @@ final class TaintTest extends TestCase
                     $b = new NonFinalClass();
                     $notEchoed = $b->finalMethod($_GET["c"]);
                     echo $b->finalMethod("safe");',
+            ],
+            'narrowingToALiteralKeepsInferredTypes' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<string> $l
+                     * @return non-empty-list<string>
+                     */
+                    function f(array $l): array {
+                        foreach ($l as $o => $v) {
+                            if ($o === 0) {
+                                $v .= "a";
+                            }
+                            $l[$o] = $v;
+                        }
+                        return $l;
+                    }',
             ],
             'taintThroughSpreadKeepsKeys' => [
                 'code' => '<?php

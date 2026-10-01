@@ -7,6 +7,7 @@ namespace Psalm;
 use InvalidArgumentException;
 use LogicException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
@@ -748,7 +749,10 @@ abstract class Type
         }
 
         if ($type_1->parent_nodes || $type_2->parent_nodes) {
-            $combined_type->parent_nodes = $type_1->parent_nodes + $type_2->parent_nodes;
+            $combined_type->parent_nodes = DataFlowNode::combineParentNodes(
+                $type_1->parent_nodes,
+                $type_2->parent_nodes,
+            );
         }
 
         if ($type_1->by_ref || $type_2->by_ref) {

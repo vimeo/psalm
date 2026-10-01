@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeExpander;
@@ -316,19 +317,49 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->taint_flow_graph
-                    && (!$result_type->hasScalarType()
-                        || ($result_type->hasString() && !$result_type->hasLiteralString())))
+            $can_carry_taints = !$result_type->hasScalarType()
+                || ($result_type->hasString() && !$result_type->hasLiteralString());
+
+            if (($statements_analyzer->taint_flow_graph && $can_carry_taints)
                 || $statements_analyzer->variable_use_graph
             ) {
+                $parent_nodes = null;
+
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
-                    $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
+                    $parent_nodes = $before_adjustment->parent_nodes;
                 } elseif (!$did_type_exist && $code_location) {
-                    $result_type = $result_type->setParentNodes(
-                        $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
-                            $key,
-                        ),
-                    );
+                    $parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($key);
+                }
+
+                // The variable use graph needs the parent nodes of a type that cannot carry taints,
+                // which the taint graph analysed alongside must not take taints through: it gets
+                // nodes standing for them there, that the taint graph has no paths into.
+                if ($parent_nodes !== null
+                    && $parent_nodes !== []
+                    && !$can_carry_taints
+                    && $statements_analyzer->taint_flow_graph
+                    && ($variable_use_graph = $statements_analyzer->variable_use_graph)
+                ) {
+                    $narrowed_parent_nodes = [];
+
+                    foreach ($parent_nodes as $parent_node) {
+                        if ($parent_node->getNarrowedNodeId() === null) {
+                            $narrowed_node = DataFlowNode::getForNarrowingToScalar($parent_node);
+
+                            $variable_use_graph->addNode($narrowed_node);
+                            $variable_use_graph->addPath($parent_node, $narrowed_node, '=');
+
+                            $parent_node = $narrowed_node;
+                        }
+
+                        $narrowed_parent_nodes[$parent_node->id] = $parent_node;
+                    }
+
+                    $parent_nodes = $narrowed_parent_nodes;
+                }
+
+                if ($parent_nodes !== null) {
+                    $result_type = $result_type->setParentNodes($parent_nodes);
                 }
             }
 

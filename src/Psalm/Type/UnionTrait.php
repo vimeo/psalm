@@ -9,6 +9,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -49,6 +50,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 
 use function array_filter;
+use function array_keys;
 use function array_unique;
 use function count;
 use function implode;
@@ -1463,6 +1465,34 @@ trait UnionTrait
     }
 
     /**
+     * The ids of $parent_nodes, with those of nodes narrowed to a scalar (see
+     * DataFlowNode::getForNarrowingToScalar()) replaced by the ids of the nodes they narrow, or null
+     * if there is none of those.
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     * @return list<array-key>|null
+     * @psalm-pure
+     */
+    private static function getParentNodeIdsWithoutNarrowing(array $parent_nodes): ?array
+    {
+        $parent_node_ids = [];
+        $has_narrowing = false;
+
+        foreach ($parent_nodes as $parent_node_id => $parent_node) {
+            $narrowed_node_id = $parent_node->getNarrowedNodeId();
+
+            if ($narrowed_node_id !== null) {
+                $parent_node_id = $narrowed_node_id;
+                $has_narrowing = true;
+            }
+
+            $parent_node_ids[$parent_node_id] = true;
+        }
+
+        return $has_narrowing ? array_keys($parent_node_ids) : null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function equals(
@@ -1512,7 +1542,17 @@ trait UnionTrait
         }
 
         if ($ensure_parent_node_equality && $this->parent_nodes !== $other_type->parent_nodes) {
-            return false;
+            // A value narrowed to a type that cannot carry taints only hides its parent nodes from
+            // the taint graph (see Reconciler): its data flow is the same.
+            $parent_node_ids = self::getParentNodeIdsWithoutNarrowing($this->parent_nodes);
+            $other_parent_node_ids = self::getParentNodeIdsWithoutNarrowing($other_type->parent_nodes);
+
+            if (($parent_node_ids === null && $other_parent_node_ids === null)
+                || ($parent_node_ids ?? array_keys($this->parent_nodes))
+                    !== ($other_parent_node_ids ?? array_keys($other_type->parent_nodes))
+            ) {
+                return false;
+            }
         }
 
         if ($this->different || $other_type->different) {
