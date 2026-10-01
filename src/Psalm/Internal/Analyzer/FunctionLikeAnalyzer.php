@@ -650,10 +650,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     'fresh' => true,
                     // inline callbacks are not worth annotating, closures assigned to a variable are;
                     // an explicit `@psalm-impure` is a deliberate choice (e.g. a hook overrides may use
-                    // freely), not a missing annotation
+                    // freely), not a missing annotation, and so is the explicit annotation of an
+                    // overridden method: it is what its overrides may do, not what its own body does
                     'report' => (!($this->function instanceof Closure || $this->function instanceof ArrowFunction)
                             || $this->function->getAttribute('assigned_var_id') !== null)
-                        && !($storage->has_mutations_annotation && $storage->capabilities === Capabilities::ALL),
+                        && !($storage->has_mutations_annotation
+                            && ($storage->capabilities === Capabilities::ALL
+                                || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
                 ]);
             }
         }

@@ -74,6 +74,45 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'keepExplicitAnnotationOfOverriddenMethod' => [
+                'input' => '<?php
+                    class Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private array $cache = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            $this->cache = [1];
+                            return $this->cache;
+                        }
+                    }',
+                'output' => '<?php
+                    class Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private array $cache = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            $this->cache = [1];
+                            return $this->cache;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
