@@ -371,7 +371,6 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedUnserialize](issues/TaintedUnserialize.md)
  - [TaintedUserSecret](issues/TaintedUserSecret.md)
  - [TaintedXpath](issues/TaintedXpath.md)
- - [TooDeeplyNestedTaintedArray](issues/TooDeeplyNestedTaintedArray.md)
  - [UncaughtThrowInGlobalScope](issues/UncaughtThrowInGlobalScope.md)
  - [UnevaluatedCode](issues/UnevaluatedCode.md)
  - [UnnecessaryVarAnnotation](issues/UnnecessaryVarAnnotation.md)

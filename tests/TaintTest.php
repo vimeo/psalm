@@ -1227,15 +1227,6 @@ final class TaintTest extends TestCase
                     $notEchoed = $b->finalMethod($_GET["c"]);
                     echo $b->finalMethod("safe");',
             ],
-            'taintArrayNestedFourLevelsInSpecializedFunction' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function get4(array $a): mixed {
-                        return $a["a"]["b"]["c"]["d"];
-                    }
-
-                    $notEchoed = get4(["a" => ["b" => ["c" => ["d" => $_GET["a"]]]]]);',
-            ],
         ];
     }
 
@@ -2781,7 +2772,6 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
-                // A specialized body is walked once per entry, keyed by the 4 outermost open array assignments: calls differing deeper share the first walk, so the deeper nesting is reported instead of the flow it hides
                 'code' => '<?php
                     /** @psalm-pure */
                     function get5(array $a): mixed {
@@ -2790,7 +2780,17 @@ final class TaintTest extends TestCase
 
                     $notEchoed = get5(["a" => ["b" => ["c" => ["d" => ["x" => $_GET["a"]]]]]]);
                     echo (string) get5(["a" => ["b" => ["c" => ["d" => ["e" => $_GET["b"]]]]]]);',
-                'error_message' => 'TooDeeplyNestedTaintedArray',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionWrappingItsArgumentDeeperOnEveryCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(mixed $a, int $n): mixed {
+                        return $n > 0 ? wrap(["k" => $a], $n - 1) : $a;
+                    }
+
+                    echo (string) wrap($_GET["a"], 3);',
+                'error_message' => 'TaintedHtml',
             ],
             'SKIPPED-taintLateArrayThroughImpureFunction' => [
                 // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
