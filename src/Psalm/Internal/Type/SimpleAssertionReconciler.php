@@ -1964,6 +1964,25 @@ final class SimpleAssertionReconciler extends Reconciler
         //we add 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value + 1;
 
+        if (!is_int($assertion_value)) {
+            // PHP_INT_MAX + 1 overflows to float; no integer can satisfy > PHP_INT_MAX.
+            if ($assertion->doesFilterNullOrFalse() &&
+                ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
+            ) {
+                $existing_var_type->removeType('null');
+                $existing_var_type->removeType('false');
+            }
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange
+                    || $atomic_type instanceof TInt
+                    || $atomic_type instanceof TLiteralInt
+                ) {
+                    $existing_var_type->removeType($atomic_type->getKey());
+                }
+            }
+            return $existing_var_type->freeze();
+        }
+
         $redundant = true;
 
         if ($assertion->doesFilterNullOrFalse() &&
@@ -2013,7 +2032,7 @@ final class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
                     }
                 }*/
-            } elseif ($atomic_type instanceof TInt && is_int($assertion_value)) {
+            } elseif ($atomic_type instanceof TInt) {
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange($assertion_value, null));
@@ -2072,6 +2091,25 @@ final class SimpleAssertionReconciler extends Reconciler
         //we remove 1 from the assertion value because we're on a strict operator
         $assertion_value = $assertion->value - 1;
         $existing_var_type = $existing_var_type->getBuilder();
+
+        if (!is_int($assertion_value)) {
+            // PHP_INT_MIN - 1 underflows to float; no integer can satisfy < PHP_INT_MIN.
+            if ($assertion->doesFilterNullOrFalse() &&
+                ($existing_var_type->hasType('null') || $existing_var_type->hasType('false'))
+            ) {
+                $existing_var_type->removeType('null');
+                $existing_var_type->removeType('false');
+            }
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TIntRange
+                    || $atomic_type instanceof TInt
+                    || $atomic_type instanceof TLiteralInt
+                ) {
+                    $existing_var_type->removeType($atomic_type->getKey());
+                }
+            }
+            return $existing_var_type->freeze();
+        }
 
         $redundant = true;
 
