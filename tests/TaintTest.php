@@ -2870,8 +2870,8 @@ final class TaintTest extends TestCase
                     echo (string) wrap($_GET["a"], 3);',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintThroughRecursionFetchingDeeperThanFourLevels' => [
-                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one, where the fetch of "x" does not match
+            'taintThroughRecursionFetchingDeeperThanFourLevels' => [
+                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one
                 'code' => '<?php
                     /** @psalm-pure */
                     function dig(mixed $a, int $n): mixed {
@@ -2884,7 +2884,7 @@ final class TaintTest extends TestCase
                     echo (string) dig(["x" => $_GET["a"]], 5);',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintThroughRecursionDifferingDeeperThanFourLevels' => [
+            'taintThroughRecursionDifferingDeeperThanFourLevels' => [
                 // A recursive entry is keyed on its 4 innermost open array assignments: the second call shares the walk of the first, wrapped around another key
                 'code' => '<?php
                     /** @psalm-pure */

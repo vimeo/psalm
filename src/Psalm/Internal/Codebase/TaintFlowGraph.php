@@ -51,7 +51,6 @@ use function array_unshift;
 use function count;
 use function end;
 use function ksort;
-use function max;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -751,8 +750,6 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): array {
-        $caller = $source->withSpecialization($unspecialized_id, null, null, $source->context);
-
         // What the body walk does depends on the entering taints and, through
         // shouldIgnoreFetch(), on the flow's open assignments (see appendPathType()).
         $entry_key = $unspecialized_id . ' ' . $source->taints;
@@ -763,13 +760,40 @@ final class TaintFlowGraph extends DataFlowGraph
         // innermost few open assignments are kept, so that there are finitely many
         // entries. Every other entry is keyed on all of them: a chain of first callers
         // only has one such entry per entered node, and finitely many others.
-        for ($context = $source->context; $context !== null; $context = $this->entry_callers[$context][0][0]->context) {
-            if ($this->entry_roots[$context]->id === $unspecialized_id) {
-                $open_assignments = array_slice($open_assignments, -self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH);
+        //
+        // The flow forgets the others, rather than walking the body with those of the
+        // first call to make the entry: every call sharing it can differ there. Without
+        // them, a fetch reaching past the kept ones is not ignored (see shouldIgnoreFetch()),
+        // in the walk as after it -- the walk may have fetched past them. So the walk
+        // may take taints a call does not have there, but takes all those it has.
+        if ($source->taintSource !== null
+            && count($open_assignments) > self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH
+        ) {
+            $context = $source->context;
 
-                break;
+            while ($context !== null) {
+                if ($this->entry_roots[$context]->id === $unspecialized_id) {
+                    // the kept open assignments, and the type of the edge taken last if not one of them
+                    $source = $source->withFlow(
+                        $source->taints,
+                        $source->taintSource,
+                        array_slice(
+                            $source->path_types,
+                            count($open_assignments) - count($source->path_types)
+                                - self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH,
+                        ),
+                        $source->context,
+                    );
+                    $open_assignments = array_slice($open_assignments, -self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH);
+
+                    break;
+                }
+
+                $context = $this->entry_callers[$context][0][0]->context;
             }
         }
+
+        $caller = $source->withSpecialization($unspecialized_id, null, null, $source->context);
 
         foreach ($open_assignments as $path_type) {
             $entry_key .= ' ' . $path_type;
@@ -866,12 +890,8 @@ final class TaintFlowGraph extends DataFlowGraph
         string $specialization_key,
     ): array {
         if ($caller !== $this->entry_callers[$entry][0][0]) {
-            $exit = $exit->withFlow(
-                $exit->taints,
-                $caller,
-                self::rebasePathTypes($exit->path_types, $this->entry_roots[$entry]->path_types, $caller->path_types),
-                $caller->context,
-            );
+            // the call and the start of the walk have the same open assignments: see enterSpecializedCall()
+            $exit = $exit->withFlow($exit->taints, $caller, $exit->path_types, $caller->context);
         }
 
         if (isset($this->specializations[$exit->id][$specialization_key])) {
@@ -888,48 +908,6 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $this->addEntryExit($caller->context, $exit);
-    }
-
-    /**
-     * Returns the path types $exit_path_types, reached by a body walk that started
-     * with $root_path_types, as if the walk had started with $caller_path_types.
-     *
-     * The walk leaves the open assignments of its start as they are, except for
-     * the innermost ones it matched with fetches, and adds its own on top. So the
-     * path types of the exit are those of the start up to where they first differ
-     * from them, followed by what the walk added. The start of the walk and the
-     * caller share their innermost open assignments (see enterSpecializedCall()),
-     * which are the ones the walk can match.
-     *
-     * @param list<string> $exit_path_types
-     * @param list<string> $root_path_types
-     * @param list<string> $caller_path_types
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function rebasePathTypes(
-        array $exit_path_types,
-        array $root_path_types,
-        array $caller_path_types,
-    ): array {
-        $root_path_types = self::getOpenAssignments($root_path_types);
-        $caller_path_types = self::getOpenAssignments($caller_path_types);
-
-        $kept = 0;
-        $root_count = count($root_path_types);
-        $exit_count = count($exit_path_types);
-
-        while ($kept < $root_count && $kept < $exit_count && $root_path_types[$kept] === $exit_path_types[$kept]) {
-            $kept++;
-        }
-
-        $path_types = array_slice($caller_path_types, 0, max(0, count($caller_path_types) - ($root_count - $kept)));
-
-        foreach (array_slice($exit_path_types, $kept) as $path_type) {
-            $path_types[] = $path_type;
-        }
-
-        return $path_types;
     }
 
     /**
