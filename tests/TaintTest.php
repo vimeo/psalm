@@ -2870,6 +2870,35 @@ final class TaintTest extends TestCase
                     echo (string) wrap($_GET["a"], 3);',
                 'error_message' => 'TaintedHtml',
             ],
+            'SKIPPED-taintThroughRecursionFetchingDeeperThanFourLevels' => [
+                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one, where the fetch of "x" does not match
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function dig(mixed $a, int $n): mixed {
+                        if ($n > 0) {
+                            return dig(["w" => $a], $n - 1);
+                        }
+                        return is_array($a) ? $a["w"]["w"]["w"]["w"]["w"]["x"] : null;
+                    }
+
+                    echo (string) dig(["x" => $_GET["a"]], 5);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'SKIPPED-taintThroughRecursionDifferingDeeperThanFourLevels' => [
+                // A recursive entry is keyed on its 4 innermost open array assignments: the second call shares the walk of the first, wrapped around another key
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function dig(mixed $a, int $n): mixed {
+                        if ($n > 0) {
+                            return dig(["w" => $a], $n - 1);
+                        }
+                        return is_array($a) ? $a["w"]["w"]["w"]["w"]["x"] : null;
+                    }
+
+                    $notEchoed = dig(["y" => $_GET["a"]], 4);
+                    echo (string) dig(["x" => $_GET["b"]], 4);',
+                'error_message' => 'TaintedHtml',
+            ],
             'SKIPPED-taintLateArrayThroughImpureFunction' => [
                 // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
                 'code' => '<?php
