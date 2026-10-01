@@ -42,6 +42,16 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'mongoObjectIdReadsAreMutationFree' => [
+                'code' => '<?php
+                    use MongoDB\\BSON\\ObjectId;
+                    use MongoDB\\BSON\\ObjectIdInterface;
+
+                    /** @psalm-capabilities read-props */
+                    function idString(ObjectId $id, ObjectIdInterface $other): string {
+                        return (string) $id . $id->getTimestamp() . $other->__toString();
+                    }',
+            ],
             'explicitCapabilitiesOnOverriddenGetter' => [
                 'code' => '<?php
                     interface HasItems {
