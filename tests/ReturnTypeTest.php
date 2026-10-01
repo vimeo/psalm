@@ -988,6 +988,44 @@ final class ReturnTypeTest extends TestCase
 
                     (new B)->getThis()->foo();',
             ],
+            'inheritedStaticReturnTypeThroughParentCall' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    interface HasSelf {
+                        public function get(): static;
+                    }
+
+                    class A implements HasSelf {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        public function get(): static {
+                            return parent::get();
+                        }
+                    }',
+            ],
+            'inheritedStaticReturnTypeThroughStaticCall' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    class Base {
+                        final public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    class Derived extends Base {
+                        public static function makeToo(): static {
+                            return static::make();
+                        }
+                    }',
+            ],
             'returnMixed' => [
                 'code' => '<?php
                     namespace Foo;
