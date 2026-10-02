@@ -153,6 +153,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public array $deferred_callees = [];
 
     /**
+     * Whether the parameter default values are being analysed: what they do is recorded in
+     * $param_default_intrinsic_capabilities and $param_default_callees instead.
+     */
+    public bool $tracking_param_defaults = false;
+
+    /**
+     * The mutations performed by the parameter default values themselves.
+     */
+    public int $param_default_intrinsic_capabilities = Capabilities::NONE;
+
+    /**
+     * The unannotated project function-likes called by the parameter default values.
+     *
+     * @var array<string, bool>
+     */
+    public array $param_default_callees = [];
+
+    /**
      * The purity templates of the enclosing scopes this closure called closures of: its purity
      * depends on them, so its type carries them (name => template).
      *
@@ -607,6 +625,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $storage->throw_locations
                     || $storage->throws
                 )
+                // its effects may be those of the closures it is given
+                && $storage->purity_from_templates === []
             ) {
                 // a function that may neither read state nor have an effect (no write, no
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
@@ -639,18 +659,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // the final level depends on the callees' levels: resolved after analysis,
                 // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
                 $codebase->code_use_graph->addMutationInfo($node_id, [
-                    'intrinsic' => $this->intrinsic_capabilities,
+                    // the calls of an unannotated overridden method may run any of its overrides,
+                    // which could do anything: annotating it would restrict them
+                    'intrinsic' => $storage instanceof MethodStorage
+                        && $storage->overridden_somewhere
+                        && !$storage->has_mutations_annotation
+                            ? Capabilities::ALL
+                            : $this->intrinsic_capabilities,
                     'allowed' => $storage->capabilities,
                     'callees' => $this->deferred_callees,
+                    'default_intrinsic' => $this->param_default_intrinsic_capabilities,
+                    'default_callees' => $this->param_default_callees,
                     'location' => $storage->location,
                     'cased_name' => $storage->cased_name ?? '{closure}',
                     'suppressed_issues' => $storage->suppressed_issues,
                     'class' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
                     'start' => (int) $this->function->getAttribute('startFilePos'),
                     'fresh' => true,
-                    // inline callbacks are not worth annotating, closures assigned to a variable are
-                    'report' => !($this->function instanceof Closure || $this->function instanceof ArrowFunction)
-                        || $this->function->getAttribute('assigned_var_id') !== null,
+                    // inline callbacks are not worth annotating, closures assigned to a variable are;
+                    // an explicit `@psalm-impure` is a deliberate choice (e.g. a hook overrides may use
+                    // freely), not a missing annotation, and so is the explicit annotation of an
+                    // overridden method: it is what its overrides may do, not what its own body does
+                    'report' => (!($this->function instanceof Closure || $this->function instanceof ArrowFunction)
+                            || $this->function->getAttribute('assigned_var_id') !== null)
+                        && !($storage->has_mutations_annotation
+                            && ($storage->capabilities === Capabilities::ALL
+                                || ($storage instanceof MethodStorage && $storage->overridden_somewhere))),
                 ]);
             }
         }
@@ -1141,18 +1175,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * function-like may otherwise do. Function-likes without a purity annotation are not
      * restricted, so `new` in the defaults of unannotated code stays free.
      */
-    private static function analyzeParamDefault(
+    private function analyzeParamDefault(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $default,
         Context $context,
     ): void {
         $capabilities = $context->capabilities;
+        $track_mutations = $this->track_mutations;
 
         $context->capabilities = self::getParamDefaultCapabilities($capabilities);
         $context->inside_param_default = true;
+        // what the default values do is recorded separately: an annotation of the function-like
+        // must allow them to do it (see MutationLevelResolver)
+        $this->track_mutations = true;
+        $this->tracking_param_defaults = true;
 
         ExpressionAnalyzer::analyze($statements_analyzer, $default, $context);
 
+        $this->tracking_param_defaults = false;
+        $this->track_mutations = $track_mutations;
         $context->inside_param_default = false;
         $context->capabilities = $capabilities;
     }
@@ -1352,7 +1393,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if (!$function_param->type_location || !$function_param->location) {
                 if ($parser_param && $parser_param->default) {
-                    self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
+                    $this->analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
                 }
 
                 continue;
@@ -1403,7 +1444,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($parser_param && $parser_param->default) {
-                self::analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
+                $this->analyzeParamDefault($statements_analyzer, $parser_param->default, $context);
 
                 $default_type = $statements_analyzer->node_data->getType($parser_param->default);
 

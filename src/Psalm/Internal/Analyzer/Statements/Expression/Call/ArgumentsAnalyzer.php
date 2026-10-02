@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -1224,6 +1225,7 @@ final class ArgumentsAnalyzer
         )) {
             $by_ref_type = null;
             $by_ref_out_type = null;
+            $source_param = null;
 
             $check_null_ref = true;
 
@@ -1258,6 +1260,10 @@ final class ArgumentsAnalyzer
                 }
                 if ($function_param->out_type) {
                     $by_ref_out_type = $function_param->out_type;
+                }
+
+                if (!str_contains($method_id, '::')) {
+                    $source_param = $function_param->name;
                 }
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
@@ -1325,12 +1331,29 @@ final class ArgumentsAnalyzer
             }
 
             $by_ref_type = $by_ref_type ?: Type::getMixed();
+            $by_ref_out_type = $by_ref_out_type ?: $by_ref_type;
+
+            // a builtin reading from outside the program into this parameter (socket_recv(), ...)
+            if ($source_param !== null
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+                && ($source_taints = InternalTaintSourceMap::getTaints($method_id, $source_param)) !== 0
+            ) {
+                $by_ref_out_type = InternalTaintSourceMap::addSource(
+                    $graph,
+                    $statements_analyzer,
+                    $arg->value,
+                    $method_id . '($' . $source_param . ')',
+                    $source_taints,
+                    $context,
+                    $by_ref_out_type,
+                );
+            }
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $arg->value,
                 $by_ref_type,
-                $by_ref_out_type ?: $by_ref_type,
+                $by_ref_out_type,
                 $context,
                 $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,

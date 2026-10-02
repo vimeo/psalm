@@ -28,7 +28,6 @@ abstract class DataFlowGraph
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     * @psalm-suppress MissingPureAnnotation CombinedFlowGraph::addPath writes the graphs it combines
      */
     public function addPath(
         DataFlowNode $from,

@@ -42,6 +42,99 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'mongoObjectIdReadsAreMutationFree' => [
+                'code' => '<?php
+                    use MongoDB\\BSON\\ObjectId;
+                    use MongoDB\\BSON\\ObjectIdInterface;
+
+                    /** @psalm-capabilities read-props */
+                    function idString(ObjectId $id, ObjectIdInterface $other): string {
+                        return (string) $id . $id->getTimestamp() . $other->__toString();
+                    }',
+            ],
+            'voidFunctionWithPurityTemplateMayBePure' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $items
+                     * @param Closure[_](int): void $callback
+                     * @psalm-pure
+                     */
+                    function each(array $items, Closure $callback): void {
+                        foreach ($items as $item) {
+                            $callback($item);
+                        }
+                    }',
+            ],
+            'explicitCapabilitiesOnOverriddenGetter' => [
+                'code' => '<?php
+                    interface HasItems {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array;
+                    }
+
+                    abstract class Base implements HasItems {
+                        protected array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[Override]
+                        public function items(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    final class Lazy extends Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[Override]
+                        public function items(): array {
+                            $this->items = [1];
+                            return parent::items();
+                        }
+                    }',
+            ],
+            'externalMutationFreeAttributeOnOverriddenGetter' => [
+                'code' => '<?php
+                    namespace Psalm {
+                        #[\\Attribute(\\Attribute::TARGET_METHOD)]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        use Psalm\\ExternalMutationFree;
+
+                        class Counter {
+                            private int $count = 0;
+
+                            #[ExternalMutationFree]
+                            public function getCount(): int {
+                                return $this->count;
+                            }
+                        }
+
+                        final class FixedCounter extends Counter {
+                            #[ExternalMutationFree]
+                            #[Override]
+                            public function getCount(): int {
+                                return 1;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        function countOf(Counter $counter): int {
+                            return $counter->getCount();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'streamWrapperRegistrationRequiresGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function register(string $class): bool {
+                        return stream_wrapper_register("app", $class)
+                            && stream_register_wrapper("app2", $class);
+                    }',
+            ],
             'readGlobals' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
@@ -984,6 +1077,71 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'fsockopenRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function connect(string $host): bool {
+                        return fsockopen($host, 80) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on fsockopen requires io',
+            ],
+            'socketReadRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param resource $socket
+                     * @psalm-capabilities write-refs
+                     */
+                    function readSome($socket): bool {
+                        return socket_read($socket, 1024) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - The context is write-refs but function call on socket_read requires io',
+            ],
+            'nameResolutionRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function resolve(string $host): string {
+                        return gethostbyname($host);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on gethostbyname requires io',
+            ],
+            'streamWrapperRegistryRequiresGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function unregister(): bool {
+                        return stream_wrapper_unregister("phar");
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on stream_wrapper_unregister requires read-globals|write-globals',
+            ],
+            'explicitAnnotationOfConsistentConstructorIsNotAssumed' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Model {
+                        public $id;
+
+                        /** @psalm-mutation-free */
+                        public function __construct(int $id) {
+                            $this->id = $id;
+                        }
+                    }
+
+                    final class LoggingModel extends Model {
+                        public function __construct(int $id) {
+                            parent::__construct($id);
+                            echo "created";
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - Model::__construct is read-props, but LoggingModel::__construct additionally requires',
+            ],
+            'curlMultiGetcontentRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function content(CurlHandle $handle): ?string {
+                        return curl_multi_getcontent($handle);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on curl_multi_getcontent requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'writeThisPropsDoesNotIncludeReadProps' => [
                 'code' => '<?php
                     final class Obj {

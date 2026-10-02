@@ -128,6 +128,16 @@ final class FunctionLikeDocblockScanner
 
         $docblock_info->capabilities_expressions = [];
 
+        if ($storage instanceof MethodStorage
+            && $storage->mutation_free_assumed
+            && $docblock_info->has_mutations_annotation
+        ) {
+            // a getter is assumed mutation-free from its shape alone: an explicit annotation replaces
+            // that assumption instead of being narrowed by it
+            $storage->capabilities = Capabilities::ALL;
+            $storage->mutation_free_assumed = false;
+        }
+
         if ($deferred_capabilities !== []) {
             // imported type aliases: the populator applies them to $storage->capabilities
             $storage->capabilities_type = CapabilitiesExpressionResolver::deferred(
