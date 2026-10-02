@@ -1288,6 +1288,12 @@ final class TaintTest extends TestCase
                     echo (string) $b[0];
                     echo (string) $b[2];',
             ],
+            'branchesWrappingDifferentlyKeepKeys' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"], "y" => "safe"];
+                    $b = rand(0, 1) ? ["k" => $a] : $a;
+                    echo $b["k"]["y"];',
+            ],
         ];
     }
 
@@ -3031,6 +3037,61 @@ final class TaintTest extends TestCase
 
                     $notEchoed = dig(["y" => $_GET["a"]], 4);
                     echo (string) dig(["x" => $_GET["b"]], 4);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughBranchesWrappingDifferently' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"]];
+                    $b = rand(0, 1) ? ["k" => $a] : $a;
+                    echo $b["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughPureFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughInferredPureFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpecializedFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionWrappingThenFetching' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(mixed $a, int $n): mixed {
+                        return $n > 0 ? wrap(["k" => $a], $n - 1) : $a;
+                    }
+
+                    echo (string) wrap(["x" => $_GET["a"]], 1)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughLoopWrappingDeeperOnEveryIteration' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"]];
+                    while (rand(0, 1)) {
+                        $a = ["k" => $a];
+                    }
+                    echo (string) $a["k"]["k"]["x"];',
                 'error_message' => 'TaintedHtml',
             ],
             'SKIPPED-taintLateArrayThroughImpureFunction' => [
