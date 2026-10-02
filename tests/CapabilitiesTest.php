@@ -127,6 +127,14 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'streamWrapperRegistrationRequiresGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function register(string $class): bool {
+                        return stream_wrapper_register("app", $class)
+                            && stream_register_wrapper("app2", $class);
+                    }',
+            ],
             'readGlobals' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
@@ -1123,6 +1131,16 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - Model::__construct is read-props, but LoggingModel::__construct additionally requires',
+            ],
+            'curlMultiGetcontentRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function content(CurlHandle $handle): ?string {
+                        return curl_multi_getcontent($handle);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on curl_multi_getcontent requires io',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'writeThisPropsDoesNotIncludeReadProps' => [
                 'code' => '<?php
