@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 /**
@@ -108,13 +109,13 @@ final class BitwiseNotAnalyzer
         PhpParser\Node\Expr $value,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
-        if ($statements_analyzer->variable_use_graph && $result_type) {
+        if (($graph = $statements_analyzer->data_flow_graph) && $result_type) {
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $stmt_value_type = $statements_analyzer->node_data->getType($value);
 
             $new_parent_node = DataFlowNode::getForAssignment('bitwisenot', $var_location);
-            $statements_analyzer->variable_use_graph->addNode($new_parent_node);
+            $graph->addNode($new_parent_node);
             $result_type = $result_type->setParentNodes([
                 $new_parent_node->id => $new_parent_node,
             ]);
@@ -122,7 +123,7 @@ final class BitwiseNotAnalyzer
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->variable_use_graph->addPath($parent_node, $new_parent_node, 'bitwisenot');
+                    $graph->addPath($parent_node, $new_parent_node, 'bitwisenot', 0, TaintKind::ALL);
                 }
             }
         }

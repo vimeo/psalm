@@ -332,9 +332,9 @@ final class DataFlowNode implements Stringable
     /**
      * The value of $node narrowed to a type that cannot carry taints, e.g. a literal string.
      *
-     * The variable use graph goes through it to $node, while the taint graph has no paths into it,
-     * so that it takes no taint through the narrowed value: see Reconciler. It stands for $node
-     * when types compare their parent nodes (see getNarrowedNodeId()).
+     * Data flows from $node to it, but no taint does, so that the narrowed value takes none: see
+     * Reconciler. It stands for $node when types compare their parent nodes (see
+     * getNarrowedNodeId()).
      *
      * @psalm-pure
      */

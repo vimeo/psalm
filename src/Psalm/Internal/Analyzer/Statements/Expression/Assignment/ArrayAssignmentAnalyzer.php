@@ -866,14 +866,14 @@ final class ArrayAssignmentAnalyzer
             $parent_var_id = $extended_var_id;
         }
 
-        if ($statements_analyzer->variable_use_graph
+        if ($statements_analyzer->data_flow_graph
             && $root_var_id !== null
             && isset($context->references_to_external_scope[$root_var_id])
             && $root_var instanceof Variable && is_string($root_var->name)
             && $root_var_id === '$' . $root_var->name
         ) {
             // Array is a reference to an external scope, mark it as used
-            $statements_analyzer->variable_use_graph->addPath(
+            $statements_analyzer->data_flow_graph->addPath(
                 DataFlowNode::getForAssignment(
                     $root_var_id,
                     new CodeLocation($statements_analyzer->getSource(), $root_var),

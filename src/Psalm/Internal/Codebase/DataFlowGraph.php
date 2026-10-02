@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Psalm\CodeLocation;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Union;
 
 use function abs;
 use function array_keys;
@@ -55,6 +59,82 @@ abstract class DataFlowGraph
         }
 
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length, $added_taints, $removed_taints);
+    }
+
+    /**
+     * Adds paths into $node from the parent nodes found in the array keys and values of $type,
+     * at any depth, as the array assignments that put them there. Returns whether it added any.
+     *
+     * A value without parent nodes of its own carries its taint in those of its array keys and
+     * values: an array fetch from it takes the parent nodes of the fetched value. Once $node is
+     * made a parent node of such a value, the fetch goes through $node instead, which these
+     * paths keep leading to the same taint.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function addPathsFromNestedParentNodes(DataFlowNode $node, Union $type, CodeLocation $location): bool
+    {
+        $added = false;
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                foreach ($atomic_type->properties as $key => $property_type) {
+                    $added = $this->addPathsFromParentNodes(
+                        $node,
+                        $property_type,
+                        'arrayvalue-assignment-\'' . $key . '\'',
+                        $location,
+                    ) || $added;
+                }
+
+                $type_params = $atomic_type->fallback_params;
+            } elseif ($atomic_type instanceof TArray) {
+                $type_params = $atomic_type->type_params;
+            } else {
+                continue;
+            }
+
+            if ($type_params !== null) {
+                $added = $this->addPathsFromParentNodes($node, $type_params[0], 'arraykey-assignment', $location)
+                    || $added;
+                $added = $this->addPathsFromParentNodes($node, $type_params[1], 'arrayvalue-assignment', $location)
+                    || $added;
+            }
+        }
+
+        return $added;
+    }
+
+    /**
+     * Adds paths of type $path_type into $node from the parent nodes of $type, or else from those
+     * nested in it (see addPathsFromNestedParentNodes()). Returns whether it added any.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function addPathsFromParentNodes(
+        DataFlowNode $node,
+        Union $type,
+        string $path_type,
+        CodeLocation $location,
+    ): bool {
+        if ($type->parent_nodes) {
+            foreach ($type->parent_nodes as $parent_node) {
+                $this->addPath($parent_node, $node, $path_type);
+            }
+
+            return true;
+        }
+
+        $nested_node = DataFlowNode::getForAssignment($node->label . ' ' . $path_type, $location);
+
+        if (!$this->addPathsFromNestedParentNodes($nested_node, $type, $location)) {
+            return false;
+        }
+
+        $this->addNode($nested_node);
+        $this->addPath($nested_node, $node, $path_type);
+
+        return true;
     }
 
     /**

@@ -30,6 +30,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -390,19 +391,19 @@ final class BinaryOpAnalyzer
         }
 
         $graph = $statements_analyzer->data_flow_graph;
-        if ($statements_analyzer->taint_flow_graph
-            && $stmt instanceof PhpParser\Node\Expr\BinaryOp
-            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
-            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
-            && (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || !$result_type->hasArray())
-        ) {
-            $graph = $statements_analyzer->variable_use_graph;
-            //among BinaryOp, only Concat and Coalesce can pass tainted value to the result. Also Plus on arrays only
-        }
 
         if (!$graph) {
             return;
         }
+
+        // among BinaryOp, only Concat and Coalesce can pass tainted value to the result. Also Plus on arrays only
+        $removed_taints = $stmt instanceof PhpParser\Node\Expr\BinaryOp
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || !$result_type->hasArray())
+            ? TaintKind::ALL
+            : 0;
+
             $stmt_left_type = $statements_analyzer->node_data->getType($left);
             $stmt_right_type = $statements_analyzer->node_data->getType($right);
 
@@ -418,19 +419,17 @@ final class BinaryOpAnalyzer
 
         if ($stmt_left_type && $stmt_left_type->parent_nodes) {
             foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $new_parent_node, $type);
+                $graph->addPath($parent_node, $new_parent_node, $type, 0, $removed_taints);
             }
         }
 
         if ($stmt_right_type && $stmt_right_type->parent_nodes) {
             foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $new_parent_node, $type);
+                $graph->addPath($parent_node, $new_parent_node, $type, 0, $removed_taints);
             }
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp
-                && $statements_analyzer->variable_use_graph
-            ) {
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp) {
             $root_expr = $left;
 
             while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {

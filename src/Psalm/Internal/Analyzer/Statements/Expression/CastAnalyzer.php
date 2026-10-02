@@ -228,8 +228,7 @@ final class CastAnalyzer
                 $type = Type::getObject();
             }
 
-            if ($statements_analyzer->variable_use_graph
-            ) {
+            if ($statements_analyzer->data_flow_graph) {
                 $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 

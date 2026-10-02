@@ -415,9 +415,9 @@ final class NamedFunctionCallHandler
             $source = $statements_analyzer->getSource();
 
             if ($source instanceof FunctionLikeAnalyzer) {
-                if ($statements_analyzer->variable_use_graph) {
+                if ($statements_analyzer->data_flow_graph) {
                     foreach ($source->param_nodes as $param_node) {
-                        $statements_analyzer->variable_use_graph->addPath(
+                        $statements_analyzer->data_flow_graph->addPath(
                             $param_node,
                             DataFlowNode::getForVariableUse(),
                             'variable-use',

@@ -55,9 +55,10 @@ final class ArrayCreationInfo
     public array $parent_taint_nodes = [];
 
     /**
-     * The nodes of the unpacked items, whose taint paths follow the keys they end up at
+     * The nodes of the unpacked items, whose paths are added once the keys they end up at are
+     * known, with the parent nodes of the arrays unpacked
      *
-     * @var array<string, DataFlowNode>
+     * @var list<array{DataFlowNode, array<string, DataFlowNode>}>
      */
     public array $unpacked_nodes = [];
 

@@ -453,10 +453,7 @@ final class VariableFetchAnalyzer
         Union &$stmt_type,
         Context $context,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($statements_analyzer->data_flow_graph
-            && $codebase->find_unused_variables
             && ($context->inside_return
                 || $context->inside_call
                 || $context->inside_general_use
@@ -465,10 +462,18 @@ final class VariableFetchAnalyzer
                 || $context->inside_isset)
         ) {
             if (!$stmt_type->parent_nodes) {
-                $assignment_node = DataFlowNode::getForAssignment(
-                    $var_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                );
+                $assignment_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                $assignment_node = DataFlowNode::getForAssignment($var_name, $assignment_location);
+
+                // The new node hides the parent nodes nested in the value, which carry its taint: lead
+                // them to it.
+                $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+
+                if ($graph
+                    && $graph->addPathsFromNestedParentNodes($assignment_node, $stmt_type, $assignment_location)
+                ) {
+                    $graph->addNode($assignment_node);
+                }
 
                 $stmt_type = $stmt_type->setParentNodes([
                     $assignment_node->id => $assignment_node,

@@ -320,9 +320,7 @@ class Reconciler
             $can_carry_taints = !$result_type->hasScalarType()
                 || ($result_type->hasString() && !$result_type->hasLiteralString());
 
-            if (($statements_analyzer->taint_flow_graph && $can_carry_taints)
-                || $statements_analyzer->variable_use_graph
-            ) {
+            if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
 
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
@@ -331,14 +329,12 @@ class Reconciler
                     $parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($key);
                 }
 
-                // The variable use graph needs the parent nodes of a type that cannot carry taints,
-                // which the taint graph analysed alongside must not take taints through: it gets
-                // nodes standing for them there, that the taint graph has no paths into.
+                // A type that cannot carry taints keeps its data flow, but gets nodes standing for its
+                // parent nodes, that no taint goes through.
                 if ($parent_nodes !== null
                     && $parent_nodes !== []
                     && !$can_carry_taints
                     && $statements_analyzer->taint_flow_graph
-                    && ($variable_use_graph = $statements_analyzer->variable_use_graph)
                 ) {
                     $narrowed_parent_nodes = [];
 
@@ -346,8 +342,8 @@ class Reconciler
                         if ($parent_node->getNarrowedNodeId() === null) {
                             $narrowed_node = DataFlowNode::getForNarrowingToScalar($parent_node);
 
-                            $variable_use_graph->addNode($narrowed_node);
-                            $variable_use_graph->addPath($parent_node, $narrowed_node, '=');
+                            $graph->addNode($narrowed_node);
+                            $graph->addPath($parent_node, $narrowed_node, '=', 0, TaintKind::ALL);
 
                             $parent_node = $narrowed_node;
                         }

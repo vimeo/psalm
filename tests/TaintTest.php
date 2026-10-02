@@ -2891,6 +2891,83 @@ final class TaintTest extends TestCase
                     echo (string) $b[1];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintThroughSpreadOfArrayWithoutTaintedItems' => [
+                'code' => '<?php
+                    /** @param list<string> $a */
+                    function spread(array $a): void {
+                        $b = [...$a];
+                        echo $b[0];
+                    }
+
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
+                    spread($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpreadOfCallResult' => [
+                'code' => '<?php
+                    $b = ["safe", ...explode(",", (string) $_GET["a"])];
+                    echo $b[1];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughForeachOverSpread' => [
+                'code' => '<?php
+                    foreach ([...explode(",", (string) $_GET["a"])] as $v) {
+                        echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToArrayItem' => [
+                'code' => '<?php
+                    $a = ["k" => "safe"];
+                    $r = &$a["k"];
+                    $r = (string) $_GET["a"];
+                    echo $a["k"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToNestedArrayItem' => [
+                'code' => '<?php
+                    $a = ["k" => ["j" => "safe"]];
+                    $r = &$a["k"]["j"];
+                    $r = (string) $_GET["a"];
+                    echo $a["k"]["j"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfParam' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo (string) $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfStaticVariable' => [
+                'code' => '<?php
+                    function f(): void {
+                        static $a = ["k" => "safe"];
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfGlobalVariable' => [
+                'code' => '<?php
+                    function f(): void {
+                        global $a;
+                        $a = ["k" => "safe"];
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughObjectCast' => [
+                'code' => '<?php
+                    $o = (object) $_GET;
+                    echo (string) json_encode($o);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintNestedCallsOnAnotherInstanceOfSpecializedClass' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
