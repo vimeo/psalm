@@ -1292,6 +1292,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $a = ["x" => (string) $_GET["a"], "y" => "safe"];
                     $b = rand(0, 1) ? ["k" => $a] : $a;
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                     echo $b["k"]["y"];',
             ],
         ];
@@ -3011,7 +3012,7 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughRecursionFetchingDeeperThanFourLevels' => [
-                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one
+                // The recursion is summarized once for all its levels: each level fetches from what the flow entering it put
                 'code' => '<?php
                     /** @psalm-pure */
                     function dig(mixed $a, int $n): mixed {
@@ -3025,7 +3026,7 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughRecursionDifferingDeeperThanFourLevels' => [
-                // A recursive entry is keyed on its 4 innermost open array assignments: the second call shares the walk of the first, wrapped around another key
+                // The recursion is summarized once for both calls: each takes the taint of the key it wrapped
                 'code' => '<?php
                     /** @psalm-pure */
                     function dig(mixed $a, int $n): mixed {
@@ -3043,6 +3044,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $a = ["x" => (string) $_GET["a"]];
                     $b = rand(0, 1) ? ["k" => $a] : $a;
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                     echo $b["k"]["x"];',
                 'error_message' => 'TaintedHtml',
             ],
@@ -3091,6 +3093,7 @@ final class TaintTest extends TestCase
                     while (rand(0, 1)) {
                         $a = ["k" => $a];
                     }
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                     echo (string) $a["k"]["k"]["x"];',
                 'error_message' => 'TaintedHtml',
             ],

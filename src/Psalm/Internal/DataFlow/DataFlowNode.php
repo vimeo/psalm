@@ -12,6 +12,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Stringable;
+use Webmozart\Assert\Assert;
 
 use function count;
 use function ltrim;
@@ -67,10 +68,9 @@ final class DataFlowNode implements Stringable
         /** @var list<string> */
         public readonly array $path_types = [],
         /**
-         * Taint resolution only: the specialized call entry (see TaintFlowGraph) whose
-         * body the flow is currently in, or null outside of any specialized call.
+         * Taint resolution only: the state of the flow reaching this node (see TaintFlowGraph)
          */
-        public readonly ?int $context = null,
+        private readonly ?TaintFlowState $flow_state = null,
     ) {
     }
 
@@ -498,7 +498,7 @@ final class DataFlowNode implements Stringable
             $taints,
             $this->taintSource,
             $this->path_types,
-            $this->context,
+            $this->flow_state,
         );
     }
 
@@ -514,7 +514,6 @@ final class DataFlowNode implements Stringable
         string $id,
         ?string $unspecialized_id,
         ?string $specialization_key,
-        ?int $context,
     ): self {
         return new self(
             $id,
@@ -525,36 +524,62 @@ final class DataFlowNode implements Stringable
             $this->taints,
             $this->taintSource,
             $this->path_types,
-            $context,
+            $this->flow_state,
         );
     }
 
     /**
-     * Produce the successor reached when taint flows out of this node along an edge: the same
-     * identity, label and location, with updated flow state (taints, provenance and path types).
-     * The location is copied from $this, so it can never diverge from the id -- see the class
-     * invariant.
+     * Produce the successor reached when taint flows out of $taintSource along an edge of type
+     * $path_type into this node, in $flow_state. The location is copied from $this, so it can never
+     * diverge from the id -- see the class invariant.
      *
-     * @param list<string> $path_types
      * @psalm-mutation-free
      */
-    public function withFlow(
-        int $taints,
-        self $taintSource,
-        array $path_types,
-        ?int $context,
-    ): self {
+    public function withFlow(self $taintSource, string $path_type, TaintFlowState $flow_state): self
+    {
         return new self(
             $this->id,
             $this->unspecialized_id,
             $this->specialization_key,
             $this->label,
             $this->code_location,
-            $taints,
+            $flow_state->taints,
             $taintSource,
-            $path_types,
-            $context,
+            [$path_type],
+            $flow_state,
         );
+    }
+
+    /**
+     * Starts a flow at this node in $flow_state.
+     *
+     * @psalm-mutation-free
+     */
+    public function withFlowState(TaintFlowState $flow_state): self
+    {
+        return new self(
+            $this->id,
+            $this->unspecialized_id,
+            $this->specialization_key,
+            $this->label,
+            $this->code_location,
+            $flow_state->taints,
+            null,
+            [],
+            $flow_state,
+        );
+    }
+
+    /**
+     * The state of the flow reaching this node, during taint resolution.
+     *
+     * @psalm-mutation-free
+     */
+    public function getFlowState(): TaintFlowState
+    {
+        Assert::notNull($this->flow_state);
+
+        return $this->flow_state;
     }
 
     /**
