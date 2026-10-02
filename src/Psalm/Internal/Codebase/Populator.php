@@ -831,6 +831,12 @@ final class Populator
             $storage->has_visitor_issues = true;
         }
 
+        // the instances of a child class are instances of its parent class: their properties hold per-instance
+        // taints in the methods of both
+        if ($parent_storage->specialize_instance) {
+            $storage->specialize_instance = true;
+        }
+
         $storage->constants = [...array_filter(
             $parent_storage->constants,
             static fn(ClassConstantStorage $constant): bool

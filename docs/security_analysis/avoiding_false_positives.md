@@ -256,6 +256,8 @@ $user2 = new User($_GET["name"]);
 echoUserName($user1);
 ```
 
+The classes that extend a class with `@psalm-taint-specialize` are specialized too.
+
 And, because it’s form of purity enforcement, `@psalm-immutable` can also be used:
 
 ```php
