@@ -23,7 +23,7 @@ namespace MongoDB\BSON
     /**
      * Without an id, the constructor generates a new one, which is not pure.
      */
-    final class ObjectId implements Stringable, ObjectIdInterface, JsonSerializable, Type
+    final class ObjectId implements Stringable, ObjectIdInterface, JsonSerializable, Type, Serializable
     {
         final public function __construct(?string $id = null)
         {
@@ -41,6 +41,16 @@ namespace MongoDB\BSON
 
         /** @psalm-pure */
         final public static function __set_state(array $properties): ObjectId
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function serialize(): string
+        {
+        }
+
+        /** @param string $serialized */
+        final public function unserialize($serialized): void
         {
         }
 
