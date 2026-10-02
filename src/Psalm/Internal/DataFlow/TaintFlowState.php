@@ -43,6 +43,11 @@ final class TaintFlowState
     private const FAMILIES = ['arraykey', 'arrayvalue', 'property'];
 
     /**
+     * Tells the states that can go on differently apart.
+     */
+    public readonly string $key;
+
+    /**
      * @param list<string> $fetches the fetches made of the open assignments of the flow it starts
      *                              from, in order: '?' and a fetch path type for checking whether
      *                              that flow takes it, '-' and a kind of assignment for matching the
@@ -56,6 +61,8 @@ final class TaintFlowState
         private readonly array $assignments,
         private readonly bool $forgets,
     ) {
+        $this->key = $kept_taints . ' ' . $taints . ' ' . implode(',', $fetches)
+            . ($forgets ? ' | ' : ' : ') . implode(',', $assignments);
     }
 
     /**
@@ -91,7 +98,17 @@ final class TaintFlowState
             return null;
         }
 
+        $structural = self::getFamily($path->type, '-');
+
+        if ($structural === null && $kept_taints === $this->kept_taints && $taints === $this->taints) {
+            return $this;
+        }
+
         $state = new self($kept_taints, $taints, $this->fetches, $this->assignments, $this->forgets);
+
+        if ($structural === null) {
+            return $state;
+        }
 
         foreach (self::FAMILIES as $family) {
             if (!str_starts_with($path->type, $family . '-fetch')) {
@@ -152,12 +169,12 @@ final class TaintFlowState
     }
 
     /**
-     * Tells the states that can go on differently apart.
+     * This state, forgetting all but its innermost open assignment: from there on, no fetch of
+     * the others is ignored. It may take taints it doesn't have, but takes all those it has.
      */
-    public function getKey(): string
+    public function widened(): self
     {
-        return $this->kept_taints . ' ' . $this->taints . ' ' . implode(',', $this->fetches)
-            . ($this->forgets ? ' | ' : ' : ') . implode(',', $this->assignments);
+        return new self($this->kept_taints, $this->taints, [], array_slice($this->assignments, -1), true);
     }
 
     /**

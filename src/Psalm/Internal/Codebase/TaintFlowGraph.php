@@ -44,12 +44,12 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_diff_key;
 use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
 use function ksort;
+use function max;
 use function min;
 use function strpos;
 use function substr;
@@ -66,6 +66,11 @@ final class TaintFlowGraph extends DataFlowGraph
      * unspecialized base id and specialization key (see DataFlowNode::make()).
      */
     private const SPECIALIZATION_SEPARATOR = ' specialized in ';
+
+    /**
+     * How many states of the flows reaching a node it takes before widening them (see admit()).
+     */
+    private const MAX_NODE_STATES = 16;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -117,17 +122,29 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $partial_summaries = [];
 
     /**
-     * The summaries made from one still being made, with the least depth of those they used (see
-     * summarize()): they hold until one of those is made again
+     * The summaries made from one still being made, with the least and greatest depths of those
+     * they used (see summarize()): they hold until one of those is made again
      *
-     * @var array<string, array{array<string, array{DataFlowNode, bool}>, int}>
+     * @var array<string, array{array<string, array{DataFlowNode, bool}>, int, int}>
      */
     private array $provisional_summaries = [];
+
+    /**
+     * What the provisional summaries dropped reached, to make them again from (see summarize())
+     *
+     * @var array<string, array<string, array{DataFlowNode, bool}>>
+     */
+    private array $summary_seeds = [];
 
     /**
      * The least depth of the summaries being made that the summary being made used (see summarize())
      */
     private int $least_used_depth = PHP_INT_MAX;
+
+    /**
+     * The greatest depth of the summaries being made that the summary being made used
+     */
+    private int $greatest_used_depth = -1;
 
     /**
      * Node id => true, for the nodes from which a sink is reachable (see getSinkReachableNodes())
@@ -572,6 +589,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sink_reachable = [];
         $this->summaries = [];
         $this->provisional_summaries = [];
+        $this->summary_seeds = [];
         $this->reported_flows = [];
 
         $progress->taskDone(0);
@@ -579,7 +597,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * Propagates the flows $roots to a fixed point: each node is reached once per state of the
-     * flows reaching it (see TaintFlowState), of which there are finitely many.
+     * flows reaching it (see TaintFlowState), of which there are finitely many (see admit()).
      *
      * The flows from the taint sources report the sinks they reach. A specialized function-like
      * has only its entry nodes (e.g. parameters) and exit nodes (e.g. return) specialized to each
@@ -598,36 +616,35 @@ final class TaintFlowGraph extends DataFlowGraph
 
         // Node id => state key => true
         $visited = [];
+        // Node id => state key => flow
         $flows = [];
         $outcomes = [];
 
         foreach ($roots as $root) {
-            $flows[$root->id . ' ' . $root->getFlowState()->getKey()] = $root;
+            $flows[$root->id][$root->getFlowState()->key] = $root;
         }
 
         while ($flows) {
             ksort($flows);
 
-            foreach ($flows as $flow) {
-                $visited[$flow->id][$flow->getFlowState()->getKey()] = true;
+            foreach ($flows as $id => $states) {
+                foreach ($states as $key => $_) {
+                    $visited[$id][$key] = true;
+                }
             }
 
             $next_flows = [];
 
-            foreach ($flows as $flow) {
-                if ($flow->code_location
-                    && $project_analyzer->canReportIssues($flow->code_location->file_path)
-                    && !$config->reportIssueInFile('TaintedInput', $flow->code_location->file_path)
-                ) {
-                    continue;
-                }
-
-                foreach ($this->getSuccessors($flow, $summarizing, $outcomes, $codebase) as $next_flow) {
-                    $state_key = $next_flow->getFlowState()->getKey();
-
-                    if (!isset($visited[$next_flow->id][$state_key])) {
-                        $next_flows[$next_flow->id . ' ' . $state_key] ??= $next_flow;
+            foreach ($flows as $states) {
+                foreach ($states as $flow) {
+                    if ($flow->code_location
+                        && $project_analyzer->canReportIssues($flow->code_location->file_path)
+                        && !$config->reportIssueInFile('TaintedInput', $flow->code_location->file_path)
+                    ) {
+                        continue;
                     }
+
+                    $this->propagate($flow, $summarizing, $outcomes, $visited, $next_flows, $codebase);
                 }
             }
 
@@ -640,21 +657,24 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * The flows $flow goes on as from its node, reporting (or, $summarizing, adding to $outcomes)
-     * the sinks it reaches.
+     * Adds the flows $flow goes on as from its node to $next_flows, unless $visited, and reports (or,
+     * $summarizing, adds to $outcomes) the sinks it reaches.
      *
      * @param array<string, array{DataFlowNode, bool}> $outcomes
      * @param-out array<string, array{DataFlowNode, bool}> $outcomes
-     * @return list<DataFlowNode>
+     * @param array<string, array<string, true>> $visited
+     * @param array<string, array<string, DataFlowNode>> $next_flows
+     * @param-out array<string, array<string, DataFlowNode>> $next_flows
      */
-    private function getSuccessors(
+    private function propagate(
         DataFlowNode $flow,
         bool $summarizing,
         array &$outcomes,
+        array $visited,
+        array &$next_flows,
         Codebase $codebase,
-    ): array {
+    ): void {
         $state = $flow->getFlowState();
-        $next_flows = [];
 
         if (isset($this->forward_edges[$flow->id])) {
             foreach ($this->forward_edges[$flow->id] as $to_id => $path) {
@@ -670,16 +690,27 @@ final class TaintFlowGraph extends DataFlowGraph
                     continue;
                 }
 
-                $next_flow = $this->nodes[$to_id]->withFlow($flow, $path->type, $next_state);
-
                 if (isset($this->sinks[$to_id])) {
-                    $this->reachSink($next_flow, $summarizing, $outcomes, $codebase);
+                    $this->reachSink(
+                        $this->nodes[$to_id]->withFlow($flow, $path->type, $next_state),
+                        $summarizing,
+                        $outcomes,
+                        $codebase,
+                    );
                 }
 
-                $next_flows[] = $next_flow;
+                $next_state = self::admit($to_id, $next_state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$to_id][$next_state->key] = $this->nodes[$to_id]->withFlow(
+                        $flow,
+                        $path->type,
+                        $next_state,
+                    );
+                }
             }
 
-            return $next_flows;
+            return;
         }
 
         // a call to a specialized function-like entering its body
@@ -688,44 +719,63 @@ final class TaintFlowGraph extends DataFlowGraph
             && isset($this->specialized_calls[$flow->specialization_key])
         ) {
             if (!isset($this->forward_edges[$flow->unspecialized_id])) {
-                return [];
+                return;
             }
 
             // a call speculatively specialized to a function-like that turned out impure is walked
             // through like an unspecialized one
             if (isset($this->despecialized_calls[$flow->specialization_key])) {
-                return [$flow->withSpecialization($flow->unspecialized_id, null, null)];
+                $next_state = self::admit($flow->unspecialized_id, $state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$flow->unspecialized_id][$next_state->key] = $flow->withSpecialization(
+                        $flow->unspecialized_id,
+                        null,
+                        null,
+                        $next_state,
+                    );
+                }
+
+                return;
             }
 
             foreach ($this->summarize($flow, $flow->unspecialized_id, $codebase) as [$reached, $is_sink]) {
-                $reached = $this->applyTo($flow, $reached);
+                $next_state = $state->then($reached->getFlowState());
 
-                if ($reached === null) {
+                if ($next_state === null) {
                     continue;
                 }
 
                 if ($is_sink) {
-                    $this->reachSink($reached, $summarizing, $outcomes, $codebase);
+                    $this->reachSink(
+                        $this->replay($flow, $reached, $next_state, $summarizing),
+                        $summarizing,
+                        $outcomes,
+                        $codebase,
+                    );
                     continue;
                 }
 
                 $specialized_id = $this->specializations[$reached->id][$flow->specialization_key] ?? null;
 
                 if ($specialized_id !== null) {
-                    $next_flows[] = $reached->withSpecialization(
-                        $specialized_id,
-                        $reached->id,
-                        $flow->specialization_key,
-                    );
+                    $next_state = self::admit($specialized_id, $next_state, $visited, $next_flows);
+
+                    if ($next_state !== null) {
+                        $next_flows[$specialized_id][$next_state->key]
+                            = $this->replay($flow, $reached, $next_state, $summarizing)
+                                ->withSpecialization($specialized_id, $reached->id, $flow->specialization_key);
+                    }
                 } elseif ($summarizing) {
                     // the flow left the body through another node specialized to calls, e.g. after
                     // passing through a static property: maybe one of the calls the body summarized
                     // by $outcomes is made from
-                    $outcomes['exit ' . $reached->id . ' ' . $reached->getFlowState()->getKey()] ??= [$reached, false];
+                    $outcomes['exit ' . $reached->id . ' ' . $next_state->key]
+                        ??= [$this->replay($flow, $reached, $next_state, true), false];
                 }
             }
 
-            return $next_flows;
+            return;
         }
 
         // a node specialized to calls, e.g. the return of a specialized function-like
@@ -734,20 +784,56 @@ final class TaintFlowGraph extends DataFlowGraph
 
             foreach ($this->specializations[$flow->id] as $specialization_key => $specialized_id) {
                 // when making a summary, the flow leaves through the call sites of the calls entering
-                // the summarized body (see getSuccessors()), else through all of them
-                if (!$summarizing || isset($this->despecialized_calls[$specialization_key])) {
-                    $next_flows[] = $flow->withSpecialization($specialized_id, $flow->id, $specialization_key);
-                } else {
+                // the summarized body (see propagate()), else through all of them
+                if ($summarizing && !isset($this->despecialized_calls[$specialization_key])) {
                     $exits_through_call = true;
+                    continue;
+                }
+
+                $next_state = self::admit($specialized_id, $state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$specialized_id][$next_state->key] = $flow->withSpecialization(
+                        $specialized_id,
+                        $flow->id,
+                        $specialization_key,
+                        $next_state,
+                    );
                 }
             }
 
             if ($exits_through_call) {
-                $outcomes['exit ' . $flow->id . ' ' . $state->getKey()] ??= [$flow, false];
+                $outcomes['exit ' . $flow->id . ' ' . $state->key] ??= [$flow, false];
             }
         }
+    }
 
-        return $next_flows;
+    /**
+     * The state $state takes at node $id, unless the walk is already there in it. Past
+     * MAX_NODE_STATES states at a node, it is widened (see TaintFlowState::widened()), so that a
+     * node takes finitely few even when the flows reaching it wrap their values under many keys.
+     *
+     * @param array<string, array<string, true>> $visited
+     * @param array<string, array<string, DataFlowNode>> $next_flows
+     * @psalm-pure
+     */
+    private static function admit(
+        string $id,
+        TaintFlowState $state,
+        array $visited,
+        array $next_flows,
+    ): ?TaintFlowState {
+        if (isset($visited[$id][$state->key]) || isset($next_flows[$id][$state->key])) {
+            return null;
+        }
+
+        if (count($visited[$id] ?? []) + count($next_flows[$id] ?? []) < self::MAX_NODE_STATES) {
+            return $state;
+        }
+
+        $state = $state->widened();
+
+        return isset($visited[$id][$state->key]) || isset($next_flows[$id][$state->key]) ? null : $state;
     }
 
     /**
@@ -756,8 +842,10 @@ final class TaintFlowGraph extends DataFlowGraph
      * relative to it of the flow reaching them (see TaintFlowState) and its trace from
      * $unspecialized_id.
      *
-     * A recursion summarizes itself: the summaries being made from one another are made again
-     * with what each other reaches so far, until that doesn't grow.
+     * A recursion summarizes itself: the summaries made from one another are made again from what
+     * each other reaches so far, until that stops growing. A summary made from one still being
+     * made is provisional: it holds until a summary it was made from is made again, which starts
+     * from it.
      *
      * @return array<string, array{DataFlowNode, bool}>
      */
@@ -768,14 +856,17 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         if (isset($this->summary_depths[$unspecialized_id])) {
-            $this->least_used_depth = min($this->least_used_depth, $this->summary_depths[$unspecialized_id]);
+            $depth = $this->summary_depths[$unspecialized_id];
+            $this->least_used_depth = min($this->least_used_depth, $depth);
+            $this->greatest_used_depth = max($this->greatest_used_depth, $depth);
 
-            return $this->partial_summaries[$unspecialized_id] ?? [];
+            return $this->partial_summaries[$unspecialized_id];
         }
 
         if (isset($this->provisional_summaries[$unspecialized_id])) {
-            [$outcomes, $least_used_depth] = $this->provisional_summaries[$unspecialized_id];
+            [$outcomes, $least_used_depth, $greatest_used_depth] = $this->provisional_summaries[$unspecialized_id];
             $this->least_used_depth = min($this->least_used_depth, $least_used_depth);
+            $this->greatest_used_depth = max($this->greatest_used_depth, $greatest_used_depth);
 
             return $outcomes;
         }
@@ -783,34 +874,48 @@ final class TaintFlowGraph extends DataFlowGraph
         $depth = count($this->summary_depths);
         $this->summary_depths[$unspecialized_id] = $depth;
         $outer_least_used_depth = $this->least_used_depth;
+        $outer_greatest_used_depth = $this->greatest_used_depth;
 
         $root = ($this->nodes[$unspecialized_id] ?? $call->withSpecialization($unspecialized_id, null, null))
             ->withFlowState(TaintFlowState::fromEntry());
 
-        $outcomes = [];
+        $outcomes = $this->summary_seeds[$unspecialized_id] ?? [];
+        unset($this->summary_seeds[$unspecialized_id]);
 
         do {
-            // what was summarized from this summary so far is summarized again
+            // the summaries made from this one are made again
             $this->dropProvisionalSummaries($depth);
 
             $this->least_used_depth = PHP_INT_MAX;
+            $this->greatest_used_depth = -1;
             $previous_outcomes = $outcomes;
             $this->partial_summaries[$unspecialized_id] = $outcomes;
 
-            $outcomes = $this->walk([$root], true, $codebase);
-        } while ($this->least_used_depth === $depth && array_diff_key($outcomes, $previous_outcomes));
+            $outcomes = $this->walk([$root], true, $codebase) + $previous_outcomes;
+        } while ($this->least_used_depth <= $depth && count($outcomes) > count($previous_outcomes));
 
         unset($this->summary_depths[$unspecialized_id], $this->partial_summaries[$unspecialized_id]);
 
         if ($this->least_used_depth < $depth) {
-            // it was made from a summary still being made, so it holds only until that one is made again
-            $this->provisional_summaries[$unspecialized_id] = [$outcomes, $this->least_used_depth];
+            // the summaries made from it hold as long as it does
+            foreach ($this->provisional_summaries as $id => [, $least_used_depth]) {
+                if ($least_used_depth >= $depth) {
+                    $this->provisional_summaries[$id][1] = $this->least_used_depth;
+                }
+            }
+
+            $this->provisional_summaries[$unspecialized_id] = [
+                $outcomes,
+                $this->least_used_depth,
+                $this->greatest_used_depth,
+            ];
             $this->least_used_depth = min($outer_least_used_depth, $this->least_used_depth);
+            $this->greatest_used_depth = max($outer_greatest_used_depth, $this->greatest_used_depth);
 
             return $outcomes;
         }
 
-        // so are the summaries made from it
+        // so are the summaries made from it alone
         foreach ($this->provisional_summaries as $id => [$provisional_outcomes, $least_used_depth]) {
             if ($least_used_depth >= $depth) {
                 $this->summaries[$id] = $provisional_outcomes;
@@ -820,19 +925,22 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->summaries[$unspecialized_id] = $outcomes;
         $this->least_used_depth = $outer_least_used_depth;
+        $this->greatest_used_depth = $outer_greatest_used_depth;
 
         return $outcomes;
     }
 
     /**
-     * Drops the provisional summaries made from summaries at least $depth deep.
+     * Drops the provisional summaries made from a summary at least $depth deep: they are made again,
+     * starting from what they reached.
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function dropProvisionalSummaries(int $depth): void
     {
-        foreach ($this->provisional_summaries as $id => [, $least_used_depth]) {
-            if ($least_used_depth >= $depth) {
+        foreach ($this->provisional_summaries as $id => [$outcomes, , $greatest_used_depth]) {
+            if ($greatest_used_depth >= $depth) {
+                $this->summary_seeds[$id] = $outcomes + ($this->summary_seeds[$id] ?? []);
                 unset($this->provisional_summaries[$id]);
             }
         }
@@ -840,17 +948,20 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * $reached, reached by the flow summarized from an entry node (see summarize()), as reached by
-     * $caller entering it, or null if $caller doesn't go there. Its trace from the entry node is
-     * replayed on top of the caller's.
+     * $caller entering it, in $state: its trace from the entry node is replayed on top of the
+     * caller's -- unless $summarizing, where it is a single step: a summary replaying the traces of
+     * the summaries it applies would make traces grow exponentially with the nesting of calls.
      *
-     * @psalm-capabilities read-props
+     * @psalm-mutation-free
      */
-    private function applyTo(DataFlowNode $caller, DataFlowNode $reached): ?DataFlowNode
-    {
-        $state = $caller->getFlowState()->then($reached->getFlowState());
-
-        if ($state === null) {
-            return null;
+    private function replay(
+        DataFlowNode $caller,
+        DataFlowNode $reached,
+        TaintFlowState $state,
+        bool $summarizing,
+    ): DataFlowNode {
+        if ($summarizing) {
+            return $reached->withFlow($caller, $reached->path_types ? $reached->path_types[0] : '', $state);
         }
 
         $walk = [];
@@ -891,7 +1002,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         if ($summarizing) {
             if (($state->kept_taints | $state->taints) & $sink->taints) {
-                $outcomes['sink ' . $flow->id . ' ' . $predecessor->id . ' ' . $state->getKey()] ??= [$flow, true];
+                $outcomes['sink ' . $flow->id . ' ' . $predecessor->id . ' ' . $state->key] ??= [$flow, true];
             }
 
             return;

@@ -504,8 +504,8 @@ final class DataFlowNode implements Stringable
 
     /**
      * Re-key this node under a different (un)specialization while carrying over its identity-derived
-     * location, label and flow state unchanged. Used by the taint resolver when it de-specializes or
-     * re-specializes a node it already holds. The location is copied from $this, so it can never
+     * location, label and flow (in $flow_state if given). Used by the taint resolver when it
+     * de-specializes or re-specializes a node it already holds. The location is copied from $this, so it can never
      * diverge from the id -- see the class invariant.
      *
      * @psalm-mutation-free
@@ -514,17 +514,20 @@ final class DataFlowNode implements Stringable
         string $id,
         ?string $unspecialized_id,
         ?string $specialization_key,
+        ?TaintFlowState $flow_state = null,
     ): self {
+        $flow_state ??= $this->flow_state;
+
         return new self(
             $id,
             $unspecialized_id,
             $specialization_key,
             $this->label,
             $this->code_location,
-            $this->taints,
+            $flow_state ? $flow_state->taints : $this->taints,
             $this->taintSource,
             $this->path_types,
-            $this->flow_state,
+            $flow_state,
         );
     }
 
