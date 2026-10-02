@@ -91,6 +91,42 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'externalMutationFreeAttributeOnOverriddenGetter' => [
+                'code' => '<?php
+                    namespace Psalm {
+                        #[\\Attribute(\\Attribute::TARGET_METHOD)]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        use Psalm\\ExternalMutationFree;
+
+                        class Counter {
+                            private int $count = 0;
+
+                            #[ExternalMutationFree]
+                            public function getCount(): int {
+                                return $this->count;
+                            }
+                        }
+
+                        final class FixedCounter extends Counter {
+                            #[ExternalMutationFree]
+                            #[Override]
+                            public function getCount(): int {
+                                return 1;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        function countOf(Counter $counter): int {
+                            return $counter->getCount();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'readGlobals' => [
                 'code' => '<?php
                     final class S { public static int $n = 0; }
@@ -1067,6 +1103,26 @@ final class CapabilitiesTest extends TestCase
                         return stream_wrapper_unregister("phar");
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on stream_wrapper_unregister requires read-globals|write-globals',
+            ],
+            'explicitAnnotationOfConsistentConstructorIsNotAssumed' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Model {
+                        public $id;
+
+                        /** @psalm-mutation-free */
+                        public function __construct(int $id) {
+                            $this->id = $id;
+                        }
+                    }
+
+                    final class LoggingModel extends Model {
+                        public function __construct(int $id) {
+                            parent::__construct($id);
+                            echo "created";
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - Model::__construct is read-props, but LoggingModel::__construct additionally requires',
             ],
             'writeThisPropsDoesNotIncludeReadProps' => [
                 'code' => '<?php
