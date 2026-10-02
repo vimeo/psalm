@@ -201,6 +201,28 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPureAnnotationWhenParamDefaultIsAnnotatedClosure' => [
+                'input' => '<?php
+                    function useDefault(Closure $log = /** @psalm-impure */ static function (): int {
+                        echo "log";
+                        return 1;
+                    }): Closure {
+                        return $log;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function useDefault(Closure $log = /** @psalm-impure */ static function (): int {
+                        echo "log";
+                        return 1;
+                    }): Closure {
+                        return $log;
+                    }',
+                'php_version' => '8.5',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
