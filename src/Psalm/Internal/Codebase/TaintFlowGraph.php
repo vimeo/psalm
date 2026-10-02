@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintFlowState;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -42,18 +43,18 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
-use Webmozart\Assert\Assert;
 
 use function array_pop;
-use function array_slice;
-use function array_splice;
 use function array_unshift;
 use function count;
 use function end;
 use function ksort;
-use function str_starts_with;
+use function max;
+use function min;
 use function strpos;
 use function substr;
+
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -67,16 +68,9 @@ final class TaintFlowGraph extends DataFlowGraph
     private const SPECIALIZATION_SEPARATOR = ' specialized in ';
 
     /**
-     * The expression types whose assignments and fetches shouldIgnoreFetch() matches.
+     * How many states of the flows reaching a node it takes before widening them (see admit()).
      */
-    private const STRUCTURAL_PATH_TYPE_FAMILIES = ['arraykey', 'arrayvalue', 'property'];
-
-    /**
-     * How many of the innermost open assignments (see appendPathType()) of a flow
-     * entering a specialized call recursively its entry is keyed on (see
-     * enterSpecializedCall()).
-     */
-    private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
+    private const MAX_NODE_STATES = 16;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -102,45 +96,62 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $specialized_calls = [];
 
     /*
-     * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
-     * Empty outside of connectSinksAndSources().
+     * Taint resolution state, see connectSinksAndSources(). Empty outside of it.
      */
 
     /**
-     * Entry key (see enterSpecializedCall()) => entry
+     * Unspecialized node entered by specialized calls => what the flow entering it reaches, keyed
+     * apart (see summarize())
+     *
+     * @var array<string, array<string, array{DataFlowNode, bool}>>
+     */
+    private array $summaries = [];
+
+    /**
+     * The summaries being made, as in summaries, and how deep they are in their making
      *
      * @var array<string, int>
      */
-    private array $entry_ids = [];
+    private array $summary_depths = [];
 
     /**
-     * Entry => the node its body walk starts from
+     * What the summaries being made reach so far
      *
-     * @var list<DataFlowNode>
+     * @var array<string, array<string, array{DataFlowNode, bool}>>
      */
-    private array $entry_roots = [];
+    private array $partial_summaries = [];
 
     /**
-     * Entry => the calls entering it: the entered node, carrying the caller's trace
-     * and context, and the specialization key of the call
+     * The summaries made from one still being made, with the least and greatest depths of those
+     * they used (see summarize()): they hold until one of those is made again
      *
-     * @var array<int, non-empty-list<array{DataFlowNode, string}>>
+     * @var array<string, array{array<string, array{DataFlowNode, bool}>, int, int}>
      */
-    private array $entry_callers = [];
+    private array $provisional_summaries = [];
 
     /**
-     * Entry => exit node id . ' ' . taints => the node its body walk leaves through
+     * What the provisional summaries dropped reached, to make them again from (see summarize())
      *
-     * @var array<int, array<string, DataFlowNode>>
+     * @var array<string, array<string, array{DataFlowNode, bool}>>
      */
-    private array $entry_exits = [];
+    private array $summary_seeds = [];
 
     /**
-     * Entry => flow key => [sink, predecessor reached by its body walk, matching taints]
-     *
-     * @var array<int, array<string, array{DataFlowNode, DataFlowNode, int}>>
+     * The least depth of the summaries being made that the summary being made used (see summarize())
      */
-    private array $entry_sinks = [];
+    private int $least_used_depth = PHP_INT_MAX;
+
+    /**
+     * The greatest depth of the summaries being made that the summary being made used
+     */
+    private int $greatest_used_depth = -1;
+
+    /**
+     * Node id => true, for the nodes from which a sink is reachable (see getSinkReachableNodes())
+     *
+     * @var array<string, true>
+     */
+    private array $sink_reachable = [];
 
     /**
      * Sink id => predecessor id => origin id => taints already reported for that flow
@@ -240,7 +251,7 @@ final class TaintFlowGraph extends DataFlowGraph
             return $node;
         }
 
-        return $node->withSpecialization($node->unspecialized_id, null, null, $node->context);
+        return $node->withSpecialization($node->unspecialized_id, null, null);
     }
 
     /**
@@ -538,11 +549,7 @@ final class TaintFlowGraph extends DataFlowGraph
         ksort($this->forward_edges);
         ksort($this->specializations);
 
-        $config = Config::getInstance();
-
-        $project_analyzer = ProjectAnalyzer::getInstance();
-
-        $codebase = $project_analyzer->getCodebase();
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
         $this->despecializeImpureCalls($codebase);
 
@@ -563,474 +570,460 @@ final class TaintFlowGraph extends DataFlowGraph
         // propagating taint into it is wasted work. On real codebases the full
         // taint graph is huge but this relevant sub-graph is tiny, which is what
         // makes resolution converge quickly.
-        $sink_reachable = $this->getSinkReachableNodes($sources, $sinks);
+        $this->sink_reachable = $this->getSinkReachableNodes($sources, $sinks);
+        $this->sinks = $sinks;
 
-        foreach ($sources as $id => $_) {
-            if (!isset($sink_reachable[$id])) {
-                unset($sources[$id]);
+        $roots = [];
+
+        foreach ($sources as $id => $source) {
+            if (isset($this->sink_reachable[$id])) {
+                $roots[] = $source->withFlowState(TaintFlowState::fromSource($source->taints));
             }
         }
-
-        // Resolution runs to a fixed point (rather than for a fixed number of
-        // rounds): the (id, taints, context) visited guard in getChildNodes()
-        // makes the state space finite -- a context is a specialized call entry,
-        // of which there are finitely many (see enterSpecializedCall()) -- so the
-        // loop is guaranteed to terminate on its own. Combined with the
-        // sink-reachability pruning above, this converges quickly enough that no
-        // artificial nesting limit is needed.
-        //
-        // Node id => state key (see getStateKey()) => true
-        $visited_source_ids = [];
 
         // The number of rounds is not known ahead of time, so the progress bar
         // renders this phase as indeterminate (a tick per round, no percentage).
-        while (count($sinks) && count($sources)) {
-            $new_sources = [];
+        $this->walk($roots, false, $codebase, $progress);
 
-            ksort($sources);
-
-            foreach ($sources as $source) {
-                $visited_source_ids[$source->id][self::getStateKey($source->taints, $source->context)] = true;
-
-                // If we have one or more edges starting at this node,
-                // process destinations of those edges.
-                if (isset($this->forward_edges[$source->id])) {
-                    $this->getChildNodes(
-                        $new_sources,
-                        $source,
-                        $visited_source_ids,
-                        $sinks,
-                        $sink_reachable,
-                        $config,
-                        $project_analyzer,
-                        $codebase,
-                    );
-                } elseif ($source->specialization_key !== null
-                    && isset($this->specialized_calls[$source->specialization_key])
-                ) {
-                    // If this is a specialized node, de-specialize: enter its shared body
-                    // (see enterSpecializedCall()).
-                    /** @var string $source->unspecialized_id */
-                    if (!isset($this->forward_edges[$source->unspecialized_id])) {
-                        continue;
-                    }
-
-                    if (isset($this->despecialized_calls[$source->specialization_key])) {
-                        // A despecialized call is entered like an unspecialized one: the body is walked
-                        // in the context of the flow, and it is exited through all of its call sites.
-                        $this->getChildNodes(
-                            $new_sources,
-                            $source->withSpecialization($source->unspecialized_id, null, null, $source->context),
-                            $visited_source_ids,
-                            $sinks,
-                            $sink_reachable,
-                            $config,
-                            $project_analyzer,
-                            $codebase,
-                        );
-                    } else {
-                        foreach ($this->enterSpecializedCall(
-                            $source,
-                            $source->unspecialized_id,
-                            $source->specialization_key,
-                            $config,
-                            $codebase,
-                        ) as $generated_source) {
-                            $this->getChildNodes(
-                                $new_sources,
-                                $generated_source,
-                                $visited_source_ids,
-                                $sinks,
-                                $sink_reachable,
-                                $config,
-                                $project_analyzer,
-                                $codebase,
-                            );
-                        }
-                    }
-                } elseif (isset($this->specializations[$source->id])) {
-                    // If this node has first level specializations (=> is first-level & unspecialized),
-                    // process them: all of them outside of any specialized call, else only those of
-                    // the calls the flow's body was entered through (see addEntryExit()).
-                    Assert::null($source->specialization_key);
-
-                    $has_specialized_calls = false;
-
-                    foreach ($this->specializations[$source->id] as $specialization => $_) {
-                        if (!isset($this->despecialized_calls[$specialization])) {
-                            $has_specialized_calls = true;
-                            break;
-                        }
-                    }
-
-                    $exits = $has_specialized_calls && $source->context !== null
-                        ? $this->addEntryExit($source->context, $source)
-                        : [];
-
-                    // The call sites of despecialized calls are all exited, keeping the context of the flow.
-                    foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                        if (isset($this->despecialized_calls[$specialization])) {
-                            $this->getChildNodes(
-                                $new_sources,
-                                $source->withSpecialization(
-                                    $specialized_id,
-                                    $source->id,
-                                    $specialization,
-                                    $source->context,
-                                ),
-                                $visited_source_ids,
-                                $sinks,
-                                $sink_reachable,
-                                $config,
-                                $project_analyzer,
-                                $codebase,
-                            );
-                        }
-                    }
-
-                    if ($has_specialized_calls && $source->context !== null) {
-                        foreach ($exits as $generated_source) {
-                            $this->getChildNodes(
-                                $new_sources,
-                                $generated_source,
-                                $visited_source_ids,
-                                $sinks,
-                                $sink_reachable,
-                                $config,
-                                $project_analyzer,
-                                $codebase,
-                            );
-                        }
-                    } elseif ($has_specialized_calls) {
-                        foreach ($this->specializations[$source->id] as $specialization => $specialized_id) {
-                            if (!isset($this->despecialized_calls[$specialization])) {
-                                $this->getChildNodes(
-                                    $new_sources,
-                                    $source->withSpecialization(
-                                        $specialized_id,
-                                        $source->id,
-                                        $specialization,
-                                        null,
-                                    ),
-                                    $visited_source_ids,
-                                    $sinks,
-                                    $sink_reachable,
-                                    $config,
-                                    $project_analyzer,
-                                    $codebase,
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-
-            $sources = $new_sources;
-
-            $progress->taskDone(0);
-        }
-
-        $this->entry_ids = [];
-        $this->entry_roots = [];
-        $this->entry_callers = [];
-        $this->entry_exits = [];
-        $this->entry_sinks = [];
+        $this->sinks = [];
+        $this->sink_reachable = [];
+        $this->summaries = [];
+        $this->provisional_summaries = [];
+        $this->summary_seeds = [];
         $this->reported_flows = [];
 
         $progress->taskDone(0);
     }
 
     /**
-     * @psalm-pure
+     * Propagates the flows $roots to a fixed point: each node is reached once per state of the
+     * flows reaching it (see TaintFlowState), of which there are finitely many (see admit()).
+     *
+     * The flows from the taint sources report the sinks they reach. A specialized function-like
+     * has only its entry nodes (e.g. parameters) and exit nodes (e.g. return) specialized to each
+     * call: its body is shared by every call. A flow entering it through a call doesn't walk the
+     * body: the body is walked once from each entry node, for all calls, $summarizing it -- the
+     * walk returns the exits and sinks it reaches (see summarize()). A call applies those to the
+     * flow entering it, and goes on from the exits at its own call site.
+     *
+     * @param list<DataFlowNode> $roots
+     * @return array<string, array{DataFlowNode, bool}>
      */
-    private static function getStateKey(int $taints, ?int $context): string
+    private function walk(array $roots, bool $summarizing, Codebase $codebase, ?Progress $progress = null): array
     {
-        return $context === null ? (string) $taints : $taints . '@' . $context;
-    }
+        $config = $codebase->config;
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
-    /**
-     * A flow enters the shared body of a specialized function-like through the
-     * specialized node $source of the call identified by $specialization_key.
-     *
-     * Only the entry nodes of such a body are specialized: all of its inner nodes
-     * are shared by every call. So the body is walked once per entry -- the
-     * unspecialized node entered plus what the walk depends on of the entering
-     * flow -- with the flows of that walk carrying the entry as their context.
-     * Everything the walk reaches depends on the call: an exit back to the call
-     * site (addEntryExit()) as well as a sink (addEntrySink()), inside the body or
-     * past it. So it is recorded against the entry and applied to each call
-     * entering it, including calls that arrive after the walk: those are not
-     * walked again, the recorded outcomes are replayed for them instead.
-     *
-     * This keeps the resolution context-sensitive for specialized calls, however
-     * many rounds apart their flows arrive, while the state space stays bounded by
-     * the number of entries rather than by the number of calls or call chains.
-     *
-     * @return list<DataFlowNode>
-     */
-    private function enterSpecializedCall(
-        DataFlowNode $source,
-        string $unspecialized_id,
-        string $specialization_key,
-        Config $config,
-        Codebase $codebase,
-    ): array {
-        // What the body walk does depends on the entering taints and, through
-        // shouldIgnoreFetch(), on the flow's open assignments (see appendPathType()).
-        $entry_key = $unspecialized_id . ' ' . $source->taints;
-        $open_assignments = self::getOpenAssignments($source->path_types);
+        // Node id => state key => true
+        $visited = [];
+        // Node id => state key => flow
+        $flows = [];
+        $outcomes = [];
 
-        // A recursive call can wrap its argument deeper on every call: entering a body
-        // the flow is already in (through the first callers of its entries), only the
-        // innermost few open assignments are kept, so that there are finitely many
-        // entries. Every other entry is keyed on all of them: a chain of first callers
-        // only has one such entry per entered node, and finitely many others.
-        //
-        // The flow forgets the others, rather than walking the body with those of the
-        // first call to make the entry: every call sharing it can differ there. Without
-        // them, a fetch reaching past the kept ones is not ignored (see shouldIgnoreFetch()),
-        // in the walk as after it -- the walk may have fetched past them. So the walk
-        // may take taints a call does not have there, but takes all those it has.
-        if ($source->taintSource !== null
-            && count($open_assignments) > self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH
-        ) {
-            $context = $source->context;
+        foreach ($roots as $root) {
+            $flows[$root->id][$root->getFlowState()->key] = $root;
+        }
 
-            while ($context !== null) {
-                if ($this->entry_roots[$context]->id === $unspecialized_id) {
-                    // the kept open assignments, and the type of the edge taken last if not one of them
-                    $source = $source->withFlow(
-                        $source->taints,
-                        $source->taintSource,
-                        array_slice(
-                            $source->path_types,
-                            count($open_assignments) - count($source->path_types)
-                                - self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH,
-                        ),
-                        $source->context,
-                    );
-                    $open_assignments = array_slice($open_assignments, -self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH);
+        while ($flows) {
+            ksort($flows);
 
-                    break;
+            foreach ($flows as $id => $states) {
+                foreach ($states as $key => $_) {
+                    $visited[$id][$key] = true;
                 }
-
-                $context = $this->entry_callers[$context][0][0]->context;
             }
-        }
 
-        $caller = $source->withSpecialization($unspecialized_id, null, null, $source->context);
+            $next_flows = [];
 
-        foreach ($open_assignments as $path_type) {
-            $entry_key .= ' ' . $path_type;
-        }
+            foreach ($flows as $states) {
+                foreach ($states as $flow) {
+                    if ($flow->code_location
+                        && $project_analyzer->canReportIssues($flow->code_location->file_path)
+                        && !$config->reportIssueInFile('TaintedInput', $flow->code_location->file_path)
+                    ) {
+                        continue;
+                    }
 
-        if (!isset($this->entry_ids[$entry_key])) {
-            $entry = count($this->entry_roots);
-            $root = $source->withSpecialization($unspecialized_id, null, null, $entry);
-
-            $this->entry_ids[$entry_key] = $entry;
-            $this->entry_roots[] = $root;
-            $this->entry_callers[$entry] = [[$caller, $specialization_key]];
-            $this->entry_exits[$entry] = [];
-            $this->entry_sinks[$entry] = [];
-
-            return [$root];
-        }
-
-        $entry = $this->entry_ids[$entry_key];
-        $this->entry_callers[$entry][] = [$caller, $specialization_key];
-
-        foreach ($this->entry_sinks[$entry] as [$sink, $predecessor, $matching_taints]) {
-            $this->addSinkThroughCaller(
-                $entry,
-                $sink,
-                $predecessor,
-                $matching_taints,
-                $caller,
-                $config,
-                $codebase,
-            );
-        }
-
-        $nodes = [];
-
-        foreach ($this->entry_exits[$entry] as $exit) {
-            foreach ($this->exitThroughCaller($entry, $exit, $caller, $specialization_key) as $node) {
-                $nodes[] = $node;
+                    $this->propagate($flow, $summarizing, $outcomes, $visited, $next_flows, $codebase);
+                }
             }
+
+            $flows = $next_flows;
+
+            $progress?->taskDone(0);
         }
 
-        return $nodes;
+        return $outcomes;
     }
 
     /**
-     * The body walk of $entry reached $exit, an unspecialized node whose
-     * specializations lead back to call sites. Continues it at the call site of
-     * each call entering $entry.
+     * Adds the flows $flow goes on as from its node to $next_flows, unless $visited, and reports (or,
+     * $summarizing, adds to $outcomes) the sinks it reaches.
      *
-     * @return list<DataFlowNode>
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param array<string, array{DataFlowNode, bool}> $outcomes
+     * @param-out array<string, array{DataFlowNode, bool}> $outcomes
+     * @param array<string, array<string, true>> $visited
+     * @param array<string, array<string, DataFlowNode>> $next_flows
+     * @param-out array<string, array<string, DataFlowNode>> $next_flows
      */
-    private function addEntryExit(int $entry, DataFlowNode $exit): array
-    {
-        $exit_key = $exit->id . ' ' . $exit->taints;
-
-        if (isset($this->entry_exits[$entry][$exit_key])) {
-            return [];
-        }
-
-        $this->entry_exits[$entry][$exit_key] = $exit;
-
-        $nodes = [];
-
-        foreach ($this->entry_callers[$entry] as [$caller, $specialization_key]) {
-            foreach ($this->exitThroughCaller($entry, $exit, $caller, $specialization_key) as $node) {
-                $nodes[] = $node;
-            }
-        }
-
-        return $nodes;
-    }
-
-    /**
-     * Continues $exit, reached by the body walk of $entry, in the context of one
-     * call entering $entry: at that call's specialization of the exit node if it
-     * has one, else -- the flow leaves through an enclosing call, e.g. after
-     * passing through a static property -- as an exit of the entry the call is
-     * made from. Outside of any specialized call the flow cannot be matched to a
-     * call site and ends.
-     *
-     * The walk itself carries the trace of the first call entering $entry. For
-     * any other call, the walk is summarized as a single step from the entered
-     * node to the exit: replaying it in full would make traces through nested
-     * specialized calls grow exponentially with the nesting depth.
-     *
-     * @return list<DataFlowNode>
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    private function exitThroughCaller(
-        int $entry,
-        DataFlowNode $exit,
-        DataFlowNode $caller,
-        string $specialization_key,
-    ): array {
-        if ($caller !== $this->entry_callers[$entry][0][0]) {
-            // the call and the start of the walk have the same open assignments: see enterSpecializedCall()
-            $exit = $exit->withFlow($exit->taints, $caller, $exit->path_types, $caller->context);
-        }
-
-        if (isset($this->specializations[$exit->id][$specialization_key])) {
-            return [$exit->withSpecialization(
-                $this->specializations[$exit->id][$specialization_key],
-                $exit->id,
-                $specialization_key,
-                $caller->context,
-            )];
-        }
-
-        if ($caller->context === null) {
-            return [];
-        }
-
-        return $this->addEntryExit($caller->context, $exit);
-    }
-
-    /**
-     * The body walk of $entry reached $sink from $predecessor. Like everything
-     * the walk reaches, that flow depends on the call entering $entry, so it is
-     * a finding for every such call (see addSinkThroughCaller()).
-     */
-    private function addEntrySink(
-        int $entry,
-        DataFlowNode $sink,
-        DataFlowNode $predecessor,
-        int $matching_taints,
-        Config $config,
+    private function propagate(
+        DataFlowNode $flow,
+        bool $summarizing,
+        array &$outcomes,
+        array $visited,
+        array &$next_flows,
         Codebase $codebase,
     ): void {
-        $sink_key = $sink->id . ' ' . $predecessor->id . ' ' . $matching_taints;
+        $state = $flow->getFlowState();
 
-        if (isset($this->entry_sinks[$entry][$sink_key])) {
+        if (isset($this->forward_edges[$flow->id])) {
+            foreach ($this->forward_edges[$flow->id] as $to_id => $path) {
+                // Skip nodes from which no sink is reachable: they cannot contribute
+                // to any issue, so there is no point propagating taint through them.
+                if (!isset($this->nodes[$to_id]) || !isset($this->sink_reachable[$to_id])) {
+                    continue;
+                }
+
+                $next_state = $state->withPath($path);
+
+                if ($next_state === null) {
+                    continue;
+                }
+
+                if (isset($this->sinks[$to_id])) {
+                    $this->reachSink(
+                        $this->nodes[$to_id]->withFlow($flow, $path->type, $next_state),
+                        $summarizing,
+                        $outcomes,
+                        $codebase,
+                    );
+                }
+
+                $next_state = self::admit($to_id, $next_state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$to_id][$next_state->key] = $this->nodes[$to_id]->withFlow(
+                        $flow,
+                        $path->type,
+                        $next_state,
+                    );
+                }
+            }
+
             return;
         }
 
-        $this->entry_sinks[$entry][$sink_key] = [$sink, $predecessor, $matching_taints];
+        // a call to a specialized function-like entering its body
+        if ($flow->specialization_key !== null
+            && $flow->unspecialized_id !== null
+            && isset($this->specialized_calls[$flow->specialization_key])
+        ) {
+            if (!isset($this->forward_edges[$flow->unspecialized_id])) {
+                return;
+            }
 
-        foreach ($this->entry_callers[$entry] as [$caller]) {
-            $this->addSinkThroughCaller(
-                $entry,
-                $sink,
-                $predecessor,
-                $matching_taints,
-                $caller,
-                $config,
-                $codebase,
-            );
+            // a call speculatively specialized to a function-like that turned out impure is walked
+            // through like an unspecialized one
+            if (isset($this->despecialized_calls[$flow->specialization_key])) {
+                $next_state = self::admit($flow->unspecialized_id, $state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$flow->unspecialized_id][$next_state->key] = $flow->withSpecialization(
+                        $flow->unspecialized_id,
+                        null,
+                        null,
+                        $next_state,
+                    );
+                }
+
+                return;
+            }
+
+            foreach ($this->summarize($flow, $flow->unspecialized_id, $codebase) as [$reached, $is_sink]) {
+                $next_state = $state->then($reached->getFlowState());
+
+                if ($next_state === null) {
+                    continue;
+                }
+
+                if ($is_sink) {
+                    $this->reachSink(
+                        $this->replay($flow, $reached, $next_state, $summarizing),
+                        $summarizing,
+                        $outcomes,
+                        $codebase,
+                    );
+                    continue;
+                }
+
+                $specialized_id = $this->specializations[$reached->id][$flow->specialization_key] ?? null;
+
+                if ($specialized_id !== null) {
+                    $next_state = self::admit($specialized_id, $next_state, $visited, $next_flows);
+
+                    if ($next_state !== null) {
+                        $next_flows[$specialized_id][$next_state->key]
+                            = $this->replay($flow, $reached, $next_state, $summarizing)
+                                ->withSpecialization($specialized_id, $reached->id, $flow->specialization_key);
+                    }
+                } elseif ($summarizing) {
+                    // the flow left the body through another node specialized to calls, e.g. after
+                    // passing through a static property: maybe one of the calls the body summarized
+                    // by $outcomes is made from
+                    $outcomes['exit ' . $reached->id . ' ' . $next_state->key]
+                        ??= [$this->replay($flow, $reached, $next_state, true), false];
+                }
+            }
+
+            return;
+        }
+
+        // a node specialized to calls, e.g. the return of a specialized function-like
+        if (isset($this->specializations[$flow->id])) {
+            $exits_through_call = false;
+
+            foreach ($this->specializations[$flow->id] as $specialization_key => $specialized_id) {
+                // when making a summary, the flow leaves through the call sites of the calls entering
+                // the summarized body (see propagate()), else through all of them
+                if ($summarizing && !isset($this->despecialized_calls[$specialization_key])) {
+                    $exits_through_call = true;
+                    continue;
+                }
+
+                $next_state = self::admit($specialized_id, $state, $visited, $next_flows);
+
+                if ($next_state !== null) {
+                    $next_flows[$specialized_id][$next_state->key] = $flow->withSpecialization(
+                        $specialized_id,
+                        $flow->id,
+                        $specialization_key,
+                        $next_state,
+                    );
+                }
+            }
+
+            if ($exits_through_call) {
+                $outcomes['exit ' . $flow->id . ' ' . $state->key] ??= [$flow, false];
+            }
         }
     }
 
     /**
-     * Reports the flow into $sink from $predecessor, reached by the body walk of
-     * $entry, as seen from one call entering $entry. If that call is itself made
-     * inside the body walk of an enclosing entry, the flow is a finding for every
-     * call entering that one instead.
-     */
-    private function addSinkThroughCaller(
-        int $entry,
-        DataFlowNode $sink,
-        DataFlowNode $predecessor,
-        int $matching_taints,
-        DataFlowNode $caller,
-        Config $config,
-        Codebase $codebase,
-    ): void {
-        $predecessor = $this->getTraceThroughCaller($entry, $predecessor, $caller);
-
-        if ($caller->context !== null) {
-            $this->addEntrySink($caller->context, $sink, $predecessor, $matching_taints, $config, $codebase);
-        } else {
-            $this->reportTaintedFlowOnce($predecessor, $sink, $matching_taints, $config, $codebase);
-        }
-    }
-
-    /**
-     * Rebuilds $node, reached by the body walk of $entry, as reached through
-     * $caller: the part of its trace inside the walk is replayed on top of the
-     * caller's own trace, so the result carries the caller's origin. The walk
-     * itself carries the trace of the first call entering $entry.
+     * The state $state takes at node $id, unless the walk is already there in it. Past
+     * MAX_NODE_STATES states at a node, it is widened (see TaintFlowState::widened()), so that a
+     * node takes finitely few even when the flows reaching it wrap their values under many keys.
      *
-     * The result only serves to report a flow, so its nodes keep just the path
-     * type the trace displays for them.
+     * @param array<string, array<string, true>> $visited
+     * @param array<string, array<string, DataFlowNode>> $next_flows
+     * @psalm-pure
+     */
+    private static function admit(
+        string $id,
+        TaintFlowState $state,
+        array $visited,
+        array $next_flows,
+    ): ?TaintFlowState {
+        if (isset($visited[$id][$state->key]) || isset($next_flows[$id][$state->key])) {
+            return null;
+        }
+
+        if (count($visited[$id] ?? []) + count($next_flows[$id] ?? []) < self::MAX_NODE_STATES) {
+            return $state;
+        }
+
+        $state = $state->widened();
+
+        return isset($visited[$id][$state->key]) || isset($next_flows[$id][$state->key]) ? null : $state;
+    }
+
+    /**
+     * What the flow entering $unspecialized_id, the shared entry node of the calls to a
+     * specialized function-like, reaches: the exits through calls and the sinks, with the state
+     * relative to it of the flow reaching them (see TaintFlowState) and its trace from
+     * $unspecialized_id.
+     *
+     * A recursion summarizes itself: the summaries made from one another are made again from what
+     * each other reaches so far, until that stops growing. A summary made from one still being
+     * made is provisional: it holds until a summary it was made from is made again, which starts
+     * from it.
+     *
+     * @return array<string, array{DataFlowNode, bool}>
+     */
+    private function summarize(DataFlowNode $call, string $unspecialized_id, Codebase $codebase): array
+    {
+        if (isset($this->summaries[$unspecialized_id])) {
+            return $this->summaries[$unspecialized_id];
+        }
+
+        if (isset($this->summary_depths[$unspecialized_id])) {
+            $depth = $this->summary_depths[$unspecialized_id];
+            $this->least_used_depth = min($this->least_used_depth, $depth);
+            $this->greatest_used_depth = max($this->greatest_used_depth, $depth);
+
+            return $this->partial_summaries[$unspecialized_id];
+        }
+
+        if (isset($this->provisional_summaries[$unspecialized_id])) {
+            [$outcomes, $least_used_depth, $greatest_used_depth] = $this->provisional_summaries[$unspecialized_id];
+            $this->least_used_depth = min($this->least_used_depth, $least_used_depth);
+            $this->greatest_used_depth = max($this->greatest_used_depth, $greatest_used_depth);
+
+            return $outcomes;
+        }
+
+        $depth = count($this->summary_depths);
+        $this->summary_depths[$unspecialized_id] = $depth;
+        $outer_least_used_depth = $this->least_used_depth;
+        $outer_greatest_used_depth = $this->greatest_used_depth;
+
+        $root = ($this->nodes[$unspecialized_id] ?? $call->withSpecialization($unspecialized_id, null, null))
+            ->withFlowState(TaintFlowState::fromEntry());
+
+        $outcomes = $this->summary_seeds[$unspecialized_id] ?? [];
+        unset($this->summary_seeds[$unspecialized_id]);
+
+        do {
+            // the summaries made from this one are made again
+            $this->dropProvisionalSummaries($depth);
+
+            $this->least_used_depth = PHP_INT_MAX;
+            $this->greatest_used_depth = -1;
+            $previous_outcomes = $outcomes;
+            $this->partial_summaries[$unspecialized_id] = $outcomes;
+
+            $outcomes = $this->walk([$root], true, $codebase) + $previous_outcomes;
+        } while ($this->least_used_depth <= $depth && count($outcomes) > count($previous_outcomes));
+
+        unset($this->summary_depths[$unspecialized_id], $this->partial_summaries[$unspecialized_id]);
+
+        if ($this->least_used_depth < $depth) {
+            // the summaries made from it hold as long as it does
+            foreach ($this->provisional_summaries as $id => [, $least_used_depth]) {
+                if ($least_used_depth >= $depth) {
+                    $this->provisional_summaries[$id][1] = $this->least_used_depth;
+                }
+            }
+
+            $this->provisional_summaries[$unspecialized_id] = [
+                $outcomes,
+                $this->least_used_depth,
+                $this->greatest_used_depth,
+            ];
+            $this->least_used_depth = min($outer_least_used_depth, $this->least_used_depth);
+            $this->greatest_used_depth = max($outer_greatest_used_depth, $this->greatest_used_depth);
+
+            return $outcomes;
+        }
+
+        // so are the summaries made from it alone
+        foreach ($this->provisional_summaries as $id => [$provisional_outcomes, $least_used_depth]) {
+            if ($least_used_depth >= $depth) {
+                $this->summaries[$id] = $provisional_outcomes;
+                unset($this->provisional_summaries[$id]);
+            }
+        }
+
+        $this->summaries[$unspecialized_id] = $outcomes;
+        $this->least_used_depth = $outer_least_used_depth;
+        $this->greatest_used_depth = $outer_greatest_used_depth;
+
+        return $outcomes;
+    }
+
+    /**
+     * Drops the provisional summaries made from a summary at least $depth deep: they are made again,
+     * starting from what they reached.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function dropProvisionalSummaries(int $depth): void
+    {
+        foreach ($this->provisional_summaries as $id => [$outcomes, , $greatest_used_depth]) {
+            if ($greatest_used_depth >= $depth) {
+                $this->summary_seeds[$id] = $outcomes + ($this->summary_seeds[$id] ?? []);
+                unset($this->provisional_summaries[$id]);
+            }
+        }
+    }
+
+    /**
+     * $reached, reached by the flow summarized from an entry node (see summarize()), as reached by
+     * $caller entering it, in $state: its trace from the entry node is replayed on top of the
+     * caller's -- unless $summarizing, where the trace only keeps the step into $reached: a summary
+     * replaying the traces of the summaries it applies would make traces grow exponentially with
+     * the nesting of calls. A sink is still reported from the node the flow reached it from.
      *
      * @psalm-mutation-free
      */
-    private function getTraceThroughCaller(int $entry, DataFlowNode $node, DataFlowNode $caller): DataFlowNode
-    {
-        if ($caller === $this->entry_callers[$entry][0][0]) {
-            return $node;
-        }
+    private function replay(
+        DataFlowNode $caller,
+        DataFlowNode $reached,
+        TaintFlowState $state,
+        bool $summarizing,
+    ): DataFlowNode {
+        $predecessor = $reached->taintSource;
 
-        $root = $this->entry_roots[$entry];
+        if ($summarizing && $predecessor !== null) {
+            if ($predecessor->taintSource !== null) {
+                $caller = $predecessor->withFlow(
+                    $caller,
+                    $predecessor->path_types ? $predecessor->path_types[0] : '',
+                    $predecessor->getFlowState(),
+                );
+            }
+
+            return $reached->withFlow($caller, $reached->path_types ? $reached->path_types[0] : '', $state);
+        }
 
         $walk = [];
 
-        while ($node !== $root) {
+        for ($node = $reached; $node->taintSource !== null; $node = $node->taintSource) {
             $walk[] = $node;
-            $node = $node->taintSource;
-
-            Assert::notNull($node);
         }
 
         $trace = $caller;
 
         for ($i = count($walk) - 1; $i >= 0; $i--) {
             $node = $walk[$i];
-            $path_types = $node->path_types ? [$node->path_types[count($node->path_types) - 1]] : [];
-
-            $trace = $node->withFlow($node->taints, $trace, $path_types, $caller->context);
+            $trace = $node->withFlow(
+                $trace,
+                $node->path_types ? $node->path_types[0] : '',
+                $i === 0 ? $state : $node->getFlowState(),
+            );
         }
 
         return $trace;
+    }
+
+    /**
+     * $flow reached a sink: reports it, or, $summarizing, adds it to $outcomes.
+     *
+     * @param array<string, array{DataFlowNode, bool}> $outcomes
+     * @param-out array<string, array{DataFlowNode, bool}> $outcomes
+     */
+    private function reachSink(DataFlowNode $flow, bool $summarizing, array &$outcomes, Codebase $codebase): void
+    {
+        $state = $flow->getFlowState();
+        $sink = $this->sinks[$flow->id];
+        $predecessor = $flow->taintSource;
+
+        if ($predecessor === null) {
+            return;
+        }
+
+        if ($summarizing) {
+            if (($state->kept_taints | $state->taints) & $sink->taints) {
+                $outcomes['sink ' . $flow->id . ' ' . $predecessor->id . ' ' . $state->key] ??= [$flow, true];
+            }
+
+            return;
+        }
+
+        $matching_taints = $sink->taints & $state->taints;
+
+        if ($matching_taints && $predecessor->code_location) {
+            $this->reportTaintedFlowOnce($predecessor, $sink, $matching_taints, $codebase->config, $codebase);
+        }
     }
 
     /**
@@ -1141,179 +1134,6 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $reverse[$node->id][$node->unspecialized_id] = true;
         $reverse[$node->unspecialized_id][$node->id] = true;
-    }
-
-    /**
-     * Follows every outgoing edge of $generated_source: reports the flow into
-     * each sink it reaches and enqueues the destinations not visited yet.
-     *
-     * @param array<string, DataFlowNode> $new_sources
-     * @param-out array<string, DataFlowNode> $new_sources
-     * @param array<string, array<string, true>> $visited_source_ids
-     * @param array<string, DataFlowNode> $sinks
-     * @param array<string, true> $sink_reachable
-     */
-    private function getChildNodes(
-        array &$new_sources,
-        DataFlowNode $generated_source,
-        array $visited_source_ids,
-        array $sinks,
-        array $sink_reachable,
-        Config $config,
-        ProjectAnalyzer $project_analyzer,
-        Codebase $codebase,
-    ): void {
-        if ($generated_source->code_location
-            && $project_analyzer->canReportIssues($generated_source->code_location->file_path)
-            && !$config->reportIssueInFile('TaintedInput', $generated_source->code_location->file_path)
-        ) {
-            return;
-        }
-
-        $source_taints = $generated_source->taints;
-        $context = $generated_source->context;
-        $open_assignments = self::getOpenAssignments($generated_source->path_types);
-
-        foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
-            if (!isset($this->nodes[$to_id])) {
-                continue;
-            }
-
-            // Skip nodes from which no sink is reachable: they cannot contribute
-            // to any issue, so there is no point propagating taint through them.
-            if (!isset($sink_reachable[$to_id])) {
-                continue;
-            }
-
-            $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
-
-            // The visited guard keeps the fixed point finite, so a visited node is never
-            // propagated from again. A visited sink still gets to report, though: the flow
-            // arriving through this edge may be a different one from the flow that visited it
-            // first (it can arrive rounds later when its path is longer).
-            $state_key = self::getStateKey($new_taints, $context);
-            $already_visited = isset($visited_source_ids[$to_id][$state_key]);
-            $sink = $sinks[$to_id] ?? null;
-
-            if ($already_visited && $sink === null) {
-                continue;
-            }
-
-            $path_type = $path->type;
-
-            if (self::shouldIgnoreFetch($path_type, 'arraykey', $open_assignments)) {
-                continue;
-            }
-
-            if (self::shouldIgnoreFetch($path_type, 'arrayvalue', $open_assignments)) {
-                continue;
-            }
-
-            if (self::shouldIgnoreFetch($path_type, 'property', $open_assignments)) {
-                continue;
-            }
-
-            if ($sink !== null && $generated_source->code_location) {
-                $matching_taints = $sink->taints & $new_taints;
-
-                if ($matching_taints) {
-                    if ($context !== null) {
-                        $this->addEntrySink($context, $sink, $generated_source, $matching_taints, $config, $codebase);
-                    } else {
-                        $this->reportTaintedFlowOnce($generated_source, $sink, $matching_taints, $config, $codebase);
-                    }
-                }
-            }
-
-            if ($already_visited) {
-                continue;
-            }
-
-            $key = $to_id . ' ' . $state_key;
-
-            if (isset($new_sources[$key])) {
-                continue;
-            }
-
-            $new_sources[$key] = $this->nodes[$to_id]->withFlow(
-                $new_taints,
-                $generated_source,
-                self::appendPathType($open_assignments, $path_type),
-                $context,
-            );
-        }
-    }
-
-    /**
-     * Returns the path types of a flow that took an edge of type $path_type from a
-     * node whose open assignments (see getOpenAssignments()) are $open_assignments.
-     *
-     * Of the path types a flow went through, only what shouldIgnoreFetch() can still
-     * observe is kept: the assignments to array keys, array values and properties
-     * that no later fetch has matched yet -- a fetch matches the latest such
-     * assignment of its expression type -- followed by the type of the edge the
-     * flow took last, which the trace displays, unless that is such an assignment
-     * itself. Keeping each node's full path would make the resolution use memory
-     * quadratic in the length of the flows.
-     *
-     * @param list<string> $open_assignments
-     * @return non-empty-list<string>
-     * @psalm-pure
-     */
-    private static function appendPathType(array $open_assignments, string $path_type): array
-    {
-        foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
-            if (!str_starts_with($path_type, $family . '-fetch')) {
-                continue;
-            }
-
-            for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
-                if (str_starts_with($open_assignments[$i], $family . '-assignment')) {
-                    array_splice($open_assignments, $i, 1);
-
-                    break;
-                }
-            }
-
-            break;
-        }
-
-        $open_assignments[] = $path_type;
-
-        return $open_assignments;
-    }
-
-    /**
-     * Returns the open assignments of a flow from its path types (see
-     * appendPathType()): the path types without the trailing one if that is not an
-     * assignment. This is the history shouldIgnoreFetch() matches the flow's next
-     * edge against; it gives the same result as on the full history.
-     *
-     * @param list<string> $path_types
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function getOpenAssignments(array $path_types): array
-    {
-        if ($path_types && !self::isStructuralAssignment($path_types[count($path_types) - 1])) {
-            array_pop($path_types);
-        }
-
-        return $path_types;
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function isStructuralAssignment(string $path_type): bool
-    {
-        foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
-            if (str_starts_with($path_type, $family . '-assignment')) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

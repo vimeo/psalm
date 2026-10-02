@@ -1288,6 +1288,13 @@ final class TaintTest extends TestCase
                     echo (string) $b[0];
                     echo (string) $b[2];',
             ],
+            'branchesWrappingDifferentlyKeepKeys' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"], "y" => "safe"];
+                    $b = rand(0, 1) ? ["k" => $a] : $a;
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                    echo $b["k"]["y"];',
+            ],
         ];
     }
 
@@ -3005,7 +3012,7 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughRecursionFetchingDeeperThanFourLevels' => [
-                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one
+                // The recursion is summarized once for all its levels: each level fetches from what the flow entering it put
                 'code' => '<?php
                     /** @psalm-pure */
                     function dig(mixed $a, int $n): mixed {
@@ -3019,7 +3026,7 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughRecursionDifferingDeeperThanFourLevels' => [
-                // A recursive entry is keyed on its 4 innermost open array assignments: the second call shares the walk of the first, wrapped around another key
+                // The recursion is summarized once for both calls: each takes the taint of the key it wrapped
                 'code' => '<?php
                     /** @psalm-pure */
                     function dig(mixed $a, int $n): mixed {
@@ -3033,8 +3040,131 @@ final class TaintTest extends TestCase
                     echo (string) dig(["x" => $_GET["b"]], 4);',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughImpureFunction' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintThroughBranchesWrappingDifferently' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"]];
+                    $b = rand(0, 1) ? ["k" => $a] : $a;
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                    echo $b["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughPureFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughInferredPureFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpecializedFunctionWrappingInOneBranch' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function maybeWrap(array $a, bool $b): array {
+                        return $b ? ["k" => $a] : $a;
+                    }
+
+                    echo (string) maybeWrap(["x" => $_GET["a"]], true)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionWrappingThenFetching' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(mixed $a, int $n): mixed {
+                        return $n > 0 ? wrap(["k" => $a], $n - 1) : $a;
+                    }
+
+                    echo (string) wrap(["x" => $_GET["a"]], 1)["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughLoopWrappingDeeperOnEveryIteration' => [
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"]];
+                    while (rand(0, 1)) {
+                        $a = ["k" => $a];
+                    }
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                    echo (string) $a["k"]["k"]["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughLoopWrappingUnderManyKeys' => [
+                // every order of keys makes another state of the flow: past a few at a node, they are widened
+                'code' => '<?php
+                    $a = ["x" => (string) $_GET["a"]];
+                    while (rand(0, 1)) {
+                        switch (rand(0, 5)) {
+                            case 0: $a = ["a" => $a]; break;
+                            case 1: $a = ["b" => $a]; break;
+                            case 2: $a = ["c" => $a]; break;
+                            case 3: $a = ["d" => $a]; break;
+                            case 4: $a = ["e" => $a]; break;
+                            default: $a = ["f" => $a];
+                        }
+                    }
+                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
+                    echo (string) $a["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionCallingAnotherRecursion' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function a(string $s): string {
+                        return b($s);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function b(string $s): string {
+                        if (rand(0, 1)) {
+                            return a($s);
+                        }
+                        if (rand(0, 1)) {
+                            $t = b($s);
+                            echo $t;
+                        }
+                        return $s;
+                    }
+
+                    a((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughFunctionCalledFromMutualRecursion' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function a(string $s): string {
+                        return b($s);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function b(string $s): string {
+                        if (rand(0, 1)) {
+                            return a($s);
+                        }
+                        if (rand(0, 1)) {
+                            d($s);
+                        }
+                        return $s;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function d(string $s): void {
+                        $t = b($s);
+                        echo $t;
+                    }
+
+                    a((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintLateArrayThroughImpureFunction' => [
                 'code' => '<?php
                     function pass(array $a): array {
                         $GLOBALS["n"] = 1;
@@ -3049,8 +3179,7 @@ final class TaintTest extends TestCase
                     echo (string) $y["v"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughStaticProperty' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintLateArrayThroughStaticProperty' => [
                 'code' => '<?php
                     final class C {
                         /** @var array<string, mixed> */
@@ -3065,8 +3194,7 @@ final class TaintTest extends TestCase
                     echo (string) C::$p["v"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughInstanceProperty' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintLateArrayThroughInstanceProperty' => [
                 'code' => '<?php
                     final class C {
                         /** @var array<string, mixed> */
