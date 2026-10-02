@@ -149,16 +149,17 @@ final class MethodCallPurityAnalyzer
 
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
-        $method_capabilities = CallPurityResolver::getCallCapabilities(
+        $template_capabilities = CallPurityResolver::getCallCapabilities(
             $statements_analyzer,
             $codebase,
             $method_storage,
-            $method_capabilities,
+            Capabilities::NONE,
             $template_result,
             $class_template_params,
             self::isThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
+        $method_capabilities |= $template_capabilities;
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -198,6 +199,11 @@ final class MethodCallPurityAnalyzer
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
+
+        // the callee's level does not include what its purity templates are bound to here
+        if ($template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        }
 
         if ($reads_globals) {
             $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);

@@ -295,14 +295,16 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
-            $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+            // what the purity templates of the method are bound to here
+            $template_capabilities = CallPurityResolver::getCallCapabilities(
                 $statements_analyzer,
                 $codebase,
                 $method_storage,
-                $method_storage->capabilities,
+                Capabilities::NONE,
                 $template_result,
                 $found_generic_params ?? [],
             );
+            $resolved_capabilities = $method_storage->capabilities | $template_capabilities;
 
             $call_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,
@@ -328,6 +330,11 @@ final class ExistingAtomicStaticCallAnalyzer
                 false,
                 $method_storage,
             );
+
+            // the callee's level does not include what its purity templates are bound to here
+            if ($template_capabilities !== Capabilities::NONE) {
+                $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+            }
 
             // what this call reads, not what it writes through its by-reference arguments
             if (($resolved_capabilities & Capabilities::READ_GLOBALS) !== 0) {

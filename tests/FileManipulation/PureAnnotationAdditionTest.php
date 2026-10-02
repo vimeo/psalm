@@ -262,6 +262,49 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontSuggestWhatAClassBoundPurityTemplateExceeds' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     */
+                    abstract class Base {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function limit(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Db extends Base {
+                        public function limit(): int {
+                            return parent::limit() + 1;
+                        }
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     */
+                    abstract class Base {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function limit(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Db extends Base {
+                        public function limit(): int {
+                            return parent::limit() + 1;
+                        }
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
