@@ -78,24 +78,6 @@ final class HackConformanceTest extends TestCase
     }
 
     /**
-     * The transpiled Psalm cases are generated from the fixtures: they must be
-     * regenerated whenever a fixture (or the transpiler) changes.
-     */
-    public function testTranspiledSuiteIsUpToDate(): void
-    {
-        $output = [];
-        $exitCode = 0;
-        exec(
-            escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(self::HARNESS_DIR . '/transpile.php') . ' --check 2>&1',
-            $output,
-            $exitCode,
-        );
-
-        /** @var list<string> $output */
-        $this->assertSame(0, $exitCode, implode("\n", $output));
-    }
-
-    /**
      * @dataProvider provideFixtures
      */
     public function testHhvmAgreesWithFixture(string $fixture, string $expect): void

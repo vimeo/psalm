@@ -8,6 +8,12 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function escapeshellarg;
+use function exec;
+use function implode;
+
+use const PHP_BINARY;
+
 /**
  * The Hack conformance fixtures, transpiled to PHP: Psalm must give each the
  * verdict HHVM gives the original (checked by HackConformanceTest).
@@ -19,6 +25,31 @@ final class HackConformanceTranspiledTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * Transpiles the fixtures again before any case runs, so that every case
+     * fails if this file was not regenerated after a fixture (or the
+     * transpiler) changed.
+     */
+    #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        $output = [];
+        $exitCode = 0;
+        exec(
+            escapeshellarg(PHP_BINARY) . ' '
+                . escapeshellarg(__DIR__ . '/../bin/hack-conformance/transpile.php') . ' --check 2>&1',
+            $output,
+            $exitCode,
+        );
+
+        if ($exitCode !== 0) {
+            /** @var list<string> $output */
+            self::fail(implode("\n", $output));
+        }
+    }
 
     /**
      * @psalm-pure

@@ -69,8 +69,10 @@ The note (and divergence) become a comment on the transpiled case.
 ## Part of the unit suite
 
 `tests/HackConformanceTranspiledTest.php` (generated) checks every fixture with
-Psalm. `tests/HackConformanceTest.php` checks that it is up to date with the
-fixtures, and drives the fixtures through HHVM as ordinary PHPUnit tests (one per
+Psalm. Before running any case it transpiles the fixtures again, and every case
+fails if the output differs from the committed file, so a fixture edit without a
+regeneration cannot pass. `tests/HackConformanceTest.php` drives the fixtures
+through HHVM as ordinary PHPUnit tests (one per
 fixture, asserting HHVM's verdict matches `expect`). The HHVM half
 **skips cleanly** when the harness cannot run here — no docker, no daemon, not
 Linux, or the pinned HHVM image is not already present locally (it never pulls a
