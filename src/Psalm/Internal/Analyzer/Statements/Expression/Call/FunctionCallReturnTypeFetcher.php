@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -257,6 +258,13 @@ final class FunctionCallReturnTypeFetcher
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $stmt_type,
+                $context,
+            );
+            self::taintInternalSource(
                 $statements_analyzer,
                 $stmt,
                 $function_id,
@@ -594,6 +602,14 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type,
             $context,
         );
+        // callmap-only unconditional sources (socket_read(), curl_exec(), ...)
+        self::taintInternalSource(
+            $statements_analyzer,
+            $stmt,
+            $callable_id,
+            $stmt_type,
+            $context,
+        );
 
         // Re-apply the declared taint behavior of the underlying function. When the call
         // target is an expression (a callable value) rather than a Node\Name, the regular
@@ -813,6 +829,40 @@ final class FunctionCallReturnTypeFetcher
             $location,
             $taints,
         );
+        $graph->addSource($source);
+
+        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
+    }
+
+    /**
+     * The builtins that read from outside the program (sockets, network streams, http clients)
+     * return user-controlled data: see dictionaries/InternalTaintSourceMap.php.
+     */
+    private static function taintInternalSource(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Union &$stmt_type,
+        Context $context,
+    ): void {
+        $taints = InternalTaintSourceMap::getTaints($function_id, 'return');
+
+        if ($taints === 0 || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $source = InternalTaintSourceMap::createSource(
+            $statements_analyzer,
+            $stmt,
+            $function_id,
+            $taints,
+            $context,
+        );
+
+        if ($source === null) {
+            return;
+        }
+
         $graph->addSource($source);
 
         $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);

@@ -1431,6 +1431,63 @@ final class TaintTest extends TestCase
                     echo stream_get_contents(STDIN);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedInputFromSocketRead' => [
+                'code' => '<?php
+                    /** @param resource $socket */
+                    function readFrom($socket): void {
+                        echo (string) socket_read($socket, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromSocketRecvByReference' => [
+                'code' => '<?php
+                    /** @param resource $socket */
+                    function readFrom($socket): void {
+                        socket_recv($socket, $data, 1024, 0);
+                        echo (string) $data;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromSocketRecvfromNamedArgument' => [
+                'code' => '<?php
+                    /** @param resource $socket */
+                    function readFrom($socket): void {
+                        socket_recvfrom($socket, length: 1024, flags: 0, address: $address, data: $data);
+                        echo (string) $data;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromFsockopenStream' => [
+                'code' => '<?php
+                    $fp = fsockopen("example.com", 80);
+                    if ($fp !== false) {
+                        echo (string) fgets($fp);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromStreamSocketClient' => [
+                'code' => '<?php
+                    $fp = stream_socket_client("tcp://example.com:80");
+                    if ($fp !== false) {
+                        echo (string) stream_get_contents($fp);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromCurlExec' => [
+                'code' => '<?php
+                    $ch = curl_init("https://example.com");
+                    echo (string) curl_exec($ch);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputFromSocketReadFirstClassCallable' => [
+                'code' => '<?php
+                    /** @param resource $socket */
+                    function readFrom($socket): void {
+                        $f = socket_read(...);
+                        echo (string) $f($socket, 1024);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedInputFromFirstClassCallable' => [
                 'code' => '<?php
                     $f = file_get_contents(...);
