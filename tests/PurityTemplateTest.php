@@ -61,6 +61,45 @@ final class PurityTemplateTest extends TestCase
                         return [];
                     }',
             ],
+            'lateStaticClassBindingThePurityTemplateDropsItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class XIt {
+                        /**
+                         * @return static[P]<T>
+                         * @psalm-purity-from-template P
+                         * @psalm-mutation-free
+                         */
+                        public function limit(int $length): static {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends XIt[pure]<T>
+                     */
+                    final class XItOnArray extends XIt {
+                        /** @var list<T> */
+                        public array $list;
+
+                        /**
+                         * @param list<T> $list
+                         * @psalm-pure
+                         */
+                        public function __construct(array $list) {
+                            $this->list = $list;
+                        }
+                    }
+
+                    $list = (new XItOnArray([1]))->limit(1);',
+                'assertions' => [
+                    '$list' => 'XItOnArray<int>',
+                ],
+            ],
             'purityArgumentLeftOutWithoutDefault' => [
                 'code' => '<?php
                     /**

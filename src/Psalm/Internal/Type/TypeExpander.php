@@ -693,6 +693,17 @@ final class TypeExpander
                         $is_static,
                         $is_static_resolved,
                     );
+
+                    if ($codebase->classlike_storage_provider->has($static_class_type->value)) {
+                        $type_params = PurityArguments::trim(
+                            $return_type->type_params,
+                            $codebase->classlike_storage_provider->get($static_class_type->value),
+                        );
+
+                        if ($type_params !== [] && count($type_params) !== count($return_type->type_params)) {
+                            $return_type = $return_type->setTypeParams($type_params);
+                        }
+                    }
                 } elseif ($static_class_type instanceof TNamedObject) {
                     $return_type = $static_class_type->setIsStatic(
                         $is_static,

@@ -79,6 +79,23 @@ final class PurityArguments
     }
 
     /**
+     * The type parameters of a use of the class without the purity arguments it has no purity
+     * templates for: what `static[P]<K, V>` becomes for a late static class that binds `P` itself
+     * (`@extends Base[pure]<K, V>`) and so declares no purity template of its own.
+     *
+     * @param array<Union> $type_params
+     * @return list<Union>
+     * @psalm-mutation-free
+     */
+    public static function trim(array $type_params, ClassLikeStorage $storage): array
+    {
+        [$type_args, $purity_args] = self::split($type_params);
+        $purity_template_count = count($storage->template_types ?? []) - self::countTypeTemplates($storage);
+
+        return [...$type_args, ...array_slice($purity_args, 0, $purity_template_count)];
+    }
+
+    /**
      * The type parameters of a use of the class, with the purity arguments in the positions of the
      * purity templates: `Foo[pure]`, for a class with type templates, gives them their bounds.
      * Parameters that do not fit the templates are left alone, for the checks to report them.
