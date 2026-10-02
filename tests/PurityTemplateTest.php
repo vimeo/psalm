@@ -27,6 +27,40 @@ final class PurityTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingKeepsTheParentsArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, T>
+                     */
+                    abstract class XIt implements Iterator {
+                        /**
+                         * @return list<T>
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function toList(): array {
+                            $list = [];
+                            foreach ($this as $value) {
+                                $list[] = $value;
+                            }
+                            return $list;
+                        }
+                    }
+
+                    /**
+                     * @param Iterator[pure]<int, string> $source
+                     * @return list<string>
+                     * @psalm-pure
+                     */
+                    function toList(Iterator $source): array {
+                        if ($source instanceof XIt) {
+                            return $source->toList();
+                        }
+                        return [];
+                    }',
+            ],
             'purityArgumentLeftOutWithoutDefault' => [
                 'code' => '<?php
                     /**
