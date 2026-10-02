@@ -601,6 +601,20 @@ final class TaintTest extends TestCase
                     // what flows into a string return is still a string
                     query(["name" => describe($_GET["name"])]);',
             ],
+            'nullableTemplateArgumentKeepsItsTaints' => [
+                'code' => '<?php
+                    /**
+                     * @template T as ?string
+                     * @param T $value
+                     */
+                    function forward(?string $value): void {
+                        consume($value);
+                    }
+
+                    function consume(?string $value): void {}
+
+                    forward($_GET["name"] ?? null);',
+            ],
             'htmlSinkNotTaintedBySourceReturningInt' => [
                 'code' => '<?php
                     final class Request {
