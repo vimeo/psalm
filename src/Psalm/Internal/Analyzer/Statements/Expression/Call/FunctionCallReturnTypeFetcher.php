@@ -1200,7 +1200,8 @@ final class FunctionCallReturnTypeFetcher
                     $function_call_node,
                     $path_type,
                     $added_taints | $function_storage->added_taints,
-                    $removed_taints,
+                    // what the native return type cannot hold, since PHP enforces it
+                    $removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0),
                 );
             }
         }

@@ -894,6 +894,19 @@ final class TaintTest extends TestCase
                     // PHP enforces the native return type: the result is never an array
                     query(["name" => first((array) $_GET["names"])]);',
             ],
+            'nosqlSinkNotTaintedByFlowIntoStringReturn' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    /** @psalm-flow ($value) -> return */
+                    function describe(mixed $value): string {
+                        return "";
+                    }
+
+                    // what flows into a string return is still a string
+                    query(["name" => describe($_GET["name"])]);',
+            ],
             'htmlSinkNotTaintedBySourceReturningInt' => [
                 'code' => '<?php
                     final class Request {
