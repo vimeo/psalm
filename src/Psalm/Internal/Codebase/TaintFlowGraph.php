@@ -949,8 +949,9 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * $reached, reached by the flow summarized from an entry node (see summarize()), as reached by
      * $caller entering it, in $state: its trace from the entry node is replayed on top of the
-     * caller's -- unless $summarizing, where it is a single step: a summary replaying the traces of
-     * the summaries it applies would make traces grow exponentially with the nesting of calls.
+     * caller's -- unless $summarizing, where the trace only keeps the step into $reached: a summary
+     * replaying the traces of the summaries it applies would make traces grow exponentially with
+     * the nesting of calls. A sink is still reported from the node the flow reached it from.
      *
      * @psalm-mutation-free
      */
@@ -960,7 +961,17 @@ final class TaintFlowGraph extends DataFlowGraph
         TaintFlowState $state,
         bool $summarizing,
     ): DataFlowNode {
-        if ($summarizing) {
+        $predecessor = $reached->taintSource;
+
+        if ($summarizing && $predecessor !== null) {
+            if ($predecessor->taintSource !== null) {
+                $caller = $predecessor->withFlow(
+                    $caller,
+                    $predecessor->path_types ? $predecessor->path_types[0] : '',
+                    $predecessor->getFlowState(),
+                );
+            }
+
             return $reached->withFlow($caller, $reached->path_types ? $reached->path_types[0] : '', $state);
         }
 
