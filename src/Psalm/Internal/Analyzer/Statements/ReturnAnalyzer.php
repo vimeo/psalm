@@ -640,7 +640,8 @@ final class ReturnAnalyzer
                     $method_node,
                     'return',
                     $storage->added_taints,
-                    $storage->removed_taints,
+                    // what the native return type cannot hold, since PHP enforces it
+                    $storage->removed_taints | ($storage->signature_return_type?->getTaintsToRemove() ?? 0),
                 );
             }
         }
