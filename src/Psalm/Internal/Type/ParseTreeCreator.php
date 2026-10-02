@@ -421,6 +421,8 @@ final class ParseTreeCreator
 
             $parent = $generic_leaf->parent;
             $callable_leaf = new CallableTree($generic_leaf->value, $parent);
+            $callable_leaf->offset_start = $generic_leaf->offset_start;
+            $callable_leaf->offset_end = $generic_leaf->offset_end;
             $callable_leaf->purity = $generic_leaf->purity->children[0];
             $callable_leaf->purity->parent = $callable_leaf;
 
@@ -914,6 +916,8 @@ final class ParseTreeCreator
             // Closure/callable): the purity arguments, as in Hack. `T[K]` with templates T and K
             // is an indexed access, told apart when the type is built.
             $new_leaf = new GenericTree($type_token[0], $new_parent);
+            $new_leaf->offset_start = $type_token[1];
+            $new_leaf->offset_end = $type_token[1] + strlen($type_token[0]);
             $new_leaf->purity = new PurityTree($new_leaf);
 
             if ($this->current_leaf instanceof Root) {
@@ -934,6 +938,8 @@ final class ParseTreeCreator
                     $type_token[0],
                     $new_parent,
                 );
+                $new_leaf->offset_start = $type_token[1];
+                $new_leaf->offset_end = $type_token[1] + strlen($type_token[0]);
                 ++$this->t;
                 break;
 
@@ -998,6 +1004,8 @@ final class ParseTreeCreator
                         $type_token[0],
                         $new_parent,
                     );
+                    $new_leaf->offset_start = $type_token[1];
+                    $new_leaf->offset_end = $type_token[1] + strlen($type_token[0]);
                 } elseif ($type_token[0][0] !== '\\'
                     && $this->current_leaf instanceof Root
                 ) {
