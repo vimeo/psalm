@@ -1017,6 +1017,7 @@ function htmlspecialchars_decode(string $string, ?int $flags = null) : string {}
  *
  * @psalm-taint-escape html
  * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape header
  * @psalm-flow ($string) -> return
  */
 function urlencode(string $string) : string {}
@@ -1026,6 +1027,7 @@ function urlencode(string $string) : string {}
  *
  * @psalm-taint-escape html
  * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape header
  * @psalm-flow ($string) -> return
  */
 function rawurlencode(string $string) : string {}
@@ -1035,6 +1037,7 @@ function rawurlencode(string $string) : string {}
  *
  * @psalm-taint-escape html
  * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape header
  * @psalm-flow ($data) -> return
  */
 function http_build_query(array|object $data, string $numeric_prefix = "", ?string $arg_separator = null, int $encoding_type = PHP_QUERY_RFC1738) : string {}

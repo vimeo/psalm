@@ -912,7 +912,9 @@ final class TaintTest extends TestCase
             'rawUrlEncodeEscapesHtml' => [
                 'code' => '<?php
                     echo rawurlencode((string) $_GET["x"]);
-                    echo http_build_query(["x" => $_GET["x"]]);',
+                    echo http_build_query(["x" => $_GET["x"]]);
+                    header("Location: /?q=" . urlencode((string) $_GET["q"]));
+                    header("Location: /?" . http_build_query(["q" => $_GET["q"]]));',
             ],
             'escapeShellArgEscapesShell' => [
                 'code' => '<?php
