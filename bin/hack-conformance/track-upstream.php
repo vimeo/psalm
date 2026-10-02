@@ -4,13 +4,13 @@
  * Tracks the Hack (facebook/hhvm) test directories that are relevant to Psalm's
  * type-variable feature, so upstream changes surface for review.
  *
- * It does NOT auto-translate Hack tests into Psalm tests: Hack's surface syntax
- * (native generics, `<_>`, `vec`/`dict`/`nothing`, `==>`) and builtins don't map
- * 1:1 to PHP + Psalm docblocks, and the tests that would map are scattered
- * through a 7500-file corpus rather than a clean directory. Instead this hashes
- * the tracked directories and reports which files were added/removed/changed
- * since the pinned commit — a signal to hand-translate or re-verify (with
- * fixtures/ + run.php as the oracle).
+ * It does NOT import Hack tests: upstream's tests use far more Hack (and its
+ * builtins) than transpile.php understands, and the ones that would map are
+ * scattered through a 7500-file corpus rather than a clean directory. Instead
+ * this hashes the tracked directories and reports which files were
+ * added/removed/changed since the pinned commit — a signal to hand-translate a
+ * case into fixtures/ (checked against HHVM by run.php, and against Psalm once
+ * transpiled).
  *
  * Usage:
  *   php bin/hack-conformance/track-upstream.php            # report drift

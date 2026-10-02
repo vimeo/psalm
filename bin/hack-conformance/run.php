@@ -1,13 +1,16 @@
 <?php
 
 /**
- * Hack conformance runner for Psalm's class-template type-variable feature.
+ * Hack conformance runner for the Psalm features ported from Hack (class-template
+ * type variables, contexts and capabilities).
  *
- * For each fixture in ./fixtures/*.hack it runs the pinned HHVM typechecker
- * (via docker) in an isolated Hack project and checks the verdict (errors vs
- * no errors) against the fixture's declared `//// expect:` header, which mirrors
- * the linked Psalm test. A mismatch means Hack's behaviour has drifted from what
- * the Psalm feature encodes — investigate before trusting the Psalm test.
+ * For each fixture in ./fixtures/<topic>/*.hack it runs the pinned HHVM
+ * typechecker (via docker) in an isolated Hack project and checks the verdict
+ * (errors vs no errors) against the fixture's declared `//// expect:` header,
+ * which the fixture's transpiled Psalm case (tests/HackConformanceTranspiledTest.php,
+ * see transpile.php) asserts of Psalm. A mismatch means Hack's behaviour has
+ * drifted from what the Psalm feature encodes — investigate before trusting the
+ * Psalm case.
  *
  * Usage:   php bin/hack-conformance/run.php [--image <ref>] [--verbose] [--json]
  * Requires: docker. See README.md.
@@ -79,7 +82,7 @@ foreach ($results as $name => $r) {
         $name,
         $r['expect'],
         $r['actual'],
-        $r['psalm_test'],
+        $r['psalm_case'],
     );
     if (!$ok) {
         $fail++;
