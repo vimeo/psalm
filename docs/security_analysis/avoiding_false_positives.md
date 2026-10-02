@@ -26,6 +26,32 @@ function echoVar(string $str) : void {
 echoVar($_GET["text"]);
 ```
 
+## Native types
+
+A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, and a string can't be a NoSQL query document. Psalm removes the taints a value can't carry where PHP guarantees its type:
+
+- casts: `(int) $_GET['id']` is only left with the taints a number can carry;
+- the native type of a parameter, inside the function;
+- the native return type of a function or method, for what it returns, taint sources included: a method annotated `@psalm-taint-source input` with a `string` return type never returns a NoSQL query.
+
+A nullable type removes what its non-null part does. Docblock types aren't enforced by PHP, so they don't remove taints.
+
+```php
+<?php
+
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
+
+function getId(string $name): int {
+    return (int) getParam($name);
+}
+
+$collection->find(['name' => getParam('name')]); // a string can't inject query operators
+echo '<b>' . getId('id') . '</b>'; // an int can't carry HTML
+```
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value

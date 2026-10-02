@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -52,6 +53,7 @@ use Psalm\Type\Atomic\TTypeAlias;
 use function array_filter;
 use function array_keys;
 use function array_unique;
+use function array_values;
 use function count;
 use function implode;
 use function ksort;
@@ -1678,6 +1680,15 @@ trait UnionTrait
 
     public function getTaintsToRemove(): int
     {
+        // null carries no taint, so a nullable type removes what its non-null part does
+        if ($this->isNullable() && !$this->isNull()) {
+            $non_null_types = array_filter($this->types, static fn(Atomic $type): bool => !$type instanceof TNull);
+
+            if ($non_null_types !== []) {
+                return (new Union(array_values($non_null_types)))->getTaintsToRemove();
+            }
+        }
+
         // numeric types can't be tainted (except sleep & custom taints), neither can bool.
         // isInt()/isString() already require every atomic member to match, so unions of
         // literals such as int(0)|int(1) or ''|'1' (e.g. produced by casting a bool) are

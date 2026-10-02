@@ -1063,7 +1063,10 @@ final class FunctionCallReturnTypeFetcher
             $added_taints = $function_storage->added_taints;
         }
 
-        $taints = $added_taints & ~$function_storage->removed_taints;
+        // a source can only return taints its native return type can hold: a `string` is never a NoSQL query
+        $taints = $added_taints
+            & ~$function_storage->removed_taints
+            & ~($function_storage->signature_return_type?->getTaintsToRemove() ?? 0);
         if ($taints !== 0) {
             $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
