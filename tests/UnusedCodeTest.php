@@ -311,6 +311,18 @@ final class UnusedCodeTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'pureIteratorCursorMovesAreUsed' => [
+                'code' => '<?php
+                    /**
+                     * @param Iterator[pure]<int, string> $iterator
+                     * @psalm-api
+                     */
+                    function second(Iterator $iterator): ?string {
+                        $iterator->rewind();
+                        $iterator->next();
+                        return $iterator->valid() ? $iterator->current() : null;
+                    }',
+            ],
             'mutationFreeMethodCallWithImpureClosureIsUsed' => [
                 'code' => '<?php
                     final class A {

@@ -149,16 +149,17 @@ final class MethodCallPurityAnalyzer
 
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
-        $method_capabilities = CallPurityResolver::getCallCapabilities(
+        $template_capabilities = CallPurityResolver::getCallCapabilities(
             $statements_analyzer,
             $codebase,
             $method_storage,
-            $method_capabilities,
+            Capabilities::NONE,
             $template_result,
             $class_template_params,
             self::isThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
+        $method_capabilities |= $template_capabilities;
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -198,6 +199,11 @@ final class MethodCallPurityAnalyzer
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
+
+        // the callee's level does not include what its purity templates are bound to here
+        if ($template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        }
 
         if ($reads_globals) {
             $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
@@ -251,6 +257,7 @@ final class MethodCallPurityAnalyzer
                     && !$method_storage->throws
                     && !$method_storage->return_type?->isNever()
                     && !$method_storage->signature_return_type?->isNever()
+                    && !self::isCalledForItsTemplatesEffects($method_storage)
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
@@ -318,5 +325,19 @@ final class MethodCallPurityAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
+     * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
+     * its call is not unused even when they turn out to be none.
+     *
+     * @psalm-mutation-free
+     */
+    public static function isCalledForItsTemplatesEffects(MethodStorage $method_storage): bool
+    {
+        return $method_storage->purity_from_templates !== []
+            && ($method_storage->return_type?->isVoid() === true
+                || $method_storage->signature_return_type?->isVoid() === true);
     }
 }

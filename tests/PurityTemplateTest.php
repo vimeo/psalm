@@ -27,6 +27,98 @@ final class PurityTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofNarrowingKeepsTheParentsArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, T>
+                     */
+                    abstract class XIt implements Iterator {
+                        /**
+                         * @return list<T>
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function toList(): array {
+                            $list = [];
+                            foreach ($this as $value) {
+                                $list[] = $value;
+                            }
+                            return $list;
+                        }
+                    }
+
+                    /**
+                     * @param Iterator[pure]<int, string> $source
+                     * @return list<string>
+                     * @psalm-pure
+                     */
+                    function toList(Iterator $source): array {
+                        if ($source instanceof XIt) {
+                            return $source->toList();
+                        }
+                        return [];
+                    }',
+            ],
+            'lateStaticClassBindingThePurityTemplateDropsItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class XIt {
+                        /**
+                         * @return static[P]<T>
+                         * @psalm-purity-from-template P
+                         * @psalm-mutation-free
+                         */
+                        public function limit(int $length): static {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends XIt[pure]<T>
+                     */
+                    final class XItOnArray extends XIt {
+                        /** @var list<T> */
+                        public array $list;
+
+                        /**
+                         * @param list<T> $list
+                         * @psalm-pure
+                         */
+                        public function __construct(array $list) {
+                            $this->list = $list;
+                        }
+                    }
+
+                    $list = (new XItOnArray([1]))->limit(1);',
+                'assertions' => [
+                    '$list' => 'XItOnArray<int>',
+                ],
+            ],
+            'purityArgumentLeftOutWithoutDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Box {
+                        /** @return static<T> */
+                        abstract public function self(): static;
+                    }
+
+                    /**
+                     * @param Box<int> $box
+                     * @return Box<int>
+                     */
+                    function keep(Box $box): Box {
+                        return $box;
+                    }',
+            ],
             'pureClosureKeepsFunctionPure' => [
                 'code' => '<?php
                     /**
@@ -1308,6 +1400,29 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'purityArgumentLeftOutWithoutDefaultIsItsUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Task {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function run(): int;
+                    }
+
+                    /**
+                     * @param Task<int> $task
+                     * @psalm-pure
+                     */
+                    function runIt(Task $task): int {
+                        return $task->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'pureClosureParamInOverrideOfWildcardOneIsComparedWithTheWildcardsBound' => [
                 'code' => '<?php
                     abstract class Base {

@@ -836,13 +836,15 @@ final class NewAnalyzer extends CallAnalyzer
         $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
 
         // the constructor only mutates the new object: what it does to it is fine
-        $resolved_capabilities = CallPurityResolver::getCallCapabilities(
+        $template_capabilities = CallPurityResolver::getCallCapabilities(
             $statements_analyzer,
             $codebase,
             $method_storage,
-            $method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS),
+            Capabilities::NONE,
             $template_result,
         );
+        $resolved_capabilities = $template_capabilities
+            | ($method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
 
         $args = $stmt->getArgs();
 
@@ -867,6 +869,11 @@ final class NewAnalyzer extends CallAnalyzer
             $method_storage,
             true,
         );
+
+        // the constructor's level does not include what its purity templates are bound to here
+        if ($template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        }
 
         // the constructor may have stored global state in the new object: what it reads, not
         // what it writes through its by-reference arguments
