@@ -265,6 +265,8 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
+This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
+
 #### forceJit
 ```xml
 <psalm
@@ -631,12 +633,12 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 #### findUnusedIssueHandlerSuppression
 
 Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 ## Project settings
 
