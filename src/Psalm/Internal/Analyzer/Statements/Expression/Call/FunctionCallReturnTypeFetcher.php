@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -271,6 +272,16 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type,
                 $context,
             );
+
+            if (!$function_storage && $callmap_callable) {
+                self::taintInternalFlows(
+                    $statements_analyzer,
+                    $stmt,
+                    $function_id,
+                    $callmap_callable,
+                    $stmt_type,
+                );
+            }
         }
 
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
@@ -848,6 +859,49 @@ final class FunctionCallReturnTypeFetcher
             $context,
             $stmt_type,
         );
+    }
+
+    /**
+     * The builtins only declared by the call map have no storage for `@psalm-flow`: the taints of the arguments
+     * given to the parameters dictionaries/InternalTaintFlowMap.php lists flow into what this call returns.
+     */
+    private static function taintInternalFlows(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        TCallable $callmap_callable,
+        Union &$stmt_type,
+    ): void {
+        $params = $callmap_callable->params ?? [];
+        $offsets = InternalCallMapHandler::getReturnTaintFlowOffsets($function_id, $params);
+
+        if ($offsets === [] || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $return_node = DataFlowNode::getForCallableReturn(
+            'builtin',
+            $function_id,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+        $graph->addNode($return_node);
+
+        $args = $stmt->getArgs();
+        foreach ($offsets as $offset) {
+            $last_offset = $params[$offset]->is_variadic ? count($args) - 1 : $offset;
+            for ($arg_offset = $offset; $arg_offset <= $last_offset && isset($args[$arg_offset]); $arg_offset++) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_offset]->value);
+                if ($arg_type === null) {
+                    continue;
+                }
+
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $return_node, 'arg', 0, $arg_type->getTaintsToRemove());
+                }
+            }
+        }
+
+        $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
     }
 
     private static function taintReturnType(
