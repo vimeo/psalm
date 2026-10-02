@@ -138,6 +138,36 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPureAnnotationWhenParamDefaultIsPure' => [
+                'input' => '<?php
+                    final class Options {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function __construct(public int $limit = 10) {}
+                    }
+
+                    function useDefault(Options $options = new Options()): int {
+                        return $options->limit;
+                    }',
+                'output' => '<?php
+                    final class Options {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function __construct(public int $limit = 10) {}
+                    }
+
+                    /**
+                     * @psalm-capabilities read-props
+                     */
+                    function useDefault(Options $options = new Options()): int {
+                        return $options->limit;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
