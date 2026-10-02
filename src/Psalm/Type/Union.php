@@ -302,7 +302,7 @@ final class Union implements TypeNode
         if (!$parent_nodes) {
             return $this;
         }
-        $parent_nodes = $this->parent_nodes + $parent_nodes;
+        $parent_nodes = DataFlowNode::combineParentNodes($this->parent_nodes, $parent_nodes);
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }

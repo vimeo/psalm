@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Psalm\Config;
+use Psalm\Config\IssueHandler;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
@@ -19,6 +20,7 @@ use function array_map;
 use function array_values;
 use function in_array;
 use function preg_quote;
+use function str_starts_with;
 use function strpos;
 use function trim;
 
@@ -106,6 +108,42 @@ final class TaintTest extends TestCase
         }
 
         $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
+     *
+     * @dataProvider providerValidCodeParse
+     */
+    public function testValidCodeTrackingUnusedVariables(string $code): void
+    {
+        $this->trackUnusedVariables();
+        $this->testValidCode($code);
+    }
+
+    /**
+     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
+     *
+     * @dataProvider providerInvalidCodeParse
+     */
+    public function testInvalidCodeTrackingUnusedVariables(
+        string $code,
+        string $error_message,
+        string $php_version = '8.0',
+    ): void {
+        $this->trackUnusedVariables();
+        $this->testInvalidCode($code, $error_message, $php_version);
+    }
+
+    private function trackUnusedVariables(): void
+    {
+        $this->project_analyzer->getCodebase()->find_unused_variables = true;
+
+        foreach (IssueHandler::getAllIssueTypes() as $issue_name) {
+            if (str_starts_with($issue_name, 'Unused') || str_starts_with($issue_name, 'PossiblyUnused')) {
+                Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+            }
+        }
     }
 
     /**
@@ -1226,6 +1264,29 @@ final class TaintTest extends TestCase
                     $b = new NonFinalClass();
                     $notEchoed = $b->finalMethod($_GET["c"]);
                     echo $b->finalMethod("safe");',
+            ],
+            'narrowingToALiteralKeepsInferredTypes' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<string> $l
+                     * @return non-empty-list<string>
+                     */
+                    function f(array $l): array {
+                        foreach ($l as $o => $v) {
+                            if ($o === 0) {
+                                $v .= "a";
+                            }
+                            $l[$o] = $v;
+                        }
+                        return $l;
+                    }',
+            ],
+            'taintThroughSpreadKeepsKeys' => [
+                'code' => '<?php
+                    $a = [$_GET["a"], "safe"];
+                    $b = ["safe", ...$a];
+                    echo (string) $b[0];
+                    echo (string) $b[2];',
             ],
         ];
     }
@@ -2813,6 +2874,100 @@ final class TaintTest extends TestCase
                     echo (string) getV(["v" => $b3]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintThroughNestedFetchOfMixedArrayInSpecializedFunction' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function get2(array $a): mixed {
+                        return $a["a"]["b"];
+                    }
+
+                    echo (string) get2(["a" => ["b" => $_GET["a"]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpreadAlongOtherItems' => [
+                'code' => '<?php
+                    $a = [$_GET["a"]];
+                    $b = ["safe", ...$a];
+                    echo (string) $b[1];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpreadOfArrayWithoutTaintedItems' => [
+                'code' => '<?php
+                    /** @param list<string> $a */
+                    function spread(array $a): void {
+                        $b = [...$a];
+                        echo $b[0];
+                    }
+
+                    /** @psalm-suppress MixedArgumentTypeCoercion */
+                    spread($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughSpreadOfCallResult' => [
+                'code' => '<?php
+                    $b = ["safe", ...explode(",", (string) $_GET["a"])];
+                    echo $b[1];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughForeachOverSpread' => [
+                'code' => '<?php
+                    foreach ([...explode(",", (string) $_GET["a"])] as $v) {
+                        echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToArrayItem' => [
+                'code' => '<?php
+                    $a = ["k" => "safe"];
+                    $r = &$a["k"];
+                    $r = (string) $_GET["a"];
+                    echo $a["k"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToNestedArrayItem' => [
+                'code' => '<?php
+                    $a = ["k" => ["j" => "safe"]];
+                    $r = &$a["k"]["j"];
+                    $r = (string) $_GET["a"];
+                    echo $a["k"]["j"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfParam' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo (string) $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfStaticVariable' => [
+                'code' => '<?php
+                    function f(): void {
+                        static $a = ["k" => "safe"];
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughReferenceToItemOfGlobalVariable' => [
+                'code' => '<?php
+                    function f(): void {
+                        global $a;
+                        $a = ["k" => "safe"];
+                        $r = &$a["k"];
+                        $r = (string) $_GET["a"];
+                        echo $a["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughObjectCast' => [
+                'code' => '<?php
+                    $o = (object) $_GET;
+                    echo (string) json_encode($o);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintNestedCallsOnAnotherInstanceOfSpecializedClass' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -2828,8 +2983,7 @@ final class TaintTest extends TestCase
                     echo $b->take($b->take($_GET["b"]));',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
-                // A specialized body is walked once per entry, keyed by the 4 outermost open array assignments: calls differing deeper share the first walk
+            'taintArrayNestedDeeperThanFourLevelsInSpecializedFunction' => [
                 'code' => '<?php
                     /** @psalm-pure */
                     function get5(array $a): mixed {
@@ -2838,6 +2992,45 @@ final class TaintTest extends TestCase
 
                     $notEchoed = get5(["a" => ["b" => ["c" => ["d" => ["x" => $_GET["a"]]]]]]);
                     echo (string) get5(["a" => ["b" => ["c" => ["d" => ["e" => $_GET["b"]]]]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionWrappingItsArgumentDeeperOnEveryCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(mixed $a, int $n): mixed {
+                        return $n > 0 ? wrap(["k" => $a], $n - 1) : $a;
+                    }
+
+                    echo (string) wrap($_GET["a"], 3);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionFetchingDeeperThanFourLevels' => [
+                // A recursive entry is keyed on its 4 innermost open array assignments: the deeper recursive call shares the walk of the shallower one
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function dig(mixed $a, int $n): mixed {
+                        if ($n > 0) {
+                            return dig(["w" => $a], $n - 1);
+                        }
+                        return is_array($a) ? $a["w"]["w"]["w"]["w"]["w"]["x"] : null;
+                    }
+
+                    echo (string) dig(["x" => $_GET["a"]], 5);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughRecursionDifferingDeeperThanFourLevels' => [
+                // A recursive entry is keyed on its 4 innermost open array assignments: the second call shares the walk of the first, wrapped around another key
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function dig(mixed $a, int $n): mixed {
+                        if ($n > 0) {
+                            return dig(["w" => $a], $n - 1);
+                        }
+                        return is_array($a) ? $a["w"]["w"]["w"]["w"]["x"] : null;
+                    }
+
+                    $notEchoed = dig(["y" => $_GET["a"]], 4);
+                    echo (string) dig(["x" => $_GET["b"]], 4);',
                 'error_message' => 'TaintedHtml',
             ],
             'SKIPPED-taintLateArrayThroughImpureFunction' => [

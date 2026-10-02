@@ -149,6 +149,12 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null $data_flow_graph = null;
 
     /**
+     * Where the data flow of code suppressing TaintedInput goes when analysing taints alone:
+     * nowhere, but it gets the same parent nodes as when tracking unused variables too.
+     */
+    private ?VariableUseGraph $discarded_flow_graph = null;
+
+    /**
      * Locations of foreach values
      *
      * Used to discern ordinary UnusedVariables from UnusedForeachValues
@@ -204,10 +210,12 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $this->data_flow_graph = $this->taint_flow_graph = $this->codebase->taint_flow_graph;
         }
         if ($this->codebase->find_unused_variables) {
-            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph();
+            $this->data_flow_graph = $this->variable_use_graph = new VariableUseGraph($this->taint_flow_graph);
         }
         if ($this->taint_flow_graph && $this->variable_use_graph) {
             $this->data_flow_graph = new CombinedFlowGraph($this->variable_use_graph, $this->taint_flow_graph);
+        } elseif ($this->taint_flow_graph) {
+            $this->discarded_flow_graph = new VariableUseGraph($this->taint_flow_graph);
         }
     }
 
@@ -217,7 +225,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
     {
         if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
-            return $this->variable_use_graph;
+            return $this->variable_use_graph ?? $this->discarded_flow_graph;
         }
         return $this->data_flow_graph;
     }

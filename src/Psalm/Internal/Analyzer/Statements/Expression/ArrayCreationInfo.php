@@ -54,5 +54,13 @@ final class ArrayCreationInfo
      */
     public array $parent_taint_nodes = [];
 
+    /**
+     * The nodes of the unpacked items, whose paths are added once the keys they end up at are
+     * known, with the parent nodes of the arrays unpacked
+     *
+     * @var list<array{DataFlowNode, array<string, DataFlowNode>}>
+     */
+    public array $unpacked_nodes = [];
+
     public bool $can_be_empty = true;
 }

@@ -864,7 +864,6 @@ final class FunctionCallReturnTypeFetcher
             return null;
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
-        $variable_use_graph = $statements_analyzer->variable_use_graph;
 
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -926,14 +925,7 @@ final class FunctionCallReturnTypeFetcher
                 $function_call_node->specialization_key,
             );
 
-            $variable_use_graph?->addPath(
-                $function_call_node,
-                $assignment_node,
-                'conditionally-escaped',
-                $added_taints,
-                $removed_taints | $conditionally_removed_taints,
-            );
-            $taint_flow_graph?->addPath(
+            $graph->addPath(
                 $function_call_node,
                 $assignment_node,
                 'conditionally-escaped',

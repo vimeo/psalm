@@ -308,11 +308,11 @@ final class TryAnalyzer
                         ])
                     ;
 
-                        $statements_analyzer->variable_use_graph?->addPath(
-                            $catch_var_node,
-                            DataFlowNode::getForVariableUse(),
-                            'variable-use',
-                        );
+                    $statements_analyzer->data_flow_graph->addPath(
+                        $catch_var_node,
+                        DataFlowNode::getForVariableUse(),
+                        'variable-use',
+                    );
                 }
             }
 

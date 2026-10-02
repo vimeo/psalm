@@ -38,7 +38,10 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use Webmozart\Assert\Assert;
 
 use function array_pop;
@@ -48,7 +51,6 @@ use function array_unshift;
 use function count;
 use function end;
 use function ksort;
-use function max;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -71,9 +73,10 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * How many of the innermost open assignments (see appendPathType()) of a flow
-     * entering a specialized call its entry is keyed on (see enterSpecializedCall()).
+     * entering a specialized call recursively its entry is keyed on (see
+     * enterSpecializedCall()).
      */
-    private const ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
+    private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -223,7 +226,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * The node as it would be without a speculative specialization: speculative specializations
-     * only concern taints, so the variable use graph (see {@see CombinedFlowGraph}) keeps the nodes
+     * only concern taints, so the variable use graph (see {@see VariableUseGraph}) keeps the nodes
      * it had before.
      *
      * @psalm-mutation-free
@@ -238,6 +241,82 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $node->withSpecialization($node->unspecialized_id, null, null, $node->context);
+    }
+
+    /**
+     * Adds paths into $node from the parent nodes found in the array keys and values of $type,
+     * at any depth, as the array assignments that put them there. Returns whether it added any.
+     *
+     * A value without parent nodes of its own carries its taint in those of its array keys and
+     * values: an array fetch from it takes the parent nodes of the fetched value. Once $node is
+     * made a parent node of such a value, the fetch goes through $node instead, which these
+     * paths keep leading to the same taint.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function addPathsFromNestedParentNodes(DataFlowNode $node, Union $type, CodeLocation $location): bool
+    {
+        $added = false;
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                foreach ($atomic_type->properties as $key => $property_type) {
+                    $added = $this->addPathsFromParentNodes(
+                        $node,
+                        $property_type,
+                        'arrayvalue-assignment-\'' . $key . '\'',
+                        $location,
+                    ) || $added;
+                }
+
+                $type_params = $atomic_type->fallback_params;
+            } elseif ($atomic_type instanceof TArray) {
+                $type_params = $atomic_type->type_params;
+            } else {
+                continue;
+            }
+
+            if ($type_params !== null) {
+                $added = $this->addPathsFromParentNodes($node, $type_params[0], 'arraykey-assignment', $location)
+                    || $added;
+                $added = $this->addPathsFromParentNodes($node, $type_params[1], 'arrayvalue-assignment', $location)
+                    || $added;
+            }
+        }
+
+        return $added;
+    }
+
+    /**
+     * Adds paths of type $path_type into $node from the parent nodes of $type, or else from those
+     * nested in it (see addPathsFromNestedParentNodes()). Returns whether it added any.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function addPathsFromParentNodes(
+        DataFlowNode $node,
+        Union $type,
+        string $path_type,
+        CodeLocation $location,
+    ): bool {
+        if ($type->parent_nodes) {
+            foreach ($type->parent_nodes as $parent_node) {
+                $this->addPath($parent_node, $node, $path_type);
+            }
+
+            return true;
+        }
+
+        $nested_node = DataFlowNode::getForAssignment($node->label . ' ' . $path_type, $location);
+
+        if (!$this->addPathsFromNestedParentNodes($nested_node, $type, $location)) {
+            return false;
+        }
+
+        $this->addNode($nested_node);
+        $this->addPath($nested_node, $node, $path_type);
+
+        return true;
     }
 
     /**
@@ -277,6 +356,31 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specialized_calls[$node->specialization_key] = true;
             $this->specializations[$node->unspecialized_id][$node->specialization_key] = $node->id;
         }
+    }
+
+    /**
+     * Leaves out the paths no taint goes through, and those to the uses only the variable use
+     * graph tracks: the analysis adds every path to the data flow graph, whichever graphs it
+     * builds, so that types get the same parent nodes either way.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    #[Override]
+    public function addPath(
+        DataFlowNode $from,
+        DataFlowNode $to,
+        string $path_type,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
+        if ($removed_taints === TaintKind::ALL
+            || $to->id === DataFlowNode::getForVariableUse()->id
+            || $to->id === DataFlowNode::getForClosureUse()->id
+        ) {
+            return;
+        }
+
+        parent::addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }
 
     /**
@@ -671,18 +775,52 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): array {
-        $caller = $source->withSpecialization($unspecialized_id, null, null, $source->context);
-
         // What the body walk does depends on the entering taints and, through
         // shouldIgnoreFetch(), on the flow's open assignments (see appendPathType()).
-        // Of those only the innermost few are kept, so that recursion wrapping its
-        // argument deeper on every call still makes finitely many entries.
         $entry_key = $unspecialized_id . ' ' . $source->taints;
+        $open_assignments = self::getOpenAssignments($source->path_types);
 
-        foreach (array_slice(
-            self::getOpenAssignments($source->path_types),
-            -self::ENTRY_OPEN_ASSIGNMENT_DEPTH,
-        ) as $path_type) {
+        // A recursive call can wrap its argument deeper on every call: entering a body
+        // the flow is already in (through the first callers of its entries), only the
+        // innermost few open assignments are kept, so that there are finitely many
+        // entries. Every other entry is keyed on all of them: a chain of first callers
+        // only has one such entry per entered node, and finitely many others.
+        //
+        // The flow forgets the others, rather than walking the body with those of the
+        // first call to make the entry: every call sharing it can differ there. Without
+        // them, a fetch reaching past the kept ones is not ignored (see shouldIgnoreFetch()),
+        // in the walk as after it -- the walk may have fetched past them. So the walk
+        // may take taints a call does not have there, but takes all those it has.
+        if ($source->taintSource !== null
+            && count($open_assignments) > self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH
+        ) {
+            $context = $source->context;
+
+            while ($context !== null) {
+                if ($this->entry_roots[$context]->id === $unspecialized_id) {
+                    // the kept open assignments, and the type of the edge taken last if not one of them
+                    $source = $source->withFlow(
+                        $source->taints,
+                        $source->taintSource,
+                        array_slice(
+                            $source->path_types,
+                            count($open_assignments) - count($source->path_types)
+                                - self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH,
+                        ),
+                        $source->context,
+                    );
+                    $open_assignments = array_slice($open_assignments, -self::RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH);
+
+                    break;
+                }
+
+                $context = $this->entry_callers[$context][0][0]->context;
+            }
+        }
+
+        $caller = $source->withSpecialization($unspecialized_id, null, null, $source->context);
+
+        foreach ($open_assignments as $path_type) {
             $entry_key .= ' ' . $path_type;
         }
 
@@ -777,12 +915,8 @@ final class TaintFlowGraph extends DataFlowGraph
         string $specialization_key,
     ): array {
         if ($caller !== $this->entry_callers[$entry][0][0]) {
-            $exit = $exit->withFlow(
-                $exit->taints,
-                $caller,
-                self::rebasePathTypes($exit->path_types, $this->entry_roots[$entry]->path_types, $caller->path_types),
-                $caller->context,
-            );
+            // the call and the start of the walk have the same open assignments: see enterSpecializedCall()
+            $exit = $exit->withFlow($exit->taints, $caller, $exit->path_types, $caller->context);
         }
 
         if (isset($this->specializations[$exit->id][$specialization_key])) {
@@ -799,48 +933,6 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $this->addEntryExit($caller->context, $exit);
-    }
-
-    /**
-     * Returns the path types $exit_path_types, reached by a body walk that started
-     * with $root_path_types, as if the walk had started with $caller_path_types.
-     *
-     * The walk leaves the open assignments of its start as they are, except for
-     * the innermost ones it matched with fetches, and adds its own on top. So the
-     * path types of the exit are those of the start up to where they first differ
-     * from them, followed by what the walk added. The start of the walk and the
-     * caller share their innermost open assignments (see enterSpecializedCall()),
-     * which are the ones the walk can match.
-     *
-     * @param list<string> $exit_path_types
-     * @param list<string> $root_path_types
-     * @param list<string> $caller_path_types
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function rebasePathTypes(
-        array $exit_path_types,
-        array $root_path_types,
-        array $caller_path_types,
-    ): array {
-        $root_path_types = self::getOpenAssignments($root_path_types);
-        $caller_path_types = self::getOpenAssignments($caller_path_types);
-
-        $kept = 0;
-        $root_count = count($root_path_types);
-        $exit_count = count($exit_path_types);
-
-        while ($kept < $root_count && $kept < $exit_count && $root_path_types[$kept] === $exit_path_types[$kept]) {
-            $kept++;
-        }
-
-        $path_types = array_slice($caller_path_types, 0, max(0, count($caller_path_types) - ($root_count - $kept)));
-
-        foreach (array_slice($exit_path_types, $kept) as $path_type) {
-            $path_types[] = $path_type;
-        }
-
-        return $path_types;
     }
 
     /**

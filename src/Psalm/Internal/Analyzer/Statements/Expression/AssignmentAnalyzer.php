@@ -89,6 +89,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -389,7 +390,7 @@ final class AssignmentAnalyzer
             }
         }
 
-        if ($statements_analyzer->variable_use_graph
+        if ($statements_analyzer->data_flow_graph
             && !$assign_value_type->parent_nodes
         ) {
             $assign_value_type = self::analyzeVariableUse(
@@ -1221,10 +1222,10 @@ final class AssignmentAnalyzer
                             $context->branch_point,
                         );
 
-                        if ($statements_analyzer->variable_use_graph) {
+                        if ($statements_analyzer->data_flow_graph) {
                             $byref_node = DataFlowNode::getForAssignment($var_id, $location);
 
-                            $statements_analyzer->variable_use_graph->addPath(
+                            $statements_analyzer->data_flow_graph->addPath(
                                 $byref_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1854,7 +1855,7 @@ final class AssignmentAnalyzer
                     $assign_value_type = $assign_value_type->setByRef(true);
                 }
 
-                if ($statements_analyzer->variable_use_graph
+                if (($graph = $statements_analyzer->data_flow_graph)
                     && $assign_value_type->parent_nodes
                 ) {
                     if (isset($context->references_to_external_scope[$var_id])
@@ -1868,16 +1869,19 @@ final class AssignmentAnalyzer
                             $parent_nodes += $original_type->parent_nodes;
                         }
                         foreach ($parent_nodes as $parent_node) {
-                            $statements_analyzer->variable_use_graph->addPath(
+                            // the assigned value replaces the referenced one, as the taint graph has it
+                            $graph->addPath(
                                 $parent_node,
                                 $assignment_node,
                                 '&=', // Normal assignment to reference/referenced variable
+                                0,
+                                TaintKind::ALL,
                             );
                         }
 
                         if (isset($context->references_to_external_scope[$var_id])) {
                             // Mark reference to an external scope as used when a value is assigned to it
-                            $statements_analyzer->variable_use_graph->addPath(
+                            $graph->addPath(
                                 $assignment_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1941,11 +1945,11 @@ final class AssignmentAnalyzer
 
             $context->inside_general_use = $was_inside_general_use;
 
-            if ($statements_analyzer->variable_use_graph
+            if ($statements_analyzer->data_flow_graph
                 && $assign_value_type->parent_nodes
             ) {
                 foreach ($assign_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->variable_use_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',
@@ -1956,7 +1960,7 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function analyzeVariableUse(
         StatementsAnalyzer $statements_analyzer,
@@ -1966,10 +1970,22 @@ final class AssignmentAnalyzer
         Context $context,
     ): Union {
         if ($extended_var_id) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $extended_var_id,
-                new CodeLocation($statements_analyzer->getSource(), $assign_var),
-            );
+            $assignment_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+            $assignment_node = DataFlowNode::getForAssignment($extended_var_id, $assignment_location);
+
+            // Analysing taints, the new node hides from the taint graph the parent nodes nested in
+            // the assigned value, which carry its taint: lead them to it.
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+            if ($taint_flow_graph
+                && $taint_flow_graph->addPathsFromNestedParentNodes(
+                    $assignment_node,
+                    $assign_value_type,
+                    $assignment_location,
+                )
+            ) {
+                $taint_flow_graph->addNode($assignment_node);
+            }
         } else {
             $assignment_node = DataFlowNode::getForUnknownOrigin();
         }

@@ -193,6 +193,11 @@ final class ArrayFetchAnalyzer
                 $context,
             );
 
+            // what is written through a reference to the item doesn't flow through the array
+            if (isset($context->referenced_counts[$keyed_array_var_id])) {
+                $stmt_type = $stmt_type->addParentNodes($context->vars_in_scope[$keyed_array_var_id]->parent_nodes);
+            }
+
             if ($stmt->dim && $statements_analyzer->node_data->getType($stmt->dim)) {
                 $statements_analyzer->node_data->setType($stmt->dim, $used_key_type);
             }
@@ -1114,7 +1119,7 @@ final class ArrayFetchAnalyzer
             }
         }
 
-        if (($variable_use_graph = $statements_analyzer->variable_use_graph)
+        if (($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             && ($stmt_var_type = $statements_analyzer->node_data->getType($stmt->var))
         ) {
             if ($stmt_var_type->parent_nodes) {
@@ -1122,12 +1127,12 @@ final class ArrayFetchAnalyzer
 
                 $new_parent_node = DataFlowNode::getForAssignment('mixed-var-array-access', $var_location);
 
-                $variable_use_graph->addNode($new_parent_node);
+                $graph->addNode($new_parent_node);
 
                 foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                    $variable_use_graph->addPath($parent_node, $new_parent_node, '=');
+                    $graph->addPath($parent_node, $new_parent_node, '=');
 
-                    $variable_use_graph->addPath(
+                    $graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',

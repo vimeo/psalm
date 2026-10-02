@@ -56,6 +56,12 @@ final class TaintKind
      */
     public const ARRAY_ONLY = self::INPUT_NOSQL;
 
+    /**
+     * @internal Every taint, builtin or custom: removing it on a data flow path means no
+     * taint goes through it, and the taint graph leaves the path out.
+     */
+    public const ALL = -1;
+
     /** @internal Keep this synced with the above */
     public const BUILTIN_TAINT_COUNT = 20;
 

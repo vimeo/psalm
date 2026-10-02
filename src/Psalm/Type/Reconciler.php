@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TypeExpander;
@@ -316,19 +317,45 @@ class Reconciler
                 continue;
             }
 
-            if (($statements_analyzer->taint_flow_graph
-                    && (!$result_type->hasScalarType()
-                        || ($result_type->hasString() && !$result_type->hasLiteralString())))
-                || $statements_analyzer->variable_use_graph
-            ) {
+            $can_carry_taints = !$result_type->hasScalarType()
+                || ($result_type->hasString() && !$result_type->hasLiteralString());
+
+            if ($graph = $statements_analyzer->data_flow_graph) {
+                $parent_nodes = null;
+
                 if ($before_adjustment && $before_adjustment->parent_nodes) {
-                    $result_type = $result_type->setParentNodes($before_adjustment->parent_nodes);
+                    $parent_nodes = $before_adjustment->parent_nodes;
                 } elseif (!$did_type_exist && $code_location) {
-                    $result_type = $result_type->setParentNodes(
-                        $statements_analyzer->getParentNodesForPossiblyUndefinedVariable(
-                            $key,
-                        ),
-                    );
+                    $parent_nodes = $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($key);
+                }
+
+                // A type that cannot carry taints keeps its data flow, but gets nodes standing for its
+                // parent nodes, that no taint goes through.
+                if ($parent_nodes !== null
+                    && $parent_nodes !== []
+                    && !$can_carry_taints
+                    && $statements_analyzer->taint_flow_graph
+                ) {
+                    $narrowed_parent_nodes = [];
+
+                    foreach ($parent_nodes as $parent_node) {
+                        if ($parent_node->getNarrowedNodeId() === null) {
+                            $narrowed_node = DataFlowNode::getForNarrowingToScalar($parent_node);
+
+                            $graph->addNode($narrowed_node);
+                            $graph->addPath($parent_node, $narrowed_node, '=', 0, TaintKind::ALL);
+
+                            $parent_node = $narrowed_node;
+                        }
+
+                        $narrowed_parent_nodes[$parent_node->id] = $parent_node;
+                    }
+
+                    $parent_nodes = $narrowed_parent_nodes;
+                }
+
+                if ($parent_nodes !== null) {
+                    $result_type = $result_type->setParentNodes($parent_nodes);
                 }
             }
 

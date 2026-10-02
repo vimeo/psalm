@@ -15,6 +15,8 @@ use Stringable;
 
 use function count;
 use function ltrim;
+use function str_starts_with;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -46,6 +48,11 @@ use function substr;
  */
 final class DataFlowNode implements Stringable
 {
+    /**
+     * The prefix of the ids of the nodes of getForNarrowingToScalar()
+     */
+    private const NARROWED_TO_SCALAR = 'narrowed to a scalar: ';
+
     /**
      * @psalm-mutation-free
      */
@@ -320,6 +327,61 @@ final class DataFlowNode implements Stringable
         }
 
         return $fallback;
+    }
+
+    /**
+     * The value of $node narrowed to a type that cannot carry taints, e.g. a literal string.
+     *
+     * Data flows from $node to it, but no taint does, so that the narrowed value takes none: see
+     * Reconciler. It stands for $node when types compare their parent nodes (see
+     * getNarrowedNodeId()).
+     *
+     * @psalm-pure
+     */
+    public static function getForNarrowingToScalar(self $node): self
+    {
+        // $node's location is a function of its id, so of this id too: see the class invariant
+        return self::make(self::NARROWED_TO_SCALAR . $node->id, $node->label, $node->code_location);
+    }
+
+    /**
+     * The id of the node this one narrows if it is one of getForNarrowingToScalar(), else null.
+     *
+     * @psalm-mutation-free
+     */
+    public function getNarrowedNodeId(): ?string
+    {
+        return str_starts_with($this->id, self::NARROWED_TO_SCALAR)
+            ? substr($this->id, strlen(self::NARROWED_TO_SCALAR))
+            : null;
+    }
+
+    /**
+     * The union of $parent_nodes and $other_parent_nodes, without the nodes narrowing others in
+     * it (see getForNarrowingToScalar()): those only stand for the nodes they narrow.
+     *
+     * @param array<string, self> $parent_nodes
+     * @param array<string, self> $other_parent_nodes
+     * @return array<string, self>
+     * @psalm-pure
+     */
+    public static function combineParentNodes(array $parent_nodes, array $other_parent_nodes): array
+    {
+        if (!$parent_nodes || !$other_parent_nodes) {
+            return $parent_nodes + $other_parent_nodes;
+        }
+
+        $parent_nodes += $other_parent_nodes;
+
+        foreach ($parent_nodes as $parent_node_id => $parent_node) {
+            $narrowed_node_id = $parent_node->getNarrowedNodeId();
+
+            if ($narrowed_node_id !== null && isset($parent_nodes[$narrowed_node_id])) {
+                unset($parent_nodes[$parent_node_id]);
+            }
+        }
+
+        return $parent_nodes;
     }
 
     /**
