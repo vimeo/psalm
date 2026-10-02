@@ -223,6 +223,45 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureAnnotationToOverriddenMethodOrItsCallers' => [
+                'input' => '<?php
+                    abstract class Base {
+                        public function hook(): int {
+                            return 1;
+                        }
+
+                        final public function run(): int {
+                            return $this->hook();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hook(): int {
+                            echo "hook";
+                            return 2;
+                        }
+                    }',
+                'output' => '<?php
+                    abstract class Base {
+                        public function hook(): int {
+                            return 1;
+                        }
+
+                        final public function run(): int {
+                            return $this->hook();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hook(): int {
+                            echo "hook";
+                            return 2;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
@@ -668,9 +707,6 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     class A {
-                        /**
-                         * @psalm-capabilities read-props
-                         */
                         public function foo(int $ex): int {
                             if ($ex === 0) {
                                 return $ex;

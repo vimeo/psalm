@@ -659,7 +659,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // the final level depends on the callees' levels: resolved after analysis,
                 // which reports MissingPureAnnotation and queues the fix (see MutationLevelResolver)
                 $codebase->code_use_graph->addMutationInfo($node_id, [
-                    'intrinsic' => $this->intrinsic_capabilities,
+                    // the calls of an unannotated overridden method may run any of its overrides,
+                    // which could do anything: annotating it would restrict them
+                    'intrinsic' => $storage instanceof MethodStorage
+                        && $storage->overridden_somewhere
+                        && !$storage->has_mutations_annotation
+                            ? Capabilities::ALL
+                            : $this->intrinsic_capabilities,
                     'allowed' => $storage->capabilities,
                     'callees' => $this->deferred_callees,
                     'default_intrinsic' => $this->param_default_intrinsic_capabilities,
