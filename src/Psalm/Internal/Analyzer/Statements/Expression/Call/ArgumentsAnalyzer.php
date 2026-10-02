@@ -1225,8 +1225,7 @@ final class ArgumentsAnalyzer
         )) {
             $by_ref_type = null;
             $by_ref_out_type = null;
-            $source_taints = 0;
-            $source_id = '';
+            $source_param = null;
 
             $check_null_ref = true;
 
@@ -1264,8 +1263,7 @@ final class ArgumentsAnalyzer
                 }
 
                 if (!str_contains($method_id, '::')) {
-                    $source_taints = InternalTaintSourceMap::getTaints($method_id, $function_param->name);
-                    $source_id = $method_id . '($' . $function_param->name . ')';
+                    $source_param = $function_param->name;
                 }
 
                 if ($by_ref_type && $by_ref_type->isNullable()) {
@@ -1336,18 +1334,19 @@ final class ArgumentsAnalyzer
             $by_ref_out_type = $by_ref_out_type ?: $by_ref_type;
 
             // a builtin reading from outside the program into this parameter (socket_recv(), ...)
-            if ($source_taints !== 0
+            if ($source_param !== null
                 && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-                && ($source = InternalTaintSourceMap::createSource(
+                && ($source_taints = InternalTaintSourceMap::getTaints($method_id, $source_param)) !== 0
+            ) {
+                $by_ref_out_type = InternalTaintSourceMap::addSource(
+                    $graph,
                     $statements_analyzer,
                     $arg->value,
-                    $source_id,
+                    $method_id . '($' . $source_param . ')',
                     $source_taints,
                     $context,
-                ))
-            ) {
-                $graph->addSource($source);
-                $by_ref_out_type = $by_ref_out_type->addParentNodes([$source->id => $source]);
+                    $by_ref_out_type,
+                );
             }
 
             AssignmentAnalyzer::assignByRefParam(

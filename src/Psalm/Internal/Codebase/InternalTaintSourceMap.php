@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\Union;
 
 use function dirname;
 use function strtolower;
@@ -42,16 +43,18 @@ final class InternalTaintSourceMap
     }
 
     /**
-     * The source node of a call reading $taints from outside the program, after the plugins have
-     * added and removed taints: null when none are left.
+     * Adds the source of a builtin call reading $taints from outside the program, after the plugins
+     * have added and removed taints, to $type: unchanged when none are left.
      */
-    public static function createSource(
+    public static function addSource(
+        TaintFlowGraph $graph,
         StatementsAnalyzer $statements_analyzer,
         Expr $stmt,
-        string $function_id,
+        string $source_id,
         int $taints,
         Context $context,
-    ): ?DataFlowNode {
+        Union $type,
+    ): Union {
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
@@ -59,13 +62,17 @@ final class InternalTaintSourceMap
         $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($taints === 0) {
-            return null;
+            return $type;
         }
 
-        return DataFlowNode::getForTaint(
-            strtolower($function_id),
+        $source = DataFlowNode::getForTaint(
+            strtolower($source_id),
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $taints,
         );
+
+        $graph->addSource($source);
+
+        return $type->addParentNodes([$source->id => $source]);
     }
 }

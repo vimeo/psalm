@@ -811,27 +811,15 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-        $taints = TaintKind::ALL_INPUT;
-        $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-        if ($taints === 0) {
-            return;
-        }
-
-        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-        $source = DataFlowNode::getForTaint(
+        $stmt_type = InternalTaintSourceMap::addSource(
+            $graph,
+            $statements_analyzer,
+            $stmt,
             $function_id . '(' . $path . ')',
-            $location,
-            $taints,
+            TaintKind::ALL_INPUT,
+            $context,
+            $stmt_type,
         );
-        $graph->addSource($source);
-
-        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
     }
 
     /**
@@ -851,21 +839,15 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $source = InternalTaintSourceMap::createSource(
+        $stmt_type = InternalTaintSourceMap::addSource(
+            $graph,
             $statements_analyzer,
             $stmt,
             $function_id,
             $taints,
             $context,
+            $stmt_type,
         );
-
-        if ($source === null) {
-            return;
-        }
-
-        $graph->addSource($source);
-
-        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
     }
 
     private static function taintReturnType(
