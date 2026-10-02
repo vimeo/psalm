@@ -585,6 +585,12 @@ final class ClassLikeNodeScanner
                     }
 
                     if (!isset($docblock_info->purity_template_defaults[$purity_template])) {
+                        // without a default, a purity argument left out (`Box<int>`) stands for the
+                        // template's upper bound
+                        if ($bound !== null && Capabilities::isPurityType($bound)) {
+                            $storage->template_defaults[$purity_template] = $bound;
+                        }
+
                         continue;
                     }
 

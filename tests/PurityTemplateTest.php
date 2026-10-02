@@ -27,6 +27,25 @@ final class PurityTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'purityArgumentLeftOutWithoutDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Box {
+                        /** @return static<T> */
+                        abstract public function self(): static;
+                    }
+
+                    /**
+                     * @param Box<int> $box
+                     * @return Box<int>
+                     */
+                    function keep(Box $box): Box {
+                        return $box;
+                    }',
+            ],
             'pureClosureKeepsFunctionPure' => [
                 'code' => '<?php
                     /**
@@ -1308,6 +1327,29 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'purityArgumentLeftOutWithoutDefaultIsItsUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Task {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function run(): int;
+                    }
+
+                    /**
+                     * @param Task<int> $task
+                     * @psalm-pure
+                     */
+                    function runIt(Task $task): int {
+                        return $task->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'pureClosureParamInOverrideOfWildcardOneIsComparedWithTheWildcardsBound' => [
                 'code' => '<?php
                     abstract class Base {
