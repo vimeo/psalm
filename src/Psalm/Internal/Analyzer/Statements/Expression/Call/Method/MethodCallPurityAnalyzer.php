@@ -257,6 +257,7 @@ final class MethodCallPurityAnalyzer
                     && !$method_storage->throws
                     && !$method_storage->return_type?->isNever()
                     && !$method_storage->signature_return_type?->isNever()
+                    && !self::isCalledForItsTemplatesEffects($method_storage)
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
@@ -324,5 +325,19 @@ final class MethodCallPurityAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
+     * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
+     * its call is not unused even when they turn out to be none.
+     *
+     * @psalm-mutation-free
+     */
+    public static function isCalledForItsTemplatesEffects(MethodStorage $method_storage): bool
+    {
+        return $method_storage->purity_from_templates !== []
+            && ($method_storage->return_type?->isVoid() === true
+                || $method_storage->signature_return_type?->isVoid() === true);
     }
 }
