@@ -324,7 +324,6 @@ final class MethodCallReturnTypeFetcher
             $node_location,
         );
 
-        $method_call_node = null;
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
             if ($method_storage->specialize_call && $var_id && isset($context->vars_in_scope[$var_id])) {
@@ -523,7 +522,7 @@ final class MethodCallReturnTypeFetcher
             ]);
         }
 
-        if (!$taint_flow_graph || !$method_call_node) {
+        if (!$taint_flow_graph) {
             return;
         }
 

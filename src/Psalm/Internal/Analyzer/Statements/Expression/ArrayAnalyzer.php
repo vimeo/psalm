@@ -552,6 +552,7 @@ final class ArrayAnalyzer
         if ($array_creation_info->unpacked_nodes
             && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
         ) {
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             $type = new Union([$array_type]);
 
             foreach ($array_creation_info->unpacked_nodes as [$unpacked_node, $unpacked_parent_nodes]) {
@@ -564,7 +565,11 @@ final class ArrayAnalyzer
                 // The unpacked items keep their taint under the keys they end up at, if they have parent
                 // nodes of their own. The paths from the array unpacked take its values at any key, so
                 // they only carry the taint it has when they don't.
-                $has_item_paths = $graph->addPathsFromNestedParentNodes($unpacked_node, $type, $location);
+                $has_item_paths = $taint_flow_graph?->addPathsFromNestedParentNodes(
+                    $unpacked_node,
+                    $type,
+                    $location,
+                ) ?? false;
 
                 if ($unpacked_parent_nodes) {
                     $removed_taints = $has_item_paths ? TaintKind::ALL : 0;

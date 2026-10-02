@@ -193,8 +193,10 @@ final class ArrayFetchAnalyzer
                 $context,
             );
 
-            // The value can also have data flow the array doesn't, e.g. written through a reference to it.
-            $stmt_type = $stmt_type->addParentNodes($context->vars_in_scope[$keyed_array_var_id]->parent_nodes);
+            // what is written through a reference to the item doesn't flow through the array
+            if (isset($context->referenced_counts[$keyed_array_var_id])) {
+                $stmt_type = $stmt_type->addParentNodes($context->vars_in_scope[$keyed_array_var_id]->parent_nodes);
+            }
 
             if ($stmt->dim && $statements_analyzer->node_data->getType($stmt->dim)) {
                 $statements_analyzer->node_data->setType($stmt->dim, $used_key_type);

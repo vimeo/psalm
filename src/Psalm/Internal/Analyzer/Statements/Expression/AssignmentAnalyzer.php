@@ -1973,18 +1973,18 @@ final class AssignmentAnalyzer
             $assignment_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
             $assignment_node = DataFlowNode::getForAssignment($extended_var_id, $assignment_location);
 
-            // The new node hides the parent nodes nested in the assigned value, which carry its
-            // taint: lead them to it.
-            $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+            // Analysing taints, the new node hides from the taint graph the parent nodes nested in
+            // the assigned value, which carry its taint: lead them to it.
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-            if ($graph
-                && $graph->addPathsFromNestedParentNodes(
+            if ($taint_flow_graph
+                && $taint_flow_graph->addPathsFromNestedParentNodes(
                     $assignment_node,
                     $assign_value_type,
                     $assignment_location,
                 )
             ) {
-                $graph->addNode($assignment_node);
+                $taint_flow_graph->addNode($assignment_node);
             }
         } else {
             $assignment_node = DataFlowNode::getForUnknownOrigin();
