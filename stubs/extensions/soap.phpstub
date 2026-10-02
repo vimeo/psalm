@@ -220,6 +220,7 @@ class SoapClient  {
      * </p>
      * @throws SoapFault A SoapFault exception will be thrown if the wsdl URI cannot be loaded.
      * @since 5.0.1
+     * @psalm-taint-sink ssrf $wsdl
      */
     public function __construct ($wsdl, array $options = null) {}
 
@@ -355,7 +356,8 @@ class SoapClient  {
       * </p>
       * @return string The old endpoint URL.
       * @since 5.0.1
-      */
+      * @psalm-taint-sink ssrf $new_location
+     */
      public function __setLocation ($new_location = null) {}
 
      /**
