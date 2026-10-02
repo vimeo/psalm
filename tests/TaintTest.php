@@ -898,6 +898,17 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintCallsOfImpureBuiltinFromOtherCalls' => [
+                'code' => '<?php
+                    /** @var array<string> $tainted */
+                    $tainted = $_GET["x"];
+                    $first = reset($tainted);
+                    $safe = ["safe"];
+                    echo reset($safe);
+                    $date = new DateTime();
+                    $formatted = $date->format((string) $_GET["format"]);
+                    echo $date->format("Y");',
+            ],
             'rawUrlEncodeEscapesHtml' => [
                 'code' => '<?php
                     echo rawurlencode((string) $_GET["x"]);
