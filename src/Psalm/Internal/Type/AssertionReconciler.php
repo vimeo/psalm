@@ -616,6 +616,8 @@ final class AssertionReconciler extends Reconciler
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
      * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`.
+     *
+     * @psalm-capabilities read-props
      */
     private static function inferTemplateParamsFromParent(
         Codebase $codebase,
