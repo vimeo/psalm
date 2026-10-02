@@ -29,7 +29,9 @@ final class HackConformanceTranspiledTest extends TestCase
     /**
      * Transpiles the fixtures again before any case runs, so that every case
      * fails if this file was not regenerated after a fixture (or the
-     * transpiler) changed.
+     * transpiler) changed. Transpiling needs HHVM's parser: where it cannot
+     * run (exit code 3), the committed cases run as they are, and
+     * HackConformanceTest::testTranspiledSuiteIsUpToDate skips.
      */
     #[Override]
     public static function setUpBeforeClass(): void
@@ -45,7 +47,7 @@ final class HackConformanceTranspiledTest extends TestCase
             $exitCode,
         );
 
-        if ($exitCode !== 0) {
+        if ($exitCode !== 0 && $exitCode !== 3) {
             /** @var list<string> $output */
             self::fail(implode("\n", $output));
         }
@@ -178,7 +180,7 @@ final class HackConformanceTranspiledTest extends TestCase
                     function use_pure(Runner $r): int { return apply(/** @psalm-capabilities read-props */ fn() => 1) + $r->run(/** @psalm-capabilities read-props */ fn() => 3); }
 
                     /** @psalm-impure */
-                    function use_io(): int { return apply(function () { echo "x"; return 1; }); }',
+                    function use_io(): int { return apply(/** @psalm-impure */ function () { echo "x"; return 1; }); }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.3',
@@ -594,7 +596,7 @@ final class HackConformanceTranspiledTest extends TestCase
                         /** @psalm-impure */
                         public function __construct() {
                             $this->c = new ArrayCollection();
-                            $this->c->filter(fn(DateTime $dt): bool => $dt === $dt);
+                            $this->c->filter(/** @psalm-impure */ fn(DateTime $dt): bool => $dt === $dt);
                         }
                     }',
                 'assertions' => [],
@@ -624,7 +626,7 @@ final class HackConformanceTranspiledTest extends TestCase
                     /** @psalm-impure */
                     function process(): void {
                         $box = new Box();
-                        $box->each(fn(Item $item) => $item->id);
+                        $box->each(/** @psalm-impure */ fn(Item $item) => $item->id);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -656,7 +658,7 @@ final class HackConformanceTranspiledTest extends TestCase
                     /** @psalm-impure */
                     function process(): void {
                         $c = new Coll([new Item()]);
-                        $c->each(fn($item) => (string)$item->id);
+                        $c->each(/** @psalm-impure */ fn($item) => (string)$item->id);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -873,7 +875,7 @@ final class HackConformanceTranspiledTest extends TestCase
                     function process(): void {
                         $box = new Box();
                         $box->set(5);
-                        $box->each(fn(Item $item) => $item->id);
+                        $box->each(/** @psalm-impure */ fn(Item $item) => $item->id);
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
                 'error_levels' => [],
@@ -909,7 +911,7 @@ final class HackConformanceTranspiledTest extends TestCase
                      */
                     function prepareTable(iterable $items): void {
                         $table = new Table($items);
-                        $table->column(fn(Item $item): int => $item->id);
+                        $table->column(/** @psalm-impure */ fn(Item $item): int => $item->id);
                     }',
                 'error_message' => 'MixedArgumentTypeCoercion',
                 'error_levels' => [],

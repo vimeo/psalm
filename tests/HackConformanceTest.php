@@ -78,6 +78,31 @@ final class HackConformanceTest extends TestCase
     }
 
     /**
+     * The transpiled Psalm cases are generated from HHVM's parse trees of the
+     * fixtures: they must be regenerated whenever a fixture (or the transpiler)
+     * changes. HackConformanceTranspiledTest checks it too, before its cases,
+     * but cannot tell when HHVM is unavailable; this check skips instead, so the
+     * HHVM CI job (--fail-on-skipped) guarantees it ran.
+     */
+    public function testTranspiledSuiteIsUpToDate(): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec(
+            escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(self::HARNESS_DIR . '/transpile.php') . ' --check 2>&1',
+            $output,
+            $exitCode,
+        );
+
+        /** @var list<string> $output */
+        if ($exitCode === 3) {
+            $this->markTestSkipped(implode("\n", $output));
+        }
+
+        $this->assertSame(0, $exitCode, implode("\n", $output));
+    }
+
+    /**
      * @dataProvider provideFixtures
      */
     public function testHhvmAgreesWithFixture(string $fixture, string $expect): void

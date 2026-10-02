@@ -2,13 +2,16 @@
 
 /**
  * Transpiles every Hack conformance fixture (fixtures/<topic>/*.hack) into PHP
- * with Psalm docblocks and writes them out as one PHPUnit suite,
+ * with Psalm docblocks, from the parse tree HHVM's own parser gives it (so it
+ * needs docker and the pinned HHVM image, like run.php), and writes them out as
+ * one PHPUnit suite,
  * tests/HackConformanceTranspiledTest.php: a fixture HHVM accepts is a valid-code
  * case, one it rejects an invalid-code case expecting its `//// psalm-error:`.
  * So each fixture is checked twice, against HHVM (run.php) and against Psalm.
  *
  * Usage:   php bin/hack-conformance/transpile.php            # regenerate the suite
  *          php bin/hack-conformance/transpile.php --check    # fail if it is stale
+ *                                                            # (exit 3: HHVM cannot run here)
  *          php bin/hack-conformance/transpile.php <fixture>  # print one fixture's PHP
  *
  * See README.md and Transpiler.php.
@@ -22,6 +25,8 @@ require __DIR__ . '/lib.php';
 require __DIR__ . '/Transpiler.php';
 
 $root = __DIR__;
+$manifest = hc_manifest($root);
+$image = is_string($manifest['hhvm_image'] ?? null) ? $manifest['hhvm_image'] : 'hhvm/hhvm:latest';
 $target = dirname($root, 2) . '/tests/HackConformanceTranspiledTest.php';
 $args = array_slice($argv, 1);
 $check = in_array('--check', $args, true);
@@ -34,6 +39,13 @@ if ($fixtures === []) {
 }
 
 try {
+    // --check runs inside the unit suite: never pull the image there
+    $trees = hc_parse_trees($root, $image, $fixtures, allow_pull: !$check);
+    if (is_string($trees)) {
+        fwrite(STDERR, "Cannot transpile: $trees\n");
+        exit(3);
+    }
+
     if ($only !== []) {
         foreach ($only as $name) {
             $name = str_starts_with($name, 'fixtures/') ? substr($name, strlen('fixtures/')) : $name;
@@ -41,12 +53,12 @@ try {
                 fwrite(STDERR, "No fixture $name\n");
                 exit(2);
             }
-            echo Transpiler::transpile($fixtures[$name]['code'], $name), "\n";
+            echo Transpiler::transpile($trees[$name], $name), "\n";
         }
         exit(0);
     }
 
-    $suite = hc_transpiled_suite($fixtures);
+    $suite = hc_transpiled_suite($fixtures, $trees);
 } catch (UnexpectedValueException $e) {
     fwrite(STDERR, $e->getMessage() . "\n");
     exit(1);
@@ -65,13 +77,14 @@ echo 'Wrote ', count($fixtures), " case(s) to tests/HackConformanceTranspiledTes
 
 /**
  * @param array<string, array<string, mixed>> $fixtures as hc_fixtures() returns them
+ * @param array<string, array<string, mixed>> $trees as hc_parse_trees() returns them
  */
-function hc_transpiled_suite(array $fixtures): string
+function hc_transpiled_suite(array $fixtures, array $trees): string
 {
     $valid = '';
     $invalid = '';
     foreach ($fixtures as $name => $fixture) {
-        $case = hc_case($name, $fixture);
+        $case = hc_case($name, $fixture, $trees[$name]);
         if ($fixture['expect'] === 'error') {
             $invalid .= $case;
         } else {
@@ -111,7 +124,9 @@ function hc_transpiled_suite(array $fixtures): string
             /**
              * Transpiles the fixtures again before any case runs, so that every case
              * fails if this file was not regenerated after a fixture (or the
-             * transpiler) changed.
+             * transpiler) changed. Transpiling needs HHVM's parser: where it cannot
+             * run (exit code 3), the committed cases run as they are, and
+             * HackConformanceTest::testTranspiledSuiteIsUpToDate skips.
              */
             #[Override]
             public static function setUpBeforeClass(): void
@@ -127,7 +142,7 @@ function hc_transpiled_suite(array $fixtures): string
                     \$exitCode,
                 );
 
-                if (\$exitCode !== 0) {
+                if (\$exitCode !== 0 && \$exitCode !== 3) {
                     /** @var list<string> \$output */
                     self::fail(implode("\\n", \$output));
                 }
@@ -159,8 +174,9 @@ function hc_transpiled_suite(array $fixtures): string
 
 /**
  * @param array<string, mixed> $fixture an entry of hc_fixtures()
+ * @param array<string, mixed> $tree its parse tree
  */
-function hc_case(string $name, array $fixture): string
+function hc_case(string $name, array $fixture, array $tree): string
 {
     $indent = str_repeat(' ', 16);
     $out = str_repeat(' ', 12) . hc_quote(hc_case_name($name, $fixture)) . " => [\n";
@@ -171,7 +187,7 @@ function hc_case(string $name, array $fixture): string
     foreach (explode("\n", trim($comment)) as $line) {
         $out .= rtrim("$indent// $line") . "\n";
     }
-    $code = Transpiler::transpile($fixture['code'], $name);
+    $code = Transpiler::transpile($tree, $name);
     $code = preg_replace('/^(?=.)/m', str_repeat(' ', 20), $code) ?? $code;
     $out .= "$indent'code' => " . hc_quote(ltrim($code)) . ",\n";
     if ($fixture['psalm_error'] !== null) {

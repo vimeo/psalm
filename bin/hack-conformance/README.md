@@ -37,11 +37,13 @@ Translating arbitrary Hack isn't achievable, so instead:
    checks the verdict against `expect`.
 3. **`transpile.php`** (with `Transpiler.php`) — transpiles every fixture to PHP
    with Psalm docblocks and generates `tests/HackConformanceTranspiledTest.php`,
-   an ordinary Psalm test suite asserting the same verdict of Psalm. The mapping
-   (types, contexts to capabilities, context constants to purity templates,
-   lambdas, Hack arrays, `inout`, …) is documented at the top of
-   `Transpiler.php`; a construct it does not know is an error naming it, never a
-   silent mistranslation.
+   an ordinary Psalm test suite asserting the same verdict of Psalm. It does not
+   parse Hack itself: it walks the parse tree HHVM's own parser gives each
+   fixture (`hh_parse --full-fidelity-json-parse-tree`, run in the pinned image
+   and cached in `.hh-parse-cache/`, gitignored). The mapping (types, contexts
+   to capabilities, context constants to purity templates, lambdas, Hack arrays,
+   `inout`, …) is documented at the top of `Transpiler.php`; a node kind it does
+   not know is an error naming it, never a silent mistranslation.
 4. **`track-upstream.php`** — hashes the Hack test directories most likely to
    grow relevant cases and reports additions/removals/changes since the pinned
    commit, so new upstream cases can be hand-translated into `fixtures/`
@@ -71,13 +73,17 @@ The note (and divergence) become a comment on the transpiled case.
 `tests/HackConformanceTranspiledTest.php` (generated) checks every fixture with
 Psalm. Before running any case it transpiles the fixtures again, and every case
 fails if the output differs from the committed file, so a fixture edit without a
-regeneration cannot pass. `tests/HackConformanceTest.php` drives the fixtures
-through HHVM as ordinary PHPUnit tests (one per
-fixture, asserting HHVM's verdict matches `expect`). The HHVM half
-**skips cleanly** when the harness cannot run here — no docker, no daemon, not
-Linux, or the pinned HHVM image is not already present locally (it never pulls a
-multi-hundred-MB image inside a unit-test shard). Pull the image once to enable
-the checks in a given environment:
+regeneration cannot pass. Transpiling needs HHVM's parser (or parse trees cached
+by an earlier run): where it cannot run, the committed cases run as they are.
+
+`tests/HackConformanceTest.php` checks that the transpiled suite is up to date,
+and drives the fixtures through HHVM as ordinary PHPUnit tests (one per fixture,
+asserting HHVM's verdict matches `expect`). It **skips cleanly** when HHVM cannot
+run here — no docker, no daemon, not Linux, or the pinned HHVM image is not
+already present locally (it never pulls a multi-hundred-MB image inside a
+unit-test shard). The `Hack conformance` CI job pulls the image and runs it with
+`--fail-on-skipped`, so both checks always run there. Pull the image once to
+enable the checks in a given environment:
 
 ```sh
 docker pull "$(php -r 'echo json_decode(file_get_contents("bin/hack-conformance/manifest.json"),true)["hhvm_image"];')"
@@ -92,9 +98,10 @@ php bin/hack-conformance/run.php            # ok/FAIL per fixture
 php bin/hack-conformance/run.php --verbose  # also print HHVM output
 php bin/hack-conformance/run.php --json     # machine-readable (what the test consumes)
 
-# Regenerate tests/HackConformanceTranspiledTest.php after changing a fixture:
+# Regenerate tests/HackConformanceTranspiledTest.php after changing a fixture
+# (requires docker; pulls the image if missing):
 php bin/hack-conformance/transpile.php
-php bin/hack-conformance/transpile.php --check                       # is it up to date?
+php bin/hack-conformance/transpile.php --check                       # is it up to date? (exit 3: no HHVM)
 php bin/hack-conformance/transpile.php type_variables/array_access.hack  # print one fixture's PHP
 
 # Upstream drift (requires git):

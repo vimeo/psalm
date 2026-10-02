@@ -35,7 +35,6 @@ function hc_manifest(string $root): array
  *     psalm_ignore: list<string>,
  *     psalm_divergence: ?string,
  *     note: string,
- *     code: string,
  *     path: string,
  * }>
  */
@@ -52,7 +51,6 @@ function hc_fixtures(string $root): array
         }
         $name = substr($path, strlen("$root/fixtures/"));
         $headers = [];
-        $code = [];
         $last = null;
         foreach (explode("\n", (string) file_get_contents($path)) as $line) {
             if (preg_match('#^//// ([a-z-]+):\s*(.*)$#', $line, $m)) {
@@ -62,7 +60,6 @@ function hc_fixtures(string $root): array
                 $headers[$last][count($headers[$last]) - 1] .= "\n" . $m[1];
             } else {
                 $last = null;
-                $code[] = $line;
             }
         }
         $expect = $headers['expect'][0] ?? '';
@@ -87,7 +84,6 @@ function hc_fixtures(string $root): array
                 ? implode("\n", $headers['psalm-divergence'])
                 : null,
             'note' => implode("\n", $headers['note'] ?? []),
-            'code' => trim(implode("\n", $code)) . "\n",
             'path' => $path,
         ];
     }
@@ -205,4 +201,85 @@ SH;
     }
 
     return $results;
+}
+
+/**
+ * HHVM's parse tree of every fixture (`hh_parse --full-fidelity-json-parse-tree`),
+ * keyed like hc_fixtures(), which Transpiler turns into PHP.
+ *
+ * Trees are cached in .hh-parse-cache/ by image and file contents, so HHVM only
+ * runs (in one container) for fixtures changed since the last run. Returns a
+ * string, the reason, when an uncached fixture needs HHVM and it cannot run here.
+ *
+ * @param array<string, array<string, mixed>> $fixtures as hc_fixtures() returns them
+ * @return array<string, array<string, mixed>>|string
+ */
+function hc_parse_trees(string $root, string $image, array $fixtures, bool $allow_pull): array|string
+{
+    $cache = "$root/.hh-parse-cache";
+    $paths = [];
+    $missing = [];
+    foreach ($fixtures as $name => $fixture) {
+        $paths[$name] = "$cache/" . sha1($image . "\0" . file_get_contents($fixture['path'])) . '.json';
+        if (!is_file($paths[$name])) {
+            $missing[] = $name;
+        }
+    }
+
+    if ($missing !== []) {
+        $reason = hc_unavailable_reason($image, $allow_pull);
+        if ($reason !== null) {
+            return $reason;
+        }
+
+        $inner = <<<'SH'
+set -e
+for f in "$@"; do
+  echo "@@@BEGIN@@@ $f"
+  hh_parse --full-fidelity-json-parse-tree "/fixtures/$f"
+  echo
+  echo "@@@END@@@ $f"
+done
+SH;
+        $cmd = 'docker run --rm '
+            . '-v ' . escapeshellarg("$root/fixtures") . ':/fixtures:ro '
+            . escapeshellarg($image) . ' bash -c ' . escapeshellarg($inner) . ' hh_parse '
+            . implode(' ', array_map('escapeshellarg', $missing));
+        $out = [];
+        exec($cmd . ' 2>/dev/null', $out, $rc);
+        if ($rc !== 0) {
+            throw new UnexpectedValueException("hh_parse failed (exit $rc)");
+        }
+
+        $blocks = [];
+        $current = null;
+        foreach ($out as $line) {
+            if (preg_match('/^@@@BEGIN@@@ (.+)$/', $line, $m)) {
+                $current = $m[1];
+                $blocks[$current] = '';
+            } elseif (preg_match('/^@@@END@@@ /', $line)) {
+                $current = null;
+            } elseif ($current !== null) {
+                $blocks[$current] .= $line . "\n";
+            }
+        }
+
+        @mkdir($cache, 0777, true);
+        foreach ($missing as $name) {
+            if (!is_array(json_decode($blocks[$name] ?? '', true))) {
+                throw new UnexpectedValueException("hh_parse printed no parse tree for $name");
+            }
+            file_put_contents($paths[$name], $blocks[$name]);
+        }
+    }
+
+    $trees = [];
+    foreach ($paths as $name => $path) {
+        $tree = json_decode((string) file_get_contents($path), true);
+        if (!is_array($tree)) {
+            throw new UnexpectedValueException("Corrupt cached parse tree $path: delete it");
+        }
+        $trees[$name] = $tree;
+    }
+    return $trees;
 }
