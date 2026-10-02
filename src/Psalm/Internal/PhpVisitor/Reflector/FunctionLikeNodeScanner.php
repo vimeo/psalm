@@ -701,6 +701,10 @@ final class FunctionLikeNodeScanner
                     $storage->specialize_call = true;
                     $storage->capabilities = Capabilities::NONE;
                     $storage->has_mutations_annotation = true;
+
+                    if ($storage instanceof MethodStorage) {
+                        $storage->mutation_free_assumed = false;
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'NoDiscard') {
@@ -721,6 +725,12 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
+                    if ($storage->mutation_free_assumed) {
+                        // like an annotation in the docblock, it replaces what a getter is assumed to do
+                        $storage->capabilities = Capabilities::ALL;
+                        $storage->mutation_free_assumed = false;
+                    }
+
                     $storage->capabilities = $storage->capabilities & Capabilities::EXTERNAL_MUTATION_FREE;
                     $storage->has_mutations_annotation = true;
                 }
@@ -844,13 +854,18 @@ final class FunctionLikeNodeScanner
             return;
         }
 
-        $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
-
-        $storage->mutation_free_assumed = true;
-
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;
         }
+
+        if ($storage->has_mutations_annotation) {
+            // an explicit annotation replaces what the constructor is assumed to do
+            return;
+        }
+
+        $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
+
+        $storage->mutation_free_assumed = true;
     }
 
     private function getTranslatedFunctionParam(

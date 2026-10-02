@@ -1018,6 +1018,15 @@ final class ClassLikes
                 $mut = Capabilities::toNamedLevel(
                     $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE,
                 );
+                if ($mut === Capabilities::NONE) {
+                    foreach ($classlike_storage->properties as $property) {
+                        if (!$property->is_static) {
+                            // a pure class may not use properties: one declaring them is immutable at best
+                            $mut = Capabilities::MUTATION_FREE;
+                            break;
+                        }
+                    }
+                }
                 if ($mut !== Capabilities::ALL
                     && !$classlike_storage->has_mutations_annotation
                 ) {

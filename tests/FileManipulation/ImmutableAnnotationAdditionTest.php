@@ -18,6 +18,22 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'addImmutableNotPureToClassWithPropertiesOnly' => [
+                'input' => '<?php
+                    abstract class Event {
+                        public string $name = "";
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    abstract class Event {
+                        public string $name = "";
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
             'dontAddImmutableWhenMutatedThroughArrayElementReceiver' => [
                 'input' => '<?php
                     class A {

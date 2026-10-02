@@ -12,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -257,6 +258,13 @@ final class FunctionCallReturnTypeFetcher
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
+                $statements_analyzer,
+                $stmt,
+                $function_id,
+                $stmt_type,
+                $context,
+            );
+            self::taintInternalSource(
                 $statements_analyzer,
                 $stmt,
                 $function_id,
@@ -594,6 +602,14 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type,
             $context,
         );
+        // callmap-only unconditional sources (socket_read(), curl_exec(), ...)
+        self::taintInternalSource(
+            $statements_analyzer,
+            $stmt,
+            $callable_id,
+            $stmt_type,
+            $context,
+        );
 
         // Re-apply the declared taint behavior of the underlying function. When the call
         // target is an expression (a callable value) rather than a Node\Name, the regular
@@ -795,27 +811,43 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+        $stmt_type = InternalTaintSourceMap::addSource(
+            $graph,
+            $statements_analyzer,
+            $stmt,
+            $function_id . '(' . $path . ')',
+            TaintKind::ALL_INPUT,
+            $context,
+            $stmt_type,
+        );
+    }
 
-        $taints = TaintKind::ALL_INPUT;
-        $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
-        $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+    /**
+     * The builtins that read from outside the program (sockets, network streams, http clients)
+     * return user-controlled data: see dictionaries/InternalTaintSourceMap.php.
+     */
+    private static function taintInternalSource(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Union &$stmt_type,
+        Context $context,
+    ): void {
+        $taints = InternalTaintSourceMap::getTaints($function_id, 'return');
 
-        if ($taints === 0) {
+        if ($taints === 0 || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
 
-        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-        $source = DataFlowNode::getForTaint(
-            $function_id . '(' . $path . ')',
-            $location,
+        $stmt_type = InternalTaintSourceMap::addSource(
+            $graph,
+            $statements_analyzer,
+            $stmt,
+            $function_id,
             $taints,
+            $context,
+            $stmt_type,
         );
-        $graph->addSource($source);
-
-        $stmt_type = $stmt_type->addParentNodes([$source->id => $source]);
     }
 
     private static function taintReturnType(

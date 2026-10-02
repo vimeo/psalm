@@ -55,6 +55,213 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'keepExplicitImpureAnnotation' => [
+                'input' => '<?php
+                    class Hook {
+                        /** @psalm-impure */
+                        public function prepare(): int {
+                            return 1;
+                        }
+                    }',
+                'output' => '<?php
+                    class Hook {
+                        /** @psalm-impure */
+                        public function prepare(): int {
+                            return 1;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'keepExplicitAnnotationOfOverriddenMethod' => [
+                'input' => '<?php
+                    class Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private array $cache = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            $this->cache = [1];
+                            return $this->cache;
+                        }
+                    }',
+                'output' => '<?php
+                    class Base {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private array $cache = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function items(): array {
+                            $this->cache = [1];
+                            return $this->cache;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPureAnnotationWhenParamDefaultIsImpure' => [
+                'input' => '<?php
+                    final class Bus {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }',
+                'output' => '<?php
+                    final class Bus {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPureAnnotationWhenParamDefaultIsPure' => [
+                'input' => '<?php
+                    final class Options {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function __construct(public int $limit = 10) {}
+                    }
+
+                    function useDefault(Options $options = new Options()): int {
+                        return $options->limit;
+                    }',
+                'output' => '<?php
+                    final class Options {
+                        /**
+                         * @psalm-pure
+                         */
+                        public function __construct(public int $limit = 10) {}
+                    }
+
+                    /**
+                     * @psalm-capabilities read-props
+                     */
+                    function useDefault(Options $options = new Options()): int {
+                        return $options->limit;
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPureAnnotationWhenParamDefaultCallsImpureDefault' => [
+                'input' => '<?php
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }
+
+                    final class Bus {
+                        public function __construct(?Logger $logger = new Logger()) {}
+                    }
+
+                    final class Logger {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }',
+                'output' => '<?php
+                    function useDefault(Bus $bus = new Bus()): Bus {
+                        return $bus;
+                    }
+
+                    final class Bus {
+                        public function __construct(?Logger $logger = new Logger()) {}
+                    }
+
+                    final class Logger {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPureAnnotationWhenParamDefaultIsAnnotatedClosure' => [
+                'input' => '<?php
+                    function useDefault(Closure $log = /** @psalm-impure */ static function (): int {
+                        echo "log";
+                        return 1;
+                    }): Closure {
+                        return $log;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function useDefault(Closure $log = /** @psalm-impure */ static function (): int {
+                        echo "log";
+                        return 1;
+                    }): Closure {
+                        return $log;
+                    }',
+                'php_version' => '8.5',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPureAnnotationToOverriddenMethodOrItsCallers' => [
+                'input' => '<?php
+                    abstract class Base {
+                        public function hook(): int {
+                            return 1;
+                        }
+
+                        final public function run(): int {
+                            return $this->hook();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hook(): int {
+                            echo "hook";
+                            return 2;
+                        }
+                    }',
+                'output' => '<?php
+                    abstract class Base {
+                        public function hook(): int {
+                            return 1;
+                        }
+
+                        final public function run(): int {
+                            return $this->hook();
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function hook(): int {
+                            echo "hook";
+                            return 2;
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPureAnnotationToFunction' => [
                 'input' => '<?php
                     function foo(string $s): string {
@@ -500,9 +707,6 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     class A {
-                        /**
-                         * @psalm-capabilities read-props
-                         */
                         public function foo(int $ex): int {
                             if ($ex === 0) {
                                 return $ex;
