@@ -280,6 +280,31 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAnOverrideThroughACallOnASiblingClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    final class CommentMapper extends Mapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    final class TownMapper extends Mapper {}
+
+                    function findTown(TownMapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }
+
+                    function findAny(Mapper $mapper): void {
+                        $mapper->find("literal");
+                    }',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1323,48 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAnOverrideThroughACallOnTheDeclaringClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    final class CommentMapper extends Mapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    function findAny(Mapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheDeclaredMethodThroughACallOnAClassInheritingIt' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    final class CommentMapper extends Mapper {}
+
+                    abstract class OtherMapper extends Mapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    function findComment(CommentMapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
@@ -1986,7 +2053,7 @@ final class TaintTest extends TestCase
                     }
 
                     (new C)->foo((string) $_GET["user_id"]);',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:3:69) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> dispatch of A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
             ],
             'taintedInputFromProperty' => [
                 'code' => '<?php
