@@ -898,6 +898,58 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintSpecializedInstancePropertyOfChildClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        public string $x = "";
+                    }
+
+                    final class ChildStringHolder extends StringHolder {
+                        public function __construct(string $x) {
+                            $this->x = $x;
+                        }
+                    }
+
+                    $a = new ChildStringHolder("a");
+                    $b = new ChildStringHolder($_GET["x"]);
+
+                    echo $a->x;',
+            ],
+            'dontTaintSpecializedInstanceWithWhatItsMethodReturns' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Box {
+                        public function take(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new Box();
+                    $unused = $a->take($_GET["a"]);
+                    echo $a->take("safe");',
+            ],
+            'dontTaintOtherInstanceThroughInheritedMethod' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        protected string $value = "";
+
+                        public function __construct(string $value) {
+                            $this->value = $value;
+                        }
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    final class ChildStringHolder extends StringHolder {}
+
+                    $tainted = new ChildStringHolder((string) $_GET["x"]);
+                    $safe = new ChildStringHolder("safe");
+                    echo $safe->getValue();',
+            ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
 
@@ -2403,6 +2455,49 @@ final class TaintTest extends TestCase
                     echoId($u);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSpecializedInstancePropertySetByChildClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        public string $x = "";
+                    }
+
+                    final class ChildStringHolder extends StringHolder {
+                        public function setX(string $x): void {
+                            $this->x = $x;
+                        }
+                    }
+
+                    function echoX(StringHolder $holder): void {
+                        echo $holder->x;
+                    }
+
+                    $holder = new ChildStringHolder();
+                    $holder->setX($_GET["x"]);
+                    echoX($holder);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughInheritedMethodOfSpecializedClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        protected string $value = "";
+
+                        public function __construct(string $value) {
+                            $this->value = $value;
+                        }
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    final class ChildStringHolder extends StringHolder {}
+
+                    $tainted = new ChildStringHolder((string) $_GET["x"]);
+                    echo $tainted->getValue();',
+                'error_message' => 'TaintedHtml',
+            ],
             'ImplodeExplode' => [
                 'code' => '<?php
                     $a = $_GET["name"];
@@ -3086,14 +3181,21 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /** @psalm-taint-specialize */
                     final class Box {
+                        private string $last = "";
+
                         public function take(string $s): string {
+                            $this->last = $s;
                             return $s;
+                        }
+
+                        public function last(): string {
+                            return $this->last;
                         }
                     }
 
                     $a = new Box();
                     $unused = $a->take($_GET["a"]);
-                    echo $a->take("safe");',
+                    echo $a->last();',
                 'error_message' => 'TaintedHtml',
             ],
             'dontSpecializeImpureFunction' => [
