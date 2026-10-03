@@ -10,6 +10,7 @@ use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
@@ -47,6 +48,7 @@ use function count;
 use function explode;
 use function str_contains;
 use function str_ends_with;
+use function str_replace;
 use function strlen;
 use function strtolower;
 use function substr;
@@ -973,6 +975,17 @@ final class FunctionCallReturnTypeFetcher
                             }
                         }
                     }
+                }
+            }
+
+            // the values formatted after the start of a URL fixing its server can't choose it
+            if (($function_id === 'sprintf' || $function_id === 'vsprintf') && isset($args[0])) {
+                $format_type = $statements_analyzer->node_data->getType($args[0]->value);
+
+                if ($format_type && $format_type->isSingleStringLiteral()) {
+                    $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin(
+                        explode('%', str_replace('%%', '', $format_type->getSingleStringLiteral()->value), 2)[0],
+                    );
                 }
             }
 

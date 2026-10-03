@@ -44,12 +44,16 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function count;
+use function in_array;
+use function preg_match;
 use function reset;
 use function strlen;
+use function strtolower;
 
 /**
  * @internal
@@ -57,6 +61,47 @@ use function strlen;
 final class ConcatAnalyzer
 {
     private const MAX_LITERALS = 64;
+
+    /**
+     * The taints a value can't have once appended to $prefix, if $prefix is the start of a URL fixing its origin: a
+     * scheme or `//`, a host and the `/`, `?` or `#` ending it. What follows such a prefix can only change the path,
+     * the query or the fragment of the URL, never the server it is sent to (`ssrf` taint). With a network scheme it
+     * can't make the URL a local file either (`file` taint), unlike with `file://`, `php://`... or no scheme.
+     *
+     * @psalm-pure
+     */
+    public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
+    {
+        if (preg_match('~^(?:([a-z][a-z\d+.\-]*):)?//[^/?#]+[/?#]~i', $prefix, $matches) !== 1) {
+            return 0;
+        }
+
+        $scheme = strtolower($matches[1] ?? '');
+
+        return in_array($scheme, ['http', 'https', 'ftp', 'ftps'], true)
+            ? TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE
+            : TaintKind::INPUT_SSRF;
+    }
+
+    /**
+     * The literal string $expr starts with, as far as it is known
+     */
+    public static function getLiteralPrefix(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): ?string
+    {
+        while ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $expr = $expr->left;
+        }
+
+        if ($expr instanceof PhpParser\Node\Scalar\InterpolatedString) {
+            $first_part = $expr->parts[0] ?? null;
+
+            return $first_part instanceof PhpParser\Node\InterpolatedStringPart ? $first_part->value : null;
+        }
+
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        return $type && $type->isSingleStringLiteral() ? $type->getSingleStringLiteral()->value : null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
