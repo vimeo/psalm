@@ -64,6 +64,9 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public bool $returns_by_ref = false;
 
+    /**
+     * @var ?int<0, max>
+     */
     public ?int $required_param_count = null;
 
     /**
