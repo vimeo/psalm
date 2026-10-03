@@ -280,6 +280,16 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintByRefParamOverwrittenWithLiteral' => [
+                'code' => '<?php // --taint-analysis
+                    function reset_value(string &$value): void {
+                        $value = "literal";
+                    }
+
+                    $value = (string) $_GET["value"];
+                    reset_value($value);
+                    echo $value;',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1308,101 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintPregMatchMatches' => [
+                'code' => '<?php // --taint-analysis
+                    preg_match("/id=(\\w+)/", (string) $_GET["value"], $matches);
+                    echo $matches[1];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintParseStrResult' => [
+                'code' => '<?php // --taint-analysis
+                    parse_str((string) $_GET["value"], $result);
+                    echo (string) $result["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayUnshiftedValue' => [
+                'code' => '<?php // --taint-analysis
+                    $values = [];
+                    array_unshift($values, (string) $_GET["value"]);
+                    echo $values[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArraySplicedValue' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["literal"];
+                    array_splice($values, 0, 0, [(string) $_GET["value"]]);
+                    echo $values[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParam' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                    }
+
+                    $value = "";
+                    read_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamAtAnEarlyReturn' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(?string &$value, bool $read): void {
+                        if ($read) {
+                            $value = (string) $_GET["value"];
+                            return;
+                        }
+                        $value = "literal";
+                    }
+
+                    $value = null;
+                    read_value($value, true);
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamKeptByTheFunction' => [
+                'code' => '<?php // --taint-analysis
+                    function trim_value(string &$value): void {
+                        $value = trim($value);
+                    }
+
+                    $value = (string) $_GET["value"];
+                    trim_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAnImplementation' => [
+                'code' => '<?php // --taint-analysis
+                    interface Reader {
+                        public function read(array &$rows): void;
+                    }
+
+                    final class GetReader implements Reader {
+                        public function read(array &$rows): void {
+                            $rows[] = (string) $_GET["value"];
+                        }
+                    }
+
+                    function show(Reader $reader): void {
+                        $rows = [];
+                        $reader->read($rows);
+                        echo (string) $rows[0];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAnAbstractMethod' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Normalizer {
+                        abstract public function normalize(string &$value): void;
+                    }
+
+                    function show(Normalizer $normalizer): void {
+                        $value = (string) $_GET["value"];
+                        $normalizer->normalize($value);
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */

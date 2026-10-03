@@ -978,6 +978,41 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
+        if ($cased_method_id && $codebase->taint_flow_graph) {
+            // what the end of the function-like leaves in its by-reference parameters (see ReturnAnalyzer
+            // for what each return leaves)
+            self::taintByRefParamsOut($codebase, $storage, $cased_method_id, $context);
+
+            // a call of a method it overrides may run it: it leaves its by-reference parameters to that call
+            foreach ($storage->params as $offset => $param) {
+                if (!$param->by_ref) {
+                    continue;
+                }
+
+                $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    if (!isset($overridden_storage->params[$offset])
+                        || !$overridden_storage->params[$offset]->by_ref
+                    ) {
+                        continue;
+                    }
+
+                    $overridden_out_node = DataFlowNode::getForMethodArgumentOut(
+                        $codebase->methods->getCasedMethodId($overridden_method_id),
+                        $offset,
+                        $overridden_storage,
+                    );
+
+                    $codebase->taint_flow_graph->addNode($out_node);
+                    $codebase->taint_flow_graph->addNode($overridden_out_node);
+                    $codebase->taint_flow_graph->addPath($out_node, $overridden_out_node, 'param-out');
+                }
+            }
+        }
+
         // Class methods are analyzed deferred, therefor it's required to
         // add taint sources additionally on analyze not only on call
         if ($codebase->taint_flow_graph
@@ -1161,6 +1196,39 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         );
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * The values the by-reference parameters of a function-like hold where it returns, with $context,
+     * flow into what the variables passed to them hold after the call (see
+     * ArgumentsAnalyzer::handlePossiblyMatchingByRefParam()).
+     */
+    public static function taintByRefParamsOut(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        string $cased_method_id,
+        Context $context,
+    ): void {
+        if (!$codebase->taint_flow_graph) {
+            return;
+        }
+
+        foreach ($storage->params as $offset => $param) {
+            if (!$param->by_ref
+                || !isset($context->vars_in_scope['$' . $param->name])
+                || !$context->vars_in_scope['$' . $param->name]->parent_nodes
+            ) {
+                continue;
+            }
+
+            $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+
+            $codebase->taint_flow_graph->addNode($out_node);
+
+            foreach ($context->vars_in_scope['$' . $param->name]->parent_nodes as $parent_node) {
+                $codebase->taint_flow_graph->addPath($parent_node, $out_node, 'param-out');
             }
         }
     }
