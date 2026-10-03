@@ -420,16 +420,29 @@ final class MethodCallReturnTypeFetcher
                     return;
                 }
 
+                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
+
                 foreach ($method_call_nodes as $method_call_node) {
                     $taint_flow_graph->addNode($method_call_node);
                     $taint_flow_graph->addNode($var_node);
-                    $taint_flow_graph->addPath(
-                        $method_call_node,
-                        $var_node,
-                        'method-call-' . $method_id->method_name,
-                        $added_taints,
-                        $removed_taints,
-                    );
+
+                    // what the method leaves in the object, which isn't what it returns
+                    if ($method_storage->location) {
+                        $this_out_node = DataFlowNode::getForAssignment(
+                            '$this out of ' . $cased_declaring_method_id,
+                            $method_storage->location,
+                            $method_call_node->specialization_key,
+                        );
+
+                        $taint_flow_graph->addNode($this_out_node);
+                        $taint_flow_graph->addPath(
+                            $this_out_node,
+                            $var_node,
+                            'method-call-' . $method_id->method_name,
+                            $added_taints,
+                            $removed_taints,
+                        );
+                    }
 
                     if (!$is_declaring) {
                         $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);

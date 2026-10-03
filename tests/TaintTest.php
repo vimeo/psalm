@@ -1487,6 +1487,19 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintSpecializedInstanceWithWhatItsMethodReturns' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Box {
+                        public function take(string $s): string {
+                            return $s;
+                        }
+                    }
+
+                    $a = new Box();
+                    $unused = $a->take($_GET["a"]);
+                    echo $a->take("safe");',
+            ],
             'dontTaintOtherInstanceThroughInheritedMethod' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -4691,14 +4704,21 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     /** @psalm-taint-specialize */
                     final class Box {
+                        private string $last = "";
+
                         public function take(string $s): string {
+                            $this->last = $s;
                             return $s;
+                        }
+
+                        public function last(): string {
+                            return $this->last;
                         }
                     }
 
                     $a = new Box();
                     $unused = $a->take($_GET["a"]);
-                    echo $a->take("safe");',
+                    echo $a->last();',
                 'error_message' => 'TaintedHtml',
             ],
             'dontSpecializeImpureFunction' => [
