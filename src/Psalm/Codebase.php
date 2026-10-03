@@ -356,8 +356,10 @@ final class Codebase
 
             foreach ($candidate_files as $candidate_file_path) {
                 $hash = $parser_cache_provider->getHash($candidate_file_path);
-                if ($hash !== null &&
-                    $hash !== $this->file_provider->getContents($candidate_file_path)
+                // Cached statements whose recorded contents are unreadable are assumed changed
+                if ($hash !== null
+                    ? $hash !== $this->file_provider->getContents($candidate_file_path)
+                    : $parser_cache_provider->hasStatementsInCache($candidate_file_path)
                 ) {
                     $diff_files[] = $candidate_file_path;
                 }

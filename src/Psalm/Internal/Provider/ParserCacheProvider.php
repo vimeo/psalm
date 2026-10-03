@@ -51,6 +51,11 @@ final class ParserCacheProvider
         return $this->stmtCache->getHash($file_path);
     }
 
+    public function hasStatementsInCache(string $file_path): bool
+    {
+        return $this->stmtCache->hasItem($file_path);
+    }
+
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */

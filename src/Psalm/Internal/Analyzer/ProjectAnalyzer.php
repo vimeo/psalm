@@ -868,8 +868,10 @@ final class ProjectAnalyzer
 
         foreach ($this->project_files as $file_path) {
             $hash = $this->parser_cache_provider->getHash($file_path);
-            if ($hash !== null &&
-                $hash !== $this->file_provider->getContents($file_path)
+            // Cached statements whose recorded contents are unreadable are assumed changed
+            if ($hash !== null
+                ? $hash !== $this->file_provider->getContents($file_path)
+                : $this->parser_cache_provider->hasStatementsInCache($file_path)
             ) {
                 $diff_files[] = $file_path;
             }
