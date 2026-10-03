@@ -1038,6 +1038,7 @@ final class ArgumentsAnalyzer
 
         if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
+            && !self::createsOnlyAllowedClasses($statements_analyzer, $cased_method_id, $args)
         ) {
             foreach ($args as $argument_offset => $_) {
                 if (!isset($arg_function_params[$argument_offset])) {
@@ -1944,5 +1945,47 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * unserialize() only creates objects of the classes its `allowed_classes` option lists, none if it is false:
+     * then what it is given can't choose which objects are created, and its `unserialize` sink doesn't apply.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    private static function createsOnlyAllowedClasses(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        array $args,
+    ): bool {
+        if (strtolower($function_id) !== 'unserialize') {
+            return false;
+        }
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->name !== null ? $arg->name->name !== 'options' : $offset !== 1) {
+                continue;
+            }
+
+            $options_type = $statements_analyzer->node_data->getType($arg->value);
+            if ($options_type === null || !$options_type->isSingle()) {
+                return false;
+            }
+
+            $options = $options_type->getSingleAtomic();
+            if (!$options instanceof TKeyedArray
+                || !isset($options->properties['allowed_classes'])
+                || $options->properties['allowed_classes']->possibly_undefined
+            ) {
+                return false;
+            }
+
+            $allowed_classes = $options->properties['allowed_classes'];
+
+            return $allowed_classes->isFalse()
+                || ($allowed_classes->isArray() && !$allowed_classes->hasMixed() && !$allowed_classes->isNullable());
+        }
+
+        return false;
     }
 }
