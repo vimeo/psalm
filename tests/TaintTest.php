@@ -1298,6 +1298,30 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintArrayValueWrappedDeeperInALoop' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    for ($i = 0; $i < 10; $i++) {
+                        $value = ["key" => $value];
+                    }
+
+                    echo (string) $value["key"]["key"]["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayValueAfterAnotherKeyReachedTheSameNode' => [
+                'code' => '<?php // --taint-analysis
+                    function show(array $task): void {
+                        echo (string) $task["name"];
+                    }
+
+                    function relay(array $task): void {
+                        show($task);
+                    }
+
+                    relay(["other" => (string) $_GET["other"]]);
+                    relay(["name" => (string) $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
