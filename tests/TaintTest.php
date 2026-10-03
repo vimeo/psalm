@@ -280,6 +280,22 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAnObjectBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /**
+                         * @psalm-flow ($url) -> return
+                         * @psalm-taint-specialize
+                         */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    $tainted = new Url((string) $_GET["url"]);
+                    fetch(new Url("https://example.com/"));',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1314,19 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAnObjectThroughTheFlowOfItsConstructor' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url((string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */

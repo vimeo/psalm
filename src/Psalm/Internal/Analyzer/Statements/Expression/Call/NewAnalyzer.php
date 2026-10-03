@@ -762,44 +762,77 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($statements_analyzer->taint_flow_graph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+        self::taintNewObject($statements_analyzer, $stmt, $method_id, $fq_class_name, $storage);
+    }
+
+    /**
+     * The new object takes its taints from what its constructor returns, and from what its `@psalm-flow`
+     * annotations say its arguments flow into.
+     */
+    private static function taintNewObject(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodIdentifier $method_id,
+        string $fq_class_name,
+        ClassLikeStorage $storage,
+    ): void {
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        if (!$statements_analyzer->taint_flow_graph
+            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            || !$stmt_type
         ) {
-            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-            $method_storage = null;
-
-            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-            if ($declaring_method_id) {
-                $method_storage = $codebase->methods->getStorage($declaring_method_id);
-            }
-
-            if (!$method_storage) {
-                $method_source = DataFlowNode::getForCallableReturn(
-                    'builtin',
-                    $fq_class_name . '::__construct',
-                    $storage->isExternalMutationFree() ? $code_location : null,
-                );
-            } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
-                    $method_storage,
-                    $code_location,
-                );
-            } else {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
-                    $method_storage,
-                );
-            }
-
-            $statements_analyzer->taint_flow_graph->addNode($method_source);
-
-            $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            return;
         }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $method_storage = null;
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id) {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+        }
+
+        if (!$method_storage) {
+            $method_source = DataFlowNode::getForCallableReturn(
+                'builtin',
+                $fq_class_name . '::__construct',
+                $storage->isExternalMutationFree() ? $code_location : null,
+            );
+        } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
+            $method_source = DataFlowNode::getForMethodReturn(
+                $fq_class_name . '::__construct',
+                $method_storage,
+                $code_location,
+            );
+        } else {
+            $method_source = DataFlowNode::getForMethodReturn(
+                $fq_class_name . '::__construct',
+                $method_storage,
+            );
+        }
+
+        $statements_analyzer->taint_flow_graph->addNode($method_source);
+
+        // what the constructor's `@psalm-flow` annotations say its arguments flow into the new object
+        if ($declaring_method_id && $method_storage && $method_storage->return_source_params !== []) {
+            FunctionCallReturnTypeFetcher::taintUsingFlows(
+                $method_storage,
+                $statements_analyzer->taint_flow_graph,
+                $codebase->methods->getCasedMethodId($declaring_method_id),
+                $stmt->getArgs(),
+                $method_source->specialization_key !== null ? $code_location : null,
+                $method_source,
+                $method_storage->removed_taints,
+            );
+        }
+
+        $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 
     /**
