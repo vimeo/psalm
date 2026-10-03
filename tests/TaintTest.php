@@ -280,6 +280,10 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintUnserializeOfWhatSerializeReturns' => [
+                'code' => '<?php // --taint-analysis
+                    unserialize(serialize((string) $_GET["value"]));',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -898,6 +902,29 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintCallsOfImpureBuiltinFromOtherCalls' => [
+                'code' => '<?php
+                    /** @var array<string> $tainted */
+                    $tainted = $_GET["x"];
+                    $first = reset($tainted);
+                    $safe = ["safe"];
+                    echo reset($safe);
+                    $date = new DateTime();
+                    $formatted = $date->format((string) $_GET["format"]);
+                    echo $date->format("Y");',
+            ],
+            'rawUrlEncodeEscapesHtml' => [
+                'code' => '<?php
+                    echo rawurlencode((string) $_GET["x"]);
+                    echo http_build_query(["x" => $_GET["x"]]);
+                    header("Location: /?q=" . urlencode((string) $_GET["q"]));
+                    header("Location: /?" . http_build_query(["q" => $_GET["q"]]));',
+            ],
+            'escapeShellArgEscapesShell' => [
+                'code' => '<?php
+                    exec("ls " . escapeshellarg((string) $_GET["x"]));
+                    exec(escapeshellcmd((string) $_GET["x"]));',
+            ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
 
@@ -1298,6 +1325,11 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintHtmlThroughSerialize' => [
+                'code' => '<?php // --taint-analysis
+                    echo serialize((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
@@ -2659,6 +2691,59 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $get = array_map(fn($str) => trim($str), $_GET);
                     echo $get["test"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunction' => [
+                'code' => '<?php
+                    echo mb_substr($_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunctionPath' => [
+                'code' => '<?php
+                    echo basename((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunctionWithParamsProvider' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_filter($a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyMethod' => [
+                'code' => '<?php
+                    echo (new DateTime())->format((string) $_GET["format"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughStubbedArrayFunction' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo array_values($a)[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughStubbedVariadicArrayFunction' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_merge(["safe"], $a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayKeys' => [
+                'code' => '<?php
+                    echo implode(",", array_keys($_GET));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayMapClosureIntoWholeArray' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_map(fn($str) => $str, $a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughShellEscape' => [
+                'code' => '<?php
+                    echo escapeshellarg((string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapImplicitFunctionCall' => [
