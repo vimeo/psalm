@@ -14,7 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
 use Psalm\Issue\InvalidPropertyFetch;
@@ -114,11 +114,12 @@ final class InstancePropertyFetchAnalyzer
             return true;
         }
 
-        // A class-template type variable used as a property-fetch receiver is
-        // the object it was inferred to be, so resolve it through its bounds —
-        // as MethodCallAnalyzer does for method calls — instead of rejecting
-        // the bare variable as a non-object.
-        $stmt_var_type = TypeVariableTracker::resolveTypeVariables($stmt_var_type, $codebase);
+        // A bare type variable minted for a class template stands for the object
+        // inferred at its construction site; resolve it so the property is
+        // fetched on that object rather than being rejected as a non-object, as
+        // MethodCallAnalyzer does for method-call receivers. Only top-level
+        // variables resolve: one nested in a generic object stays live.
+        $stmt_var_type = TypeVariableResolver::resolveTopLevel($stmt_var_type, $codebase);
 
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(

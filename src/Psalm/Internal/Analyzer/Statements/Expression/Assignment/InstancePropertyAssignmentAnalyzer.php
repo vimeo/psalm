@@ -215,7 +215,13 @@ final class InstancePropertyAssignmentAnalyzer
                     || $union_comparison_results->type_variable_upper_bounds)
             ) {
                 // transfer any type-variable bounds recorded while checking
-                // the assignment
+                // the assignment; a value that only reaches an upper bound
+                // through mixed is reported as MixedPropertyTypeCoercion at
+                // reconciliation
+                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                    $upper_bound->property_requirement_id = $assigned_property->id;
+                }
+
                 $statements_analyzer->type_variable_tracker->addBounds(
                     $union_comparison_results->type_variable_lower_bounds,
                     $union_comparison_results->type_variable_upper_bounds,
@@ -224,6 +230,7 @@ final class InstancePropertyAssignmentAnalyzer
                         $assignment_value ?? $stmt,
                         $context->include_location,
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
