@@ -989,6 +989,23 @@ final class TaintTest extends TestCase
                     }
                     echo $organization->city;',
             ],
+            'dontTaintValidatedValueAddedToArray' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true literal-string $city */
+                    function isKnownCity(string $city): bool {
+                        return in_array($city, ["moscow", "spb"], true);
+                    }
+
+                    $city = (string) $_GET["city"];
+                    if (!isKnownCity($city)) {
+                        throw new RuntimeException("Unknown city");
+                    }
+
+                    /** @var list<string> $cities */
+                    $cities = [];
+                    $cities[] = $city;
+                    echo implode(",", $cities);',
+            ],
             'dontTaintLiteralStringType' => [
                 'code' => '<?php
                     /** @var "asc"|"desc" $direction */
