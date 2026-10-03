@@ -17,6 +17,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\TaintKind;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -77,6 +78,11 @@ final class InternalCallMapHandler
      * @var array<lowercase-string, non-empty-list<non-empty-string>>|null
      */
     private static ?array $taint_flow_map = null;
+
+    /**
+     * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
+     */
+    private static ?array $taint_escape_map = null;
 
     /**
      * The callmap version (e.g. 80) each function/method first appears in, across all callmaps.
@@ -445,6 +451,27 @@ final class InternalCallMapHandler
         }
 
         return $offsets;
+    }
+
+    /**
+     * The taints the value the builtin function or method $function_id returns can't carry (see
+     * dictionaries/InternalTaintEscapeMap.php).
+     *
+     * @psalm-capabilities read-props|read-globals|write-globals
+     */
+    public static function getReturnRemovedTaints(string $function_id): int
+    {
+        if (self::$taint_escape_map === null) {
+            /** @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>> */
+            self::$taint_escape_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintEscapeMap.php');
+        }
+
+        $removed_taints = 0;
+        foreach (self::$taint_escape_map[strtolower($function_id)] ?? [] as $taint) {
+            $removed_taints |= TaintKind::TAINT_NAMES[$taint];
+        }
+
+        return $removed_taints;
     }
 
     /**

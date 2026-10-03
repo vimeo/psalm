@@ -280,6 +280,10 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintUnserializeOfWhatSerializeReturns' => [
+                'code' => '<?php // --taint-analysis
+                    unserialize(serialize((string) $_GET["value"]));',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1321,6 +1325,11 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintHtmlThroughSerialize' => [
+                'code' => '<?php // --taint-analysis
+                    echo serialize((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */

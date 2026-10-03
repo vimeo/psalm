@@ -886,6 +886,8 @@ final class FunctionCallReturnTypeFetcher
         );
         $graph->addNode($return_node);
 
+        $removed_taints = InternalCallMapHandler::getReturnRemovedTaints($function_id);
+
         $args = $stmt->getArgs();
         foreach ($offsets as $offset) {
             $last_offset = $params[$offset]->is_variadic ? count($args) - 1 : $offset;
@@ -896,7 +898,13 @@ final class FunctionCallReturnTypeFetcher
                 }
 
                 foreach ($arg_type->parent_nodes as $parent_node) {
-                    $graph->addPath($parent_node, $return_node, 'arg', 0, $arg_type->getTaintsToRemove());
+                    $graph->addPath(
+                        $parent_node,
+                        $return_node,
+                        'arg',
+                        0,
+                        $removed_taints | $arg_type->getTaintsToRemove(),
+                    );
                 }
             }
         }
