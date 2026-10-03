@@ -1142,6 +1142,7 @@ final class AssignmentAnalyzer
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false,
+        bool $out_type_holds_value = false,
     ): void {
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
@@ -1251,9 +1252,13 @@ final class AssignmentAnalyzer
                     $statements_analyzer,
                 );
 
-                $by_ref_out_type = $by_ref_out_type->addParentNodes(
-                    $existing_type->parent_nodes,
-                );
+                // unless the parent nodes of the out type are those of what the function-like left
+                // in the parameter, the value passed to it may still be there
+                if (!$out_type_holds_value) {
+                    $by_ref_out_type = $by_ref_out_type->addParentNodes(
+                        $existing_type->parent_nodes,
+                    );
+                }
 
                 if (!$context->inside_conditional) {
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;

@@ -249,6 +249,8 @@ final class ReturnAnalyzer
 
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
+            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $storage, $cased_method_id, $context);
+
             if ($stmt->expr && $storage->location) {
                 $inferred_type = TypeExpander::expandUnion(
                     $codebase,
