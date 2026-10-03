@@ -68,6 +68,7 @@ use function min;
 use function reset;
 use function str_contains;
 use function strtolower;
+use function strtoupper;
 
 /**
  * @internal
@@ -1040,7 +1041,9 @@ final class ArgumentsAnalyzer
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
-                if (!isset($arg_function_params[$argument_offset])) {
+                if (!isset($arg_function_params[$argument_offset])
+                    || self::setsNoDestination($cased_method_id, $argument_offset, $args)
+                ) {
                     continue;
                 }
 
@@ -1944,5 +1947,42 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The curl options whose value chooses where a request goes: the value of another one (a header, a body, a
+     * timeout, ...) can't send it elsewhere.
+     */
+    private const CURL_DESTINATION_OPTIONS = [
+        'CURLOPT_URL' => true,
+        'CURLOPT_PROXY' => true,
+        'CURLOPT_PRE_PROXY' => true,
+        'CURLOPT_CONNECT_TO' => true,
+        'CURLOPT_RESOLVE' => true,
+        'CURLOPT_DNS_SERVERS' => true,
+        'CURLOPT_DOH_URL' => true,
+        'CURLOPT_INTERFACE' => true,
+        'CURLOPT_UNIX_SOCKET_PATH' => true,
+        'CURLOPT_ABSTRACT_UNIX_SOCKET' => true,
+    ];
+
+    /**
+     * Whether the argument at $argument_offset of a call of $function_id is the value of a curl option that doesn't
+     * choose where the request goes (see CURL_DESTINATION_OPTIONS): its `ssrf` sink doesn't apply then. An option
+     * the analysis can't tell may be one that does.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function setsNoDestination(string $function_id, int $argument_offset, array $args): bool
+    {
+        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+            return false;
+        }
+
+        $option = $args[1]->value;
+
+        return $option instanceof PhpParser\Node\Expr\ConstFetch
+            && !isset(self::CURL_DESTINATION_OPTIONS[strtoupper($option->name->toString())]);
     }
 }

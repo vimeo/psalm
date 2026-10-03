@@ -280,6 +280,13 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintSsrfInACurlOptionNotChoosingTheDestination' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
+                    curl_setopt($curl, CURLOPT_HTTPHEADER, ["X-Value: " . (string) $_GET["header"]]);
+                    curl_setopt($curl, \\CURLOPT_USERAGENT, (string) $_GET["agent"]);',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1305,19 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintSsrfInTheCurlUrlOption' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init();
+                    curl_setopt($curl, CURLOPT_URL, (string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInACurlOptionTheAnalysisCantTell' => [
+                'code' => '<?php // --taint-analysis
+                    function set(\\CurlHandle $curl, int $option): void {
+                        curl_setopt($curl, $option, (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
