@@ -971,6 +971,24 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintValidatedValueStoredInProperty' => [
+                'code' => '<?php
+                    final class Organization {
+                        public string $city = "";
+                    }
+
+                    /** @psalm-assert-if-true literal-string $city */
+                    function isKnownCity(string $city): bool {
+                        return in_array($city, ["moscow", "spb"], true);
+                    }
+
+                    $organization = new Organization();
+                    $city = (string) $_GET["city"];
+                    if (isKnownCity($city)) {
+                        $organization->city = $city;
+                    }
+                    echo $organization->city;',
+            ],
             'dontTaintLiteralStringType' => [
                 'code' => '<?php
                     /** @var "asc"|"desc" $direction */
