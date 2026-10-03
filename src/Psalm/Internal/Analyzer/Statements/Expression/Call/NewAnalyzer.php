@@ -782,16 +782,16 @@ final class NewAnalyzer extends CallAnalyzer
                     $fq_class_name . '::__construct',
                     $storage->isExternalMutationFree() ? $code_location : null,
                 );
-            } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
-                    $method_storage,
-                    $code_location,
-                );
             } else {
+                // the node the body of the constructor returns into, wherever it is declared
+                $cased_constructor_id = $declaring_method_id
+                    ? $codebase->methods->getCasedMethodId($declaring_method_id)
+                    : $fq_class_name . '::__construct';
+
                 $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
+                    $cased_constructor_id,
                     $method_storage,
+                    $storage->isExternalMutationFree() || $method_storage->specialize_call ? $code_location : null,
                 );
             }
 

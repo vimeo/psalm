@@ -343,12 +343,17 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if ($method_storage->location) {
-                    $this_parent_node = DataFlowNode::getForAssignment(
-                        '$this in ' . $method_id,
-                        $method_storage->location,
-                    );
-
+                    // the body of the method, declared by this class or the one it inherits it from, takes `$this`
+                    // from this node: this call enters it with its own specialization, like the arguments do, so
+                    // that what it returns is this object's and not every object's
                     foreach ($parent_nodes as $parent_node) {
+                        $this_parent_node = DataFlowNode::getForAssignment(
+                            '$this in ' . (string) $declaring_method_id,
+                            $method_storage->location,
+                            $parent_node->specialization_key ?? DataFlowNode::getSpecializationKey($node_location),
+                        );
+
+                        $taint_flow_graph->addNode($this_parent_node);
                         $taint_flow_graph->addPath(
                             $parent_node,
                             $this_parent_node,

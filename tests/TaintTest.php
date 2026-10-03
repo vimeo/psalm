@@ -916,6 +916,27 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintOtherInstanceThroughInheritedMethod' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        protected string $value = "";
+
+                        public function __construct(string $value) {
+                            $this->value = $value;
+                        }
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    final class ChildStringHolder extends StringHolder {}
+
+                    $tainted = new ChildStringHolder((string) $_GET["x"]);
+                    $safe = new ChildStringHolder("safe");
+                    echo $safe->getValue();',
+            ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
 
@@ -2441,6 +2462,27 @@ final class TaintTest extends TestCase
                     $holder = new ChildStringHolder();
                     $holder->setX($_GET["x"]);
                     echoX($holder);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughInheritedMethodOfSpecializedClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class StringHolder {
+                        protected string $value = "";
+
+                        public function __construct(string $value) {
+                            $this->value = $value;
+                        }
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    final class ChildStringHolder extends StringHolder {}
+
+                    $tainted = new ChildStringHolder((string) $_GET["x"]);
+                    echo $tainted->getValue();',
                 'error_message' => 'TaintedHtml',
             ],
             'ImplodeExplode' => [
