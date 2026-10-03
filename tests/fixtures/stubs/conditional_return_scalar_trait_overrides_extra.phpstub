@@ -1,0 +1,11 @@
+<?php
+namespace Psalm\Tests\Fixtures\ConditionalScalarTraitOverride;
+
+trait MyTrait
+{
+    /**
+     * @param string|null $key
+     * @return ($key is null ? array<string, int> : int|null)
+     */
+    public function get($key = null) {}
+}
