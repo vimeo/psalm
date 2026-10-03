@@ -185,6 +185,12 @@ final class BinaryOpAnalyzer
                     }
                 }
 
+                // appended to the start of a URL fixing its server, the right operand can't choose it
+                $left_prefix = ConcatAnalyzer::getLiteralPrefix($statements_analyzer, $stmt->left);
+                $right_removed_taints = $left_prefix === null
+                    ? $removed_taints
+                    : $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin($left_prefix);
+
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
                         $graph->addPath(
@@ -192,7 +198,7 @@ final class BinaryOpAnalyzer
                             $new_parent_node,
                             'concat',
                             $added_taints,
-                            $removed_taints,
+                            $right_removed_taints,
                         );
                     }
                 }

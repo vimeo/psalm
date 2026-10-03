@@ -280,6 +280,14 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintSsrfAfterTheStartOfAUrlFixingItsServer' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    file_get_contents("https://api.example.com/search?q=" . $value);
+                    file_get_contents("https://api.example.com/items/{$value}/details");
+                    file_get_contents(sprintf("https://api.example.com/items/%s", $value));
+                    file_get_contents("https://api.example.com/" . $value . "/" . $value);',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1306,26 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintFileAfterTheStartOfAUrlWithoutScheme' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("//api.example.com/" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintSsrfAfterAUrlStartNotEndingItsHost' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("https://api.example.com" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInTheHostOfAFormattedUrl' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents(sprintf("https://%s/items", (string) $_GET["value"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintHtmlAfterTheStartOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    echo "https://example.com/" . (string) $_GET["value"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */

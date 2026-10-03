@@ -9,6 +9,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\InterpolatedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -43,6 +44,9 @@ final class EncapsulatedStringAnalyzer
 
         $literal_string = "";
 
+        // the taints the parts can't have after the start of a URL fixing its server (see ConcatAnalyzer)
+        $url_origin_removed_taints = 0;
+
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
@@ -56,6 +60,10 @@ final class EncapsulatedStringAnalyzer
                 }
                 $non_empty = $non_empty || $part->value !== "";
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
+                if ($literal_string !== null && $url_origin_removed_taints === 0) {
+                    $url_origin_removed_taints = ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin($literal_string);
+                }
+
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -108,6 +116,8 @@ final class EncapsulatedStringAnalyzer
                         $taint_source = $new_parent_node->setTaints($taints);
                         $graph->addSource($taint_source);
                     }
+
+                    $removed_taints |= $url_origin_removed_taints;
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
