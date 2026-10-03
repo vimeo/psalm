@@ -381,23 +381,49 @@ final class VariableFetchAnalyzer
             $context->vars_in_scope[$var_name] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
-                if ($context->is_global) {
+            if (($stmt_type->possibly_undefined_from_try || $stmt_type->possibly_undefined)
+                && !$context->inside_isset
+                && !$context->inside_unset
+            ) {
+                $suffix = $stmt_type->possibly_undefined_from_try
+                    ? ' defined in try block'
+                    : '';
+
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+
+                if (!$suffix && $first_appearance) {
+                    $suffix = ', first seen on line ' . $first_appearance->getLineNumber();
+                }
+
+                if ($codebase->alter_code
+                    && !$stmt_type->possibly_undefined_from_try
+                    && isset($project_analyzer->getIssuesToFix()[$context->is_global
+                        ? 'PossiblyUndefinedGlobalVariable'
+                        : 'PossiblyUndefinedVariable'])
+                ) {
+                    $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                    if ($branch_point !== null) {
+                        $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                    }
+                } elseif ($context->is_global) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
-                            'Possibly undefined global variable ' . $var_name . ' defined in try block',
+                            'Possibly undefined global variable ' . $var_name . $suffix,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $var_name,
                         ),
                         $statements_analyzer->getSuppressedIssues(),
+                        (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $var_name . ' defined in try block',
+                            'Possibly undefined variable ' . $var_name . $suffix,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
+                        (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 }
             }
