@@ -568,6 +568,28 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'classLevelAnnotationCoversAbstractMethods' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    interface PureInterface {
+                        public function a(): int;
+                    }
+
+                    /** @psalm-immutable */
+                    interface ImmutableInterface {
+                        public function b(): int;
+                    }
+
+                    /** @psalm-mutable */
+                    interface MutableInterface {
+                        public function c(): int;
+                    }
+
+                    /** @psalm-immutable */
+                    abstract class ImmutableBase {
+                        abstract public function d(): int;
+                    }',
+            ],
         ];
     }
 
@@ -764,7 +786,6 @@ final class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     /** @psalm-immutable */
                     interface SomethingImmutable {
-                        /** @psalm-suppress MissingAbstractPureAnnotation */
                         public function someInteger() : int;
                     }
 

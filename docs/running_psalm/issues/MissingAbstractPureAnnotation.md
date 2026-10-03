@@ -8,6 +8,8 @@ annotation, which says what every implementation may do, for example:
 * `@psalm-capabilities read-props|write-this-props` - may also write the properties of `$this`
 * `@psalm-impure` - may do anything (not recommended)
 
+An annotation on the declaring interface or class (`@psalm-pure`, `@psalm-immutable`, `@psalm-capabilities` or `@psalm-mutable`) applies to all its abstract methods, so they do not need their own.
+
 This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly pure functions and methods are marked as pure.  
 
 ```php
