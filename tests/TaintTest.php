@@ -898,6 +898,17 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontReportCallingAClosureBuiltFromInput' => [
+                'code' => '<?php
+                    /** @var mixed $value */
+                    $value = $_GET["value"];
+                    if ($value instanceof Closure) {
+                        $value();
+                    }
+
+                    $closure = fn(): string => (string) $_GET["value"];
+                    $closure();',
+            ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
 
@@ -2660,6 +2671,12 @@ final class TaintTest extends TestCase
                     $get = array_map(fn($str) => trim($str), $_GET);
                     echo $get["test"];',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintCallingAFunctionNamedByInput' => [
+                'code' => '<?php
+                    $name = (string) $_GET["function"];
+                    $name();',
+                'error_message' => 'TaintedCallable',
             ],
             'taintThroughArrayMapImplicitFunctionCall' => [
                 'code' => '<?php

@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -998,6 +999,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_name_type->parent_nodes
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !self::isOnlyObjects($stmt_name_type)
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -1387,5 +1389,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
+     * chosen by the client, whatever data it was built from.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOnlyObjects(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
