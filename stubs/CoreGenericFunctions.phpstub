@@ -1264,6 +1264,7 @@ function preg_replace_callback_array(array $pattern, $subject, int $limit = -1, 
  * @return array
  *
  * @psalm-pure
+ * @psalm-flow ($iterator) -> return
  * @psalm-purity-from-template P
  */
 function iterator_to_array(Traversable $iterator, bool $preserve_keys = true): array {}

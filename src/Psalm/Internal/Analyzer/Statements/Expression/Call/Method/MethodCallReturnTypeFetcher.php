@@ -36,6 +36,7 @@ use Throwable;
 use UnexpectedValueException;
 
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -272,6 +273,35 @@ final class MethodCallReturnTypeFetcher
             $context,
         );
 
+        // what a generator gives comes from what it yields (see YieldAnalyzer::taintGenerator())
+        $generator_path_type = match (strtolower((string) $declaring_method_id)) {
+            'generator::current', 'generator::send' => 'arrayvalue-fetch',
+            'generator::key' => 'arraykey-fetch',
+            'generator::getreturn' => 'return',
+            default => null,
+        };
+
+        if ($generator_path_type !== null
+            && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
+            && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
+            && $var_type->parent_nodes
+        ) {
+            $generator_node = DataFlowNode::getForAssignment(
+                'generator ' . $cased_method_id,
+                new CodeLocation($statements_analyzer, $stmt->name),
+            );
+
+            $graph->addNode($generator_node);
+
+            foreach ($var_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $generator_node, $generator_path_type);
+            }
+
+            $return_type_candidate = $return_type_candidate->addParentNodes(
+                [$generator_node->id => $generator_node],
+            );
+        }
+
         return $return_type_candidate;
     }
 
@@ -308,6 +338,7 @@ final class MethodCallReturnTypeFetcher
         );
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
+
 
         $is_declaring = (string) $declaring_method_id === (string) $method_id;
 
