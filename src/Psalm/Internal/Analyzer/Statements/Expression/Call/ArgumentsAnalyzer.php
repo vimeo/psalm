@@ -1038,6 +1038,7 @@ final class ArgumentsAnalyzer
 
         if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
+            && !self::returnsInsteadOfOutputting($statements_analyzer, $cased_method_id, $args)
         ) {
             foreach ($args as $argument_offset => $_) {
                 if (!isset($arg_function_params[$argument_offset])) {
@@ -1944,5 +1945,30 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * print_r() and var_export() return what they would output when their second argument is true: they output
+     * nothing then, so their output sinks don't apply.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    private static function returnsInsteadOfOutputting(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        array $args,
+    ): bool {
+        $function_id = strtolower($function_id);
+        if ($function_id !== 'print_r' && $function_id !== 'var_export') {
+            return false;
+        }
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->name !== null ? $arg->name->name === 'return' : $offset === 1) {
+                return $statements_analyzer->node_data->getType($arg->value)?->isTrue() ?? false;
+            }
+        }
+
+        return false;
     }
 }
