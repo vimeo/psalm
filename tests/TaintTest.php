@@ -280,6 +280,14 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintUnserializeCreatingOnlyAllowedClasses' => [
+                'code' => '<?php // --taint-analysis
+                    final class Point {}
+
+                    unserialize((string) $_GET["none"], ["allowed_classes" => false]);
+                    unserialize((string) $_GET["listed"], ["allowed_classes" => [Point::class]]);
+                    unserialize((string) $_GET["named"], options: ["allowed_classes" => false]);',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1298,6 +1306,16 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintUnserializeAllowingAllClasses' => [
+                'code' => '<?php // --taint-analysis
+                    unserialize((string) $_GET["value"], ["allowed_classes" => true]);',
+                'error_message' => 'TaintedUnserialize',
+            ],
+            'taintUnserializeWithoutAllowedClasses' => [
+                'code' => '<?php // --taint-analysis
+                    unserialize((string) $_GET["value"], ["max_depth" => 2]);',
+                'error_message' => 'TaintedUnserialize',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
