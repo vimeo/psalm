@@ -274,6 +274,14 @@ final class ForeachAnalyzer
             ) {
                 return false;
             }
+
+            [$key_type, $value_type] = self::taintObjectIteration(
+                $statements_analyzer,
+                $stmt->expr,
+                $iterator_type,
+                $key_type,
+                $value_type,
+            );
         }
 
         $foreach_context = clone $context;
@@ -597,6 +605,59 @@ final class ForeachAnalyzer
     /**
      * @return false|null
      */
+    /**
+     * The keys and values an object iterated over gives come from what it holds: a generator, what it yields (see
+     * YieldAnalyzer::taintGenerator()), another Traversable, what it was given. An array gives its keys and values
+     * through their own types.
+     *
+     * @return array{?Union, ?Union}
+     */
+    private static function taintObjectIteration(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Union $iterator_type,
+        ?Union $key_type,
+        ?Union $value_type,
+    ): array {
+        if (!$statements_analyzer->data_flow_graph || !$iterator_type->parent_nodes) {
+            return [$key_type, $value_type];
+        }
+
+        $iterates_object = false;
+
+        foreach ($iterator_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TObject
+                || $atomic_type instanceof TIterable
+                || $atomic_type instanceof TMixed
+            ) {
+                $iterates_object = true;
+            }
+        }
+
+        if (!$iterates_object) {
+            return [$key_type, $value_type];
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $expr);
+
+        $key_node = DataFlowNode::getForAssignment('foreach key', $location);
+        $value_node = DataFlowNode::getForAssignment('foreach value', $location);
+
+        $statements_analyzer->data_flow_graph->addNode($key_node);
+        $statements_analyzer->data_flow_graph->addNode($value_node);
+
+        foreach ($iterator_type->parent_nodes as $parent_node) {
+            $statements_analyzer->data_flow_graph->addPath($parent_node, $key_node, 'arraykey-fetch');
+            $statements_analyzer->data_flow_graph->addPath($parent_node, $value_node, 'arrayvalue-fetch');
+        }
+
+        return [
+            ($key_type ?? Type::getMixed())->addParentNodes([$key_node->id => $key_node]),
+            ($value_type ?? Type::getMixed())->addParentNodes([$value_node->id => $value_node]),
+        ];
+    }
+
     public static function checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $expr,

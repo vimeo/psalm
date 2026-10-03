@@ -22,6 +22,7 @@ function str_split(string $string, int $length = 1) {}
  * @return array
  *
  * @psalm-pure
+ * @psalm-flow ($iterator) -> return
  * @psalm-purity-from-template P
  * @psalm-flow ($iterator) -> return
  */

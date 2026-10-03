@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblock;
@@ -24,6 +25,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_values;
 
@@ -132,6 +134,12 @@ final class YieldAnalyzer
                 return false;
             }
             $context->inside_call = false;
+
+            self::taintGenerator(
+                $statements_analyzer,
+                $statements_analyzer->node_data->getType($stmt->key),
+                'arraykey-assignment',
+            );
         }
 
         if ($stmt->value) {
@@ -140,6 +148,12 @@ final class YieldAnalyzer
                 return false;
             }
             $context->inside_call = false;
+
+            self::taintGenerator(
+                $statements_analyzer,
+                $statements_analyzer->node_data->getType($stmt->value),
+                'arrayvalue-assignment',
+            );
 
             if ($var_comment_type) {
                 $expression_type = $var_comment_type;
@@ -262,5 +276,40 @@ final class YieldAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * What a generator yields flows into what it returns, which a foreach iterates over (see ForeachAnalyzer)
+     *
+     * @param 'arraykey-assignment'|'arrayvalue-assignment'|'yield-from' $path_type
+     */
+    public static function taintGenerator(
+        StatementsAnalyzer $statements_analyzer,
+        ?Union $yielded_type,
+        string $path_type,
+    ): void {
+        $source = $statements_analyzer->getSource();
+
+        if (!$statements_analyzer->data_flow_graph
+            || !$yielded_type
+            || !$yielded_type->parent_nodes
+            || !$source instanceof FunctionLikeAnalyzer
+        ) {
+            return;
+        }
+
+        $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+        if (!$storage->location) {
+            return;
+        }
+
+        $generator_node = DataFlowNode::getForMethodReturn($source->getCorrectlyCasedMethodId(), $storage);
+
+        $statements_analyzer->data_flow_graph->addNode($generator_node);
+
+        foreach ($yielded_type->parent_nodes as $parent_node) {
+            $statements_analyzer->data_flow_graph->addPath($parent_node, $generator_node, $path_type);
+        }
     }
 }
