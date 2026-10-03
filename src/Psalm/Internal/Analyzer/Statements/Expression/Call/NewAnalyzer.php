@@ -797,7 +797,24 @@ final class NewAnalyzer extends CallAnalyzer
 
             $statements_analyzer->taint_flow_graph->addNode($method_source);
 
-            $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+            $parent_nodes = [$method_source->id => $method_source];
+
+            // the object is what the constructor leaves in it (see FunctionLikeAnalyzer)
+            $constructor_location = $method_storage !== null && $method_storage->specialize_call
+                ? $method_storage->location
+                : null;
+            if ($constructor_location) {
+                $this_out_node = DataFlowNode::getForAssignment(
+                    '$this out of ' . $codebase->methods->getCasedMethodId($declaring_method_id ?? $method_id),
+                    $constructor_location,
+                    $method_source->specialization_key,
+                );
+
+                $statements_analyzer->taint_flow_graph->addNode($this_out_node);
+                $parent_nodes[$this_out_node->id] = $this_out_node;
+            }
+
+            $stmt_type = $stmt_type->setParentNodes($parent_nodes);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
     }
