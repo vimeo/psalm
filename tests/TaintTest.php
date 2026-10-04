@@ -2452,6 +2452,26 @@ final class TaintTest extends TestCase
                     show(values());',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWhatATemplateTraversableParamGives' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    /**
+                     * @template T of Traversable<int, string>
+                     * @param T $values
+                     */
+                    function show(Traversable $values): void {
+                        foreach ($values as $value) {
+                            echo $value;
+                        }
+                    }
+
+                    show(values());',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSsrfAfterTwoSlashesOrABackslash' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink ssrf $uri */

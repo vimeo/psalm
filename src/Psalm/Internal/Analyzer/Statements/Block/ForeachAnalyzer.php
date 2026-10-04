@@ -73,6 +73,7 @@ use UnexpectedValueException;
 
 use function array_keys;
 use function array_map;
+use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
@@ -628,7 +629,17 @@ final class ForeachAnalyzer
 
         $iterates_object = false;
 
-        foreach ($iterator_type->getAtomicTypes() as $atomic_type) {
+        $atomic_types = $iterator_type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            // a template parameter iterates over what its bound does
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...$atomic_type->as->getAtomicTypes()];
+                continue;
+            }
+
             if ($atomic_type instanceof TNamedObject
                 || $atomic_type instanceof TObject
                 || $atomic_type instanceof TIterable
