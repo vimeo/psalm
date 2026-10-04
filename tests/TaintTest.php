@@ -7875,6 +7875,30 @@ final class TaintTest extends TestCase
                 ],
                 'expectedSourceLines' => [5, 7],
             ],
+            'arrayKeysStayApartWhereManyFlowsConverge' => [
+                // Enough differently keyed arrays reach $task for what is reachable from it to be walked once,
+                // relative to them: the fetch still only takes the one with the key it fetches.
+                'code' => '<?php
+                    function show(array $task): void {
+                        echo (string) $task["name"];
+                    }
+
+                    show(["a" => (string)($_GET["a"] ?? "")]);
+                    show(["b" => (string)($_GET["b"] ?? "")]);
+                    show(["c" => (string)($_GET["c"] ?? "")]);
+                    show(["d" => (string)($_GET["d"] ?? "")]);
+                    show(["e" => (string)($_GET["e"] ?? "")]);
+                    show(["f" => (string)($_GET["f"] ?? "")]);
+                    show(["g" => (string)($_GET["g"] ?? "")]);
+                    show(["h" => (string)($_GET["h"] ?? "")]);
+                    show(["name" => (string)($_GET["name"] ?? "")]);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo (string) $task["name"]; }',
+                    'TaintedTextWithQuotes{ echo (string) $task["name"]; }',
+                ],
+                'expectedSourceLines' => [14, 14],
+            ],
             'specializedMethodCallSitesStayApart' => [
                 // With unused-variable tracking on, as in the CLI. Fresh instances, so no taint is carried over
                 // through the receiver.
