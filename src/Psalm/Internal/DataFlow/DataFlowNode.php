@@ -678,7 +678,7 @@ final class DataFlowNode implements Stringable
             $from_id . ' via ' . $path_type,
             null,
             null,
-            $from->label ?? $from_id,
+            $from?->label ?? $from_id,
             $from?->code_location,
         );
     }
