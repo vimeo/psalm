@@ -51,7 +51,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
-use Throwable;
 
 use function array_any;
 use function array_filter;
@@ -66,7 +65,6 @@ use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
-use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -491,9 +489,11 @@ final class FunctionLikeDocblockScanner
 
         foreach ($pending as $template_name => $j) {
             assert(isset($storage->template_types[$template_name]));
-            $v = $storage->template_types[$template_name];
-            $template_as_type = reset($v);
-            $template_function_id = key($v);
+            $template_function_id = key($storage->template_types[$template_name]);
+            // The template was generated when another tag referenced this param, which may precede
+            // the param's own @param tag: bound it by the param's final type, not the one seen then
+            $template_as_type = $storage->params[$j]->type ?? Type::getMixed();
+            $storage->template_types[$template_name] = [$template_function_id => $template_as_type];
 
             $storage->params[$j]->type = new Union([
                 new TTemplateParam(
@@ -906,7 +906,7 @@ final class FunctionLikeDocblockScanner
                     true,
                     true,
                 );
-            } catch (TypeParseTreeException|Throwable $e) {
+            } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_method_id,
                     $docblock_type_location,

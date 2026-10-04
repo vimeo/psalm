@@ -2996,7 +2996,7 @@ final class FunctionCallTest extends TestCase
             ],
             'templateTypesInParams' => [
                 'code' => '<?php
-                    /** 
+                    /**
                      * @param ($flag is 0 ? (double|int) : ($flag is 1 ? bool : string)) $in
                      * @param 0|1|2 $flag
                      */
@@ -3005,6 +3005,16 @@ final class FunctionCallTest extends TestCase
                     }
                     test("test", 0);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'conditionalParamTypeKeepsReferencedParamDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @param ($flag is 0 ? int : string) $in
+                     * @param 0|1 $flag
+                     */
+                    function test($in, int $flag): void {}
+                    test("test", 5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34 - Argument 2 of test expects 0|1, but 5 provided',
             ],
             'noCrashOnEmptyArrayPush' => [
                 'code' => '<?php
