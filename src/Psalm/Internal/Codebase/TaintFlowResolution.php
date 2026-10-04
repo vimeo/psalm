@@ -51,7 +51,8 @@ use const SORT_STRING;
  *   its open assignments.
  * - Where flows converge in many states, at a node many contexts or open assignments reach (a property, a
  *   parameter of a function called with many different arrays, ...), what is reachable from it is walked
- *   once, relative to them, like the body of a specialized call (see enterConvergence()).
+ *   once for each innermost open assignment of the flows, relative to them, like the body of a specialized
+ *   call (see enterConvergence()).
  * - Nothing is kept of a flow but its state and, to rebuild the traces of the flows reported, the state it
  *   came from (see buildTrace()).
  *
@@ -112,6 +113,18 @@ final class TaintFlowResolution
      */
     private const ENTRY_CALL = 0;
     private const ENTRY_CONVERGENCE = 1;
+
+    /**
+     * Through how many convergences a flow entering an entry finds the class of an open assignment of it made
+     * before them, that a fetch in the walk of the entry observes (see getAssignmentClass())
+     */
+    private const CONVERGENCE_LEVELS = 3;
+
+    /**
+     * How many convergences of a node know the innermost open assignments of the flows entering them at most
+     * (see getConvergenceOpenAssignments())
+     */
+    private const MAX_CONVERGENCE_KEYS = 32;
 
     /**
      * The bits of a packed observable depth (see computeObservableDepths()) for each expression type
@@ -308,7 +321,7 @@ final class TaintFlowResolution
      */
 
     /**
-     * Kind . ' ' . node id => entry
+     * Kind . ' ' . node id . ' ' . open assignments its walk starts with => entry
      *
      * @var array<string, int>
      */
@@ -370,12 +383,28 @@ final class TaintFlowResolution
     private array $entry_class_dependents = [];
 
     /**
+     * Entry => position (see getPosition()) => through how many convergences the calls entering it that don't
+     * know their class of open assignment there find it (see dependOnClass())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_class_levels = [];
+
+    /**
      * Node id => some of the specialized call entries whose walks reached it => true: a node the walks of
      * several reach is shared by them, like a property (see enterConvergence())
      *
      * @var array<string, array<int, true>>
      */
     private array $call_entries_reaching = [];
+
+    /**
+     * Node id => the open assignments the convergences of that node start with (see
+     * getConvergenceOpenAssignments()) => true
+     *
+     * @var array<string, array<int, true>>
+     */
+    private array $convergence_open_assignments = [];
 
     /**
      * Root state => its entry
@@ -1558,7 +1587,49 @@ final class TaintFlowResolution
      */
     private function enterConvergence(int $caller, string $id): void
     {
-        $this->addEntryCaller($this->getEntry($id, self::ENTRY_CONVERGENCE, $caller), $caller, null);
+        $this->addEntryCaller(
+            $this->getEntry($id, self::ENTRY_CONVERGENCE, $caller, $this->getConvergenceOpenAssignments($caller, $id)),
+            $caller,
+            null,
+        );
+    }
+
+    /**
+     * The open assignments the walk of the convergence of node $id for the flows of state $caller starts with:
+     * those of its innermost open assignment of each expression type, so that the flows with different ones
+     * don't share it.
+     *
+     * The flows converging at a node often differ by little more: e.g. the values of the properties of an
+     * object, each assigned to its own array key, converge at the array of all of them. A fetch past the
+     * convergence ignores all of them but one there, and in any convergence their flows enter later on, where
+     * the open assignments of the flows entering it are only known through those of the flows entering the
+     * first one (see getAssignmentClass()). Past MAX_CONVERGENCE_KEYS of them at a node, the flows share one
+     * convergence that knows none.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getConvergenceOpenAssignments(int $caller, string $id): int
+    {
+        [$made] = $this->open_assignments[$this->state_open_assignments[$caller]];
+        $known = [];
+        $known_count = [];
+
+        foreach (self::FAMILIES as $family => $_) {
+            $known[$family] = array_slice($made[$family] ?? [], -1);
+            $known_count[$family] = count($known[$family]);
+        }
+
+        $open_assignments = $this->truncateOpenAssignments($this->internOpenAssignments($known, $known_count), $id);
+
+        if (!isset($this->convergence_open_assignments[$id][$open_assignments])) {
+            if (count($this->convergence_open_assignments[$id] ?? []) >= self::MAX_CONVERGENCE_KEYS) {
+                return self::CALL_OPEN_ASSIGNMENTS;
+            }
+
+            $this->convergence_open_assignments[$id][$open_assignments] = true;
+        }
+
+        return $open_assignments;
     }
 
     /**
@@ -1573,14 +1644,19 @@ final class TaintFlowResolution
     }
 
     /**
-     * The entry of kind $kind for the node $id, made if needed with $caller as the first call entering it
+     * The entry of kind $kind for the node $id whose walk starts with open assignments $open_assignments,
+     * made if needed with $caller as the first call entering it
      *
      * @param self::ENTRY_* $kind
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private function getEntry(string $id, int $kind, int $caller): int
-    {
-        $entry_key = $kind . ' ' . $id;
+    private function getEntry(
+        string $id,
+        int $kind,
+        int $caller,
+        int $open_assignments = self::CALL_OPEN_ASSIGNMENTS,
+    ): int {
+        $entry_key = $kind . ' ' . $id . ' ' . $open_assignments;
 
         if (isset($this->entry_ids[$entry_key])) {
             return $this->entry_ids[$entry_key];
@@ -1590,7 +1666,7 @@ final class TaintFlowResolution
         $this->entry_ids[$entry_key] = $entry;
         $this->root_entries[count($this->state_nodes)] = $entry;
 
-        $this->reach($id, $entry, self::CALL_OPEN_ASSIGNMENTS, self::ALL_TAINTS, 0, $caller, 0, -1);
+        $this->reach($id, $entry, $open_assignments, self::ALL_TAINTS, 0, $caller, 0, -1);
 
         return $entry;
     }
@@ -1671,7 +1747,7 @@ final class TaintFlowResolution
         foreach ($this->entry_filters[$entry] as $filter) {
             [$family, $depth, $fetched_key] = $this->filter_fetches[$filter];
 
-            if ($this->passesFetch($caller, $family, $depth, $fetched_key) === true) {
+            if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
                 $this->addEntryCaller($filter, $caller, $specialization_key);
             }
         }
@@ -1754,7 +1830,7 @@ final class TaintFlowResolution
         $this->filter_fetches[$filter] = [$family, $depth, $fetched_key];
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
-            if ($this->passesFetch($caller, $family, $depth, $fetched_key) === true) {
+            if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
                 $this->addEntryCaller($filter, $caller, $specialization_key);
             }
         }
@@ -1764,10 +1840,11 @@ final class TaintFlowResolution
 
     /**
      * Whether a fetch of key $fetched_key doesn't ignore the open assignment of type $family at depth $depth
-     * of the flows of state $state, or null if they don't know it: it is one of those of the call entering
-     * their context, which decides (see dependOnClass()).
+     * of the flows of state $state, or null if they don't know it: it is one of those of the flows entering
+     * their context, which decides (see dependOnClass()), through $levels more convergences at most (see
+     * getAssignmentClass()).
      */
-    private function passesFetch(int $state, int $family, int $depth, string $fetched_key): ?bool
+    private function passesFetch(int $state, int $family, int $depth, string $fetched_key, int $levels): ?bool
     {
         [$made, $closed] = $this->open_assignments[$this->state_open_assignments[$state]];
         $count = count($made[$family]);
@@ -1790,8 +1867,10 @@ final class TaintFlowResolution
 
         $context = $this->state_contexts[$state];
 
-        if ($this->entry_kinds[$context] !== self::ENTRY_CALL) {
-            // made before the flows reached the convergence, see getAssignmentClass()
+        $is_convergence = $this->entry_kinds[$context] !== self::ENTRY_CALL;
+
+        if ($is_convergence && $levels === 0) {
+            // see getAssignmentClass()
             return true;
         }
 
@@ -1810,17 +1889,22 @@ final class TaintFlowResolution
             return true;
         }
 
-        $this->dependOnClass($context, self::getPosition($family, $call_depth), $state);
+        $this->dependOnClass(
+            $context,
+            self::getPosition($family, $call_depth),
+            $state,
+            $is_convergence ? $levels - 1 : $levels,
+        );
 
         return null;
     }
 
     /**
      * The class (see getClass()) of the open assignment of type $family at depth $depth of the flows of state
-     * $state, or null if they don't know it: it is one of those of the call entering their context, which
-     * decides (see dependOnClass()).
+     * $state, or null if they don't know it: it is one of those of the flows entering their context, which
+     * decides (see dependOnClass()), through $levels more convergences at most.
      */
-    private function getAssignmentClass(int $state, int $family, int $depth): ?string
+    private function getAssignmentClass(int $state, int $family, int $depth, int $levels): ?string
     {
         [$made, $closed] = $this->open_assignments[$this->state_open_assignments[$state]];
         $count = count($made[$family]);
@@ -1843,13 +1927,14 @@ final class TaintFlowResolution
 
         $context = $this->state_contexts[$state];
 
-        if ($this->entry_kinds[$context] !== self::ENTRY_CALL) {
-            // Made before the flows reached the convergence. Telling apart the flows entering it by the class of
-            // their open assignment there (in filters of it, like for a specialized call), and so on through
-            // every convergence enclosing it, would multiply the walks for every combination of classes, and
-            // going on in the context of each flow entering it (as a convergence has no call site its flows must
-            // leave through) would multiply them by the flows entering it. So no fetch ignores it: past one, a
-            // flow may take taints it doesn't have, but takes all those it has.
+        $is_convergence = $this->entry_kinds[$context] !== self::ENTRY_CALL;
+
+        if ($is_convergence && $levels === 0) {
+            // Made before the flows entering a convergence reached the convergence they are in themselves, and
+            // so on through CONVERGENCE_LEVELS convergences. Telling apart the flows entering each of them by
+            // the class of their open assignment there, in filters of it, would multiply the walks for every
+            // combination of classes of the convergences they went through. So no fetch ignores it there: past
+            // one, a flow may take taints it doesn't have, but takes all those it has.
             return '';
         }
 
@@ -1867,7 +1952,7 @@ final class TaintFlowResolution
             return '';
         }
 
-        $this->dependOnClass($context, $position, $state);
+        $this->dependOnClass($context, $position, $state, $is_convergence ? $levels - 1 : $levels);
 
         return null;
     }
@@ -1910,9 +1995,10 @@ final class TaintFlowResolution
     /**
      * What the flows of state $state, in the walk of $entry, do depends on the class of the open assignment
      * at position $position of the calls entering $entry. They go on in each filter of $entry for the calls
-     * with a given class there (see dependOnClass()), as they would in $entry, but knowing it.
+     * with a given class there (see dependOnClass()), as they would in $entry, but knowing it. The calls
+     * that don't know it either find it through $levels more convergences at most (see getAssignmentClass()).
      */
-    private function dependOnClass(int $entry, int $position, int $state): void
+    private function dependOnClass(int $entry, int $position, int $state, int $levels): void
     {
         $this->entry_class_dependents[$entry][$position][$state] = true;
 
@@ -1926,6 +2012,7 @@ final class TaintFlowResolution
         }
 
         $this->entry_class_filters[$entry][$position] = [];
+        $this->entry_class_levels[$entry][$position] = $levels;
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
             $this->addClassFilterCaller($entry, $position, $caller, $specialization_key);
@@ -1941,7 +2028,12 @@ final class TaintFlowResolution
      */
     private function addClassFilterCaller(int $entry, int $position, int $caller, ?string $specialization_key): void
     {
-        $class = $this->getAssignmentClass($caller, $position >> self::DEPTH_BITS, $position & self::DEPTH_MASK);
+        $class = $this->getAssignmentClass(
+            $caller,
+            $position >> self::DEPTH_BITS,
+            $position & self::DEPTH_MASK,
+            $this->entry_class_levels[$entry][$position],
+        );
 
         if ($class === null) {
             return;

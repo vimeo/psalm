@@ -440,6 +440,37 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
+                // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
+                // fetch still ignores those of other keys.
+                'code' => '<?php
+                    function show(array $r): void {
+                        echo (string) $r["name"];
+                    }
+
+                    function relay(array $row): void {
+                        show($row);
+                    }
+
+                    relay(["a" => (string)($_GET["a"] ?? "")]);
+                    relay(["b" => (string)($_GET["b"] ?? "")]);
+                    relay(["c" => (string)($_GET["c"] ?? "")]);
+                    relay(["d" => (string)($_GET["d"] ?? "")]);
+                    relay(["e" => (string)($_GET["e"] ?? "")]);
+                    relay(["f" => (string)($_GET["f"] ?? "")]);
+                    relay(["g" => (string)($_GET["g"] ?? "")]);
+                    relay(["h" => (string)($_GET["h"] ?? "")]);
+                    relay(["name" => "safe"]);
+                    show(["i" => (string)($_GET["i"] ?? "")]);
+                    show(["j" => (string)($_GET["j"] ?? "")]);
+                    show(["k" => (string)($_GET["k"] ?? "")]);
+                    show(["l" => (string)($_GET["l"] ?? "")]);
+                    show(["m" => (string)($_GET["m"] ?? "")]);
+                    show(["n" => (string)($_GET["n"] ?? "")]);
+                    show(["o" => (string)($_GET["o"] ?? "")]);
+                    show(["p" => (string)($_GET["p"] ?? "")]);
+                ',
+            ],
             'fetchOfAKeySixLevelsDeep' => [
                 // The value assigned to key "cost" is wrapped in five more arrays: the fetch of key "callback"
                 // past the fetches of those still ignores it, whatever the keys of the unkeyed ones.
@@ -460,6 +491,28 @@ final class TaintTest extends TestCase
                     $pack = [];
                     $pack[$cat]["children"][$sub]["children"][] = ["cost" => (string)($_GET["cost"] ?? "")];
                     render($pack);
+                ',
+            ],
+            'specializedFetchOfOneKeyWhereManyKeyedArraysConverge' => [
+                // Enough differently keyed arrays reach $row for what is reachable from it to be walked once,
+                // relative to them: the fetch in the specialized call still ignores those of other keys.
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function getName(array $p): string { return (string) $p["name"]; }
+
+                    function relay(array $row): void {
+                        echo getName($row);
+                    }
+
+                    relay(["a" => (string)($_GET["a"] ?? "")]);
+                    relay(["b" => (string)($_GET["b"] ?? "")]);
+                    relay(["c" => (string)($_GET["c"] ?? "")]);
+                    relay(["d" => (string)($_GET["d"] ?? "")]);
+                    relay(["e" => (string)($_GET["e"] ?? "")]);
+                    relay(["f" => (string)($_GET["f"] ?? "")]);
+                    relay(["g" => (string)($_GET["g"] ?? "")]);
+                    relay(["h" => (string)($_GET["h"] ?? "")]);
+                    relay(["name" => "safe"]);
                 ',
             ],
             'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
