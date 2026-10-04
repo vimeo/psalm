@@ -543,6 +543,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     ): void {
         $function_id = strtolower($function_id);
 
+        // The initialisation and mutation passes re-analyse bodies whose normal
+        // analysis records the same references; in --diff mode a method skipped
+        // as unchanged keeps the references cached from its last analysis.
         if ($context->collect_initializations
             || $context->collect_mutations
             || InternalCallMapHandler::inCallMap($function_id)
