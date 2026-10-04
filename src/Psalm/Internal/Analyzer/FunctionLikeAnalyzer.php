@@ -978,7 +978,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($cased_method_id && $codebase->taint_flow_graph) {
+        if ($cased_method_id !== null && $codebase->taint_flow_graph) {
             // what the end of the function-like leaves in its by-reference parameters (see ReturnAnalyzer
             // for what each return leaves)
             self::taintByRefParamsOut($codebase, $storage, $cased_method_id, $context);
