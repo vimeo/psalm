@@ -1476,7 +1476,7 @@ final class ArrayFetchAnalyzer
         foreach ($offset_type_parts as $offset_type_part) {
             if ($offset_type_part instanceof TClassString) {
                 if ($offset_type_part instanceof TTemplateParamClass) {
-                    $template_result_get = new TemplateResult(
+                    $template_result_get = TemplateResult::make(
                         [],
                         [
                             $type->param_name => [
@@ -1493,7 +1493,7 @@ final class ArrayFetchAnalyzer
                         ],
                     );
 
-                    $template_result_set = new TemplateResult(
+                    $template_result_set = TemplateResult::make(
                         [],
                         [
                             $offset_type_part->param_name => [
@@ -1510,7 +1510,7 @@ final class ArrayFetchAnalyzer
                         ],
                     );
                 } else {
-                    $template_result_get = new TemplateResult(
+                    $template_result_get = TemplateResult::make(
                         [],
                         [
                             $type->param_name => [
@@ -1521,7 +1521,7 @@ final class ArrayFetchAnalyzer
                             ],
                         ],
                     );
-                    $template_result_set = new TemplateResult(
+                    $template_result_set = TemplateResult::make(
                         [],
                         [],
                     );

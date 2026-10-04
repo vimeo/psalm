@@ -1799,7 +1799,7 @@ final class MethodCallTest extends TestCase
                         $a->val = 5;
                         echo strlen($a->getValue());
                     }',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'possiblyNullReferenceInInvokedCall' => [
                 'code' => '<?php

@@ -81,6 +81,6 @@ final class ClosedInheritanceToUnion
             }
         }
 
-        return new TemplateResult($storage->template_types, $lower_bounds);
+        return TemplateResult::make($storage->template_types, $lower_bounds);
     }
 }

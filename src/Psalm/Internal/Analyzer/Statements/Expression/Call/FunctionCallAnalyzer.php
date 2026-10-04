@@ -79,6 +79,7 @@ use function is_string;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -255,7 +256,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $already_inferred_lower_bounds = $template_result->lower_bounds;
 
-        $template_result = new TemplateResult([], []);
+        $param_lower_bounds = [];
+        foreach ($template_result->lower_bounds as $k => $bounds) {
+            if (str_starts_with($k, 'TGeneratedFromParam')) {
+                $param_lower_bounds[$k] = $bounds;
+            }
+        }
+        // Keep every template type, not only the generated ones: argument checking only
+        // collects the function's own templates (TKey, TValue, ...) into an empty result.
+        $template_result = new TemplateResult($template_result->template_types, $param_lower_bounds);
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {

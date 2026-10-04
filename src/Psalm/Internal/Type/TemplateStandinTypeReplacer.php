@@ -1395,7 +1395,7 @@ final class TemplateStandinTypeReplacer
 
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        TemplateResult::make([], $replacement_templates),
                         $codebase,
                     );
 

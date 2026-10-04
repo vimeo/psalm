@@ -1561,7 +1561,7 @@ final class InstancePropertyAssignmentAnalyzer
             true,
         );
 
-        $template_result = new TemplateResult(
+        $template_result = TemplateResult::make(
             $class_template_params ?: [],
             [],
         );

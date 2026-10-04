@@ -515,7 +515,7 @@ final class ArrayAssignmentAnalyzer
                      */
                     $offset_type_part = $key_type->getSingleAtomic();
 
-                    $template_result = new TemplateResult(
+                    $template_result = TemplateResult::make(
                         [],
                         [
                             $offset_type_part->param_name => [

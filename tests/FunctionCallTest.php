@@ -33,6 +33,29 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'conditionalReturnOnOneParamKeepsOtherTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TK of array-key
+                     * @template TV
+                     * @param array<mixed, TK> $k
+                     * @param array<mixed, TV> $v
+                     * @return ($k is non-empty-array ? non-empty-array<TK, TV> : array<TK, TV>)
+                     */
+                    function combine(array $k, array $v): array {
+                        return [];
+                    }
+
+                    /** @param list{string, ...<string>} $a */
+                    function f(array $a): array {
+                        return combine(["x"], $a);
+                    }
+
+                    $r = combine(["a", "b"], [1, 2]);',
+                'assertions' => [
+                    '$r===' => "non-empty-array<'a'|'b', 1|2>",
+                ],
+            ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
                     $error = error_get_last();',
@@ -2959,6 +2982,29 @@ final class FunctionCallTest extends TestCase
                         echo "$x, $c\n";
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'castConditionalParamTypeToString' => [
+                'code' => '<?php
+                    /**
+                     * @param ($flag is 0 ? int : array) $in
+                     * @param 0|1 $flag
+                     */
+                    function test($in, int $flag): string {
+                        return (string) $in;
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
+            'templateTypesInParams' => [
+                'code' => '<?php
+                    /** 
+                     * @param ($flag is 0 ? (double|int) : ($flag is 1 ? bool : string)) $in
+                     * @param 0|1|2 $flag
+                     */
+                    function test($in, int $flag): string {
+                        return (string) $in;
+                    }
+                    test("test", 0);',
+                'error_message' => 'InvalidArgument',
             ],
             'noCrashOnEmptyArrayPush' => [
                 'code' => '<?php
