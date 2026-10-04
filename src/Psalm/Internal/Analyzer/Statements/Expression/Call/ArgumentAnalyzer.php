@@ -1528,6 +1528,9 @@ final class ArgumentAnalyzer
         }
 
         foreach ($input_type->getLiteralStrings() as $literal_string) {
+            // PHP resolves a callable string against neither the namespace nor
+            // the imports of the code that calls it: the name is always fully
+            // qualified, with an optional leading backslash
             $function_id = ltrim($literal_string->value, '\\');
 
             // Class::method strings are recorded as method references

@@ -467,6 +467,33 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testNamespacedFunctionPassedAsCallableStringValueIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                function cmp(int $a, int $b): int { return $a <=> $b; }
+
+                $l = [2, 1];
+                $cmp = "Ns\\Cmp";
+                usort($l, $cmp);
+                echo $l[0];',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testFunctionReferencedByFirstClassCallableIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
