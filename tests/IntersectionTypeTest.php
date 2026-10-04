@@ -136,6 +136,22 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'objectShapePropertyOnIntersectionWithFinalClass' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'assertions' => [
+                    '$id' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

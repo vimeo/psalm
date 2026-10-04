@@ -266,6 +266,8 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
+            $found_in_mixin = false;
+
             if ($class_storage->namedMixins) {
                 foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
@@ -288,6 +290,7 @@ final class AtomicPropertyFetchAnalyzer
                         )
                             || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                     ) {
+                        $found_in_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
                         $class_storage = $new_class_storage;
@@ -299,7 +302,11 @@ final class AtomicPropertyFetchAnalyzer
                         $property_id = $new_property_id;
                     }
                 }
-            } elseif ($intersection_types !== [] && !$class_storage->final) {
+            }
+
+            // An intersected object shape can declare a property the class only exposes at runtime,
+            // e.g. through __get, also when the class is final or has a @mixin (Eloquent's `pivot`).
+            if (!$found_in_mixin && $intersection_types !== []) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,
