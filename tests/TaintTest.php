@@ -978,6 +978,17 @@ final class TaintTest extends TestCase
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
             ],
+            'firstClassCallableOfAStaticMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Formatter {
+                        public static function format(string $value): string {
+                            return trim($value);
+                        }
+                    }
+
+                    $format = Formatter::format(...);
+                    echo $format("safe");',
+            ],
             'dontTaintTheOverridesOfSiblingsThroughACallOfTheParentMethod' => [
                 'code' => '<?php // --taint-analysis
                     abstract class Mapper {

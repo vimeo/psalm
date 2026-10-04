@@ -52,7 +52,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
-        if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->toLowerString() !== 'static') {
+        if ($stmt->class instanceof PhpParser\Node\Name
+            && $stmt->class->toLowerString() !== 'static'
+            && !$stmt->isFirstClassCallable()
+        ) {
             foreach ($stmt->getArgs() as $arg) {
                 $arg->value->setAttribute(ArgumentAnalyzer::NON_VIRTUAL_CALL_ATTRIBUTE, true);
             }
