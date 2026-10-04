@@ -434,6 +434,39 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testFunctionsPassedAsCallableStringValuesAreUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function via_variable(int $a, int $b): int { return $a <=> $b; }
+                function via_constant(): int { return 1; }
+                function via_qualified_variable(): void {}
+
+                final class Callbacks {
+                    public const CALLBACK = "via_constant";
+                }
+
+                $l = [2, 1];
+                $cmp = "via_variable";
+                usort($l, $cmp);
+                echo (int) call_user_func(Callbacks::CALLBACK);
+                $shutdown = "\\\\via_qualified_variable";
+                register_shutdown_function($shutdown);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertNotContains(
+            'UnusedFunction',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testFunctionReferencedByFirstClassCallableIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
