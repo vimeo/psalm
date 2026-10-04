@@ -292,6 +292,14 @@ final class TaintTest extends TestCase
                     echo key($values);
                     echo (string) array_key_first($values);',
             ],
+            'dontTaintTheKeysOfAnArrayWithItsValuesThroughArrayKeysOrSearch' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => (string) $_GET["value"]];
+                    foreach (array_keys($values) as $key) {
+                        echo $key;
+                    }
+                    echo (string) array_search("x", $values);',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -1337,6 +1345,14 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheKeysOfAFlippedArrayWithItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    $flipped = array_flip(["key" => (string) $_GET["value"]]);
+                    foreach ($flipped as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = [["name" => (string) $_GET["name"], "tmp_name" => "/tmp/upload"]];

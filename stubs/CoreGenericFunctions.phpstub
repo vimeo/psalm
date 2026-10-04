@@ -8,7 +8,7 @@
  *
  * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
 function array_keys(array $array, $search_value = null, bool $strict = false)
 {
@@ -132,7 +132,7 @@ function array_diff_assoc(array $array, array ...$arrays)
  *
  * @return ($array is non-empty-array ? non-empty-array<TValue, TKey> : array<TValue, TKey>)
  * @psalm-pure
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function array_flip(array $array)
 {
@@ -260,7 +260,7 @@ function array_values($array)
  *
  * @return T|false
  * @psalm-pure
- * @psalm-flow ($haystack) -> return
+ * @psalm-flow ($haystack) -(arraykey-fetch)-> return
  */
 function array_search($needle, array $haystack, bool $strict = false)
 {
