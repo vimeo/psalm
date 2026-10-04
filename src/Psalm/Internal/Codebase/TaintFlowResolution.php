@@ -62,9 +62,18 @@ final class TaintFlowResolution
 {
     /**
      * The expression types whose assignments and fetches shouldIgnoreFetch() matches, in the order
-     * appendPathType() matches a fetch against them.
+     * appendPathType() matches a fetch against them. The assignments and fetches of array keys are those of
+     * array values: the key and the value of an item are at the same level of an array, so the open
+     * assignments of both are one stack (see getPathTypeEffects()).
      */
-    private const FAMILIES = ['arraykey', 'arrayvalue', 'property'];
+    private const FAMILIES = ['arrayvalue', 'property'];
+    private const ARRAY_FAMILY = 0;
+
+    /**
+     * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
+     * it, a fetch of an array key doesn't.
+     */
+    private const KEY_CLASS = 'key';
 
     /**
      * How many of its innermost open assignments of each expression type a flow outside of any context keeps
@@ -548,8 +557,8 @@ final class TaintFlowResolution
         private readonly Codebase $codebase,
     ) {
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
-        $this->internOpenAssignments([[], [], []], [self::NO_CALL, self::NO_CALL, self::NO_CALL]);
-        $this->internOpenAssignments([[], [], []], [0, 0, 0]);
+        $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
+        $this->internOpenAssignments([[], []], [0, 0]);
     }
 
     public function resolve(Progress $progress): void
@@ -945,13 +954,23 @@ final class TaintFlowResolution
 
     /**
      * What an edge of type $path_type does with the open assignments of a flow, as shouldIgnoreFetch() and
-     * appendPathType() treat them.
+     * appendPathType() treat them, except that the array keys are at the level of the array values (see
+     * FAMILIES).
      *
      * @return array{int, ?string, int, int}
      * @psalm-pure
      */
     private static function getPathTypeEffects(string $path_type): array
     {
+        if ($path_type === 'arraykey-assignment') {
+            return [-1, null, -1, self::ARRAY_FAMILY];
+        }
+
+        if ($path_type === 'arraykey-fetch') {
+            // it fetches the key '' (see classPassesFetch()): not the key of a value assigned under a known key
+            return [self::ARRAY_FAMILY, '', self::ARRAY_FAMILY, -1];
+        }
+
         $observed_family = -1;
         $observed_key = null;
         $closed_family = -1;
@@ -961,9 +980,6 @@ final class TaintFlowResolution
             if (str_starts_with($path_type, $expression_type . '-fetch-')) {
                 $observed_family = $family;
                 $observed_key = substr($path_type, strlen($expression_type) + 7);
-            } elseif ($path_type === 'arraykey-fetch' && $expression_type === 'arrayvalue') {
-                // any key ignores it: the key of the value was not tainted
-                $observed_family = $family;
             }
         }
 
@@ -1062,7 +1078,7 @@ final class TaintFlowResolution
      *
      * A fetch only observes and closes the innermost open assignment of its expression type, and an
      * assignment only adds one to its own: the open assignments of each expression type are a stack of their
-     * own, and how they interleave doesn't matter.
+     * own, and how they interleave doesn't matter. Array keys share the stack of array values (see FAMILIES).
      *
      * @psalm-external-mutation-free
      */
@@ -1143,8 +1159,8 @@ final class TaintFlowResolution
 
         [$call_made, $call_closed] = $this->open_assignments[$call_open_assignments];
         [$flow_made, $flow_closed] = $this->open_assignments[$open_assignments];
-        $made = [[], [], []];
-        $closed = [self::NO_CALL, self::NO_CALL, self::NO_CALL];
+        $made = [[], []];
+        $closed = [self::NO_CALL, self::NO_CALL];
 
         foreach (self::FAMILIES as $family => $_) {
             $count = count($call_made[$family]);
@@ -1959,7 +1975,8 @@ final class TaintFlowResolution
 
     /**
      * The class of an open assignment of type $family: what decides whether a fetch ignores it (see
-     * shouldIgnoreFetch()). That's its key, prefixed with ':', or '' if no fetch ignores it.
+     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, or '' if no fetch
+     * ignores it.
      *
      * @psalm-mutation-free
      */
@@ -1967,6 +1984,10 @@ final class TaintFlowResolution
     {
         $assignment_type = $this->path_types[$assignment];
         $expression_type = self::FAMILIES[$family];
+
+        if ($assignment_type === 'arraykey-assignment') {
+            return self::KEY_CLASS;
+        }
 
         return $assignment_type !== $expression_type . '-assignment'
             && str_starts_with($assignment_type, $expression_type . '-assignment-')
@@ -1989,6 +2010,11 @@ final class TaintFlowResolution
      */
     private static function classPassesFetch(string $class, string $fetched_key): bool
     {
+        if ($class === self::KEY_CLASS) {
+            // only a fetch of the key takes what was assigned to it
+            return $fetched_key === '';
+        }
+
         return $class === '' || $class === ':' . $fetched_key;
     }
 

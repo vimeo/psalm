@@ -2237,6 +2237,33 @@ final class TaintTest extends TestCase
                     echo U::foo($_GET["foo"], true);
                     echo U::foo($_GET["foo"]);',
             ],
+            'valuesOfAnArrayWhoseKeysAreTaintedAreNotTainted' => [
+                // The taint is in a key: a fetch of a value doesn't take it.
+                'code' => '<?php
+                    /** @param array<string, string> $arr */
+                    function takesArray(array $arr): void {
+                        echo $arr["city"] ?? "";
+                    }
+
+                    takesArray([(string)$_GET["bad"] => "good"]);',
+            ],
+            'valuesOfAPropertyWhoseKeysAreTaintedAreNotTainted' => [
+                'code' => '<?php
+                    final class Version {
+                        /** @var array<string, string> */
+                        public array $data = [];
+                    }
+
+                    function save(Version $version, string $field_id): void {
+                        $version->data = ["val_" . $field_id => "good"];
+                    }
+
+                    function show(Version $version): void {
+                        echo $version->data["comment_count"] ?? "";
+                    }
+
+                    save(new Version(), (string)$_GET["field_id"]);',
+            ],
             'keysAreNotTainted' => [
                 'code' => '<?php
                     function takesArray(array $arr): void {
@@ -6910,6 +6937,38 @@ final class TaintTest extends TestCase
                     $order = Wdb::esc_like($_GET["order"]);
                     $res = Wdb::query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
                 'error_message' => 'TaintedSql',
+            ],
+            'keysOfAValueOfAnArrayAreTainted' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, string>> $arr */
+                    function takesArray(array $arr): void {
+                        foreach ($arr["inner"] as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    takesArray(["inner" => [(string)$_GET["bad"] => "good"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keysOfAPropertyAreTainted' => [
+                'code' => '<?php
+                    final class Version {
+                        /** @var array<string, string> */
+                        public array $data = [];
+                    }
+
+                    function save(Version $version, string $field_id): void {
+                        $version->data = ["val_" . $field_id => "good"];
+                    }
+
+                    function show(Version $version): void {
+                        foreach ($version->data as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    save(new Version(), (string)$_GET["field_id"]);',
+                'error_message' => 'TaintedHtml',
             ],
             'keysAreTainted' => [
                 'code' => '<?php
