@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -79,6 +81,7 @@ final class ArrayAssignmentAnalyzer
             $assign_value,
             $assignment_value_type,
             $context,
+            self::getElementCopySource($stmt, $assign_value, $context),
         );
 
         if (!$statements_analyzer->node_data->getType($stmt->var) && $var_id) {
@@ -87,6 +90,9 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * @param array<string, DataFlowNode>|null $element_copy_source the parent nodes of the array whose elements
+     *                                                              the assignment copies under their own key
+     *                                                              (see getElementCopySource())
      * @return false|null
      */
     public static function updateArrayType(
@@ -95,6 +101,7 @@ final class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_type,
         Context $context,
+        ?array $element_copy_source = null,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -164,6 +171,7 @@ final class ArrayAssignmentAnalyzer
             $current_type,
             $current_dim,
             $offset_already_existed,
+            $element_copy_source,
         );
 
         $root_is_string = $root_type->isString();
@@ -379,7 +387,62 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key,
+     * if it does: in the body of a foreach loop over that array, $r[$k] = $v or $r[$k] = $x[$k], with $k and $v
+     * the key and value variables of the loop and $x the array, neither reassigned since (see
+     * Context::$foreach_element_copies). It may copy only some of them.
+     *
+     * @return array<string, DataFlowNode>|null
+     * @psalm-mutation-free
+     */
+    private static function getElementCopySource(
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        ?PhpParser\Node\Expr $assign_value,
+        Context $context,
+    ): ?array {
+        if (!$stmt->dim instanceof PhpParser\Node\Expr\Variable || !is_string($stmt->dim->name)) {
+            return null;
+        }
+
+        $key_var_id = '$' . $stmt->dim->name;
+
+        foreach ($context->foreach_element_copies as $value_var_id => $copy) {
+            [$copy_key_var_id, $key_type, $value_type, $array_var_id, $array_type, $array_nodes] = $copy;
+
+            if ($copy_key_var_id !== $key_var_id || ($context->vars_in_scope[$key_var_id] ?? null) !== $key_type) {
+                continue;
+            }
+
+            if ($assign_value instanceof PhpParser\Node\Expr\Variable
+                && is_string($assign_value->name)
+                && '$' . $assign_value->name === $value_var_id
+                && ($context->vars_in_scope[$value_var_id] ?? null) === $value_type
+            ) {
+                return $array_nodes;
+            }
+
+            if ($assign_value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && $array_var_id !== null
+                && $assign_value->var instanceof PhpParser\Node\Expr\Variable
+                && is_string($assign_value->var->name)
+                && '$' . $assign_value->var->name === $array_var_id
+                && $assign_value->dim instanceof PhpParser\Node\Expr\Variable
+                && is_string($assign_value->dim->name)
+                && '$' . $assign_value->dim->name === $key_var_id
+                && ($context->vars_in_scope[$array_var_id] ?? null) === $array_type
+            ) {
+                return $array_nodes;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param list<TLiteralInt|TLiteralString> $key_values $key_values
+     * @param array<string, DataFlowNode>|null $element_copy_source the parent nodes of the array whose elements
+     *                                                              the assignment copies under their own key
+     *                                                              (see getElementCopySource())
      */
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -388,6 +451,7 @@ final class ArrayAssignmentAnalyzer
         Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values,
+        ?array $element_copy_source = null,
     ): void {
         if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
@@ -427,11 +491,31 @@ final class ArrayAssignmentAnalyzer
             // what the assigned value cannot hold, given its type
             $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
 
+            $value_graph = $graph;
+
+            $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
+
+            if ($element_copy_source !== null && $taint_graph instanceof TaintFlowGraph) {
+                // the elements of the array, under the same keys: the array, as far as its taints go
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    foreach ($element_copy_source as $source_node) {
+                        $taint_graph->addPath($source_node, $parent_node, '=');
+                    }
+                }
+
+                // the value is used all the same
+                $value_graph = $graph instanceof CombinedFlowGraph ? $graph->variable_use_graph : null;
+            }
+
+            if ($value_graph === null) {
+                return;
+            }
+
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
                         foreach ($key_values as $key_value) {
-                            $graph->addPath(
+                            $value_graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
                                 'arrayvalue-assignment-\'' . $key_value->value . '\'',
@@ -440,7 +524,7 @@ final class ArrayAssignmentAnalyzer
                             );
                         }
                     } else {
-                        $graph->addPath(
+                        $value_graph->addPath(
                             $child_parent_node,
                             $parent_node,
                             'arrayvalue-assignment'
@@ -758,6 +842,7 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @param  non-empty-list<PhpParser\Node\Expr\ArrayDimFetch>  $child_stmts
+     * @param array<string, DataFlowNode>|null $element_copy_source
      * @param-out PhpParser\Node\Expr $child_stmt
      */
     private static function analyzeNestedArrayAssignment(
@@ -773,6 +858,7 @@ final class ArrayAssignmentAnalyzer
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
+        ?array $element_copy_source,
     ): void {
         $var_id_additions = [];
 
@@ -881,6 +967,7 @@ final class ArrayAssignmentAnalyzer
                             $statements_analyzer,
                         ),
                         $offset_type !== null ? [$offset_type] : [],
+                        $element_copy_source,
                     );
                 }
             }

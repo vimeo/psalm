@@ -71,6 +71,7 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -381,6 +382,31 @@ final class ForeachAnalyzer
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
+        }
+
+        // the value of an element of an array is the element; that of an object, what the object makes it
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && array_filter(
+                $iterator_type->getAtomicTypes(),
+                static fn(Atomic $type): bool => !$type instanceof TArray && !$type instanceof TKeyedArray,
+            ) === []
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                '$' . $stmt->keyVar->name,
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
+                $var_id,
+                $var_id !== null ? $foreach_context->vars_in_scope[$var_id] ?? null : null,
+                $iterator_type->parent_nodes,
+            ];
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);

@@ -101,6 +101,17 @@ final class Context
     public array $by_ref_param_out_nodes = [];
 
     /**
+     * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
+     * own key (see ArrayAssignmentAnalyzer::getElementCopySource()): value variable id => [key variable id, its
+     * type, the type of the value variable, iterated variable id, its type, the parent nodes of the iterated
+     * array]. The types are those the loop gave the variables: they are reassigned once they are other ones.
+     *
+     * @internal
+     * @var array<string, array{string, Union, Union, ?string, ?Union, array<string, DataFlowNode>}>
+     */
+    public array $foreach_element_copies = [];
+
+    /**
      * A set of globals that are referenced somewhere.
      *
      * @var array<string, true>
