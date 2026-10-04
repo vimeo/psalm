@@ -286,7 +286,10 @@ final class TaintTest extends TestCase
                     file_get_contents("https://api.example.com/search?q=" . $value);
                     file_get_contents("https://api.example.com/items/{$value}/details");
                     file_get_contents(sprintf("https://api.example.com/items/%s", $value));
-                    file_get_contents("https://api.example.com/" . $value . "/" . $value);',
+                    file_get_contents("https://api.example.com/" . $value . "/" . $value);
+                    $origin = "https://api.example.com";
+                    file_get_contents($origin . "/" . $value);
+                    file_get_contents("https://api.example.com" . "/{$value}");',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php

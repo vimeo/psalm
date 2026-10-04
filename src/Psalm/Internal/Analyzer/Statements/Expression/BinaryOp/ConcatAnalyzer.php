@@ -88,8 +88,23 @@ final class ConcatAnalyzer
      */
     public static function getLiteralPrefix(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): ?string
     {
-        while ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $expr = $expr->left;
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type && $type->isSingleStringLiteral()) {
+            return $type->getSingleStringLiteral()->value;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $left_prefix = self::getLiteralPrefix($statements_analyzer, $expr->left);
+
+            $left_type = $statements_analyzer->node_data->getType($expr->left);
+
+            // all of the left side is known: what the right side starts with follows it
+            if ($left_prefix !== null && $left_type && $left_type->isSingleStringLiteral()) {
+                return $left_prefix . (self::getLiteralPrefix($statements_analyzer, $expr->right) ?? '');
+            }
+
+            return $left_prefix;
         }
 
         if ($expr instanceof PhpParser\Node\Scalar\InterpolatedString) {
@@ -98,9 +113,7 @@ final class ConcatAnalyzer
             return $first_part instanceof PhpParser\Node\InterpolatedStringPart ? $first_part->value : null;
         }
 
-        $type = $statements_analyzer->node_data->getType($expr);
-
-        return $type && $type->isSingleStringLiteral() ? $type->getSingleStringLiteral()->value : null;
+        return null;
     }
 
     public static function analyze(
