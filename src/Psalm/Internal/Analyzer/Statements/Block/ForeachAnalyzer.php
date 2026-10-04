@@ -619,7 +619,10 @@ final class ForeachAnalyzer
         ?Union $key_type,
         ?Union $value_type,
     ): array {
-        if (!$statements_analyzer->data_flow_graph || !$iterator_type->parent_nodes) {
+        // only taints: the variable use graph keeps the origins of mixed keys and values to report them
+        $graph = $statements_analyzer->taint_flow_graph;
+
+        if (!$graph || !$iterator_type->parent_nodes) {
             return [$key_type, $value_type];
         }
 
@@ -644,12 +647,12 @@ final class ForeachAnalyzer
         $key_node = DataFlowNode::getForAssignment('foreach key', $location);
         $value_node = DataFlowNode::getForAssignment('foreach value', $location);
 
-        $statements_analyzer->data_flow_graph->addNode($key_node);
-        $statements_analyzer->data_flow_graph->addNode($value_node);
+        $graph->addNode($key_node);
+        $graph->addNode($value_node);
 
         foreach ($iterator_type->parent_nodes as $parent_node) {
-            $statements_analyzer->data_flow_graph->addPath($parent_node, $key_node, 'arraykey-fetch');
-            $statements_analyzer->data_flow_graph->addPath($parent_node, $value_node, 'arrayvalue-fetch');
+            $graph->addPath($parent_node, $key_node, 'arraykey-fetch');
+            $graph->addPath($parent_node, $value_node, 'arrayvalue-fetch');
         }
 
         return [
