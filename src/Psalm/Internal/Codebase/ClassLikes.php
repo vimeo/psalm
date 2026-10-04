@@ -70,6 +70,7 @@ use function preg_quote;
 use function preg_replace;
 use function str_starts_with;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
