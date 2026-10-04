@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -71,7 +72,6 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -384,19 +384,10 @@ final class ForeachAnalyzer
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
-        // the value of an element of an array (or of what is taken for one) is the element; that of an object,
-        // what the object makes it
         if (!$stmt->byRef
             && $iterator_type !== null
             && $iterator_type->parent_nodes
-            && array_filter(
-                $iterator_type->getAtomicTypes(),
-                static fn(Atomic $type): bool => !$type instanceof TArray
-                    && !$type instanceof TKeyedArray
-                    && !$type instanceof TMixed
-                    && !$type instanceof TNull
-                    && !$type instanceof TFalse,
-            ) === []
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
             && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->keyVar->name)
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
@@ -412,12 +403,6 @@ final class ForeachAnalyzer
                     '$' . $stmt->keyVar->name,
                     $key_node_ids,
                     $value_node_ids,
-                    $var_id !== null
-                        && isset($foreach_context->vars_in_scope[$var_id])
-                        && array_keys($foreach_context->vars_in_scope[$var_id]->parent_nodes)
-                            === array_keys($iterator_type->parent_nodes)
-                        ? $var_id
-                        : null,
                     $iterator_type->parent_nodes,
                 ];
             }

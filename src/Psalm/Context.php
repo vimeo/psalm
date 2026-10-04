@@ -103,12 +103,12 @@ final class Context
     /**
      * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
      * own key (see ArrayAssignmentAnalyzer::getElementCopySource()): value variable id => [key variable id, ids of
-     * its parent nodes, ids of the parent nodes of the value variable, iterated variable id, parent nodes of the
-     * iterated array]. The parent nodes are those the loop gave the variables: an assignment gives a variable
-     * other ones, a narrowing keeps them.
+     * its parent nodes, ids of the parent nodes of the value variable, parent nodes of the iterated array]. The
+     * parent nodes are those the loop gave the variables: an assignment gives a variable other ones, a narrowing
+     * keeps them.
      *
      * @internal
-     * @var array<string, array{string, list<string>, list<string>, ?string, array<string, DataFlowNode>}>
+     * @var array<string, array{string, list<string>, list<string>, array<string, DataFlowNode>}>
      */
     public array $foreach_element_copies = [];
 

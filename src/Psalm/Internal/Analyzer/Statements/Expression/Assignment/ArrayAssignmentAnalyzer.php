@@ -27,11 +27,13 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -82,7 +84,7 @@ final class ArrayAssignmentAnalyzer
             $assign_value,
             $assignment_value_type,
             $context,
-            self::getElementCopySource($stmt, $assign_value, $context),
+            true,
         );
 
         if (!$statements_analyzer->node_data->getType($stmt->var) && $var_id) {
@@ -91,9 +93,7 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param array<string, DataFlowNode>|null $element_copy_source the parent nodes of the array whose elements
-     *                                                              the assignment copies under their own key
-     *                                                              (see getElementCopySource())
+     * @param bool $is_assignment whether $assign_value is the value assigned, not an operand of it
      * @return false|null
      */
     public static function updateArrayType(
@@ -102,7 +102,7 @@ final class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_type,
         Context $context,
-        ?array $element_copy_source = null,
+        bool $is_assignment = false,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -172,7 +172,7 @@ final class ArrayAssignmentAnalyzer
             $current_type,
             $current_dim,
             $offset_already_existed,
-            $element_copy_source,
+            $is_assignment,
         );
 
         $root_is_string = $root_type->isString();
@@ -388,60 +388,90 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key,
-     * if it does: in the body of a foreach loop over that array, $r[$k] = $v or $r[$k] = $x[$k], with $k and $v
-     * the key and value variables of the loop and $x the array, none of them reassigned since, though maybe
-     * narrowed (see Context::$foreach_element_copies). It may copy only some of them.
+     * Whether the elements of a value of type $type are taken from the value itself (those of an array, or of what
+     * is taken for one), not made by it (those of an object).
+     *
+     * @psalm-pure
+     */
+    public static function hasElementsOfItsOwn(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TMixed
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key, if
+     * it does. It may copy only some of them. $stmt is analyzed already. The copies are:
+     * - $r[$k] = $y[$k], with $y an array (see hasElementsOfItsOwn()) and $k the same at both dims;
+     * - $r[$k] = $v in the body of a foreach loop over an array, with $k and $v the key and value variables of
+     *   the loop, not reassigned since (see Context::$foreach_element_copies).
+     * A variable is the same as long as its parent nodes are: an assignment gives it other ones, a narrowing
+     * keeps them.
      *
      * @return array<string, DataFlowNode>|null
-     * @psalm-mutation-free
      */
     private static function getElementCopySource(
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?PhpParser\Node\Expr $assign_value,
         Context $context,
     ): ?array {
-        if (!$stmt->dim instanceof PhpParser\Node\Expr\Variable || !is_string($stmt->dim->name)) {
+        if (!$stmt->dim instanceof PhpParser\Node\Expr\Variable
+            || !is_string($stmt->dim->name)
+            || $assign_value === null
+        ) {
             return null;
         }
 
-        $key_var_id = '$' . $stmt->dim->name;
+        $key_node_ids = array_keys($statements_analyzer->node_data->getType($stmt->dim)?->parent_nodes ?? []);
+        $value_type = $statements_analyzer->node_data->getType($assign_value);
 
-        foreach ($context->foreach_element_copies as $value_var_id => $copy) {
-            [$copy_key_var_id, $key_node_ids, $value_node_ids, $array_var_id, $array_nodes] = $copy;
-
-            if ($copy_key_var_id !== $key_var_id
-                || !isset($context->vars_in_scope[$key_var_id])
-                || array_keys($context->vars_in_scope[$key_var_id]->parent_nodes) !== $key_node_ids
-            ) {
-                continue;
-            }
-
-            if ($assign_value instanceof PhpParser\Node\Expr\Variable
-                && is_string($assign_value->name)
-                && '$' . $assign_value->name === $value_var_id
-                && isset($context->vars_in_scope[$value_var_id])
-                && array_keys($context->vars_in_scope[$value_var_id]->parent_nodes) === $value_node_ids
-            ) {
-                return $array_nodes;
-            }
-
-            if ($assign_value instanceof PhpParser\Node\Expr\ArrayDimFetch
-                && $array_var_id !== null
-                && $assign_value->var instanceof PhpParser\Node\Expr\Variable
-                && is_string($assign_value->var->name)
-                && '$' . $assign_value->var->name === $array_var_id
-                && $assign_value->dim instanceof PhpParser\Node\Expr\Variable
-                && is_string($assign_value->dim->name)
-                && '$' . $assign_value->dim->name === $key_var_id
-                && isset($context->vars_in_scope[$array_var_id])
-                && array_keys($context->vars_in_scope[$array_var_id]->parent_nodes) === array_keys($array_nodes)
-            ) {
-                return $array_nodes;
-            }
+        if ($key_node_ids === [] || $value_type === null) {
+            return null;
         }
 
-        return null;
+        if ($assign_value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $fetched_key_type = $assign_value->dim instanceof PhpParser\Node\Expr\Variable
+                && $assign_value->dim->name === $stmt->dim->name
+                ? $statements_analyzer->node_data->getType($assign_value->dim)
+                : null;
+            $array_type = $statements_analyzer->node_data->getType($assign_value->var);
+
+            return $fetched_key_type !== null
+                && array_keys($fetched_key_type->parent_nodes) === $key_node_ids
+                && $array_type !== null
+                && $array_type->parent_nodes !== []
+                && self::hasElementsOfItsOwn($array_type)
+                ? $array_type->parent_nodes
+                : null;
+        }
+
+        $value_var_id = $assign_value instanceof PhpParser\Node\Expr\Variable && is_string($assign_value->name)
+            ? '$' . $assign_value->name
+            : null;
+
+        if ($value_var_id === null || !isset($context->foreach_element_copies[$value_var_id])) {
+            return null;
+        }
+
+        [$key_var_id, $loop_key_node_ids, $loop_value_node_ids, $array_nodes] =
+            $context->foreach_element_copies[$value_var_id];
+
+        return $key_var_id === '$' . $stmt->dim->name
+            && $loop_key_node_ids === $key_node_ids
+            && $loop_value_node_ids === array_keys($value_type->parent_nodes)
+            ? $array_nodes
+            : null;
     }
 
     /**
@@ -848,7 +878,6 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @param  non-empty-list<PhpParser\Node\Expr\ArrayDimFetch>  $child_stmts
-     * @param array<string, DataFlowNode>|null $element_copy_source
      * @param-out PhpParser\Node\Expr $child_stmt
      */
     private static function analyzeNestedArrayAssignment(
@@ -864,7 +893,7 @@ final class ArrayAssignmentAnalyzer
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
-        ?array $element_copy_source,
+        bool $is_assignment,
     ): void {
         $var_id_additions = [];
 
@@ -973,7 +1002,9 @@ final class ArrayAssignmentAnalyzer
                             $statements_analyzer,
                         ),
                         $offset_type !== null ? [$offset_type] : [],
-                        $element_copy_source,
+                        $is_assignment
+                            ? self::getElementCopySource($statements_analyzer, $child_stmt, $assign_value, $context)
+                            : null,
                     );
                 }
             }

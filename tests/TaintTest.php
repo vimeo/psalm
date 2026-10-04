@@ -510,6 +510,28 @@ final class TaintTest extends TestCase
                     show($data);
                 ',
             ],
+            'fetchOfAnotherKeyOfACopyOfTheElementsOfAnotherArrayUnderTheirKey' => [
+                // $diff[$key] = $data[$key] copies an element of $data under its own key, whatever $key is.
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key];
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);
+                ',
+            ],
             'fetchOfAKeyStartingWithAnotherStartThanTheAssignedKey' => [
                 // The start of the fetched key is known: it can't be "name_tail".
                 'code' => '<?php
@@ -2799,6 +2821,70 @@ final class TaintTest extends TestCase
                     $data = [];
                     $data["name_tail"] = "";
                     show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfACopyOfTheElementsOfAnotherArrayUnderTheirKey' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key];
+                            }
+                        }
+                        echo $diff["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfACopyOfTheElementsOfAnotherArrayUnderAnotherKey' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $other_key = strtolower($key);
+                                $diff[$key] = $data[$other_key];
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAnAssignmentOfAnotherValueThanAnElement' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key] . "x";
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfAKeyStartingLikeTheAssignedKey' => [
