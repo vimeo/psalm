@@ -1914,13 +1914,10 @@ final class TaintFlowResolution
      */
     private function dependOnClass(int $entry, int $position, int $state): void
     {
-        if (isset($this->entry_class_dependents[$entry][$position][$state])) {
-            return;
-        }
-
         $this->entry_class_dependents[$entry][$position][$state] = true;
 
         if (isset($this->entry_class_filters[$entry][$position])) {
+            // again if the state got more taints since
             foreach ($this->entry_class_filters[$entry][$position] as $filter) {
                 $this->copyToFilter($state, $filter);
             }
