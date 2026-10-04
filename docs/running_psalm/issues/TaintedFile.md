@@ -28,8 +28,7 @@ It could range from:
 ```php
 <?php
 
-$content = fopen($_GET['header'], "r");
-echo $content;
+unlink($_GET['path']);
 ```
 
 ## Mitigations
