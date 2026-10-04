@@ -384,13 +384,18 @@ final class ForeachAnalyzer
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
-        // the value of an element of an array is the element; that of an object, what the object makes it
+        // the value of an element of an array (or of what is taken for one) is the element; that of an object,
+        // what the object makes it
         if (!$stmt->byRef
             && $iterator_type !== null
             && $iterator_type->parent_nodes
             && array_filter(
                 $iterator_type->getAtomicTypes(),
-                static fn(Atomic $type): bool => !$type instanceof TArray && !$type instanceof TKeyedArray,
+                static fn(Atomic $type): bool => !$type instanceof TArray
+                    && !$type instanceof TKeyedArray
+                    && !$type instanceof TMixed
+                    && !$type instanceof TNull
+                    && !$type instanceof TFalse,
             ) === []
             && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->keyVar->name)
@@ -399,14 +404,23 @@ final class ForeachAnalyzer
             && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
             && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
         ) {
-            $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
-                '$' . $stmt->keyVar->name,
-                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
-                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
-                $var_id,
-                $var_id !== null ? $foreach_context->vars_in_scope[$var_id] ?? null : null,
-                $iterator_type->parent_nodes,
-            ];
+            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
+            $value_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->valueVar->name]->parent_nodes);
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $var_id !== null
+                        && isset($foreach_context->vars_in_scope[$var_id])
+                        && array_keys($foreach_context->vars_in_scope[$var_id]->parent_nodes)
+                            === array_keys($iterator_type->parent_nodes)
+                        ? $var_id
+                        : null,
+                    $iterator_type->parent_nodes,
+                ];
+            }
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);

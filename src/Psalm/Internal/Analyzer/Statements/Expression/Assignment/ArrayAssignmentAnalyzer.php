@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_keys;
 use function array_pop;
 use function array_reverse;
 use function array_shift;
@@ -389,8 +390,8 @@ final class ArrayAssignmentAnalyzer
     /**
      * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key,
      * if it does: in the body of a foreach loop over that array, $r[$k] = $v or $r[$k] = $x[$k], with $k and $v
-     * the key and value variables of the loop and $x the array, neither reassigned since (see
-     * Context::$foreach_element_copies). It may copy only some of them.
+     * the key and value variables of the loop and $x the array, none of them reassigned since, though maybe
+     * narrowed (see Context::$foreach_element_copies). It may copy only some of them.
      *
      * @return array<string, DataFlowNode>|null
      * @psalm-mutation-free
@@ -407,16 +408,20 @@ final class ArrayAssignmentAnalyzer
         $key_var_id = '$' . $stmt->dim->name;
 
         foreach ($context->foreach_element_copies as $value_var_id => $copy) {
-            [$copy_key_var_id, $key_type, $value_type, $array_var_id, $array_type, $array_nodes] = $copy;
+            [$copy_key_var_id, $key_node_ids, $value_node_ids, $array_var_id, $array_nodes] = $copy;
 
-            if ($copy_key_var_id !== $key_var_id || ($context->vars_in_scope[$key_var_id] ?? null) !== $key_type) {
+            if ($copy_key_var_id !== $key_var_id
+                || !isset($context->vars_in_scope[$key_var_id])
+                || array_keys($context->vars_in_scope[$key_var_id]->parent_nodes) !== $key_node_ids
+            ) {
                 continue;
             }
 
             if ($assign_value instanceof PhpParser\Node\Expr\Variable
                 && is_string($assign_value->name)
                 && '$' . $assign_value->name === $value_var_id
-                && ($context->vars_in_scope[$value_var_id] ?? null) === $value_type
+                && isset($context->vars_in_scope[$value_var_id])
+                && array_keys($context->vars_in_scope[$value_var_id]->parent_nodes) === $value_node_ids
             ) {
                 return $array_nodes;
             }
@@ -429,7 +434,8 @@ final class ArrayAssignmentAnalyzer
                 && $assign_value->dim instanceof PhpParser\Node\Expr\Variable
                 && is_string($assign_value->dim->name)
                 && '$' . $assign_value->dim->name === $key_var_id
-                && ($context->vars_in_scope[$array_var_id] ?? null) === $array_type
+                && isset($context->vars_in_scope[$array_var_id])
+                && array_keys($context->vars_in_scope[$array_var_id]->parent_nodes) === array_keys($array_nodes)
             ) {
                 return $array_nodes;
             }
