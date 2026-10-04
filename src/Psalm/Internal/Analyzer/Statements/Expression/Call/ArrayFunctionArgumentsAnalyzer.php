@@ -602,7 +602,7 @@ final class ArrayFunctionArgumentsAnalyzer
             return null;
         }
 
-        $replacement_parent_nodes = $replacement_arg_type->parent_nodes ?? [];
+        $replacement_parent_nodes = $replacement_arg_type?->parent_nodes ?? [];
 
         if ($array_type) {
             AssignmentAnalyzer::assignByRefParam(
