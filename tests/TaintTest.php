@@ -440,6 +440,56 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'fetchOfAKeyStartingWithAnotherStartThanTheAssignedKey' => [
+                // The start of the fetched key is known: it can't be "name_tail".
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        echo $data["mpf_{$id}"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data, 1);
+                ',
+            ],
+            'fetchOfAKeyOfAnArrayWhoseItemKeyStartsWithSomethingElse' => [
+                // The start of the key of the item is known: it can't be "city".
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        echo $data["city"] ?? "";
+                    }
+
+                    function make(int $id): void {
+                        show(["val_{$id}" => (string)($_GET["value"] ?? "")]);
+                    }
+                ',
+            ],
+            'fetchOfAKeyAfterAnAssignmentToAKeyStartingWithSomethingElse' => [
+                // The start of the assigned key is known: it can't be "city".
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        $data["_mpf_{$id}"] = (string)($_GET["value"] ?? "");
+                        echo $data["city"] ?? "";
+                    }
+
+                    show([], 1);
+                ',
+            ],
+            'fetchOfAKeyStartingWithSomethingElseThanTheStartOfTheAssignedKey' => [
+                // Neither start is a start of the other: the keys can't be the same.
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        $data["ab" . $id] = (string)($_GET["value"] ?? "");
+                        echo $data["cd" . $id] ?? "";
+                    }
+
+                    show([], 1);
+                ',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -2596,6 +2646,40 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'fetchOfAKeyStartingLikeTheAssignedKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        echo $data["na{$id}"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data, 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAKeyAfterAnAssignmentToAKeyItStartsWith' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        $data["ci{$id}"] = (string)($_GET["value"] ?? "");
+                        echo $data["city"] ?? "";
+                    }
+
+                    show([], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAKeyWhoseStartStartsWithTheStartOfTheAssignedKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data, int $id): void {
+                        $data["na" . $id] = (string)($_GET["value"] ?? "");
+                        echo $data["name" . $id] ?? "";
+                    }
+
+                    show([], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
                     $outer = [];

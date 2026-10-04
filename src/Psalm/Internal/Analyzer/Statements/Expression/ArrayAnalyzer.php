@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -48,6 +49,7 @@ use function filter_var;
 use function is_int;
 use function is_numeric;
 use function is_string;
+use function substr;
 use function trim;
 
 use const FILTER_VALIDATE_INT;
@@ -398,9 +400,12 @@ final class ArrayAnalyzer
                 if ($item_value_type->parent_nodes) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
+                    $key_path_suffix = $item_key_value !== null
+                        ? '-\'' . $item_key_value . '\''
+                        : ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $item->key) ?? '';
+
                     $new_parent_node = DataFlowNode::getForAssignment(
-                        'array'
-                            . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
+                        'array' . ($key_path_suffix !== '' ? '[' . substr($key_path_suffix, 1) . ']' : ''),
                         $var_location,
                     );
 
@@ -431,8 +436,7 @@ final class ArrayAnalyzer
                         $graph->addPath(
                             $parent_node,
                             $new_parent_node,
-                            'arrayvalue-assignment'
-                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
+                            'arrayvalue-assignment' . $key_path_suffix,
                             $added_taints,
                             $removed_taints,
                         );
