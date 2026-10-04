@@ -418,13 +418,17 @@ final class InternalCallMapHandler
 
     /**
      * Makes the taints of the parameters of the builtin function or method $function_id that its return value holds
-     * flow into it (see dictionaries/InternalTaintFlowMap.php), as `@psalm-flow` does for the builtins of the stubs.
+     * flow into it (see dictionaries/InternalTaintFlowMap.php), except those it can't carry (see
+     * dictionaries/InternalTaintEscapeMap.php), as `@psalm-flow` and `@psalm-taint-escape` do for the builtins of the
+     * stubs.
      */
     public static function addReturnTaintFlows(FunctionLikeStorage $storage, string $function_id): void
     {
         foreach (self::getReturnTaintFlows($function_id, $storage->params) as $offset => $path_type) {
             $storage->return_source_params[$offset] = $path_type;
         }
+
+        $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
     }
 
     /**
