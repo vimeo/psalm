@@ -17,6 +17,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -505,6 +507,7 @@ final class ArrayFetchAnalyzer
         ?Context $context = null,
         ?Union $var_type = null,
         ?string $key_prefix_path_suffix = null,
+        ?string $foreach_marker = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $var_type ?? $statements_analyzer->node_data->getType($var))
@@ -564,14 +567,40 @@ final class ArrayFetchAnalyzer
                 ? '-\'' . $dim_value . '\''
                 : $key_prefix_path_suffix ?? '';
 
+            // the taint flow graph tells the element values a foreach loop fetches (see ForeachAnalyzer)
+            $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
+            $marks_elements = $foreach_marker !== null
+                && $key_path_suffix === ''
+                && $taint_graph instanceof TaintFlowGraph;
+
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    'arrayvalue-fetch' . $key_path_suffix,
-                    $added_taints,
-                    $removed_taints,
-                );
+                if ($marks_elements && $taint_graph instanceof TaintFlowGraph) {
+                    $taint_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch@' . $foreach_marker,
+                        $added_taints,
+                        $removed_taints,
+                    );
+
+                    if ($graph instanceof CombinedFlowGraph) {
+                        $graph->variable_use_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'arrayvalue-fetch',
+                            $added_taints,
+                            $removed_taints,
+                        );
+                    }
+                } else {
+                    $graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                }
 
                 if ($stmt_type->by_ref) {
                     $graph->addPath(

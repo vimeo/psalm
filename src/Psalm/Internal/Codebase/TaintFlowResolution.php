@@ -14,10 +14,12 @@ use Psalm\Type\TaintKind;
 
 use function array_key_exists;
 use function array_key_first;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_slice;
 use function count;
+use function explode;
 use function implode;
 use function ksort;
 use function max;
@@ -103,6 +105,15 @@ final class TaintFlowResolution
      */
     private const NO_OPEN_ASSIGNMENTS = 0;
     private const CALL_OPEN_ASSIGNMENTS = 1;
+
+    /**
+     * The element slots of a flow (see $open_assignment_slots) that aren't ids of $slots: none; in the body
+     * walk of a specialized call, that of the call entering it; and none in such a walk once the flow went
+     * through a node the value may outlive the call in (see scopeSlot()).
+     */
+    private const NO_SLOT = -1;
+    private const INHERITED_SLOT = -2;
+    private const BLOCKED_SLOT = -3;
 
     /**
      * What getNextOpenAssignments() returns for an edge shouldIgnoreFetch() ignores, and for one whose
@@ -219,9 +230,12 @@ final class TaintFlowResolution
      *     what the key of that assignment must be not to ignore it, or null if any key but '' ignores it,
      *     expression type whose innermost open assignment it closes, or -1,
      *     expression type whose open assignments it adds to, or -1,
+     *     the foreach loop whose element values it fetches, or that it assigns under the key of the element
+     *     (see getForeachMarker() in ForeachAnalyzer), or null,
+     *     whether it fetches them,
      * ]
      *
-     * @var list<array{int, ?string, int, int}>
+     * @var list<array{int, ?string, int, int, ?string, bool}>
      */
     private array $path_type_effects = [];
 
@@ -235,7 +249,8 @@ final class TaintFlowResolution
     /**
      * Open assignments key => [
      *     for each expression type, the open assignments the flow made from the outermost to the innermost,
-     *     as path type ids,
+     *     as path type ids, or as minus the depth of one of the call entering its context it put back (see
+     *     applyPathType()),
      *     for each expression type, how many of those of the call entering its context it closed, FORGOTTEN
      *     if it doesn't know, or NO_CALL outside of any context,
      * ]
@@ -243,6 +258,35 @@ final class TaintFlowResolution
      * @var list<array{array<int, list<int>>, array<int, int>}>
      */
     private array $open_assignments = [];
+
+    /**
+     * Open assignments key => the element slot of the flows: the element of the array a foreach loop iterates
+     * over whose value they went through, as an id of $slots, so that an assignment in the body of the loop
+     * under the key of the element (see applyPathType()) puts their open assignments back as they were in the
+     * array; or NO_SLOT, INHERITED_SLOT or BLOCKED_SLOT.
+     *
+     * @var list<int>
+     */
+    private array $open_assignment_slots = [];
+
+    /**
+     * Slot id => [the marker of the foreach loop, the open assignment of the element the value fetch of the
+     * loop closed, as a path type id]
+     *
+     * @var list<array{string, int}>
+     */
+    private array $slots = [];
+
+    /** @var array<string, int> */
+    private array $slot_ids = [];
+
+    /**
+     * Foreach loop marker => [path of its file, start and end of its function (or of the loop outside of
+     * any), start and end of the loop, start of its body]
+     *
+     * @var array<string, array{string, int, int, int, int, int}>
+     */
+    private array $foreach_markers = [];
 
     /**
      * Open assignments key => path type => the open assignments after taking an edge of that type, IGNORED
@@ -580,7 +624,7 @@ final class TaintFlowResolution
     ) {
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
-        $this->internOpenAssignments([[], []], [0, 0]);
+        $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT);
     }
 
     public function resolve(Progress $progress): void
@@ -833,7 +877,13 @@ final class TaintFlowResolution
      */
     private function getObservedDepths(int $depths, int $path_type): int
     {
-        [$observed_family, , $closed_family, $added_family] = $this->path_type_effects[$path_type];
+        [$observed_family, , $closed_family, $added_family, $foreach_marker, $fetches_elements]
+            = $this->path_type_effects[$path_type];
+
+        if ($foreach_marker !== null && $fetches_elements) {
+            // the element slot is the open assignment it closes (see applyPathType())
+            $observed_family = $closed_family;
+        }
 
         if ($this->path_types[$path_type] === 'arrayvalue-fetch') {
             // it ignores an innermost array key (see getNextOpenAssignments())
@@ -986,22 +1036,29 @@ final class TaintFlowResolution
      * DataFlowGraph::isOverwritten()) has that key prefixed with '!' as observed key, and observes, closes and
      * adds nothing (see getNextOpenAssignments()).
      *
-     * @return array{int, ?string, int, int}
+     * @return array{int, ?string, int, int, ?string, bool}
      * @psalm-pure
      */
     private static function getPathTypeEffects(string $path_type): array
     {
         if ($path_type === 'arraykey-assignment') {
-            return [-1, null, -1, self::ARRAY_FAMILY];
+            return [-1, null, -1, self::ARRAY_FAMILY, null, false];
         }
 
         if ($path_type === 'arraykey-fetch') {
             // it fetches the key '' (see classPassesFetch()): not the key of a value assigned under a known key
-            return [self::ARRAY_FAMILY, '', self::ARRAY_FAMILY, -1];
+            return [self::ARRAY_FAMILY, '', self::ARRAY_FAMILY, -1, null, false];
+        }
+
+        $foreach_marker = null;
+        $fetches_elements = str_starts_with($path_type, 'arrayvalue-fetch@');
+
+        if ($fetches_elements || str_starts_with($path_type, 'arrayvalue-assignment@')) {
+            $foreach_marker = substr($path_type, (int) strpos($path_type, '@') + 1);
         }
 
         if (str_starts_with($path_type, 'arrayvalue-overwrite-')) {
-            return [-1, '!' . substr($path_type, 21), -1, -1];
+            return [-1, '!' . substr($path_type, 21), -1, -1, null, false];
         }
 
         $observed_family = -1;
@@ -1032,7 +1089,7 @@ final class TaintFlowResolution
             }
         }
 
-        return [$observed_family, $observed_key, $closed_family, $added_family];
+        return [$observed_family, $observed_key, $closed_family, $added_family, $foreach_marker, $fetches_elements];
     }
 
     /**
@@ -1040,9 +1097,9 @@ final class TaintFlowResolution
      * @param array<int, int> $closed
      * @psalm-external-mutation-free
      */
-    private function internOpenAssignments(array $made, array $closed): int
+    private function internOpenAssignments(array $made, array $closed, int $slot = self::NO_SLOT): int
     {
-        $key = '';
+        $key = (string) $slot . '|';
 
         foreach (self::FAMILIES as $family => $_) {
             $key .= implode(',', $made[$family] ?? []) . '|' . ($closed[$family] ?? self::NO_CALL) . '|';
@@ -1055,6 +1112,7 @@ final class TaintFlowResolution
         $id = count($this->open_assignments);
         $this->open_assignment_ids[$key] = $id;
         $this->open_assignments[] = [$made, $closed];
+        $this->open_assignment_slots[] = $slot;
 
         return $id;
     }
@@ -1125,6 +1183,8 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
 
+        $innermost_array_assignment = $array_assignments ? $array_assignments[count($array_assignments) - 1] : -1;
+
         if ($observed_family === -1 && $observed_key !== null) {
             // The replacement of the value under a key (see getPathTypeEffects()) stops a flow of what was
             // assigned under that key, where the flow knows that's its innermost open array assignment. Any other
@@ -1133,13 +1193,15 @@ final class TaintFlowResolution
             // they would take otherwise. Nor is it an observation keeping the open assignments of the flows
             // reaching it (see computeObservableDepths()): where no fetch past it can observe the one it would
             // stop, the flow goes on as it did through the plain edge it replaces.
-            $innermost = $array_assignments ? $array_assignments[count($array_assignments) - 1] : -1;
-            $next = $innermost >= 0
-                && !self::classPassesFetch($this->getClass($innermost, self::ARRAY_FAMILY), $observed_key)
+            $next = $innermost_array_assignment >= 0
+                && !self::classPassesFetch(
+                    $this->getClass($innermost_array_assignment, self::ARRAY_FAMILY),
+                    $observed_key,
+                )
                 ? self::IGNORED
                 : $open_assignments;
-        } elseif ($array_assignments
-            && $this->path_types[$array_assignments[count($array_assignments) - 1]] === 'arraykey-assignment'
+        } elseif ($innermost_array_assignment >= 0
+            && $this->path_types[$innermost_array_assignment] === 'arraykey-assignment'
             && $this->path_types[$path_type] === 'arrayvalue-fetch'
         ) {
             // The value of an item under an unknown key doesn't take what was assigned to its key either. Only
@@ -1148,6 +1210,9 @@ final class TaintFlowResolution
             $next = self::IGNORED;
         } elseif ($observed_family === -1) {
             $next = $this->applyPathType($open_assignments, $path_type);
+        } elseif ($made[$observed_family] && $made[$observed_family][count($made[$observed_family]) - 1] < 0) {
+            // one of the call put back
+            $next = self::OBSERVES_CALL;
         } elseif ($made[$observed_family]) {
             $next = self::classPassesFetch(
                 $this->getClass($made[$observed_family][count($made[$observed_family]) - 1], $observed_family),
@@ -1166,6 +1231,20 @@ final class TaintFlowResolution
     }
 
     /**
+     * The depth in the open assignments of the call entering their context of the innermost open assignment of
+     * type $family of flows with open assignments $open_assignments, which is one of those of the call
+     *
+     * @psalm-mutation-free
+     */
+    private function getObservedCallDepth(int $open_assignments, int $family): int
+    {
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+        $innermost = $made[$family] ? $made[$family][count($made[$family]) - 1] : 0;
+
+        return $innermost < 0 ? -$innermost : $closed[$family] + 1;
+    }
+
+    /**
      * The open assignments of a flow with open assignments $open_assignments after it takes an edge of type
      * $path_type that it doesn't ignore: a fetch closes the innermost open assignment of its expression
      * type, and an assignment adds one to its own.
@@ -1174,29 +1253,129 @@ final class TaintFlowResolution
      */
     private function applyPathType(int $open_assignments, int $path_type): int
     {
-        [, , $closed_family, $added_family] = $this->path_type_effects[$path_type];
+        [, , $closed_family, $added_family, $foreach_marker, $fetches_elements] = $this->path_type_effects[$path_type];
 
         if ($closed_family === -1 && $added_family === -1) {
             return $open_assignments;
         }
 
         [$made, $closed] = $this->open_assignments[$open_assignments];
+        $slot = $this->open_assignment_slots[$open_assignments];
 
         if ($closed_family !== -1) {
             if ($made[$closed_family]) {
-                array_pop($made[$closed_family]);
+                $closed_assignment = array_pop($made[$closed_family]);
+
+                if ($foreach_marker !== null && $fetches_elements) {
+                    $slot = $this->getSlot($foreach_marker, $closed_assignment);
+                }
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
                 // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
                 $closed[$closed_family]++;
+
+                if ($foreach_marker !== null && $fetches_elements && $closed[$closed_family] !== self::FORGOTTEN) {
+                    // one of the call entering the context, by its depth there
+                    $slot = $this->getSlot($foreach_marker, -$closed[$closed_family]);
+                }
             }
         }
 
         if ($added_family !== -1) {
-            $made[$added_family][] = $path_type;
+            if ($foreach_marker !== null
+                && !$fetches_elements
+                && $slot >= 0
+                && $this->slots[$slot][0] === $foreach_marker
+            ) {
+                // the value of the element, or what was made of it, back under its key
+                $made[$added_family][] = $this->slots[$slot][1];
+                $slot = self::NO_SLOT;
+            } else {
+                $made[$added_family][] = $path_type;
+            }
+
             self::capMadeOpenAssignments($made, $closed, $added_family);
         }
 
-        return $this->internOpenAssignments($made, $closed);
+        return $this->internOpenAssignments($made, $closed, $slot);
+    }
+
+    /**
+     * The id of the slot of the element of the foreach loop marked $foreach_marker whose open assignment, as a
+     * path type id, is $assignment
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getSlot(string $foreach_marker, int $assignment): int
+    {
+        $key = $assignment . ' ' . $foreach_marker;
+
+        if (!isset($this->slot_ids[$key])) {
+            $this->slot_ids[$key] = count($this->slots);
+            $this->slots[] = [$foreach_marker, $assignment];
+        }
+
+        return $this->slot_ids[$key];
+    }
+
+    /**
+     * The open assignments $open_assignments, with element slot $slot, of a flow reaching node $node_id: without
+     * the slot if the value of the element may outlive the iteration it was fetched in there. That's where it
+     * may be kept: in a node without a location (a property, ...), in a variable of the body of the loop, which
+     * the next iterations see, or in the function of the loop out of the loop, the function being called again
+     * through its parameters and left through its return value. In the body walk of a specialized call, only
+     * the first is known.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function scopeSlot(int $open_assignments, int $slot, string $node_id): int
+    {
+        $node = $this->getNode($node_id);
+        $location = $node?->code_location;
+
+        if ($node === null || $location === null) {
+            $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
+        } elseif ($slot >= 0) {
+            $foreach_marker = $this->slots[$slot][0];
+            [$file_path, $function_start, $function_end, $start, $end, $body_start]
+                = $this->foreach_markers[$foreach_marker] ??= self::parseForeachMarker($foreach_marker);
+
+            $scoped_slot = $location->file_path === $file_path
+                && $location->raw_file_start >= $function_start
+                && $location->raw_file_end <= $function_end
+                && ($location->raw_file_start < $start
+                    || $location->raw_file_end > $end
+                    || ($location->raw_file_start >= $body_start && str_starts_with($node->label, '$')))
+                ? self::NO_SLOT
+                : $slot;
+        } else {
+            return $open_assignments;
+        }
+
+        if ($scoped_slot === $slot) {
+            return $open_assignments;
+        }
+
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        return $this->internOpenAssignments($made, $closed, $scoped_slot);
+    }
+
+    /**
+     * @return array{string, int, int, int, int, int}
+     * @psalm-pure
+     */
+    private static function parseForeachMarker(string $foreach_marker): array
+    {
+        $parts = explode(':', $foreach_marker, 6);
+
+        return [
+            $parts[5] ?? '',
+            (int) $parts[0],
+            (int) ($parts[1] ?? 0),
+            (int) ($parts[2] ?? 0),
+            (int) ($parts[3] ?? 0),
+            (int) ($parts[4] ?? 0),
+        ];
     }
 
     /**
@@ -1237,10 +1416,40 @@ final class TaintFlowResolution
                     : min(self::FORGOTTEN, $call_closed[$family] + $flow_closed_count - $count);
             }
 
+            $made[$family] = array_map(
+                fn(int $assignment): int => $assignment < 0
+                    ? $this->resolvePutBackAssignment($call_made[$family], $call_closed[$family], -$assignment)
+                    : $assignment,
+                $made[$family],
+            );
+
             self::capMadeOpenAssignments($made, $closed, $family);
         }
 
-        $result = $this->internOpenAssignments($made, $closed);
+        $flow_slot = $this->open_assignment_slots[$open_assignments];
+        $call_slot = $this->open_assignment_slots[$call_open_assignments];
+
+        if ($flow_slot === self::INHERITED_SLOT) {
+            $slot = $call_slot;
+        } elseif ($flow_slot >= 0) {
+            [$foreach_marker, $assignment] = $this->slots[$flow_slot];
+            $slot = $assignment < 0
+                ? $this->getSlot(
+                    $foreach_marker,
+                    $this->resolvePutBackAssignment(
+                        $call_made[self::ARRAY_FAMILY] ?? [],
+                        $call_closed[self::ARRAY_FAMILY] ?? self::NO_CALL,
+                        -$assignment,
+                    ),
+                )
+                : $flow_slot;
+        } else {
+            $slot = $call_slot === self::INHERITED_SLOT || $call_slot === self::BLOCKED_SLOT
+                ? self::BLOCKED_SLOT
+                : self::NO_SLOT;
+        }
+
+        $result = $this->internOpenAssignments($made, $closed, $slot);
         $this->open_assignment_compositions[$call_open_assignments][$open_assignments] = $result;
 
         return $result;
@@ -1272,7 +1481,38 @@ final class TaintFlowResolution
             }
         }
 
-        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments($made, $closed);
+        // the slot is that of the innermost ones
+        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments(
+            $made,
+            $closed,
+            $this->open_assignment_slots[$open_assignments],
+        );
+    }
+
+    /**
+     * The open assignment at depth $depth of the open assignments of a call, made $call_made and with $call_closed
+     * of those of its own call closed (see $open_assignments): as a path type id, minus its depth in those of its
+     * own call, or the unkeyed array value assignment if the call doesn't know it.
+     *
+     * @param list<int> $call_made
+     * @psalm-external-mutation-free
+     */
+    private function resolvePutBackAssignment(array $call_made, int $call_closed, int $depth): int
+    {
+        $count = count($call_made);
+        $index = $count - $depth;
+
+        if ($index >= 0 && isset($call_made[$index])) {
+            return $call_made[$index];
+        }
+
+        if ($call_closed !== self::NO_CALL && $call_closed !== self::FORGOTTEN
+            && $call_closed + $depth - $count < self::FORGOTTEN
+        ) {
+            return $count - $call_closed - $depth;
+        }
+
+        return $this->getPathTypeId('arrayvalue-assignment');
     }
 
     /**
@@ -1302,7 +1542,7 @@ final class TaintFlowResolution
             }
         }
 
-        $result = $this->internOpenAssignments($made, $closed);
+        $result = $this->internOpenAssignments($made, $closed, $this->open_assignment_slots[$open_assignments]);
         $this->open_assignment_truncations[$open_assignments][$depths] = $result;
 
         return $result;
@@ -1332,6 +1572,11 @@ final class TaintFlowResolution
         }
 
         $open_assignments = $this->truncateOpenAssignments($open_assignments, $node_id);
+        $slot = $this->open_assignment_slots[$open_assignments];
+
+        if ($slot >= 0 || $slot === self::INHERITED_SLOT) {
+            $open_assignments = $this->scopeSlot($open_assignments, $slot, $node_id);
+        }
 
         if (isset($this->state_ids[$node_id]) && count($this->state_ids[$node_id]) >= self::WIDENING_STATES) {
             $open_assignments = $this->widenOpenAssignments($open_assignments);
@@ -1555,7 +1800,7 @@ final class TaintFlowResolution
             // it goes on for the calls whose open assignment it doesn't ignore
             [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
             $observed_key ??= '';
-            $depth = $this->open_assignments[$open_assignments][1][$observed_family] + 1;
+            $depth = $this->getObservedCallDepth($open_assignments, $observed_family);
             $fact = $this->entry_facts[$context][self::getPosition($observed_family, $depth)] ?? null;
 
             if ($fact !== null && $fact[0] !== null) {
@@ -1716,15 +1961,26 @@ final class TaintFlowResolution
     private function getConvergenceOpenAssignments(int $caller, string $id): int
     {
         [$made] = $this->open_assignments[$this->state_open_assignments[$caller]];
+        $slot = $this->open_assignment_slots[$this->state_open_assignments[$caller]];
         $known = [];
         $known_count = [];
 
         foreach (self::FAMILIES as $family => $_) {
-            $known[$family] = array_slice($made[$family] ?? [], -1);
+            $innermost = array_slice($made[$family] ?? [], -1);
+            // one of the call put back is not one the convergence knows
+            $known[$family] = $innermost !== [] && $innermost[0] >= 0 ? $innermost : [];
             $known_count[$family] = count($known[$family]);
         }
 
-        $open_assignments = $this->truncateOpenAssignments($this->internOpenAssignments($known, $known_count), $id);
+        // the walk of a convergence isn't composed with its callers: it can't inherit their slot
+        $open_assignments = $this->truncateOpenAssignments(
+            $this->internOpenAssignments(
+                $known,
+                $known_count,
+                $slot >= 0 && $this->slots[$slot][1] >= 0 ? $slot : self::NO_SLOT,
+            ),
+            $id,
+        );
 
         if (!isset($this->convergence_open_assignments[$id][$open_assignments])) {
             if (count($this->convergence_open_assignments[$id] ?? []) >= self::MAX_CONVERGENCE_KEYS) {
@@ -1956,14 +2212,14 @@ final class TaintFlowResolution
 
         $index = $count - $depth;
 
-        if ($index >= 0) {
+        if ($index >= 0 && $made[$family][$index] >= 0) {
             return self::classPassesFetch($this->getClass($made[$family][$index], $family), $fetched_key);
         }
 
-        $call_depth = $closed[$family] + $depth - $count;
+        // one of the call, or one of the call put back
+        $call_depth = $index >= 0 ? -$made[$family][$index] : $closed[$family] + $depth - $count;
 
-        if ($closed[$family] === self::NO_CALL
-            || $closed[$family] === self::FORGOTTEN
+        if (($index < 0 && ($closed[$family] === self::NO_CALL || $closed[$family] === self::FORGOTTEN))
             || $call_depth > self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH
         ) {
             // there is none, or the flows don't know it
@@ -2016,14 +2272,14 @@ final class TaintFlowResolution
 
         $index = $count - $depth;
 
-        if ($index >= 0) {
+        if ($index >= 0 && $made[$family][$index] >= 0) {
             return $this->getClass($made[$family][$index], $family);
         }
 
-        $call_depth = $closed[$family] + $depth - $count;
+        // one of the call, or one of the call put back
+        $call_depth = $index >= 0 ? -$made[$family][$index] : $closed[$family] + $depth - $count;
 
-        if ($closed[$family] === self::NO_CALL
-            || $closed[$family] === self::FORGOTTEN
+        if (($index < 0 && ($closed[$family] === self::NO_CALL || $closed[$family] === self::FORGOTTEN))
             || $call_depth > self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH
         ) {
             // there is none, or the flows don't know it: no fetch ignores it

@@ -113,6 +113,16 @@ final class Context
     public array $foreach_element_copies = [];
 
     /**
+     * The foreach loops whose element values an assignment under the key of the element in their body may put
+     * back under that key (see ArrayAssignmentAnalyzer::getForeachMarker()): key variable id => [ids of the
+     * parent nodes the loop gave it, the marker of the loop (see ForeachAnalyzer::getForeachMarker())]
+     *
+     * @internal
+     * @var array<string, array{list<string>, string}>
+     */
+    public array $foreach_keys = [];
+
+    /**
      * A set of globals that are referenced somewhere.
      *
      * @var array<string, true>
