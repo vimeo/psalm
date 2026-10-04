@@ -818,21 +818,71 @@ final class NewAnalyzer extends CallAnalyzer
 
         $statements_analyzer->taint_flow_graph->addNode($method_source);
 
-        // what the constructor's `@psalm-flow` annotations say its arguments flow into the new object
-        if ($declaring_method_id && $method_storage && $method_storage->return_source_params !== []) {
-            FunctionCallReturnTypeFetcher::taintUsingFlows(
-                $method_storage,
-                $statements_analyzer->taint_flow_graph,
-                $codebase->methods->getCasedMethodId($declaring_method_id),
-                $stmt->getArgs(),
-                $method_source->specialization_key !== null ? $code_location : null,
-                $method_source,
-                $method_storage->removed_taints,
-            );
+        if ($method_storage && $method_storage->return_source_params !== []) {
+            self::taintUsingConstructorFlows($statements_analyzer, $stmt, $method_storage, $method_source);
         }
 
         $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+    }
+
+    /**
+     * What the constructor's `@psalm-flow` annotations say the arguments of this call flow into the new object. The
+     * arguments' own nodes are used: the constructor's argument nodes are only this call's when the call is
+     * specialized, and the new object's node may be this call's (an external-mutation-free class) even when it isn't.
+     */
+    private static function taintUsingConstructorFlows(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodStorage $method_storage,
+        DataFlowNode $method_source,
+    ): void {
+        $graph = $statements_analyzer->taint_flow_graph;
+
+        if (!$graph) {
+            return;
+        }
+
+        foreach ($stmt->getArgs() as $argument_offset => $arg) {
+            $param_offset = $argument_offset;
+
+            if ($arg->name !== null) {
+                $param_offset = null;
+
+                foreach ($method_storage->params as $offset => $param) {
+                    if ($param->name === $arg->name->name) {
+                        $param_offset = $offset;
+                    }
+                }
+            }
+
+            // the arguments a variadic parameter takes flow as it does
+            $last_offset = count($method_storage->params) - 1;
+            if ($param_offset !== null
+                && $param_offset > $last_offset
+                && $last_offset >= 0
+                && $method_storage->params[$last_offset]->is_variadic
+            ) {
+                $param_offset = $last_offset;
+            }
+
+            $path_type = $param_offset !== null ? $method_storage->return_source_params[$param_offset] ?? null : null;
+            $arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if ($path_type === null || !$arg_type) {
+                continue;
+            }
+
+            foreach ($arg_type->parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $method_source,
+                    $path_type,
+                    $method_storage->added_taints,
+                    $method_storage->removed_taints,
+                );
+            }
+        }
     }
 
     /**
