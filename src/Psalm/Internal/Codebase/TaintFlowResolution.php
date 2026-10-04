@@ -505,7 +505,7 @@ final class TaintFlowResolution
         private readonly array $nodes,
         private readonly array $sources,
         private readonly array $sinks,
-        private readonly array $specializations,
+        private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
         private readonly Config $config,
@@ -634,6 +634,13 @@ final class TaintFlowResolution
 
             ksort($destinations, SORT_STRING);
             $this->forward_edges[$from_id] = $destinations;
+        }
+
+        // The states, and so where flows converge (see enterConvergence()) and the traces of the flows
+        // reported, depend on the order the call sites of a node are left through (see walk()).
+        foreach ($this->specializations as $id => $specializations) {
+            ksort($specializations, SORT_STRING);
+            $this->specializations[$id] = $specializations;
         }
 
         $this->computeObservableDepths($reverse);
@@ -1441,7 +1448,11 @@ final class TaintFlowResolution
         if (!array_key_exists($id, $this->derived_nodes)) {
             $this->derived_nodes[$id] = null;
 
-            foreach ($this->specialization_links[$id] ?? [] as $linked_id => $_) {
+            // the same one whichever order the analysis of the files added them in
+            $linked_ids = $this->specialization_links[$id] ?? [];
+            ksort($linked_ids, SORT_STRING);
+
+            foreach ($linked_ids as $linked_id => $_) {
                 $linked = $this->nodes[$linked_id] ?? $this->sources[$linked_id] ?? null;
 
                 if ($linked !== null) {
