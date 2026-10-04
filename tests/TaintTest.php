@@ -1295,6 +1295,23 @@ final class TaintTest extends TestCase
                     }
                     echo $organization->city;',
             ],
+            'dontTaintValidatedValueOrItsReplacement' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true literal-string $city */
+                    function isKnownCity(string $city): bool {
+                        return in_array($city, ["moscow", "spb"], true);
+                    }
+
+                    function getDefaultCity(): string {
+                        return (string) getenv("DEFAULT_CITY");
+                    }
+
+                    $city = (string) $_GET["city"];
+                    if (!isKnownCity($city)) {
+                        $city = getDefaultCity();
+                    }
+                    echo $city;',
+            ],
             'dontTaintValidatedValueAddedToArray' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true literal-string $city */
