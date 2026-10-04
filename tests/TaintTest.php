@@ -978,6 +978,26 @@ final class TaintTest extends TestCase
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
             ],
+            'dontTaintTheOverridesOfSiblingsThroughACallOfTheParentMethod' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function findBy(array $query): void {}
+                    }
+
+                    final class ModerationMapper extends Mapper {
+                        public function findBy(array $query): void {
+                            parent::findBy($query);
+                        }
+                    }
+
+                    final class ArticleMapper extends Mapper {
+                        public function findBy(array $query): void {
+                            echo (string) $query["title"];
+                        }
+                    }
+
+                    (new ModerationMapper())->findBy($_GET);',
+            ],
             'dontTaintAnOverrideThroughACallOnASiblingClass' => [
                 'code' => '<?php // --taint-analysis
                     abstract class Mapper {
@@ -3668,6 +3688,25 @@ final class TaintTest extends TestCase
 
                     relay(["other" => (string) $_GET["other"]]);
                     relay(["name" => (string) $_GET["name"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOverridesThroughAVirtualCall' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(array $query): void {
+                            $this->findBy($query);
+                        }
+
+                        public function findBy(array $query): void {}
+                    }
+
+                    final class ArticleMapper extends Mapper {
+                        public function findBy(array $query): void {
+                            echo (string) $query["title"];
+                        }
+                    }
+
+                    (new ArticleMapper())->find($_GET);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAnOverrideThroughACallOnTheDeclaringClass' => [
