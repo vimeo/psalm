@@ -162,7 +162,7 @@ function array_unique(array $array, int $flags = 0)
  * @return (TArray is array<never, never> ? null : (TArray is non-empty-list ? int<0,max> : (TArray is non-empty-array ? TKey : TKey|null)))
  * @psalm-pure
  * @psalm-ignore-nullable-return
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
 function key($array)
 {
@@ -177,7 +177,7 @@ function key($array)
  *
  * @return (TArray is array<never, never> ? false : (TArray is non-empty-array ? TValue : TValue|false))
  * @psalm-pure
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function current($array)
 {
@@ -191,7 +191,7 @@ function current($array)
  * @param TArray $array
  *
  * @return (TArray is array<never, never> ? false : (TArray is non-empty-array ? TValue : TValue|false))
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function reset(&$array)
 {
@@ -205,7 +205,7 @@ function reset(&$array)
  * @param TArray $array
  *
  * @return (TArray is array<never, never> ? false : (TArray is non-empty-array ? TValue : TValue|false))
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function end(&$array)
 {
@@ -219,7 +219,7 @@ function end(&$array)
  *
  * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
 function array_key_first($array)
 {
@@ -232,7 +232,7 @@ function array_key_first($array)
  *
  * @return (TArray is array<never, never> ? null : (TArray is non-empty-array ? key-of<TArray> : key-of<TArray>|null))
  * @psalm-pure
- * @psalm-flow ($array) -> return
+ * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
 function array_key_last($array)
 {

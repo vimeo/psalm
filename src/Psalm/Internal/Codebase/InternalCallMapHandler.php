@@ -41,6 +41,7 @@ use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
+use function is_int;
 use function strtolower;
 use function substr;
 
@@ -75,7 +76,7 @@ final class InternalCallMapHandler
     private static ?array $taint_sink_map = null;
 
     /**
-     * @var array<lowercase-string, non-empty-list<non-empty-string>>|null
+     * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
      */
     private static ?array $taint_flow_map = null;
 
@@ -421,36 +422,39 @@ final class InternalCallMapHandler
      */
     public static function addReturnTaintFlows(FunctionLikeStorage $storage, string $function_id): void
     {
-        foreach (self::getReturnTaintFlowOffsets($function_id, $storage->params) as $offset) {
-            $storage->return_source_params[$offset] = 'arg';
+        foreach (self::getReturnTaintFlows($function_id, $storage->params) as $offset => $path_type) {
+            $storage->return_source_params[$offset] = $path_type;
         }
     }
 
     /**
      * The offsets, among $params, of the parameters of the builtin function or method $function_id whose taints
-     * flow into its return value (see dictionaries/InternalTaintFlowMap.php).
+     * flow into its return value => the type of the path they flow through (see dictionaries/InternalTaintFlowMap.php)
      *
      * @param array<int, FunctionLikeParameter> $params
-     * @return list<int>
+     * @return array<int, string>
      * @psalm-capabilities read-props|read-globals|write-globals
      */
-    public static function getReturnTaintFlowOffsets(string $function_id, array $params): array
+    public static function getReturnTaintFlows(string $function_id, array $params): array
     {
         if (self::$taint_flow_map === null) {
-            /** @var array<lowercase-string, non-empty-list<non-empty-string>> */
+            /** @var array<lowercase-string, array<int|non-empty-string, non-empty-string>> */
             self::$taint_flow_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintFlowMap.php');
         }
 
-        $offsets = [];
-        foreach (self::$taint_flow_map[strtolower($function_id)] ?? [] as $param_name) {
+        $flows = [];
+        foreach (self::$taint_flow_map[strtolower($function_id)] ?? [] as $key => $value) {
+            // a parameter flows as an argument, or through the path its entry names
+            [$param_name, $path_type] = is_int($key) ? [$value, 'arg'] : [$key, $value];
+
             foreach ($params as $offset => $param) {
                 if ($param->name === $param_name) {
-                    $offsets[] = $offset;
+                    $flows[$offset] = $path_type;
                 }
             }
         }
 
-        return $offsets;
+        return $flows;
     }
 
     /**

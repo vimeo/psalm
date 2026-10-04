@@ -873,9 +873,9 @@ final class FunctionCallReturnTypeFetcher
         Union &$stmt_type,
     ): void {
         $params = $callmap_callable->params ?? [];
-        $offsets = InternalCallMapHandler::getReturnTaintFlowOffsets($function_id, $params);
+        $flows = InternalCallMapHandler::getReturnTaintFlows($function_id, $params);
 
-        if ($offsets === [] || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+        if ($flows === [] || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
 
@@ -889,7 +889,7 @@ final class FunctionCallReturnTypeFetcher
         $removed_taints = InternalCallMapHandler::getReturnRemovedTaints($function_id);
 
         $args = $stmt->getArgs();
-        foreach ($offsets as $offset) {
+        foreach ($flows as $offset => $path_type) {
             $last_offset = $params[$offset]->is_variadic ? count($args) - 1 : $offset;
             for ($arg_offset = $offset; $arg_offset <= $last_offset && isset($args[$arg_offset]); $arg_offset++) {
                 $arg_type = $statements_analyzer->node_data->getType($args[$arg_offset]->value);
@@ -901,7 +901,7 @@ final class FunctionCallReturnTypeFetcher
                     $graph->addPath(
                         $parent_node,
                         $return_node,
-                        'arg',
+                        $path_type,
                         0,
                         $removed_taints | $arg_type->getTaintsToRemove(),
                     );

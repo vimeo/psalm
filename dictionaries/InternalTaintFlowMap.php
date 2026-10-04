@@ -5,9 +5,11 @@ declare(strict_types=1);
 /**
  * The builtin functions and methods only declared by the call map whose return value holds data given to some of
  * their parameters: the taints of these parameters flow into the return value, as with `@psalm-flow`. The builtins
- * declared by stubs carry `@psalm-flow` annotations in the stubs instead.
+ * declared by stubs carry `@psalm-flow` annotations in the stubs instead. A parameter given as a key flows through
+ * the path its value names, as `@psalm-flow ($array) -(arrayvalue-fetch)-> return` does: what returns one of the
+ * values (or keys) of an array takes only its taints.
  *
- * @var array<lowercase-string, non-empty-list<non-empty-string>>
+ * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>
  */
 return [
     // standard: strings
@@ -25,19 +27,19 @@ return [
     'array_diff_ukey' => ['array'],
     'array_fill' => ['value'],
     'array_filter' => ['array'],
-    'array_find' => ['array'],
-    'array_find_key' => ['array'],
-    'array_first' => ['array'],
+    'array_find' => ['array' => 'arrayvalue-fetch'],
+    'array_find_key' => ['array' => 'arraykey-fetch'],
+    'array_first' => ['array' => 'arrayvalue-fetch'],
     'array_intersect_uassoc' => ['array'],
     'array_intersect_ukey' => ['array'],
-    'array_last' => ['array'],
+    'array_last' => ['array' => 'arrayvalue-fetch'],
     'array_pad' => ['array', 'value'],
-    'array_pop' => ['array'],
-    'array_rand' => ['array'],
+    'array_pop' => ['array' => 'arrayvalue-fetch'],
+    'array_rand' => ['array' => 'arraykey-fetch'],
     'array_replace' => ['array', 'replacements'],
     'array_replace_recursive' => ['array', 'replacements'],
     'array_reverse' => ['array'],
-    'array_shift' => ['array'],
+    'array_shift' => ['array' => 'arrayvalue-fetch'],
     'array_slice' => ['array'],
     'array_splice' => ['array'],
     'array_udiff' => ['array'],

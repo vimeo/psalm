@@ -280,6 +280,18 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
+                    echo (string) (current($files)["tmp_name"] ?? "");
+                    echo (string) (array_pop($files)["tmp_name"] ?? "");',
+            ],
+            'dontTaintTheKeyOfAnArrayWithItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => (string) $_GET["value"]];
+                    echo key($values);
+                    echo (string) array_key_first($values);',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -1325,6 +1337,18 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheElementABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $files = [["name" => (string) $_GET["name"], "tmp_name" => "/tmp/upload"]];
+                    echo array_shift($files)["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $values = [(string) $_GET["key"] => 1];
+                    echo (string) array_key_last($values);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintHtmlThroughSerialize' => [
                 'code' => '<?php // --taint-analysis
                     echo serialize((string) $_GET["value"]);',
