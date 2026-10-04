@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Example\Plugin;
+namespace Psalm\Tests\Config\Plugin\EventHandler\LocationlessNode;
 
 use Override;
 use PhpParser\Node\Expr\FuncCall;

@@ -10,9 +10,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
@@ -70,9 +68,6 @@ final class LocationlessNodeTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/LocationlessNode/RelayPlugin.php" />
-                    </plugins>
                     <issueHandlers>
                         <MissingPureAnnotation errorLevel="suppress"/>
                         <ImpureFunctionCall errorLevel="suppress"/>
@@ -80,7 +75,7 @@ final class LocationlessNodeTest extends TestCase
                 </psalm>',
             ),
         );
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->registerClass(RelayPlugin::class);
 
         $file_path = (string) getcwd() . '/src/somefile.php';
 
@@ -98,7 +93,7 @@ final class LocationlessNodeTest extends TestCase
 
         // the flow reaches the sink from a node with no location: it is reported at the sink
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/^TaintedHtml - src\/somefile.php:7:13/');
+        $this->expectExceptionMessageMatches('#^TaintedHtml - (.*[\\\\/])?src[\\\\/]somefile\.php:7:13#');
 
         $this->analyzeFile($file_path, new Context(), true, true);
     }
