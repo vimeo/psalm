@@ -1295,6 +1295,18 @@ final class TaintTest extends TestCase
                     }
                     echo $organization->city;',
             ],
+            'dontTaintAQueryWithAStringItem' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink nosql $query */
+                    function find(array $query): void {}
+
+                    function findOthersInCity(object $id): void {
+                        $city = $_GET["city"];
+                        if (is_string($city)) {
+                            find(["city" => $city, "_id" => [\'$ne\' => $id]]);
+                        }
+                    }',
+            ],
             'dontTaintValidatedValueOrItsReplacement' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true literal-string $city */
@@ -1802,6 +1814,14 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAQueryWithAnArrayItem' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink nosql $query */
+                    function find(array $query): void {}
+
+                    find(["city" => $_GET["city"]]);',
+                'error_message' => 'TaintedNosql',
+            ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
                 'code' => '<?php // --taint-analysis
                     $flipped = array_flip(["key" => (string) $_GET["value"]]);
