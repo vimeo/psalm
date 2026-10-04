@@ -95,6 +95,7 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
+use function is_int;
 use function is_string;
 use function reset;
 use function spl_object_id;
@@ -1285,6 +1286,64 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * The literal key, or the position, of a destructured item, null if it has another key
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getDestructuredOffsetValue(PhpParser\Node\ArrayItem $item, int $offset): string|int|null
+    {
+        if (!$item->key) {
+            return $offset;
+        }
+
+        if (!$item->key instanceof PhpParser\Node\Scalar\String_) {
+            return null;
+        }
+
+        $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($item->key->value);
+
+        return $string_to_int !== false ? $string_to_int : $item->key->value;
+    }
+
+    /**
+     * What a destructured item takes from the array: what its literal key or position holds, through a node of its
+     * own, which keeps it apart from the other items of an array whose type has no shape
+     */
+    private static function taintDestructuredItem(
+        StatementsAnalyzer $statements_analyzer,
+        ?PhpParser\Node\Expr $assign_value,
+        string|int|null $offset_value,
+        ?Union $item_type,
+    ): ?Union {
+        if (!$statements_analyzer->data_flow_graph || !$assign_value || !$item_type) {
+            return $item_type;
+        }
+
+        if ($offset_value === null) {
+            $offset_type = Type::getArrayKey();
+            ArrayFetchAnalyzer::taintArrayFetch($statements_analyzer, $assign_value, null, $item_type, $offset_type);
+            return $item_type;
+        }
+
+        $assign_value_id = ExpressionIdentifier::getExtendedVarId(
+            $assign_value,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        $offset_type = is_int($offset_value) ? Type::getInt(false, $offset_value) : Type::getString($offset_value);
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_analyzer,
+            $assign_value,
+            ($assign_value_id ?? 'destructured') . '[\'' . $offset_value . '\']',
+            $item_type,
+            $offset_type,
+        );
+
+        return $item_type;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -1338,20 +1397,7 @@ final class AssignmentAnalyzer
                 continue;
             }
 
-            $offset_value = null;
-
-            if (!$assign_var_item->key) {
-                $offset_value = $offset;
-            } elseif ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_) {
-                $offset_value = $assign_var_item->key->value;
-            }
-
-            if ($offset_value !== null) {
-                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_value);
-                if ($string_to_int !== false) {
-                    $offset_value = $string_to_int;
-                }
-            }
+            $offset_value = self::getDestructuredOffsetValue($assign_var_item, $offset);
 
             $list_var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
@@ -1530,18 +1576,7 @@ final class AssignmentAnalyzer
                     if ($assign_value_atomic_type instanceof TArray) {
                         $new_assign_type = $assign_value_atomic_type->type_params[1];
 
-                        if ($statements_analyzer->data_flow_graph
-                            && $assign_value
-                        ) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp,
-                            );
-                        }
+                        $new_assign_type = self::taintDestructuredItem($statements_analyzer, $assign_value, $offset_value, $new_assign_type);
 
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
                     } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
@@ -1583,16 +1618,7 @@ final class AssignmentAnalyzer
                                 $assign_value_atomic_type->fallback_params[1];
                         }
 
-                        if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp,
-                            );
-                        }
+                        $new_assign_type = self::taintDestructuredItem($statements_analyzer, $assign_value, $offset_value, $new_assign_type);
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
