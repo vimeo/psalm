@@ -440,6 +440,28 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'fetchOfAKeySixLevelsDeep' => [
+                // The value assigned to key "cost" is wrapped in five more arrays: the fetch of key "callback"
+                // past the fetches of those still ignores it, whatever the keys of the unkeyed ones.
+                'code' => '<?php
+                    /** @param array<string, array{children: array<string, array{children: list<array<string, string>>}>}> $pack */
+                    function render(array $pack): void {
+                        foreach ($pack as $category) {
+                            foreach ($category["children"] as $subcategory) {
+                                foreach ($subcategory["children"] as $dish) {
+                                    echo $dish["callback"] ?? "";
+                                }
+                            }
+                        }
+                    }
+
+                    $cat = (string)($_GET["cat"] ?? "");
+                    $sub = (string)($_GET["sub"] ?? "");
+                    $pack = [];
+                    $pack[$cat]["children"][$sub]["children"][] = ["cost" => (string)($_GET["cost"] ?? "")];
+                    render($pack);
+                ',
+            ],
             'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
                 'code' => '<?php
                     $stream = fopen("php://stderr", "w");

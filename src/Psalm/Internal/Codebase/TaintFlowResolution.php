@@ -66,19 +66,25 @@ final class TaintFlowResolution
     private const FAMILIES = ['arraykey', 'arrayvalue', 'property'];
 
     /**
-     * How many of its innermost open assignments of each expression type a flow keeps at most, and how many
-     * of those of the call entering its context it closes at most: a loop or a recursive call can wrap or
-     * unwrap a value further every time. Past those, a fetch of an open assignment the flow forgot isn't
-     * ignored (see getNextOpenAssignments()): the flow may take taints it doesn't have there, but takes all
-     * those it has.
+     * How many of its innermost open assignments of each expression type a flow outside of any context keeps
+     * at most: a loop can wrap a value further every time. Past those, a fetch of an open assignment the
+     * flow forgot isn't ignored (see getNextOpenAssignments()): the flow may take taints it doesn't have
+     * there, but takes all those it has.
      */
-    private const MAX_OPEN_ASSIGNMENT_DEPTH = 4;
+    private const MAX_OPEN_ASSIGNMENT_DEPTH = 8;
+
+    /**
+     * How many of them a flow in the walk of an entry keeps at most, counting those of the call entering it
+     * it closed. Fewer: a walk is told apart in a filter for each open assignment of the calls entering it a
+     * fetch observes (see getFilter()), and the deeper one the more.
+     */
+    private const MAX_CALL_OPEN_ASSIGNMENT_DEPTH = 4;
 
     /**
      * The number of open assignments of the call entering its context a flow closed (see
      * $open_assignments) when it doesn't know them anymore, and when it is in no context
      */
-    private const FORGOTTEN = self::MAX_OPEN_ASSIGNMENT_DEPTH + 1;
+    private const FORGOTTEN = self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH + 1;
     private const NO_CALL = -1;
 
     /**
@@ -976,7 +982,29 @@ final class TaintFlowResolution
     }
 
     /**
-     * Keeps the innermost MAX_OPEN_ASSIGNMENT_DEPTH open assignments of an expression type
+     * Keeps the innermost open assignments of an expression type a flow can keep (see
+     * MAX_OPEN_ASSIGNMENT_DEPTH and MAX_CALL_OPEN_ASSIGNMENT_DEPTH)
+     *
+     * @param array<int, list<int>> $made
+     * @param array<int, int> $closed
+     * @param-out array<int, list<int>> $made
+     * @param-out array<int, int> $closed
+     * @psalm-capabilities write-refs
+     */
+    private static function capMadeOpenAssignments(array &$made, array &$closed, int $family): void
+    {
+        self::capOpenAssignments(
+            $made,
+            $closed,
+            $family,
+            $closed[$family] === self::NO_CALL
+                ? self::MAX_OPEN_ASSIGNMENT_DEPTH
+                : self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH,
+        );
+    }
+
+    /**
+     * Keeps the innermost $depth open assignments of an expression type
      *
      * @param array<int, list<int>> $made
      * @param array<int, int> $closed
@@ -1058,14 +1086,14 @@ final class TaintFlowResolution
             if ($made[$closed_family]) {
                 array_pop($made[$closed_family]);
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
-                // past MAX_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
+                // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
                 $closed[$closed_family]++;
             }
         }
 
         if ($added_family !== -1) {
             $made[$added_family][] = $path_type;
-            self::capOpenAssignments($made, $closed, $added_family, self::MAX_OPEN_ASSIGNMENT_DEPTH);
+            self::capMadeOpenAssignments($made, $closed, $added_family);
         }
 
         return $this->internOpenAssignments($made, $closed);
@@ -1109,7 +1137,7 @@ final class TaintFlowResolution
                     : min(self::FORGOTTEN, $call_closed[$family] + $flow_closed_count - $count);
             }
 
-            self::capOpenAssignments($made, $closed, $family, self::MAX_OPEN_ASSIGNMENT_DEPTH);
+            self::capMadeOpenAssignments($made, $closed, $family);
         }
 
         $result = $this->internOpenAssignments($made, $closed);
@@ -1754,7 +1782,7 @@ final class TaintFlowResolution
 
         if ($closed[$family] === self::NO_CALL
             || $closed[$family] === self::FORGOTTEN
-            || $call_depth > self::MAX_OPEN_ASSIGNMENT_DEPTH
+            || $call_depth > self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH
         ) {
             // there is none, or the flows don't know it
             return true;
@@ -1807,7 +1835,7 @@ final class TaintFlowResolution
 
         if ($closed[$family] === self::NO_CALL
             || $closed[$family] === self::FORGOTTEN
-            || $call_depth > self::MAX_OPEN_ASSIGNMENT_DEPTH
+            || $call_depth > self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH
         ) {
             // there is none, or the flows don't know it: no fetch ignores it
             return '';
