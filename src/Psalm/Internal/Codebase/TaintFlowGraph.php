@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\Path;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
@@ -51,6 +52,8 @@ use function count;
 use function end;
 use function implode;
 use function ksort;
+use function min;
+use function strcmp;
 use function strlen;
 use function strpos;
 use function substr;
@@ -368,6 +371,49 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Adds a path between two nodes from the graph of another worker (see addGraph()), which may have added
+     * one already, from another file: then a flow can take either. Whichever came first, so that the
+     * resolution doesn't depend on the order the workers' graphs are merged in. (The analysis of a file adds
+     * a path again to replace it, e.g. with the taints a call escapes: see addPath().)
+     *
+     * Two paths of the same type are merged into one: a flow keeps the taints either keeps, and gets those
+     * either adds. Two paths of different types aren't: they handle open assignments differently (see
+     * shouldIgnoreFetch()). The one of the first type stays, and the other goes through a node of its own.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function mergePath(string $from_id, ?DataFlowNode $from, string $to_id, Path $path): void
+    {
+        $existing = $this->forward_edges[$from_id][$to_id] ?? null;
+
+        if ($existing === null) {
+            $this->forward_edges[$from_id][$to_id] = $path;
+
+            return;
+        }
+
+        if ($existing->type === $path->type) {
+            $this->forward_edges[$from_id][$to_id] = new Path(
+                $path->type,
+                min($existing->length, $path->length),
+                ($existing->added_taints & ~$existing->removed_taints) | ($path->added_taints & ~$path->removed_taints),
+                $existing->removed_taints & $path->removed_taints,
+            );
+
+            return;
+        }
+
+        [$kept, $moved] = strcmp($existing->type, $path->type) < 0 ? [$existing, $path] : [$path, $existing];
+
+        $this->forward_edges[$from_id][$to_id] = $kept;
+
+        $variant = DataFlowNode::getForPathVariant($from_id, $from, $moved->type);
+        $this->nodes[$variant->id] = $variant;
+        $this->mergePath($from_id, $from, $variant->id, $moved);
+        $this->forward_edges[$variant->id][$to_id] = new Path('=', 0);
+    }
+
+    /**
      * Records that the generators of the function-like with the return node $return_node get what is sent to
      * them through $sent_node.
      *
@@ -459,8 +505,14 @@ final class TaintFlowGraph extends DataFlowGraph
         foreach ($other->forward_edges as $key => $map) {
             if (!isset($this->forward_edges[$key])) {
                 $this->forward_edges[$key] = $map;
-            } else {
-                $this->forward_edges[$key] += $map;
+
+                continue;
+            }
+
+            $from = $this->nodes[$key] ?? $this->sources[$key] ?? null;
+
+            foreach ($map as $to_id => $path) {
+                $this->mergePath($key, $from, $to_id, $path);
             }
         }
 

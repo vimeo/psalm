@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\IssueBuffer;
+use Psalm\Type\TaintKind;
 
 use function array_reverse;
 use function json_encode;
@@ -157,5 +160,108 @@ final class TaintFlowGraphTest extends TestCase
             $reverse,
             'Taint issues must not depend on the order partial graphs are merged in',
         );
+    }
+
+    /**
+     * Two files can add the same path between two nodes, changing taints differently: a flow takes either, so
+     * the taint one of them keeps reaches the sink, whichever graph is merged first.
+     */
+    public function testPathAddedTwiceKeepsTheTaintsEitherKeeps(): void
+    {
+        foreach ([false, true] as $reverse_merge_order) {
+            $this->assertSame(
+                ['TaintedHtml'],
+                $this->resolveMergedPaths(
+                    [['=', TaintKind::INPUT_HTML], ['=', 0]],
+                    'arg',
+                    $reverse_merge_order,
+                ),
+            );
+        }
+    }
+
+    /**
+     * Two files can add paths of different types between the same nodes: a flow takes either. The source is
+     * assigned to another key than the one the sink fetches: the fetch ignores it past a plain path, but not
+     * past an assignment to any key, whichever graph is merged first.
+     */
+    public function testPathsOfDifferentTypesBetweenTheSameNodesAreBothTaken(): void
+    {
+        foreach ([false, true] as $reverse_merge_order) {
+            $this->assertSame(
+                ['TaintedHtml'],
+                $this->resolveMergedPaths(
+                    [['=', 0], ['arrayvalue-assignment', 0]],
+                    'arrayvalue-fetch-\'key\'',
+                    $reverse_merge_order,
+                ),
+            );
+        }
+    }
+
+    /**
+     * Resolves the merge of partial graphs, each with the source assigned to the array key 'other' of an
+     * array, a path of the given type and removed taints from that array to a variable, and a path of type
+     * $sink_path_type from the variable to a sink, and returns the types of the issues reported.
+     *
+     * @param non-empty-list<array{string, int}> $paths
+     * @return list<string>
+     */
+    private function resolveMergedPaths(array $paths, string $sink_path_type, bool $reverse_merge_order): array
+    {
+        IssueBuffer::clear();
+
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php echo $x;');
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+        $location = new Raw('<?php echo $x;', $file_path, 'somefile.php', 6, 14);
+
+        $partials = [];
+
+        foreach ($paths as [$path_type, $removed_taints]) {
+            $partial = new TaintFlowGraph();
+            $source = DataFlowNode::getForTaint('source', $location, TaintKind::INPUT_HTML);
+            $array = DataFlowNode::getForAssignment('array', $location);
+            $variable = DataFlowNode::getForAssignment('$x', $location);
+            $sink = DataFlowNode::getForTaint('sink', $location, TaintKind::INPUT_HTML);
+
+            $partial->addSource($source);
+            $partial->addNode($array);
+            $partial->addNode($variable);
+            $partial->addSink($sink);
+            $partial->addPath($source, $array, 'arrayvalue-assignment-\'other\'');
+            $partial->addPath($array, $variable, $path_type, 0, $removed_taints);
+            $partial->addPath($variable, $sink, $sink_path_type);
+
+            $partials[] = $partial;
+        }
+
+        if ($reverse_merge_order) {
+            $partials = array_reverse($partials);
+        }
+
+        $merged = new TaintFlowGraph();
+
+        foreach ($partials as $partial) {
+            $merged->addGraph($partial);
+        }
+
+        $codebase->taint_flow_graph = $merged;
+        $merged->connectSinksAndSources($codebase->progress);
+
+        $issue_types = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $issue_types[] = $issue->type;
+            }
+        }
+
+        return $issue_types;
     }
 }

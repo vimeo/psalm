@@ -665,6 +665,25 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The node a path of type $path_type from node $from_id (if known, $from) goes through, when the analysis
+     * added a path of another type between the same nodes (see TaintFlowGraph::mergePath()). It stands for
+     * the node the path comes from: its label and location, a pure function of its id, are those of that
+     * node.
+     *
+     * @psalm-pure
+     */
+    public static function getForPathVariant(string $from_id, ?self $from, string $path_type): self
+    {
+        return new self(
+            $from_id . ' via ' . $path_type,
+            null,
+            null,
+            $from->label ?? $from_id,
+            $from?->code_location,
+        );
+    }
+
+    /**
      * A node identified only by its id, with no location and no taint state. Used by the
      * variable-use graph, whose nodes are never taint-reporting sites; a null location trivially
      * satisfies the id -> location invariant.
