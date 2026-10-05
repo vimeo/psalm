@@ -74,8 +74,10 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_keys;
 use function array_merge;
 use function array_pop;
+use function array_push;
 use function array_shift;
 use function array_values;
 use function assert;
@@ -2048,56 +2050,32 @@ final class ClassLikeNodeScanner
         ?array $type_aliases,
         ?string $self_fqcln,
     ): array {
-        $type_alias_tokens = [];
+        $declarations = [];
 
         foreach ($type_alias_comment_lines as $var_line) {
-            $var_line = trim($var_line);
+            $declaration = self::parseTypeAliasDeclarationLine($var_line);
 
-            if (!$var_line) {
-                continue;
+            if ($declaration !== null) {
+                // A name declared more than once in the same docblock keeps the value
+                // of its last declaration (matching the pre-existing overwrite
+                // behavior), so dedupe before reordering: otherwise a losing
+                // declaration could be reordered after the winner and overwrite it.
+                $declarations[$declaration[0]] = $declaration;
             }
+        }
 
-            $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $declarations = array_values($declarations);
 
-            if (!$var_line_parts) {
-                continue;
-            }
+        // Aliases declared in the same docblock may reference each other regardless
+        // of declaration order, so a referenced alias must be tokenized before the
+        // alias that uses it. Aliases that form a cycle (including self-references)
+        // keep their original order, preserving the existing invalid-reference error
+        // instead of looping forever trying to resolve an order that doesn't exist.
+        $declarations = self::orderTypeAliasDeclarationsByDependency($declarations);
 
-            $type_alias = array_shift($var_line_parts);
+        $type_alias_tokens = [];
 
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            if ($var_line_parts[0] === '=') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            $type_string = implode('', $var_line_parts);
-            $type_string = ltrim($type_string, "* \n\r");
-            try {
-                $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
-            } catch (DocblockParseException $e) {
-                throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
-            }
-            $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
-
+        foreach ($declarations as [$type_alias, $type_string]) {
             try {
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
@@ -2114,5 +2092,165 @@ final class ClassLikeNodeScanner
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    private static function parseTypeAliasDeclarationLine(string $var_line): ?array
+    {
+        $var_line = trim($var_line);
+
+        if (!$var_line) {
+            return null;
+        }
+
+        $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+        if (!$var_line_parts) {
+            return null;
+        }
+
+        $type_alias = array_shift($var_line_parts);
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        if ($var_line_parts[0] === '=') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        $type_string = implode('', $var_line_parts);
+        $type_string = ltrim($type_string, "* \n\r");
+        try {
+            $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+        } catch (DocblockParseException $e) {
+            throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+        }
+
+        return [$type_alias, CommentAnalyzer::sanitizeDocblockType($type_string)];
+    }
+
+    /**
+     * @param  list<array{0: string, 1: string}> $declarations
+     * @return list<array{0: string, 1: string}>
+     */
+    private static function orderTypeAliasDeclarationsByDependency(array $declarations): array
+    {
+        $declared_names = [];
+
+        foreach ($declarations as [$name]) {
+            $declared_names[$name] = true;
+        }
+
+        $resolved_names = [];
+        $ordered = [];
+        $remaining = $declarations;
+
+        while ($remaining) {
+            $progressed = false;
+            $still_remaining = [];
+
+            foreach ($remaining as $declaration) {
+                [$name, $type_string] = $declaration;
+                $depends_on_unresolved = false;
+
+                foreach (self::getLocalTypeAliasReferences($type_string, $declared_names) as $referenced_name) {
+                    if ($referenced_name !== $name && !isset($resolved_names[$referenced_name])) {
+                        $depends_on_unresolved = true;
+                        break;
+                    }
+                }
+
+                if ($depends_on_unresolved) {
+                    $still_remaining[] = $declaration;
+                    continue;
+                }
+
+                $ordered[] = $declaration;
+                $resolved_names[$name] = true;
+                $progressed = true;
+            }
+
+            if (!$progressed) {
+                // The remaining aliases form a cycle (direct or mutual): none of them
+                // can be fully resolved, so fall back to declaration order rather than
+                // looping forever. This preserves the pre-existing undefined/invalid
+                // alias error for self-referencing and mutually-referencing aliases.
+                array_push($ordered, ...$still_remaining);
+                break;
+            }
+
+            $remaining = $still_remaining;
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * @param  array<string, true> $declared_names
+     * @return list<string>
+     */
+    private static function getLocalTypeAliasReferences(string $type_string, array $declared_names): array
+    {
+        try {
+            // A malformed type string is reported with its original message by the
+            // real tokenization pass in getTypeAliasesFromCommentLines; here it just
+            // means we can't determine dependencies, so treat it as having none.
+            $type_tokens = TypeTokenizer::tokenize($type_string);
+        } catch (TypeParseTreeException) {
+            return [];
+        }
+
+        $referenced_names = [];
+
+        for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
+            $name = $type_tokens[$i][0];
+
+            if (!isset($declared_names[$name])) {
+                continue;
+            }
+
+            if ($i > 0 && $type_tokens[$i - 1][0] === '::') {
+                continue;
+            }
+
+            if ($i > 0
+                && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
+                && isset($type_tokens[$i + 1])
+            ) {
+                $next_token = $type_tokens[$i + 1][0];
+
+                if ($next_token === ':') {
+                    continue;
+                }
+
+                if ($next_token === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2][0] === ':') {
+                    continue;
+                }
+            }
+
+            $referenced_names[$name] = true;
+        }
+
+        return array_keys($referenced_names);
     }
 }

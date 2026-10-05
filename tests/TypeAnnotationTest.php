@@ -891,6 +891,106 @@ final class TypeAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'forwardReferencedTypeAliasInSameDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Src;
+                    /**
+                     * @phpstan-type ParentType = array{child: ChildType}
+                     * @phpstan-type ChildType = array{foo: string}
+                     */
+                    class Types {}
+                    /** @phpstan-import-type ParentType from Types */
+                    class Bar {
+                        public function __construct(
+                            /** @var ParentType */
+                            public array $foo = ['child' => ['foo' => 'bla']],
+                        ) {}
+                    }
+                    $_z = (new Bar)->foo;
+                    PHP,
+                'assertions' => [
+                    '$_z===' => 'array{child: array{foo: string}}',
+                ],
+            ],
+            'reversedOrderTypeAliasInSameDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Src2;
+                    /**
+                     * @phpstan-type ChildType = array{foo: string}
+                     * @phpstan-type ParentType = array{child: ChildType}
+                     */
+                    class Types {}
+                    /** @phpstan-import-type ParentType from Types */
+                    class Bar {
+                        public function __construct(
+                            /** @var ParentType */
+                            public array $foo = ['child' => ['foo' => 'bla']],
+                        ) {}
+                    }
+                    $_z = (new Bar)->foo;
+                    PHP,
+                'assertions' => [
+                    '$_z===' => 'array{child: array{foo: string}}',
+                ],
+            ],
+            'typeAliasResolvesForwardReferenceWithinSameDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Barrr;
+
+                    /**
+                     * @psalm-type _C=array{c:_CC}
+                     * @psalm-type _CC=float
+                     */
+                    class A {
+                        /**
+                         * @param _C $arr
+                         */
+                        public function foo(array $arr) : void {
+                            /** @psalm-check-type-exact $arr = array{c: float} */;
+                        }
+                    }
+                    PHP,
+            ],
+            'duplicateTypeAliasKeepsLastDeclarationAfterReordering' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace DupOrder;
+                    /**
+                     * @phpstan-type A = B
+                     * @psalm-type A = int
+                     * @psalm-type B = string
+                     */
+                    class C {
+                        /**
+                         * @param A $a
+                         */
+                        public function foo($a): void {
+                            /** @psalm-check-type-exact $a = int */;
+                        }
+                    }
+                    PHP,
+            ],
+            'typeAliasKeyNameNotTreatedAsDependency' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace KeyDep;
+                    /**
+                     * @psalm-type A = array{b: B}
+                     * @psalm-type B = array{A?: string}
+                     */
+                    class C {
+                        /**
+                         * @param A $a
+                         */
+                        public function foo(array $a): void {
+                            /** @psalm-check-type-exact $a = array{b: array{A?: string}} */;
+                        }
+                    }
+                    PHP,
+            ],
             'importFromEnum' => [
                 'code' => <<<'PHP'
                 <?php
@@ -1089,22 +1189,6 @@ final class TypeAnnotationTest extends TestCase
                 ',
                 'error_message' => 'InvalidTypeImport',
             ],
-            'noCrashWithPriorReference' => [
-                'code' => '<?php
-                    namespace Barrr;
-
-                    /**
-                     * @psalm-type _C=array{c:_CC}
-                     * @psalm-type _CC=float
-                     */
-                    class A {
-                        /**
-                         * @param _C $arr
-                         */
-                        public function foo(array $arr) : void {}
-                    }',
-                'error_message' => 'UndefinedDocblockClass',
-            ],
             'mergeImportedTypes' => [
                 'code' => '<?php
                     namespace A\B;
@@ -1152,6 +1236,24 @@ final class TypeAnnotationTest extends TestCase
                      */
                     function test(array $input):void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'noCrashWithMutuallyReferencingTypes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type A = array{b?: B}
+                     * @psalm-type B = array{a?: A}
+                     * @psalm-param A $input
+                     */
+                    function test(array $input):void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidTypeAliasReportsOriginalParseError' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Bad = int.
+                     */
+                    class A {}',
+                'error_message' => 'is not a valid type',
             ],
             'invalidTypeWhenNotImported' => [
                 'code' => '<?php
