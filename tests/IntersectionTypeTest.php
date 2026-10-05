@@ -251,6 +251,14 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'class-string param can only target',
                 'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
+            'objectShapePropertyOnIntersectionWithFinalClassWithoutMagicGet' => [
+                'code' => '<?php
+                    final class Row {}
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
         ];
     }
 }

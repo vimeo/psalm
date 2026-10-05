@@ -305,8 +305,12 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             // An intersected object shape can declare a property the class only exposes at runtime,
-            // e.g. through __get, also when the class is final or has a @mixin (Eloquent's `pivot`).
-            if (!$found_in_mixin && $intersection_types !== []) {
+            // e.g. through __get, also when the class has a @mixin (Eloquent's `pivot`). A final class
+            // without __get cannot expose undeclared properties, so its shape stays undefined.
+            if (!$found_in_mixin
+                && $intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
+            ) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,

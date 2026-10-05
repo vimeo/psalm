@@ -1071,6 +1071,19 @@ final class MixinAnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'objectShapePropertyOnIntersectionWithFinalMixinClassWithoutMagicGet' => [
+                'code' => '<?php
+                    class Helper {
+                        public int $fromMixin = 1;
+                    }
+
+                    /** @mixin Helper */
+                    final class WithMixin {}
+
+                    /** @var WithMixin&object{fromShape: string} $x */
+                    $fromShape = $x->fromShape;',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
         ];
     }
 
