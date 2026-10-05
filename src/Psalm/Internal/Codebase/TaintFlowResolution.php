@@ -964,7 +964,9 @@ final class TaintFlowResolution
     /**
      * What an edge of type $path_type does with the open assignments of a flow, as shouldIgnoreFetch() and
      * appendPathType() treat them, except that the array keys are at the level of the array values (see
-     * FAMILIES).
+     * FAMILIES). The edge to what an array becomes once its value under a key is replaced (see
+     * DataFlowGraph::isOverwritten()) observes the innermost open array assignment as a fetch of that key
+     * prefixed with '!' (see classPassesFetch()), and closes none.
      *
      * @return array{int, ?string, int, int}
      * @psalm-pure
@@ -978,6 +980,10 @@ final class TaintFlowResolution
         if ($path_type === 'arraykey-fetch') {
             // it fetches the key '' (see classPassesFetch()): not the key of a value assigned under a known key
             return [self::ARRAY_FAMILY, '', self::ARRAY_FAMILY, -1];
+        }
+
+        if (str_starts_with($path_type, 'arrayvalue-overwrite-')) {
+            return [self::ARRAY_FAMILY, '!' . substr($path_type, 21), -1, -1];
         }
 
         $observed_family = -1;
@@ -2028,6 +2034,12 @@ final class TaintFlowResolution
      */
     private static function classPassesFetch(string $class, string $fetched_key): bool
     {
+        if (str_starts_with($fetched_key, '!')) {
+            // the replacement of the value under a key (see getPathTypeEffects()): only what was assigned under
+            // that key goes
+            return $class !== ':' . substr($fetched_key, 1);
+        }
+
         if ($class === self::KEY_CLASS) {
             // only a fetch of the key takes what was assigned to it
             return $fetched_key === '';
