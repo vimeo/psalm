@@ -433,6 +433,58 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
             ],
+            'dontTaintTheOtherItemsDestructuredFromAnUnshapedArray' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    ["author" => $author, "text" => $text] = getComment();
+                    echo $text;',
+            ],
+            'dontTaintTheOtherItemsDestructuredByIntegerKeys' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return [1 => (string) $_GET["author"], 2 => "safe"];
+                    }
+
+                    [1 => $author, 2 => $text] = getComment();
+                    echo $text;',
+            ],
+            'dontTaintTheOtherItemsDestructuredFromAShapeReturnedByACall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{0: string, 1: string} */
+                    function getComment(): array {
+                        return [(string) $_GET["author"], "safe"];
+                    }
+
+                    [$author, $text] = getComment();
+                    echo $text;',
+            ],
+            'dontTaintTheOtherItemsDestructuredInAForeach' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    foreach (["first" => getComment()] as ["author" => $author, "text" => $text]) {
+                        echo $text;
+                    }',
+            ],
+            'dontTaintTheOtherItemsOfANestedDestructuring' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    /** @return non-empty-list<array> */
+                    function getComments(): array {
+                        return [getComment()];
+                    }
+
+                    [["author" => $author, "text" => $text]] = getComments();
+                    echo $text;',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -1605,6 +1657,94 @@ final class TaintTest extends TestCase
             'taintHtmlThroughSerialize' => [
                 'code' => '<?php // --taint-analysis
                     echo serialize((string) $_GET["value"]);',
+            ],
+            'taintTheItemDestructuredFromAnUnshapedArray' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    ["author" => $author, "text" => $text] = getComment();
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemDestructuredByAnIntegerKey' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return [1 => (string) $_GET["author"], 2 => "safe"];
+                    }
+
+                    [1 => $author, 2 => $text] = getComment();
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemDestructuredFromAShapeReturnedByACall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{0: string, 1: string} */
+                    function getComment(): array {
+                        return [(string) $_GET["author"], "safe"];
+                    }
+
+                    [$author, $text] = getComment();
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemDestructuredFromTheFallbackOfAShape' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return array{author: string, ...<string, string>} */
+                    function getComment(): array {
+                        return ["author" => "safe", "text" => (string) $_GET["text"]];
+                    }
+
+                    ["author" => $author, "text" => $text] = getComment();
+                    echo $text;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemDestructuredInAForeach' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    foreach (["first" => getComment()] as ["author" => $author, "text" => $text]) {
+                        echo $author;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemDestructuredInAForeachOverAList' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    foreach ([getComment()] as ["author" => $author, "text" => $text]) {
+                        echo $author;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemOfANestedDestructuring' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    [["author" => $author, "text" => $text]] = [getComment()];
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemOfANestedDestructuringOfAnUnshapedArray' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    /** @return non-empty-list<array> */
+                    function getComments(): array {
+                        return [getComment()];
+                    }
+
+                    [["author" => $author, "text" => $text]] = getComments();
+                    echo $author;',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayItemWrittenByAForeachByReference' => [
@@ -2451,7 +2591,7 @@ final class TaintTest extends TestCase
             'taintedSsrfInCurlSetoptArray' => [
                 'code' => '<?php
                     $ch = curl_init();
-                    curl_setopt_array($ch, [CURLOPT_URL => $_GET["url"]]);',
+                    curl_setopt_array($ch, [CURLOPT_PROXY => $_GET["proxy"]]);',
                 'error_message' => 'TaintedSSRF',
             ],
             'taintedSsrfInFsockopen' => [

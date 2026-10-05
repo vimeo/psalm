@@ -22,6 +22,31 @@ final class ListTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'destructureAKeyFromEachTypeOfAUnion' => [
+                'code' => '<?php
+                    /** @return array{author: int}|ArrayObject<string, string> */
+                    function getComment() {
+                        return ["author" => 1];
+                    }
+
+                    ["author" => $author] = getComment();',
+                'assertions' => [
+                    '$author' => 'int|string',
+                ],
+            ],
+            'destructureAKeyFromTheFallbackOfAShape' => [
+                'code' => '<?php
+                    /** @return array{author: int, ...<string, string>} */
+                    function getComment(): array {
+                        return ["author" => 1];
+                    }
+
+                    ["author" => $author, "text" => $text] = getComment();',
+                'assertions' => [
+                    '$author' => 'int',
+                    '$text' => 'string',
+                ],
+            ],
             'simpleVars' => [
                 'code' => '<?php
                     list($a, $b) = ["a", "b"];',
