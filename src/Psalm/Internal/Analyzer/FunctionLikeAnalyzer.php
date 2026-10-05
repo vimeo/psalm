@@ -84,6 +84,7 @@ use function array_combine;
 use function array_diff_key;
 use function array_key_exists;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_search;
 use function array_values;
@@ -100,6 +101,7 @@ use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function strtolower;
+use function strval;
 use function substr;
 
 use const SORT_NUMERIC;
@@ -425,6 +427,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         );
 
         $this->taintPromotedProperties($statements_analyzer, $context);
+        // the context of an arrow function is that of the function-like it is in
+        $context->by_ref_param_out_nodes = [];
+
+        // see ArgumentsAnalyzer::getByRefParamOutNode() and FunctionCallReturnTypeFetcher::taintCallableReturnType()
+        $out_method_id = $cased_method_id ?? ($this instanceof ClosureAnalyzer ? $this->getClosureId() : null);
+
+        if ($out_method_id !== null && $codebase->taint_flow_graph) {
+            foreach ($storage->params as $offset => $param) {
+                if ($param->by_ref) {
+                    $context->by_ref_param_out_nodes['$' . $param->name]
+                        = DataFlowNode::getForMethodArgumentOut($out_method_id, $offset, $storage);
+                }
+            }
+        }
 
         if ($byref_uses) {
             $ref_context = clone $context;
@@ -835,6 +851,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->byref_uses,
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
+                            $closure_atomic->callable_id,
                         ),
                     ], ['reference_free' => true]),
                 );
@@ -981,6 +998,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     '$this',
                 );
             }
+        }
+
+        // what the end of the function-like leaves in its by-reference parameters (see ReturnAnalyzer
+        // for what each return leaves)
+        self::taintByRefParamsOut($codebase, $context);
+
+        if ($cased_method_id !== null
+            && $this instanceof MethodAnalyzer
+            && $context->self !== null
+            && $overridden_method_ids
+        ) {
+            self::taintOverriddenByRefParamsOut(
+                $codebase,
+                $storage,
+                $cased_method_id,
+                $context->self,
+                $overridden_method_ids,
+            );
         }
 
         // Class methods are analyzed deferred, therefor it's required to
@@ -1166,6 +1201,121 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         );
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * The values the by-reference parameters of a function-like hold where it returns, with $context,
+     * flow into what the variables passed to them hold after the call (see
+     * ArgumentsAnalyzer::handlePossiblyMatchingByRefParam()).
+     */
+    public static function taintByRefParamsOut(Codebase $codebase, Context $context): void
+    {
+        foreach ($context->by_ref_param_out_nodes as $var_id => $_) {
+            self::taintByRefParamOut($codebase, $context, $var_id);
+        }
+    }
+
+    /**
+     * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
+     * static, ...): that variable keeps what the parameter holds now.
+     */
+    public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
+    {
+        if (isset($context->by_ref_param_out_nodes[$var_id])) {
+            self::taintByRefParamOut($codebase, $context, $var_id);
+
+            unset($context->by_ref_param_out_nodes[$var_id]);
+        }
+    }
+
+    private static function taintByRefParamOut(Codebase $codebase, Context $context, string $var_id): void
+    {
+        if (!$codebase->taint_flow_graph
+            || !isset($context->by_ref_param_out_nodes[$var_id])
+            || !isset($context->vars_in_scope[$var_id])
+        ) {
+            return;
+        }
+
+        $out_node = $context->by_ref_param_out_nodes[$var_id];
+
+        $codebase->taint_flow_graph->addNode($out_node);
+
+        foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+            $codebase->taint_flow_graph->addPath($parent_node, $out_node, 'param-out');
+        }
+    }
+
+    /**
+     * The method id of the out nodes of the by-reference parameters of a method called as $method_id
+     * (see DataFlowNode::getForMethodArgumentOut()): the body of a method of a trait is analyzed as one
+     * of each class using it.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getByRefParamsOutMethodId(Codebase $codebase, MethodIdentifier $method_id): string
+    {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id;
+
+        return $appearing_method_id->fq_class_name
+            . '::' . $codebase->methods->getStorage($declaring_method_id)->cased_name;
+    }
+
+    /**
+     * A call of a method a method overrides may run it: what it leaves in its by-reference parameters is
+     * left to that call too.
+     *
+     * @param array<string, MethodIdentifier> $overridden_method_ids
+     */
+    private static function taintOverriddenByRefParamsOut(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        string $cased_method_id,
+        string $fq_class_name,
+        array $overridden_method_ids,
+    ): void {
+        if (!$codebase->taint_flow_graph) {
+            return;
+        }
+
+        $overridden_method_ids = array_map(strval(...), $overridden_method_ids);
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        // the classes a method overridden is called through (see getByRefParamsOutMethodId())
+        foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
+            $ancestor_method_id = new MethodIdentifier($ancestor, strtolower((string) $storage->cased_name));
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($ancestor_method_id);
+
+            if ($declaring_method_id === null
+                || !in_array((string) $declaring_method_id, $overridden_method_ids, true)
+            ) {
+                continue;
+            }
+
+            $overridden_storage = $codebase->methods->getStorage($declaring_method_id);
+            $overridden_cased_method_id = self::getByRefParamsOutMethodId($codebase, $ancestor_method_id);
+
+            foreach ($storage->params as $offset => $param) {
+                if (!$param->by_ref
+                    || !isset($overridden_storage->params[$offset])
+                    || !$overridden_storage->params[$offset]->by_ref
+                ) {
+                    continue;
+                }
+
+                $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+                $overridden_out_node = DataFlowNode::getForMethodArgumentOut(
+                    $overridden_cased_method_id,
+                    $offset,
+                    $overridden_storage,
+                );
+
+                $codebase->taint_flow_graph->addNode($out_node);
+                $codebase->taint_flow_graph->addNode($overridden_out_node);
+                $codebase->taint_flow_graph->addPath($out_node, $overridden_out_node, 'param-out');
             }
         }
     }
@@ -2417,6 +2567,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type,
                 $storage->capabilities,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
+                callable_id: $this->getClosureId(),
             );
 
             $type_provider->setType(
