@@ -157,6 +157,12 @@ final class TaintFlowResolution
     private const DEPTH_MASK = (1 << self::DEPTH_BITS) - 1;
 
     /**
+     * How many fetches under a parameter key (see resolveParamKey()) a flow outside of any specialized call
+     * waits to know the key of at most, until it leaves through the call sites
+     */
+    private const MAX_PARAM_GUARDS = 4;
+
+    /**
      * The taints a state of a body walk keeps of the call when it starts: all
      */
     private const ALL_TAINTS = -1;
@@ -226,6 +232,14 @@ final class TaintFlowResolution
     private array $path_type_effects = [];
 
     /**
+     * Path type whose key is a parameter of the function-like it is in (see resolveParamKey()) => [the
+     * unspecialized node of the argument passed to it, the path type without key]
+     *
+     * @var array<int, array{string, string}>
+     */
+    private array $path_type_params = [];
+
+    /**
      * Open assignments => key (see internOpenAssignments())
      *
      * @var array<string, int>
@@ -238,9 +252,12 @@ final class TaintFlowResolution
      *     as path type ids,
      *     for each expression type, how many of those of the call entering its context it closed, FORGOTTEN
      *     if it doesn't know, or NO_CALL outside of any context,
+     *     the fetches under a parameter key the flow took outside of any specialized call, as the class of the
+     *     open assignment each fetched (see getClass()) by the unspecialized argument node of the parameter,
+     *     until it leaves through a call site (see resolveParamKey()),
      * ]
      *
-     * @var list<array{array<int, list<int>>, array<int, int>}>
+     * @var list<array{array<int, list<int>>, array<int, int>, array<string, string>}>
      */
     private array $open_assignments = [];
 
@@ -383,6 +400,30 @@ final class TaintFlowResolution
     private array $entry_facts = [];
 
     /**
+     * Entry => what it knows of the array keys the calls entering it pass to parameters, if it is a filter of
+     * another (see dependOnParam()): unspecialized argument node of the parameter => key, '' if not a literal
+     *
+     * @var list<array<string, string>>
+     */
+    private array $entry_param_facts = [];
+
+    /**
+     * Entry => unspecialized argument node of a parameter => key => the filter of the entry for the calls
+     * passing that key to the parameter (see dependOnParam())
+     *
+     * @var array<int, array<string, array<string, int>>>
+     */
+    private array $entry_param_filters = [];
+
+    /**
+     * Entry => unspecialized argument node of a parameter => the states of its walk that depend on the key
+     * the calls entering it pass to it => true: they go on in each of those filters
+     *
+     * @var array<int, array<string, array<int, true>>>
+     */
+    private array $entry_param_dependents = [];
+
+    /**
      * Entry => expression type . ' ' . depth . ' ' . fetched key => the filter of the entry for the calls
      * whose open assignment there a fetch of that key doesn't ignore (see getFilter())
      *
@@ -450,6 +491,15 @@ final class TaintFlowResolution
      * @var list<int>
      */
     private array $entry_bases = [];
+
+    /**
+     * Entry => whether its walk is told apart in filters for the calls with each class of an open assignment
+     * it observes (see getAssignmentClass()): unless it is a filter, but for the calls passing a key to a
+     * parameter (see dependOnParam())
+     *
+     * @var list<bool>
+     */
+    private array $entry_tracks_classes = [];
 
     /**
      * Specialization key => the key standing for the function-like called there: two keys stand for the same
@@ -563,6 +613,7 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
+     * @param array<string, array<string, string>> $param_keys
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -574,6 +625,7 @@ final class TaintFlowResolution
         private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
+        private readonly array $param_keys,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -976,6 +1028,12 @@ final class TaintFlowResolution
         $this->path_types[] = $path_type;
         $this->path_type_effects[] = self::getPathTypeEffects($path_type);
 
+        foreach (['arrayvalue-fetch', 'arrayvalue-assignment'] as $base) {
+            if (str_starts_with($path_type, $base . '-@')) {
+                $this->path_type_params[$id] = [substr($path_type, strlen($base) + 2), $base];
+            }
+        }
+
         return $id;
     }
 
@@ -1038,14 +1096,23 @@ final class TaintFlowResolution
     /**
      * @param array<int, list<int>> $made
      * @param array<int, int> $closed
+     * @param array<string, string> $guards
      * @psalm-external-mutation-free
      */
-    private function internOpenAssignments(array $made, array $closed): int
+    private function internOpenAssignments(array $made, array $closed, array $guards = []): int
     {
         $key = '';
 
         foreach (self::FAMILIES as $family => $_) {
             $key .= implode(',', $made[$family] ?? []) . '|' . ($closed[$family] ?? self::NO_CALL) . '|';
+        }
+
+        if ($guards) {
+            ksort($guards, SORT_STRING);
+
+            foreach ($guards as $param => $class) {
+                $key .= $param . "\0" . $class . "\0";
+            }
         }
 
         if (isset($this->open_assignment_ids[$key])) {
@@ -1054,7 +1121,7 @@ final class TaintFlowResolution
 
         $id = count($this->open_assignments);
         $this->open_assignment_ids[$key] = $id;
-        $this->open_assignments[] = [$made, $closed];
+        $this->open_assignments[] = [$made, $closed, $guards];
 
         return $id;
     }
@@ -1180,7 +1247,7 @@ final class TaintFlowResolution
             return $open_assignments;
         }
 
-        [$made, $closed] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
 
         if ($closed_family !== -1) {
             if ($made[$closed_family]) {
@@ -1196,7 +1263,7 @@ final class TaintFlowResolution
             self::capMadeOpenAssignments($made, $closed, $added_family);
         }
 
-        return $this->internOpenAssignments($made, $closed);
+        return $this->internOpenAssignments($made, $closed, $guards);
     }
 
     /**
@@ -1212,8 +1279,8 @@ final class TaintFlowResolution
             return $this->open_assignment_compositions[$call_open_assignments][$open_assignments];
         }
 
-        [$call_made, $call_closed] = $this->open_assignments[$call_open_assignments];
-        [$flow_made, $flow_closed] = $this->open_assignments[$open_assignments];
+        [$call_made, $call_closed, $call_guards] = $this->open_assignments[$call_open_assignments];
+        [$flow_made, $flow_closed, $flow_guards] = $this->open_assignments[$open_assignments];
         $made = [[], []];
         $closed = [self::NO_CALL, self::NO_CALL];
 
@@ -1240,7 +1307,7 @@ final class TaintFlowResolution
             self::capMadeOpenAssignments($made, $closed, $family);
         }
 
-        $result = $this->internOpenAssignments($made, $closed);
+        $result = $this->internOpenAssignments($made, $closed, $flow_guards + $call_guards);
         $this->open_assignment_compositions[$call_open_assignments][$open_assignments] = $result;
 
         return $result;
@@ -1260,7 +1327,7 @@ final class TaintFlowResolution
             return $this->open_assignment_widenings[$open_assignments];
         }
 
-        [$made, $closed] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
 
         foreach (self::FAMILIES as $family => $_) {
             $made[$family] ??= [];
@@ -1272,7 +1339,12 @@ final class TaintFlowResolution
             }
         }
 
-        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments($made, $closed);
+        // the guards are those of the innermost ones
+        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments(
+            $made,
+            $closed,
+            $guards,
+        );
     }
 
     /**
@@ -1289,7 +1361,7 @@ final class TaintFlowResolution
             return $this->open_assignment_truncations[$open_assignments][$depths];
         }
 
-        [$made, $closed] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
 
         foreach (self::FAMILIES as $family => $_) {
             $depth = ($depths >> ($family * self::DEPTH_BITS)) & self::DEPTH_MASK;
@@ -1302,7 +1374,7 @@ final class TaintFlowResolution
             }
         }
 
-        $result = $this->internOpenAssignments($made, $closed);
+        $result = $this->internOpenAssignments($made, $closed, $guards);
         $this->open_assignment_truncations[$open_assignments][$depths] = $result;
 
         return $result;
@@ -1466,10 +1538,16 @@ final class TaintFlowResolution
 
         foreach ($this->specializations[$id] as $specialization_key => $specialized_id) {
             if ($outside_of_calls || isset($this->despecialized_calls[$specialization_key])) {
+                $open_assignments = $this->passParamGuards($this->state_open_assignments[$state], $specialization_key);
+
+                if ($open_assignments === self::IGNORED) {
+                    continue;
+                }
+
                 $this->reach(
                     $specialized_id,
                     $context,
-                    $this->state_open_assignments[$state],
+                    $open_assignments,
                     $this->state_kept[$state],
                     $this->state_added[$state],
                     $state,
@@ -1510,6 +1588,13 @@ final class TaintFlowResolution
         $kept = $this->state_kept[$state];
         $added = $this->state_added[$state];
 
+        if ($this->open_assignments[$open_assignments][2] && isset($this->specializations[$from_id])) {
+            // leaving the function-like of a fetch under a parameter other than through a specialized call site
+            // (see passParamGuards())
+            [$made, $closed] = $this->open_assignments[$open_assignments];
+            $open_assignments = $this->internOpenAssignments($made, $closed);
+        }
+
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
 
@@ -1544,11 +1629,34 @@ final class TaintFlowResolution
         string $to_id,
         int $path_type,
     ): void {
+        $guarded_param = null;
+
+        if (isset($this->path_type_params[$path_type])) {
+            [$param, $base] = $this->path_type_params[$path_type];
+
+            if ($this->isOutsideOfCalls($context)) {
+                $key = '';
+                $guarded_param = $base === 'arrayvalue-fetch' && isset($this->param_keys[$param]) ? $param : null;
+            } else {
+                $key = $this->resolveParamKey($context, $param, $predecessor);
+
+                if ($key === null) {
+                    return;
+                }
+            }
+
+            $path_type = $this->getPathTypeId($key === '' ? $base : $base . '-' . $key);
+        }
+
         $next_open_assignments = $this->open_assignment_transitions[$open_assignments][$path_type]
             ?? $this->getNextOpenAssignments($open_assignments, $path_type);
 
         if ($next_open_assignments === self::IGNORED) {
             return;
+        }
+
+        if ($guarded_param !== null && $next_open_assignments >= 0) {
+            $next_open_assignments = $this->addParamGuard($open_assignments, $next_open_assignments, $guarded_param);
         }
 
         if ($next_open_assignments === self::OBSERVES_CALL) {
@@ -1701,8 +1809,8 @@ final class TaintFlowResolution
 
     /**
      * The open assignments the walk of the convergence of node $id for the flows of state $caller starts with:
-     * those of its innermost open assignment of each expression type, so that the flows with different ones
-     * don't share it.
+     * those of its innermost open assignment of each expression type, and the keys of the fetches under
+     * parameters it waits to know (see addParamGuard()), so that the flows with different ones don't share it.
      *
      * The flows converging at a node often differ by little more: e.g. the values of the properties of an
      * object, each assigned to its own array key, converge at the array of all of them. A fetch past the
@@ -1715,7 +1823,7 @@ final class TaintFlowResolution
      */
     private function getConvergenceOpenAssignments(int $caller, string $id): int
     {
-        [$made] = $this->open_assignments[$this->state_open_assignments[$caller]];
+        [$made, , $guards] = $this->open_assignments[$this->state_open_assignments[$caller]];
         $known = [];
         $known_count = [];
 
@@ -1724,7 +1832,10 @@ final class TaintFlowResolution
             $known_count[$family] = count($known[$family]);
         }
 
-        $open_assignments = $this->truncateOpenAssignments($this->internOpenAssignments($known, $known_count), $id);
+        $open_assignments = $this->truncateOpenAssignments(
+            $this->internOpenAssignments($known, $known_count, $guards),
+            $id,
+        );
 
         if (!isset($this->convergence_open_assignments[$id][$open_assignments])) {
             if (count($this->convergence_open_assignments[$id] ?? []) >= self::MAX_CONVERGENCE_KEYS) {
@@ -1779,15 +1890,24 @@ final class TaintFlowResolution
     /**
      * @param self::ENTRY_* $kind
      * @param array<int, array{?string, array<string, true>}> $facts
+     * @param array<string, string> $param_facts
      * @psalm-external-mutation-free
      */
-    private function addEntry(string $id, int $kind, array $facts, ?int $base = null): int
-    {
+    private function addEntry(
+        string $id,
+        int $kind,
+        array $facts,
+        ?int $base = null,
+        array $param_facts = [],
+        ?bool $tracks_classes = null,
+    ): int {
         $entry = count($this->entry_nodes);
         $this->entry_bases[] = $base ?? $entry;
+        $this->entry_tracks_classes[] = $tracks_classes ?? $base === null;
         $this->entry_nodes[] = $id;
         $this->entry_kinds[] = $kind;
         $this->entry_facts[] = $facts;
+        $this->entry_param_facts[] = $param_facts;
         $this->entry_filters[$entry] = [];
         $this->entry_class_filters[$entry] = [];
         $this->entry_class_dependents[$entry] = [];
@@ -1860,6 +1980,10 @@ final class TaintFlowResolution
         foreach ($this->entry_class_filters[$entry] as $position => $_) {
             $this->addClassFilterCaller($entry, $position, $caller, $specialization_key);
         }
+
+        foreach ($this->entry_param_filters[$entry] ?? [] as $param => $_) {
+            $this->addParamFilterCaller($entry, $param, $caller, $specialization_key);
+        }
     }
 
     /**
@@ -1930,6 +2054,7 @@ final class TaintFlowResolution
             $this->entry_kinds[$entry],
             $facts,
             $this->entry_bases[$entry],
+            $this->entry_param_facts[$entry],
         );
         $this->entry_filters[$entry][$filter_key] = $filter;
         $this->filter_fetches[$filter] = [$family, $depth, $fetched_key];
@@ -1989,7 +2114,7 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
+        if (!$this->entry_tracks_classes[$context]) {
             // see getAssignmentClass()
             return true;
         }
@@ -2050,10 +2175,11 @@ final class TaintFlowResolution
             return $class;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
+        if (!$this->entry_tracks_classes[$context]) {
             // Already in a filter, for the calls agreeing on another open assignment: a filter of it for each
             // class there too would make one for every combination of classes of the open assignments a walk
-            // observes. So no fetch ignores it, as above.
+            // observes. So no fetch ignores it, as above. (Not one for the calls passing a key to a parameter:
+            // each passes one, so those multiply the filters by the calls at most.)
             return '';
         }
 
@@ -2169,6 +2295,7 @@ final class TaintFlowResolution
                 $this->entry_kinds[$entry],
                 $facts,
                 $this->entry_bases[$entry],
+                $this->entry_param_facts[$entry],
             );
             $this->entry_class_filters[$entry][$position][$class] = $filter;
 
@@ -2195,6 +2322,179 @@ final class TaintFlowResolution
             0,
             -1,
         );
+    }
+
+    /**
+     * The key of a fetch or assignment under the parameter of unspecialized argument node $param, in the walk of
+     * specialized call entry $entry from state $state: the literal one the calls entering it pass, '' if they
+     * don't pass one, or null if that depends on the call -- then the flows of $state go on in the filters of
+     * $entry for each key (see dependOnParam()).
+     *
+     * The analysis gives an array fetch or assignment the key of the parameter it is if it wasn't assigned (see
+     * ArrayFetchAnalyzer::getParamKey()), in the body of a function-like each call of which is specialized or
+     * not. Each specialized call passes its own key: its walk, entered through it, fetches or assigns that key.
+     * In the walk of a call of another function-like, it is not the one entered: an exit of the function-like
+     * of the parameter can't lead back to a call site of it there (see addEntryExit()), so the key doesn't
+     * matter, and no call passes one. Outside of any specialized call, a fetch waits until the flow leaves
+     * through a call site to know its key (see addParamGuard()).
+     */
+    private function resolveParamKey(int $entry, string $param, int $state): ?string
+    {
+        if (isset($this->entry_param_facts[$entry][$param])) {
+            return $this->entry_param_facts[$entry][$param];
+        }
+
+        if (!isset($this->param_keys[$param])) {
+            // no specialized call passes it a literal key
+            return '';
+        }
+
+        $this->dependOnParam($entry, $param, $state);
+
+        return null;
+    }
+
+    /**
+     * What the flows of state $state, in the walk of $entry, do depends on the key the calls entering $entry
+     * pass to the parameter of unspecialized argument node $param. They go on in each filter of $entry for the
+     * calls passing a given key there, as they would in $entry, but knowing it.
+     */
+    private function dependOnParam(int $entry, string $param, int $state): void
+    {
+        $this->entry_param_dependents[$entry][$param][$state] = true;
+
+        if (isset($this->entry_param_filters[$entry][$param])) {
+            // again if the state got more taints since
+            foreach ($this->entry_param_filters[$entry][$param] as $filter) {
+                $this->copyToFilter($state, $filter);
+            }
+
+            return;
+        }
+
+        $this->entry_param_filters[$entry][$param] = [];
+
+        foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
+            $this->addParamFilterCaller($entry, $param, $caller, $specialization_key);
+        }
+    }
+
+    /**
+     * Makes the call of state $caller one entering the filter of $entry for the calls passing its key to the
+     * parameter of unspecialized argument node $param (see dependOnParam()).
+     */
+    private function addParamFilterCaller(int $entry, string $param, int $caller, ?string $specialization_key): void
+    {
+        $key = $specialization_key === null ? '' : $this->param_keys[$param][$specialization_key] ?? '';
+
+        if (str_starts_with($key, '@')) {
+            // the call passes on a parameter of the function-like it is made in: the key the call of the context
+            // of $caller passes to it
+            $caller_context = $this->state_contexts[$caller];
+            $key = $this->isOutsideOfCalls($caller_context)
+                ? ''
+                : $this->resolveParamKey($caller_context, substr($key, 1), $caller);
+
+            if ($key === null) {
+                // the call goes on in the filters of its context (see dependOnParam())
+                return;
+            }
+        }
+
+        if (!isset($this->entry_param_filters[$entry][$param][$key])) {
+            $param_facts = $this->entry_param_facts[$entry];
+            $param_facts[$param] = $key;
+
+            $filter = $this->addEntry(
+                $this->entry_nodes[$entry],
+                $this->entry_kinds[$entry],
+                $this->entry_facts[$entry],
+                $this->entry_bases[$entry],
+                $param_facts,
+                $this->entry_tracks_classes[$entry],
+            );
+            $this->entry_param_filters[$entry][$param][$key] = $filter;
+
+            foreach ($this->entry_param_dependents[$entry][$param] ?? [] as $state => $_) {
+                $this->copyToFilter($state, $filter);
+            }
+        }
+
+        $this->addEntryCaller($this->entry_param_filters[$entry][$param][$key], $caller, $specialization_key);
+    }
+
+    /**
+     * The open assignments $next_open_assignments of a flow with open assignments $open_assignments past a fetch
+     * under the parameter of unspecialized argument node $param, outside of any specialized call: the key it
+     * fetches is the one of the call site the flow leaves through (see passParamGuards()). Where it fetched the
+     * value assigned under a known key, the flow waits to know it, to go on only through the calls passing that
+     * key.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function addParamGuard(int $open_assignments, int $next_open_assignments, string $param): int
+    {
+        $array_assignments = $this->open_assignments[$open_assignments][0][self::ARRAY_FAMILY] ?? [];
+
+        if (!$array_assignments) {
+            return $next_open_assignments;
+        }
+
+        $class = $this->getClass($array_assignments[count($array_assignments) - 1], self::ARRAY_FAMILY);
+        [$made, $closed, $guards] = $this->open_assignments[$next_open_assignments];
+
+        if (!str_starts_with($class, ':')
+            || (!isset($guards[$param]) && count($guards) >= self::MAX_PARAM_GUARDS)
+        ) {
+            return $next_open_assignments;
+        }
+
+        // of another fetch under the parameter if any, one the flow left the function-like after (see walkEdges())
+        $guards[$param] = $class;
+
+        return $this->internOpenAssignments($made, $closed, $guards);
+    }
+
+    /**
+     * The open assignments of a flow with open assignments $open_assignments leaving through the call site of
+     * specialization key $specialization_key outside of any specialized call, or IGNORED if it fetched another
+     * key than that call passes under a parameter (see addParamGuard()). Past the call site, the flow only waits
+     * to know the keys the call passes on from the parameters of the function-like making it: it left the
+     * function-like whose parameters they were, or one it calls.
+     *
+     * The value fetched in a call can't go out through another call site of a specialized function-like: its
+     * calls don't share anything. A despecialized one may keep it for another call to return.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function passParamGuards(int $open_assignments, string $specialization_key): int
+    {
+        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
+
+        if (!$guards) {
+            return $open_assignments;
+        }
+
+        $passed_on = [];
+
+        if (!isset($this->despecialized_calls[$specialization_key])) {
+            foreach ($guards as $param => $class) {
+                $key = $this->param_keys[$param][$specialization_key] ?? null;
+
+                if ($key === null) {
+                    continue;
+                }
+
+                if (str_starts_with($key, '@')) {
+                    // a parameter of the function-like making the call, whose key the flow waits to know now
+                    $passed_on[substr($key, 1)] = $class;
+                } elseif (!self::classPassesFetch($class, $key)) {
+                    return self::IGNORED;
+                }
+            }
+        }
+
+        return $this->internOpenAssignments($made, $closed, $passed_on);
     }
 
     /**

@@ -2582,6 +2582,104 @@ final class TaintTest extends TestCase
                     echo (string) $b[0];
                     echo (string) $b[2];',
             ],
+            'taintFreeFetchUnderParamKeyOfOtherCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo (string) $holder->get("b");',
+            ],
+            'taintFreeNestedFetchUnderParamKeyOfOtherCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, array<string, string>> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"]["x"] = $value;
+                            $this->data["b"]["x"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key]["x"];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOn' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    /** @psalm-pure */
+                    function getKeyOf(array $array, string $key): mixed {
+                        return getKey($array, $key);
+                    }
+
+                    $array = ["a" => $_GET["value"], "b" => "safe"];
+                    echo (string) getKeyOf($array, "b");',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOnOutsideOfCalls' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key];
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function getLabel(string $key): string {
+                            return "Value: " . $this->get($key);
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->getLabel("b");',
+            ],
+            'taintFreeAssignmentAndFetchUnderParamKeys' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    echo (string) getKey(withKey([], "a", $_GET["value"]), "b");',
+            ],
             'writingToTheTerminalIsNotAnHtmlSink' => [
                 'code' => '<?php
                     fwrite(STDOUT, (string) $_GET["a"]);',
@@ -2596,6 +2694,177 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintFetchUnderParamKeyOfSameCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo (string) $holder->get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderNonLiteralParamKey' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    function show(string $key): void {
+                        $holder = new Holder();
+                        $holder->fill((string) $_GET["value"]);
+                        echo (string) $holder->get($key);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderReassignedParamKey' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            if ($key === "b") {
+                                $key = "a";
+                            }
+                            return $this->data[$key];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedFetchUnderParamKeyOfSameCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, array<string, string>> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"]["x"] = $value;
+                            $this->data["b"]["x"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key]["x"];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOn' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    /** @psalm-pure */
+                    function getKeyOf(array $array, string $key): mixed {
+                        return getKey($array, $key);
+                    }
+
+                    $array = ["a" => $_GET["value"], "b" => "safe"];
+                    echo (string) getKeyOf($array, "b");
+                    echo (string) getKeyOf($array, "a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOnOutsideOfCalls' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key];
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function getLabel(string $key): string {
+                            return "Value: " . $this->get($key);
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->getLabel("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentAndFetchUnderSameParamKeys' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    echo (string) getKey(withKey([], "a", $_GET["value"]), "a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKey' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    function show(string $key): void {
+                        echo (string) getKey(withKey([], $key, $_GET["value"]), "b");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
                     $outer = [];
