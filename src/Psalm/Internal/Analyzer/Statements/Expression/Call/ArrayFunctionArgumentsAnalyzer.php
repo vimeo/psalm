@@ -44,11 +44,9 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_keys;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
-use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -56,6 +54,8 @@ use function in_array;
 use function is_numeric;
 use function str_contains;
 use function str_starts_with;
+use function strcspn;
+use function strlen;
 use function strtolower;
 use function substr;
 
@@ -65,10 +65,10 @@ use function substr;
 final class ArrayFunctionArgumentsAnalyzer
 {
     /**
-     * Node attribute set on the argument of array_pop()/array_shift() when an offset or property of it
-     * was tracked separately before the call, so the type of the variable itself may be stale.
+     * Node attribute set on the argument of array_pop()/array_shift() when it is a local variable whose
+     * type Psalm tracks reliably across the call, so the removed element can be inferred exactly.
      */
-    public const HAS_TRACKED_DESCENDANTS = 'psalmByRefArrayHasTrackedDescendants';
+    public const IS_TRACKED_BY_REF_ARRAY = 'psalmIsTrackedByRefArray';
 
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
@@ -638,17 +638,22 @@ final class ArrayFunctionArgumentsAnalyzer
         );
 
         if ($var_id) {
-            // checked before the descendants are removed below
-            if (self::hasTrackedDescendant($var_id, $context)) {
-                $arg->value->setAttribute(self::HAS_TRACKED_DESCENDANTS, true);
-            }
+            // Only a local variable that takes no part in a reference is tracked reliably: a property may be
+            // shared with an object alias, and a reference may have been changed through another name
+            $is_tracked = !$arg->unpack
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && !self::isReferenced($var_id, $context, $statements_analyzer);
+            $arg->value->setAttribute(self::IS_TRACKED_BY_REF_ARRAY, $is_tracked);
 
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
+                $var_atomic_types = $is_tracked
+                    ? self::expandArrayTemplates($context->vars_in_scope[$var_id])
+                    : $context->vars_in_scope[$var_id]->getAtomicTypes();
 
-                foreach (self::expandArrayTemplates($context->vars_in_scope[$var_id]) as $array_atomic_type) {
+                foreach ($var_atomic_types as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -751,26 +756,92 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * Whether an offset or property of the variable is tracked on its own (e.g. $a[1] after $x = &$a[1]),
-     * in which case the type of the variable itself may be stale.
+     * Whether the variable, an offset or property of it or an alias of it may have changed through a
+     * reference that Psalm doesn't propagate (see StatementsAnalyzer::$untracked_reference_ids), in which
+     * case its tracked type may be stale.
      */
-    public static function hasTrackedDescendant(string $var_id, Context $context): bool
-    {
-        $tracked_ids = [
-            ...array_keys($context->vars_in_scope),
-            ...array_keys($context->references_in_scope),
-            ...array_values($context->references_in_scope),
-            ...array_keys($context->references_to_external_scope),
-            ...array_keys($context->referenced_counts),
-        ];
+    public static function mayHaveChangedThroughReference(
+        string $var_id,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        if (!$statements_analyzer->untracked_reference_ids) {
+            return false;
+        }
 
-        foreach ($tracked_ids as $tracked_id) {
-            if (str_starts_with($tracked_id, $var_id . '[') || str_starts_with($tracked_id, $var_id . '->')) {
-                return true;
+        $var_ids = self::getReferenceAliases($var_id, $context);
+
+        foreach ($statements_analyzer->untracked_reference_ids as $reference_id => $_) {
+            foreach ($var_ids as $alias_id) {
+                if ($reference_id === $alias_id
+                    || self::isDescendantId($reference_id, $alias_id)
+                    || self::isDescendantId($alias_id, $reference_id)
+                ) {
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    private static function isReferenced(
+        string $var_id,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        return isset($context->references_in_scope[$var_id])
+            || in_array($var_id, $context->references_in_scope, true)
+            || ($context->referenced_counts[$var_id] ?? 0) > 0
+            || isset($context->references_to_external_scope[$var_id])
+            || isset($context->references_possibly_from_confusing_scope[$var_id])
+            || isset($context->referenced_globals[$var_id])
+            || isset($context->byref_constraints[$var_id])
+            || isset($statements_analyzer->byref_uses[$var_id])
+            || self::mayHaveChangedThroughReference($var_id, $context, $statements_analyzer);
+    }
+
+    /**
+     * Returns the variable id spelled through each variable it shares a reference with ($b = &$a),
+     * including itself.
+     *
+     * @return list<string>
+     */
+    private static function getReferenceAliases(string $var_id, Context $context): array
+    {
+        if (!$context->references_in_scope || !str_starts_with($var_id, '$')) {
+            return [$var_id];
+        }
+
+        // the plain variable before any offset or property
+        $root_var_id = substr($var_id, 0, strcspn($var_id, '[-'));
+        $aliases = [$root_var_id => true];
+
+        do {
+            $found_alias = false;
+
+            foreach ($context->references_in_scope as $reference_id => $referenced_id) {
+                if (isset($aliases[$reference_id]) !== isset($aliases[$referenced_id])) {
+                    $aliases[$reference_id] = true;
+                    $aliases[$referenced_id] = true;
+                    $found_alias = true;
+                }
+            }
+        } while ($found_alias);
+
+        $suffix = substr($var_id, strlen($root_var_id));
+        $var_ids = [];
+
+        foreach ($aliases as $alias_id => $_) {
+            $var_ids[] = $alias_id . $suffix;
+        }
+
+        return $var_ids;
+    }
+
+    private static function isDescendantId(string $var_id, string $ancestor_id): bool
+    {
+        return str_starts_with($var_id, $ancestor_id . '[') || str_starts_with($var_id, $ancestor_id . '->');
     }
 
     /**

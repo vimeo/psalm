@@ -136,6 +136,16 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $byref_uses = [];
 
+    /**
+     * Variables, offsets and properties that may change through a reference whose effect Psalm doesn't
+     * propagate to the containing variable: a reference to an offset or property, a by-reference foreach
+     * value or a by-reference closure use. Once such a reference exists, the tracked type of the
+     * containing variable may be stale.
+     *
+     * @var array<string, true>
+     */
+    public array $untracked_reference_ids = [];
+
     private ?ParsedDocblock $parsed_docblock = null;
 
     private ?string $fake_this_class = null;

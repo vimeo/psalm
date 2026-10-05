@@ -22,6 +22,7 @@ use Psalm\Type\Union;
 use function array_shift;
 use function array_values;
 use function count;
+use function strtolower;
 
 /**
  * Infers the return type of array_first() and array_last() (PHP 8.5+).
@@ -53,8 +54,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
 
         $call_args = $event->getCallArgs();
 
-        // If an offset or property of the array is tracked on its own (e.g. changed through a reference),
-        // the type of the array itself may be stale
+        // The type of an array changed through a reference to one of its elements may be stale
         $var_id = isset($call_args[0]) ? ExpressionIdentifier::getExtendedVarId(
             $call_args[0]->value,
             $statements_source->getFQCLN(),
@@ -62,7 +62,11 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
         ) : null;
 
         if ($var_id !== null
-            && ArrayFunctionArgumentsAnalyzer::hasTrackedDescendant($var_id, $event->getContext())
+            && ArrayFunctionArgumentsAnalyzer::mayHaveChangedThroughReference(
+                $var_id,
+                $event->getContext(),
+                $statements_source,
+            )
         ) {
             return null;
         }
@@ -70,7 +74,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
         return self::getElementType(
             $statements_source,
             $call_args,
-            $event->getFunctionId() === 'array_first',
+            strtolower($event->getFunctionId()) === 'array_first',
         );
     }
 

@@ -3071,11 +3071,25 @@ final class ArrayFunctionCallTest extends TestCase
                         return strlen($key) > $value;
                     });
                     $c = array_all($dates, fn ($date, $index) => $date->getTimestamp() > $index);
-                    $d = array_find_key($map, fn ($value, $key) => strlen($key) > $value);',
+                    $d = array_find_key($map, fn ($value, $key) => strlen($key) > $value);
+                    array_find($map, function ($value, $key): bool {
+                        /** @psalm-check-type-exact $key = string */
+                        return strlen($key) > $value;
+                    });
+                    $f = array_any($dates, function ($date, $index): bool {
+                        /** @psalm-check-type-exact $index = int<0, max> */
+                        return $date->getTimestamp() > $index;
+                    });
+                    $g = array_all(["a" => 1, "b" => 2], function ($value, $key): bool {
+                        /** @psalm-check-type-exact $key = "a"|"b" */
+                        return $value > 0;
+                    });',
                 'assertions' => [
                     '$a===' => 'bool',
                     '$b===' => 'bool',
                     '$c===' => 'bool',
+                    '$f===' => 'bool',
+                    '$g===' => 'bool',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
@@ -3268,16 +3282,102 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'arrayFirstLastExactWithoutTrackedOffsets' => [
+            'arrayFirstLastPopAfterOffsetWriteOrIsset' => [
                 'code' => '<?php
-                    $a = ["first", "last"];
+                    $a = ["x", "y"];
+                    $a[0] = "z";
                     $first = array_first($a);
-                    $last = array_last($a);',
+                    $last = array_last($a);
+
+                    $b = [1, "a"];
+                    $b[1] = "b";
+                    $popped = array_pop($b);
+
+                    /** @param list<int> $list */
+                    function firstIfSet(array $list): int {
+                        if (isset($list[0])) {
+                            return array_first($list);
+                        }
+                        return 0;
+                    }',
                 'assertions' => [
-                    '$first===' => '\'first\'',
-                    '$last===' => '\'last\'',
+                    '$first===' => '\'z\'',
+                    '$last===' => '\'y\'',
+                    '$popped===' => '\'b\'',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastShiftCaseInsensitiveName' => [
+                'code' => '<?php
+                    function f(): void {
+                        $first = \ARRAY_FIRST([1, "a"]);
+                        /** @psalm-check-type-exact $first = 1 */
+                        $last = Array_Last([1, "a"]);
+                        /** @psalm-check-type-exact $last = "a" */
+                        $list = [1, "a"];
+                        $shifted = \ARRAY_SHIFT($list);
+                        /** @psalm-check-type-exact $shifted = 1 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopKeepsGenericTypeForUntrackedVariables' => [
+                'code' => '<?php
+                    /** @var list{int, string} $g */
+                    $g = [1, "a"];
+
+                    /**
+                     * @param list{int, string} $a
+                     * @param-out list<int|string> $a
+                     */
+                    function byRefParam(array &$a): void {
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = int|string */
+                    }
+
+                    function globalVar(): void {
+                        global $g;
+                        $x = array_pop($g);
+                        /** @psalm-check-type-exact $x = int|string */
+                    }
+
+                    function staticVar(): void {
+                        /** @var list{int, string} */
+                        static $s = [1, "a"];
+                        $x = array_pop($s);
+                        /** @psalm-check-type-exact $x = int|string */
+                    }
+
+                    function byRefClosureUse(): void {
+                        $a = [];
+                        $f = function () use (&$a): void {
+                            array_pop($a);
+                        };
+                        $a = [1, "a"];
+                        $f();
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function byRefForeach(): void {
+                        $a = [1, "a"];
+                        foreach ($a as &$v) {}
+                        $v = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    /**
+                     * @template T of list<int>
+                     * @param T $stack
+                     */
+                    function byRefTemplateParam(array &$stack): void {
+                        array_pop($stack);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
                 'php_version' => '8.5',
             ],
         ];
@@ -4110,6 +4210,62 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_first(...$args);
                     }',
                 'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstThroughAliasWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["first", "last"];
+                        $b = &$a;
+                        $x = &$a[0];
+                        $x = new stdClass();
+                        return array_first($b);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTwiceWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = [1, "a", 2.5];
+                        $x = &$a[1];
+                        $x = new stdClass();
+                        array_pop($a);
+                        return array_pop($a);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayLastAfterByRefClosureUse' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = [];
+                        $f = function () use (&$a): void {
+                            $a[] = new stdClass();
+                        };
+                        $a = ["a"];
+                        $f();
+                        return array_last($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayPopTemplateVariableNoLongerTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param T $a
+                     * @return T
+                     */
+                    function f(array $a): array {
+                        array_pop($a);
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],

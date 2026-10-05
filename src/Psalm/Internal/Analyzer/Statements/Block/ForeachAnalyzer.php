@@ -336,6 +336,17 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+
+            // the value stays a reference to an element of the iterated array after the loop
+            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($iterated_var_id !== null) {
+                $statements_analyzer->untracked_reference_ids[$iterated_var_id] = true;
+            }
         }
 
         foreach ($var_comments as $var_comment) {

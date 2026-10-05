@@ -970,6 +970,12 @@ final class AssignmentAnalyzer
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
         $context->referenced_counts[$rhs_var_id] = ($context->referenced_counts[$rhs_var_id] ?? 0) + 1;
+        // a change through the reference is not propagated to the array or object holding the offset or property
+        foreach ([$lhs_var_id, $rhs_var_id] as $reference_id) {
+            if (str_contains($reference_id, '[') || str_contains($reference_id, '->')) {
+                $statements_analyzer->untracked_reference_ids[$reference_id] = true;
+            }
+        }
         if (str_contains($rhs_var_id, '[')) {
             // Reference to array item, we always consider array items to be an external scope for references
             // TODO handle differently so it's detected as unused if the array is unused?
