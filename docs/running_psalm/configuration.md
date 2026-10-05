@@ -700,6 +700,8 @@ Optional. A list of issues that can't be suppressed: Psalm reports them as error
 
 An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
 
+Taint issues can only be suppressed in docblocks all at once, with `@psalm-suppress TaintedInput`, which stops tracking taints in the function or the statement it annotates: if any taint issue is unsuppressible, it doesn't, and every taint issue found there is reported.
+
 The issues are still only reported in the files of `<projectFiles>` that aren't ignored. A `@psalm-suppress` of an unsuppressible issue is never used, so [findUnusedPsalmSuppress](#findunusedpsalmsuppress) reports it, and a baseline entry for one is never used either: `--set-baseline` and `--update-baseline` leave them out, and [findUnusedBaselineEntry](#findunusedbaselineentry) reports those of an existing baseline.
 
 #### &lt;mockClasses&gt;

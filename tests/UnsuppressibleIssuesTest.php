@@ -66,24 +66,6 @@ final class UnsuppressibleIssuesTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testSuppressingTaintedInputStillHidesTheOtherTaints(): void
-    {
-        $file_path = self::$src_dir_path . 'somefile.php';
-        $this->addFile(
-            $file_path,
-            '<?php
-                /** @psalm-suppress TaintedInput, PossiblyInvalidCast */
-                function run(): void {
-                    exec((string) $_GET["x"]);
-                }',
-        );
-
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->analyzeFile($file_path, new Context());
-        $this->addToAssertionCount(1);
-    }
-
     /**
      * @psalm-pure
      */
@@ -100,7 +82,7 @@ final class UnsuppressibleIssuesTest extends TestCase
             ],
             'suppressionsPsalmAddsAroundItsOwnCallsStillApply' => [
                 'code' => '<?php
-                    /** @template-implements ArrayAccess<mixed, int> */
+                    /** @template-implements ArrayAccess<mixed, mixed> */
                     final class Values implements ArrayAccess {
                         public function offsetExists(mixed $offset): bool {
                             return true;

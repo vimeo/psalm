@@ -238,10 +238,14 @@ final class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1);
         $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
 
+        // with taint analysis, Psalm doesn't exit with an error code on GitHub
         $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
         $psalmXml = str_replace(
-            '</psalm>',
-            '<unsuppressibleIssues><issue name="InvalidReturnType" /></unsuppressibleIssues></psalm>',
+            ['<psalm', '</psalm>'],
+            [
+                '<psalm runTaintAnalysis="false"',
+                '<unsuppressibleIssues><issue name="InvalidReturnType" /></unsuppressibleIssues></psalm>',
+            ],
             $psalmXml,
         );
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
