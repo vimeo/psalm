@@ -1510,8 +1510,8 @@ final class TaintTest extends TestCase
             'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
-                    foreach ($values as $key => &$value) {
-                        if ($key === "key") {
+                    foreach ($values as &$value) {
+                        if (rand(0, 1)) {
                             $value = (string) $_GET["value"];
                             break;
                         }
