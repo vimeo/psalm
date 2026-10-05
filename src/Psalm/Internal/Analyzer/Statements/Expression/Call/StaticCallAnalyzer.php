@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -32,6 +33,7 @@ use Psalm\Type\Union;
 
 use function count;
 use function in_array;
+use function is_string;
 use function strtolower;
 
 /**
@@ -50,6 +52,23 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $lhs_type = null;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        // parent::/self:: run the method on `$this`, an object of its class (see InheritedMethodTaints)
+        if ($stmt->class instanceof PhpParser\Node\Name
+            && in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
+            && !$stmt->isFirstClassCallable()
+            && isset($context->vars_in_scope['$this'])
+        ) {
+            foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $this_atomic) {
+                if ($this_atomic instanceof TNamedObject) {
+                    $stmt->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
+
+                    foreach ($stmt->getArgs() as $arg) {
+                        $arg->value->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
+                    }
+                }
+            }
+        }
 
         // collected by the atomic analyzers; a call nothing describes may do anything
         $stmt->setAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE, null);
@@ -299,11 +318,29 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
             );
         } else {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $method_storage,
-                $specialization_location,
-            );
+            $body_class = $stmt->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
+            $declaring_method_id = is_string($body_class)
+                ? $statements_analyzer->getCodebase()->methods->getDeclaringMethodId($method_id)
+                : null;
+            $body_suffix = is_string($body_class) && $declaring_method_id
+                ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $body_class, $declaring_method_id)
+                : null;
+
+            $method_source = $body_suffix !== null && $declaring_method_id
+                ? InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id,
+                    $body_suffix,
+                    static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
+                        $statements_analyzer->getCodebase()->methods->getCasedMethodId($declaring_method_id),
+                        $method_storage,
+                        $specialization_location,
+                    ),
+                )
+                : DataFlowNode::getForMethodReturn(
+                    $cased_method_id,
+                    $method_storage,
+                    $specialization_location,
+                );
         }
 
         $graph->addNode($method_source);
