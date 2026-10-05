@@ -757,7 +757,9 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         $class_property_node = $property_node;
 
-        foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name) as $ancestor) {
+        // what is set through a class declaring the property again stays its own: a parent class reading it would
+        // read what every one of its subclasses sets
+        foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name, false) as $ancestor) {
             $ancestor_property_node = DataFlowNode::getForPropertyFetch($ancestor . '::$' . $prop_name);
 
             $graph->addNode($ancestor_property_node);
@@ -792,19 +794,26 @@ final class InstancePropertyAssignmentAnalyzer
 
     /**
      * The parent classes of $fq_class_name sharing its instance property $prop_name, the nearest first: those having
-     * it, unless it is private there or in a class below (a class declaring it again still shares it)
+     * it, unless it is private there or in a class below (a class declaring it again still shares it, unless
+     * $through_redeclarations is false)
      *
      * @return list<string>
      * @psalm-capabilities read-props
      */
-    public static function getPropertyAncestors(Codebase $codebase, string $fq_class_name, string $prop_name): array
-    {
+    public static function getPropertyAncestors(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $prop_name,
+        bool $through_redeclarations = true,
+    ): array {
         $ancestors = [];
 
         while ($codebase->classlike_storage_provider->has($fq_class_name)) {
             $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             if ($storage->parent_class === null
+                || (!$through_redeclarations
+                    && strtolower($storage->declaring_property_ids[$prop_name] ?? '') === strtolower($storage->name))
                 || !$codebase->classlike_storage_provider->has($storage->parent_class)
                 || self::isPrivateProperty($codebase, $storage->declaring_property_ids[$prop_name] ?? null, $prop_name)
             ) {
