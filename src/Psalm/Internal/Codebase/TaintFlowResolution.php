@@ -1392,18 +1392,6 @@ final class TaintFlowResolution
         // addEntryExit()). The call sites of despecialized calls are all exited, keeping the context.
         $context = $this->state_contexts[$state];
         $outside_of_calls = $this->isOutsideOfCalls($context);
-
-        if ($outside_of_calls
-            && !isset($this->root_entries[$state])
-            && count($this->state_ids[$id]) >= self::CONVERGING_STATES
-        ) {
-            // leaving through all the call sites once for the flows reaching the exit in many states, relative
-            // to them, as where flows converge at a node with edges (e.g. the exit of a function-like reading
-            // a property many flows reach, see exitThroughCaller())
-            $this->enterConvergence($state, $id);
-
-            return;
-        }
         $has_specialized_calls = false;
 
         foreach ($this->specializations[$id] as $specialization_key => $specialized_id) {
