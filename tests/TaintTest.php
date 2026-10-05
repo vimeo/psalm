@@ -404,6 +404,27 @@ final class TaintTest extends TestCase
                     echo key($values);
                     echo (string) array_key_first($values);',
             ],
+            'dontTaintTheKeysOfAnArrayWithTheValuesAssignedUnderKeysNotKnown' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $attr */
+                    function render(array $attr, bool $isLink, string $name): void {
+                        $attr[$isLink ? "href" : "data-href"] = (string) $_GET["url"];
+                        $attr[$name] = (string) $_GET["value"];
+                        foreach ($attr as $key => $_) {
+                            echo $key;
+                        }
+                    }',
+            ],
+            'dontTaintTheOuterKeysOfANestedArrayWithItsInnerKeys' => [
+                'code' => '<?php // --taint-analysis
+                    function nest(string $outer): void {
+                        $nested = [];
+                        $nested[$outer][(string) $_GET["inner"]] = "x";
+                        foreach ($nested as $key => $_) {
+                            echo $key;
+                        }
+                    }',
+            ],
             'dontTaintTheKeysOfAnArrayWithItsValuesThroughArrayKeysOrSearch' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => (string) $_GET["value"]];
@@ -1654,6 +1675,16 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheKeysOfAnArrayWithTheKeysAssigned' => [
+                'code' => '<?php // --taint-analysis
+                    function keyed(string $value): void {
+                        $values = [(string) $_GET["key"] => $value];
+                        foreach ($values as $key => $_) {
+                            echo $key;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
                 'code' => '<?php // --taint-analysis
                     $flipped = array_flip(["key" => (string) $_GET["value"]]);

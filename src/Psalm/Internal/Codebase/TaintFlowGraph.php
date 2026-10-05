@@ -1223,6 +1223,10 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
+            if ($path_type === 'arraykey-fetch' && self::isAnArrayValue($open_assignments)) {
+                continue;
+            }
+
             if (self::shouldIgnoreFetch($path_type, 'property', $open_assignments)) {
                 continue;
             }
@@ -1314,6 +1318,29 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $path_types;
+    }
+
+    /**
+     * Whether a flow whose open assignments (see getOpenAssignments()) are $open_assignments is in the value of an
+     * array element, which the keys of the array an arraykey-fetch takes are not: its latest open array assignment is
+     * to a value, under a known key or not, rather than to a key.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function isAnArrayValue(array $open_assignments): bool
+    {
+        for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+            if (str_starts_with($open_assignments[$i], 'arraykey-assignment')) {
+                return false;
+            }
+
+            if (str_starts_with($open_assignments[$i], 'arrayvalue-assignment')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
