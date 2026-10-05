@@ -20,6 +20,7 @@ use function array_map;
 use function array_values;
 use function in_array;
 use function preg_quote;
+use function sort;
 use function str_starts_with;
 use function strpos;
 use function trim;
@@ -271,6 +272,67 @@ final class TaintTest extends TestCase
         ));
 
         self::assertSame(array_fill(0, $call_sites, 'TaintedShell'), $taint_issue_types);
+    }
+
+    /**
+     * An option the analysis can't tell may be one choosing where the request goes as well as one written into it,
+     * so its value is both an `ssrf` and a `header` sink.
+     *
+     * @dataProvider providerTrackingUnusedVariables
+     */
+    public function testCurlOptionTheAnalysisCantTellIsEverySink(bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function set(\\CurlHandle $curl, int $option): void {
+                    curl_setopt($curl, $option, (string) $_GET["value"]);
+                }
+
+                function setAll(\\CurlHandle $curl, int $option): void {
+                    curl_setopt_array($curl, [$option => (string) $_GET["value"]]);
+                }',
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        self::assertSame(
+            [
+                'TaintedHeader on line 3',
+                'TaintedHeader on line 7',
+                'TaintedSSRF on line 3',
+                'TaintedSSRF on line 7',
+            ],
+            $taint_issues,
+        );
+    }
+
+    /**
+     * @return array<string, array{bool}>
+     * @psalm-pure
+     */
+    public function providerTrackingUnusedVariables(): array
+    {
+        return [
+            'taint analysis only' => [false],
+            'tracking unused variables' => [true],
+        ];
     }
 
     /**
@@ -1362,20 +1424,6 @@ final class TaintTest extends TestCase
                     $options = [CURLOPT_URL => "https://example.com/"];
                     $options[CURLOPT_HTTPHEADER] = ["X-Value: " . (string) $_GET["header"]];
                     curl_setopt_array(curl_init(), $options);',
-                'error_message' => 'TaintedHeader',
-            ],
-            'taintSsrfInACurlOptionArrayEntryTheAnalysisCantTell' => [
-                'code' => '<?php // --taint-analysis
-                    function set(\\CurlHandle $curl, int $option): void {
-                        curl_setopt_array($curl, [$option => (string) $_GET["value"]]);
-                    }',
-                'error_message' => 'TaintedSSRF',
-            ],
-            'taintHeaderInACurlOptionTheAnalysisCantTell' => [
-                'code' => '<?php // --taint-analysis
-                    function set(\\CurlHandle $curl, int $option): void {
-                        curl_setopt($curl, $option, (string) $_GET["value"]);
-                    }',
                 'error_message' => 'TaintedHeader',
             ],
             'taintedNamedArgumentToSinkParameter' => [
