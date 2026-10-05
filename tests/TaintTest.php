@@ -2672,6 +2672,11 @@ final class TaintTest extends TestCase
                     echo print_r($_GET["x"], true);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintVarExportReturningItsOutput' => [
+                'code' => '<?php
+                    echo var_export($_GET["x"], true);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPrintROutput' => [
                 'code' => '<?php
                     print_r($_GET["x"]);',
