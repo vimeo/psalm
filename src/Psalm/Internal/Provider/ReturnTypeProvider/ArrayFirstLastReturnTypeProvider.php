@@ -12,8 +12,8 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -66,19 +66,18 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
                 continue;
             }
 
-            if ($atomic_type instanceof TMixed) {
-                return null;
-            }
-
             if ($atomic_type instanceof TArray) {
                 $atomic_value_type = $atomic_type->type_params[1];
                 $possibly_empty = $possibly_empty || !$atomic_type instanceof TNonEmptyArray;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $atomic_value_type = $atomic_type->getGenericValueType();
                 $possibly_empty = $possibly_empty || !$atomic_type->isNonEmpty();
-            } else {
-                // Anything else (e.g. null or iterable) throws a TypeError, reported by the callmap signature
+            } elseif ($atomic_type instanceof TNull) {
+                // throws a TypeError, reported by the callmap signature
                 continue;
+            } else {
+                // e.g. mixed, iterable or class-string-map: keep the callmap signature
+                return null;
             }
 
             $has_array = true;

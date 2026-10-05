@@ -3373,6 +3373,16 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayFirstOfIterableUnionStaysMixed' => [
+                'code' => '<?php
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): int {
+                        return array_first($values) ?? 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'arrayFirstTraversableArgument' => [
                 'code' => '<?php
                     function f(Traversable $t): void {
