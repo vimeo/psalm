@@ -1227,6 +1227,17 @@ final class TaintTest extends TestCase
                     exec("ls " . escapeshellarg((string) $_GET["x"]));
                     exec(escapeshellcmd((string) $_GET["x"]));',
             ],
+            'dontTaintPromotedPropertyOfOtherInstance' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Holder {
+                        public function __construct(public string $value) {}
+                    }
+
+                    $tainted = new Holder((string) $_GET["x"]);
+                    $safe = new Holder("safe");
+                    echo $safe->value;',
+            ],
             'dontReportOutputOfPrintRAndVarExportReturningIt' => [
                 'code' => '<?php
                     $exported = var_export($_GET["x"], true);
@@ -1666,6 +1677,7 @@ final class TaintTest extends TestCase
             'taintHtmlThroughSerialize' => [
                 'code' => '<?php // --taint-analysis
                     echo serialize((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
             ],
             'taintTheItemDestructuredFromAnUnshapedArray' => [
                 'code' => '<?php // --taint-analysis
@@ -3689,6 +3701,30 @@ final class TaintTest extends TestCase
             'taintHtmlThroughShellEscape' => [
                 'code' => '<?php
                     echo escapeshellarg((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPromotedProperty' => [
+                'code' => '<?php
+                    final class Holder {
+                        public function __construct(private string $value) {}
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    echo (new Holder((string) $_GET["x"]))->getValue();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPublicPromotedPropertyOfSpecializedClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Holder {
+                        public function __construct(public string $value) {}
+                    }
+
+                    $holder = new Holder((string) $_GET["x"]);
+                    echo $holder->value;',
                 'error_message' => 'TaintedHtml',
             ],
             'taintPrintRReturningItsOutput' => [

@@ -19,6 +19,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -56,8 +57,10 @@ use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedDocblockParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Stmt\VirtualWhile;
+use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualNode;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
 use Psalm\Storage\Capabilities;
@@ -423,6 +426,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             (bool) $template_types,
         );
 
+        $this->taintPromotedProperties($statements_analyzer, $context);
         // the context of an arrow function is that of the function-like it is in
         $context->by_ref_param_out_nodes = [];
 
@@ -1363,6 +1367,47 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return ($capabilities & Capabilities::WRITE_GLOBALS) !== 0
             ? $capabilities & (Capabilities::READ_GLOBALS | Capabilities::WRITE_GLOBALS)
             : Capabilities::NONE;
+    }
+
+    /**
+     * A promoted constructor parameter is assigned to its property: what the constructor is given flows into it,
+     * as with `$this->name = $name`.
+     */
+    private function taintPromotedProperties(StatementsAnalyzer $statements_analyzer, Context $context): void
+    {
+        if (!$statements_analyzer->getCodebase()->taint_flow_graph
+            || !$this->function instanceof ClassMethod
+            || $this->function->name->toLowerString() !== '__construct'
+            || !isset($context->vars_in_scope['$this'])
+        ) {
+            return;
+        }
+
+        foreach ($this->function->params as $param) {
+            $var = $param->var;
+            if (!$param->isPromoted() || !$var instanceof PhpParser\Node\Expr\Variable || !is_string($var->name)) {
+                continue;
+            }
+
+            $name = $var->name;
+            if (!isset($context->vars_in_scope['$' . $name])) {
+                continue;
+            }
+
+            $attributes = $param->getAttributes();
+            InstancePropertyAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                new VirtualPropertyFetch(
+                    new VirtualVariable('this', $attributes),
+                    new VirtualIdentifier($name, $attributes),
+                    $attributes,
+                ),
+                $name,
+                new VirtualVariable($name, $var->getAttributes()),
+                $context->vars_in_scope['$' . $name],
+                $context,
+            );
+        }
     }
 
     /**
