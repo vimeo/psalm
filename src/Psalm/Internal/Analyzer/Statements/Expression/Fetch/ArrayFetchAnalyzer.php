@@ -382,6 +382,9 @@ final class ArrayFetchAnalyzer
 
     /**
      * Used to create a path between a variable $foo and $foo["a"]
+     *
+     * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
+     * foreach goes over, ...).
      */
     public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -390,13 +393,16 @@ final class ArrayFetchAnalyzer
         Union &$stmt_type,
         Union &$offset_type,
         ?Context $context = null,
+        ?Union $var_type = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
-            && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
+            && ($stmt_var_type = $var_type ?? $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
             if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
+                if (!$var_type) {
+                    $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
+                }
                 return;
             }
 
