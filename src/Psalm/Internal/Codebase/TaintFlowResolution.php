@@ -452,12 +452,12 @@ final class TaintFlowResolution
     private array $entry_bases = [];
 
     /**
-     * Context . ' ' . exit node id . ' ' . open assignments => the taints kept and added of the flows that left
-     * an exit outside of any specialized call through all its call sites (see leaveThroughAllCallSites())
+     * Unspecialized node entered by a specialized call => exit node id => whether the exit is one of the same
+     * function-like (see isExitOfEntered())
      *
-     * @var array<string, array{int, int}>
+     * @var array<string, array<string, bool>>
      */
-    private array $shared_exits = [];
+    private array $exits_of_entered = [];
 
     /**
      * Entry => the taints of the flows entering it (see getUnionTaints())
@@ -1392,6 +1392,18 @@ final class TaintFlowResolution
         // addEntryExit()). The call sites of despecialized calls are all exited, keeping the context.
         $context = $this->state_contexts[$state];
         $outside_of_calls = $this->isOutsideOfCalls($context);
+
+        if ($outside_of_calls
+            && !isset($this->root_entries[$state])
+            && count($this->state_ids[$id]) >= self::CONVERGING_STATES
+        ) {
+            // leaving through all the call sites once for the flows reaching the exit in many states, relative
+            // to them, as where flows converge at a node with edges (e.g. the exit of a function-like reading
+            // a property many flows reach, see exitThroughCaller())
+            $this->enterConvergence($state, $id);
+
+            return;
+        }
         $has_specialized_calls = false;
 
         foreach ($this->specializations[$id] as $specialization_key => $specialized_id) {
@@ -2129,12 +2141,12 @@ final class TaintFlowResolution
 
     /**
      * Continues an exit reached by the body walk of an entry in the context of one call entering it: at that
-     * call's specialization of the exit node if it has one. If it has one the call site doesn't use (left out of
-     * the specializations for having no outgoing edge, see TaintFlowGraph::connectSinksAndSources()), the flow
-     * ends. Else the exit is one of another function-like, reached through
-     * something the calls share (a property, a static property, ...): the flow leaves through an enclosing call
-     * of that function-like if any, as an exit of the entry the call is made from, and outside of any
-     * specialized call through all of its call sites, as a flow reaching it there would (see walk()).
+     * call's specialization of the exit node if it has one. Else, if the exit is one of the function-like the call
+     * enters, the call site doesn't use it, and the flows end. If it is one of another function-like, reached
+     * through something the calls share (a property, a static property, ...), any call to that function-like may
+     * return what the flows hold: they leave through an enclosing call of it if any, as an exit of the entry the
+     * call is made from, and outside of any specialized call through all of its call sites, as a flow reaching
+     * the exit there would (see walk()).
      *
      * A convergence of flows in specialized calls is left like its node would be left in the context of the
      * call (see walk()): as an exit of the entry it is in.
@@ -2171,20 +2183,22 @@ final class TaintFlowResolution
                 -1,
                 $caller,
             );
-        } elseif ($specialization_key !== null
-            && isset($this->nodes[$exit_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . $specialization_key])
-        ) {
+        } elseif ($specialization_key !== null && $this->isExitOfEntered($exit_id, $caller)) {
+            // the call site doesn't use the exit
             return;
         } elseif ($this->isOutsideOfCalls($context)) {
             if ($specialization_key !== null) {
-                $this->leaveThroughAllCallSites(
+                // as a flow reaching the exit there, which leaves through all its call sites (see walk())
+                $this->reach(
                     $exit_id,
                     $context,
                     $caller_open_assignments,
                     $caller_kept,
                     $caller_added,
                     $state,
-                    $this->getLink($caller, $link),
+                    $link,
+                    -1,
+                    $caller,
                 );
             }
         } else {
@@ -2208,35 +2222,35 @@ final class TaintFlowResolution
     }
 
     /**
-     * Continues the flows reaching exit $exit_id in context $context, outside of any specialized call, with open
-     * assignments $open_assignments, from state $state (seen through the calls of $link), at all the call sites
-     * of its specialized calls: those of despecialized calls were all left from the exit already (see walk()).
+     * Whether exit $exit_id is one of the function-like whose specialized node the call of state $caller entered:
+     * that one is specialized for some of the calls the exit is (whether or not the call of $caller uses the exit
+     * itself, that is whether it has a specialization of it: see TaintFlowGraph::connectSinksAndSources()).
      *
      * @psalm-external-mutation-free
      */
-    private function leaveThroughAllCallSites(
-        string $exit_id,
-        int $context,
-        int $open_assignments,
-        int $kept,
-        int $added,
-        int $state,
-        int $link,
-    ): void {
-        $exit_key = $context . ' ' . $exit_id . ' ' . $open_assignments;
-        $previous = $this->shared_exits[$exit_key] ?? null;
+    private function isExitOfEntered(string $exit_id, int $caller): bool
+    {
+        $entered_id = $this->getNode($this->state_nodes[$caller])?->unspecialized_id;
 
-        if ($previous !== null && ($kept & ~$previous[0]) === 0 && ($added & ~$previous[1]) === 0) {
-            return;
+        if ($entered_id === null) {
+            return false;
         }
 
-        $this->shared_exits[$exit_key] = [($previous[0] ?? 0) | $kept, ($previous[1] ?? 0) | $added];
+        if (!isset($this->exits_of_entered[$entered_id][$exit_id])) {
+            $is_exit = false;
 
-        foreach ($this->specializations[$exit_id] as $specialization_key => $specialized_id) {
-            if (!isset($this->despecialized_calls[$specialization_key])) {
-                $this->reach($specialized_id, $context, $open_assignments, $kept, $added, $state, $link, -1);
+            foreach ($this->specializations[$exit_id] ?? [] as $specialization_key => $_) {
+                if (isset($this->nodes[$entered_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . $specialization_key])) {
+                    $is_exit = true;
+
+                    break;
+                }
             }
+
+            $this->exits_of_entered[$entered_id][$exit_id] = $is_exit;
         }
+
+        return $this->exits_of_entered[$entered_id][$exit_id];
     }
 
     /**
