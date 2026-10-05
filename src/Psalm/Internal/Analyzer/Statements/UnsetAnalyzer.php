@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -82,6 +83,8 @@ final class UnsetAnalyzer
                         $stmt,
                     );
                 }
+
+                FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $var_id);
 
                 $context->remove($var_id);
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
