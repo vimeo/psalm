@@ -60,4 +60,5 @@ return [
 'curl_init' => [TaintKind::INPUT_SSRF],
 'curl_setopt' => [0, 0, TaintKind::INPUT_SSRF],
 'getimagesize' => [TaintKind::INPUT_SSRF],
+'Closure::fromCallable' => [TaintKind::INPUT_CALLABLE],
 ];

@@ -1,5 +1,5 @@
 # TaintedCustom
 
-This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
 Emitted when tainted input detection is turned on and custom-tainted data is detected.
