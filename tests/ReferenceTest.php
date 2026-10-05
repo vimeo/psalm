@@ -32,11 +32,11 @@ final class ReferenceTest extends TestCase
                     read_value($values["read"]);
                     $read = $values["read"];
 
-                    $nested = ["a" => ["b" => 1]];
+                    $nested = ["a" => ["b" => "1"]];
                     read_value($nested["a"]["b"]);
 
                     $key = "z";
-                    $dynamic = ["z" => 1];
+                    $dynamic = ["z" => "1"];
                     read_value($dynamic[$key]);',
                 'assertions' => [
                     '$values===' => 'array{read: string}',
@@ -44,6 +44,24 @@ final class ReferenceTest extends TestCase
                     '$nested===' => 'array{a: array{b: string}}',
                     '$dynamic===' => 'array{z: string}',
                 ],
+            ],
+            'arrayItemPassedByReferenceIsCheckedWithTheTypeItIsPassedWith' => [
+                'code' => '<?php
+                    function run(string $command): void {
+                        $process = proc_open($command, [0 => ["pipe", "r"], 1 => ["pipe", "w"]], $pipes);
+                        if (!is_resource($process)) {
+                            return;
+                        }
+
+                        fclose($pipes[0]);
+
+                        if (isset($pipes[1])) {
+                            echo (string) stream_get_contents($pipes[1]);
+                            fclose($pipes[1]);
+                        }
+
+                        proc_close($process);
+                    }',
             ],
             'referenceAssignmentToNonReferenceCountsAsUse' => [
                 'code' => '<?php
