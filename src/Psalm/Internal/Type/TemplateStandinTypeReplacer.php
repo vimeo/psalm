@@ -1300,7 +1300,11 @@ final class TemplateStandinTypeReplacer
             if (strtolower($input_type_part->value) === strtolower($container_type_part->value)) {
                 $input_type_params = $class_storage->getClassTemplateTypes();
             } elseif (!empty($class_storage->template_extended_params[$container_class])) {
-                $input_type_params = array_values($class_storage->template_extended_params[$container_class]);
+                // the params of the container are mapped below from those of the class, which an
+                // object without type params leaves at its templates
+                $input_type_params = $class_storage->template_types !== null && $class_storage->template_types !== []
+                    ? self::getOwnTemplateParams($class_storage->template_types)
+                    : array_values($class_storage->template_extended_params[$container_class]);
             } else {
                 $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
             }
@@ -1407,5 +1411,27 @@ final class TemplateStandinTypeReplacer
         }
 
         return $input_type_params;
+    }
+
+    /**
+     * The templates of a class as its type params: what an object of the class without type params
+     * has them bound to.
+     *
+     * @param array<string, non-empty-array<string, Union>> $template_types
+     * @return list<Union>
+     * @psalm-pure
+     */
+    private static function getOwnTemplateParams(array $template_types): array
+    {
+        $params = [];
+
+        foreach ($template_types as $template_name => $type_map) {
+            foreach ($type_map as $defining_class => $bound) {
+                $params[] = new Union([new TTemplateParam($template_name, $bound, $defining_class)]);
+                break;
+            }
+        }
+
+        return $params;
     }
 }

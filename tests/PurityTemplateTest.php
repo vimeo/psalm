@@ -1437,6 +1437,30 @@ final class PurityTemplateTest extends TestCase
                     takeImpureInt(new EchoDriver());
                     takePure(new NullDriver());',
             ],
+            'instanceofSubclassBindingTheParentsPurityToItsOwn' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Future {}
+
+                    /**
+                     * @template TKey as array-key
+                     * @template-covariant TValue
+                     * @psalm-purity-template C
+                     * @extends Future[C]<array<TKey, TValue>>
+                     */
+                    final class CombinedFuture extends Future {}
+
+                    function isCombined(Future $future): bool {
+                        if ($future instanceof CombinedFuture) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
         ];
     }
 
