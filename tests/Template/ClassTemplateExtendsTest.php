@@ -958,6 +958,7 @@ final class ClassTemplateExtendsTest extends TestCase
 
                         /**
                          * @return \ArrayIterator<int, T>
+                         * @psalm-mutation-free
                          */
                         public function getIterator() {
                             return parent::getIterator();
@@ -2116,6 +2117,7 @@ final class ClassTemplateExtendsTest extends TestCase
                          * called to get the collection ready when we go to loop through it
                          *
                          * @return \ArrayIterator<int, T2>
+                         * @psalm-mutation-free
                          */
                         public function getIterator() {
                             return parent::getIterator();

@@ -30,6 +30,51 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'splContainersOnlyRequireWritingTheirOwnContents' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props */
+                    function useContainers(): int {
+                        /** @var SplQueue<int> */
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $queue->push(2);
+                        $sum = 0;
+                        foreach ($queue as $value) {
+                            $sum += $value;
+                        }
+                        $sum += $queue->dequeue() + $queue->count();
+
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $key = new stdClass();
+                        $storage->attach($key, 1);
+                        $storage[$key] = 2;
+                        $sum += $storage[$key] + (int) $storage->contains($key);
+
+                        /** @var SplFixedArray<int> */
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $sum += $fixed->getSize();
+
+                        /** @var SplMinHeap<int> */
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        $sum += $heap->top();
+
+                        $object = new ArrayObject([5]);
+                        $object->append(6);
+                        return $sum + count($object);
+                    }
+
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function readContainers(SplQueue $queue, ArrayObject $object): int {
+                        return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
+                    }',
+            ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**
@@ -1077,6 +1122,29 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'writingACallersSplQueueRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @psalm-mutation-free
+                     */
+                    function add(SplQueue $queue): int {
+                        $queue->enqueue(1);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method SplQueue::enqueue requires write-props',
+            ],
+            'serializingAnSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplObjectStorage $storage): string {
+                        return $storage->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
                     /** @psalm-pure */

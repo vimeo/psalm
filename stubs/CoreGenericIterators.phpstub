@@ -238,12 +238,16 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @param array<TKey, TValue> $array The array or object to be iterated on.
      * @param int-mask-of<static::*> $flags Flags to control the behaviour of the ArrayObject object.
+     *
+     * @psalm-pure
      */
     public function __construct($array = array(), $flags = 0) { }
 
     /**
      * @param TKey $offset The offset being checked.
      * @return bool true if the offset exists, otherwise false
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) { }
 
@@ -251,6 +255,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $offset The offset to get the value from.
      * @return TValue|null The value at offset index, null when accessing invalid indexes
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) { }
 
@@ -258,51 +264,69 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $offset The index to set for.
      * @param TValue $value The new value to store at the index.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function offsetSet($offset, $value) { }
 
     /**
      * @param TKey $offset The offset to unset.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function offsetUnset($offset) { }
 
     /**
      * @param TValue $value The value to append.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function append($value) { }
 
     /**
      * @return array<TKey, TValue> A copy of the array, or array of public properties
      *                             if ArrayIterator refers to an object.
+     *
+     * @psalm-mutation-free
      */
     public function getArrayCopy() { }
 
     /**
      * @return int The number of elements or public properties in the associated
      *             array or object, respectively.
+     *
+     * @psalm-mutation-free
      */
     public function count() { }
 
     /**
      * @return int-mask-of<self::*> The current flags.
+     *
+     * @psalm-mutation-free
      */
     public function getFlags() { }
 
     /**
      * @param int-mask-of<self::*> $flags bitmask
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setFlags($flags) { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function asort() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function ksort() { }
 
@@ -328,11 +352,15 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function natsort() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function natcasesort() { }
 
@@ -349,34 +377,46 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind() { }
 
     /**
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function current() { }
 
     /**
      * @return TKey|null The current array key or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next() { }
 
     /**
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function valid() { }
 
     /**
      * @param int $position The position to seek to.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function seek($position) { }
 }
