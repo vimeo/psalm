@@ -693,43 +693,18 @@ final class InstancePropertyAssignmentAnalyzer
             && $stmt instanceof PropertyFetch
             && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            // The property of the class is that of its parents too: what they read gets what is set through it. And
-            // what is set through it may be set to an object of a subclass: what the subclasses read gets it too.
             [$fq_class_name] = explode('::$', $property_id, 2);
-            $prop_name = $stmt->name->name;
-            $class_property_node = $property_node;
 
-            foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name) as $ancestor) {
-                $ancestor_property_node = DataFlowNode::getForPropertyFetch($ancestor . '::$' . $prop_name);
-
-                $graph->addNode($ancestor_property_node);
-                $graph->addPath(
-                    $class_property_node,
-                    $ancestor_property_node,
-                    'property-assignment',
-                    $added_taints,
-                    $removed_taints,
-                );
-
-                $class_property_node = $ancestor_property_node;
-            }
-
-            if ($codebase->classlike_storage_provider->has($fq_class_name)
-                && !$codebase->classlike_storage_provider->get($fq_class_name)->final
-            ) {
-                $inherited_property_node = DataFlowNode::getForInheritedProperty(
-                    $codebase->classlike_storage_provider->get($fq_class_name)->name . '::$' . $prop_name,
-                );
-
-                $graph->addNode($inherited_property_node);
-                $graph->addPath(
-                    $localized_property_node,
-                    $inherited_property_node,
-                    'property-assignment',
-                    $added_taints,
-                    $removed_taints,
-                );
-            }
+            self::taintInheritedProperty(
+                $codebase,
+                $graph,
+                $localized_property_node,
+                $property_node,
+                $fq_class_name,
+                $stmt->name->name,
+                $added_taints,
+                $removed_taints,
+            );
 
             return;
         }
@@ -757,6 +732,57 @@ final class InstancePropertyAssignmentAnalyzer
             $graph->addPath(
                 $property_node,
                 $declaring_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints,
+            );
+        }
+    }
+
+    /**
+     * Links what is set to instance property $prop_name through class $fq_class_name, from the node of the
+     * assignment to the node of the property of the class (see taintUnspecializedProperty()), to its parent classes
+     * and subclasses: the property of the class is that of its parents too, what they read gets what is set through
+     * it. And what is set through it may be set to an object of a subclass: what the subclasses read gets it too.
+     */
+    public static function taintInheritedProperty(
+        Codebase $codebase,
+        DataFlowGraph $graph,
+        DataFlowNode $localized_property_node,
+        DataFlowNode $property_node,
+        string $fq_class_name,
+        string $prop_name,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
+        $class_property_node = $property_node;
+
+        foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name) as $ancestor) {
+            $ancestor_property_node = DataFlowNode::getForPropertyFetch($ancestor . '::$' . $prop_name);
+
+            $graph->addNode($ancestor_property_node);
+            $graph->addPath(
+                $class_property_node,
+                $ancestor_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints,
+            );
+
+            $class_property_node = $ancestor_property_node;
+        }
+
+        if ($codebase->classlike_storage_provider->has($fq_class_name)
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
+        ) {
+            $inherited_property_node = DataFlowNode::getForInheritedProperty(
+                $codebase->classlike_storage_provider->get($fq_class_name)->name . '::$' . $prop_name,
+            );
+
+            $graph->addNode($inherited_property_node);
+            $graph->addPath(
+                $localized_property_node,
+                $inherited_property_node,
                 'property-assignment',
                 $added_taints,
                 $removed_taints,
