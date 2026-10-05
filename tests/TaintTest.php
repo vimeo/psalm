@@ -609,6 +609,26 @@ final class TaintTest extends TestCase
                     [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $text;',
             ],
+            'dontTaintTheStringConversionOfAnObjectWhoseToStringEscapesIt' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return htmlspecialchars($this->content);
+                        }
+                    }
+
+                    /** @psalm-taint-source input */
+                    function getTag(): Tag {
+                        return new Tag();
+                    }
+
+                    $tag = getTag();
+                    echo (string) $tag;
+                    echo $tag;
+                    echo "<p>{$tag}</p>";
+                    echo "<p>" . $tag . "</p>";',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -2367,6 +2387,83 @@ final class TaintTest extends TestCase
 
                     [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheStringConversionOfAnObjectWhoseToStringReturnsItsTaint' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        private string $content;
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+                    echo (string) new Tag((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheEchoOfAnObjectWhoseToStringReturnsItsTaint' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        private string $content;
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+                    $tag = new Tag((string) $_GET["x"]);
+                    echo $tag;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheInterpolationOfAnObjectWhoseToStringReturnsItsTaint' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        private string $content;
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+                    $tag = new Tag((string) $_GET["x"]);
+                    echo "<p>{$tag}</p>";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheConcatenationOfAnObjectWhoseToStringReturnsATaintedProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Tag {
+                        public string $content = "";
+                        public function __toString(): string {
+                            return $this->content;
+                        }
+                    }
+
+                    $tag = new Tag();
+                    $tag->content = (string) $_GET["x"];
+                    echo "<p>" . $tag . "</p>";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheStringPartOfAStringConversionOfAnObjectOrAString' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        private string $content;
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                        public function __toString(): string {
+                            return htmlspecialchars($this->content);
+                        }
+                    }
+                    $value = rand(0, 1) ? new Tag("safe") : (string) $_GET["x"];
+                    echo (string) $value;',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayItemWrittenByAForeachByReference' => [
