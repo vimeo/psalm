@@ -538,7 +538,6 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
-     * @param array<string, array<string, true>> $unused_specializations
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -550,7 +549,6 @@ final class TaintFlowResolution
         private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
-        private readonly array $unused_specializations,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -2131,8 +2129,9 @@ final class TaintFlowResolution
 
     /**
      * Continues an exit reached by the body walk of an entry in the context of one call entering it: at that
-     * call's specialization of the exit node if it has one. If it has one the call site doesn't use (see
-     * $unused_specializations), the flow ends. Else the exit is one of another function-like, reached through
+     * call's specialization of the exit node if it has one. If it has one the call site doesn't use (left out of
+     * the specializations for having no outgoing edge, see TaintFlowGraph::connectSinksAndSources()), the flow
+     * ends. Else the exit is one of another function-like, reached through
      * something the calls share (a property, a static property, ...): the flow leaves through an enclosing call
      * of that function-like if any, as an exit of the entry the call is made from, and outside of any
      * specialized call through all of its call sites, as a flow reaching it there would (see walk()).
@@ -2172,7 +2171,9 @@ final class TaintFlowResolution
                 -1,
                 $caller,
             );
-        } elseif ($specialization_key !== null && isset($this->unused_specializations[$exit_id][$specialization_key])) {
+        } elseif ($specialization_key !== null
+            && isset($this->nodes[$exit_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . $specialization_key])
+        ) {
             return;
         } elseif ($this->isOutsideOfCalls($context)) {
             if ($specialization_key !== null) {
