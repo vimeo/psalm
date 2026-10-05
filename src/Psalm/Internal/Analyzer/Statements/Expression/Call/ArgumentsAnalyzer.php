@@ -1975,10 +1975,13 @@ final class ArgumentsAnalyzer
      * - `sleep` for the ones making curl throttle a transfer or wait longer for it.
      * - `callable` for the functions curl calls.
      *
+     * Some options have several: a `file://` URL reads a local file, the request target sent to a proxy is the URL
+     * the proxy fetches, and a unix socket is a file.
+     *
      * The value of another option (a body, credentials curl encodes or checks, ...) can do none of these.
      */
     private const CURL_OPTION_SINKS = [
-        'CURLOPT_URL' => TaintKind::INPUT_SSRF,
+        'CURLOPT_URL' => TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE,
         'CURLOPT_PORT' => TaintKind::INPUT_SSRF,
         'CURLOPT_DEFAULT_PROTOCOL' => TaintKind::INPUT_SSRF,
         'CURLOPT_PROTOCOLS_STR' => TaintKind::INPUT_SSRF,
@@ -1995,12 +1998,12 @@ final class ArgumentsAnalyzer
         'CURLOPT_DNS_LOCAL_IP6' => TaintKind::INPUT_SSRF,
         'CURLOPT_DOH_URL' => TaintKind::INPUT_SSRF,
         'CURLOPT_INTERFACE' => TaintKind::INPUT_SSRF,
-        'CURLOPT_UNIX_SOCKET_PATH' => TaintKind::INPUT_SSRF,
+        'CURLOPT_UNIX_SOCKET_PATH' => TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE,
         'CURLOPT_ABSTRACT_UNIX_SOCKET' => TaintKind::INPUT_SSRF,
         'CURLOPT_HTTPHEADER' => TaintKind::INPUT_HEADER,
         'CURLOPT_PROXYHEADER' => TaintKind::INPUT_HEADER,
         'CURLOPT_CUSTOMREQUEST' => TaintKind::INPUT_HEADER,
-        'CURLOPT_REQUEST_TARGET' => TaintKind::INPUT_HEADER,
+        'CURLOPT_REQUEST_TARGET' => TaintKind::INPUT_HEADER | TaintKind::INPUT_SSRF,
         'CURLOPT_USERAGENT' => TaintKind::INPUT_HEADER,
         'CURLOPT_REFERER' => TaintKind::INPUT_HEADER,
         'CURLOPT_COOKIE' => TaintKind::INPUT_HEADER,
@@ -2070,7 +2073,7 @@ final class ArgumentsAnalyzer
         | TaintKind::INPUT_CALLABLE;
 
     /**
-     * The name of each sink of CURL_OPTION_SINKS, for the nodes of addCurlOptionArraySinks().
+     * The name of each of the sinks of CURL_OPTION_SINKS, for the nodes of addCurlOptionArraySinks().
      */
     private const CURL_SINK_NAMES = [
         TaintKind::INPUT_SSRF => 'ssrf',
@@ -2109,8 +2112,8 @@ final class ArgumentsAnalyzer
      * does. An option the curl extension doesn't define can't be given, but without the curl extension the key of
      * every option is unknown, so anything in the array reaches it.
      *
-     * The nodes of the options with the same sink flow into one node, which flows into the sink: a value under a
-     * key the analysis can't tell, which reaches every option, is reported once.
+     * The node of an option flows into one node for each of its sinks, which flows into the sink: a value under a
+     * key the analysis can't tell, which reaches every option, is reported once for each sink.
      */
     private static function addCurlOptionArraySinks(
         TaintFlowGraph $graph,
@@ -2138,28 +2141,6 @@ final class ArgumentsAnalyzer
 
             $fetched_options[$option ?? $option_name] = true;
 
-            if (!isset($sink_nodes[$sinks])) {
-                $sink_name = self::CURL_SINK_NAMES[$sinks];
-
-                $sink_nodes[$sinks] = DataFlowNode::getForCallableArg(
-                    'builtin',
-                    $function_id . '[' . $sink_name . ' options]',
-                    1,
-                    $code_location,
-                );
-                $graph->addNode($sink_nodes[$sinks]);
-
-                $sink = DataFlowNode::getForCallableArg(
-                    'builtin',
-                    $function_id . '[' . $sink_name . ']',
-                    1,
-                    $code_location,
-                    $sinks,
-                );
-                $graph->addSink($sink);
-                $graph->addPath($sink_nodes[$sinks], $sink, 'arg');
-            }
-
             $option_node = DataFlowNode::getForCallableArg(
                 'builtin',
                 $function_id . '[' . $option_name . ']',
@@ -2172,7 +2153,34 @@ final class ArgumentsAnalyzer
                 $option_node,
                 $option !== null ? 'arrayvalue-fetch-\'' . $option . '\'' : 'arrayvalue-fetch',
             );
-            $graph->addPath($option_node, $sink_nodes[$sinks], 'arg');
+
+            foreach (self::CURL_SINK_NAMES as $sink => $sink_name) {
+                if (($sinks & $sink) === 0) {
+                    continue;
+                }
+
+                if (!isset($sink_nodes[$sink])) {
+                    $sink_nodes[$sink] = DataFlowNode::getForCallableArg(
+                        'builtin',
+                        $function_id . '[' . $sink_name . ' options]',
+                        1,
+                        $code_location,
+                    );
+                    $graph->addNode($sink_nodes[$sink]);
+
+                    $sink_node = DataFlowNode::getForCallableArg(
+                        'builtin',
+                        $function_id . '[' . $sink_name . ']',
+                        1,
+                        $code_location,
+                        $sink,
+                    );
+                    $graph->addSink($sink_node);
+                    $graph->addPath($sink_nodes[$sink], $sink_node, 'arg');
+                }
+
+                $graph->addPath($option_node, $sink_nodes[$sink], 'arg');
+            }
         }
     }
 
