@@ -247,6 +247,32 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The value a by-reference parameter is left with when the function-like returns: what the
+     * variable passed to it holds after the call.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForMethodArgumentOut(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' out',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no

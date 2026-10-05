@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -86,6 +87,8 @@ final class StaticAnalyzer
                     );
                 }
             }
+
+            FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
 
             if ($context->check_variables) {
                 $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
