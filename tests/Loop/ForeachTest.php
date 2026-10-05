@@ -23,6 +23,37 @@ final class ForeachTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
+                'code' => '<?php
+                    /** @param list<int> $values */
+                    function f(array $values): void {
+                        $previousValues = [];
+                        $continued = [];
+                        foreach ($values as $value) {
+                            $previousValues[] = $previous ?? null;
+                            $continued[] = $skipped ?? null;
+                            if ($value > 5) {
+                                $skipped = "skipped";
+                                continue;
+                            }
+                            $previous = $value;
+                        }
+                        /** @psalm-check-type-exact $previousValues = list<int<min, 5>|null> */;
+                        /** @psalm-check-type-exact $continued = list<\'skipped\'|null> */;
+                    }',
+            ],
+            'superglobalReadInALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function f(): array {
+                        foreach (["_GET", "_POST"] as $name) {
+                            if (isset($GLOBALS[$name]) && is_array($GLOBALS[$name])) {
+                                echo count($GLOBALS[$name]);
+                            }
+                        }
+
+                        return array_keys($GLOBALS);
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {

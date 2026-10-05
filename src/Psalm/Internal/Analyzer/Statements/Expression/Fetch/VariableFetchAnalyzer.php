@@ -393,6 +393,34 @@ final class VariableFetchAnalyzer
             $context->vars_in_scope[$var_name] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
+            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            if ($stmt_type->possibly_undefined
+                && !$stmt_type->possibly_undefined_from_try
+                && !$context->inside_isset
+                && !$context->inside_unset
+                // passed by reference, which defines it
+                && (!$context->inside_assignment || $array_assignment)
+                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
+                && !$codebase->alter_code
+            ) {
+                IssueBuffer::maybeAdd(
+                    $context->is_global
+                        ? new PossiblyUndefinedGlobalVariable(
+                            'Possibly undefined global variable ' . $var_name . ', first seen on line '
+                                . $first_appearance->getLineNumber(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $var_name,
+                        )
+                        : new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $var_name . ', first seen on line '
+                                . $first_appearance->getLineNumber(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                    $statements_analyzer->getSuppressedIssues(),
+                    (bool) $statements_analyzer->getBranchPoint($var_name),
+                );
+            }
+
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
                     IssueBuffer::maybeAdd(

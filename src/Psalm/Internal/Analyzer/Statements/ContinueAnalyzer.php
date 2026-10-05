@@ -79,6 +79,16 @@ final class ContinueAnalyzer
                 );
             }
 
+            // what the next iteration may start with in the variables the loop defines (see LoopAnalyzer)
+            foreach ($context->vars_in_scope as $var => $type) {
+                if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var])) {
+                    $loop_scope->possibly_defined_loop_vars[$var] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_defined_loop_vars[$var] ?? null,
+                    );
+                }
+            }
+
             if ($context->finally_scope) {
                 foreach ($context->vars_in_scope as $var_id => &$type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
