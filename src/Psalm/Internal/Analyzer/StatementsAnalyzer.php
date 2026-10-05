@@ -1145,21 +1145,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public function addUntrackedReferenceTo(PhpParser\Node\Expr $expr, Context $context): void
     {
-        $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+        $var_id = $this->getClosestVarId($expr);
 
-        while ($var_id === null) {
-            if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
-                && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
-                && !$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            ) {
-                return;
-            }
-
-            $expr = $expr->var;
-            $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+        if ($var_id !== null) {
+            $this->addUntrackedReference($var_id, $context);
         }
-
-        $this->addUntrackedReference($var_id, $context);
     }
 
     /**
@@ -1168,22 +1158,38 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public function addReferenceAlias(string $alias_id, string $var_id): void
     {
-        foreach ($this->untracked_reference_ids as $reference_id => $_) {
-            foreach ([[$var_id, $alias_id], [$alias_id, $var_id]] as [$from_id, $to_id]) {
-                if ($reference_id === $from_id || self::isDescendantId($reference_id, $from_id)) {
-                    $this->untracked_reference_ids[$to_id . substr($reference_id, strlen($from_id))] = true;
+        foreach ([[$var_id, $alias_id], [$alias_id, $var_id]] as [$from_id, $to_id]) {
+            $known_from_id = self::getKnownPath($from_id);
+            $known_to_id = self::getKnownPath($to_id);
+            // with a dynamic offset on either side, the known paths don't line up: take the whole alias
+            $is_exact = $known_from_id === $from_id && $known_to_id === $to_id;
+
+            foreach ($this->untracked_reference_ids as $reference_id => $_) {
+                if ($reference_id === $known_from_id || self::isDescendantId($reference_id, $known_from_id)) {
+                    $this->untracked_reference_ids[
+                        $is_exact ? $to_id . substr($reference_id, strlen($from_id)) : $known_to_id
+                    ] = true;
+                } elseif (self::isDescendantId($known_from_id, $reference_id)) {
+                    $this->untracked_reference_ids[$known_to_id] = true;
                 }
             }
         }
     }
 
     /**
-     * Whether the variable, an offset or property of it or an alias of it may have changed through a
-     * reference recorded by addUntrackedReference(), in which case its tracked type may be stale.
+     * Whether the value of the expression may have changed through a reference recorded by
+     * addUntrackedReference(), in which case its tracked type may be stale: it, an offset or property
+     * of it, a variable containing it or an alias of any of them was changed.
      */
-    public function mayHaveChangedThroughReference(string $var_id, Context $context): bool
+    public function mayHaveChangedThroughReference(PhpParser\Node\Expr $expr, Context $context): bool
     {
         if (!$this->untracked_reference_ids) {
+            return false;
+        }
+
+        $var_id = $this->getClosestVarId($expr);
+
+        if ($var_id === null) {
             return false;
         }
 
@@ -1201,6 +1207,28 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * The id of the expression, or of the closest offset or property container that has one.
+     */
+    private function getClosestVarId(PhpParser\Node\Expr $expr): ?string
+    {
+        $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+
+        while ($var_id === null) {
+            if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                return null;
+            }
+
+            $expr = $expr->var;
+            $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+        }
+
+        return $var_id;
     }
 
     /**

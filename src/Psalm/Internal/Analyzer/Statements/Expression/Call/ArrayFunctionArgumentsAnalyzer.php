@@ -644,7 +644,8 @@ final class ArrayFunctionArgumentsAnalyzer
             // shared with an object alias, and a reference may have been changed through another name
             $is_tracked = !$arg->unpack
                 && $arg->value instanceof PhpParser\Node\Expr\Variable
-                && !self::isReferenced($var_id, $context, $statements_analyzer);
+                && !self::isReferenced($var_id, $context, $statements_analyzer)
+                && !$statements_analyzer->mayHaveChangedThroughReference($arg->value, $context);
             $arg->value->setAttribute(self::IS_TRACKED_BY_REF_ARRAY, $is_tracked);
 
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
@@ -769,8 +770,7 @@ final class ArrayFunctionArgumentsAnalyzer
             || isset($context->references_possibly_from_confusing_scope[$var_id])
             || isset($context->referenced_globals[$var_id])
             || isset($context->byref_constraints[$var_id])
-            || isset($statements_analyzer->byref_uses[$var_id])
-            || $statements_analyzer->mayHaveChangedThroughReference($var_id, $context);
+            || isset($statements_analyzer->byref_uses[$var_id]);
     }
 
     /**

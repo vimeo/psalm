@@ -272,6 +272,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($use->byRef) {
                     $byref_uses[$use_var_id] = true;
+                    // the captured variable may have changed since the closure was defined
+                    $statements_analyzer->addUntrackedReference($use_var_id, $context);
 
                     if ($statements_analyzer->data_flow_graph && $use_assignment) {
                         $statements_analyzer->data_flow_graph->addPath(

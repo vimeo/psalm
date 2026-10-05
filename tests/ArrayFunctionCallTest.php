@@ -3431,6 +3431,15 @@ final class ArrayFunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $x = "a"|1 */
                     }
 
+                    function byRefForeachIntoOffset(): void {
+                        $a = [1, "a"];
+                        $b = [];
+                        foreach ($a as &$b[0]) {}
+                        $b[0] = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
                     /**
                      * @template T of list<int>
                      * @param T $stack
@@ -4413,6 +4422,47 @@ final class ArrayFunctionCallTest extends TestCase
                         [[, &$v]] = $a;
                         $v = 1;
                         return array_last($a[0]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstOfComputedOffsetWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        $a = [[1], [2]];
+                        $x = &$a[0][0];
+                        $x = "changed";
+                        return array_first($a[$i + 1]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstThroughDynamicOffsetAliasWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(bool $flag): int {
+                        $a = ["k" => [1], "m" => [2]];
+                        $x = &$a["k"][0];
+                        $key = $flag ? "k" : "m";
+                        $b = &$a[$key];
+                        unset($a);
+                        $x = "changed";
+                        return array_first($b);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayLastOfByRefCaptureInsideClosure' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = [1, "a"];
+                        $f = function () use (&$a): string {
+                            return array_last($a);
+                        };
+                        $a = [1, 1];
+                        $f();
                     }',
                 'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],
