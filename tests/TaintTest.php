@@ -392,6 +392,17 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'closurePassedToMagicStaticMethod' => [
+                'code' => '<?php
+                    /** @method static string run(Closure $c) */
+                    final class Magic {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): string {
+                            return "";
+                        }
+                    }
+                    echo Magic::run(fn(): string => "a");',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];

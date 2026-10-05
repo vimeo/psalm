@@ -1949,12 +1949,11 @@ final class ArgumentAnalyzer
             $callable_param_method_id = $cased_method_id;
             $callable_param_storage = $function_storage;
 
-            // keyed as the body of the method keys its callable parameters
-            if ($method_id) {
+            // keyed as the body of the method keys its callable parameters (a magic method has none)
+            $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
+            if ($method_id && $declaring_method_id) {
                 $callable_param_method_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
-                $callable_param_storage = $codebase->methods->getStorage(
-                    $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
-                );
+                $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
             FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
