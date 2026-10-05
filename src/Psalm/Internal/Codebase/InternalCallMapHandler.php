@@ -35,13 +35,13 @@ use function file_exists;
 use function function_exists;
 use function intdiv;
 use function interface_exists;
+use function is_int;
 use function max;
 use function min;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
-use function is_int;
 use function strtolower;
 use function substr;
 
@@ -480,6 +480,19 @@ final class InternalCallMapHandler
         }
 
         return $removed_taints;
+    }
+
+    /**
+     * The taints the parameter at $offset of the builtin function or method $function_id must not be given
+     * (see dictionaries/InternalTaintSinkMap.php).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals
+     */
+    public static function getParamTaintSinks(string $function_id, int $offset): int
+    {
+        self::getCallMap();
+
+        return self::$taint_sink_map[strtolower($function_id)][$offset] ?? 0;
     }
 
     /**

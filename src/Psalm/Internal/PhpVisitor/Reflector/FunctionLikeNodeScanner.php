@@ -1259,4 +1259,28 @@ final class FunctionLikeNodeScanner
             false,
         ];
     }
+
+    /**
+     * A stub of a builtin replaces its call map entry, but not the taint sinks of its parameters (see
+     * dictionaries/InternalTaintSinkMap.php): adds them to the function-like scanned by start().
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals
+     */
+    public function addInternalTaintSinks(): void
+    {
+        if ($this->storage === null
+            || $this->storage->cased_name === null
+            || !in_array($this->file_path, $this->codebase->config->internal_stubs, true)
+        ) {
+            return;
+        }
+
+        $function_id = $this->classlike_storage !== null
+            ? $this->classlike_storage->name . '::' . $this->storage->cased_name
+            : $this->storage->cased_name;
+
+        foreach ($this->storage->params as $offset => $param) {
+            $param->sinks |= InternalCallMapHandler::getParamTaintSinks($function_id, $offset);
+        }
+    }
 }
