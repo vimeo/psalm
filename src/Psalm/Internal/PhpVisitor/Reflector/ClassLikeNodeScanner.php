@@ -89,7 +89,10 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 use function trim;
 use function usort;
 
@@ -2071,7 +2074,12 @@ final class ClassLikeNodeScanner
         // alias that uses it. Aliases that form a cycle (including self-references)
         // keep their original order, preserving the existing invalid-reference error
         // instead of looping forever trying to resolve an order that doesn't exist.
-        $declarations = self::orderTypeAliasDeclarationsByDependency($declarations);
+        $declarations = self::orderTypeAliasDeclarationsByDependency(
+            $declarations,
+            $aliases,
+            $type_aliases,
+            $self_fqcln,
+        );
 
         $type_alias_tokens = [];
 
@@ -2150,15 +2158,33 @@ final class ClassLikeNodeScanner
     }
 
     /**
+     * Marker spliced in place of a local alias reference by the placeholder pass in
+     * getLocalTypeAliasReferences(); never appears in real docblock type strings.
+     */
+    private const LOCAL_ALIAS_DEP_MARKER = "\0psalm-local-alias-dep\0";
+
+    /**
      * @param  list<array{0: string, 1: string}> $declarations
+     * @param  array<string, TypeAlias>|null $type_aliases
      * @return list<array{0: string, 1: string}>
      */
-    private static function orderTypeAliasDeclarationsByDependency(array $declarations): array
-    {
-        $declared_names = [];
+    private static function orderTypeAliasDeclarationsByDependency(
+        array $declarations,
+        Aliases $aliases,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
+        // Only locally-declared names not already resolvable through $type_aliases
+        // (an import, or an alias from a preceding comment) need reordering: a name
+        // that's already externally resolvable keeps binding to whatever was in
+        // scope at its original textual position, exactly as before this ordering
+        // pass existed, so shadowing a later local redeclaration doesn't rebind it.
+        $placeholders = [];
 
         foreach ($declarations as [$name]) {
-            $declared_names[$name] = true;
+            if (!isset($type_aliases[$name])) {
+                $placeholders[$name] = new InlineTypeAlias([[self::LOCAL_ALIAS_DEP_MARKER . $name, 0]]);
+            }
         }
 
         $resolved_names = [];
@@ -2173,7 +2199,15 @@ final class ClassLikeNodeScanner
                 [$name, $type_string] = $declaration;
                 $depends_on_unresolved = false;
 
-                foreach (self::getLocalTypeAliasReferences($type_string, $declared_names) as $referenced_name) {
+                $references = self::getLocalTypeAliasReferences(
+                    $type_string,
+                    $aliases,
+                    $placeholders,
+                    $type_aliases,
+                    $self_fqcln,
+                );
+
+                foreach ($references as $referenced_name) {
                     if ($referenced_name !== $name && !isset($resolved_names[$referenced_name])) {
                         $depends_on_unresolved = true;
                         break;
@@ -2206,49 +2240,46 @@ final class ClassLikeNodeScanner
     }
 
     /**
-     * @param  array<string, true> $declared_names
+     * Finds which locally-declared alias names (represented by $placeholders) a type
+     * string actually binds to once substituted, by running the real tokenizer
+     * substitution instead of re-implementing its rules (keyed-array keys, '('
+     * callable syntax, '$param' suffixes, '::' constants, generics, ...): a
+     * placeholder's marker token only survives into the output where the real
+     * tokenizer would have spliced in that alias's own replacement tokens.
+     *
+     * @param  array<string, InlineTypeAlias> $placeholders
+     * @param  array<string, TypeAlias>|null $type_aliases
      * @return list<string>
      */
-    private static function getLocalTypeAliasReferences(string $type_string, array $declared_names): array
-    {
+    private static function getLocalTypeAliasReferences(
+        string $type_string,
+        Aliases $aliases,
+        array $placeholders,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
         try {
             // A malformed type string is reported with its original message by the
             // real tokenization pass in getTypeAliasesFromCommentLines; here it just
             // means we can't determine dependencies, so treat it as having none.
-            $type_tokens = TypeTokenizer::tokenize($type_string);
+            $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                $type_string,
+                $aliases,
+                null,
+                $placeholders + $type_aliases,
+                $self_fqcln,
+            );
         } catch (TypeParseTreeException) {
             return [];
         }
 
         $referenced_names = [];
+        $marker_length = strlen(self::LOCAL_ALIAS_DEP_MARKER);
 
-        for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
-            $name = $type_tokens[$i][0];
-
-            if (!isset($declared_names[$name])) {
-                continue;
+        foreach ($type_tokens as $token) {
+            if (str_starts_with($token[0], self::LOCAL_ALIAS_DEP_MARKER)) {
+                $referenced_names[substr($token[0], $marker_length)] = true;
             }
-
-            if ($i > 0 && $type_tokens[$i - 1][0] === '::') {
-                continue;
-            }
-
-            if ($i > 0
-                && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
-                && isset($type_tokens[$i + 1])
-            ) {
-                $next_token = $type_tokens[$i + 1][0];
-
-                if ($next_token === ':') {
-                    continue;
-                }
-
-                if ($next_token === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2][0] === ':') {
-                    continue;
-                }
-            }
-
-            $referenced_names[$name] = true;
         }
 
         return array_keys($referenced_names);

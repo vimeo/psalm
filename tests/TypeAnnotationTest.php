@@ -954,6 +954,63 @@ final class TypeAnnotationTest extends TestCase
                     }
                     PHP,
             ],
+            'importShadowingNotTreatedAsLocalDependency' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe;
+                    /** @psalm-type T = int */
+                    class Source {}
+                    /**
+                     * @psalm-import-type T from Source
+                     * @psalm-type Wrap = array{v:T}
+                     * @psalm-type T = string
+                     */
+                    class Types {
+                        /** @return T */
+                        public function direct(int $x) {
+                            return $x;
+                        }
+                        /** @return Wrap */
+                        public function wrapped(int $x): array {
+                            return ['v' => $x];
+                        }
+                    }
+                    $_direct = (new Types)->direct(1);
+                    $_wrapped = (new Types)->wrapped(1);
+                    PHP,
+                'assertions' => [
+                    '$_direct===' => 'int',
+                    '$_wrapped===' => 'array{v: int}',
+                ],
+            ],
+            'callableParamDollarSuffixStrippedForDependencyDetection' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe2;
+                    /**
+                     * @psalm-type A = callable(B$x):void
+                     * @psalm-type B = int
+                     */
+                    class C {
+                        /** @param A $a */
+                        public function foo($a): void {}
+                    }
+                    PHP,
+            ],
+            'closureCallableSyntaxNotTreatedAsAliasReference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe3;
+                    /**
+                     * @psalm-type Closure = Handler
+                     * @psalm-type Handler = Closure():void
+                     */
+                    class C {
+                        /** @param Closure $c */
+                        public function foo($c): void {}
+                    }
+                    PHP,
+            ],
             'duplicateTypeAliasKeepsLastDeclarationAfterReordering' => [
                 'code' => <<<'PHP'
                     <?php
