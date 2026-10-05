@@ -61,7 +61,6 @@ final class ThisOutTest extends TestCase
                          * @psalm-this-out self<NewT>
                          */
                         public function setData($data): void {
-                            /** @psalm-suppress InvalidPropertyAssignmentValue */
                             $this->data = [$data];
                         }
                         /**
@@ -71,7 +70,6 @@ final class ThisOutTest extends TestCase
                          * @psalm-this-out self<T|NewT>
                          */
                         public function addData($data): void {
-                            /** @psalm-suppress InvalidPropertyAssignmentValue */
                             $this->data []= $data;
                         }
                         /**
@@ -95,6 +93,28 @@ final class ThisOutTest extends TestCase
                     '$data2===' => 'list<2>',
                     '$data3===' => 'list<2|3>',
                 ],
+            ],
+            'propertyAssignmentFitsTheSelfOutType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        private array $items = [];
+
+                        /**
+                         * @template U
+                         * @param U $item
+                         * @psalm-self-out Box<T|U>
+                         */
+                        public function add(mixed $item): void {
+                            $this->items[] = $item;
+                        }
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return $this->items;
+                        }
+                    }',
             ],
             'parameterConditionalTypeIsResolvedFromCallArguments' => [
                 'code' => '<?php
@@ -233,6 +253,37 @@ final class ThisOutTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyAssignmentNotFittingTheSelfOutType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        private array $items = [];
+
+                        /** @psalm-self-out Box<T|string> */
+                        public function add(int $item): void {
+                            $this->items[] = $item;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'propertyAssignmentInAMethodWithoutSelfOut' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var list<T> */
+                        private array $items = [];
+
+                        /**
+                         * @template U
+                         * @param U $item
+                         */
+                        public function add(mixed $item): void {
+                            $this->items[] = $item;
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
             'unparseableTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     class A {

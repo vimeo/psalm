@@ -27,6 +27,33 @@ final class PurityTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'callbackStoredByAMethodWideningThePurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @psalm-capabilities read-props|write-this-props|write-refs
+                     */
+                    final class Box {
+                        /** @var list<callable[P](): void> */
+                        private array $cbs = [];
+
+                        /**
+                         * @psalm-purity-template R
+                         * @param callable[R](): void $cb
+                         * @psalm-self-out Box[P|R]
+                         */
+                        public function then(callable $cb): void {
+                            $this->cbs[] = $cb;
+                        }
+
+                        /** @psalm-purity-from-template P */
+                        public function run(): void {
+                            foreach ($this->cbs as $cb) {
+                                $cb();
+                            }
+                        }
+                    }',
+            ],
             'instanceofNarrowingKeepsTheParentsArguments' => [
                 'code' => '<?php
                     /**
@@ -1400,6 +1427,27 @@ final class PurityTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'callbackStoredByAMethodNotWideningThePurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @psalm-capabilities read-props|write-this-props|write-refs
+                     */
+                    final class Box {
+                        /** @var list<callable[P](): void> */
+                        private array $cbs = [];
+
+                        /**
+                         * @psalm-purity-template R
+                         * @param callable[R](): void $cb
+                         * @psalm-self-out Box[P]
+                         */
+                        public function then(callable $cb): void {
+                            $this->cbs[] = $cb;
+                        }
+                    }',
+                'error_message' => 'PropertyTypeCoercion',
+            ],
             'purityArgumentLeftOutWithoutDefaultIsItsUpperBound' => [
                 'code' => '<?php
                     /**
