@@ -22,6 +22,29 @@ final class ReferenceTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [
+                'code' => '<?php
+                    function read_value(string &$value): void {
+                        $value = (string) rand(0, 1);
+                    }
+
+                    $values = ["read" => ""];
+                    read_value($values["read"]);
+                    $read = $values["read"];
+
+                    $nested = ["a" => ["b" => 1]];
+                    read_value($nested["a"]["b"]);
+
+                    $key = "z";
+                    $dynamic = ["z" => 1];
+                    read_value($dynamic[$key]);',
+                'assertions' => [
+                    '$values===' => 'array{read: string}',
+                    '$read===' => 'string',
+                    '$nested===' => 'array{a: array{b: string}}',
+                    '$dynamic===' => 'array{z: string}',
+                ],
+            ],
             'referenceAssignmentToNonReferenceCountsAsUse' => [
                 'code' => '<?php
                     $b = &$a;
