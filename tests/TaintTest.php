@@ -392,6 +392,24 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        $value = (string) $_GET["value"];
+                        $value = "literal";
+                    }
+                    unset($value);
+                    echo $values["key"];',
+            ],
+            'dontTaintArrayIteratedOverByValue' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as $value) {
+                        $value = (string) $_GET["value"];
+                    }
+                    echo $values["key"];',
+            ],
             'dontTaintACurlOptionArrayEntryNotChoosingTheDestinationNorWrittenIntoTheRequest' => [
                 'code' => '<?php // --taint-analysis
                     $value = (string) $_GET["value"];
@@ -1469,6 +1487,58 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintArrayItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        $value = (string) $_GET["value"];
+                    }
+                    unset($value);
+                    echo $values["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedArrayItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $rows = [["name" => ""]];
+                    foreach ($rows as &$row) {
+                        $row["name"] = (string) $_GET["name"];
+                    }
+                    unset($row);
+                    echo $rows[0]["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as $key => &$value) {
+                        if ($key === "key") {
+                            $value = (string) $_GET["value"];
+                            break;
+                        }
+                    }
+                    unset($value);
+                    echo $values["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPropertyItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Rows {
+                        /** @var array<string, string> */
+                        private array $rows = ["key" => ""];
+
+                        public function read(): void {
+                            foreach ($this->rows as &$row) {
+                                $row = (string) $_GET["value"];
+                            }
+                            unset($row);
+                        }
+
+                        public function show(): void {
+                            echo $this->rows["key"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintHeaderInTheCurlHttpHeaderOption' => [
                 'code' => '<?php // --taint-analysis
                     $curl = curl_init("https://example.com/");
