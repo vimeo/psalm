@@ -97,15 +97,6 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $specializations = [];
 
     /**
-     * The specializations without an outgoing edge, left out of $specializations: unspecialized ID =>
-     * (specialization key => true). An exit of a specialized call whose specialization for the call is one of
-     * them leads nowhere: the call site doesn't use it (see exitThroughCaller()).
-     *
-     * @var array<string, array<string, true>>
-     */
-    private array $unused_specializations = [];
-
-    /**
      * Specialization key => true
      *
      * @var array<string, true>
@@ -571,7 +562,6 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($map as $kk => $specialized_id) {
                 if (!isset($this->forward_edges[$specialized_id])) {
                     unset($map[$kk]);
-                    $this->unused_specializations[$k][$kk] = true;
                 }
             }
             if (!$map) {
@@ -951,7 +941,8 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        if (isset($this->unused_specializations[$exit->id][$specialization_key])) {
+        // one without an outgoing edge, left out of the specializations
+        if (isset($this->nodes[$exit->id . self::SPECIALIZATION_SEPARATOR . $specialization_key])) {
             return [];
         }
 
