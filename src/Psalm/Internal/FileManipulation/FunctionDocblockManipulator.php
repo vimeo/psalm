@@ -14,6 +14,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Storage\Capabilities;
 
 use function array_key_exists;
@@ -25,6 +26,7 @@ use function is_string;
 use function ltrim;
 use function preg_match;
 use function reset;
+use function rtrim;
 use function str_replace;
 use function str_split;
 use function strlen;
@@ -88,6 +90,13 @@ final class FunctionDocblockManipulator
 
     /** @var list<string> */
     private array $throwsExceptions = [];
+
+    /**
+     * Where to give the parameters the `_` purity (param name => paths, {@see PurityWildcardPaths})
+     *
+     * @var array<string, list<string>>
+     */
+    private array $purity_wildcards = [];
 
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
@@ -406,6 +415,41 @@ final class FunctionDocblockManipulator
             }
         }
 
+        foreach ($this->purity_wildcards as $param_name => $paths) {
+            $found_in_params = false;
+
+            foreach (['psalm-param', 'phpstan-param', 'param'] as $tag) {
+                foreach ($parsed_docblock->tags[$tag] ?? [] as $offset => $param_block) {
+                    $doc_parts = CommentAnalyzer::splitDocLine($param_block);
+
+                    if (($doc_parts[1] ?? null) !== '$' . $param_name
+                        && ($doc_parts[1] ?? null) !== '...$' . $param_name
+                    ) {
+                        continue;
+                    }
+
+                    $found_in_params = true;
+                    $new_type = PurityWildcardPaths::addToTypeString($doc_parts[0], $paths);
+
+                    if ($new_type !== null) {
+                        $modified_docblock = true;
+                        $parsed_docblock->tags[$tag][$offset] = rtrim(
+                            str_replace($doc_parts[0], $new_type, $param_block),
+                        );
+                    }
+                }
+            }
+
+            if (!$found_in_params) {
+                $new_type = PurityWildcardPaths::addToTypeString($this->getNativeParamType($param_name) ?? '', $paths);
+
+                if ($new_type !== null) {
+                    $modified_docblock = true;
+                    $parsed_docblock->tags['param'][] = $new_type . ' $' . $param_name;
+                }
+            }
+        }
+
         $old_phpdoc_return_type = null;
         if (isset($parsed_docblock->tags['return'])) {
             $old_phpdoc_return_type = reset($parsed_docblock->tags['return']);
@@ -520,6 +564,7 @@ final class FunctionDocblockManipulator
                 || !$manipulator->return_type_is_php_compatible
                 || $manipulator->docblock_start !== $manipulator->docblock_end
                 || $manipulator->capabilities !== null
+                || $manipulator->purity_wildcards !== []
             ) {
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
@@ -573,6 +618,35 @@ final class FunctionDocblockManipulator
     public function setCapabilities(int $capabilities): void
     {
         $this->capabilities = $capabilities;
+    }
+
+    /**
+     * Gives the parameters the `_` purity (`Closure[_]`, `list<Closure[_]>`, `Traversable[_]`) where
+     * the paths say ({@see PurityWildcardPaths}).
+     *
+     * @param array<string, list<string>> $paths_by_param
+     * @psalm-external-mutation-free
+     */
+    public function addPurityWildcards(array $paths_by_param): void
+    {
+        $this->purity_wildcards = $paths_by_param;
+    }
+
+    /**
+     * The native type of the parameter as written.
+     */
+    private function getNativeParamType(string $param_name): ?string
+    {
+        foreach ($this->stmt->getParams() as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable
+                && $param->var->name === $param_name
+                && $param->type !== null
+            ) {
+                return PurityWildcardPaths::getNativeTypeString($param->type);
+            }
+        }
+
+        return null;
     }
 
     /**

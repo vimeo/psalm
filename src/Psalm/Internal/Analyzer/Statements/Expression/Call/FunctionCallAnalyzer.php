@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -23,6 +24,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
@@ -795,7 +797,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
                         $stmt,
-                        null,
+                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                            ? Capabilities::NONE
+                            : null,
                         false,
                         $function_call_info->function_storage,
                     )) {
@@ -1312,6 +1316,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * A call of a closure or callable with the default purity (`impure`) found in a parameter of
+     * the function or method being analysed (`$f()`, `$fs[0]()`, `foreach ($fs as $f) { $f(); }`):
+     * with a `_` purity there (`Closure[_]`), the call would be charged to the callers, so it is left
+     * out of the purity inferred for the function-like, which records where `--alter` adds the `_`
+     * along with the purity annotation ({@see PurityWildcardInference}).
+     */
+    private static function isPurityWildcardCandidate(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $var_type_part,
+    ): bool {
+        // only the default purity of a closure type: one written out was chosen deliberately
+        if (!$var_type_part->hasFixedPurity() || $var_type_part->getCapabilities() !== Capabilities::ALL) {
+            return false;
+        }
+
+        $found = PurityWildcardInference::getParamPath($statements_analyzer, $function_name);
+
+        if ($found === null) {
+            return false;
+        }
+
+        [$source, $param_name, $steps] = $found;
+
+        return PurityWildcardInference::record($source, $param_name, PurityWildcardPaths::closure($steps));
     }
 
     /**

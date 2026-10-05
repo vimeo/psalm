@@ -22,7 +22,9 @@ use Psalm\Storage\Capabilities;
 use Throwable;
 
 use function array_keys;
+use function array_map;
 use function array_pop;
+use function implode;
 
 /**
  * Infers the level of mutations (purity) of every analysed function-like once
@@ -48,7 +50,8 @@ use function array_pop;
  *     class: ?string,
  *     start: int,
  *     fresh: bool,
- *     report: bool
+ *     report: bool,
+ *     wildcards?: array<string, list<string>>
  * }
  * @internal
  */
@@ -233,9 +236,19 @@ final class MutationLevelResolver
                 continue;
             }
 
+            // the parameters whose closures it calls, and whose iterables and objects it uses,
+            // that would take the `_` purity: where, by parameter
+            $wildcards = $info['wildcards'] ?? [];
+
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
                     $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
+                    . ($wildcards
+                        ? ', with the _ purity for ' . implode(', ', array_map(
+                            static fn(string $param): string => '$' . $param,
+                            array_keys($wildcards),
+                        )) . ' (Closure[_], Traversable[_], ...),'
+                        : '')
                     . ' to aid security analysis'
                     . ', run with --alter --issues=MissingPureAnnotation to fix this',
                     $info['location'],
@@ -249,11 +262,14 @@ final class MutationLevelResolver
                 $stmt = self::findFunctionLike($codebase, $file_path, $info['start']);
 
                 if ($stmt !== null) {
-                    FunctionDocblockManipulator::getForFunction(
+                    $manipulator = FunctionDocblockManipulator::getForFunction(
                         $project_analyzer,
                         $file_path,
                         $stmt,
-                    )->setCapabilities($level);
+                    );
+
+                    $manipulator->setCapabilities($level);
+                    $manipulator->addPurityWildcards($wildcards);
                 }
             }
         }

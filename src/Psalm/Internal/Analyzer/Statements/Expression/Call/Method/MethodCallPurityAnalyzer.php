@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -147,6 +148,8 @@ final class MethodCallPurityAnalyzer
             $method_storage,
         );
 
+        $receiver_capabilities = $method_capabilities;
+
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
         $template_capabilities = CallPurityResolver::getCallCapabilities(
@@ -160,6 +163,17 @@ final class MethodCallPurityAnalyzer
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
         $method_capabilities |= $template_capabilities;
+
+        $inferred_template_capabilities = self::getInferredTemplateCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $stmt->var,
+            $method_storage,
+            $class_storage,
+            $template_result,
+            $class_template_params,
+            $template_capabilities,
+        );
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -178,6 +192,17 @@ final class MethodCallPurityAnalyzer
             $args,
         );
 
+        // the same for the inferred purity, which some template capabilities may be left out of
+        $inferred_capabilities = $inferred_template_capabilities === $template_capabilities
+            ? $method_capabilities
+            : ByRefArgumentAnalyzer::adjustCapabilities(
+                $statements_analyzer,
+                $context,
+                $receiver_capabilities | $inferred_template_capabilities,
+                $method_storage->params,
+                $args,
+            );
+
         $statements_analyzer->signalMutation(
             $method_capabilities,
             $context,
@@ -187,7 +212,7 @@ final class MethodCallPurityAnalyzer
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
             // mutating a receiver other than `$this` writes another object's properties
-            $method_storage->capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
+            $method_storage->capabilities | ($inferred_capabilities & Capabilities::WRITE_PROPS),
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
@@ -201,8 +226,8 @@ final class MethodCallPurityAnalyzer
         );
 
         // the callee's level does not include what its purity templates are bound to here
-        if ($template_capabilities !== Capabilities::NONE) {
-            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        if ($inferred_template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($inferred_template_capabilities);
         }
 
         if ($reads_globals) {
@@ -325,6 +350,47 @@ final class MethodCallPurityAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The capabilities the purity templates of the call are bound to, without what depends on a
+     * purity argument of a receiver found in a parameter: the parameter's `_` would charge it to
+     * the callers, so it is left out of the inferred purity.
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function getInferredTemplateCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Expr $receiver,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        ?TemplateResult $template_result,
+        array $class_template_params,
+        int $template_capabilities,
+    ): int {
+        $marked_class_template_params = PurityWildcardInference::markReceiverTemplates(
+            $statements_analyzer,
+            $codebase,
+            $receiver,
+            $class_storage->name,
+            $class_template_params,
+        );
+
+        if ($marked_class_template_params === null) {
+            return $template_capabilities;
+        }
+
+        return CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $method_storage,
+            Capabilities::NONE,
+            $template_result,
+            $marked_class_template_params,
+            self::isThis($receiver),
+            self::isFromGlobalState($statements_analyzer, $receiver),
+        );
     }
 
     /**
