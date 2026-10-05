@@ -4507,6 +4507,26 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayLastAfterPassingArrayByReferenceToCallable' => [
+                'code' => '<?php
+                    function deferredClear(mixed &$target): Closure {
+                        return static function () use (&$target): void {
+                            $target = [];
+                        };
+                    }
+
+                    function f(): string {
+                        $factory = deferredClear(...);
+                        $a = [1, "a"];
+                        $clear = $factory($a);
+                        $a = [1, "a"];
+                        $clear();
+                        return array_last($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }

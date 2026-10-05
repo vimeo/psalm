@@ -1322,7 +1322,7 @@ final class ArgumentsAnalyzer
             $is_user_defined = $method_id
                 && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id));
 
-            if ($is_user_defined) {
+            if ($is_user_defined || !$method_id) {
                 // the function may keep the reference (e.g. in a closure) and change the argument later
                 $statements_analyzer->addUntrackedReferenceTo($arg->value, $context);
             }
