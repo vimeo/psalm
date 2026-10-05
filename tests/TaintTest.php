@@ -728,6 +728,42 @@ final class TaintTest extends TestCase
                     identity((string) $_GET["value"]);
                     echo identity("safe");',
             ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnInheritedMethodSetsOnOtherObjects' => [
+                'code' => '<?php // --taint-analysis
+                    class Block {
+                        /** @var array<string, string> */
+                        protected array $children = [];
+
+                        public function add(string $key, string $child): void {
+                            $this->children[$key] = $child;
+                        }
+                    }
+
+                    final class ErrorBlock extends Block {
+                        public function __construct() {
+                            $this->add("trace", (string) $_GET["trace"]);
+                        }
+                    }
+
+                    class Layout extends Block {
+                        public function __construct() {
+                            $this->add("title", "Title");
+                        }
+                    }
+
+                    final class Page extends Layout {
+                        protected string $footer;
+
+                        public function __construct() {
+                            parent::__construct();
+                            $this->footer = "";
+                        }
+
+                        public function render(): void {
+                            echo $this->children["top"] ?? $this->footer;
+                        }
+                    }',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
