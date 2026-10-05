@@ -23,6 +23,26 @@ final class ClassTemplateExtendsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'newResolvesATemplateNotGivenToTheParentToItsBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Collection {
+                        /** @param list<T> $values */
+                        public function __construct(public array $values) {}
+                    }
+
+                    /**
+                     * @template TValue
+                     * @template TContext as array
+                     * @extends Collection<TValue>
+                     */
+                    final class Table extends Collection {}
+
+                    /** @return Table<int, array> */
+                    function make(): Table {
+                        return new Table([1]);
+                    }',
+            ],
             'SKIPPED-interface' => [
                 'code' => '<?php
                     /**
