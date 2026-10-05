@@ -6,7 +6,6 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser\Node\Arg;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArrayFunctionArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -61,13 +60,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             $statements_source,
         ) : null;
 
-        if ($var_id !== null
-            && ArrayFunctionArgumentsAnalyzer::mayHaveChangedThroughReference(
-                $var_id,
-                $event->getContext(),
-                $statements_source,
-            )
-        ) {
+        if ($var_id !== null && $statements_source->mayHaveChangedThroughReference($var_id, $event->getContext())) {
             return null;
         }
 
@@ -178,18 +171,19 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
      */
     private static function getArrayArgType(StatementsAnalyzer $statements_analyzer, array $call_args): ?Union
     {
-        if (count($call_args) !== 1) {
+        if (!isset($call_args[0])) {
             return null;
         }
 
         $arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
 
+        // Further arguments are reported as TooManyArguments, and are valid when unpacking an empty array
         if (!$arg_type || !$call_args[0]->unpack) {
             return $arg_type;
         }
 
         // With f(...$args), the array argument is the first element of $args, or its "array" key
-        if (!$arg_type->isSingle()) {
+        if (count($call_args) !== 1 || !$arg_type->isSingle()) {
             return null;
         }
 

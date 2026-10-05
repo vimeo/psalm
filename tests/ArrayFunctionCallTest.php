@@ -3369,6 +3369,43 @@ final class ArrayFunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $x = "a"|1 */
                     }
 
+                    function byRefArrayLiteralItem(): void {
+                        $a = [1, "a"];
+                        $refs = [&$a[1]];
+                        $refs[0] = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function byRefDestructuring(): void {
+                        $a = [1, "a"];
+                        [, &$v] = $a;
+                        $v = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function referenceThroughUnsetAlias(): void {
+                        $a = [1, "a"];
+                        $b = &$a;
+                        $r = &$b[1];
+                        unset($b);
+                        $r = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function setToInt(int|string &$v): void {
+                        $v = 2;
+                    }
+
+                    function byRefOffsetArgument(): void {
+                        $a = [1, "a"];
+                        setToInt($a[1]);
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
                     /**
                      * @template T of list<int>
                      * @param T $stack
@@ -3378,6 +3415,19 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
+                'php_version' => '8.5',
+            ],
+            'arrayPopShiftFirstWithEmptyUnpackedArguments' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = [1, "a"];
+                        $popped = array_pop($a, ...[]);
+                        /** @psalm-check-type-exact $popped = "a" */
+                        $first = array_first([1, "a"], ...[]);
+                        /** @psalm-check-type-exact $first = 1 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TooManyArguments'],
                 'php_version' => '8.5',
             ],
         ];
@@ -4266,6 +4316,41 @@ final class ArrayFunctionCallTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstAfterPopOnOffset' => [
+                'code' => '<?php
+                    function f(): array {
+                        $a = ["k" => [1, "a"]];
+                        array_pop($a["k"]);
+                        return array_first($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstAfterShiftOnOffset' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["k" => [1, "last"]];
+                        array_shift($a["k"]);
+                        return array_first($a["k"]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstWithDynamicOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = ["k" => [1], "m" => [2]];
+                        $key = $b ? "k" : "m";
+                        $x = &$a[$key][0];
+                        $x = "changed";
+                        return array_first($a["k"]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],

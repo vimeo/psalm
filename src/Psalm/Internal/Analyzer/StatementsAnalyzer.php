@@ -82,10 +82,12 @@ use function explode;
 use function fwrite;
 use function in_array;
 use function is_string;
+use function preg_replace;
 use function preg_split;
 use function reset;
 use function round;
 use function str_starts_with;
+use function strcspn;
 use function strlen;
 use function strrpos;
 use function strtolower;
@@ -138,13 +140,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     /**
      * Variables, offsets and properties that may change through a reference whose effect Psalm doesn't
-     * propagate to the containing variable: a reference to an offset or property, a by-reference foreach
-     * value or a by-reference closure use. Once such a reference exists, the tracked type of the
-     * containing variable may be stale.
+     * propagate to the containing variable (see addUntrackedReference()).
      *
      * @var array<string, true>
      */
-    public array $untracked_reference_ids = [];
+    private array $untracked_reference_ids = [];
 
     private ?ParsedDocblock $parsed_docblock = null;
 
@@ -1123,6 +1123,91 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function setByRefUses(array $byref_uses): void
     {
         $this->byref_uses = $byref_uses;
+    }
+
+    /**
+     * Records that the variable, offset or property may change through a reference whose effect Psalm
+     * doesn't propagate to the containing variable, e.g. $x = &$a[1], foreach ($a as &$v) or use (&$a).
+     * From then on, the tracked type of the containing variable may be stale for the rest of the function.
+     * Current aliases are recorded too, as they may be gone (e.g. unset) by the time the type is used.
+     */
+    public function addUntrackedReference(string $var_id, Context $context): void
+    {
+        // a dynamic offset may be any key, so only the part before it is known
+        $var_id = preg_replace('/\[(?!\'[^\']*\'\]|-?\d+\]).*/s', '', $var_id) ?? $var_id;
+
+        foreach (self::getReferenceAliases($var_id, $context) as $alias_id) {
+            $this->untracked_reference_ids[$alias_id] = true;
+        }
+    }
+
+    /**
+     * Whether the variable, an offset or property of it or an alias of it may have changed through a
+     * reference recorded by addUntrackedReference(), in which case its tracked type may be stale.
+     */
+    public function mayHaveChangedThroughReference(string $var_id, Context $context): bool
+    {
+        if (!$this->untracked_reference_ids) {
+            return false;
+        }
+
+        $var_ids = self::getReferenceAliases($var_id, $context);
+
+        foreach ($this->untracked_reference_ids as $reference_id => $_) {
+            foreach ($var_ids as $alias_id) {
+                if ($reference_id === $alias_id
+                    || self::isDescendantId($reference_id, $alias_id)
+                    || self::isDescendantId($alias_id, $reference_id)
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the variable id spelled through each variable it shares a reference with ($b = &$a),
+     * including itself.
+     *
+     * @return list<string>
+     */
+    private static function getReferenceAliases(string $var_id, Context $context): array
+    {
+        if (!$context->references_in_scope || !str_starts_with($var_id, '$')) {
+            return [$var_id];
+        }
+
+        // the plain variable before any offset or property
+        $root_var_id = substr($var_id, 0, strcspn($var_id, '[-'));
+        $aliases = [$root_var_id => true];
+
+        do {
+            $found_alias = false;
+
+            foreach ($context->references_in_scope as $reference_id => $referenced_id) {
+                if (isset($aliases[$reference_id]) !== isset($aliases[$referenced_id])) {
+                    $aliases[$reference_id] = true;
+                    $aliases[$referenced_id] = true;
+                    $found_alias = true;
+                }
+            }
+        } while ($found_alias);
+
+        $suffix = substr($var_id, strlen($root_var_id));
+        $var_ids = [];
+
+        foreach ($aliases as $alias_id => $_) {
+            $var_ids[] = $alias_id . $suffix;
+        }
+
+        return $var_ids;
+    }
+
+    private static function isDescendantId(string $var_id, string $ancestor_id): bool
+    {
+        return str_starts_with($var_id, $ancestor_id . '[') || str_starts_with($var_id, $ancestor_id . '->');
     }
 
     /**

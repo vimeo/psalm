@@ -515,6 +515,9 @@ final class ArrayAnalyzer
             );
 
             if ($var_id) {
+                // changing the array element changes the referenced variable
+                $statements_analyzer->addUntrackedReference($var_id, $context);
+
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->removeDescendents(
                         $var_id,

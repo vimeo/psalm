@@ -232,7 +232,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
                     // calling the closure may change the variable in this scope
-                    $statements_analyzer->untracked_reference_ids[$use_var_id] = true;
+                    $statements_analyzer->addUntrackedReference($use_var_id, $context);
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;

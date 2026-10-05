@@ -345,7 +345,7 @@ final class ForeachAnalyzer
             );
 
             if ($iterated_var_id !== null) {
-                $statements_analyzer->untracked_reference_ids[$iterated_var_id] = true;
+                $statements_analyzer->addUntrackedReference($iterated_var_id, $foreach_context);
             }
         }
 

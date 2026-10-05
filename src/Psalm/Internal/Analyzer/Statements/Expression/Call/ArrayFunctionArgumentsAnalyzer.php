@@ -53,9 +53,6 @@ use function explode;
 use function in_array;
 use function is_numeric;
 use function str_contains;
-use function str_starts_with;
-use function strcspn;
-use function strlen;
 use function strtolower;
 use function substr;
 
@@ -637,6 +634,19 @@ final class ArrayFunctionArgumentsAnalyzer
             $statements_analyzer,
         );
 
+        if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            // the change is not propagated to the array holding the offset
+            $offset_var_id = ExpressionIdentifier::getExtendedVarId(
+                $arg->value,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($offset_var_id !== null) {
+                $statements_analyzer->addUntrackedReference($offset_var_id, $context);
+            }
+        }
+
         if ($var_id) {
             // Only a local variable that takes no part in a reference is tracked reliably: a property may be
             // shared with an object alias, and a reference may have been changed through another name
@@ -755,36 +765,6 @@ final class ArrayFunctionArgumentsAnalyzer
         }
     }
 
-    /**
-     * Whether the variable, an offset or property of it or an alias of it may have changed through a
-     * reference that Psalm doesn't propagate (see StatementsAnalyzer::$untracked_reference_ids), in which
-     * case its tracked type may be stale.
-     */
-    public static function mayHaveChangedThroughReference(
-        string $var_id,
-        Context $context,
-        StatementsAnalyzer $statements_analyzer,
-    ): bool {
-        if (!$statements_analyzer->untracked_reference_ids) {
-            return false;
-        }
-
-        $var_ids = self::getReferenceAliases($var_id, $context);
-
-        foreach ($statements_analyzer->untracked_reference_ids as $reference_id => $_) {
-            foreach ($var_ids as $alias_id) {
-                if ($reference_id === $alias_id
-                    || self::isDescendantId($reference_id, $alias_id)
-                    || self::isDescendantId($alias_id, $reference_id)
-                ) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private static function isReferenced(
         string $var_id,
         Context $context,
@@ -798,50 +778,7 @@ final class ArrayFunctionArgumentsAnalyzer
             || isset($context->referenced_globals[$var_id])
             || isset($context->byref_constraints[$var_id])
             || isset($statements_analyzer->byref_uses[$var_id])
-            || self::mayHaveChangedThroughReference($var_id, $context, $statements_analyzer);
-    }
-
-    /**
-     * Returns the variable id spelled through each variable it shares a reference with ($b = &$a),
-     * including itself.
-     *
-     * @return list<string>
-     */
-    private static function getReferenceAliases(string $var_id, Context $context): array
-    {
-        if (!$context->references_in_scope || !str_starts_with($var_id, '$')) {
-            return [$var_id];
-        }
-
-        // the plain variable before any offset or property
-        $root_var_id = substr($var_id, 0, strcspn($var_id, '[-'));
-        $aliases = [$root_var_id => true];
-
-        do {
-            $found_alias = false;
-
-            foreach ($context->references_in_scope as $reference_id => $referenced_id) {
-                if (isset($aliases[$reference_id]) !== isset($aliases[$referenced_id])) {
-                    $aliases[$reference_id] = true;
-                    $aliases[$referenced_id] = true;
-                    $found_alias = true;
-                }
-            }
-        } while ($found_alias);
-
-        $suffix = substr($var_id, strlen($root_var_id));
-        $var_ids = [];
-
-        foreach ($aliases as $alias_id => $_) {
-            $var_ids[] = $alias_id . $suffix;
-        }
-
-        return $var_ids;
-    }
-
-    private static function isDescendantId(string $var_id, string $ancestor_id): bool
-    {
-        return str_starts_with($var_id, $ancestor_id . '[') || str_starts_with($var_id, $ancestor_id . '->');
+            || $statements_analyzer->mayHaveChangedThroughReference($var_id, $context);
     }
 
     /**

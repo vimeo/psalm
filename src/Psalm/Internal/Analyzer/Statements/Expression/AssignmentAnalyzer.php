@@ -973,7 +973,7 @@ final class AssignmentAnalyzer
         // a change through the reference is not propagated to the array or object holding the offset or property
         foreach ([$lhs_var_id, $rhs_var_id] as $reference_id) {
             if (str_contains($reference_id, '[') || str_contains($reference_id, '->')) {
-                $statements_analyzer->untracked_reference_ids[$reference_id] = true;
+                $statements_analyzer->addUntrackedReference($reference_id, $context);
             }
         }
         if (str_contains($rhs_var_id, '[')) {
@@ -1056,6 +1056,19 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($stmt instanceof ArrayDimFetch) {
+            // the new type of the offset is not propagated to the array holding it
+            $offset_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($offset_var_id !== null) {
+                $statements_analyzer->addUntrackedReference($offset_var_id, $context);
+            }
+        }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             $property_id = ExpressionIdentifier::getVarId(
@@ -1216,6 +1229,19 @@ final class AssignmentAnalyzer
             }
 
             $var = $assign_var_item->value;
+
+            if ($assign_var_item->byRef && $assign_value) {
+                // the destructured element stays a reference into the assigned array
+                $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $assign_value,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                if ($assigned_var_id !== null) {
+                    $statements_analyzer->addUntrackedReference($assigned_var_id, $context);
+                }
+            }
 
             if ($assign_value instanceof PhpParser\Node\Expr\Array_
                 && $statements_analyzer->node_data->getType($assign_var_item->value)
