@@ -791,8 +791,8 @@ final class InstancePropertyAssignmentAnalyzer
     }
 
     /**
-     * The classes $fq_class_name inherits instance property $prop_name from, the nearest first, up to the one
-     * declaring it
+     * The parent classes of $fq_class_name sharing its instance property $prop_name, the nearest first: those having
+     * it, unless it is private there or in a class below (a class declaring it again still shares it)
      *
      * @return list<string>
      * @psalm-capabilities read-props
@@ -803,19 +803,20 @@ final class InstancePropertyAssignmentAnalyzer
 
         while ($codebase->classlike_storage_provider->has($fq_class_name)) {
             $storage = $codebase->classlike_storage_provider->get($fq_class_name);
-            $declaring_class = $storage->declaring_property_ids[$prop_name] ?? null;
 
-            if ($declaring_class === null
-                || strtolower($declaring_class) === strtolower($storage->name)
-                || $storage->parent_class === null
+            if ($storage->parent_class === null
                 || !$codebase->classlike_storage_provider->has($storage->parent_class)
+                || self::isPrivateProperty($codebase, $storage->declaring_property_ids[$prop_name] ?? null, $prop_name)
             ) {
                 break;
             }
 
             $parent_storage = $codebase->classlike_storage_provider->get($storage->parent_class);
+            $parent_declaring_class = $parent_storage->declaring_property_ids[$prop_name] ?? null;
 
-            if (!isset($parent_storage->declaring_property_ids[$prop_name])) {
+            if ($parent_declaring_class === null
+                || self::isPrivateProperty($codebase, $parent_declaring_class, $prop_name)
+            ) {
                 break;
             }
 
@@ -824,6 +825,20 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $ancestors;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isPrivateProperty(Codebase $codebase, ?string $declaring_class, string $prop_name): bool
+    {
+        if ($declaring_class === null || !$codebase->classlike_storage_provider->has($declaring_class)) {
+            return false;
+        }
+
+        $property = $codebase->classlike_storage_provider->get($declaring_class)->properties[$prop_name] ?? null;
+
+        return $property !== null && $property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
     }
 
     /**
