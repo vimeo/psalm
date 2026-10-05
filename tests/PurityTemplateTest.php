@@ -1467,7 +1467,7 @@ final class PurityTemplateTest extends TestCase
 
                     $x = unwrap([1, 2]);',
                 'assertions' => [
-                    '$x' => 'int',
+                    '$x===' => '1|2',
                 ],
             ],
         ];
