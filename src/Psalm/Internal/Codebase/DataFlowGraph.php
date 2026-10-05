@@ -8,6 +8,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
+use function array_key_last;
 use function array_keys;
 use function array_sum;
 use function count;
@@ -105,6 +106,28 @@ abstract class DataFlowGraph
         }
 
         return false;
+    }
+
+    /**
+     * Whether an edge of type $path_type, from an array to the array it becomes once its value under a key is
+     * replaced (see ArrayAssignmentAnalyzer::getOverwritePathType()), drops a flow whose open assignments are
+     * $open_assignments: a flow of that value, the innermost of them being the assignment to that key. A flow of
+     * the array's other values, of its keys or of all of it goes on, also one whose key isn't known, which may be
+     * that one.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    protected static function isOverwritten(string $path_type, array $open_assignments): bool
+    {
+        if (!str_starts_with($path_type, 'arrayvalue-overwrite-')) {
+            return false;
+        }
+
+        $innermost = array_key_last($open_assignments);
+
+        return $innermost !== null
+            && $open_assignments[$innermost] === 'arrayvalue-assignment-' . substr($path_type, 21);
     }
 
     /**

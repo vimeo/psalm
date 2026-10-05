@@ -8,10 +8,13 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureVariable;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
@@ -188,7 +191,14 @@ final class UnsetAnalyzer
                         }
                     }
 
-                    $context->vars_in_scope[$root_var_id] = new Union($root_types);
+                    $context->vars_in_scope[$root_var_id] = self::taintUnsetOffset(
+                        $statements_analyzer,
+                        $var,
+                        $root_var_id,
+                        $context->vars_in_scope[$root_var_id],
+                        new Union($root_types),
+                        $key_type,
+                    );
 
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,
@@ -200,5 +210,46 @@ final class UnsetAnalyzer
         }
 
         $context->inside_unset = false;
+    }
+
+    /**
+     * The array $root_var_id is once its offset $var is unset, of type $new_type: what it held under its other keys
+     * flows into it, not what it held under that key if it is a single literal one (see
+     * ArrayAssignmentAnalyzer::getOverwritePathType()).
+     */
+    private static function taintUnsetOffset(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $var,
+        string $root_var_id,
+        Union $old_type,
+        Union $new_type,
+        Union $key_type,
+    ): Union {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if (!$graph instanceof TaintFlowGraph || $old_type->parent_nodes === []) {
+            return $new_type;
+        }
+
+        $node = DataFlowNode::getForAssignment(
+            $root_var_id,
+            new CodeLocation($statements_analyzer->getSource(), $var->var),
+        );
+
+        $graph->addNode($node);
+
+        $path_type = '=';
+
+        if ($key_type->isSingleStringLiteral()) {
+            $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($old_type, $key_type->getSingleStringLiteral());
+        } elseif ($key_type->isSingleIntLiteral()) {
+            $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($old_type, $key_type->getSingleIntLiteral());
+        }
+
+        foreach ($old_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $node, $path_type);
+        }
+
+        return $new_type->setParentNodes([$node->id => $node]);
     }
 }

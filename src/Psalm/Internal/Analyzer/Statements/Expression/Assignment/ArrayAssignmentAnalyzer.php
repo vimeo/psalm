@@ -30,7 +30,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -399,13 +401,18 @@ final class ArrayAssignmentAnalyzer
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
+            // what the array held under the key assigned, if only one, is replaced
+            $copy_path_type = count($key_values) === 1 && !$stmt_type->by_ref
+                ? self::getOverwritePathType($stmt_type, $key_values[0])
+                : '=';
+
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
                 $graph->addPath(
                     $old_parent_node,
                     $parent_node,
-                    '=',
+                    $copy_path_type,
                 );
 
                 if ($stmt_type->by_ref) {
@@ -444,6 +451,29 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The type of the path from an array to the array it becomes once its value under $key is replaced: one
+     * keeping what it held under its other keys only (see DataFlowGraph::isOverwritten()). Assigning an offset of
+     * anything that may not be an array (an ArrayAccess object, a string...) may do anything else with what it held,
+     * so the path keeps it all then.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getOverwritePathType(Union $array_type, TLiteralInt|TLiteralString $key): string
+    {
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TNever
+            ) {
+                return '=';
+            }
+        }
+
+        return 'arrayvalue-overwrite-\'' . $key->value . '\'';
     }
 
     private static function updateArrayAssignmentChildType(
