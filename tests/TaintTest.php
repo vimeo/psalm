@@ -1551,6 +1551,19 @@ final class TaintTest extends TestCase
                     echo $values["key"];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintVariadicByRefParamWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    function read_values(string &...$values): void {
+                        foreach ($values as &$value) {
+                            $value = (string) $_GET["value"];
+                        }
+                    }
+
+                    $value = "";
+                    read_values($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPropertyItemWrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     final class Rows {
