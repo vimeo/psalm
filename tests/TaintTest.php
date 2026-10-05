@@ -1578,6 +1578,7 @@ final class TaintTest extends TestCase
             ],
             'dontTaintWhatAnArrayMapClosureReturnsWithoutItsParam' => [
                 'code' => '<?php
+                    /** @psalm-suppress MissingClosureParamType */
                     echo implode(",", array_map(fn($s) => "safe", $_GET["a"]));',
             ],
             'dontTaintPromotedPropertyOfOtherInstance' => [
