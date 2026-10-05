@@ -280,6 +280,14 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintSsrfAfterAnyOfTheStartsOfAUrlFixingItsServer' => [
+                'code' => '<?php // --taint-analysis
+                    $origin = match ((string) $_GET["host"]) {
+                        "example.com" => "https://example.com/",
+                        default => "https://example.org/",
+                    };
+                    file_get_contents($origin . (string) $_GET["path"]);',
+            ],
             'dontTaintSsrfAfterTheStartOfAUrlFixingItsServer' => [
                 'code' => '<?php // --taint-analysis
                     $value = (string) $_GET["value"];
@@ -1313,6 +1321,12 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     file_get_contents("//api.example.com/" . (string) $_GET["value"]);',
                 'error_message' => 'TaintedFile',
+            ],
+            'taintSsrfAfterOneOfTheStartsOfAUrlNotEndingItsHost' => [
+                'code' => '<?php
+                    $origin = rand(0, 1) ? "https://example.com/" : "https://example.org";
+                    file_get_contents($origin . (string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
             ],
             'taintSsrfAfterAUrlStartNotEndingItsHost' => [
                 'code' => '<?php // --taint-analysis

@@ -84,36 +84,92 @@ final class ConcatAnalyzer
     }
 
     /**
-     * The literal string $expr starts with, as far as it is known
+     * The taints a value can't have once appended to any of $prefixes (see getTaintsRemovedAfterUrlOrigin()): only
+     * those every one of them removes
+     *
+     * @param list<string> $prefixes
+     * @psalm-pure
      */
-    public static function getLiteralPrefix(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): ?string
+    public static function getTaintsRemovedAfterUrlOrigins(array $prefixes): int
+    {
+        $removed_taints = null;
+
+        foreach ($prefixes as $prefix) {
+            $removed_taints = $removed_taints === null
+                ? self::getTaintsRemovedAfterUrlOrigin($prefix)
+                : $removed_taints & self::getTaintsRemovedAfterUrlOrigin($prefix);
+        }
+
+        return $removed_taints ?? 0;
+    }
+
+    /**
+     * The literal strings $expr can start with, as far as they are known: none if it can start with anything
+     *
+     * @return list<string>
+     */
+    public static function getLiteralPrefixes(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): array
     {
         $type = $statements_analyzer->node_data->getType($expr);
+        $literals = $type ? self::getLiteralStrings($type) : null;
 
-        if ($type && $type->isSingleStringLiteral()) {
-            return $type->getSingleStringLiteral()->value;
+        if ($literals !== null) {
+            return $literals;
         }
 
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $left_prefix = self::getLiteralPrefix($statements_analyzer, $expr->left);
+            $left_prefixes = self::getLiteralPrefixes($statements_analyzer, $expr->left);
 
             $left_type = $statements_analyzer->node_data->getType($expr->left);
 
             // all of the left side is known: what the right side starts with follows it
-            if ($left_prefix !== null && $left_type && $left_type->isSingleStringLiteral()) {
-                return $left_prefix . (self::getLiteralPrefix($statements_analyzer, $expr->right) ?? '');
+            if ($left_prefixes !== [] && $left_type && self::getLiteralStrings($left_type) !== null) {
+                $right_prefixes = self::getLiteralPrefixes($statements_analyzer, $expr->right) ?: [''];
+
+                if (count($left_prefixes) * count($right_prefixes) <= self::MAX_LITERALS) {
+                    $prefixes = [];
+
+                    foreach ($left_prefixes as $left_prefix) {
+                        foreach ($right_prefixes as $right_prefix) {
+                            $prefixes[] = $left_prefix . $right_prefix;
+                        }
+                    }
+
+                    return $prefixes;
+                }
             }
 
-            return $left_prefix;
+            return $left_prefixes;
         }
 
         if ($expr instanceof PhpParser\Node\Scalar\InterpolatedString) {
             $first_part = $expr->parts[0] ?? null;
 
-            return $first_part instanceof PhpParser\Node\InterpolatedStringPart ? $first_part->value : null;
+            return $first_part instanceof PhpParser\Node\InterpolatedStringPart ? [$first_part->value] : [];
         }
 
-        return null;
+        return [];
+    }
+
+    /**
+     * The values of a type of string literals, null if it can be any other value
+     *
+     * @return non-empty-list<string>|null
+     * @psalm-mutation-free
+     */
+    private static function getLiteralStrings(Union $type): ?array
+    {
+        $values = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TLiteralString) {
+                return null;
+            }
+
+            $values[] = $atomic->value;
+        }
+
+        return $values;
     }
 
     public static function analyze(

@@ -187,10 +187,9 @@ final class BinaryOpAnalyzer
 
                 // after the start of a URL fixing its server (the left operand's, and the right operand's own
                 // literal start when the left operand is a literal), the right operand can't choose it
-                $prefix = ConcatAnalyzer::getLiteralPrefix($statements_analyzer, $stmt);
-                $right_removed_taints = $prefix === null
-                    ? $removed_taints
-                    : $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin($prefix);
+                $right_removed_taints = $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins(
+                    ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $stmt),
+                );
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
