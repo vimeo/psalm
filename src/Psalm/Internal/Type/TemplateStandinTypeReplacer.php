@@ -1284,7 +1284,7 @@ final class TemplateStandinTypeReplacer
     private static function areAllPurityBounds(array $lower_bounds): bool
     {
         foreach ($lower_bounds as $template_bound) {
-            if ($template_bound->type->isNever() || !Capabilities::isPurityArgument($template_bound->type)) {
+            if (!Capabilities::isPurityArgument($template_bound->type)) {
                 return false;
             }
         }
