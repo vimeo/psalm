@@ -644,7 +644,7 @@ final class ArrayFunctionArgumentsAnalyzer
             // shared with an object alias, and a reference may have been changed through another name
             $is_tracked = !$arg->unpack
                 && $arg->value instanceof PhpParser\Node\Expr\Variable
-                && !self::isReferenced($var_id, $context, $statements_analyzer)
+                && !self::isReferenced($var_id, $context)
                 && !$statements_analyzer->mayHaveChangedThroughReference($arg->value, $context);
             $arg->value->setAttribute(self::IS_TRACKED_BY_REF_ARRAY, $is_tracked);
 
@@ -758,19 +758,16 @@ final class ArrayFunctionArgumentsAnalyzer
         }
     }
 
-    private static function isReferenced(
-        string $var_id,
-        Context $context,
-        StatementsAnalyzer $statements_analyzer,
-    ): bool {
+    /**
+     * Whether the variable is part of a reference within this scope (other scopes are handled by
+     * StatementsAnalyzer::mayHaveChangedThroughReference()).
+     */
+    private static function isReferenced(string $var_id, Context $context): bool
+    {
         return isset($context->references_in_scope[$var_id])
             || in_array($var_id, $context->references_in_scope, true)
             || ($context->referenced_counts[$var_id] ?? 0) > 0
-            || isset($context->references_to_external_scope[$var_id])
-            || isset($context->references_possibly_from_confusing_scope[$var_id])
-            || isset($context->referenced_globals[$var_id])
-            || isset($context->byref_constraints[$var_id])
-            || isset($statements_analyzer->byref_uses[$var_id]);
+            || isset($context->references_possibly_from_confusing_scope[$var_id]);
     }
 
     /**

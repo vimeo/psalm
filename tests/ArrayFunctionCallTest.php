@@ -4468,6 +4468,26 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'arrayLastAfterPassingArrayByReference' => [
+                'code' => '<?php
+                    /** @param list<int|string> $queue */
+                    function makeDrain(array &$queue): Closure {
+                        return static function () use (&$queue): void {
+                            array_pop($queue);
+                        };
+                    }
+
+                    function f(): string {
+                        $a = [1, "a"];
+                        $drain = makeDrain($a);
+                        $a = [1, "a"];
+                        $drain();
+                        return array_last($a);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }

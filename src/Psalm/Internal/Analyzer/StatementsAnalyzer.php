@@ -1177,16 +1177,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Whether the value of the expression may have changed through a reference recorded by
-     * addUntrackedReference(), in which case its tracked type may be stale: it, an offset or property
-     * of it, a variable containing it or an alias of any of them was changed.
+     * Whether the value of the expression may have changed through a reference, in which case its tracked
+     * type may be stale: the variable holding it is shared with another scope (a by-reference parameter or
+     * argument, a global, a static or a closure use), or it, an offset or property of it, a variable
+     * containing it or an alias of any of them was recorded by addUntrackedReference().
      */
     public function mayHaveChangedThroughReference(PhpParser\Node\Expr $expr, Context $context): bool
     {
-        if (!$this->untracked_reference_ids) {
-            return false;
-        }
-
         $var_id = $this->getClosestVarId($expr);
 
         if ($var_id === null) {
@@ -1195,8 +1192,18 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         $var_ids = self::getReferenceAliases(self::getKnownPath($var_id), $context);
 
-        foreach ($this->untracked_reference_ids as $reference_id => $_) {
-            foreach ($var_ids as $alias_id) {
+        foreach ($var_ids as $alias_id) {
+            $root_var_id = substr($alias_id, 0, strcspn($alias_id, '[-'));
+
+            if (isset($context->references_to_external_scope[$root_var_id])
+                || isset($context->byref_constraints[$root_var_id])
+                || isset($context->referenced_globals[$root_var_id])
+                || isset($this->byref_uses[$root_var_id])
+            ) {
+                return true;
+            }
+
+            foreach ($this->untracked_reference_ids as $reference_id => $_) {
                 if ($reference_id === $alias_id
                     || self::isDescendantId($reference_id, $alias_id)
                     || self::isDescendantId($alias_id, $reference_id)
