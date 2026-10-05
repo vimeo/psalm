@@ -1390,6 +1390,53 @@ final class PurityTemplateTest extends TestCase
 
                     $box = new Box(new ArrayIterator([1 => "a"]));',
             ],
+            'subclassFitsItsParentWithOmittedTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    interface Driver {
+                        /**
+                         * @return T
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function consume();
+                    }
+
+                    /** @implements Driver[pure]<int> */
+                    final class NullDriver implements Driver {
+                        /** @psalm-pure */
+                        #[Override]
+                        public function consume(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @implements Driver<int> */
+                    final class EchoDriver implements Driver {
+                        #[Override]
+                        public function consume(): int {
+                            echo "consumed";
+                            return 1;
+                        }
+                    }
+
+                    function takeAny(Driver $_driver): void {}
+
+                    /** @param Driver[pure] $_driver */
+                    function takePure(Driver $_driver): void {}
+
+                    /** @param Driver[impure]<int> $_driver */
+                    function takeImpureInt(Driver $_driver): void {}
+
+                    takeAny(new NullDriver());
+                    takeAny(new EchoDriver());
+                    takeImpureInt(new NullDriver());
+                    takeImpureInt(new EchoDriver());
+                    takePure(new NullDriver());',
+            ],
         ];
     }
 
@@ -2849,6 +2896,37 @@ final class PurityTemplateTest extends TestCase
                         $w->inner = $it;
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'subclassWithMorePurityDoesNotFitParentWithOmittedTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    interface Driver {
+                        /**
+                         * @return T
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function consume();
+                    }
+
+                    /** @implements Driver[io]<int> */
+                    final class EchoDriver implements Driver {
+                        /** @psalm-capabilities io */
+                        #[Override]
+                        public function consume(): int {
+                            echo "consumed";
+                            return 1;
+                        }
+                    }
+
+                    /** @param Driver[pure] $_driver */
+                    function takePure(Driver $_driver): void {}
+
+                    takePure(new EchoDriver());',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
