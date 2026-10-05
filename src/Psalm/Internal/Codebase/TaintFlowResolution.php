@@ -113,9 +113,11 @@ final class TaintFlowResolution
 
     /**
      * How many states a node must have for the flows reaching it in more states to be walked from it once,
-     * relative to them (see enterConvergence())
+     * relative to them (see enterConvergence()). Each convergence a flow goes through takes away one of the
+     * CONVERGENCE_LEVELS it finds the open assignments it made before them through: fewer convergences, of
+     * flows reaching a node in more states, keep more of those, at little cost.
      */
-    private const CONVERGING_STATES = 8;
+    private const CONVERGING_STATES = 12;
 
     /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
@@ -125,9 +127,11 @@ final class TaintFlowResolution
 
     /**
      * Through how many convergences a flow entering an entry finds the class of an open assignment of it made
-     * before them, that a fetch in the walk of the entry observes (see getAssignmentClass())
+     * before them, that a fetch in the walk of the entry observes (see getAssignmentClass()). Values go
+     * through many convergences on large code bases (properties, parameters of functions called with many
+     * different arrays, ...): past those, no fetch ignores the open assignment.
      */
-    private const CONVERGENCE_LEVELS = 3;
+    private const CONVERGENCE_LEVELS = 12;
 
     /**
      * How many convergences of a node know the innermost open assignments of the flows entering them at most
