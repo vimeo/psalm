@@ -59,6 +59,8 @@ return [
 'proc_open' => [TaintKind::INPUT_SHELL],
 'curl_init' => [TaintKind::INPUT_SSRF],
 'curl_setopt' => [0, 0, TaintKind::INPUT_SSRF],
+'curl_file_create' => [TaintKind::INPUT_FILE],
+'CURLFile::__construct' => [TaintKind::INPUT_FILE],
 'getimagesize' => [TaintKind::INPUT_SSRF],
 'Closure::fromCallable' => [TaintKind::INPUT_CALLABLE],
 ];

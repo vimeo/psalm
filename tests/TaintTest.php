@@ -275,8 +275,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * An option the analysis can't tell may be one choosing where the request goes as well as one written into it,
-     * so its value is both an `ssrf` and a `header` sink.
+     * An option the analysis can't tell may be any option with a sink, so its value is every sink of an option.
      *
      * @dataProvider providerTrackingUnusedVariables
      */
@@ -314,10 +313,16 @@ final class TaintTest extends TestCase
 
         self::assertSame(
             [
+                'TaintedCallable on line 3',
+                'TaintedCallable on line 7',
+                'TaintedFile on line 3',
+                'TaintedFile on line 7',
                 'TaintedHeader on line 3',
                 'TaintedHeader on line 7',
                 'TaintedSSRF on line 3',
                 'TaintedSSRF on line 7',
+                'TaintedSleep on line 3',
+                'TaintedSleep on line 7',
             ],
             $taint_issues,
         );
@@ -346,14 +351,14 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     $value = (string) $_GET["value"];
                     $options = [CURLOPT_URL => "https://example.com/", CURLOPT_POSTFIELDS => $value];
-                    $options[CURLOPT_TIMEOUT] = $value;
+                    $options[CURLOPT_PRIVATE] = $value;
                     curl_setopt_array(curl_init(), $options);',
             ],
             'dontTaintSsrfInACurlOptionNotChoosingTheDestination' => [
                 'code' => '<?php // --taint-analysis
                     $curl = curl_init("https://example.com/");
                     curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
-                    curl_setopt($curl, \\CURLOPT_TIMEOUT, (string) $_GET["timeout"]);',
+                    curl_setopt($curl, \\CURLOPT_PRIVATE, (string) $_GET["private"]);',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
@@ -1413,6 +1418,48 @@ final class TaintTest extends TestCase
                     $curl = curl_init("https://example.com/");
                     curl_setopt($curl, \\CURLOPT_CUSTOMREQUEST, (string) $_GET["method"]);',
                 'error_message' => 'TaintedHeader',
+            ],
+            'taintSsrfInTheCurlDefaultProtocolOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_DEFAULT_PROTOCOL, (string) $_GET["protocol"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintHeaderInTheCurlQuoteOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_QUOTE, ["DELE " . (string) $_GET["file"]]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintFileInTheCurlCookieJarOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_COOKIEJAR, (string) $_GET["jar"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintSleepInTheCurlMaxRecvSpeedOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_MAX_RECV_SPEED_LARGE, (int) $_GET["speed"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintCallableInTheCurlWriteFunctionOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_WRITEFUNCTION, (string) $_GET["callback"]);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintFileInTheCurlCookieFileOptionOfAnArray' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(curl_init(), [CURLOPT_COOKIEFILE => (string) $_GET["file"]]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintFileInACurlFile' => [
+                'code' => '<?php // --taint-analysis
+                    $file = new CURLFile((string) $_GET["path"]);
+                    curl_setopt(curl_init(), CURLOPT_POSTFIELDS, ["file" => $file]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintFileInCurlFileCreate' => [
+                'code' => '<?php // --taint-analysis
+                    $file = curl_file_create((string) $_GET["path"]);
+                    curl_setopt(curl_init(), CURLOPT_POSTFIELDS, ["file" => $file]);',
+                'error_message' => 'TaintedFile',
             ],
             'taintSsrfInTheCurlUrlOptionOfAnArray' => [
                 'code' => '<?php // --taint-analysis

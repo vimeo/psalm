@@ -16,7 +16,7 @@ If your system does not do that, there may be other concerns, such as:
 - Open Redirects
 - Proxy Cache Poisoning
 
-The headers of a request the application makes itself are sinks too. Unlike `header()`, curl writes the value of an option such as `CURLOPT_HTTPHEADER`, `CURLOPT_USERAGENT`, `CURLOPT_COOKIE` or `CURLOPT_CUSTOMREQUEST` into the request as is. A line break in it adds headers to the request, for example another `Host` or `Authorization` header. Given to `CURLOPT_CUSTOMREQUEST`, it adds a whole other request to the connection.
+The headers of a request the application makes itself are sinks too. Unlike `header()`, curl writes the value of an option such as `CURLOPT_HTTPHEADER`, `CURLOPT_USERAGENT`, `CURLOPT_COOKIE` or `CURLOPT_CUSTOMREQUEST` into the request as is. A line break in it adds headers to the request, for example another `Host` or `Authorization` header. Given to `CURLOPT_CUSTOMREQUEST` or `CURLOPT_REQUEST_TARGET`, it adds a whole other request to the connection. `CURLOPT_QUOTE` sends the FTP or SFTP commands it's given as they are, and `CURLOPT_COOKIELIST` adds cookies to the requests.
 
 ## Example
 
