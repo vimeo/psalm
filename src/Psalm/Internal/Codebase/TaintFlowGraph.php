@@ -97,6 +97,15 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $specializations = [];
 
     /**
+     * The specializations without an outgoing edge, left out of $specializations: unspecialized ID =>
+     * (specialization key => true). An exit of a specialized call whose specialization for the call is one of
+     * them leads nowhere: the call site doesn't use it (see exitThroughCaller()).
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $unused_specializations = [];
+
+    /**
      * Specialization key => true
      *
      * @var array<string, true>
@@ -562,6 +571,7 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($map as $kk => $specialized_id) {
                 if (!isset($this->forward_edges[$specialized_id])) {
                     unset($map[$kk]);
+                    $this->unused_specializations[$k][$kk] = true;
                 }
             }
             if (!$map) {
@@ -906,10 +916,12 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Continues $exit, reached by the body walk of $entry, in the context of one
      * call entering $entry: at that call's specialization of the exit node if it
-     * has one, else -- the flow leaves through an enclosing call, e.g. after
-     * passing through a static property -- as an exit of the entry the call is
-     * made from. Outside of any specialized call the flow cannot be matched to a
-     * call site and ends.
+     * has one. If it has one the call site doesn't use, the flow ends. Else the
+     * exit is one of another function-like, reached through something the calls
+     * share (a property, a static property, ...): as an exit of the entry the
+     * call is made from, so that it leaves through an enclosing call of that
+     * function-like if any, and outside of any specialized call through all of
+     * its call sites, as a flow reaching it there would.
      *
      * The walk itself carries the trace of the first call entering $entry. For
      * any other call, the walk is summarized as a single step from the entered
@@ -939,11 +951,24 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        if ($caller->context === null) {
+        if (isset($this->unused_specializations[$exit->id][$specialization_key])) {
             return [];
         }
 
-        return $this->addEntryExit($caller->context, $exit);
+        if ($caller->context !== null) {
+            return $this->addEntryExit($caller->context, $exit);
+        }
+
+        $nodes = [];
+
+        // the call sites of despecialized calls were all left from the exit already
+        foreach ($this->specializations[$exit->id] as $exit_specialization_key => $specialized_id) {
+            if (!isset($this->despecialized_calls[$exit_specialization_key])) {
+                $nodes[] = $exit->withSpecialization($specialized_id, $exit->id, $exit_specialization_key, null);
+            }
+        }
+
+        return $nodes;
     }
 
     /**
