@@ -446,6 +446,7 @@ final class ArrayAssignmentAnalyzer
                             $child_parent_node,
                             $parent_node,
                             $key_values,
+                            $var_location,
                             $removed_taints,
                         );
                     } elseif ($key_values) {
@@ -471,9 +472,10 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * Adds the paths of the assignment of $value to array $array under a key that is one of $key_values: one for
-     * each, in the taint flow graph, the others than the first through a node of their own (a path between two
-     * nodes has one type). The variable use graph only knows the key is one of them: an unkeyed assignment there.
+     * Adds the paths of the assignment of $value to array $array at $location under a key that is one of
+     * $key_values: one for each, in the taint flow graph, the others than the first through a node of their own (a
+     * path between two nodes has one type). The variable use graph only knows the key is one of them: an unkeyed
+     * assignment there.
      *
      * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
      */
@@ -482,6 +484,7 @@ final class ArrayAssignmentAnalyzer
         DataFlowNode $value,
         DataFlowNode $array,
         array $key_values,
+        CodeLocation $location,
         int $removed_taints,
     ): void {
         if ($graph instanceof CombinedFlowGraph) {
@@ -502,10 +505,10 @@ final class ArrayAssignmentAnalyzer
                 continue;
             }
 
-            $variant = DataFlowNode::getForPathVariant($value->id, $value, $path_type);
-            $graph->addNode($variant);
-            $graph->addPath($value, $variant, $path_type, 0, $removed_taints);
-            $graph->addPath($variant, $array, '=');
+            $key_node = DataFlowNode::getForAssignment($array->label . ' ' . $path_type, $location);
+            $graph->addNode($key_node);
+            $graph->addPath($value, $key_node, $path_type, 0, $removed_taints);
+            $graph->addPath($key_node, $array, '=');
         }
     }
 
