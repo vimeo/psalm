@@ -13,7 +13,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureVariable;
 use Psalm\IssueBuffer;
@@ -225,9 +224,9 @@ final class UnsetAnalyzer
         Union $new_type,
         Union $key_type,
     ): Union {
-        $graph = $statements_analyzer->data_flow_graph;
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
 
-        if (!$graph instanceof TaintFlowGraph || $old_type->parent_nodes === []) {
+        if ($graph === null || $old_type->parent_nodes === []) {
             return $new_type;
         }
 

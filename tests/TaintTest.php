@@ -2543,6 +2543,15 @@ final class TaintTest extends TestCase
                     echo (string) $value;',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheOtherValuesOfAnArrayIteratedOverAfterAKeyIsUnset' => [
+                'code' => '<?php
+                    $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
+                    unset($data["city"]);
+                    foreach ($data as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheOtherValuesOfAnArrayGivenToAFunctionAssigningAKey' => [
                 'code' => '<?php
                     function zip(array $data): string {
