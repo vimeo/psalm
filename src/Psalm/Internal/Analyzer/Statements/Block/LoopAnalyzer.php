@@ -11,6 +11,7 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -732,13 +733,15 @@ final class LoopAnalyzer
     }
 
     /**
-     * A variable the loop can define, rather than an array item, a property or a static property of one
-     *
-     * @psalm-pure
+     * A variable the loop can define, rather than an array item, a property or a static property of one, or a
+     * superglobal, which the loop only reads (and which is always defined)
      */
     private static function isLoopVar(string $var_id): bool
     {
-        return !str_contains($var_id, '[') && !str_contains($var_id, '->') && !str_contains($var_id, '::');
+        return !str_contains($var_id, '[')
+            && !str_contains($var_id, '->')
+            && !str_contains($var_id, '::')
+            && !VariableFetchAnalyzer::isSuperGlobal($var_id);
     }
 
     private static function updateLoopScopeContexts(

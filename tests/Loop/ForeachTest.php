@@ -42,6 +42,18 @@ final class ForeachTest extends TestCase
                         /** @psalm-check-type-exact $continued = list<\'skipped\'|null> */;
                     }',
             ],
+            'superglobalReadInALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function f(): array {
+                        foreach (["_GET", "_POST"] as $name) {
+                            if (isset($GLOBALS[$name]) && is_array($GLOBALS[$name])) {
+                                echo count($GLOBALS[$name]);
+                            }
+                        }
+
+                        return array_keys($GLOBALS);
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
