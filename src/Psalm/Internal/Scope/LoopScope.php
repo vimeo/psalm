@@ -25,6 +25,13 @@ final class LoopScope
     public array $possibly_redefined_loop_vars = [];
 
     /**
+     * What the variables the loop defines, which weren't defined before it, hold where an iteration continues
+     *
+     * @var array<string, Union>
+     */
+    public array $possibly_defined_loop_vars = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $possibly_redefined_loop_parent_vars = [];
