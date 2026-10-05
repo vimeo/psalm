@@ -1202,7 +1202,8 @@ final class TaintFlowResolution
                 : $open_assignments;
         } elseif ($innermost_array_assignment >= 0
             && $this->path_types[$innermost_array_assignment] === 'arraykey-assignment'
-            && $this->path_types[$path_type] === 'arrayvalue-fetch'
+            && ($this->path_types[$path_type] === 'arrayvalue-fetch'
+                || str_starts_with($this->path_types[$path_type], 'arrayvalue-fetch@'))
         ) {
             // The value of an item under an unknown key doesn't take what was assigned to its key either. Only
             // where the flow knows that's the innermost one: an unknown key is fetched too often for the walks
