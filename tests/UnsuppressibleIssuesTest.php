@@ -101,6 +101,7 @@ final class UnsuppressibleIssuesTest extends TestCase
                     function has(?Values $values): bool {
                         return isset($values["x"]);
                     }',
+                'assertions' => [],
                 // the suppression of the user can't be used
                 'ignored_issues' => ['UnusedPsalmSuppress'],
             ],
