@@ -10,6 +10,7 @@ use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -760,7 +761,7 @@ final class FunctionCallReturnTypeFetcher
                 $statements_analyzer->getCodebase(),
                 $source->getMethodId(),
             );
-        } elseif ($source instanceof FunctionAnalyzer) {
+        } elseif ($source instanceof FunctionAnalyzer || $source instanceof ClosureAnalyzer) {
             $method_id = $source->getCorrectlyCasedMethodId();
         } else {
             return;
@@ -840,7 +841,7 @@ final class FunctionCallReturnTypeFetcher
             );
             $graph->addNode($return_node);
 
-            foreach ($atomic->return_type->parent_nodes ?? [] as $parent_node) {
+            foreach ($atomic->return_type?->parent_nodes ?? [] as $parent_node) {
                 $graph->addPath($parent_node, $return_node, 'callable-return');
             }
 
@@ -936,6 +937,25 @@ final class FunctionCallReturnTypeFetcher
 
                 foreach ($arg_type->parent_nodes as $parent_node) {
                     $graph->addPath($parent_node, $param_node, 'arg');
+                }
+            }
+        }
+
+        // the callables passed, which the body may call (see taintCallableParamCall())
+        foreach ($storage->params as $i => $param) {
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
+
+                if ($arg_type !== null) {
+                    self::taintCallablePassedToParam(
+                        $statements_analyzer,
+                        $graph,
+                        $callable_id,
+                        $i,
+                        $storage,
+                        $specialization_location,
+                        $arg_type,
+                    );
                 }
             }
         }

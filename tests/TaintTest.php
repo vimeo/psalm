@@ -4870,6 +4870,14 @@ final class TaintTest extends TestCase
                     echo (string) $x;',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedReturnOfClosurePassedToClosureCallingIt' => [
+                'code' => '<?php
+                    $run = function (callable $callback): string {
+                        return (string) $callback();
+                    };
+                    echo $run(fn(): string => (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'castToArrayPassTaints' => [
                 'code' => '<?php
                     $args = $_POST;
