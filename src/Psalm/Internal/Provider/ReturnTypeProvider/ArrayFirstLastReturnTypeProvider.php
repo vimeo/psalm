@@ -11,6 +11,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -72,7 +73,7 @@ final class ArrayFirstLastReturnTypeProvider implements FunctionReturnTypeProvid
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $atomic_value_type = $atomic_type->getGenericValueType();
                 $possibly_empty = $possibly_empty || !$atomic_type->isNonEmpty();
-            } elseif ($atomic_type instanceof TNull) {
+            } elseif ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
                 // throws a TypeError, reported by the callmap signature
                 continue;
             } else {
