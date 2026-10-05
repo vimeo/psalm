@@ -392,6 +392,24 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        $value = (string) $_GET["value"];
+                        $value = "literal";
+                    }
+                    unset($value);
+                    echo $values["key"];',
+            ],
+            'dontTaintArrayIteratedOverByValue' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as $value) {
+                        $value = (string) $_GET["value"];
+                    }
+                    echo $values["key"];',
+            ],
             'dontTaintByRefParamOverwrittenWithLiteral' => [
                 'code' => '<?php // --taint-analysis
                     function reset_value(string &$value): void {
@@ -1500,6 +1518,71 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintArrayItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        $value = (string) $_GET["value"];
+                    }
+                    unset($value);
+                    echo $values["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedArrayItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    $rows = [["name" => ""]];
+                    foreach ($rows as &$row) {
+                        $row["name"] = (string) $_GET["name"];
+                    }
+                    unset($row);
+                    echo $rows[0]["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        if (rand(0, 1)) {
+                            $value = (string) $_GET["value"];
+                            break;
+                        }
+                    }
+                    unset($value);
+                    echo $values["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintVariadicByRefParamWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    function read_values(string &...$values): void {
+                        foreach ($values as &$value) {
+                            $value = (string) $_GET["value"];
+                        }
+                    }
+
+                    $value = "";
+                    read_values($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPropertyItemWrittenByAForeachByReference' => [
+                'code' => '<?php // --taint-analysis
+                    final class Rows {
+                        /** @var array<string, string> */
+                        private array $rows = ["key" => ""];
+
+                        public function read(): void {
+                            foreach ($this->rows as &$row) {
+                                $row = (string) $_GET["value"];
+                            }
+                            unset($row);
+                        }
+
+                        public function show(): void {
+                            echo $this->rows["key"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPregMatchMatches' => [
                 'code' => '<?php // --taint-analysis
                     preg_match("/id=(\\w+)/", (string) $_GET["value"], $matches);
