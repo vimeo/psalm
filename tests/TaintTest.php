@@ -2659,6 +2659,12 @@ final class TaintTest extends TestCase
                     echo (string) gethostbyaddr("127.0.0.1");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedFileInPharAddFile' => [
+                'code' => '<?php
+                    $phar = new Phar("/tmp/a.phar");
+                    $phar->addFile((string) $_GET["path"]);',
+                'error_message' => 'TaintedFile',
+            ],
             'taintedSsrfInCurlSetoptArray' => [
                 'code' => '<?php
                     $ch = curl_init();

@@ -135,7 +135,10 @@ return [
 'ZipArchive::addFile' => [TaintKind::INPUT_FILE],
 'ZipArchive::extractTo' => [TaintKind::INPUT_FILE],
 'Phar::__construct' => [TaintKind::INPUT_FILE],
+'Phar::addFile' => [TaintKind::INPUT_FILE],
+'Phar::extractTo' => [TaintKind::INPUT_FILE],
 'PharData::__construct' => [TaintKind::INPUT_FILE],
+'PharData::addFile' => [TaintKind::INPUT_FILE],
 'PharData::extractTo' => [TaintKind::INPUT_FILE],
 // connections to the host given
 'ftp_connect' => [TaintKind::INPUT_SSRF],
