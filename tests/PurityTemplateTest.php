@@ -54,6 +54,51 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
             ],
+            'traitMethodOverridingAMethodOfAPurityTemplateTheClassDoesNotBind' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Getter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function get(): string;
+                    }
+
+                    trait EchoingGetter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    final class Doer implements Getter {
+                        use EchoingGetter;
+                    }',
+            ],
+            'traitMethodOverridingAMethodOfAPurityTemplateTheClassBindsExplicitly' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Getter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function get(): string;
+                    }
+
+                    trait EchoingGetter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    /** @implements Getter[impure] */
+                    final class Doer implements Getter {
+                        use EchoingGetter;
+                    }',
+            ],
             'instanceofNarrowingKeepsTheParentsArguments' => [
                 'code' => '<?php
                     /**
@@ -1651,6 +1696,30 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyTypeCoercion',
+            ],
+            'traitMethodNeedingMoreThanThePurityTemplateTheClassBinds' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Getter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function get(): string;
+                    }
+
+                    trait EchoingGetter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    /** @implements Getter[pure] */
+                    final class Doer implements Getter {
+                        use EchoingGetter;
+                    }',
+                'error_message' => 'ImmutableDependency',
             ],
             'purityArgumentLeftOutWithoutDefaultIsItsUpperBound' => [
                 'code' => '<?php
