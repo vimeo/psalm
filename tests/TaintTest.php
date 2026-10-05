@@ -598,6 +598,58 @@ final class TaintTest extends TestCase
 
                     echo render($_GET["x"], true);',
             ],
+            'taintFreeSpecializedCallWhoseReturnTheTaintedCallSiteDoesNotUse' => [
+                'code' => '<?php
+                    final class Storage {
+                        private string $baseUrl = "https://example.com";
+
+                        /** @psalm-taint-specialize */
+                        public function getUrl(string $path): string {
+                            return sprintf("%s/%s", $this->baseUrl, ltrim($path, "/"));
+                        }
+
+                        public function request(string $method, string $path): bool {
+                            return ($method . $this->getUrl($path)) !== "";
+                        }
+                    }
+
+                    function upload(Storage $storage): void {
+                        $storage->request("HEAD", (string) $_GET["path"]);
+                    }
+
+                    function show(Storage $storage): void {
+                        echo $storage->getUrl("safe");
+                    }',
+            ],
+            'taintFreeSpecializedInstanceBuiltInAnotherOne' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        public string $content;
+
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Inline {
+                        public Tag $tag;
+
+                        public function __construct(string $content) {
+                            $this->tag = new Tag($content);
+                        }
+                    }
+
+                    function geo(): void {
+                        new Inline((string) $_GET["owner"]);
+                    }
+
+                    function phone(): void {
+                        $tag = new Tag("safe");
+                        echo $tag->content;
+                    }',
+            ],
             'taintFreeUnusedReturnOfSpecializedCall' => [
                 'code' => '<?php
                     /** @psalm-pure */
