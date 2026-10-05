@@ -392,6 +392,23 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'keysOfAnArrayDontHoldTheValuesAssignedUnderAVariableKey' => [
+                'code' => '<?php
+                    /** @return array<string, array{url: string}> */
+                    function getData(string $town): array {
+                        $result = [];
+                        foreach (["a", "b"] as $key) {
+                            $result[$key] = ["url" => "/" . $town];
+                        }
+                        return $result;
+                    }
+
+                    $keys = "";
+                    foreach (getData($_GET["town"]) as $category => $_) {
+                        $keys .= $category;
+                    }
+                    echo $keys;',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
@@ -1654,6 +1671,17 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
+                'code' => '<?php
+                    $outer = [];
+                    $outer[] = [$_GET["key"] => 1];
+                    foreach ($outer as $inner) {
+                        foreach ($inner as $key => $_) {
+                            echo $key;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
                 'code' => '<?php // --taint-analysis
                     $flipped = array_flip(["key" => (string) $_GET["value"]]);

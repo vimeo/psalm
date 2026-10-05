@@ -79,7 +79,8 @@ abstract class DataFlowGraph
                 $previous_path_type = $previous_path_types[$x];
                 if ($previous_path_type === $expression_type . '-assignment') {
                     if ($fetch_nesting === 0) {
-                        return false;
+                        // a value assigned under any key: the keys of the array don't hold it
+                        return $path_type === 'arraykey-fetch';
                     }
 
                     $fetch_nesting--;
