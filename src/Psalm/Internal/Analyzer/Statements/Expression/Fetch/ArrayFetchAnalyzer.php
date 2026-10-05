@@ -96,7 +96,6 @@ use function array_pop;
 use function array_values;
 use function count;
 use function implode;
-use function in_array;
 use function is_int;
 use function spl_object_id;
 use function strlen;
@@ -1866,11 +1865,11 @@ final class ArrayFetchAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                 $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
             }
 
-            if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
@@ -1880,11 +1879,11 @@ final class ArrayFetchAnalyzer
                 $context,
             );
 
-            if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
             }
 
-            if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
             }
 
@@ -1894,15 +1893,15 @@ final class ArrayFetchAnalyzer
         } else {
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                 $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
             }
 
-            if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->addSuppressedIssues(['MixedMethodCall']);
             }
 
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+            if (!isset($suppressed_issues['PossiblyNullReference'])
                 && ($context->inside_isset || $context->inside_unset)
             ) {
                 // a null receiver is what isset() and unset() are for
@@ -2037,17 +2036,17 @@ final class ArrayFetchAnalyzer
 
             $has_array_access = true;
 
-            if (!in_array('PossiblyNullReference', $suppressed_issues, true)
+            if (!isset($suppressed_issues['PossiblyNullReference'])
                 && ($context->inside_isset || $context->inside_unset)
             ) {
                 $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
             }
 
-            if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
             }
 
-            if (!in_array('MixedMethodCall', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['MixedMethodCall'])) {
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
             }
         }

@@ -736,7 +736,7 @@ final class AtomicPropertyFetchAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['InternalMethod'])) {
                 $statements_analyzer->addSuppressedIssues(['InternalMethod']);
             }
 
@@ -747,7 +747,7 @@ final class AtomicPropertyFetchAnalyzer
                 false,
             );
 
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['InternalMethod'])) {
                 $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
             }
 

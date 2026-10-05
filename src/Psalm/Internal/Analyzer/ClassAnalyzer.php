@@ -1687,7 +1687,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->alter_code
             && $source === $this
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-            && !in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && !$codebase->config->suppressesIssueType($this->getSuppressedIssues(), 'MissingPropertyType')
             && $suggested_type
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {

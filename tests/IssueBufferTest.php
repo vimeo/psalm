@@ -115,6 +115,7 @@ final class IssueBufferTest extends TestCase
 
         $config = $this->createMock(Config::class);
         $config->eventDispatcher = $eventDispatcher;
+        $config->method('isSuppressible')->willReturn(true);
 
         $codebase = $this->createMock(Codebase::class);
         $codebase->analyzer = $analyzer;
@@ -130,6 +131,81 @@ final class IssueBufferTest extends TestCase
         IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
         $output = (string) ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
+        IssueBuffer::clear();
+    }
+
+    public function testBaselineDoesNotSuppressUnsuppressibleIssues(): void
+    {
+        IssueBuffer::clear();
+        IssueBuffer::addIssues([
+            '/path/one.php' => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'PossiblyNullReference',
+                    'Message',
+                    'one.php',
+                    '/path/one.php',
+                    'snippet-1',
+                    'snippet-1',
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    0,
+                    0,
+                    'MissingPropertyType',
+                    'Message',
+                    'one.php',
+                    '/path/one.php',
+                    'snippet-2',
+                    'snippet-2',
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            ],
+        ]);
+        $baseline = [
+            'one.php' => [
+                'PossiblyNullReference' => ['o' => 1, 's' => ['snippet-1']],
+                'MissingPropertyType' => ['o' => 1, 's' => ['snippet-2']],
+            ],
+        ];
+
+        $analyzer = $this->createMock(Analyzer::class);
+        $analyzer->method('getTotalTypeCoverage')->willReturn([0, 0]);
+
+        $config = $this->createMock(Config::class);
+        $config->eventDispatcher = $this->createMock(EventDispatcher::class);
+        $config->method('isSuppressible')->willReturnCallback(
+            static fn(string $issue_type): bool => $issue_type !== 'PossiblyNullReference',
+        );
+
+        $codebase = $this->createMock(Codebase::class);
+        $codebase->analyzer = $analyzer;
+        $codebase->config = $config;
+
+        $projectAnalyzer = $this->createMock(ProjectAnalyzer::class);
+        $projectAnalyzer->method('getCodebase')->willReturn($codebase);
+
+        $projectAnalyzer->stdout_report_options = new ReportOptions();
+        $projectAnalyzer->generated_report_options = [];
+
+        ob_start();
+        IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
+        $output = (string) ob_get_clean();
+        $this->assertMatchesRegularExpression('/ERROR\S*: PossiblyNullReference/', $output);
+        $this->assertDoesNotMatchRegularExpression('/ERROR\S*: MissingPropertyType/', $output);
         IssueBuffer::clear();
     }
 

@@ -111,7 +111,7 @@ final class IncludeAnalyzer
         if ($stmt_expr_type
             && $statements_analyzer->taint_flow_graph
             && $stmt_expr_type->parent_nodes
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !$config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
         ) {
             $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
