@@ -728,6 +728,38 @@ final class TaintTest extends TestCase
                     identity((string) $_GET["value"]);
                     echo identity("safe");',
             ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnInheritedConstructorSetsOnOtherObjects' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Provider {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        /** @param array<string, string> $options */
+                        public function __construct(array $options) {
+                            foreach ($options as $key => $value) {
+                                $this->options[$key] = $value;
+                            }
+                        }
+                    }
+
+                    final class Comments extends Provider {}
+
+                    final class Activity extends Provider {
+                        protected string $title;
+
+                        public function __construct() {
+                            parent::__construct([]);
+                            $this->title = "";
+                        }
+
+                        public function printIds(): void {
+                            echo $this->options["ids"] ?? $this->title;
+                        }
+                    }
+
+                    new Comments(["comment" => (string) $_GET["comment"]]);
+                    (new Activity())->printIds();',
+            ],
             'dontTaintThePropertiesOfASubclassWithWhatAnInheritedMethodSetsOnOtherObjects' => [
                 'code' => '<?php // --taint-analysis
                     class Block {

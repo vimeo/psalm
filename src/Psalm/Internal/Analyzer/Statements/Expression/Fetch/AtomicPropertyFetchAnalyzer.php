@@ -876,13 +876,7 @@ final class AtomicPropertyFetchAnalyzer
         bool $in_assignment,
         ?Context $context = null,
     ): void {
-        // A method can be analyzed again to collect the properties it initializes or mutates, in the context of
-        // a subclass calling it (see CallAnalyzer::collectSpecialInformation()): its parameters stay those of
-        // every call, so linking its properties to those of the subclass there would make any call to it, on
-        // any object, reach the properties of that subclass. Its regular analysis adds its paths.
-        if (!$statements_analyzer->data_flow_graph
-            || ($context && ($context->collect_initializations || $context->collect_mutations))
-        ) {
+        if (!$statements_analyzer->data_flow_graph) {
             return;
         }
 

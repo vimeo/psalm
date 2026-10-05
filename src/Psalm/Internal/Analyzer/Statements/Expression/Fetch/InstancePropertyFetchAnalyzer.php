@@ -422,16 +422,14 @@ final class InstancePropertyFetchAnalyzer
 
                     $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
-                    if (!$context->collect_initializations && !$context->collect_mutations) {
-                        AtomicPropertyFetchAnalyzer::processTaints(
-                            $statements_analyzer,
-                            $stmt,
-                            $stmt_type,
-                            $property_id,
-                            $class_storage,
-                            $in_assignment,
-                        );
-                    }
+                    AtomicPropertyFetchAnalyzer::processTaints(
+                        $statements_analyzer,
+                        $stmt,
+                        $stmt_type,
+                        $property_id,
+                        $class_storage,
+                        $in_assignment,
+                    );
 
                     $context->vars_in_scope[$var_id] = $stmt_type;
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
