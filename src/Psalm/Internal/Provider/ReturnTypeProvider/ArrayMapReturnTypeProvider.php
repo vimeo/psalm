@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
@@ -13,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
@@ -234,13 +236,12 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            // the array holds what the callback returns: what takes the whole array (implode(), ...) takes its taints
             return self::getMappedArrayType(
                 $array_arg_atomic_type,
                 count($call_args),
                 $generic_key_type,
                 $mapping_return_type,
-            )->addParentNodes($mapping_return_type->parent_nodes);
+            )->addParentNodes(self::getElementNodes($statements_source, $event, $mapping_return_type));
         }
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
@@ -251,6 +252,37 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 ]),
             ])
             : Type::getList();
+    }
+
+    /**
+     * The array holds what the callback returns as its elements, so a fetch of an element gets the whole of what the
+     * callback returned, keys included, and what takes the whole array (implode(), ...) takes its taints
+     *
+     * @return array<string, DataFlowNode>
+     */
+    private static function getElementNodes(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionReturnTypeProviderEvent $event,
+        Union $mapping_return_type,
+    ): array {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($graph === null || $mapping_return_type->parent_nodes === []) {
+            return [];
+        }
+
+        $element_node = DataFlowNode::getForAssignment(
+            'array_map elements',
+            new CodeLocation($statements_analyzer, $event->getStmt()),
+        );
+
+        $graph->addNode($element_node);
+
+        foreach ($mapping_return_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $element_node, 'arrayvalue-assignment');
+        }
+
+        return [$element_node->id => $element_node];
     }
 
     /**

@@ -300,6 +300,23 @@ final class TaintTest extends TestCase
                     }
                     echo (string) array_search("x", $values);',
             ],
+            'dontTaintTheOtherKeysOfTheElementsArrayMapReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $links = array_map(
+                        fn(string $title): array => ["title" => $title, "url" => "/"],
+                        ["a" => (string) $_GET["title"]],
+                    );
+                    foreach ($links as $link) {
+                        echo $link["url"];
+                    }',
+            ],
+            'dontTaintTheOtherKeysOfTheElementsArrayMapPassesOn' => [
+                'code' => '<?php // --taint-analysis
+                    $links = ["a" => ["title" => (string) $_GET["title"], "url" => "/"]];
+                    foreach (array_map(fn(array $link): array => $link, $links) as $link) {
+                        echo (string) $link["url"];
+                    }',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -2772,6 +2789,17 @@ final class TaintTest extends TestCase
             'taintThroughArrayKeys' => [
                 'code' => '<?php
                     echo implode(",", array_keys($_GET));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeysOfTheElementsArrayMapReturns' => [
+                'code' => '<?php
+                    $links = array_map(
+                        fn(string $title): array => ["title" => $title, "url" => "/"],
+                        ["a" => (string) $_GET["title"]],
+                    );
+                    foreach ($links as $link) {
+                        echo $link["title"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapClosureIntoWholeArray' => [
