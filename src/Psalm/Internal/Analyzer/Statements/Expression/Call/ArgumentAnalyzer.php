@@ -1945,6 +1945,29 @@ final class ArgumentAnalyzer
 
         $graph->addNode($method_node);
 
+        if ($taint_flow_graph && $function_storage && !$in_call_map) {
+            $callable_param_method_id = $cased_method_id;
+            $callable_param_storage = $function_storage;
+
+            // keyed as the body of the method keys its callable parameters
+            if ($method_id) {
+                $callable_param_method_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
+                $callable_param_storage = $codebase->methods->getStorage(
+                    $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                );
+            }
+
+            FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $callable_param_method_id,
+                DataFlowNode::getParameterOffset($callable_param_storage, $function_param, $argument_offset),
+                $callable_param_storage,
+                $specialization_location,
+                $input_type,
+            );
+        }
+
         $argument_value_node = DataFlowNode::getForAssignment(
             'call to ' . $cased_method_id,
             $arg_location,

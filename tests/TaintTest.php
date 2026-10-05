@@ -4783,6 +4783,82 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
             ],
             */
+            'taintedArgReturnedByClosureCalledThroughVariable' => [
+                'code' => '<?php
+                    $f = function (string $s): string {
+                        return $s;
+                    };
+                    echo $f((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedArgEchoedByClosureCalledThroughVariable' => [
+                'code' => '<?php
+                    $f = static function (string $s): void {
+                        echo $s;
+                    };
+                    $f((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedReturnOfClosurePassedToFunctionCallingIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(): T $callback
+                     * @return T
+                     */
+                    function run(callable $callback) {
+                        return $callback();
+                    }
+                    echo run(fn(): string => (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedReturnOfClosurePassedToMethodCallingIt' => [
+                'code' => '<?php
+                    final class Locker {
+                        /**
+                         * @template T
+                         * @param Closure(): T $callback
+                         * @return T
+                         */
+                        public static function lock(string $name, Closure $callback) {
+                            return $callback();
+                        }
+                    }
+                    echo Locker::lock("a", static function (): string {
+                        return (string) $_GET["x"];
+                    });',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedReturnOfNamedFunctionPassedToFunctionCallingIt' => [
+                'code' => '<?php
+                    function source(): string {
+                        return (string) $_GET["x"];
+                    }
+                    function run(callable $callback): string {
+                        return (string) $callback();
+                    }
+                    echo run(source(...));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedArgPassedByFunctionToClosureItIsGiven' => [
+                'code' => '<?php
+                    function apply(callable $callback, string $value): void {
+                        $callback($value);
+                    }
+                    apply(function (string $s): void {
+                        echo $s;
+                    }, (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedReturnOfClosureWithDocblockReturnTypeCalledThroughVariable' => [
+                'code' => '<?php
+                    $f = /** @return list{0: mixed} */ function () {
+                        return [(string) $_GET["x"]];
+                    };
+                    [$x] = $f();
+                    echo (string) $x;',
+                'error_message' => 'TaintedHtml',
+            ],
             'castToArrayPassTaints' => [
                 'code' => '<?php
                     $args = $_POST;
