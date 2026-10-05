@@ -6120,16 +6120,32 @@ final class TaintTest extends TestCase
                     ',
                 'error_message' => 'TaintedShell',
             ],
-            /*
-            // TODO: Stubs do not support this type of inference even with $this->message = $message.
-            // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
-            'taintException' => [
-                '<?php
+            'taintExceptionMessage' => [
+                'code' => '<?php
                     $x = new Exception($_GET["x"]);
                     echo $x->getMessage();',
                 'error_message' => 'TaintedHtml',
             ],
-            */
+            'taintCaughtExceptionMessage' => [
+                'code' => '<?php
+                    function foo(): void {}
+                    try {
+                        foo();
+                    } catch (Throwable $e) {
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCaughtExceptionDump' => [
+                'code' => '<?php
+                    function foo(): void {}
+                    try {
+                        foo();
+                    } catch (RuntimeException $e) {
+                        echo print_r($e, true);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'castToArrayPassTaints' => [
                 'code' => '<?php
                     $args = $_POST;
