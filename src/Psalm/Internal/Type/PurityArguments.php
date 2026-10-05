@@ -133,9 +133,25 @@ final class PurityArguments
                 break;
             }
 
-            $type_args[] = $bound;
+            $type_args[] = self::getOmittedArgument($bound);
         }
 
         return [...$type_args, ...$purity_args];
+    }
+
+    /**
+     * What a template argument left out of a use of the class stands for: its bound. A use of a
+     * class whose templates have no bounds but purity bounds is no more specific than a use without
+     * arguments, which any instance fits: those bounds stand for whatever the instance binds the
+     * templates to, and are not compared invariantly. The bound of a bounded type template
+     * (`@template T as object`) is still the argument, as it is without purity templates.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getOmittedArgument(Union $bound): Union
+    {
+        return $bound->isMixed() || Capabilities::isPurityType($bound)
+            ? $bound->setProperties(['had_template' => true])
+            : $bound;
     }
 }

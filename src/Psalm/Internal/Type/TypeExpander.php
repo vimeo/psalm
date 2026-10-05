@@ -658,7 +658,7 @@ final class TypeExpander
                     $return_type->value,
                     array_values(
                         array_map(
-                            static fn($type_map) => reset($type_map),
+                            static fn($type_map) => PurityArguments::getOmittedArgument(reset($type_map)),
                             $container_class_storage->template_types,
                         ),
                     ),
