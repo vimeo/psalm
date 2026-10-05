@@ -139,9 +139,9 @@ final class TaintFlowGraph extends DataFlowGraph
      * The array keys passed to parameters at call sites: unspecialized argument node id => (specialization key of
      * the call site, whether the call is specialized or not => key). A literal key is as the keys of array
      * fetches and assignments are in path types, and a parameter of the function-like making the call, as passed,
-     * is its unspecialized argument node id prefixed with '@'. The body of a function-like whose array key is one of its parameters, as passed,
-     * fetches or assigns the key of each call (see ArrayFetchAnalyzer::getParamKey() and
-     * TaintFlowResolution::resolveParamKey()).
+     * is its unspecialized argument node id prefixed with '@'. The body of a function-like whose array key is one
+     * of its parameters, as passed, fetches or assigns the key of each call (see ArrayFetchAnalyzer::getParamKey()
+     * and TaintFlowResolution::resolveParamKey()).
      *
      * @var array<string, array<string, string>>
      */
