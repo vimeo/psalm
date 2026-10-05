@@ -30,8 +30,7 @@ curl opens the files some of its options name too. `CURLOPT_COOKIEJAR` writes th
 ```php
 <?php
 
-$content = fopen($_GET['header'], "r");
-echo $content;
+unlink($_GET['path']);
 ```
 
 ## Mitigations

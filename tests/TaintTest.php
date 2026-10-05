@@ -2349,6 +2349,59 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedSql',
             ],
+            'taintedHeaderInMail' => [
+                'code' => '<?php
+                    mail("admin@example.com", "Report", "body", "From: " . $_GET["from"]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintedShellInMailParameters' => [
+                'code' => '<?php
+                    mail("admin@example.com", "Report", "body", "", "-f" . $_GET["from"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintedSsrfInCurlSetoptArray' => [
+                'code' => '<?php
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [CURLOPT_URL => $_GET["url"]]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInFsockopen' => [
+                'code' => '<?php
+                    fsockopen($_GET["host"], 80);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInStreamSocketClient' => [
+                'code' => '<?php
+                    stream_socket_client($_GET["address"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInFopen' => [
+                'code' => '<?php
+                    fopen($_GET["url"], "r");',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInSoapClient' => [
+                'code' => '<?php
+                    new SoapClient($_GET["wsdl"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedCookieInSetrawcookie' => [
+                'code' => '<?php
+                    setrawcookie("session", $_GET["value"]);',
+                'error_message' => 'TaintedCookie',
+            ],
+            'taintedSqlInSqlite3' => [
+                'code' => '<?php
+                    $db = new SQLite3("app.db");
+                    $db->exec("DELETE FROM users WHERE name = \'" . $_GET["name"] . "\'");',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedFileInGlob' => [
+                'code' => '<?php
+                    // glob() is declared by a stub, which must keep its taint sinks
+                    glob($_GET["pattern"]);',
+                'error_message' => 'TaintedFile',
+            ],
             'taintedNosqlFromMongoQuery' => [
                 'code' => '<?php
                     function getUser() : MongoDB\Driver\Query {
@@ -4111,7 +4164,7 @@ final class TaintTest extends TestCase
             ],
             'taintedFile' => [
                 'code' => '<?php
-                fopen($_GET[\'taint\'], "r");',
+                file_put_contents($_GET[\'taint\'], "data");',
             'error_message' => 'TaintedFile',
             ],
             'taintedHeader' => [
@@ -4700,6 +4753,7 @@ final class TaintTest extends TestCase
                     $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
                     $result = $mysqli->execute_query($query);',
                 'error_message' => 'TaintedSql',
+                'php_version' => '8.2',
             ],
             'taintedRegisterShutdownFunction' => [
                 'code' => '<?php
