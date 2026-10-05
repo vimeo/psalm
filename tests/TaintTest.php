@@ -485,6 +485,15 @@ final class TaintTest extends TestCase
                     [["author" => $author, "text" => $text]] = getComments();
                     echo $text;',
             ],
+            'dontTaintTheOtherItemsOfANestedDestructuringThroughArrayValues' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    [["author" => $author, "text" => $text]] = array_values([getComment()]);
+                    echo $text;',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -1744,6 +1753,16 @@ final class TaintTest extends TestCase
                     }
 
                     [["author" => $author, "text" => $text]] = getComments();
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemOfANestedDestructuringThroughArrayValues' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $author;',
                 'error_message' => 'TaintedHtml',
             ],
