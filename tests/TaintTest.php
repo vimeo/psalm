@@ -20,6 +20,7 @@ use function array_map;
 use function array_values;
 use function in_array;
 use function preg_quote;
+use function sort;
 use function str_starts_with;
 use function strpos;
 use function trim;
@@ -274,6 +275,117 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * The sinks of the curl options with several, which a test expecting an issue can't check: it only sees the first
+     * one reported.
+     *
+     * @param list<string> $expected_issues
+     * @dataProvider providerCurlSinks
+     */
+    public function testCurlSinks(string $code, array $expected_issues, bool $track_unused_variables): void
+    {
+        if ($track_unused_variables) {
+            $this->trackUnusedVariables();
+        }
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+        sort($taint_issues);
+
+        self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public function providerCurlSinks(): array
+    {
+        $cases = [
+            // a URL may name a local file: file:///etc/passwd
+            'url' => [
+                '<?php
+                    $url = (string) $_GET["url"];
+                    $curl = curl_init($url);
+                    curl_setopt($curl, CURLOPT_URL, $url);
+                    curl_setopt_array($curl, [CURLOPT_URL => $url]);',
+                [
+                    'TaintedFile on line 3',
+                    'TaintedFile on line 4',
+                    'TaintedFile on line 5',
+                    'TaintedSSRF on line 3',
+                    'TaintedSSRF on line 4',
+                    'TaintedSSRF on line 5',
+                ],
+            ],
+            // the request target sent to a proxy is the URL it fetches
+            'requestTarget' => [
+                '<?php
+                    $target = (string) $_GET["target"];
+                    curl_setopt(curl_init(), CURLOPT_REQUEST_TARGET, $target);
+                    curl_setopt_array(curl_init(), [CURLOPT_REQUEST_TARGET => $target]);',
+                [
+                    'TaintedHeader on line 3',
+                    'TaintedHeader on line 4',
+                    'TaintedSSRF on line 3',
+                    'TaintedSSRF on line 4',
+                ],
+            ],
+            'unixSocket' => [
+                '<?php
+                    curl_setopt(curl_init(), CURLOPT_UNIX_SOCKET_PATH, (string) $_GET["socket"]);',
+                [
+                    'TaintedFile on line 2',
+                    'TaintedSSRF on line 2',
+                ],
+            ],
+            // an option the analysis can't tell may be any option with a sink
+            'optionTheAnalysisCantTell' => [
+                '<?php
+                    function set(\\CurlHandle $curl, int $option): void {
+                        curl_setopt($curl, $option, (string) $_GET["value"]);
+                    }
+
+                    function setAll(\\CurlHandle $curl, int $option): void {
+                        curl_setopt_array($curl, [$option => (string) $_GET["value"]]);
+                    }',
+                [
+                    'TaintedCallable on line 3',
+                    'TaintedCallable on line 7',
+                    'TaintedFile on line 3',
+                    'TaintedFile on line 7',
+                    'TaintedHeader on line 3',
+                    'TaintedHeader on line 7',
+                    'TaintedSSRF on line 3',
+                    'TaintedSSRF on line 7',
+                    'TaintedSleep on line 3',
+                    'TaintedSleep on line 7',
+                ],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
+    }
+
+    /**
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
@@ -310,6 +422,49 @@ final class TaintTest extends TestCase
                     $values = ["read" => "", "other" => ""];
                     read_value($values["read"]);
                     echo $values["other"];',
+            ],
+            'dontTaintACurlOptionArrayEntryNotChoosingTheDestinationNorWrittenIntoTheRequest' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    $options = [CURLOPT_URL => "https://example.com/", CURLOPT_POSTFIELDS => $value];
+                    $options[CURLOPT_PRIVATE] = $value;
+                    curl_setopt_array(curl_init(), $options);',
+            ],
+            'dontTaintSsrfInACurlOptionNotChoosingTheDestination' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
+                    curl_setopt($curl, \\CURLOPT_PRIVATE, (string) $_GET["private"]);',
+            ],
+            'dontTaintAnImmutableObjectBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    $tainted = new Url((string) $_GET["url"]);
+                    fetch(new Url("https://example.com/"));',
+            ],
+            'dontTaintAnObjectBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /**
+                         * @psalm-flow ($url) -> return
+                         * @psalm-taint-specialize
+                         */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    $tainted = new Url((string) $_GET["url"]);
+                    fetch(new Url("https://example.com/"));',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
@@ -928,6 +1083,22 @@ final class TaintTest extends TestCase
                     $b = new StringHolder($_GET["x"]);
 
                     echo $a->x;',
+            ],
+            'dontReportOutputOfPrintRAndVarExportReturningIt' => [
+                'code' => '<?php
+                    $exported = var_export($_GET["x"], true);
+                    $printed = print_r($_GET["x"], true);
+                    $named = print_r(value: $_GET["x"], return: true);',
+            ],
+            'dontTaintAClosureMadeFromAClosure' => [
+                'code' => '<?php
+                    $v = (string) $_GET["v"];
+                    $a = Closure::fromCallable("strlen");
+                    $b = Closure::fromCallable(function () use ($v): string { return $v; });
+                    $c = Closure::fromCallable(fn(): string => $v);
+                    $a("a");
+                    $b();
+                    $c();',
             ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
@@ -1594,6 +1765,120 @@ final class TaintTest extends TestCase
                     read_value(Values::$value);
                     echo Values::$value;',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintHeaderInTheCurlHttpHeaderOption' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, CURLOPT_HTTPHEADER, ["X-Value: " . (string) $_GET["header"]]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintHeaderInTheCurlCustomRequestOption' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, \\CURLOPT_CUSTOMREQUEST, (string) $_GET["method"]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintSsrfInTheCurlDefaultProtocolOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_DEFAULT_PROTOCOL, (string) $_GET["protocol"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintHeaderInTheCurlQuoteOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_QUOTE, ["DELE " . (string) $_GET["file"]]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintFileInTheCurlCookieJarOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_COOKIEJAR, (string) $_GET["jar"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintSleepInTheCurlMaxRecvSpeedOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_MAX_RECV_SPEED_LARGE, (int) $_GET["speed"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintCallableInTheCurlWriteFunctionOption' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), CURLOPT_WRITEFUNCTION, (string) $_GET["callback"]);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintFileInTheCurlCookieFileOptionOfAnArray' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(curl_init(), [CURLOPT_COOKIEFILE => (string) $_GET["file"]]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintFileInACurlFile' => [
+                'code' => '<?php // --taint-analysis
+                    $file = new CURLFile((string) $_GET["path"]);
+                    curl_setopt(curl_init(), CURLOPT_POSTFIELDS, ["file" => $file]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintFileInCurlFileCreate' => [
+                'code' => '<?php // --taint-analysis
+                    $file = curl_file_create((string) $_GET["path"]);
+                    curl_setopt(curl_init(), CURLOPT_POSTFIELDS, ["file" => $file]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintHeaderInTheCurlHttpHeaderOptionOfAnArray' => [
+                'code' => '<?php // --taint-analysis
+                    $options = [CURLOPT_URL => "https://example.com/"];
+                    $options[CURLOPT_HTTPHEADER] = ["X-Value: " . (string) $_GET["header"]];
+                    curl_setopt_array(curl_init(), $options);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintAnImmutableObjectThroughTheFlowOfItsConstructor' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url((string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructorFromANamedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(int $port = 80, string $url = "") {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url(url: (string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructorFromAVariadicArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($parts) -> return */
+                        public function __construct(string ...$parts) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url("https:", "", (string) $_GET["host"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructor' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url((string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
             ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
@@ -2957,6 +3242,30 @@ final class TaintTest extends TestCase
                     $get = array_map(fn($str) => trim($str), $_GET);
                     echo $get["test"];',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintPrintRReturningItsOutput' => [
+                'code' => '<?php
+                    echo print_r($_GET["x"], true);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintVarExportReturningItsOutput' => [
+                'code' => '<?php
+                    echo var_export($_GET["x"], true);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPrintROutput' => [
+                'code' => '<?php
+                    print_r($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintClosureFromCallable' => [
+                'code' => '<?php
+                    $name = $_GET["f"];
+                    if (is_callable($name)) {
+                        $closure = Closure::fromCallable($name);
+                        $closure();
+                    }',
+                'error_message' => 'TaintedCallable',
             ],
             'taintThroughArrayMapImplicitFunctionCall' => [
                 'code' => '<?php
