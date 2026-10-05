@@ -965,8 +965,8 @@ final class TaintFlowResolution
      * What an edge of type $path_type does with the open assignments of a flow, as shouldIgnoreFetch() and
      * appendPathType() treat them, except that the array keys are at the level of the array values (see
      * FAMILIES). The edge to what an array becomes once its value under a key is replaced (see
-     * DataFlowGraph::isOverwritten()) observes the innermost open array assignment as a fetch of that key
-     * prefixed with '!' (see classPassesFetch()), and closes none.
+     * DataFlowGraph::isOverwritten()) has that key prefixed with '!' as observed key, and observes, closes and
+     * adds nothing (see getNextOpenAssignments()).
      *
      * @return array{int, ?string, int, int}
      * @psalm-pure
@@ -983,7 +983,7 @@ final class TaintFlowResolution
         }
 
         if (str_starts_with($path_type, 'arrayvalue-overwrite-')) {
-            return [self::ARRAY_FAMILY, '!' . substr($path_type, 21), -1, -1];
+            return [-1, '!' . substr($path_type, 21), -1, -1];
         }
 
         $observed_family = -1;
@@ -1107,7 +1107,20 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
 
-        if ($array_assignments
+        if ($observed_family === -1 && $observed_key !== null) {
+            // The replacement of the value under a key (see getPathTypeEffects()) stops a flow of what was
+            // assigned under that key, where the flow knows that's its innermost open array assignment. Any other
+            // goes on, also one that doesn't know it: deciding that for each call entering its context, in
+            // filters, would lose the precision of the fetches in them (see getAssignmentClass()) for no flow
+            // they would take otherwise. Nor is it an observation keeping the open assignments of the flows
+            // reaching it (see computeObservableDepths()): where no fetch past it can observe the one it would
+            // stop, the flow goes on as it did through the plain edge it replaces.
+            $innermost = $array_assignments ? $array_assignments[count($array_assignments) - 1] : -1;
+            $next = $innermost >= 0
+                && !self::classPassesFetch($this->getClass($innermost, self::ARRAY_FAMILY), $observed_key)
+                ? self::IGNORED
+                : $open_assignments;
+        } elseif ($array_assignments
             && $this->path_types[$array_assignments[count($array_assignments) - 1]] === 'arraykey-assignment'
             && $this->path_types[$path_type] === 'arrayvalue-fetch'
         ) {
