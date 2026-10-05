@@ -259,9 +259,10 @@ final class ArrayAssignmentAnalyzer
             }
         } elseif ($root_var_id) {
             // PHP creates the array an item is assigned to: it's defined from now on
-            $context->vars_in_scope[$root_var_id] = $root_type->possibly_undefined && !$root_type->possibly_undefined_from_try
-                ? $root_type->setPossiblyUndefined(false)
-                : $root_type;
+            $context->vars_in_scope[$root_var_id] = $root_type->possibly_undefined
+                && !$root_type->possibly_undefined_from_try
+                    ? $root_type->setPossiblyUndefined(false)
+                    : $root_type;
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
