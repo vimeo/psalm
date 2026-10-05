@@ -392,6 +392,47 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
+                    echo (string) (current($files)["tmp_name"] ?? "");
+                    echo (string) (array_pop($files)["tmp_name"] ?? "");',
+            ],
+            'dontTaintTheKeyOfAnArrayWithItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => (string) $_GET["value"]];
+                    echo key($values);
+                    echo (string) array_key_first($values);',
+            ],
+            'dontTaintTheKeysOfAnArrayWithItsValuesThroughArrayKeysOrSearch' => [
+                'code' => '<?php // --taint-analysis
+                    $values = ["key" => (string) $_GET["value"]];
+                    foreach (array_keys($values) as $key) {
+                        echo $key;
+                    }
+                    echo (string) array_search("x", $values);',
+            ],
+            'dontTaintTheOtherKeysOfTheElementsArrayMapReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $links = array_map(
+                        fn(string $title): array => ["title" => $title, "url" => "/"],
+                        ["a" => (string) $_GET["title"]],
+                    );
+                    foreach ($links as $link) {
+                        echo $link["url"];
+                    }',
+            ],
+            'dontTaintTheOtherKeysOfTheElementsArrayMapPassesOn' => [
+                'code' => '<?php // --taint-analysis
+                    $links = ["a" => ["title" => (string) $_GET["title"], "url" => "/"]];
+                    foreach (array_map(fn(array $link): array => $link, $links) as $link) {
+                        echo (string) $link["url"];
+                    }',
+            ],
+            'dontTaintUnserializeOfWhatSerializeReturns' => [
+                'code' => '<?php // --taint-analysis
+                    unserialize(serialize((string) $_GET["value"]));',
+            ],
             'dontTaintTheOtherItemsDestructuredFromAnUnshapedArray' => [
                 'code' => '<?php // --taint-analysis
                     function getComment(): array {
@@ -442,6 +483,15 @@ final class TaintTest extends TestCase
                     }
 
                     [["author" => $author, "text" => $text]] = getComments();
+                    echo $text;',
+            ],
+            'dontTaintTheOtherItemsOfANestedDestructuringThroughArrayValues' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $text;',
             ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
@@ -1154,6 +1204,29 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintCallsOfImpureBuiltinFromOtherCalls' => [
+                'code' => '<?php
+                    /** @var array<string> $tainted */
+                    $tainted = $_GET["x"];
+                    $first = reset($tainted);
+                    $safe = ["safe"];
+                    echo reset($safe);
+                    $date = new DateTime();
+                    $formatted = $date->format((string) $_GET["format"]);
+                    echo $date->format("Y");',
+            ],
+            'rawUrlEncodeEscapesHtml' => [
+                'code' => '<?php
+                    echo rawurlencode((string) $_GET["x"]);
+                    echo http_build_query(["x" => $_GET["x"]]);
+                    header("Location: /?q=" . urlencode((string) $_GET["q"]));
+                    header("Location: /?" . http_build_query(["q" => $_GET["q"]]));',
+            ],
+            'escapeShellArgEscapesShell' => [
+                'code' => '<?php
+                    exec("ls " . escapeshellarg((string) $_GET["x"]));
+                    exec(escapeshellcmd((string) $_GET["x"]));',
+            ],
             'dontTaintPromotedPropertyOfOtherInstance' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -1581,6 +1654,31 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintTheKeysOfAFlippedArrayWithItsValues' => [
+                'code' => '<?php // --taint-analysis
+                    $flipped = array_flip(["key" => (string) $_GET["value"]]);
+                    foreach ($flipped as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheElementABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $files = [["name" => (string) $_GET["name"], "tmp_name" => "/tmp/upload"]];
+                    echo array_shift($files)["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyABuiltinReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $values = [(string) $_GET["key"] => 1];
+                    echo (string) array_key_last($values);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughSerialize' => [
+                'code' => '<?php // --taint-analysis
+                    echo serialize((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheItemDestructuredFromAnUnshapedArray' => [
                 'code' => '<?php // --taint-analysis
                     function getComment(): array {
@@ -1667,6 +1765,16 @@ final class TaintTest extends TestCase
                     }
 
                     [["author" => $author, "text" => $text]] = getComments();
+                    echo $author;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheItemOfANestedDestructuringThroughArrayValues' => [
+                'code' => '<?php // --taint-analysis
+                    function getComment(): array {
+                        return ["author" => (string) $_GET["author"], "text" => "safe"];
+                    }
+
+                    [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $author;',
                 'error_message' => 'TaintedHtml',
             ],
@@ -3529,6 +3637,70 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     $get = array_map(fn($str) => trim($str), $_GET);
                     echo $get["test"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunction' => [
+                'code' => '<?php
+                    echo mb_substr($_GET["x"], 1);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunctionPath' => [
+                'code' => '<?php
+                    echo basename((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyFunctionWithParamsProvider' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_filter($a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughCallMapOnlyMethod' => [
+                'code' => '<?php
+                    echo (new DateTime())->format((string) $_GET["format"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughStubbedArrayFunction' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo array_values($a)[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughStubbedVariadicArrayFunction' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_merge(["safe"], $a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayKeys' => [
+                'code' => '<?php
+                    echo implode(",", array_keys($_GET));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeysOfTheElementsArrayMapReturns' => [
+                'code' => '<?php
+                    $links = array_map(
+                        fn(string $title): array => ["title" => $title, "url" => "/"],
+                        ["a" => (string) $_GET["title"]],
+                    );
+                    foreach ($links as $link) {
+                        echo $link["title"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayMapClosureIntoWholeArray' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = $_GET["a"];
+                    echo implode(",", array_map(fn($str) => $str, $a));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlThroughShellEscape' => [
+                'code' => '<?php
+                    echo escapeshellarg((string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintPromotedProperty' => [

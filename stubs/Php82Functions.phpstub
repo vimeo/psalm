@@ -23,6 +23,7 @@ function str_split(string $string, int $length = 1) {}
  *
  * @psalm-pure
  * @psalm-purity-from-template P
+ * @psalm-flow ($iterator) -> return
  */
 function iterator_to_array(iterable $iterator, bool $preserve_keys = true): array {}
 
