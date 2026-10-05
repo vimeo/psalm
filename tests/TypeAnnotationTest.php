@@ -913,28 +913,6 @@ final class TypeAnnotationTest extends TestCase
                     '$_z===' => 'array{child: array{foo: string}}',
                 ],
             ],
-            'reversedOrderTypeAliasInSameDocblock' => [
-                'code' => <<<'PHP'
-                    <?php
-                    namespace Src2;
-                    /**
-                     * @phpstan-type ChildType = array{foo: string}
-                     * @phpstan-type ParentType = array{child: ChildType}
-                     */
-                    class Types {}
-                    /** @phpstan-import-type ParentType from Types */
-                    class Bar {
-                        public function __construct(
-                            /** @var ParentType */
-                            public array $foo = ['child' => ['foo' => 'bla']],
-                        ) {}
-                    }
-                    $_z = (new Bar)->foo;
-                    PHP,
-                'assertions' => [
-                    '$_z===' => 'array{child: array{foo: string}}',
-                ],
-            ],
             'typeAliasResolvesForwardReferenceWithinSameDocblock' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1310,7 +1288,7 @@ final class TypeAnnotationTest extends TestCase
                      * @psalm-type Bad = int.
                      */
                     class A {}',
-                'error_message' => 'is not a valid type',
+                'error_message' => 'int. is not a valid type: Unexpected token',
             ],
             'invalidTypeWhenNotImported' => [
                 'code' => '<?php

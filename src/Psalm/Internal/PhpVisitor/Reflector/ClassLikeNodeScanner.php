@@ -74,10 +74,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_keys;
+use function array_diff_key;
 use function array_merge;
 use function array_pop;
-use function array_push;
 use function array_shift;
 use function array_values;
 use function assert;
@@ -2059,21 +2058,12 @@ final class ClassLikeNodeScanner
             $declaration = self::parseTypeAliasDeclarationLine($var_line);
 
             if ($declaration !== null) {
-                // A name declared more than once in the same docblock keeps the value
-                // of its last declaration (matching the pre-existing overwrite
-                // behavior), so dedupe before reordering: otherwise a losing
-                // declaration could be reordered after the winner and overwrite it.
-                $declarations[$declaration[0]] = $declaration;
+                // Last declaration wins; dedupe before ordering so an earlier
+                // declaration can't be reordered after the winner and overwrite it.
+                $declarations[$declaration[0]] = $declaration[1];
             }
         }
 
-        $declarations = array_values($declarations);
-
-        // Aliases declared in the same docblock may reference each other regardless
-        // of declaration order, so a referenced alias must be tokenized before the
-        // alias that uses it. Aliases that form a cycle (including self-references)
-        // keep their original order, preserving the existing invalid-reference error
-        // instead of looping forever trying to resolve an order that doesn't exist.
         $declarations = self::orderTypeAliasDeclarationsByDependency(
             $declarations,
             $aliases,
@@ -2083,7 +2073,7 @@ final class ClassLikeNodeScanner
 
         $type_alias_tokens = [];
 
-        foreach ($declarations as [$type_alias, $type_string]) {
+        foreach ($declarations as $type_alias => $type_string) {
             try {
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
@@ -2164,9 +2154,12 @@ final class ClassLikeNodeScanner
     private const LOCAL_ALIAS_DEP_MARKER = "\0psalm-local-alias-dep\0";
 
     /**
-     * @param  list<array{0: string, 1: string}> $declarations
+     * Orders declarations so that each alias comes after the same-docblock aliases
+     * it references, keeping declaration order otherwise.
+     *
+     * @param  array<string, string> $declarations alias name => type string
      * @param  array<string, TypeAlias>|null $type_aliases
-     * @return list<array{0: string, 1: string}>
+     * @return array<string, string>
      */
     private static function orderTypeAliasDeclarationsByDependency(
         array $declarations,
@@ -2174,82 +2167,62 @@ final class ClassLikeNodeScanner
         ?array $type_aliases,
         ?string $self_fqcln,
     ): array {
-        // Only locally-declared names not already resolvable through $type_aliases
-        // (an import, or an alias from a preceding comment) need reordering: a name
-        // that's already externally resolvable keeps binding to whatever was in
-        // scope at its original textual position, exactly as before this ordering
-        // pass existed, so shadowing a later local redeclaration doesn't rebind it.
+        // Names already resolvable through $type_aliases (imports, aliases from
+        // preceding comments) aren't dependencies: references to them keep binding
+        // to whatever was in scope at their textual position.
         $placeholders = [];
 
-        foreach ($declarations as [$name]) {
+        foreach ($declarations as $name => $_) {
             if (!isset($type_aliases[$name])) {
                 $placeholders[$name] = new InlineTypeAlias([[self::LOCAL_ALIAS_DEP_MARKER . $name, 0]]);
             }
         }
 
-        $resolved_names = [];
+        $dependencies = [];
+
+        foreach ($declarations as $name => $type_string) {
+            $dependencies[$name] = self::getLocalTypeAliasReferences(
+                $type_string,
+                $aliases,
+                $placeholders,
+                $type_aliases,
+                $self_fqcln,
+            );
+            // Self-references can't be ordered; they fail in the tokenization pass.
+            unset($dependencies[$name][$name]);
+        }
+
         $ordered = [];
-        $remaining = $declarations;
 
-        while ($remaining) {
-            $progressed = false;
-            $still_remaining = [];
+        while ($declarations) {
+            $remaining_count = count($declarations);
 
-            foreach ($remaining as $declaration) {
-                [$name, $type_string] = $declaration;
-                $depends_on_unresolved = false;
-
-                $references = self::getLocalTypeAliasReferences(
-                    $type_string,
-                    $aliases,
-                    $placeholders,
-                    $type_aliases,
-                    $self_fqcln,
-                );
-
-                foreach ($references as $referenced_name) {
-                    if ($referenced_name !== $name && !isset($resolved_names[$referenced_name])) {
-                        $depends_on_unresolved = true;
-                        break;
-                    }
+            foreach ($declarations as $name => $type_string) {
+                if (!array_diff_key($dependencies[$name], $ordered)) {
+                    $ordered[$name] = $type_string;
+                    unset($declarations[$name]);
                 }
-
-                if ($depends_on_unresolved) {
-                    $still_remaining[] = $declaration;
-                    continue;
-                }
-
-                $ordered[] = $declaration;
-                $resolved_names[$name] = true;
-                $progressed = true;
             }
 
-            if (!$progressed) {
-                // The remaining aliases form a cycle (direct or mutual): none of them
-                // can be fully resolved, so fall back to declaration order rather than
-                // looping forever. This preserves the pre-existing undefined/invalid
-                // alias error for self-referencing and mutually-referencing aliases.
-                array_push($ordered, ...$still_remaining);
-                break;
+            if (count($declarations) === $remaining_count) {
+                // The rest contain or depend on a cycle: keep declaration order so
+                // they hit the existing undefined/invalid alias error.
+                return $ordered + $declarations;
             }
-
-            $remaining = $still_remaining;
         }
 
         return $ordered;
     }
 
     /**
-     * Finds which locally-declared alias names (represented by $placeholders) a type
-     * string actually binds to once substituted, by running the real tokenizer
-     * substitution instead of re-implementing its rules (keyed-array keys, '('
-     * callable syntax, '$param' suffixes, '::' constants, generics, ...): a
-     * placeholder's marker token only survives into the output where the real
-     * tokenizer would have spliced in that alias's own replacement tokens.
+     * Returns the locally-declared aliases (represented by $placeholders) a type
+     * string binds to. Runs the real tokenizer substitution instead of copying its
+     * rules (keyed-array keys, `Name(` callables, `$param` suffixes, `::` constants):
+     * a placeholder's marker survives only where the alias would be spliced in.
      *
      * @param  array<string, InlineTypeAlias> $placeholders
      * @param  array<string, TypeAlias>|null $type_aliases
-     * @return list<string>
+     * @return array<string, true>
      */
     private static function getLocalTypeAliasReferences(
         string $type_string,
@@ -2259,9 +2232,8 @@ final class ClassLikeNodeScanner
         ?string $self_fqcln,
     ): array {
         try {
-            // A malformed type string is reported with its original message by the
-            // real tokenization pass in getTypeAliasesFromCommentLines; here it just
-            // means we can't determine dependencies, so treat it as having none.
+            // A malformed type is reported with its full message by the real
+            // tokenization pass; here it just has no detectable dependencies.
             $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                 $type_string,
                 $aliases,
@@ -2282,6 +2254,6 @@ final class ClassLikeNodeScanner
             }
         }
 
-        return array_keys($referenced_names);
+        return $referenced_names;
     }
 }
