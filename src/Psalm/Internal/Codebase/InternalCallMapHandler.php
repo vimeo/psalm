@@ -404,6 +404,19 @@ final class InternalCallMapHandler
     }
 
     /**
+     * The taints the parameter at $offset of the builtin function or method $function_id must not be given
+     * (see dictionaries/InternalTaintSinkMap.php).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals
+     */
+    public static function getParamTaintSinks(string $function_id, int $offset): int
+    {
+        self::getCallMap();
+
+        return self::$taint_sink_map[strtolower($function_id)][$offset] ?? 0;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public static function inCallMap(string $key): bool

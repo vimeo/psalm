@@ -1390,6 +1390,86 @@ final class PurityTemplateTest extends TestCase
 
                     $box = new Box(new ArrayIterator([1 => "a"]));',
             ],
+            'purityTemplateInferredFromSeveralPositionsJoinsTheirPurities' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Box[pure]<int>
+                     */
+                    function pureBox(): Box { throw new RuntimeException(); }
+
+                    /**
+                     * @psalm-pure
+                     * @return Box[io]<int>
+                     */
+                    function ioBox(): Box { throw new RuntimeException(); }
+
+                    /**
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](): Box[Q]<mixed> $a
+                     * @return Box[Q]<mixed>
+                     * @psalm-pure
+                     */
+                    function fromClosure(Closure $a): Box { throw new RuntimeException(); }
+
+                    /**
+                     * @psalm-purity-template Q
+                     * @param Generator[Q]<mixed, Box[Q]<mixed>, mixed, mixed> $g
+                     * @return Box[Q]<mixed>
+                     * @psalm-pure
+                     */
+                    function fromGenerator(Generator $g): Box { throw new RuntimeException(); }
+
+                    /**
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](): mixed $a
+                     * @param Closure[Q](): mixed $b
+                     * @return Box[Q]<mixed>
+                     * @psalm-pure
+                     */
+                    function fromTwo(Closure $a, Closure $b): Box { throw new RuntimeException(); }
+
+                    $gen = static function (): Generator { echo 1; yield pureBox(); };
+
+                    $io_closure = fromClosure(static function (): Box { echo 1; return pureBox(); });
+                    $io_inner = fromClosure(static fn(): Box => ioBox());
+                    $pure = fromClosure(static fn(): Box => pureBox());
+                    $io_generator = fromGenerator($gen());
+                    $io_second = fromTwo(static fn(): int => 1, static function (): int { echo 1; return 1; });
+                    $pure_two = fromTwo(static fn(): int => 1, static fn(): int => 2);',
+                'assertions' => [
+                    '$io_closure' => 'Box[io]<mixed>',
+                    '$io_inner' => 'Box[io]<mixed>',
+                    '$pure' => 'Box[pure]<mixed>',
+                    '$io_generator' => 'Box[io]<mixed>',
+                    '$io_second' => 'Box[io]<mixed>',
+                    '$pure_two' => 'Box[pure]<mixed>',
+                ],
+            ],
+            'typeTemplateInferredFromSeveralPositionsKeepsTheDeepestBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param array<T>|T $value
+                     * @return T
+                     * @psalm-pure
+                     */
+                    function unwrap($value) { throw new RuntimeException(); }
+
+                    $x = unwrap([1, 2]);',
+                'assertions' => [
+                    '$x===' => '1|2',
+                ],
+            ],
         ];
     }
 
@@ -2849,6 +2929,57 @@ final class PurityTemplateTest extends TestCase
                         $w->inner = $it;
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'purityTemplateInferredFromAClosureAndItsReturnMakesCallImpure' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Box[pure]<int>
+                     */
+                    function pureBox(): Box { throw new RuntimeException(); }
+
+                    /**
+                     * @psalm-purity-template Q
+                     * @param Closure[Q](): Box[Q]<mixed> $a
+                     * @return Box[Q]<mixed>
+                     * @psalm-pure
+                     * @psalm-purity-from-template Q
+                     */
+                    function fromClosure(Closure $a): Box { throw new RuntimeException(); }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        fromClosure(static function (): Box { echo 1; return pureBox(); });
+                        return 1;
+                    }',
+                'error_message' => 'function call on fromclosure requires io',
+            ],
+            'typeTemplateInferredFromSeveralDepthsMakesCallImpure' => [
+                'code' => '<?php
+                    /**
+                     * @template T of Closure(): int
+                     * @param array{0: T, 1: list<T>} $a
+                     * @return T
+                     * @psalm-pure
+                     * @psalm-purity-from-template T
+                     */
+                    function pick(array $a): Closure { throw new RuntimeException(); }
+
+                    /** @psalm-pure */
+                    function usePure(): int {
+                        pick([static function (): int { echo 1; return 1; }, [static fn(): int => 1]]);
+                        return 1;
+                    }',
+                'error_message' => 'function call on pick requires io',
             ],
         ];
     }

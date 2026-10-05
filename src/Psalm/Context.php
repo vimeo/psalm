@@ -7,6 +7,7 @@ namespace Psalm;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
@@ -85,6 +86,16 @@ final class Context
      * @var array<string, true>
      */
     public array $references_to_external_scope = [];
+
+    /**
+     * The by-reference parameters of the function-like analyzed that still reference the variables passed
+     * to them, with the taint node of what the call leaves in those variables. unset(), =&, global and
+     * static make a parameter stop referencing it.
+     *
+     * @internal
+     * @var array<string, DataFlowNode>
+     */
+    public array $by_ref_param_out_nodes = [];
 
     /**
      * A set of globals that are referenced somewhere.

@@ -1,6 +1,6 @@
 # TaintedFile
 
-This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
 This rule is emitted when user-controlled input can be passed into a sensitive file operation.
 
@@ -23,13 +23,14 @@ It could range from:
     - Example: `unlink`
     - Risk: Denial of Service or potentially RCE. (e.g. deleting application code, removing a .htaccess file)
 
+curl opens the files some of its options name too. `CURLOPT_COOKIEJAR` writes the cookies the server sends into the file it names, so a server can put PHP code in a file of the attacker's choosing. A `CURLFile` uploads the file it names to the server.
+
 ## Example
 
 ```php
 <?php
 
-$content = fopen($_GET['header'], "r");
-echo $content;
+unlink($_GET['path']);
 ```
 
 ## Mitigations
