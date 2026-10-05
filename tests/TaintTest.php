@@ -2619,6 +2619,46 @@ final class TaintTest extends TestCase
                     mail("admin@example.com", "Report", "body", "", "-f" . $_GET["from"]);',
                 'error_message' => 'TaintedShell',
             ],
+            'taintedSsrfInImageCreateFromJpeg' => [
+                'code' => '<?php
+                    imagecreatefromjpeg((string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedFileInZipArchiveExtractTo' => [
+                'code' => '<?php
+                    $zip = new ZipArchive(); $zip->extractTo((string) $_GET["dir"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintedSsrfInDomDocumentLoad' => [
+                'code' => '<?php
+                    (new DOMDocument())->load((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInXmlReaderOpen' => [
+                'code' => '<?php
+                    XMLReader::open((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInFinfoFile' => [
+                'code' => '<?php
+                    (new finfo())->file((string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInSoapClient' => [
+                'code' => '<?php
+                    new SoapClient((string) $_GET["wsdl"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedHtmlFromDnsRecord' => [
+                'code' => '<?php
+                    $records = dns_get_record("example.com", DNS_TXT); echo (string) ($records[0]["txt"] ?? "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlFromReverseDns' => [
+                'code' => '<?php
+                    echo (string) gethostbyaddr("127.0.0.1");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedSsrfInCurlSetoptArray' => [
                 'code' => '<?php
                     $ch = curl_init();
