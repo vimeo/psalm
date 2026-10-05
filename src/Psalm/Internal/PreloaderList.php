@@ -913,6 +913,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\ArrayReplaceRecursiveReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayPointerAdjustmentReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ArrayPopReturnTypeProvider::class,
