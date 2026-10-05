@@ -813,6 +813,11 @@ final class TaintFlowResolution
     {
         [$observed_family, , $closed_family, $added_family] = $this->path_type_effects[$path_type];
 
+        if ($this->path_types[$path_type] === 'arrayvalue-fetch') {
+            // it ignores an innermost array key (see getNextOpenAssignments())
+            $observed_family = self::ARRAY_FAMILY;
+        }
+
         if ($observed_family === -1 && $closed_family === -1 && $added_family === -1) {
             return $depths;
         }
@@ -1090,8 +1095,17 @@ final class TaintFlowResolution
 
         [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
         [$made, $closed] = $this->open_assignments[$open_assignments];
+        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
 
-        if ($observed_family === -1) {
+        if ($array_assignments
+            && $this->path_types[$array_assignments[count($array_assignments) - 1]] === 'arraykey-assignment'
+            && $this->path_types[$path_type] === 'arrayvalue-fetch'
+        ) {
+            // The value of an item under an unknown key doesn't take what was assigned to its key either. Only
+            // where the flow knows that's the innermost one: an unknown key is fetched too often for the walks
+            // to be told apart by it in filters (see getFilter()).
+            $next = self::IGNORED;
+        } elseif ($observed_family === -1) {
             $next = $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family]) {
             $next = self::classPassesFetch(

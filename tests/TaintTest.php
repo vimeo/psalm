@@ -2264,6 +2264,13 @@ final class TaintTest extends TestCase
 
                     save(new Version(), (string)$_GET["field_id"]);',
             ],
+            'valuesOfAnArrayIteratedOverWhoseKeysAreTaintedAreNotTainted' => [
+                'code' => '<?php
+                    $arr = [(string)$_GET["bad"] => "good"];
+                    foreach ($arr as $value) {
+                        echo $value;
+                    }',
+            ],
             'keysAreNotTainted' => [
                 'code' => '<?php
                     function takesArray(array $arr): void {
