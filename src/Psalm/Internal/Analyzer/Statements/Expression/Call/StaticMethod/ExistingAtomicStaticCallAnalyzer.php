@@ -504,13 +504,14 @@ final class ExistingAtomicStaticCallAnalyzer
 
         $return_type_candidate ??= Type::getMixed();
 
+        // the storage of a builtin method holds the flows of its declaration (see InternalCallMapHandler)
         StaticCallAnalyzer::taintReturnType(
             $statements_analyzer,
             $stmt,
             $method_id,
             $cased_method_id,
             $return_type_candidate,
-            $method_storage,
+            $method_storage ?? ($declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null),
             $template_result,
             $context,
         );

@@ -268,6 +268,7 @@ final class Reflection
 
         $storage->cased_name = $method->name;
         $storage->defining_fqcln = $method->class;
+        $storage->builtin = $method->isInternal();
 
         if ($method_name_lc === $fq_class_name_lc) {
             $this->codebase->methods->setDeclaringMethodId(
@@ -388,6 +389,7 @@ final class Reflection
             }
 
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
+            $storage->builtin = $reflection_function->isInternal();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
