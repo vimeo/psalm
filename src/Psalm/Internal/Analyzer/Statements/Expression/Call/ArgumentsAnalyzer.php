@@ -1319,6 +1319,13 @@ final class ArgumentsAnalyzer
             }
 
             $by_ref_type = $by_ref_type ?: Type::getMixed();
+            $is_user_defined = $method_id
+                && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id));
+
+            if ($is_user_defined) {
+                // the function may keep the reference (e.g. in a closure) and change the argument later
+                $statements_analyzer->addUntrackedReferenceTo($arg->value, $context);
+            }
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
@@ -1326,7 +1333,7 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
+                $is_user_defined,
                 $check_null_ref,
             );
         }
