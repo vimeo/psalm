@@ -452,37 +452,12 @@ final class TaintFlowResolution
     private array $entry_bases = [];
 
     /**
-     * Specialization key => the key standing for the function-like called there: two keys stand for the same
-     * one when a node is specialized for both (see getCallee())
+     * Context . ' ' . exit node id . ' ' . open assignments => the taints kept and added of the flows that left
+     * an exit outside of any specialized call through all its call sites (see leaveThroughAllCallSites())
      *
-     * @var array<string, string>
+     * @var array<string, array{int, int}>
      */
-    private array $callees = [];
-
-    /**
-     * Specialized call entry => the function-likes (see getCallee()) of the calls entering it and of those
-     * enclosing them => true: an exit of another function-like can't lead back to a call site (see
-     * addEntryExit())
-     *
-     * @var array<int, array<string, true>>
-     */
-    private array $entry_callees = [];
-
-    /**
-     * Specialized call entry => the specialized call entries with calls made in its walk => true
-     *
-     * @var array<int, array<int, true>>
-     */
-    private array $entry_dependents = [];
-
-    /**
-     * Specialized call entry => function-like => the exits of that function-like its walk reached (see
-     * addEntryExit()): exit node id . ' ' . open assignments => [exit node id, open assignments, state, caller
-     * link, kept, added]
-     *
-     * @var array<int, array<string, array<string, array{string, int, int, int, int, int}>>>
-     */
-    private array $unmatched_exits = [];
+    private array $shared_exits = [];
 
     /**
      * Entry => the taints of the flows entering it (see getUnionTaints())
@@ -563,6 +538,7 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
+     * @param array<string, array<string, true>> $unused_specializations
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -574,6 +550,7 @@ final class TaintFlowResolution
         private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
+        private readonly array $unused_specializations,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -711,7 +688,6 @@ final class TaintFlowResolution
 
         $this->computeObservableDepths($reverse);
         $this->computeTaintAddingReachable($reverse);
-        $this->computeCallees();
     }
 
     /**
@@ -916,50 +892,6 @@ final class TaintFlowResolution
                 }
             }
         }
-    }
-
-    /**
-     * Groups the specialization keys by the function-like called (see getCallee()): the specializations of
-     * the nodes of a function-like (its parameters, its return, ...) share the keys of its calls.
-     *
-     * @psalm-external-mutation-free
-     */
-    private function computeCallees(): void
-    {
-        foreach ($this->specializations as $specializations) {
-            $first = null;
-
-            foreach ($specializations as $specialization_key => $_) {
-                $callee = $this->getCallee($specialization_key);
-
-                if ($first === null) {
-                    $first = $callee;
-                } elseif ($callee !== $first) {
-                    $this->callees[$callee] = $first;
-                }
-            }
-        }
-    }
-
-    /**
-     * The key standing for the function-like called at the call site of specialization key $key
-     *
-     * @psalm-external-mutation-free
-     */
-    private function getCallee(string $key): string
-    {
-        $callee = $key;
-
-        while (isset($this->callees[$callee]) && $this->callees[$callee] !== $callee) {
-            $callee = $this->callees[$callee];
-        }
-
-        // shorten the path for the next time
-        if ($callee !== $key) {
-            $this->callees[$key] = $callee;
-        }
-
-        return $callee;
     }
 
     /**
@@ -1806,18 +1738,6 @@ final class TaintFlowResolution
     {
         $this->entry_callers[$entry][$caller] = $specialization_key;
 
-        if ($this->entry_kinds[$entry] !== self::ENTRY_CONVERGENCE) {
-            $caller_context = $this->state_contexts[$caller];
-            $callees = $specialization_key === null ? [] : [$this->getCallee($specialization_key) => true];
-
-            if (!$this->isOutsideOfCalls($caller_context)) {
-                $this->entry_dependents[$caller_context][$entry] = true;
-                $callees += $this->entry_callees[$caller_context] ?? [];
-            }
-
-            $this->addEntryCallees($entry, $callees);
-        }
-
         $caller_context = $this->state_contexts[$caller];
 
         if ($caller_context !== -1) {
@@ -1859,43 +1779,6 @@ final class TaintFlowResolution
 
         foreach ($this->entry_class_filters[$entry] as $position => $_) {
             $this->addClassFilterCaller($entry, $position, $caller, $specialization_key);
-        }
-    }
-
-    /**
-     * The calls entering specialized call entry $entry, or enclosing them, are calls to the function-likes
-     * $callees (see getCallee()): continues the exits of those its walk reached (see addEntryExit()), and
-     * tells the entries of the calls made in its walk.
-     *
-     * @param array<string, true> $callees
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    private function addEntryCallees(int $entry, array $callees): void
-    {
-        $new_callees = [];
-
-        foreach ($callees as $callee => $_) {
-            if (!isset($this->entry_callees[$entry][$callee])) {
-                $this->entry_callees[$entry][$callee] = true;
-                $new_callees[$callee] = true;
-            }
-        }
-
-        if (!$new_callees) {
-            return;
-        }
-
-        foreach ($new_callees as $callee => $_) {
-            $exits = $this->unmatched_exits[$entry][$callee] ?? [];
-            unset($this->unmatched_exits[$entry][$callee]);
-
-            foreach ($exits as [$exit_id, $open_assignments, $state, $link, $kept, $added]) {
-                $this->addEntryExit($entry, $exit_id, $open_assignments, $state, $link, $kept, $added);
-            }
-        }
-
-        foreach ($this->entry_dependents[$entry] ?? [] as $dependent => $_) {
-            $this->addEntryCallees($dependent, $new_callees);
         }
     }
 
@@ -2213,33 +2096,6 @@ final class TaintFlowResolution
         int $kept,
         int $added,
     ): void {
-        if ($this->entry_kinds[$entry] !== self::ENTRY_CONVERGENCE) {
-            $callee = $this->getCallee((string) array_key_first($this->specializations[$exit_id]));
-
-            if (!isset($this->entry_callees[$entry][$callee])) {
-                // Not an exit of the function-like of a call entering the entry or enclosing it (it was reached
-                // through e.g. a property): it can't lead back to a call site, unless one comes later.
-                $exit_key = $exit_id . ' ' . $open_assignments;
-                $unmatched = $this->unmatched_exits[$entry][$callee][$exit_key] ?? null;
-
-                if ($unmatched !== null && ($kept & ~$unmatched[4]) === 0 && ($added & ~$unmatched[5]) === 0) {
-                    return;
-                }
-
-                // the first flow's trace, with all the taints
-                $this->unmatched_exits[$entry][$callee][$exit_key] = [
-                    $exit_id,
-                    $open_assignments,
-                    $unmatched[2] ?? $state,
-                    $unmatched[3] ?? $link,
-                    $kept | ($unmatched[4] ?? 0),
-                    $added | ($unmatched[5] ?? 0),
-                ];
-
-                return;
-            }
-        }
-
         $exit_key = $exit_id . ' ' . $open_assignments;
         $exit = $this->entry_exits[$entry][$exit_key] ?? [$exit_id, $open_assignments, 0, 0, []];
         $new_kept = $kept & ~$exit[2];
@@ -2275,9 +2131,11 @@ final class TaintFlowResolution
 
     /**
      * Continues an exit reached by the body walk of an entry in the context of one call entering it: at that
-     * call's specialization of the exit node if it has one, else -- the flow leaves through an enclosing
-     * call, e.g. after passing through a static property -- as an exit of the entry the call is made from.
-     * Outside of any specialized call the flow cannot be matched to a call site and ends.
+     * call's specialization of the exit node if it has one. If it has one the call site doesn't use (see
+     * $unused_specializations), the flow ends. Else the exit is one of another function-like, reached through
+     * something the calls share (a property, a static property, ...): the flow leaves through an enclosing call
+     * of that function-like if any, as an exit of the entry the call is made from, and outside of any
+     * specialized call through all of its call sites, as a flow reaching it there would (see walk()).
      *
      * A convergence of flows in specialized calls is left like its node would be left in the context of the
      * call (see walk()): as an exit of the entry it is in.
@@ -2314,7 +2172,21 @@ final class TaintFlowResolution
                 -1,
                 $caller,
             );
-        } elseif (!$this->isOutsideOfCalls($context)) {
+        } elseif ($specialization_key !== null && isset($this->unused_specializations[$exit_id][$specialization_key])) {
+            return;
+        } elseif ($this->isOutsideOfCalls($context)) {
+            if ($specialization_key !== null) {
+                $this->leaveThroughAllCallSites(
+                    $exit_id,
+                    $context,
+                    $caller_open_assignments,
+                    $caller_kept,
+                    $caller_added,
+                    $state,
+                    $this->getLink($caller, $link),
+                );
+            }
+        } else {
             $exit = $this->entry_exits[$context][$exit_id . ' ' . $caller_open_assignments] ?? null;
 
             // the link is made only for a flow that gets recorded
@@ -2331,6 +2203,38 @@ final class TaintFlowResolution
                 $caller_kept,
                 $caller_added,
             );
+        }
+    }
+
+    /**
+     * Continues the flows reaching exit $exit_id in context $context, outside of any specialized call, with open
+     * assignments $open_assignments, from state $state (seen through the calls of $link), at all the call sites
+     * of its specialized calls: those of despecialized calls were all left from the exit already (see walk()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function leaveThroughAllCallSites(
+        string $exit_id,
+        int $context,
+        int $open_assignments,
+        int $kept,
+        int $added,
+        int $state,
+        int $link,
+    ): void {
+        $exit_key = $context . ' ' . $exit_id . ' ' . $open_assignments;
+        $previous = $this->shared_exits[$exit_key] ?? null;
+
+        if ($previous !== null && ($kept & ~$previous[0]) === 0 && ($added & ~$previous[1]) === 0) {
+            return;
+        }
+
+        $this->shared_exits[$exit_key] = [($previous[0] ?? 0) | $kept, ($previous[1] ?? 0) | $added];
+
+        foreach ($this->specializations[$exit_id] as $specialization_key => $specialized_id) {
+            if (!isset($this->despecialized_calls[$specialization_key])) {
+                $this->reach($specialized_id, $context, $open_assignments, $kept, $added, $state, $link, -1);
+            }
         }
     }
 
