@@ -2624,9 +2624,9 @@ final class TaintTest extends TestCase
                     imagecreatefromjpeg((string) $_GET["path"]);',
                 'error_message' => 'TaintedSSRF',
             ],
-            'taintedFileInZipArchiveExtractTo' => [
+            'taintedFileInPharDataExtractTo' => [
                 'code' => '<?php
-                    $zip = new ZipArchive(); $zip->extractTo((string) $_GET["dir"]);',
+                    $archive = new PharData("/tmp/a.tar"); $archive->extractTo((string) $_GET["dir"]);',
                 'error_message' => 'TaintedFile',
             ],
             'taintedSsrfInDomDocumentLoad' => [
@@ -2634,14 +2634,14 @@ final class TaintTest extends TestCase
                     (new DOMDocument())->load((string) $_GET["url"]);',
                 'error_message' => 'TaintedSSRF',
             ],
-            'taintedSsrfInXmlReaderOpen' => [
+            'taintedSsrfInSimplexmlLoadFile' => [
                 'code' => '<?php
-                    XMLReader::open((string) $_GET["url"]);',
+                    simplexml_load_file((string) $_GET["url"]);',
                 'error_message' => 'TaintedSSRF',
             ],
-            'taintedSsrfInFinfoFile' => [
+            'taintedSsrfInMd5File' => [
                 'code' => '<?php
-                    (new finfo())->file((string) $_GET["path"]);',
+                    md5_file((string) $_GET["path"]);',
                 'error_message' => 'TaintedSSRF',
             ],
             'taintedSsrfInSoapClient' => [
