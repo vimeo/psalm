@@ -82,6 +82,7 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_pop;
 use function count;
+use function explode;
 use function in_array;
 use function reset;
 use function str_ends_with;
@@ -688,6 +689,51 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        if ($statements_analyzer->taint_flow_graph
+            && $stmt instanceof PropertyFetch
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
+            // The property of the class is that of its parents too: what they read gets what is set through it. And
+            // what is set through it may be set to an object of a subclass: what the subclasses read gets it too.
+            [$fq_class_name] = explode('::$', $property_id, 2);
+            $prop_name = $stmt->name->name;
+            $class_property_node = $property_node;
+
+            foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name) as $ancestor) {
+                $ancestor_property_node = DataFlowNode::getForPropertyFetch($ancestor . '::$' . $prop_name);
+
+                $graph->addNode($ancestor_property_node);
+                $graph->addPath(
+                    $class_property_node,
+                    $ancestor_property_node,
+                    'property-assignment',
+                    $added_taints,
+                    $removed_taints,
+                );
+
+                $class_property_node = $ancestor_property_node;
+            }
+
+            if ($codebase->classlike_storage_provider->has($fq_class_name)
+                && !$codebase->classlike_storage_provider->get($fq_class_name)->final
+            ) {
+                $inherited_property_node = DataFlowNode::getForInheritedProperty(
+                    $codebase->classlike_storage_provider->get($fq_class_name)->name . '::$' . $prop_name,
+                );
+
+                $graph->addNode($inherited_property_node);
+                $graph->addPath(
+                    $localized_property_node,
+                    $inherited_property_node,
+                    'property-assignment',
+                    $added_taints,
+                    $removed_taints,
+                );
+            }
+
+            return;
+        }
+
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $property_id,
             false,
@@ -716,6 +762,42 @@ final class InstancePropertyAssignmentAnalyzer
                 $removed_taints,
             );
         }
+    }
+
+    /**
+     * The classes $fq_class_name inherits instance property $prop_name from, the nearest first, up to the one
+     * declaring it
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    public static function getPropertyAncestors(Codebase $codebase, string $fq_class_name, string $prop_name): array
+    {
+        $ancestors = [];
+
+        while ($codebase->classlike_storage_provider->has($fq_class_name)) {
+            $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $declaring_class = $storage->declaring_property_ids[$prop_name] ?? null;
+
+            if ($declaring_class === null
+                || strtolower($declaring_class) === strtolower($storage->name)
+                || $storage->parent_class === null
+                || !$codebase->classlike_storage_provider->has($storage->parent_class)
+            ) {
+                break;
+            }
+
+            $parent_storage = $codebase->classlike_storage_provider->get($storage->parent_class);
+
+            if (!isset($parent_storage->declaring_property_ids[$prop_name])) {
+                break;
+            }
+
+            $ancestors[] = $parent_storage->name;
+            $fq_class_name = $parent_storage->name;
+        }
+
+        return $ancestors;
     }
 
     /**
