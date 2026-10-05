@@ -55,7 +55,7 @@ final class UnsuppressibleIssuesTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                /** @psalm-suppress TaintedInput */
+                /** @psalm-suppress TaintedInput, PossiblyInvalidCast */
                 function show(): void {
                     echo (string) $_GET["x"];
                 }',
@@ -72,7 +72,7 @@ final class UnsuppressibleIssuesTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                /** @psalm-suppress TaintedInput */
+                /** @psalm-suppress TaintedInput, PossiblyInvalidCast */
                 function run(): void {
                     exec((string) $_GET["x"]);
                 }',
@@ -100,7 +100,7 @@ final class UnsuppressibleIssuesTest extends TestCase
             ],
             'suppressionsPsalmAddsAroundItsOwnCallsStillApply' => [
                 'code' => '<?php
-                    /** @template-implements ArrayAccess<string, int> */
+                    /** @template-implements ArrayAccess<mixed, int> */
                     final class Values implements ArrayAccess {
                         public function offsetExists(mixed $offset): bool {
                             return true;

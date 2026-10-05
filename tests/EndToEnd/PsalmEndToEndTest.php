@@ -233,6 +233,32 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
+    public function testBaselineDoesntHideUnsuppressibleIssues(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace(
+            '</psalm>',
+            '<unsuppressibleIssues><issue name="InvalidReturnType" /></unsuppressibleIssues></psalm>',
+            $psalmXml,
+        );
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertMatchesRegularExpression('/ERROR\S*: InvalidReturnType/', $result['STDOUT']);
+        $this->assertDoesNotMatchRegularExpression('/ERROR\S*: InvalidReturnStatement/', $result['STDOUT']);
+        $this->assertSame(2, $result['CODE']);
+
+        $this->runPsalm(['--update-baseline'], self::$tmpDir, true);
+        $baseline = (string) file_get_contents(self::$tmpDir . '/psalm-baseline.xml');
+        $this->assertStringNotContainsString('<InvalidReturnType', $baseline);
+        $this->assertStringContainsString('<InvalidReturnStatement', $baseline);
+
+        unlink(self::$tmpDir . '/psalm-baseline.xml');
+    }
+
     public function testTaintingWithoutInit(): void
     {
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
