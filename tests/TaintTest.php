@@ -2685,6 +2685,30 @@ final class TaintTest extends TestCase
                     $holder->fill((string) $_GET["value"]);
                     echo $holder->get("b");',
             ],
+            'taintFreeAssignmentUnderParamKeyOfOtherUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
             'taintFreeAssignmentAndFetchUnderParamKeys' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -2874,6 +2898,82 @@ final class TaintTest extends TestCase
                     $holder->fill((string) $_GET["value"]);
                     $holder->get("a");
                     echo $holder->get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfSameUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function set(Mail $mail, string $key): void {
+                        $mail->setOption($key, (string) $_GET["value"]);
+                    }
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfRecursiveUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value, bool $again): void {
+                            if ($again) {
+                                $this->setOption("greeting", $value, false);
+                            }
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"], true);
+                    echo (string) $base->getOptions()["greeting"];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAssignmentAndFetchUnderSameParamKeys' => [

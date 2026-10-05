@@ -1927,6 +1927,9 @@ final class ArgumentAnalyzer
             }
         }
 
+        // the function-like whose body the argument enters
+        $declaring_storage = $function_storage;
+
         if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -1953,13 +1956,13 @@ final class ArgumentAnalyzer
                 );
 
                 if ($param_key !== null) {
-                    $taint_flow_graph->addParamKey($new_sink, $param_key);
+                    $taint_flow_graph->addParamKey($new_sink, $param_key, $function_call_location);
                 }
             }
         }
 
         if ($param_key !== null) {
-            $taint_flow_graph?->addParamKey($method_node, $param_key);
+            $taint_flow_graph?->addParamKey($method_node, $param_key, $function_call_location);
         }
 
         $graph->addNode($method_node);
@@ -2000,6 +2003,12 @@ final class ArgumentAnalyzer
             $added_taints,
             $removed_taints,
         );
+
+        $callee_location = $declaring_storage?->stmt_location;
+
+        if ($taint_flow_graph && !$specialize_taint && $callee_location !== null) {
+            $taint_flow_graph->addCallArgument($argument_value_node, $function_call_location, $callee_location);
+        }
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);

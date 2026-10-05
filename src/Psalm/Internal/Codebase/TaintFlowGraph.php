@@ -136,16 +136,25 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $speculative_calls = [];
 
     /**
-     * The array keys passed to parameters at specialized call sites: unspecialized argument node id =>
-     * (specialization key => key). A literal key is as the keys of array fetches and assignments are in path
-     * types, and a parameter of the function-like making the call, as passed, is its unspecialized argument node
-     * id prefixed with '@'. The body of a function-like whose array key is one of its parameters, as passed,
+     * The array keys passed to parameters at call sites: unspecialized argument node id => (specialization key of
+     * the call site, whether the call is specialized or not => key). A literal key is as the keys of array
+     * fetches and assignments are in path types, and a parameter of the function-like making the call, as passed,
+     * is its unspecialized argument node id prefixed with '@'. The body of a function-like whose array key is one of its parameters, as passed,
      * fetches or assigns the key of each call (see ArrayFetchAnalyzer::getParamKey() and
      * TaintFlowResolution::resolveParamKey()).
      *
      * @var array<string, array<string, string>>
      */
     private array $param_keys = [];
+
+    /**
+     * The arguments of unspecialized calls: argument node id of the call site => [the specialization key of the
+     * call site, the file, start and end of the declaration of the function-like called]. A flow entering it
+     * through them knows the array keys the call passes (see TaintFlowResolution::bindCall()).
+     *
+     * @var array<string, array{string, string, int, int}>
+     */
+    private array $call_arguments = [];
 
     /**
      * Speculatively specialized call sites of a callee that turned out not to be pure,
@@ -361,16 +370,34 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * Records that the call of $argument_node, if specialized, passes the array key $key (see $param_keys) to
-     * its parameter
+     * Records that the call at $call_location passes the array key $key (see $param_keys) to the parameter of
+     * $argument_node
      *
      * @psalm-external-mutation-free
      */
-    public function addParamKey(DataFlowNode $argument_node, string $key): void
+    public function addParamKey(DataFlowNode $argument_node, string $key, CodeLocation $call_location): void
     {
-        if ($argument_node->unspecialized_id !== null && $argument_node->specialization_key !== null) {
-            $this->param_keys[$argument_node->unspecialized_id][$argument_node->specialization_key] = $key;
-        }
+        $this->param_keys[$argument_node->unspecialized_id ?? $argument_node->id]
+            [DataFlowNode::getSpecializationKey($call_location)] = $key;
+    }
+
+    /**
+     * Records that $argument_node is an argument of the unspecialized call at $call_location, of the function-like
+     * declared at $callee_location (see $call_arguments)
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addCallArgument(
+        DataFlowNode $argument_node,
+        CodeLocation $call_location,
+        CodeLocation $callee_location,
+    ): void {
+        $this->call_arguments[$argument_node->id] = [
+            DataFlowNode::getSpecializationKey($call_location),
+            $callee_location->file_path,
+            $callee_location->raw_file_start,
+            $callee_location->raw_file_end,
+        ];
     }
 
     /**
@@ -545,6 +572,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->param_keys[$key] = ($this->param_keys[$key] ?? []) + $map;
         }
 
+        $this->call_arguments += $other->call_arguments;
+
         foreach ($other->speculative_calls as $key => $map) {
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
         }
@@ -703,6 +732,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->despecialized_calls,
             $this->read_only_calls,
             $this->param_keys,
+            $this->call_arguments,
             Config::getInstance(),
             $project_analyzer,
             $codebase,

@@ -240,6 +240,14 @@ final class TaintFlowResolution
     private array $path_type_params = [];
 
     /**
+     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()) => the file, start
+     * and end of the declaration of the function-like called
+     *
+     * @var array<string, array{string, int, int}>
+     */
+    private array $call_ranges = [];
+
+    /**
      * Open assignments => key (see internOpenAssignments())
      *
      * @var array<string, int>
@@ -255,9 +263,11 @@ final class TaintFlowResolution
      *     the fetches under a parameter key the flow took outside of any specialized call, as the class of the
      *     open assignment each fetched (see getClass()) by the unspecialized argument node of the parameter,
      *     until it leaves through a call site (see resolveParamKey()),
+     *     the specialization key of the unspecialized call whose body the flow entered through its arguments, or
+     *     '' (see bindCall()),
      * ]
      *
-     * @var list<array{array<int, list<int>>, array<int, int>, array<string, string>}>
+     * @var list<array{array<int, list<int>>, array<int, int>, array<string, string>, string}>
      */
     private array $open_assignments = [];
 
@@ -615,6 +625,7 @@ final class TaintFlowResolution
      * @param array<string, true> $despecialized_calls
      * @param array<string, true> $read_only_calls
      * @param array<string, array<string, string>> $param_keys
+     * @param array<string, array{string, string, int, int}> $call_arguments
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -628,6 +639,7 @@ final class TaintFlowResolution
         private readonly array $despecialized_calls,
         private readonly array $read_only_calls,
         private readonly array $param_keys,
+        private readonly array $call_arguments,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -1101,7 +1113,7 @@ final class TaintFlowResolution
      * @param array<string, string> $guards
      * @psalm-external-mutation-free
      */
-    private function internOpenAssignments(array $made, array $closed, array $guards = []): int
+    private function internOpenAssignments(array $made, array $closed, array $guards = [], string $call = ''): int
     {
         $key = '';
 
@@ -1117,13 +1129,15 @@ final class TaintFlowResolution
             }
         }
 
+        $key .= '|' . $call;
+
         if (isset($this->open_assignment_ids[$key])) {
             return $this->open_assignment_ids[$key];
         }
 
         $id = count($this->open_assignments);
         $this->open_assignment_ids[$key] = $id;
-        $this->open_assignments[] = [$made, $closed, $guards];
+        $this->open_assignments[] = [$made, $closed, $guards, $call];
 
         return $id;
     }
@@ -1249,7 +1263,7 @@ final class TaintFlowResolution
             return $open_assignments;
         }
 
-        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
 
         if ($closed_family !== -1) {
             if ($made[$closed_family]) {
@@ -1265,7 +1279,7 @@ final class TaintFlowResolution
             self::capMadeOpenAssignments($made, $closed, $added_family);
         }
 
-        return $this->internOpenAssignments($made, $closed, $guards);
+        return $this->internOpenAssignments($made, $closed, $guards, $call);
     }
 
     /**
@@ -1281,7 +1295,7 @@ final class TaintFlowResolution
             return $this->open_assignment_compositions[$call_open_assignments][$open_assignments];
         }
 
-        [$call_made, $call_closed, $call_guards] = $this->open_assignments[$call_open_assignments];
+        [$call_made, $call_closed, $call_guards, $call] = $this->open_assignments[$call_open_assignments];
         [$flow_made, $flow_closed, $flow_guards] = $this->open_assignments[$open_assignments];
         $made = [[], []];
         $closed = [self::NO_CALL, self::NO_CALL];
@@ -1309,7 +1323,8 @@ final class TaintFlowResolution
             self::capMadeOpenAssignments($made, $closed, $family);
         }
 
-        $result = $this->internOpenAssignments($made, $closed, $flow_guards + $call_guards);
+        // back at the call site, in the body the call is made in
+        $result = $this->internOpenAssignments($made, $closed, $flow_guards + $call_guards, $call);
         $this->open_assignment_compositions[$call_open_assignments][$open_assignments] = $result;
 
         return $result;
@@ -1363,7 +1378,7 @@ final class TaintFlowResolution
             return $this->open_assignment_truncations[$open_assignments][$depths];
         }
 
-        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
 
         foreach (self::FAMILIES as $family => $_) {
             $depth = ($depths >> ($family * self::DEPTH_BITS)) & self::DEPTH_MASK;
@@ -1376,7 +1391,7 @@ final class TaintFlowResolution
             }
         }
 
-        $result = $this->internOpenAssignments($made, $closed, $guards);
+        $result = $this->internOpenAssignments($made, $closed, $guards, $call);
         $this->open_assignment_truncations[$open_assignments][$depths] = $result;
 
         return $result;
@@ -1403,6 +1418,10 @@ final class TaintFlowResolution
     ): void {
         if ($kept === 0 && $added === 0 && !isset($this->taint_adding_reachable[$node_id])) {
             return;
+        }
+
+        if ($this->open_assignments[$open_assignments][3] !== '') {
+            $open_assignments = $this->scopeCall($open_assignments, $node_id);
         }
 
         $open_assignments = $this->truncateOpenAssignments($open_assignments, $node_id);
@@ -1593,8 +1612,8 @@ final class TaintFlowResolution
         if ($this->open_assignments[$open_assignments][2] && isset($this->specializations[$from_id])) {
             // leaving the function-like of a fetch under a parameter other than through a specialized call site
             // (see passParamGuards())
-            [$made, $closed] = $this->open_assignments[$open_assignments];
-            $open_assignments = $this->internOpenAssignments($made, $closed);
+            [$made, $closed, , $call] = $this->open_assignments[$open_assignments];
+            $open_assignments = $this->internOpenAssignments($made, $closed, [], $call);
         }
 
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
@@ -1635,8 +1654,12 @@ final class TaintFlowResolution
 
         if (isset($this->path_type_params[$path_type])) {
             [$param, $base] = $this->path_type_params[$path_type];
+            $bound_key = $this->param_keys[$param][$this->open_assignments[$open_assignments][3]] ?? null;
 
-            if ($this->isOutsideOfCalls($context)) {
+            if ($bound_key !== null && !str_starts_with($bound_key, '@')) {
+                // the flow entered the body through the arguments of an unspecialized call passing it
+                $key = $bound_key;
+            } elseif ($this->isOutsideOfCalls($context)) {
                 $key = '';
                 $guarded_param = $base === 'arrayvalue-fetch' && isset($this->param_keys[$param]) ? $param : null;
             } else {
@@ -1659,6 +1682,10 @@ final class TaintFlowResolution
 
         if ($guarded_param !== null && $next_open_assignments >= 0) {
             $next_open_assignments = $this->addParamGuard($open_assignments, $next_open_assignments, $guarded_param);
+        }
+
+        if (isset($this->call_arguments[$from_id]) && $next_open_assignments >= 0) {
+            $next_open_assignments = $this->bindCall($next_open_assignments, $from_id);
         }
 
         if ($next_open_assignments === self::OBSERVES_CALL) {
@@ -2443,7 +2470,7 @@ final class TaintFlowResolution
         }
 
         $class = $this->getClass($array_assignments[count($array_assignments) - 1], self::ARRAY_FAMILY);
-        [$made, $closed, $guards] = $this->open_assignments[$next_open_assignments];
+        [$made, $closed, $guards, $call] = $this->open_assignments[$next_open_assignments];
 
         if (!str_starts_with($class, ':')
             || (!isset($guards[$param]) && count($guards) >= self::MAX_PARAM_GUARDS)
@@ -2454,7 +2481,7 @@ final class TaintFlowResolution
         // of another fetch under the parameter if any, one the flow left the function-like after (see walkEdges())
         $guards[$param] = $class;
 
-        return $this->internOpenAssignments($made, $closed, $guards);
+        return $this->internOpenAssignments($made, $closed, $guards, $call);
     }
 
     /**
@@ -2472,7 +2499,7 @@ final class TaintFlowResolution
      */
     private function passParamGuards(int $open_assignments, string $specialization_key): int
     {
-        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
+        [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
 
         if (!$guards) {
             return $open_assignments;
@@ -2499,7 +2526,56 @@ final class TaintFlowResolution
             }
         }
 
-        return $this->internOpenAssignments($made, $closed, $passed_on);
+        return $this->internOpenAssignments($made, $closed, $passed_on, $call);
+    }
+
+    /**
+     * The open assignments $open_assignments of a flow entering the body of an unspecialized call through its
+     * argument node $argument_id (see TaintFlowGraph::$call_arguments): the flow knows the array keys the call
+     * passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not those of a
+     * call the body makes to its own function-like: the body would know them past that call.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function bindCall(int $open_assignments, string $argument_id): int
+    {
+        [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
+        [$new_call, $file_path, $start, $end] = $this->call_arguments[$argument_id];
+
+        $previous = $this->call_ranges[$call] ?? null;
+        $this->call_ranges[$new_call] = [$file_path, $start, $end];
+
+        return $this->internOpenAssignments(
+            $made,
+            $closed,
+            $guards,
+            $previous === [$file_path, $start, $end] ? '' : $new_call,
+        );
+    }
+
+    /**
+     * The open assignments $open_assignments of a flow reaching node $node_id: without the unspecialized call it
+     * entered the body of (see bindCall()) if the node is out of that body. That's where the keys the call passes
+     * may be those of another call: in a node without a location (a property, ...), or one of another
+     * function-like (the call sites the call returns to, ...).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function scopeCall(int $open_assignments, string $node_id): int
+    {
+        [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
+        [$file_path, $start, $end] = $this->call_ranges[$call];
+        $location = $this->getNode($node_id)?->code_location;
+
+        if ($location !== null
+            && $location->file_path === $file_path
+            && $location->raw_file_start >= $start
+            && $location->raw_file_end <= $end
+        ) {
+            return $open_assignments;
+        }
+
+        return $this->internOpenAssignments($made, $closed, $guards);
     }
 
     /**
