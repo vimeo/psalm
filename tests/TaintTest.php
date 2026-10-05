@@ -232,6 +232,54 @@ final class TaintTest extends TestCase
      * whereas each specialized function body is resolved once per entry and
      * applied to every call, so this resolves in well under a second.
      */
+    /**
+     * A __toString that isn't analyzed (here a stub's) can still declare the taints it escapes: the objects it
+     * converts keep their own taints, less those.
+     */
+    public function testStringConversionThroughAToStringThatIsNotAnalyzedButDeclaresItsEscapes(): void
+    {
+        $this->addStubFile(
+            'views.phpstub',
+            '<?php
+                final class EscapingView {
+                    /**
+                     * @psalm-taint-escape html
+                     * @psalm-taint-escape has_quotes
+                     */
+                    public function __toString(): string {}
+                }
+                final class RawView {
+                    public function __toString(): string {}
+                }
+                /** @psalm-taint-source input */
+                function escaping_view(): EscapingView {}
+                /** @psalm-taint-source input */
+                function raw_view(): RawView {}
+            ',
+        );
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            echo escaping_view();
+            echo (string) escaping_view();
+            echo raw_view();
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertSame(
+            [[4, 'TaintedHtml'], [4, 'TaintedTextWithQuotes']],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;

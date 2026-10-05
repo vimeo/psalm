@@ -968,6 +968,8 @@ final class CastAnalyzer
         $has_to_string = false;
         $converted_atomics = 0;
         $to_string_atomics = 0;
+        $escaping_atomics = 0;
+        $escaped_taints = null;
 
         $atomic_types = $type->getAtomicTypes();
 
@@ -990,22 +992,12 @@ final class CastAnalyzer
 
             $has_to_string = true;
 
-            $return_type = $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($to_string_id);
 
-            MethodCallReturnTypeFetcher::taintMethodCallResult(
-                $statements_analyzer,
-                $return_type,
-                $expr,
-                $expr,
-                [],
-                $to_string_id,
-                $declaring_method_id,
-                $to_string_id->fq_class_name . '::__toString',
-                $context,
+            $to_string_parent_nodes = array_merge(
+                $to_string_parent_nodes,
+                self::taintToStringResult($statements_analyzer, $context, $expr, $to_string_id, $declaring_method_id),
             );
-
-            $to_string_parent_nodes = array_merge($to_string_parent_nodes, $return_type->parent_nodes);
 
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $expr,
@@ -1015,6 +1007,15 @@ final class CastAnalyzer
 
             if (self::returnsTheTaintsOfTheObject($codebase, $context, $declaring_method_id, $var_id)) {
                 $to_string_atomics++;
+
+                continue;
+            }
+
+            $removed_taints = self::getDeclaredEscapes($codebase, $declaring_method_id);
+
+            if ($removed_taints !== 0) {
+                $escaping_atomics++;
+                $escaped_taints = $escaped_taints === null ? $removed_taints : $escaped_taints & $removed_taints;
             }
         }
 
@@ -1028,6 +1029,13 @@ final class CastAnalyzer
                 $expr,
                 $type->parent_nodes,
                 $to_string_parent_nodes,
+            );
+        }
+
+        if ($escaped_taints !== null && $to_string_atomics + $escaping_atomics === $converted_atomics) {
+            return array_merge(
+                $to_string_parent_nodes,
+                self::getEscapedObjectParentNodes($statements_analyzer, $expr, $type->parent_nodes, $escaped_taints),
             );
         }
 
@@ -1238,5 +1246,81 @@ final class CastAnalyzer
 
 
         IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
+    }
+
+    /**
+     * The parent nodes of what the __toString $expr converts through returns
+     *
+     * @return array<string, DataFlowNode>
+     */
+    private static function taintToStringResult(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
+        MethodIdentifier $to_string_id,
+        ?MethodIdentifier $declaring_method_id,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+        $self_class = null;
+
+        $return_type = $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+
+        MethodCallReturnTypeFetcher::taintMethodCallResult(
+            $statements_analyzer,
+            $return_type,
+            $expr,
+            $expr,
+            [],
+            $to_string_id,
+            $declaring_method_id,
+            $to_string_id->fq_class_name . '::__toString',
+            $context,
+        );
+
+        return $return_type->parent_nodes;
+    }
+
+    /**
+     * The taints a __toString that isn't analyzed declares it escapes (`@psalm-taint-escape`)
+     *
+     * @psalm-mutation-free
+     */
+    private static function getDeclaredEscapes(Codebase $codebase, ?MethodIdentifier $to_string_id): int
+    {
+        return $to_string_id === null ? 0 : $codebase->methods->getStorage($to_string_id)->removed_taints;
+    }
+
+    /**
+     * The parent nodes of the string objects convert to through a __toString that isn't analyzed (a dependency, a
+     * stub) but declares the taints it escapes: their own taints, less those (only when every such __toString escapes
+     * them)
+     *
+     * @param array<string, DataFlowNode> $object_parent_nodes
+     * @return array<string, DataFlowNode>
+     */
+    private static function getEscapedObjectParentNodes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        array $object_parent_nodes,
+        int $escaped_taints,
+    ): array {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($graph === null || $object_parent_nodes === []) {
+            return $object_parent_nodes;
+        }
+
+        $conversion_node = DataFlowNode::getForAssignment(
+            'escaping string conversion',
+            new CodeLocation($statements_analyzer->getSource(), $expr),
+        );
+
+        $graph->addNode($conversion_node);
+
+        foreach ($object_parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $conversion_node, '=', 0, $escaped_taints);
+        }
+
+        return [$conversion_node->id => $conversion_node];
     }
 }
