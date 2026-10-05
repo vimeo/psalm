@@ -1470,6 +1470,77 @@ final class PurityTemplateTest extends TestCase
                     '$x===' => '1|2',
                 ],
             ],
+            'subclassFitsItsParentWithOmittedTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    interface Driver {
+                        /**
+                         * @return T
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function consume();
+                    }
+
+                    /** @implements Driver[pure]<int> */
+                    final class NullDriver implements Driver {
+                        /** @psalm-pure */
+                        #[Override]
+                        public function consume(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @implements Driver<int> */
+                    final class EchoDriver implements Driver {
+                        #[Override]
+                        public function consume(): int {
+                            echo "consumed";
+                            return 1;
+                        }
+                    }
+
+                    function takeAny(Driver $_driver): void {}
+
+                    /** @param Driver[pure] $_driver */
+                    function takePure(Driver $_driver): void {}
+
+                    /** @param Driver[impure]<int> $_driver */
+                    function takeImpureInt(Driver $_driver): void {}
+
+                    takeAny(new NullDriver());
+                    takeAny(new EchoDriver());
+                    takeImpureInt(new NullDriver());
+                    takeImpureInt(new EchoDriver());
+                    takePure(new NullDriver());',
+            ],
+            'instanceofSubclassBindingTheParentsPurityToItsOwn' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    abstract class Future {}
+
+                    /**
+                     * @template TKey as array-key
+                     * @template-covariant TValue
+                     * @psalm-purity-template C
+                     * @extends Future[C]<array<TKey, TValue>>
+                     */
+                    final class CombinedFuture extends Future {}
+
+                    function isCombined(Future $future): bool {
+                        if ($future instanceof CombinedFuture) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+            ],
         ];
     }
 
@@ -2980,6 +3051,37 @@ final class PurityTemplateTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'function call on pick requires io',
+            ],
+            'subclassWithMorePurityDoesNotFitParentWithOmittedTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    interface Driver {
+                        /**
+                         * @return T
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function consume();
+                    }
+
+                    /** @implements Driver[io]<int> */
+                    final class EchoDriver implements Driver {
+                        /** @psalm-capabilities io */
+                        #[Override]
+                        public function consume(): int {
+                            echo "consumed";
+                            return 1;
+                        }
+                    }
+
+                    /** @param Driver[pure] $_driver */
+                    function takePure(Driver $_driver): void {}
+
+                    takePure(new EchoDriver());',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
