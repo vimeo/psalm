@@ -338,15 +338,7 @@ final class ForeachAnalyzer
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
 
             // the value stays a reference to an element of the iterated array after the loop
-            $iterated_var_id = ExpressionIdentifier::getExtendedVarId(
-                $stmt->expr,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer,
-            );
-
-            if ($iterated_var_id !== null) {
-                $statements_analyzer->addUntrackedReference($iterated_var_id, $foreach_context);
-            }
+            $statements_analyzer->addUntrackedReferenceTo($stmt->expr, $foreach_context);
         }
 
         foreach ($var_comments as $var_comment) {

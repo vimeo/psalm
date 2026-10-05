@@ -636,15 +636,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
         if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             // the change is not propagated to the array holding the offset
-            $offset_var_id = ExpressionIdentifier::getExtendedVarId(
-                $arg->value,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer,
-            );
-
-            if ($offset_var_id !== null) {
-                $statements_analyzer->addUntrackedReference($offset_var_id, $context);
-            }
+            $statements_analyzer->addUntrackedReferenceTo($arg->value, $context);
         }
 
         if ($var_id) {

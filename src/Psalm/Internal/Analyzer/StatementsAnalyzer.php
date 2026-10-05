@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
@@ -1133,11 +1134,46 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public function addUntrackedReference(string $var_id, Context $context): void
     {
-        // a dynamic offset may be any key, so only the part before it is known
-        $var_id = preg_replace('/\[(?!\'[^\']*\'\]|-?\d+\]).*/s', '', $var_id) ?? $var_id;
-
-        foreach (self::getReferenceAliases($var_id, $context) as $alias_id) {
+        foreach (self::getReferenceAliases(self::getKnownPath($var_id), $context) as $alias_id) {
             $this->untracked_reference_ids[$alias_id] = true;
+        }
+    }
+
+    /**
+     * Like addUntrackedReference(), for an expression: an offset or property without an id (e.g. $a[$i + 1])
+     * is recorded through the closest containing expression that has one.
+     */
+    public function addUntrackedReferenceTo(PhpParser\Node\Expr $expr, Context $context): void
+    {
+        $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+
+        while ($var_id === null) {
+            if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                return;
+            }
+
+            $expr = $expr->var;
+            $var_id = ExpressionIdentifier::getExtendedVarId($expr, $this->getFQCLN(), $this);
+        }
+
+        $this->addUntrackedReference($var_id, $context);
+    }
+
+    /**
+     * Called when $alias_id becomes a reference to $var_id: untracked references recorded under one
+     * name also apply to the other, even once the reference between them is gone.
+     */
+    public function addReferenceAlias(string $alias_id, string $var_id): void
+    {
+        foreach ($this->untracked_reference_ids as $reference_id => $_) {
+            foreach ([[$var_id, $alias_id], [$alias_id, $var_id]] as [$from_id, $to_id]) {
+                if ($reference_id === $from_id || self::isDescendantId($reference_id, $from_id)) {
+                    $this->untracked_reference_ids[$to_id . substr($reference_id, strlen($from_id))] = true;
+                }
+            }
         }
     }
 
@@ -1151,7 +1187,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             return false;
         }
 
-        $var_ids = self::getReferenceAliases($var_id, $context);
+        $var_ids = self::getReferenceAliases(self::getKnownPath($var_id), $context);
 
         foreach ($this->untracked_reference_ids as $reference_id => $_) {
             foreach ($var_ids as $alias_id) {
@@ -1165,6 +1201,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * A dynamic offset may be any key, so only the part of the id before it is known.
+     */
+    private static function getKnownPath(string $var_id): string
+    {
+        return preg_replace('/\[(?!\'[^\']*\'\]|-?\d+\]).*/s', '', $var_id) ?? $var_id;
     }
 
     /**

@@ -3406,6 +3406,31 @@ final class ArrayFunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $x = "a"|1 */
                     }
 
+                    function byRefComputedOffsetArgument(int $i): void {
+                        $a = [1, "a"];
+                        setToInt($a[$i + 0]);
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function arrayLiteralHoldingReference(): void {
+                        $v = "a";
+                        $a = [1, &$v];
+                        $v = 2;
+                        $x = array_pop($a);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
+                    function referenceThroughLaterAlias(): void {
+                        $a = [1, "a"];
+                        $r = &$a[1];
+                        $b = &$a;
+                        unset($a);
+                        $r = 2;
+                        $x = array_pop($b);
+                        /** @psalm-check-type-exact $x = "a"|1 */
+                    }
+
                     /**
                      * @template T of list<int>
                      * @param T $stack
@@ -4349,6 +4374,45 @@ final class ArrayFunctionCallTest extends TestCase
                         $x = &$a[$key][0];
                         $x = "changed";
                         return array_first($a["k"]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstOfDynamicOffsetWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = ["k" => [1], "m" => [2]];
+                        $x = &$a["k"][0];
+                        $x = "changed";
+                        $key = $b ? "k" : "m";
+                        return array_first($a[$key]);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstThroughLaterAliasWithOffsetChangedThroughReference' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [1, "last"];
+                        $x = &$a[0];
+                        $b = &$a;
+                        unset($a);
+                        $x = "changed";
+                        return array_first($b);
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayLastAfterNestedByRefDestructuring' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = [[1, "a"]];
+                        [[, &$v]] = $a;
+                        $v = 1;
+                        return array_last($a[0]);
                     }',
                 'error_message' => 'MixedReturnStatement',
                 'ignored_issues' => [],

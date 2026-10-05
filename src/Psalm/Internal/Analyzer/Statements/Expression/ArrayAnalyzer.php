@@ -508,6 +508,9 @@ final class ArrayAnalyzer
         }
 
         if ($item->byRef) {
+            // changing the array element changes the referenced variable
+            $statements_analyzer->addUntrackedReferenceTo($item->value, $context);
+
             $var_id = ExpressionIdentifier::getExtendedVarId(
                 $item->value,
                 $statements_analyzer->getFQCLN(),
@@ -515,9 +518,6 @@ final class ArrayAnalyzer
             );
 
             if ($var_id) {
-                // changing the array element changes the referenced variable
-                $statements_analyzer->addUntrackedReference($var_id, $context);
-
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->removeDescendents(
                         $var_id,
