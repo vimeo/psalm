@@ -2397,6 +2397,23 @@ final class TaintTest extends TestCase
                     find(["city" => $_GET["city"]]);',
                 'error_message' => 'TaintedNosql',
             ],
+            'variableDefinedByNarrowingInABranchKeepsItsTaints' => [
+                'code' => '<?php
+                    function render(array $names): string {
+                        foreach ($names as $name) {
+                            $first = $name;
+                            break;
+                        }
+                        if (empty($first)) {
+                            $first = "none";
+                        }
+
+                        return $first;
+                    }
+
+                    echo render($_GET["names"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
                 'code' => '<?php // --taint-analysis
                     $flipped = array_flip(["key" => (string) $_GET["value"]]);

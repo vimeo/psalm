@@ -380,10 +380,13 @@ final class IfElseAnalyzer
 
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {
-                // every branch assigns the variable, replacing what it held before: only the use of variables
-                // is tracked through the assignments made before (taints don't flow through them)
+                // a variable every branch assigns no longer holds what it held before: only the use of variables
+                // is tracked through the assignments made before then (a branch defining it by narrowing, like
+                // the implicit else of `if (empty($a)) { $a = 1; }`, keeps it, and its taints)
                 if (isset($context->vars_possibly_in_scope[$var_id])
-                    && $statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                    && $statements_analyzer->data_flow_graph
+                    && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                        || !isset($if_scope->assigned_var_ids[$var_id]))
                 ) {
                     $type = $type->addParentNodes(
                         $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id),
