@@ -63,6 +63,7 @@ use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function is_int;
 use function is_string;
 use function max;
 use function min;
@@ -1047,6 +1048,17 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
+                if ($in_call_map && $argument_offset === 1 && strtolower($cased_method_id) === 'curl_setopt_array') {
+                    self::addCurlOptionArraySinks(
+                        $statements_analyzer->taint_flow_graph,
+                        $codebase,
+                        $cased_method_id,
+                        $code_location,
+                    );
+
+                    continue;
+                }
+
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
 
@@ -1952,44 +1964,37 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The curl options whose value chooses where a request goes: the value of another one (a body, a timeout, ...)
-     * can't send it elsewhere.
+     * The sink of the value of each curl option that has one: `ssrf` for the options choosing where a request goes,
+     * `header` for the ones curl writes as is into the request line or the headers of a request, where a line break
+     * adds headers, or a whole other request, to what is sent. The value of another option (a body, a timeout, ...)
+     * can do neither.
      */
-    private const CURL_DESTINATION_OPTIONS = [
-        'CURLOPT_URL' => true,
-        'CURLOPT_PROXY' => true,
-        'CURLOPT_PRE_PROXY' => true,
-        'CURLOPT_CONNECT_TO' => true,
-        'CURLOPT_RESOLVE' => true,
-        'CURLOPT_DNS_SERVERS' => true,
-        'CURLOPT_DOH_URL' => true,
-        'CURLOPT_INTERFACE' => true,
-        'CURLOPT_UNIX_SOCKET_PATH' => true,
-        'CURLOPT_ABSTRACT_UNIX_SOCKET' => true,
-    ];
-
-    /**
-     * The curl options whose value curl writes as is into the request line or the headers of a request: a line
-     * break in it adds headers, or a whole other request, to what is sent.
-     */
-    private const CURL_HEADER_OPTIONS = [
-        'CURLOPT_HTTPHEADER' => true,
-        'CURLOPT_PROXYHEADER' => true,
-        'CURLOPT_CUSTOMREQUEST' => true,
-        'CURLOPT_USERAGENT' => true,
-        'CURLOPT_REFERER' => true,
-        'CURLOPT_COOKIE' => true,
-        'CURLOPT_ENCODING' => true,
-        'CURLOPT_ACCEPT_ENCODING' => true,
-        'CURLOPT_RANGE' => true,
-        'CURLOPT_XOAUTH2_BEARER' => true,
+    private const CURL_OPTION_SINKS = [
+        'CURLOPT_URL' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PROXY' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PRE_PROXY' => TaintKind::INPUT_SSRF,
+        'CURLOPT_CONNECT_TO' => TaintKind::INPUT_SSRF,
+        'CURLOPT_RESOLVE' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DNS_SERVERS' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DOH_URL' => TaintKind::INPUT_SSRF,
+        'CURLOPT_INTERFACE' => TaintKind::INPUT_SSRF,
+        'CURLOPT_UNIX_SOCKET_PATH' => TaintKind::INPUT_SSRF,
+        'CURLOPT_ABSTRACT_UNIX_SOCKET' => TaintKind::INPUT_SSRF,
+        'CURLOPT_HTTPHEADER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_PROXYHEADER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_CUSTOMREQUEST' => TaintKind::INPUT_HEADER,
+        'CURLOPT_USERAGENT' => TaintKind::INPUT_HEADER,
+        'CURLOPT_REFERER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_COOKIE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_ENCODING' => TaintKind::INPUT_HEADER,
+        'CURLOPT_ACCEPT_ENCODING' => TaintKind::INPUT_HEADER,
+        'CURLOPT_RANGE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_XOAUTH2_BEARER' => TaintKind::INPUT_HEADER,
     ];
 
     /**
      * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
-     * is an `ssrf` sink for the options choosing where the request goes (see CURL_DESTINATION_OPTIONS), a `header`
-     * sink for the ones written into the request (see CURL_HEADER_OPTIONS), and no sink for the others. An option
-     * the analysis can't tell may be any of them.
+     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @psalm-capabilities read-props
@@ -2006,13 +2011,71 @@ final class ArgumentsAnalyzer
             return TaintKind::INPUT_SSRF | TaintKind::INPUT_HEADER;
         }
 
-        $option_name = strtoupper($option->name->toString());
+        return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
 
-        if (isset(self::CURL_DESTINATION_OPTIONS[$option_name])) {
-            return TaintKind::INPUT_SSRF;
+    /**
+     * Makes the value of each option given to curl_setopt_array() the sink curl_setopt() makes it (see
+     * CURL_OPTION_SINKS). The options array flows into the node of an option through a fetch of its key, so what
+     * the array holds under another key doesn't reach it, but what it holds under a key the analysis can't tell
+     * does. Without the curl extension, the key of an option is unknown, so anything in the array reaches it.
+     *
+     * The nodes of the options with the same sink flow into one node, which flows into the sink: a value under a
+     * key the analysis can't tell, which reaches every option, is reported once.
+     */
+    private static function addCurlOptionArraySinks(
+        TaintFlowGraph $graph,
+        Codebase $codebase,
+        string $function_id,
+        CodeLocation $code_location,
+    ): void {
+        $options_node = DataFlowNode::getForCallableArg('builtin', $function_id, 1, $code_location);
+        $graph->addNode($options_node);
+
+        $constants = $codebase->config->getPredefinedConstants();
+        $sink_nodes = [];
+
+        foreach (self::CURL_OPTION_SINKS as $option_name => $sinks) {
+            if (!isset($sink_nodes[$sinks])) {
+                $kind = $sinks === TaintKind::INPUT_SSRF ? 'ssrf' : 'header';
+
+                $sink_nodes[$sinks] = DataFlowNode::getForCallableArg(
+                    'builtin',
+                    $function_id . '[' . $kind . ' options]',
+                    1,
+                    $code_location,
+                );
+                $graph->addNode($sink_nodes[$sinks]);
+
+                $sink = DataFlowNode::getForCallableArg(
+                    'builtin',
+                    $function_id . '[' . $kind . ']',
+                    1,
+                    $code_location,
+                    $sinks,
+                );
+                $graph->addSink($sink);
+                $graph->addPath($sink_nodes[$sinks], $sink, 'arg');
+            }
+
+            $option = isset($constants[$option_name]) && is_int($constants[$option_name])
+                ? $constants[$option_name]
+                : null;
+
+            $option_node = DataFlowNode::getForCallableArg(
+                'builtin',
+                $function_id . '[' . $option_name . ']',
+                1,
+                $code_location,
+            );
+            $graph->addNode($option_node);
+            $graph->addPath(
+                $options_node,
+                $option_node,
+                $option !== null ? 'arrayvalue-fetch-\'' . $option . '\'' : 'arrayvalue-fetch',
+            );
+            $graph->addPath($option_node, $sink_nodes[$sinks], 'arg');
         }
-
-        return isset(self::CURL_HEADER_OPTIONS[$option_name]) ? TaintKind::INPUT_HEADER : 0;
     }
 
     /**

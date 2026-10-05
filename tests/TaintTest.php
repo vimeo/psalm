@@ -280,6 +280,13 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintACurlOptionArrayEntryNotChoosingTheDestinationNorWrittenIntoTheRequest' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    $options = [CURLOPT_URL => "https://example.com/", CURLOPT_POSTFIELDS => $value];
+                    $options[CURLOPT_TIMEOUT] = $value;
+                    curl_setopt_array(curl_init(), $options);',
+            ],
             'dontTaintSsrfInACurlOptionNotChoosingTheDestination' => [
                 'code' => '<?php // --taint-analysis
                     $curl = curl_init("https://example.com/");
@@ -1344,6 +1351,25 @@ final class TaintTest extends TestCase
                     $curl = curl_init("https://example.com/");
                     curl_setopt($curl, \\CURLOPT_CUSTOMREQUEST, (string) $_GET["method"]);',
                 'error_message' => 'TaintedHeader',
+            ],
+            'taintSsrfInTheCurlUrlOptionOfAnArray' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(curl_init(), [CURLOPT_URL => (string) $_GET["url"]]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintHeaderInTheCurlHttpHeaderOptionOfAnArray' => [
+                'code' => '<?php // --taint-analysis
+                    $options = [CURLOPT_URL => "https://example.com/"];
+                    $options[CURLOPT_HTTPHEADER] = ["X-Value: " . (string) $_GET["header"]];
+                    curl_setopt_array(curl_init(), $options);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintSsrfInACurlOptionArrayEntryTheAnalysisCantTell' => [
+                'code' => '<?php // --taint-analysis
+                    function set(\\CurlHandle $curl, int $option): void {
+                        curl_setopt_array($curl, [$option => (string) $_GET["value"]]);
+                    }',
+                'error_message' => 'TaintedSSRF',
             ],
             'taintHeaderInACurlOptionTheAnalysisCantTell' => [
                 'code' => '<?php // --taint-analysis
