@@ -280,6 +280,36 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAnImmutableObjectBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    $tainted = new Url((string) $_GET["url"]);
+                    fetch(new Url("https://example.com/"));',
+            ],
+            'dontTaintAnObjectBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /**
+                         * @psalm-flow ($url) -> return
+                         * @psalm-taint-specialize
+                         */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    $tainted = new Url((string) $_GET["url"]);
+                    fetch(new Url("https://example.com/"));',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1314,6 +1344,59 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAnImmutableObjectThroughTheFlowOfItsConstructor' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url((string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructorFromANamedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(int $port = 80, string $url = "") {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url(url: (string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructorFromAVariadicArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($parts) -> return */
+                        public function __construct(string ...$parts) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url("https:", "", (string) $_GET["host"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintAnObjectThroughTheFlowOfItsConstructor' => [
+                'code' => '<?php // --taint-analysis
+                    final class Url {
+                        /** @psalm-flow ($url) -> return */
+                        public function __construct(string $url) {}
+                    }
+
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(Url $url): void {}
+
+                    fetch(new Url((string) $_GET["url"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink html $dangerous */
