@@ -10,7 +10,6 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -199,7 +198,7 @@ final class CallPurityResolver
         }
 
         foreach ($storage->purity_from_templates as $template_name) {
-            $bound = self::resolveMethodTemplateType($template_name, $template_result, $codebase);
+            $bound = self::resolveMethodTemplateType($template_name, $template_result);
             $on_receiver = false;
 
             if ($bound === null) {
@@ -260,28 +259,29 @@ final class CallPurityResolver
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      */
-    private static function resolveMethodTemplateType(
-        string $template_name,
-        ?TemplateResult $template_result,
-        Codebase $codebase,
-    ): ?Union {
+    private static function resolveMethodTemplateType(string $template_name, ?TemplateResult $template_result): ?Union
+    {
         if ($template_result !== null && isset($template_result->lower_bounds[$template_name])) {
-            $bounds = [];
+            $atomics = [];
 
             foreach ($template_result->lower_bounds[$template_name] as $bound_list) {
                 foreach ($bound_list as $bound) {
                     // a template no argument bound is defaulted to its upper bound, without an
                     // argument offset: nothing was passed, so nothing is required
                     if ($bound->arg_offset !== null) {
-                        $bounds[] = $bound;
+                        // the call requires what every position the template is inferred from
+                        // requires: unlike the template's type, no bound is dropped for a deeper one
+                        foreach ($bound->type->getAtomicTypes() as $atomic) {
+                            $atomics[] = $atomic;
+                        }
                     }
                 }
             }
 
-            if ($bounds !== []) {
-                return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($bounds, $codebase);
+            if ($atomics !== []) {
+                return new Union($atomics);
             }
         }
 
