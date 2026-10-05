@@ -52,6 +52,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -1041,14 +1042,14 @@ final class ArgumentsAnalyzer
             && $cased_method_id
         ) {
             foreach ($args as $argument_offset => $_) {
-                if (!isset($arg_function_params[$argument_offset])
-                    || self::setsNoDestination($cased_method_id, $argument_offset, $args)
-                ) {
+                if (!isset($arg_function_params[$argument_offset])) {
                     continue;
                 }
 
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    if ($function_param->sinks) {
+                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+
+                    if ($sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
@@ -1072,7 +1073,7 @@ final class ArgumentsAnalyzer
                                     $cased_method_id,
                                     $argument_offset,
                                     $code_location,
-                                    $function_param->sinks,
+                                    $sinks,
                                 );
                         } elseif ($specialize_taint) {
                             $sink = DataFlowNode::getForMethodArgument(
@@ -1950,8 +1951,8 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The curl options whose value chooses where a request goes: the value of another one (a header, a body, a
-     * timeout, ...) can't send it elsewhere.
+     * The curl options whose value chooses where a request goes: the value of another one (a body, a timeout, ...)
+     * can't send it elsewhere.
      */
     private const CURL_DESTINATION_OPTIONS = [
         'CURLOPT_URL' => true,
@@ -1967,22 +1968,49 @@ final class ArgumentsAnalyzer
     ];
 
     /**
-     * Whether the argument at $argument_offset of a call of $function_id is the value of a curl option that doesn't
-     * choose where the request goes (see CURL_DESTINATION_OPTIONS): its `ssrf` sink doesn't apply then. An option
-     * the analysis can't tell may be one that does.
+     * The curl options whose value curl writes as is into the request line or the headers of a request: a line
+     * break in it adds headers, or a whole other request, to what is sent.
+     */
+    private const CURL_HEADER_OPTIONS = [
+        'CURLOPT_HTTPHEADER' => true,
+        'CURLOPT_PROXYHEADER' => true,
+        'CURLOPT_CUSTOMREQUEST' => true,
+        'CURLOPT_USERAGENT' => true,
+        'CURLOPT_REFERER' => true,
+        'CURLOPT_COOKIE' => true,
+        'CURLOPT_ENCODING' => true,
+        'CURLOPT_ACCEPT_ENCODING' => true,
+        'CURLOPT_RANGE' => true,
+        'CURLOPT_XOAUTH2_BEARER' => true,
+    ];
+
+    /**
+     * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
+     * is an `ssrf` sink for the options choosing where the request goes (see CURL_DESTINATION_OPTIONS), a `header`
+     * sink for the ones written into the request (see CURL_HEADER_OPTIONS), and no sink for the others. An option
+     * the analysis can't tell may be any of them.
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @psalm-capabilities read-props
      */
-    private static function setsNoDestination(string $function_id, int $argument_offset, array $args): bool
+    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
     {
         if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
-            return false;
+            return $sinks;
         }
 
         $option = $args[1]->value;
 
-        return $option instanceof PhpParser\Node\Expr\ConstFetch
-            && !isset(self::CURL_DESTINATION_OPTIONS[strtoupper($option->name->toString())]);
+        if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
+            return TaintKind::INPUT_SSRF | TaintKind::INPUT_HEADER;
+        }
+
+        $option_name = strtoupper($option->name->toString());
+
+        if (isset(self::CURL_DESTINATION_OPTIONS[$option_name])) {
+            return TaintKind::INPUT_SSRF;
+        }
+
+        return isset(self::CURL_HEADER_OPTIONS[$option_name]) ? TaintKind::INPUT_HEADER : 0;
     }
 }

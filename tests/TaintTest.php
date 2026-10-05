@@ -284,8 +284,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     $curl = curl_init("https://example.com/");
                     curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
-                    curl_setopt($curl, CURLOPT_HTTPHEADER, ["X-Value: " . (string) $_GET["header"]]);
-                    curl_setopt($curl, \\CURLOPT_USERAGENT, (string) $_GET["agent"]);',
+                    curl_setopt($curl, \\CURLOPT_TIMEOUT, (string) $_GET["timeout"]);',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
@@ -1317,6 +1316,25 @@ final class TaintTest extends TestCase
                         curl_setopt($curl, $option, (string) $_GET["value"]);
                     }',
                 'error_message' => 'TaintedSSRF',
+            ],
+            'taintHeaderInTheCurlHttpHeaderOption' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, CURLOPT_HTTPHEADER, ["X-Value: " . (string) $_GET["header"]]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintHeaderInTheCurlCustomRequestOption' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, \\CURLOPT_CUSTOMREQUEST, (string) $_GET["method"]);',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintHeaderInACurlOptionTheAnalysisCantTell' => [
+                'code' => '<?php // --taint-analysis
+                    function set(\\CurlHandle $curl, int $option): void {
+                        curl_setopt($curl, $option, (string) $_GET["value"]);
+                    }',
+                'error_message' => 'TaintedHeader',
             ],
             'taintedNamedArgumentToSinkParameter' => [
                 'code' => '<?php // --taint-analysis
