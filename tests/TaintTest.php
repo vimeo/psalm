@@ -2665,6 +2665,26 @@ final class TaintTest extends TestCase
                     $holder->fill((string) $_GET["value"]);
                     echo $holder->getLabel("b");',
             ],
+            'taintFreeFetchUnderParamKeyOfOtherReadOnlyCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        public function get(int|string $key): string {
+                            return $this->data[(string) $key];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+            ],
             'taintFreeAssignmentAndFetchUnderParamKeys' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -2829,6 +2849,31 @@ final class TaintTest extends TestCase
                     $holder = new Holder();
                     $holder->fill((string) $_GET["value"]);
                     echo $holder->getLabel("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfCallKeepingIt' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        private string $last = "";
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        public function get(string $key): string {
+                            $this->last = $this->data[$key];
+                            return $this->last;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    $holder->get("a");
+                    echo $holder->get("b");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAssignmentAndFetchUnderSameParamKeys' => [

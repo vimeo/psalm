@@ -613,6 +613,7 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
+     * @param array<string, true> $read_only_calls
      * @param array<string, array<string, string>> $param_keys
      * @psalm-capabilities read-props
      */
@@ -625,6 +626,7 @@ final class TaintFlowResolution
         private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
+        private readonly array $read_only_calls,
         private readonly array $param_keys,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
@@ -2463,7 +2465,8 @@ final class TaintFlowResolution
      * function-like whose parameters they were, or one it calls.
      *
      * The value fetched in a call can't go out through another call site of a specialized function-like: its
-     * calls don't share anything. A despecialized one may keep it for another call to return.
+     * calls don't share anything. Nor of a despecialized one that only reads. Another one may keep it for another
+     * call to return.
      *
      * @psalm-external-mutation-free
      */
@@ -2477,7 +2480,9 @@ final class TaintFlowResolution
 
         $passed_on = [];
 
-        if (!isset($this->despecialized_calls[$specialization_key])) {
+        if (!isset($this->despecialized_calls[$specialization_key])
+            || isset($this->read_only_calls[$specialization_key])
+        ) {
             foreach ($guards as $param => $class) {
                 $key = $this->param_keys[$param][$specialization_key] ?? null;
 

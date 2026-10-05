@@ -495,6 +495,11 @@ final class ArrayFetchAnalyzer
      */
     public static function getParamKey(StatementsAnalyzer $statements_analyzer, ?PhpParser\Node\Expr $dim): ?string
     {
+        if ($dim instanceof PhpParser\Node\Expr\Cast\String_) {
+            // the same key, if the parameter is one (see TaintFlowGraph::addParamKey())
+            $dim = $dim->expr;
+        }
+
         if (!$dim instanceof PhpParser\Node\Expr\Variable || $statements_analyzer->taint_flow_graph === null) {
             return null;
         }

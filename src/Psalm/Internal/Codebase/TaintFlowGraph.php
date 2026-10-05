@@ -156,6 +156,14 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $despecialized_calls = [];
 
     /**
+     * The despecialized calls whose callees only read, and so can't keep what a call gets for another one to
+     * return: specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $read_only_calls = [];
+
+    /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
      * so that taint flowing into one call does not flow out of the other calls.
      *
@@ -333,11 +341,21 @@ final class TaintFlowGraph extends DataFlowGraph
         $mutation_levels = $codebase->code_use_graph->getMutationLevels();
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
+            $is_read_only = true;
+
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                $mutation_level = $mutation_levels[$function_node_id] ?? Capabilities::ALL;
+
+                if ($mutation_level !== Capabilities::NONE) {
                     $this->despecialized_calls[$specialization_key] = true;
-                    break;
                 }
+
+                $is_read_only = $is_read_only
+                    && ($mutation_level & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) === 0;
+            }
+
+            if ($is_read_only && isset($this->despecialized_calls[$specialization_key])) {
+                $this->read_only_calls[$specialization_key] = true;
             }
         }
     }
@@ -683,6 +701,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specializations,
             $this->specialized_calls,
             $this->despecialized_calls,
+            $this->read_only_calls,
             $this->param_keys,
             Config::getInstance(),
             $project_analyzer,
