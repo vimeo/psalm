@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -1474,7 +1475,8 @@ final class ArgumentsAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
             $storage = $codebase->methods->getStorage($declaring_method_id);
 
-            if ($storage->abstract) {
+            // the arguments of a call through an alias of a trait method don't flow into its body
+            if ($storage->abstract || strtolower((string) $storage->cased_name) !== $method_id->method_name) {
                 return false;
             }
         }
@@ -1485,7 +1487,7 @@ final class ArgumentsAnalyzer
 
     /**
      * The node of what the function-like called leaves in a by-reference parameter: that of the
-     * declaring method, specialized to the call like its return.
+     * method in the class it appears in, specialized to the call like its return.
      *
      * @psalm-capabilities read-props
      */
@@ -1499,9 +1501,10 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
     ): DataFlowNode {
         if ($method_id !== null) {
-            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
-            $cased_function_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-            $storage = $codebase->methods->getStorage($declaring_method_id);
+            $cased_function_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
+            $storage = $codebase->methods->getStorage(
+                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+            );
         }
 
         return DataFlowNode::getForMethodArgumentOut(

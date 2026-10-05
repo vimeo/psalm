@@ -290,6 +290,27 @@ final class TaintTest extends TestCase
                     reset_value($value);
                     echo $value;',
             ],
+            'dontTaintByRefParamWrittenAfterItIsUnset' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        unset($value);
+                        $value = (string) $_GET["value"];
+                    }
+
+                    $value = "literal";
+                    read_value($value);
+                    echo $value;',
+            ],
+            'dontTaintOtherArrayItemThanTheOnePassedByRef' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                    }
+
+                    $values = ["read" => "", "other" => ""];
+                    read_value($values["read"]);
+                    echo $values["other"];',
+            ],
             'firstClassCallableOfTaintPropagatingFunction' => [
                 'code' => '<?php
                     function f(string $s): array {
@@ -1401,6 +1422,177 @@ final class TaintTest extends TestCase
                         $normalizer->normalize($value);
                         echo $value;
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToATraitMethod' => [
+                'code' => '<?php // --taint-analysis
+                    trait Normalizes {
+                        public function normalize(string &$value): void {}
+                    }
+
+                    final class ValueNormalizer {
+                        use Normalizes;
+                    }
+
+                    $value = (string) $_GET["value"];
+                    (new ValueNormalizer())->normalize($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAnAliasedTraitMethod' => [
+                'code' => '<?php // --taint-analysis
+                    trait Normalizes {
+                        public function normalize(string &$value): void {}
+                    }
+
+                    final class ValueNormalizer {
+                        use Normalizes { normalize as clean; }
+                    }
+
+                    $value = (string) $_GET["value"];
+                    (new ValueNormalizer())->clean($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAnOverrideOfATraitMethod' => [
+                'code' => '<?php // --taint-analysis
+                    trait Reads {
+                        public function read(string &$value): void {
+                            $value = "literal";
+                        }
+                    }
+
+                    class Reader {
+                        use Reads;
+                    }
+
+                    final class GetReader extends Reader {
+                        #[Override]
+                        public function read(string &$value): void {
+                            $value = (string) $_GET["value"];
+                        }
+                    }
+
+                    function show(Reader $reader): void {
+                        $value = "";
+                        $reader->read($value);
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAFunctionUnsettingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function forget(string &$value): void {
+                        unset($value);
+                    }
+
+                    $value = (string) $_GET["value"];
+                    forget($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamWrittenBeforeItIsUnset' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                        unset($value);
+                        $value = "literal";
+                    }
+
+                    $value = "";
+                    read_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAFunctionRebindingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function rebind(string &$value): void {
+                        $literal = "literal";
+                        $value = &$literal;
+                    }
+
+                    $value = (string) $_GET["value"];
+                    rebind($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAFunctionRebindingItToAStaticVariable' => [
+                'code' => '<?php // --taint-analysis
+                    function rebind(string &$value): void {
+                        static $value = "literal";
+                    }
+
+                    $value = (string) $_GET["value"];
+                    rebind($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValuePassedByRefToAFunctionRebindingItToAGlobal' => [
+                'code' => '<?php // --taint-analysis
+                    function rebind(string &$value): void {
+                        global $value;
+                    }
+
+                    $input = (string) $_GET["value"];
+                    rebind($input);
+                    echo $input;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAClosure' => [
+                'code' => '<?php // --taint-analysis
+                    $read_value = function (string &$value): void {
+                        $value = (string) $_GET["value"];
+                    };
+
+                    $value = "";
+                    $read_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAnArrowFunction' => [
+                'code' => '<?php // --taint-analysis
+                    $read_value = fn (string &$value): string => $value = (string) $_GET["value"];
+
+                    $value = "";
+                    $read_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAFirstClassCallable' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                    }
+
+                    $read_value = read_value(...);
+                    $value = "";
+                    $read_value($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayItemPassedByRef' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                    }
+
+                    $values = ["read" => ""];
+                    read_value($values["read"]);
+                    echo $values["read"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintStaticPropertyPassedByRef' => [
+                'code' => '<?php // --taint-analysis
+                    function read_value(string &$value): void {
+                        $value = (string) $_GET["value"];
+                    }
+
+                    final class Values {
+                        public static string $value = "";
+                    }
+
+                    read_value(Values::$value);
+                    echo Values::$value;',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedNamedArgumentToSinkParameter' => [

@@ -13,6 +13,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -322,6 +323,8 @@ final class ForeachAnalyzer
             // When assigning as reference, it removes any previous
             // reference, so it's no longer from a previous confusing scope
             unset($foreach_context->references_possibly_from_confusing_scope['$' . $stmt->valueVar->name]);
+
+            FunctionLikeAnalyzer::unbindByRefParam($codebase, $foreach_context, '$' . $stmt->valueVar->name);
         }
 
         AssignmentAnalyzer::analyze(

@@ -1063,6 +1063,8 @@ final class AssignmentAnalyzer
                 ?? Type::getMixed();
         }
 
+        FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count
             $context->decrementReferenceCount($lhs_var_id);
@@ -1165,6 +1167,8 @@ final class AssignmentAnalyzer
             $statements_analyzer,
         );
 
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             $property_id = ExpressionIdentifier::getVarId(
                 $stmt,
@@ -1173,7 +1177,7 @@ final class AssignmentAnalyzer
             );
 
             if ($property_id !== null
-                && $statements_analyzer->getCodebase()->propertyExists($property_id, false)
+                && $codebase->propertyExists($property_id, false)
             ) {
                 ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
@@ -1184,7 +1188,28 @@ final class AssignmentAnalyzer
                     true,
                     true,
                 );
+
+                // the property holds what the call leaves in it (see StaticPropertyAssignmentAnalyzer)
+                if (($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+                    && ($declaring_class = $codebase->properties->getDeclaringClassForProperty($property_id, false))
+                        !== null
+                ) {
+                    InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
+                        $statements_analyzer,
+                        $graph,
+                        $stmt,
+                        $property_id,
+                        $codebase->classlike_storage_provider->get($declaring_class),
+                        $by_ref_out_type,
+                        $context,
+                        null,
+                    );
+                }
             }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            self::taintByRefArrayItem($statements_analyzer, $stmt, $by_ref_out_type, $context);
         }
 
         if ($var_id) {
@@ -1286,6 +1311,67 @@ final class AssignmentAnalyzer
             if ($var_not_in_scope && $stmt instanceof PhpParser\Node\Expr\Variable) {
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $stmt);
             }
+        }
+    }
+
+    /**
+     * The arrays an item passed by reference is in hold what the call leaves in it too (see
+     * ArrayFetchAnalyzer::taintArrayFetch() and ArrayAssignmentAnalyzer).
+     */
+    private static function taintByRefArrayItem(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $item,
+        Union $by_ref_out_type,
+        Context $context,
+    ): void {
+        if (!($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())) {
+            return;
+        }
+
+        $item_parent_nodes = $by_ref_out_type->parent_nodes;
+
+        while ($item_parent_nodes && $item instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $array_var_id = ExpressionIdentifier::getExtendedVarId(
+                $item->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($array_var_id === null || !isset($context->vars_in_scope[$array_var_id])) {
+                return;
+            }
+
+            $array_node = DataFlowNode::getForAssignment(
+                $array_var_id,
+                new CodeLocation($statements_analyzer->getSource(), $item->var),
+            );
+
+            $graph->addNode($array_node);
+
+            $dim_type = $item->dim ? $statements_analyzer->node_data->getType($item->dim) : null;
+            $path_type = 'arrayvalue-assignment';
+
+            if ($dim_type && $dim_type->isSingleStringLiteral()) {
+                $path_type .= '-\'' . $dim_type->getSingleStringLiteral()->value . '\'';
+            } elseif ($dim_type && $dim_type->isSingleIntLiteral()) {
+                $path_type .= '-\'' . $dim_type->getSingleIntLiteral()->value . '\'';
+            }
+
+            foreach ($item_parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $array_node, $path_type);
+            }
+
+            foreach ($context->vars_in_scope[$array_var_id]->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $array_node, '=');
+            }
+
+            $item_parent_nodes = [$array_node->id => $array_node];
+
+            $context->vars_in_scope[$array_var_id] = $context->vars_in_scope[$array_var_id]->setParentNodes(
+                $item_parent_nodes,
+            );
+
+            $item = $item->var;
         }
     }
 

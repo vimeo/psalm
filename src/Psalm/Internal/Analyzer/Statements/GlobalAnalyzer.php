@@ -67,6 +67,8 @@ final class GlobalAnalyzer
 
             $var_id = '$' . $var->name;
 
+            FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
+
             $doc_comment = $stmt->getDocComment();
             $comment_type = null;
 
