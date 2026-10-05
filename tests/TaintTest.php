@@ -677,14 +677,6 @@ final class TaintTest extends TestCase
                     echo "<p>{$tag}</p>";
                     echo "<p>" . $tag . "</p>";',
             ],
-            'dontTaintTheValueOfAnArrayGivenToAFunctionUnderAKeyItAssigns' => [
-                'code' => '<?php // --taint-analysis
-                    function city(array $data): string {
-                        $data["city"] = "msk";
-                        return (string) $data["city"];
-                    }
-                    echo city(["city" => (string) $_GET["city"]]);',
-            ],
             'dontTaintTheValueAnArrayHeldUnderAKeyAssignedSinceThen' => [
                 'code' => '<?php // --taint-analysis
                     $data = ["city" => (string) $_GET["city"], "zip" => "000"];
@@ -2541,6 +2533,20 @@ final class TaintTest extends TestCase
                     }
                     $value = rand(0, 1) ? new Tag("safe") : (string) $_GET["x"];
                     echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAForeachTransformAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    /** @param array<string, string> $input */
+                    function show(array $input): void {
+                        $input["zip"] = (string) $_GET["zip"];
+                        $output = [];
+                        foreach ($input as $key => $value) {
+                            $output[$key] = trim($value);
+                        }
+                        $output["city"] = "msk";
+                        echo $output["zip"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAnArrayIteratedOverAfterAKeyIsUnset' => [

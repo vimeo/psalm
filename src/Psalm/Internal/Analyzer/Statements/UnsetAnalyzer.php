@@ -213,8 +213,8 @@ final class UnsetAnalyzer
 
     /**
      * The array $root_var_id is once its offset $var is unset, of type $new_type: what it held under its other keys
-     * flows into it, not what it held under that key if it is a single literal one (see
-     * ArrayAssignmentAnalyzer::getOverwritePathType()).
+     * flows into it, not what it held under that key (see ArrayAssignmentAnalyzer::getOverwritePathType()). Only
+     * for a single literal key: the graphs are left as they were for any other.
      */
     private static function taintUnsetOffset(
         StatementsAnalyzer $statements_analyzer,
@@ -225,6 +225,14 @@ final class UnsetAnalyzer
         Union $key_type,
     ): Union {
         $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+
+        if ($key_type->isSingleStringLiteral()) {
+            $key = $key_type->getSingleStringLiteral();
+        } elseif ($key_type->isSingleIntLiteral()) {
+            $key = $key_type->getSingleIntLiteral();
+        } else {
+            return $new_type;
+        }
 
         if ($graph === null || $old_type->parent_nodes === []) {
             return $new_type;
@@ -237,13 +245,7 @@ final class UnsetAnalyzer
 
         $graph->addNode($node);
 
-        $path_type = '=';
-
-        if ($key_type->isSingleStringLiteral()) {
-            $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($old_type, $key_type->getSingleStringLiteral());
-        } elseif ($key_type->isSingleIntLiteral()) {
-            $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($old_type, $key_type->getSingleIntLiteral());
-        }
+        $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($old_type, $key);
 
         foreach ($old_type->parent_nodes as $parent_node) {
             $graph->addPath($parent_node, $node, $path_type);
