@@ -904,6 +904,16 @@ final class TaintTest extends TestCase
                     $printed = print_r($_GET["x"], true);
                     $named = print_r(value: $_GET["x"], return: true);',
             ],
+            'dontTaintAClosureMadeFromAClosure' => [
+                'code' => '<?php
+                    $v = (string) $_GET["v"];
+                    $a = Closure::fromCallable("strlen");
+                    $b = Closure::fromCallable(function () use ($v): string { return $v; });
+                    $c = Closure::fromCallable(fn(): string => $v);
+                    $a("a");
+                    $b();
+                    $c();',
+            ],
             'dontTaintSpecializedCallsForAnonymousInstance' => [
                 'code' => '<?php
 
@@ -2681,6 +2691,15 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     print_r($_GET["x"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintClosureFromCallable' => [
+                'code' => '<?php
+                    $name = $_GET["f"];
+                    if (is_callable($name)) {
+                        $closure = Closure::fromCallable($name);
+                        $closure();
+                    }',
+                'error_message' => 'TaintedCallable',
             ],
             'taintThroughArrayMapImplicitFunctionCall' => [
                 'code' => '<?php
