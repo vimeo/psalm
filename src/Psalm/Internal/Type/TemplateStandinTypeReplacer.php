@@ -12,6 +12,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -1224,6 +1225,17 @@ final class TemplateStandinTypeReplacer
             return reset($lower_bounds)->type;
         }
 
+        // a purity template must allow everything each position it was inferred from requires, however deep
+        if (self::areAllPurityBounds($lower_bounds)) {
+            $joined = null;
+
+            foreach ($lower_bounds as $template_bound) {
+                $joined = Type::combineUnionTypes($joined, $template_bound->type, $codebase);
+            }
+
+            return $joined;
+        }
+
         usort(
             $lower_bounds,
             static fn(TemplateBound $bound_a, TemplateBound $bound_b): int => $bound_b->appearance_depth <=> $bound_a->appearance_depth,
@@ -1261,6 +1273,23 @@ final class TemplateStandinTypeReplacer
         }
 
         return $current_type ?? Type::getMixed();
+    }
+
+    /**
+     * Whether the bounds are all capability sets (or purity templates), i.e. those of a purity template
+     *
+     * @param non-empty-list<TemplateBound> $lower_bounds
+     * @psalm-mutation-free
+     */
+    private static function areAllPurityBounds(array $lower_bounds): bool
+    {
+        foreach ($lower_bounds as $template_bound) {
+            if (!Capabilities::isPurityArgument($template_bound->type)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

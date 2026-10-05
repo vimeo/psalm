@@ -10,6 +10,7 @@ use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
@@ -48,6 +49,7 @@ use function explode;
 use function str_contains;
 use function str_ends_with;
 use function strlen;
+use function strrpos;
 use function strtolower;
 use function substr;
 use function trim;
@@ -619,6 +621,21 @@ final class FunctionCallReturnTypeFetcher
         $storage = self::getCallableStorage($statements_analyzer, $callable_id);
 
         if ($storage === null) {
+            // a closure: its return type already holds what it returns
+            $closure_storage = self::getClosureStorage($statements_analyzer, $callable_id);
+
+            if ($closure_storage !== null) {
+                self::taintCallableByRefParams(
+                    $statements_analyzer,
+                    $graph,
+                    $context,
+                    $callable_id,
+                    $closure_storage,
+                    $stmt->getArgs(),
+                    null,
+                );
+            }
+
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
 
             return;
@@ -701,7 +718,87 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
+        self::taintCallableByRefParams(
+            $statements_analyzer,
+            $graph,
+            $context,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+        );
+
         $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    /**
+     * The by-reference parameters of a callable invoked: what its body leaves in them flows into the
+     * variables passed (see FunctionLikeAnalyzer::taintByRefParamsOut()). The value passed may still be
+     * there, as another of the callables the call target may be can run.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintCallableByRefParams(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        Context $context,
+        string $callable_id,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?CodeLocation $specialization_location,
+    ): void {
+        foreach ($storage->params as $i => $param) {
+            if (!$param->by_ref) {
+                continue;
+            }
+
+            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+                $var_id = ExpressionIdentifier::getExtendedVarId(
+                    $args[$arg_index]->value,
+                    null,
+                    $statements_analyzer,
+                );
+
+                if ($var_id === null || !isset($context->vars_in_scope[$var_id])) {
+                    continue;
+                }
+
+                $out_node = DataFlowNode::getForMethodArgumentOut(
+                    $callable_id,
+                    $i,
+                    $storage,
+                    $specialization_location,
+                );
+                $graph->addNode($out_node);
+
+                $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->addParentNodes(
+                    [$out_node->id => $out_node],
+                );
+            }
+        }
+    }
+
+    /**
+     * The storage of a closure from its id (see ClosureAnalyzer::getClosureId()), which starts with the
+     * path of the file it is in.
+     */
+    private static function getClosureStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $closure_id,
+    ): ?FunctionLikeStorage {
+        if (!str_ends_with($closure_id, ':-:closure')) {
+            return null;
+        }
+
+        $file_path = substr($closure_id, 0, -strlen(':-:closure'));
+        $file_path = substr($file_path, 0, (int) strrpos($file_path, ':'));
+        $file_path = substr($file_path, 0, (int) strrpos($file_path, ':'));
+
+        try {
+            return $statements_analyzer->getCodebase()->getClosureStorage($file_path, $closure_id);
+        } catch (UnexpectedValueException) {
+            return null;
+        }
     }
 
     /**
