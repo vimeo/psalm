@@ -1745,6 +1745,9 @@ final class AssignmentAnalyzer
                             $can_be_empty,
                         );
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
+                        $array_access_key_type = null;
+                        $array_access_value_type = null;
+
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
                             $codebase,
@@ -1752,7 +1755,10 @@ final class AssignmentAnalyzer
                             $array_access_value_type,
                         );
 
-                        $new_assign_type = Type::combineUnionTypes($array_access_value_type, $new_assign_type);
+                        // a non-Traversable ArrayAccess has no value type to take
+                        if ($array_access_value_type !== null) {
+                            $new_assign_type = Type::combineUnionTypes($array_access_value_type, $new_assign_type);
+                        }
                     }
 
                     if ($item_type) {
