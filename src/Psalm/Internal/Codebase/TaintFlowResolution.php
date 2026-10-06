@@ -1783,11 +1783,6 @@ final class TaintFlowResolution
     }
 
     /**
-     * @param self::ENTRY_* $kind
-     * @param array<int, array{?string, array<string, true>}> $facts
-     * @psalm-external-mutation-free
-     */
-    /**
      * Whether the walks of entry $entry are split by the class of the open assignments of the calls entering
      * it (see dependOnClass()). Those of an entry are, and those of a filter knowing a single fact (e.g. the
      * key of the property its walk read) too: each of its walks only observes that one so far, so splitting
@@ -1803,6 +1798,11 @@ final class TaintFlowResolution
             || count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS;
     }
 
+    /**
+     * @param self::ENTRY_* $kind
+     * @param array<int, array{?string, array<string, true>}> $facts
+     * @psalm-external-mutation-free
+     */
     private function addEntry(string $id, int $kind, array $facts, ?int $base = null): int
     {
         $entry = count($this->entry_nodes);
