@@ -54,6 +54,7 @@ use function count;
 use function end;
 use function in_array;
 use function ksort;
+use function preg_match;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -1203,11 +1204,16 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
+            // A property is shared by every object of its class, so what reaches it no longer depends on the
+            // specialized call it went through: carrying the call's entry on would walk everything reading the
+            // property once per entry
+            $to_context = $context !== null && self::isSharedNode($this->nodes[$to_id]) ? null : $context;
+
             // The visited guard keeps the fixed point finite, so a visited node is never
             // propagated from again. A visited sink still gets to report, though: the flow
             // arriving through this edge may be a different one from the flow that visited it
             // first (it can arrive rounds later when its path is longer).
-            $state_key = self::getStateKey($new_taints, $context);
+            $state_key = self::getStateKey($new_taints, $to_context);
             $already_visited = isset($visited_source_ids[$to_id][$state_key]);
             $sink = $sinks[$to_id] ?? null;
 
@@ -1235,8 +1241,15 @@ final class TaintFlowGraph extends DataFlowGraph
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
-                    if ($context !== null) {
-                        $this->addEntrySink($context, $sink, $generated_source, $matching_taints, $config, $codebase);
+                    if ($to_context !== null) {
+                        $this->addEntrySink(
+                            $to_context,
+                            $sink,
+                            $generated_source,
+                            $matching_taints,
+                            $config,
+                            $codebase,
+                        );
                     } else {
                         $this->reportTaintedFlowOnce($generated_source, $sink, $matching_taints, $config, $codebase);
                     }
@@ -1257,9 +1270,21 @@ final class TaintFlowGraph extends DataFlowGraph
                 $new_taints,
                 $generated_source,
                 self::appendPathType($open_assignments, $path_type),
-                $context,
+                $to_context,
             );
         }
+    }
+
+    /**
+     * Whether the node is the unspecialized node of a property, which all the objects of its class share.
+     *
+     * @psalm-pure
+     */
+    private static function isSharedNode(DataFlowNode $node): bool
+    {
+        return $node->specialization_key === null
+            && $node->code_location === null
+            && preg_match('/^[^ ]+::\$[^ ]+( inherited)?$/D', $node->id) === 1;
     }
 
     /**
