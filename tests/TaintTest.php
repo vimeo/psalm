@@ -392,6 +392,51 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAPrivatePropertyWithWhatIsSetToTheOneOfAParentClass' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        private string $name = "";
+
+                        public function setName(string $name): void {
+                            $this->name = $name;
+                        }
+                    }
+
+                    final class Admin extends Model {
+                        private string $name = "";
+
+                        public function printName(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    $admin = new Admin();
+                    $admin->setName((string) $_GET["name"]);
+                    $admin->printName();',
+            ],
+            'dontTaintThePropertyOfASubclassWithWhatIsSetThroughAnotherSubclass' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        protected string $name = "";
+                    }
+
+                    class Admin extends Model {
+                        public function printName(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    final class SuperAdmin extends Admin {}
+
+                    final class Guest extends Model {
+                        public function setName(string $name): void {
+                            $this->name = $name;
+                        }
+                    }
+
+                    (new Guest())->setName((string) $_GET["name"]);
+                    (new SuperAdmin())->printName();',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
@@ -1824,6 +1869,73 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintThePropertyOfASubclassWithWhatAParentMethodSets' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        protected string $name = "";
+
+                        public function setName(string $name): void {
+                            $this->name = $name;
+                        }
+                    }
+
+                    final class Admin extends Model {
+                        public function printName(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    $admin = new Admin();
+                    $admin->setName((string) $_GET["name"]);
+                    $admin->printName();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThePropertyASubclassDeclaresAgainWithWhatAParentMethodSets' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Provider {
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+                    }
+
+                    final class Activity extends Provider {
+                        protected array $options = ["ids" => ""];
+
+                        public function printIds(): void {
+                            echo (string) $this->options["ids"];
+                        }
+                    }
+
+                    $activity = new Activity();
+                    $activity->setOption("ids", (string) $_GET["ids"]);
+                    $activity->printIds();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThePropertyOfAParentClassWithWhatIsSetThroughASubclassOfASubclass' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        protected string $name = "";
+                    }
+
+                    class Admin extends Model {
+                        public function printName(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    final class SuperAdmin extends Admin {
+                        public function setName(string $name): void {
+                            $this->name = $name;
+                        }
+                    }
+
+                    $admin = new SuperAdmin();
+                    $admin->setName((string) $_GET["name"]);
+                    $admin->printName();',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAQueryWithAnArrayItem' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink nosql $query */
