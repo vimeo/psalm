@@ -4508,6 +4508,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template TValue
                      * @template-extends SplObjectStorage<object, TValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class ObjectStorage extends SplObjectStorage {}
 

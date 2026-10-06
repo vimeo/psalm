@@ -215,7 +215,10 @@ final class CapabilitiesTest extends TestCase
             ],
             'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
-                    /** @extends SplHeap<int> */
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
                     final class IntHeap extends SplHeap {
                         /** @psalm-mutation-free */
                         #[Override]
@@ -357,6 +360,27 @@ final class CapabilitiesTest extends TestCase
                     function notify(Observer $observer, SplSubject $subject): bool {
                         $observer->update($subject);
                         return true;
+                    }',
+            ],
+            'mutatingAFreshSplContainerIsMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function useFreshContainers(): int {
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $stack = new SplStack();
+                        $stack->push(2);
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $fixed->setSize(2);
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        $priority_queue = new SplPriorityQueue();
+                        $priority_queue->insert(5, 1);
+                        $queue->dequeue();
+                        $stack->pop();
+                        $heap->extract();
+                        return count($queue) + count($stack) + count($heap) + count($fixed) + count($priority_queue);
                     }',
             ],
             'traversableWithPurityCombinesWithIterable' => [
@@ -1431,7 +1455,10 @@ final class CapabilitiesTest extends TestCase
             ],
             'splHeapSubclassesMustCompareWithoutSideEffects' => [
                 'code' => '<?php
-                    /** @extends SplHeap<int> */
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
                     final class LoudHeap extends SplHeap {
                         #[Override]
                         protected function compare($value1, $value2): int {
@@ -1493,6 +1520,21 @@ final class CapabilitiesTest extends TestCase
                     function notify(Observer $observer, SplSubject $subject): bool {
                         $observer->update($subject);
                         return true;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splContainerSubclassesKeepTheirContract' => [
+                'code' => '<?php
+                    /** @extends SplQueue<int> */
+                    final class Queue extends SplQueue {}',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - SplQueue is marked with @psalm-capabilities read-props|write-this-props, but Queue is not',
+            ],
+            'serializingAFreshSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function save(): string {
+                        $queue = new SplQueue();
+                        return $queue->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
