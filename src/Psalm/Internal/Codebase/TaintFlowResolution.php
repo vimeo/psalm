@@ -383,19 +383,20 @@ final class TaintFlowResolution
     private array $entry_facts = [];
 
     /**
-     * Entry => expression type . ' ' . depth . ' ' . fetched key => the filter of the entry for the calls
-     * whose open assignment there a fetch of that key doesn't ignore (see getFilter())
+     * Entry => expression type . ' ' . depth . ' ' . fetched key => [the filter of the entry for the calls
+     * whose open assignment there a fetch of that key doesn't ignore (see getFilter()), expression type, depth,
+     * fetched key]
      *
-     * @var array<int, array<string, int>>
+     * @var array<int, array<string, array{int, int, int, string}>>
      */
     private array $entry_filters = [];
 
     /**
-     * Filter => [expression type, depth, fetched key] of the fetch the calls entering it pass
+     * Base entry and facts => the filter knowing them (see addEntry())
      *
-     * @var array<int, array{int, int, string}>
+     * @var array<string, int>
      */
-    private array $filter_fetches = [];
+    private array $filter_ids = [];
 
     /**
      * Entry => position (see getPosition()) => class => the filter of the entry for the calls whose open
@@ -1783,6 +1784,30 @@ final class TaintFlowResolution
      */
     private function addEntry(string $id, int $kind, array $facts, ?int $base = null): int
     {
+        if ($base !== null) {
+            // A filter is the walks of its base for the calls agreeing with its facts, whatever the order it got
+            // them in: it is shared by the filters it is a filter of (its walk is the union of the walks they
+            // continue in it, each for calls it holds).
+            ksort($facts);
+            $filter_key = (string) $base;
+
+            foreach ($facts as $position => [$class, $passed_keys]) {
+                ksort($passed_keys, SORT_STRING);
+                $facts[$position] = [$class, $passed_keys];
+                $filter_key .= "\0" . $position . ($class === null ? '' : '=' . $class);
+
+                foreach ($passed_keys as $passed_key => $_) {
+                    $filter_key .= "\1" . $passed_key;
+                }
+            }
+
+            if (isset($this->filter_ids[$filter_key])) {
+                return $this->filter_ids[$filter_key];
+            }
+
+            $this->filter_ids[$filter_key] = count($this->entry_nodes);
+        }
+
         $entry = count($this->entry_nodes);
         $this->entry_bases[] = $base ?? $entry;
         $this->entry_nodes[] = $id;
@@ -1849,9 +1874,7 @@ final class TaintFlowResolution
             }
         }
 
-        foreach ($this->entry_filters[$entry] as $filter) {
-            [$family, $depth, $fetched_key] = $this->filter_fetches[$filter];
-
+        foreach ($this->entry_filters[$entry] as [$filter, $family, $depth, $fetched_key]) {
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
                 $this->addEntryCaller($filter, $caller, $specialization_key);
             }
@@ -1915,7 +1938,7 @@ final class TaintFlowResolution
         $filter_key = $family . ' ' . $depth . ' ' . $fetched_key;
 
         if (isset($this->entry_filters[$entry][$filter_key])) {
-            return $this->entry_filters[$entry][$filter_key];
+            return $this->entry_filters[$entry][$filter_key][0];
         }
 
         $facts = $this->entry_facts[$entry];
@@ -1931,8 +1954,7 @@ final class TaintFlowResolution
             $facts,
             $this->entry_bases[$entry],
         );
-        $this->entry_filters[$entry][$filter_key] = $filter;
-        $this->filter_fetches[$filter] = [$family, $depth, $fetched_key];
+        $this->entry_filters[$entry][$filter_key] = [$filter, $family, $depth, $fetched_key];
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
