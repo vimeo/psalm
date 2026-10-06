@@ -23,6 +23,49 @@ final class ForeachTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'foreachByReferenceWritesIntoTheItemsOfTheArray' => [
+                'code' => '<?php
+                    $values = ["key" => ""];
+                    foreach ($values as &$value) {
+                        $value = (string) rand(0, 1);
+                    }
+                    unset($value);
+
+                    $rows = [["name" => ""]];
+                    foreach ($rows as &$row) {
+                        $row["name"] = (string) rand(0, 1);
+                    }
+                    unset($row);
+
+                    /** @var array<string, int> */
+                    $counts = [];
+                    foreach ($counts as &$count) {
+                        $count = "many";
+                        break;
+                    }
+                    unset($count);',
+                'assertions' => [
+                    '$values===' => "array{key: ''|'0'|'1'}",
+                    '$rows===' => "list{array{name: ''|'0'|'1'}}",
+                    '$counts===' => "array<string, 'many'|int>",
+                ],
+            ],
+            'foreachByReferenceDoesNotWriteWhatTheValueVariableHeldBefore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $value
+                     * @param array<string, array<string, string>> $groups
+                     * @return array<string, array<string, string>>
+                     */
+                    function sortGroups(array $value, array $groups): array {
+                        foreach ($groups as &$value) {
+                            ksort($value);
+                        }
+                        unset($value);
+
+                        return $groups;
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {

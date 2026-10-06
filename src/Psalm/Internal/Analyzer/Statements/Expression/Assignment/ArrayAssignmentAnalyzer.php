@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -416,6 +417,9 @@ final class ArrayAssignmentAnalyzer
                 }
             }
 
+            // what the assigned value cannot hold, given its type
+            $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
+
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
@@ -424,6 +428,8 @@ final class ArrayAssignmentAnalyzer
                                 $child_parent_node,
                                 $parent_node,
                                 'arrayvalue-assignment-\'' . $key_value->value . '\'',
+                                0,
+                                $removed_taints,
                             );
                         }
                     } else {
@@ -431,6 +437,8 @@ final class ArrayAssignmentAnalyzer
                             $child_parent_node,
                             $parent_node,
                             'arrayvalue-assignment',
+                            0,
+                            $removed_taints,
                         );
                     }
                 }

@@ -12,10 +12,12 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\TaintKind;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
@@ -33,6 +35,7 @@ use function file_exists;
 use function function_exists;
 use function intdiv;
 use function interface_exists;
+use function is_int;
 use function max;
 use function min;
 use function str_contains;
@@ -71,6 +74,16 @@ final class InternalCallMapHandler
      * @var non-empty-array<string, non-empty-list<int>>|null
      */
     private static ?array $taint_sink_map = null;
+
+    /**
+     * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
+     */
+    private static ?array $taint_flow_map = null;
+
+    /**
+     * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
+     */
+    private static ?array $taint_escape_map = null;
 
     /**
      * The callmap version (e.g. 80) each function/method first appears in, across all callmaps.
@@ -401,6 +414,85 @@ final class InternalCallMapHandler
         self::$taint_sink_map = $taint_map;
 
         return self::$call_map;
+    }
+
+    /**
+     * Makes the taints of the parameters of the builtin function or method $function_id that its return value holds
+     * flow into it (see dictionaries/InternalTaintFlowMap.php), except those it can't carry (see
+     * dictionaries/InternalTaintEscapeMap.php), as `@psalm-flow` and `@psalm-taint-escape` do for the builtins of the
+     * stubs.
+     */
+    public static function addReturnTaintFlows(FunctionLikeStorage $storage, string $function_id): void
+    {
+        foreach (self::getReturnTaintFlows($function_id, $storage->params) as $offset => $path_type) {
+            $storage->return_source_params[$offset] = $path_type;
+        }
+
+        $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
+    }
+
+    /**
+     * The offsets, among $params, of the parameters of the builtin function or method $function_id whose taints
+     * flow into its return value => the type of the path they flow through (see dictionaries/InternalTaintFlowMap.php)
+     *
+     * @param array<int, FunctionLikeParameter> $params
+     * @return array<int, string>
+     * @psalm-capabilities read-props|read-globals|write-globals
+     */
+    public static function getReturnTaintFlows(string $function_id, array $params): array
+    {
+        if (self::$taint_flow_map === null) {
+            /** @var array<lowercase-string, array<int|non-empty-string, non-empty-string>> */
+            self::$taint_flow_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintFlowMap.php');
+        }
+
+        $flows = [];
+        foreach (self::$taint_flow_map[strtolower($function_id)] ?? [] as $key => $value) {
+            // a parameter flows as an argument, or through the path its entry names
+            [$param_name, $path_type] = is_int($key) ? [$value, 'arg'] : [$key, $value];
+
+            foreach ($params as $offset => $param) {
+                if ($param->name === $param_name) {
+                    $flows[$offset] = $path_type;
+                }
+            }
+        }
+
+        return $flows;
+    }
+
+    /**
+     * The taints the value the builtin function or method $function_id returns can't carry (see
+     * dictionaries/InternalTaintEscapeMap.php).
+     *
+     * @psalm-capabilities read-props|read-globals|write-globals
+     */
+    public static function getReturnRemovedTaints(string $function_id): int
+    {
+        if (self::$taint_escape_map === null) {
+            /** @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>> */
+            self::$taint_escape_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintEscapeMap.php');
+        }
+
+        $removed_taints = 0;
+        foreach (self::$taint_escape_map[strtolower($function_id)] ?? [] as $taint) {
+            $removed_taints |= TaintKind::TAINT_NAMES[$taint];
+        }
+
+        return $removed_taints;
+    }
+
+    /**
+     * The taints the parameter at $offset of the builtin function or method $function_id must not be given
+     * (see dictionaries/InternalTaintSinkMap.php).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals
+     */
+    public static function getParamTaintSinks(string $function_id, int $offset): int
+    {
+        self::getCallMap();
+
+        return self::$taint_sink_map[strtolower($function_id)][$offset] ?? 0;
     }
 
     /**

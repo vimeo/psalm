@@ -16,6 +16,7 @@ class DateTimeImmutable implements DateTimeInterface
      * @param string $format
      *
      * @return ($format is non-empty-string ? non-empty-string : string)
+     * @psalm-flow ($format) -> return
      */
     public function format($format) {}
 
@@ -130,9 +131,6 @@ class DatePeriod implements Traversable
     public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
 }
 
-/**
- * @psalm-taint-specialize
- */
 interface Throwable
 {
     /**
@@ -181,9 +179,6 @@ interface Throwable
     public function __toString();
 }
 
-/**
- * @psalm-taint-specialize
- */
 class Exception implements Throwable
 {
     /**
@@ -261,9 +256,6 @@ class Exception implements Throwable
     public function __toString() {}
 }
 
-/**
- * @psalm-taint-specialize
- */
 class Error implements Throwable
 {
     /**

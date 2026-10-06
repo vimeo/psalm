@@ -317,6 +317,15 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
+            // the array now holds the values added to it too
+            foreach ($args as $argument_offset => $arg) {
+                if ($argument_offset !== 0
+                    && ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                ) {
+                    $by_ref_type = $by_ref_type->addParentNodes($arg_value_type->parent_nodes);
+                }
+            }
+
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $array_arg,
@@ -533,7 +542,7 @@ final class ArrayFunctionArgumentsAnalyzer
         ) {
             $replacement_arg_type = new Union([
                 new TArray([Type::getInt(), $replacement_arg_type]),
-            ]);
+            ], ['parent_nodes' => $replacement_arg_type->parent_nodes]);
 
             $statements_analyzer->node_data->setType($replacement_arg, $replacement_arg_type);
         }
@@ -577,7 +586,9 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type]);
+            // the array now holds the replacement values too
+            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type])
+                ->addParentNodes($replacement_arg_type->parent_nodes);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
@@ -591,12 +602,14 @@ final class ArrayFunctionArgumentsAnalyzer
             return null;
         }
 
+        $replacement_parent_nodes = $replacement_arg_type?->parent_nodes ?? [];
+
         if ($array_type) {
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $array_arg,
                 new Union([$array_type]),
-                new Union([$array_type]),
+                new Union([$array_type], ['parent_nodes' => $replacement_parent_nodes]),
                 $context,
                 false,
             );
@@ -606,7 +619,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 $statements_analyzer,
                 $array_arg,
                 $default_array_type,
-                $default_array_type,
+                $default_array_type->setParentNodes($replacement_parent_nodes),
                 $context,
                 false,
             );

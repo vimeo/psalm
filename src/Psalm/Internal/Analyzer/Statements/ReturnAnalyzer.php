@@ -249,6 +249,8 @@ final class ReturnAnalyzer
 
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
+            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
+
             if ($stmt->expr && $storage->location) {
                 $inferred_type = TypeExpander::expandUnion(
                     $codebase,
@@ -632,13 +634,18 @@ final class ReturnAnalyzer
         $storage->removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($inferred_type->parent_nodes) {
+            // what the returned value cannot hold, given its type or the native return type PHP enforces
+            $removed_taints = $storage->removed_taints
+                | $inferred_type->getTaintsToRemove()
+                | ($storage->signature_return_type?->getTaintsToRemove() ?? 0);
+
             foreach ($inferred_type->parent_nodes as $parent_node) {
                 $statements_analyzer->taint_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',
                     $storage->added_taints,
-                    $storage->removed_taints,
+                    $removed_taints,
                 );
             }
         }
