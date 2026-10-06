@@ -23,12 +23,14 @@ It could range from:
     - Example: `unlink`
     - Risk: Denial of Service or potentially RCE. (e.g. deleting application code, removing a .htaccess file)
 
+curl opens the files some of its options name too. `CURLOPT_COOKIEJAR` writes the cookies the server sends into the file it names, so a server can put PHP code in a file of the attacker's choosing. A `CURLFile` uploads the file it names to the server.
+
 ## Example
 
 ```php
 <?php
 
-unlink($_GET['file']);
+unlink($_GET['path']);
 ```
 
 ## Mitigations

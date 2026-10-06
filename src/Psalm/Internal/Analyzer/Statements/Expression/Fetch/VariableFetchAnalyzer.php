@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
@@ -545,11 +546,16 @@ final class VariableFetchAnalyzer
         $taints |= $added_taints;
         $taints &= ~$removed_taints;
 
-        if ($taints === 0) {
+        $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        if ($var_name === '$_FILES' && $taints === 0) {
+            $type = self::taintFiles($graph, $taint_location, $type);
             return;
         }
 
-        $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        if ($taints === 0) {
+            return;
+        }
 
         $taint_source = DataFlowNode::getForTaint(
             $var_name,
@@ -561,6 +567,25 @@ final class VariableFetchAnalyzer
         $type = $type->setParentNodes([
             $taint_source->id => $taint_source,
         ]);
+    }
+
+    /**
+     * The client chooses the names of the files it uploads, `$_FILES[...]['name']`, unlike the entries of an
+     * uploaded file the server writes (see also ArrayFetchAnalyzer::taintSuperGlobalFetch()).
+     */
+    private static function taintFiles(TaintFlowGraph $graph, CodeLocation $taint_location, Union $type): Union
+    {
+        $taint_source = DataFlowNode::getForTaint('$_FILES[][\'name\']', $taint_location, TaintKind::ALL_INPUT);
+        $name_node = DataFlowNode::getForAssignment('$_FILES[] name', $taint_location);
+        $files_node = DataFlowNode::getForAssignment('$_FILES', $taint_location);
+
+        $graph->addSource($taint_source);
+        $graph->addNode($name_node);
+        $graph->addNode($files_node);
+        $graph->addPath($taint_source, $name_node, 'arrayvalue-assignment-\'name\'');
+        $graph->addPath($name_node, $files_node, 'arrayvalue-assignment');
+
+        return $type->setParentNodes([$files_node->id => $files_node]);
     }
 
     /**

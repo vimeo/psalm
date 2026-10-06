@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
@@ -13,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
@@ -26,6 +28,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
@@ -233,53 +236,12 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         }
 
         if ($mapping_return_type && $generic_key_type) {
-            if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
-                $atomic_type = TKeyedArray::make(
-                    array_map(
-                        static fn(Union $in): Union => $mapping_return_type->setPossiblyUndefined(
-                            $in->possibly_undefined,
-                        ),
-                        $array_arg_atomic_type->properties,
-                    ),
-                    null,
-                    $array_arg_atomic_type->fallback_params === null
-                        ? null
-                        : [$array_arg_atomic_type->fallback_params[0], $mapping_return_type],
-                    $array_arg_atomic_type->is_list,
-                );
-
-                return new Union([$atomic_type]);
-            }
-
-            if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
-                || count($call_args) !== 2
-            ) {
-                if ($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->isNonEmpty()) {
-                    return Type::getNonEmptyList(
-                        $mapping_return_type,
-                    );
-                }
-
-                return Type::getList(
-                    $mapping_return_type,
-                );
-            }
-
-            if ($array_arg_atomic_type instanceof TNonEmptyArray) {
-                return new Union([
-                    new TNonEmptyArray([
-                        $generic_key_type,
-                        $mapping_return_type,
-                    ]),
-                ]);
-            }
-
-            return new Union([
-                new TArray([
-                    $generic_key_type,
-                    $mapping_return_type,
-                ]),
-            ]);
+            return self::getMappedArrayType(
+                $array_arg_atomic_type,
+                count($call_args),
+                $generic_key_type,
+                $mapping_return_type,
+            )->addParentNodes(self::getElementNodes($statements_source, $event, $mapping_return_type));
         }
 
         return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
@@ -290,6 +252,37 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 ]),
             ])
             : Type::getList();
+    }
+
+    /**
+     * The array holds what the callback returns as its elements, so a fetch of an element gets the whole of what the
+     * callback returned, keys included, and what takes the whole array (implode(), ...) takes its taints
+     *
+     * @return array<string, DataFlowNode>
+     */
+    private static function getElementNodes(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionReturnTypeProviderEvent $event,
+        Union $mapping_return_type,
+    ): array {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($graph === null || $mapping_return_type->parent_nodes === []) {
+            return [];
+        }
+
+        $element_node = DataFlowNode::getForAssignment(
+            'array_map elements',
+            new CodeLocation($statements_analyzer, $event->getStmt()),
+        );
+
+        $graph->addNode($element_node);
+
+        foreach ($mapping_return_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $element_node, 'arrayvalue-assignment');
+        }
+
+        return [$element_node->id => $element_node];
     }
 
     /**
@@ -369,6 +362,61 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         $statements_analyzer->node_data = $old_data_provider;
 
         return $return_type;
+    }
+
+    private static function getMappedArrayType(
+        ?Atomic $array_arg_atomic_type,
+        int $call_arg_count,
+        Union $generic_key_type,
+        Union $mapping_return_type,
+    ): Union {
+        if ($array_arg_atomic_type instanceof TKeyedArray && $call_arg_count === 2) {
+            $atomic_type = TKeyedArray::make(
+                array_map(
+                    static fn(Union $in): Union => $mapping_return_type->setPossiblyUndefined(
+                        $in->possibly_undefined,
+                    ),
+                    $array_arg_atomic_type->properties,
+                ),
+                null,
+                $array_arg_atomic_type->fallback_params === null
+                    ? null
+                    : [$array_arg_atomic_type->fallback_params[0], $mapping_return_type],
+                $array_arg_atomic_type->is_list,
+            );
+
+            return new Union([$atomic_type]);
+        }
+
+        if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
+            || $call_arg_count !== 2
+        ) {
+            if ($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->isNonEmpty()) {
+                return Type::getNonEmptyList(
+                    $mapping_return_type,
+                );
+            }
+
+            return Type::getList(
+                $mapping_return_type,
+            );
+        }
+
+        if ($array_arg_atomic_type instanceof TNonEmptyArray) {
+            return new Union([
+                new TNonEmptyArray([
+                    $generic_key_type,
+                    $mapping_return_type,
+                ]),
+            ]);
+        }
+
+        return new Union([
+            new TArray([
+                $generic_key_type,
+                $mapping_return_type,
+            ]),
+        ]);
     }
 
     /**

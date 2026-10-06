@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -52,6 +53,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -61,19 +63,28 @@ use function array_slice;
 use function array_values;
 use function assert;
 use function count;
+use function dirname;
 use function in_array;
+use function is_int;
 use function is_string;
 use function max;
 use function min;
 use function reset;
 use function str_contains;
 use function strtolower;
+use function strtoupper;
 
 /**
  * @internal
  */
 final class ArgumentsAnalyzer
 {
+    /**
+     * @see self::getByRefFlowInputs()
+     * @var array<lowercase-string, array<string, list<string>>>|null
+     */
+    private static ?array $by_ref_flow_map = null;
+
     public const ARRAY_FILTERLIKE = [
         'array_filter',
         'array_find',
@@ -1003,6 +1014,10 @@ final class ArgumentsAnalyzer
                     $arg,
                     $context,
                     $template_result,
+                    $method_id instanceof MethodIdentifier ? $method_id : null,
+                    $in_call_map ? null : $function_storage,
+                    $code_location,
+                    $args,
                 ) === false) {
                     return null;
                 }
@@ -1038,14 +1053,28 @@ final class ArgumentsAnalyzer
 
         if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
+            && !self::returnsInsteadOfOutputting($statements_analyzer, $cased_method_id, $args)
         ) {
             foreach ($args as $argument_offset => $_) {
                 if (!isset($arg_function_params[$argument_offset])) {
                     continue;
                 }
 
+                if ($in_call_map && $argument_offset === 1 && strtolower($cased_method_id) === 'curl_setopt_array') {
+                    self::addCurlOptionArraySinks(
+                        $statements_analyzer->taint_flow_graph,
+                        $codebase,
+                        $cased_method_id,
+                        $code_location,
+                    );
+
+                    continue;
+                }
+
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    if ($function_param->sinks) {
+                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+
+                    if ($sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
@@ -1069,7 +1098,7 @@ final class ArgumentsAnalyzer
                                     $cased_method_id,
                                     $argument_offset,
                                     $code_location,
-                                    $function_param->sinks,
+                                    $sinks,
                                 );
                         } elseif ($specialize_taint) {
                             $sink = DataFlowNode::getForMethodArgument(
@@ -1171,6 +1200,7 @@ final class ArgumentsAnalyzer
 
     /**
      * @param  array<int, FunctionLikeParameter> $function_params
+     * @param  array<int, PhpParser\Node\Arg> $args
      * @return false|null
      */
     private static function handlePossiblyMatchingByRefParam(
@@ -1184,6 +1214,10 @@ final class ArgumentsAnalyzer
         PhpParser\Node\Arg $arg,
         Context $context,
         ?TemplateResult $template_result,
+        ?MethodIdentifier $method_identifier,
+        ?FunctionLikeStorage $function_storage,
+        CodeLocation $call_location,
+        array $args,
     ): ?bool {
         if ($arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
@@ -1226,6 +1260,7 @@ final class ArgumentsAnalyzer
             $by_ref_type = null;
             $by_ref_out_type = null;
             $source_param = null;
+            $function_param = null;
 
             $check_null_ref = true;
 
@@ -1333,6 +1368,48 @@ final class ArgumentsAnalyzer
             $by_ref_type = $by_ref_type ?: Type::getMixed();
             $by_ref_out_type = $by_ref_out_type ?: $by_ref_type;
 
+            // what the function-like leaves in the parameter (see FunctionLikeAnalyzer::taintByRefParamsOut())
+            $out_type_holds_value = false;
+            if ($function_storage !== null
+                && $function_param !== null
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $out_node = self::getByRefParamOutNode(
+                    $codebase,
+                    $cased_method_id ?? $method_id,
+                    $method_identifier,
+                    $function_storage,
+                    $function_param,
+                    $argument_offset,
+                    $call_location,
+                );
+
+                $graph->addNode($out_node);
+
+                // the value passed may still be there after a call of a function-like whose body isn't
+                // analyzed: one without a body, or out of the project files
+                $out_type_holds_value = self::hasAnalyzedBody($codebase, $method_identifier, $function_storage);
+
+                $by_ref_out_type = $out_type_holds_value
+                    ? $by_ref_out_type->setParentNodes([$out_node->id => $out_node])
+                    : $by_ref_out_type->addParentNodes([$out_node->id => $out_node]);
+            }
+
+            // a builtin filling this parameter with data given to other ones (preg_match(), ...)
+            if ($function_storage === null
+                && $function_param !== null
+                && $statements_analyzer->getTaintFlowGraphWithSuppressed()
+            ) {
+                foreach (self::getByRefFlowInputs($method_id, $function_param->name) as $input_name) {
+                    $input_arg = self::getArgForParam($args, $function_params, $input_name);
+                    $input_type = $input_arg ? $statements_analyzer->node_data->getType($input_arg->value) : null;
+
+                    if ($input_type && $input_type->parent_nodes) {
+                        $by_ref_out_type = $by_ref_out_type->addParentNodes($input_type->parent_nodes);
+                    }
+                }
+            }
+
             // a builtin reading from outside the program into this parameter (socket_recv(), ...)
             if ($source_param !== null
                 && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
@@ -1357,10 +1434,102 @@ final class ArgumentsAnalyzer
                 $context,
                 $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,
+                $out_type_holds_value,
             );
         }
 
         return null;
+    }
+
+    /**
+     * The parameters of a builtin whose taints flow into its by-reference parameter $param_name
+     * (see dictionaries/InternalTaintByRefFlowMap.php)
+     *
+     * @return list<string>
+     * @psalm-capabilities read-globals|write-globals
+     */
+    private static function getByRefFlowInputs(string $function_id, string $param_name): array
+    {
+        if (self::$by_ref_flow_map === null) {
+            /** @var array<lowercase-string, array<string, list<string>>> */
+            self::$by_ref_flow_map = require(dirname(__DIR__, 7) . '/dictionaries/InternalTaintByRefFlowMap.php');
+        }
+
+        return self::$by_ref_flow_map[strtolower($function_id)][$param_name] ?? [];
+    }
+
+    /**
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @psalm-mutation-free
+     */
+    private static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $arg) {
+            if ($arg->name !== null && $arg->name->name === $param_name) {
+                return $arg;
+            }
+        }
+
+        foreach ($function_params as $offset => $param) {
+            if ($param->name === $param_name) {
+                return isset($args[$offset]) && $args[$offset]->name === null ? $args[$offset] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function hasAnalyzedBody(
+        Codebase $codebase,
+        ?MethodIdentifier $method_id,
+        FunctionLikeStorage $storage,
+    ): bool {
+        if ($method_id !== null) {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+            $storage = $codebase->methods->getStorage($declaring_method_id);
+
+            // the arguments of a call through an alias of a trait method don't flow into its body
+            if ($storage->abstract || strtolower((string) $storage->cased_name) !== $method_id->method_name) {
+                return false;
+            }
+        }
+
+        return $storage->location !== null
+            && $codebase->config->isInProjectDirs($storage->location->file_path);
+    }
+
+    /**
+     * The node of what the function-like called leaves in a by-reference parameter: that of the
+     * method in the class it appears in, specialized to the call like its return.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getByRefParamOutNode(
+        Codebase $codebase,
+        string $cased_function_id,
+        ?MethodIdentifier $method_id,
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $param,
+        int $argument_offset,
+        CodeLocation $call_location,
+    ): DataFlowNode {
+        if ($method_id !== null) {
+            $cased_function_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
+            $storage = $codebase->methods->getStorage(
+                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+            );
+        }
+
+        return DataFlowNode::getForMethodArgumentOut(
+            $cased_function_id,
+            DataFlowNode::getParameterOffset($storage, $param, $argument_offset),
+            $storage,
+            $storage->specialize_call ? $call_location : null,
+        );
     }
 
     /**
@@ -1944,5 +2113,251 @@ final class ArgumentsAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The sink of the value of each curl option that has one:
+     *
+     * - `ssrf` for the options choosing where a request goes, or the protocol it uses: a URL without a scheme uses
+     *   CURLOPT_DEFAULT_PROTOCOL, and CURLOPT_REDIR_PROTOCOLS_STR lets a redirect read a local file.
+     * - `header` for the ones curl writes as is into a request: a line break in a header, the request line or an FTP
+     *   command adds others, or a whole other request, to what is sent. CURLOPT_QUOTE sends commands as they are,
+     *   and CURLOPT_COOKIELIST adds cookies to the requests.
+     * - `file` for the ones naming a file curl reads or writes: CURLOPT_COOKIEJAR writes what the server sends.
+     * - `sleep` for the ones making curl throttle a transfer or wait longer for it.
+     * - `callable` for the functions curl calls.
+     *
+     * Some options have several: a `file://` URL reads a local file, the request target sent to a proxy is the URL
+     * the proxy fetches, and a unix socket is a file.
+     *
+     * The value of another option (a body, credentials curl encodes or checks, ...) can do none of these.
+     */
+    private const CURL_OPTION_SINKS = [
+        'CURLOPT_URL' => TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE,
+        'CURLOPT_PORT' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DEFAULT_PROTOCOL' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PROTOCOLS_STR' => TaintKind::INPUT_SSRF,
+        'CURLOPT_REDIR_PROTOCOLS_STR' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PROXY' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PROXYPORT' => TaintKind::INPUT_SSRF,
+        'CURLOPT_PRE_PROXY' => TaintKind::INPUT_SSRF,
+        'CURLOPT_NOPROXY' => TaintKind::INPUT_SSRF,
+        'CURLOPT_CONNECT_TO' => TaintKind::INPUT_SSRF,
+        'CURLOPT_RESOLVE' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DNS_SERVERS' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DNS_INTERFACE' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DNS_LOCAL_IP4' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DNS_LOCAL_IP6' => TaintKind::INPUT_SSRF,
+        'CURLOPT_DOH_URL' => TaintKind::INPUT_SSRF,
+        'CURLOPT_INTERFACE' => TaintKind::INPUT_SSRF,
+        'CURLOPT_UNIX_SOCKET_PATH' => TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE,
+        'CURLOPT_ABSTRACT_UNIX_SOCKET' => TaintKind::INPUT_SSRF,
+        'CURLOPT_HTTPHEADER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_PROXYHEADER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_CUSTOMREQUEST' => TaintKind::INPUT_HEADER,
+        'CURLOPT_REQUEST_TARGET' => TaintKind::INPUT_HEADER | TaintKind::INPUT_SSRF,
+        'CURLOPT_USERAGENT' => TaintKind::INPUT_HEADER,
+        'CURLOPT_REFERER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_COOKIE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_COOKIELIST' => TaintKind::INPUT_HEADER,
+        'CURLOPT_ENCODING' => TaintKind::INPUT_HEADER,
+        'CURLOPT_ACCEPT_ENCODING' => TaintKind::INPUT_HEADER,
+        'CURLOPT_RANGE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_XOAUTH2_BEARER' => TaintKind::INPUT_HEADER,
+        'CURLOPT_AWS_SIGV4' => TaintKind::INPUT_HEADER,
+        'CURLOPT_RTSP_STREAM_URI' => TaintKind::INPUT_HEADER,
+        'CURLOPT_RTSP_SESSION_ID' => TaintKind::INPUT_HEADER,
+        'CURLOPT_RTSP_TRANSPORT' => TaintKind::INPUT_HEADER,
+        'CURLOPT_QUOTE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_PREQUOTE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_POSTQUOTE' => TaintKind::INPUT_HEADER,
+        'CURLOPT_COOKIEFILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_COOKIEJAR' => TaintKind::INPUT_FILE,
+        'CURLOPT_HSTS' => TaintKind::INPUT_FILE,
+        'CURLOPT_ALTSVC' => TaintKind::INPUT_FILE,
+        'CURLOPT_NETRC_FILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_CAINFO' => TaintKind::INPUT_FILE,
+        'CURLOPT_CAPATH' => TaintKind::INPUT_FILE,
+        'CURLOPT_CRLFILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_ISSUERCERT' => TaintKind::INPUT_FILE,
+        'CURLOPT_SSLCERT' => TaintKind::INPUT_FILE,
+        'CURLOPT_SSLKEY' => TaintKind::INPUT_FILE,
+        'CURLOPT_PINNEDPUBLICKEY' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_CAINFO' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_CAPATH' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_CRLFILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_ISSUERCERT' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_SSLCERT' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_SSLKEY' => TaintKind::INPUT_FILE,
+        'CURLOPT_PROXY_PINNEDPUBLICKEY' => TaintKind::INPUT_FILE,
+        'CURLOPT_SSH_PRIVATE_KEYFILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_SSH_PUBLIC_KEYFILE' => TaintKind::INPUT_FILE,
+        'CURLOPT_SSH_KNOWNHOSTS' => TaintKind::INPUT_FILE,
+        'CURLOPT_MAX_RECV_SPEED_LARGE' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_MAX_SEND_SPEED_LARGE' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_TIMEOUT' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_TIMEOUT_MS' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_CONNECTTIMEOUT' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_CONNECTTIMEOUT_MS' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_EXPECT_100_TIMEOUT_MS' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_SERVER_RESPONSE_TIMEOUT' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_FTP_RESPONSE_TIMEOUT' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_ACCEPTTIMEOUT_MS' => TaintKind::INPUT_SLEEP,
+        'CURLOPT_WRITEFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_READFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_HEADERFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_PROGRESSFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_XFERINFOFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_DEBUGFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_FNMATCH_FUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_PREREQFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_SSH_HOSTKEYFUNCTION' => TaintKind::INPUT_CALLABLE,
+        'CURLOPT_SEEKFUNCTION' => TaintKind::INPUT_CALLABLE,
+    ];
+
+    /**
+     * The sinks of a curl option the analysis can't tell: any of CURL_OPTION_SINKS.
+     */
+    private const CURL_ANY_OPTION_SINKS = TaintKind::INPUT_SSRF
+        | TaintKind::INPUT_HEADER
+        | TaintKind::INPUT_FILE
+        | TaintKind::INPUT_SLEEP
+        | TaintKind::INPUT_CALLABLE;
+
+    /**
+     * The name of each of the sinks of CURL_OPTION_SINKS, for the nodes of addCurlOptionArraySinks().
+     */
+    private const CURL_SINK_NAMES = [
+        TaintKind::INPUT_SSRF => 'ssrf',
+        TaintKind::INPUT_HEADER => 'header',
+        TaintKind::INPUT_FILE => 'file',
+        TaintKind::INPUT_SLEEP => 'sleep',
+        TaintKind::INPUT_CALLABLE => 'callable',
+    ];
+
+    /**
+     * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
+     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
+    {
+        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+            return $sinks;
+        }
+
+        $option = $args[1]->value;
+
+        if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
+            return self::CURL_ANY_OPTION_SINKS;
+        }
+
+        return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
+
+    /**
+     * Makes the value of each option given to curl_setopt_array() the sink curl_setopt() makes it (see
+     * CURL_OPTION_SINKS). The options array flows into the node of an option through a fetch of its key, so what
+     * the array holds under another key doesn't reach it, but what it holds under a key the analysis can't tell
+     * does. An option the curl extension doesn't define can't be given, but without the curl extension the key of
+     * every option is unknown, so anything in the array reaches it.
+     *
+     * The node of an option flows into one node for each of its sinks, which flows into the sink: a value under a
+     * key the analysis can't tell, which reaches every option, is reported once for each sink.
+     */
+    private static function addCurlOptionArraySinks(
+        TaintFlowGraph $graph,
+        Codebase $codebase,
+        string $function_id,
+        CodeLocation $code_location,
+    ): void {
+        $options_node = DataFlowNode::getForCallableArg('builtin', $function_id, 1, $code_location);
+        $graph->addNode($options_node);
+
+        $constants = $codebase->config->getPredefinedConstants();
+        $has_curl = isset($constants['CURLOPT_URL']);
+        $sink_nodes = [];
+        $fetched_options = [];
+
+        foreach (self::CURL_OPTION_SINKS as $option_name => $sinks) {
+            $option = isset($constants[$option_name]) && is_int($constants[$option_name])
+                ? $constants[$option_name]
+                : null;
+
+            // an alias of another option (CURLOPT_ENCODING, ...) is fetched with it
+            if (($option === null && $has_curl) || isset($fetched_options[$option ?? $option_name])) {
+                continue;
+            }
+
+            $fetched_options[$option ?? $option_name] = true;
+
+            $option_node = DataFlowNode::getForCallableArg(
+                'builtin',
+                $function_id . '[' . $option_name . ']',
+                1,
+                $code_location,
+            );
+            $graph->addNode($option_node);
+            $graph->addPath(
+                $options_node,
+                $option_node,
+                $option !== null ? 'arrayvalue-fetch-\'' . $option . '\'' : 'arrayvalue-fetch',
+            );
+
+            foreach (self::CURL_SINK_NAMES as $sink => $sink_name) {
+                if (($sinks & $sink) === 0) {
+                    continue;
+                }
+
+                if (!isset($sink_nodes[$sink])) {
+                    $sink_nodes[$sink] = DataFlowNode::getForCallableArg(
+                        'builtin',
+                        $function_id . '[' . $sink_name . ' options]',
+                        1,
+                        $code_location,
+                    );
+                    $graph->addNode($sink_nodes[$sink]);
+
+                    $sink_node = DataFlowNode::getForCallableArg(
+                        'builtin',
+                        $function_id . '[' . $sink_name . ']',
+                        1,
+                        $code_location,
+                        $sink,
+                    );
+                    $graph->addSink($sink_node);
+                    $graph->addPath($sink_nodes[$sink], $sink_node, 'arg');
+                }
+
+                $graph->addPath($option_node, $sink_nodes[$sink], 'arg');
+            }
+        }
+    }
+
+    /**
+     * print_r() and var_export() return what they would output when their second argument is true: they output
+     * nothing then, so their output sinks don't apply.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    private static function returnsInsteadOfOutputting(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        array $args,
+    ): bool {
+        $function_id = strtolower($function_id);
+        if ($function_id !== 'print_r' && $function_id !== 'var_export') {
+            return false;
+        }
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->name !== null ? $arg->name->name === 'return' : $offset === 1) {
+                return $statements_analyzer->node_data->getType($arg->value)?->isTrue() ?? false;
+            }
+        }
+
+        return false;
     }
 }

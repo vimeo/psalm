@@ -360,7 +360,10 @@ class SoapClient  {
       * </p>
       * @return string The old endpoint URL.
       * @since 5.0.1
-      */
+      * @psalm-taint-sink ssrf $new_location
+      * @psalm-taint-sink url_component $new_location
+      * @psalm-taint-sink url_path $new_location
+     */
      public function __setLocation ($new_location = null) {}
 
      /**

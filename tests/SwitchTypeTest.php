@@ -22,6 +22,52 @@ final class SwitchTypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
+                'code' => '<?php
+                    /** @return array-key */
+                    function getKey() {
+                        return "a";
+                    }
+
+                    $key = getKey();
+                    $letter = null;
+                    $number = null;
+                    switch ($key) {
+                        case "a":
+                        case "b":
+                            $letter = $key;
+                            break;
+                        case "1":
+                            $number = $key;
+                            break;
+                    }',
+                'assertions' => [
+                    '$letter===' => "'a'|'b'|null",
+                    '$number===' => 'array-key|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchKeepsAnArrayKeyLooselyEqualToAStringBeforePhp8' => [
+                'code' => '<?php
+                    /** @return array-key */
+                    function getKey() {
+                        return "a";
+                    }
+
+                    $key = getKey();
+                    $letter = null;
+                    switch ($key) {
+                        case "a":
+                            $letter = $key;
+                            break;
+                    }',
+                'assertions' => [
+                    '$letter===' => 'array-key|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'getClassConstArg' => [
                 'code' => '<?php
                     class A {

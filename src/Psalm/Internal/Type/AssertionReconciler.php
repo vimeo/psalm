@@ -69,6 +69,7 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function count;
+use function is_numeric;
 use function is_string;
 
 /**
@@ -1311,6 +1312,7 @@ final class AssertionReconciler extends Reconciler
             $existing_var_atomic_types,
             $assertion_type,
             $assertion instanceof IsLooselyEqual,
+            $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00,
         );
 
         if ($compatible_string_type !== null) {
@@ -1350,6 +1352,7 @@ final class AssertionReconciler extends Reconciler
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
                     $assertion instanceof IsLooselyEqual,
+                    $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00,
                 );
                 if ($compatible_string_type !== null) {
                     return $compatible_string_type;
@@ -1606,13 +1609,20 @@ final class AssertionReconciler extends Reconciler
         array $existing_var_atomic_types,
         TLiteralString $assertion_type,
         bool $is_loose_equality,
+        bool $is_php8,
     ): ?Union {
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TMixed
                 || $existing_var_atomic_type instanceof TScalar
                 || $existing_var_atomic_type instanceof TArrayKey
             ) {
-                if ($is_loose_equality) {
+                // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
+                // array key loosely equal to a string that isn't numeric is that string
+                if ($is_loose_equality
+                    && !($is_php8
+                        && $existing_var_atomic_type instanceof TArrayKey
+                        && !is_numeric($assertion_type->value))
+                ) {
                     return $existing_var_type;
                 }
 

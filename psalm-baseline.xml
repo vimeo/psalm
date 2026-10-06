@@ -790,7 +790,6 @@
       <code><![CDATA[!strpos($root_var_id ?? '', '->')]]></code>
       <code><![CDATA[!strpos($var_id, '->')]]></code>
       <code><![CDATA[!strpos($var_id, '::')]]></code>
-      <code><![CDATA[$assign_value_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>

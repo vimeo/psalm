@@ -653,6 +653,7 @@ class DateInterval
      * @return string
      * @link https://php.net/manual/en/dateinterval.format.php
      * @psalm-pure
+     * @psalm-flow ($format) -> return
      */
     public function format(string $format = ''): string {}
 

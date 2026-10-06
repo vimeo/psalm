@@ -323,6 +323,7 @@ final class Reflection
             }
 
             $storage->setParams($callables[0]->params);
+            InternalCallMapHandler::addReturnTaintFlows($storage, $method_id);
 
             $storage->return_type = $callables[0]->return_type;
             /** @psalm-suppress UnusedMethodCall */
@@ -402,6 +403,7 @@ final class Reflection
                 && $callmap_callable->return_type !== null
             ) {
                 $storage->setParams($callmap_callable->params);
+                InternalCallMapHandler::addReturnTaintFlows($storage, $function_id);
                 $storage->return_type = $callmap_callable->return_type;
             } else {
                 $reflection_params = $reflection_function->getParameters();

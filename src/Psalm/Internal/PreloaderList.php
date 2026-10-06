@@ -770,6 +770,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\Functions::class,
         \Psalm\Internal\Codebase\ImpureFunctionsList::class,
         \Psalm\Internal\Codebase\InternalCallMapHandler::class,
+        \Psalm\Internal\Codebase\InternalTaintSourceMap::class,
         \Psalm\Internal\Codebase\Methods::class,
         \Psalm\Internal\Codebase\MutationLevelResolver::class,
         \Psalm\Internal\Codebase\Populator::class,
