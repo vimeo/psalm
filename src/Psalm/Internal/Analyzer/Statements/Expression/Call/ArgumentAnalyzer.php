@@ -1929,12 +1929,14 @@ final class ArgumentAnalyzer
 
         // the function-like whose body the argument enters
         $declaring_storage = $function_storage;
+        $declaring_return_id = strtolower($cased_method_id);
 
         if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                $declaring_return_id = strtolower($codebase->methods->getCasedMethodId($declaring_method_id));
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
@@ -2008,6 +2010,16 @@ final class ArgumentAnalyzer
 
         if ($taint_flow_graph && !$specialize_taint && $callee_location !== null) {
             $taint_flow_graph->addCallArgument($argument_value_node, $function_call_location, $callee_location);
+        }
+
+        if ($taint_flow_graph
+            && $callee_location !== null
+            && $function_call_location->file_path === $callee_location->file_path
+            && $function_call_location->raw_file_start >= $callee_location->raw_file_start
+            && $function_call_location->raw_file_end <= $callee_location->raw_file_end
+        ) {
+            // a call the function-like makes to itself
+            $taint_flow_graph->addRecursiveCall($function_call_location, $callee_location, $declaring_return_id);
         }
 
         foreach ($input_type->parent_nodes as $parent_node) {

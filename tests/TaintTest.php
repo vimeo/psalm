@@ -440,6 +440,20 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'recursiveCallReturnsIntoTheBodyMakingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function wrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return ["label" => "safe", "value" => wrap($value["value"])];
+                        }
+                        error_log("wrapped");
+                        return $value;
+                    }
+
+                    $wrapped = wrap(["value" => $_GET["x"]]);
+                    // the inner call returns its value into the array, under "value"
+                    echo $wrapped["label"];',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -2738,6 +2752,51 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'recursiveCallReturnsIntoTheArrayItBuilds' => [
+                'code' => '<?php // --taint-analysis
+                    function wrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return ["label" => "safe", "value" => wrap($value["value"])];
+                        }
+                        error_log("wrapped");
+                        return $value;
+                    }
+
+                    $wrapped = wrap(["value" => $_GET["x"]]);
+                    echo $wrapped["value"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveCallReturnedByTheBodyMakingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function unwrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return unwrap($value["value"]);
+                        }
+                        error_log("unwrapped");
+                        return $value;
+                    }
+
+                    echo unwrap(["value" => $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveCallKeepingItsValueInAStaticProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        public static mixed $last = null;
+                    }
+
+                    function keep(mixed $value): mixed {
+                        if (is_array($value)) {
+                            keep($value["value"]);
+                            return Box::$last;
+                        }
+                        Box::$last = $value;
+                        return "";
+                    }
+
+                    echo keep(["value" => $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintFetchUnderParamKeyOfSameCall' => [
                 'code' => '<?php
                     final class Holder {

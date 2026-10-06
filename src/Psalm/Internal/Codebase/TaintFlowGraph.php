@@ -56,6 +56,7 @@ use function min;
 use function strcmp;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 
 /**
@@ -155,6 +156,16 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, array{string, string, int, int}>
      */
     private array $call_arguments = [];
+
+    /**
+     * The calls a function-like makes to itself, specialized or not: specialization key of the call site => [the
+     * file path and lowercase file name, start and end of the declaration of the function-like, the id of its
+     * return node]. A flow entering one returns to a call site in that declaration (see
+     * TaintFlowResolution::bindRecursiveCall()).
+     *
+     * @var array<string, array{string, string, int, int, string}>
+     */
+    private array $recursive_calls = [];
 
     /**
      * Speculatively specialized call sites of a callee that turned out not to be pure,
@@ -382,6 +393,26 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records that the call at $call_location, of the function-like declared at $callee_location whose return node
+     * is $callee_return_id, is made in that declaration (see $recursive_calls)
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addRecursiveCall(
+        CodeLocation $call_location,
+        CodeLocation $callee_location,
+        string $callee_return_id,
+    ): void {
+        $this->recursive_calls[DataFlowNode::getSpecializationKey($call_location)] = [
+            $callee_location->file_path,
+            strtolower($callee_location->file_name),
+            $callee_location->raw_file_start,
+            $callee_location->raw_file_end,
+            $callee_return_id,
+        ];
+    }
+
+    /**
      * Records that $argument_node is an argument of the unspecialized call at $call_location, of the function-like
      * declared at $callee_location (see $call_arguments)
      *
@@ -573,6 +604,7 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $this->call_arguments += $other->call_arguments;
+        $this->recursive_calls += $other->recursive_calls;
 
         foreach ($other->speculative_calls as $key => $map) {
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
@@ -733,6 +765,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->read_only_calls,
             $this->param_keys,
             $this->call_arguments,
+            $this->recursive_calls,
             Config::getInstance(),
             $project_analyzer,
             $codebase,

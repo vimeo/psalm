@@ -25,6 +25,7 @@ use function min;
 use function str_starts_with;
 use function strlen;
 use function strpos;
+use function strrpos;
 use function substr;
 
 use const PHP_INT_MAX;
@@ -240,8 +241,9 @@ final class TaintFlowResolution
     private array $path_type_params = [];
 
     /**
-     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()) => the file, start
-     * and end of the declaration of the function-like called
+     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()), or of a call a
+     * function-like makes to itself prefixed with '^' (see bindRecursiveCall()) => the file, start and end of the
+     * declaration of the function-like called
      *
      * @var array<string, array{string, int, int}>
      */
@@ -626,6 +628,7 @@ final class TaintFlowResolution
      * @param array<string, true> $read_only_calls
      * @param array<string, array<string, string>> $param_keys
      * @param array<string, array{string, string, int, int}> $call_arguments
+     * @param array<string, array{string, string, int, int, string}> $recursive_calls
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -640,6 +643,7 @@ final class TaintFlowResolution
         private readonly array $read_only_calls,
         private readonly array $param_keys,
         private readonly array $call_arguments,
+        private readonly array $recursive_calls,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -1528,11 +1532,14 @@ final class TaintFlowResolution
 
             if (isset($this->despecialized_calls[$specialization_key])) {
                 // A despecialized call is entered like an unspecialized one: the body is walked in the
-                // context of the flow, and it is exited through all of its call sites.
+                // context of the flow, and it is exited through all of its call sites, but a call the body
+                // makes to its own function-like returns into the body.
                 $this->reach(
                     $unspecialized_id,
                     $this->state_contexts[$state],
-                    $this->state_open_assignments[$state],
+                    isset($this->recursive_calls[$specialization_key])
+                        ? $this->bindRecursiveCall($this->state_open_assignments[$state], $specialization_key)
+                        : $this->state_open_assignments[$state],
                     $this->state_kept[$state],
                     $this->state_added[$state],
                     $state,
@@ -1559,6 +1566,10 @@ final class TaintFlowResolution
 
         foreach ($this->specializations[$id] as $specialization_key => $specialized_id) {
             if ($outside_of_calls || isset($this->despecialized_calls[$specialization_key])) {
+                if ($this->leavesRecursiveCall($this->state_open_assignments[$state], $id, $specialization_key)) {
+                    continue;
+                }
+
                 $open_assignments = $this->passParamGuards($this->state_open_assignments[$state], $specialization_key);
 
                 if ($open_assignments === self::IGNORED) {
@@ -1617,6 +1628,10 @@ final class TaintFlowResolution
         }
 
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
+            if ($this->leavesRecursiveCall($open_assignments, $from_id, null, $to_id)) {
+                continue;
+            }
+
             $removed_taints = $path->removed_taints;
 
             $this->takeEdge(
@@ -2542,6 +2557,10 @@ final class TaintFlowResolution
         [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
         [$new_call, $file_path, $start, $end] = $this->call_arguments[$argument_id];
 
+        if (isset($this->recursive_calls[$new_call])) {
+            return $this->bindRecursiveCall($open_assignments, $new_call);
+        }
+
         $previous = $this->call_ranges[$call] ?? null;
         $this->call_ranges[$new_call] = [$file_path, $start, $end];
 
@@ -2576,6 +2595,68 @@ final class TaintFlowResolution
         }
 
         return $this->internOpenAssignments($made, $closed, $guards);
+    }
+
+    /**
+     * The open assignments $open_assignments of a flow entering, through the call with specialization key
+     * $specialization_key, the body of the function-like making that call (see TaintFlowGraph::$recursive_calls):
+     * the flow knows no array key the call passes (see bindCall()), but, as long as it stays in the body (see
+     * scopeCall()), what it returns goes back to a call site in it: the other call sites of the function-like
+     * would get what the body makes of it there (see leavesRecursiveCall()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function bindRecursiveCall(int $open_assignments, string $specialization_key): int
+    {
+        [$made, $closed, $guards] = $this->open_assignments[$open_assignments];
+        [$file_path, , $start, $end] = $this->recursive_calls[$specialization_key];
+        $this->call_ranges['^' . $specialization_key] = [$file_path, $start, $end];
+
+        return $this->internOpenAssignments($made, $closed, $guards, '^' . $specialization_key);
+    }
+
+    /**
+     * Whether a flow with open assignments $open_assignments at the return node $return_id leaves the call
+     * whose specialization key is $specialization_key, or that leads to node $to_id, the wrong way: it entered
+     * the function-like through a call made in its own body (see bindRecursiveCall()), which returns to a call
+     * site in that body, not to one out of it
+     *
+     * @psalm-external-mutation-free
+     */
+    private function leavesRecursiveCall(
+        int $open_assignments,
+        string $return_id,
+        ?string $specialization_key,
+        ?string $to_id = null,
+    ): bool {
+        $call = $this->open_assignments[$open_assignments][3];
+
+        if (!str_starts_with($call, '^')) {
+            return false;
+        }
+
+        [$file_path, $file_name, $start, $end, $recursive_return_id] = $this->recursive_calls[substr($call, 1)];
+
+        if ($return_id !== $recursive_return_id) {
+            return false;
+        }
+
+        if ($specialization_key !== null) {
+            // a call site's key is its file name and start (see DataFlowNode::getSpecializationKey())
+            $separator = (int) strrpos($specialization_key, ':');
+            $position = (int) substr($specialization_key, $separator + 1);
+
+            return substr($specialization_key, 0, $separator) !== $file_name
+                || $position < $start
+                || $position > $end;
+        }
+
+        $location = $to_id === null ? null : $this->getNode($to_id)?->code_location;
+
+        return $location === null
+            || $location->file_path !== $file_path
+            || $location->raw_file_start < $start
+            || $location->raw_file_end > $end;
     }
 
     /**
