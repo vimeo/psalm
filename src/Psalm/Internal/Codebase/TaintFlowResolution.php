@@ -1453,9 +1453,11 @@ final class TaintFlowResolution
         $node = $this->getNode($node_id);
         $location = $node?->code_location;
 
-        if ($node?->specialization_key !== null
-            && isset($this->specialized_calls[$node->specialization_key])
-            && !isset($this->despecialized_calls[$node->specialization_key])
+        $specialization_key = $node?->specialization_key;
+
+        if ($specialization_key !== null
+            && isset($this->specialized_calls[$specialization_key])
+            && !isset($this->despecialized_calls[$specialization_key])
         ) {
             return $open_assignments;
         }
