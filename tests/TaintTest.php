@@ -1394,6 +1394,27 @@ final class TaintTest extends TestCase
 
                     echo $a->x;',
             ],
+            'dontTaintMethodCallOnNewSpecializedInstanceWithOtherInstances' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        public function __construct(private string $name, private string $content) {}
+
+                        public function render(): string {
+                            return "<" . $this->name . ">" . $this->content;
+                        }
+
+                        public function getName(): string {
+                            return $this->name;
+                        }
+                    }
+
+                    $tainted = new Tag("a", (string) $_GET["x"]);
+                    $html = (new Tag("b", (string) $_GET["y"]))->render();
+                    echo $tainted->getName();
+                    echo (new Tag("c", (string) $_GET["z"]))->getName();
+                    echo (new Tag("d", "safe"))->render();',
+            ],
             'dontTaintValidatedValueStoredInProperty' => [
                 'code' => '<?php
                     final class Organization {
@@ -4076,6 +4097,49 @@ final class TaintTest extends TestCase
 
                     $holder = new ChildStringHolder($_GET["x"]);
                     echoX($holder);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMethodCallOnNewSpecializedInstance' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        public function __construct(private string $name, private string $content) {}
+
+                        public function render(): string {
+                            return "<" . $this->name . ">" . $this->content;
+                        }
+                    }
+
+                    echo (new Tag("a", (string) $_GET["x"]))->render();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMethodCallOnNewInstance' => [
+                'code' => '<?php
+                    final class Tag {
+                        public function __construct(private string $name, private string $content) {}
+
+                        public function render(): string {
+                            return "<" . $this->name . ">" . $this->content;
+                        }
+                    }
+
+                    echo (new Tag("a", (string) $_GET["x"]))->render();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMethodCallOnSpecializedInstanceInVariableNextToANewOne' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        public function __construct(private string $name, private string $content) {}
+
+                        public function render(): string {
+                            return "<" . $this->name . ">" . $this->content;
+                        }
+                    }
+
+                    $html = (new Tag("a", "safe"))->render();
+                    $tag = new Tag("b", (string) $_GET["x"]);
+                    echo $tag->render();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughInheritedMethodOfSpecializedClass' => [
