@@ -405,6 +405,7 @@ final class ForeachAnalyzer
                 '$' . $stmt->valueVar->name,
                 $context,
                 $inner_loop_context,
+                $loop_scope,
             );
 
             self::taintItemsWrittenByRef(
@@ -432,7 +433,8 @@ final class ForeachAnalyzer
 
     /**
      * The items of the array a foreach by reference iterates over may hold, after the loop, what the value variable
-     * holds where an iteration ends or where the loop is left, under each of their keys.
+     * holds where an iteration ends or where the loop is left, under each of their keys. Not what it held before the
+     * loop: the context after the loop has it where the loop was not entered, but then nothing was written.
      */
     private static function addItemsWrittenByRef(
         StatementsAnalyzer $statements_analyzer,
@@ -440,6 +442,7 @@ final class ForeachAnalyzer
         string $value_var_id,
         Context $context,
         Context $inner_loop_context,
+        LoopScope $loop_scope,
     ): void {
         $array_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->expr,
@@ -455,13 +458,13 @@ final class ForeachAnalyzer
 
         $written_type = null;
 
-        foreach ([$inner_loop_context, $context] as $item_context) {
-            if (isset($item_context->vars_in_scope[$value_var_id])) {
-                $written_type = Type::combineUnionTypes(
-                    $item_context->vars_in_scope[$value_var_id],
-                    $written_type,
-                    $codebase,
-                );
+        // where an iteration ends, and where the loop is broken out of
+        foreach ([
+            $inner_loop_context->vars_in_scope[$value_var_id] ?? null,
+            $loop_scope->possibly_redefined_loop_parent_vars[$value_var_id] ?? null,
+        ] as $item_type) {
+            if ($item_type !== null) {
+                $written_type = Type::combineUnionTypes($item_type, $written_type, $codebase);
             }
         }
 

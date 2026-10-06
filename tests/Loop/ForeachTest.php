@@ -50,6 +50,22 @@ final class ForeachTest extends TestCase
                     '$counts===' => "array<string, 'many'|int>",
                 ],
             ],
+            'foreachByReferenceDoesNotWriteWhatTheValueVariableHeldBefore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $value
+                     * @param array<string, array<string, string>> $groups
+                     * @return array<string, array<string, string>>
+                     */
+                    function sortGroups(array $value, array $groups): array {
+                        foreach ($groups as &$value) {
+                            ksort($value);
+                        }
+                        unset($value);
+
+                        return $groups;
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
