@@ -458,10 +458,12 @@ final class ForeachAnalyzer
 
         $written_type = null;
 
-        // where an iteration ends, and where the loop is broken out of
+        // where an iteration ends, and where the loop is broken out of (see BreakAnalyzer), whether the variable
+        // was defined before the loop or not
         foreach ([
             $inner_loop_context->vars_in_scope[$value_var_id] ?? null,
             $loop_scope->possibly_redefined_loop_parent_vars[$value_var_id] ?? null,
+            $loop_scope->possibly_defined_loop_parent_vars[$value_var_id] ?? null,
         ] as $item_type) {
             if ($item_type !== null) {
                 $written_type = Type::combineUnionTypes($item_type, $written_type, $codebase);
