@@ -145,6 +145,12 @@ final class TaintFlowResolution
     private const CONVERGENCE_LEVELS = 12;
 
     /**
+     * How many facts (see addEntry()) a filter can know and still be split by the class of another open
+     * assignment of the calls entering it (see tracksClasses())
+     */
+    private const MAX_TRACKING_FILTER_FACTS = 1;
+
+    /**
      * How many convergences of a node know the innermost open assignments of the flows entering them at most
      * (see getConvergenceOpenAssignments())
      */
@@ -1781,6 +1787,22 @@ final class TaintFlowResolution
      * @param array<int, array{?string, array<string, true>}> $facts
      * @psalm-external-mutation-free
      */
+    /**
+     * Whether the walks of entry $entry are split by the class of the open assignments of the calls entering
+     * it (see dependOnClass()). Those of an entry are, and those of a filter knowing a single fact (e.g. the
+     * key of the property its walk read) too: each of its walks only observes that one so far, so splitting
+     * them by the class of another one (e.g. the key of the array that property holds, fetched further on)
+     * multiplies them by the classes of that one at most. A filter knowing more isn't split further: that
+     * would make a walk for every combination of classes of all the open assignments the walks observe.
+     *
+     * @psalm-mutation-free
+     */
+    private function tracksClasses(int $entry): bool
+    {
+        return $this->entry_bases[$entry] === $entry
+            || count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS;
+    }
+
     private function addEntry(string $id, int $kind, array $facts, ?int $base = null): int
     {
         $entry = count($this->entry_nodes);
@@ -1989,7 +2011,7 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
+        if (!$this->tracksClasses($context)) {
             // see getAssignmentClass()
             return true;
         }
@@ -2050,8 +2072,8 @@ final class TaintFlowResolution
             return $class;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
-            // Already in a filter, for the calls agreeing on another open assignment: a filter of it for each
+        if (!$this->tracksClasses($context)) {
+            // Already in a filter, for the calls agreeing on other open assignments: a filter of it for each
             // class there too would make one for every combination of classes of the open assignments a walk
             // observes. So no fetch ignores it, as above.
             return '';
