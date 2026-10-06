@@ -100,6 +100,12 @@ final class TaintFlowGraph extends DataFlowGraph
     private const MAX_OPEN_ASSIGNMENT_STATES = 1;
 
     /**
+     * How many taint masks and specialized call entries a node is visited with before the flows reaching it are
+     * widened (see getChildNodes()).
+     */
+    private const MAX_NODE_CONTEXTS = 16;
+
+    /**
      * How many nested calls the search for the generators what is sent can be sent to matches (see
      * linkGeneratorSends()): recursive calls nest without end.
      */
@@ -1594,12 +1600,26 @@ final class TaintFlowGraph extends DataFlowGraph
             $path_types = isset($this->fetch_reachable[$to_id])
                 ? self::appendPathType($open_assignments, $path_type)
                 : [$path_type];
+            $to_context = $context;
+
+            // A node reached in the context of many specialized call entries (a property they all write, and
+            // everything reading it) would be walked once per entry: past a few, the flow forgets the entry and goes
+            // on as if outside of any call, exiting through all of the call sites. It forgets its open assignments
+            // too, so that any fetch takes it, and the flows widened at a node are walked once per taints rather
+            // than once per open assignments. Both can only add flows
+            $is_widened = $context !== null
+                && count($visited_source_ids[$to_id] ?? []) >= self::MAX_NODE_CONTEXTS;
+
+            if ($is_widened) {
+                $to_context = null;
+                $path_types = [$path_type];
+            }
 
             // The visited guard keeps the fixed point finite, so a visited node is never
             // propagated from again. A visited sink still gets to report, though: the flow
             // arriving through this edge may be a different one from the flow that visited it
             // first (it can arrive rounds later when its path is longer).
-            $state_key = self::getStateKey($new_taints, $context);
+            $state_key = self::getStateKey($new_taints, $to_context);
             $open_assignments_key = $this->getOpenAssignmentsKey($to_id, $path_types);
             $visited_states = $visited_source_ids[$to_id][$state_key] ?? [];
 
@@ -1611,8 +1631,8 @@ final class TaintFlowGraph extends DataFlowGraph
             // with more open assignments than can be walked from: past a few, a flow forgets
             // all but the innermost one. Then an edge the others would have dropped it at
             // doesn't (see mayDropByOpenAssignments()): the flow may take taints it doesn't
-            // have there, but takes all those it has.
-            if (!$already_visited && count($visited_states) >= self::MAX_OPEN_ASSIGNMENT_STATES) {
+            // have there, but takes all those it has. A widened flow has already forgotten them.
+            if (!$already_visited && !$is_widened && count($visited_states) >= self::MAX_OPEN_ASSIGNMENT_STATES) {
                 $path_types = self::isStructuralAssignment($path_type)
                     ? [$path_type]
                     : self::appendPathType(array_slice($open_assignments, -1), $path_type);
@@ -1632,8 +1652,15 @@ final class TaintFlowGraph extends DataFlowGraph
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
-                    if ($context !== null) {
-                        $this->addEntrySink($context, $sink, $generated_source, $matching_taints, $config, $codebase);
+                    if ($to_context !== null) {
+                        $this->addEntrySink(
+                            $to_context,
+                            $sink,
+                            $generated_source,
+                            $matching_taints,
+                            $config,
+                            $codebase,
+                        );
                     } else {
                         $this->reportTaintedFlowOnce($generated_source, $sink, $matching_taints, $config, $codebase);
                     }
@@ -1654,7 +1681,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 $new_taints,
                 $generated_source,
                 $path_types,
-                $context,
+                $to_context,
             );
         }
     }
