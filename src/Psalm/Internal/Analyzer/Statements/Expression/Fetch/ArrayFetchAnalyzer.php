@@ -17,6 +17,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -486,6 +488,76 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The values of the key of a fetch that is one of a few literals (two to eight, as for assignments, see
+     * ArrayAssignmentAnalyzer::MAX_KEY_VALUES): what it fetches is what is under one of them. Empty if the key isn't
+     * one of a few literals.
+     *
+     * @return list<string|int>
+     * @psalm-mutation-free
+     */
+    private static function getFetchedKeyValues(Union $offset_type): array
+    {
+        $string_literals = $offset_type->getLiteralStrings();
+        $int_literals = $offset_type->getLiteralInts();
+        $count = count($string_literals) + count($int_literals);
+
+        if ($count < 2 || $count > 8 || $count !== count($offset_type->getAtomicTypes())) {
+            return [];
+        }
+
+        $key_values = [];
+        foreach ($string_literals as $string_literal) {
+            $key_values[] = $string_literal->value;
+        }
+        foreach ($int_literals as $int_literal) {
+            $key_values[] = $int_literal->value;
+        }
+
+        return $key_values;
+    }
+
+    /**
+     * Adds the paths of the fetch from array $array into $fetched at $location of a key that is one of $key_values:
+     * one for each, in the taint flow graph, the others than the first through a node of their own (a path between
+     * two nodes has one type). The variable use graph only knows the key is one of them: an unkeyed fetch there.
+     *
+     * @param non-empty-list<string|int> $key_values
+     */
+    private static function taintFetchUnderKeys(
+        DataFlowGraph $graph,
+        DataFlowNode $array,
+        DataFlowNode $fetched,
+        array $key_values,
+        CodeLocation $location,
+        int $added_taints,
+        int $removed_taints,
+    ): void {
+        if ($graph instanceof CombinedFlowGraph) {
+            $graph->variable_use_graph->addPath($array, $fetched, 'arrayvalue-fetch', $added_taints, $removed_taints);
+            $graph = $graph->taint_flow_graph;
+        } elseif ($graph instanceof VariableUseGraph) {
+            $graph->addPath($array, $fetched, 'arrayvalue-fetch', $added_taints, $removed_taints);
+
+            return;
+        }
+
+        foreach ($key_values as $index => $key_value) {
+            $path_type = 'arrayvalue-fetch-\'' . $key_value . '\'';
+
+            if ($index === 0) {
+                $graph->addPath($array, $fetched, $path_type, $added_taints, $removed_taints);
+
+                continue;
+            }
+
+            $key_node = DataFlowNode::getForAssignment($fetched->label . ' ' . $path_type, $location);
+            $graph->addNode($key_node);
+            $graph->addPath($array, $key_node, $path_type, $added_taints, $removed_taints);
+            $graph->addPath($key_node, $fetched, '=');
+        }
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -554,14 +626,29 @@ final class ArrayFetchAnalyzer
                 $graph->addNode($array_key_node);
             }
 
+            // a key that is one of a few literals fetches what is under one of them (see getFetchedKeyValues())
+            $key_values = $dim_value === null ? self::getFetchedKeyValues($offset_type) : [];
+
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
-                    $added_taints,
-                    $removed_taints,
-                );
+                if ($key_values !== []) {
+                    self::taintFetchUnderKeys(
+                        $graph,
+                        $parent_node,
+                        $new_parent_node,
+                        $key_values,
+                        $var_location,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                } else {
+                    $graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                        $added_taints,
+                        $removed_taints,
+                    );
+                }
 
                 if ($stmt_type->by_ref) {
                     $graph->addPath(
