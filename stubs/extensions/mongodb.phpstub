@@ -34,7 +34,12 @@ namespace MongoDB\BSON
         {
         }
 
-        /** @psalm-mutation-free */
+        /**
+         * Its 24 hexadecimal digits: nothing the client sends can be in them
+         *
+         * @psalm-mutation-free
+         * @psalm-taint-escape input
+         */
         final public function __toString(): string
         {
         }

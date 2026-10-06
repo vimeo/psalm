@@ -830,6 +830,18 @@ final class TaintTest extends TestCase
                     [["author" => $author, "text" => $text]] = array_values([getComment()]);
                     echo $text;',
             ],
+            'objectIdConvertedToAStringHoldsNoInput' => [
+                'code' => '<?php // --taint-analysis
+                    function show(mixed $value): string {
+                        if ($value instanceof MongoDB\BSON\ObjectId) {
+                            // its 24 hexadecimal digits
+                            return (string) $value;
+                        }
+                        return "";
+                    }
+
+                    echo show($_GET["id"]);',
+            ],
             'dontTaintTheStringConversionOfAnObjectWhoseToStringEscapesIt' => [
                 'code' => '<?php // --taint-analysis
                     final class Tag {
