@@ -440,6 +440,28 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'fetchOfAnotherKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["page"])) {
+                        echo $attr["data"]["page"];
+                    }',
+            ],
             'fetchOfAnotherKeyOfAnElementARecursiveSpecializedCallTransforms' => [
                 'code' => '<?php
                     final class Attributes {
@@ -2970,6 +2992,29 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'fetchOfTheKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["q"])) {
+                        echo $attr["data"]["q"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfTheKeyOfAnElementARecursiveSpecializedCallTransforms' => [
                 'code' => '<?php
                     final class Attributes {

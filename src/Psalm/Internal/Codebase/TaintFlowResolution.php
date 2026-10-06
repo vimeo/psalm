@@ -127,7 +127,8 @@ final class TaintFlowResolution
     /**
      * The element slots of a flow (see $open_assignment_slots) that aren't ids of $slots: none; in the body
      * walk of a specialized call, that of the call entering it; and none in such a walk once the flow went
-     * through a node the value may outlive the call in (see scopeSlot()).
+     * through a node the value may outlive the call in (see scopeSlot()). A slot of $slots of a flow in a body
+     * walk can also keep that of the call, for once the flow puts the element back (see getSlot()).
      */
     private const NO_SLOT = -1;
     private const INHERITED_SLOT = -2;
@@ -317,9 +318,10 @@ final class TaintFlowResolution
 
     /**
      * Slot id => [the marker of the foreach loop, the open assignment of the element the value fetch of the
-     * loop closed, as a path type id]
+     * loop closed, as a path type id, whether the flows inherit the slot of the call entering their context under
+     * it (see getSlot())]
      *
-     * @var list<array{string, int}>
+     * @var list<array{string, int, bool}>
      */
     private array $slots = [];
 
@@ -1386,7 +1388,7 @@ final class TaintFlowResolution
                 $closed_assignment = array_pop($made[$closed_family]);
 
                 if ($foreach_marker !== null && $fetches_elements) {
-                    $slot = $this->getSlot($foreach_marker, $closed_assignment);
+                    $slot = $this->getSlot($foreach_marker, $closed_assignment, $this->inheritsSlot($slot));
                 }
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
                 // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
@@ -1394,7 +1396,7 @@ final class TaintFlowResolution
 
                 if ($foreach_marker !== null && $fetches_elements && $closed[$closed_family] !== self::FORGOTTEN) {
                     // one of the call entering the context, by its depth there
-                    $slot = $this->getSlot($foreach_marker, -$closed[$closed_family]);
+                    $slot = $this->getSlot($foreach_marker, -$closed[$closed_family], $this->inheritsSlot($slot));
                 }
             }
         }
@@ -1407,7 +1409,7 @@ final class TaintFlowResolution
             ) {
                 // the value of the element, or what was made of it, back under its key
                 $made[$added_family][] = $this->slots[$slot][1];
-                $slot = self::NO_SLOT;
+                $slot = $this->slots[$slot][2] ? self::INHERITED_SLOT : self::NO_SLOT;
             } else {
                 $made[$added_family][] = $path_type;
             }
@@ -1420,20 +1422,34 @@ final class TaintFlowResolution
 
     /**
      * The id of the slot of the element of the foreach loop marked $foreach_marker whose open assignment, as a
-     * path type id, is $assignment
+     * path type id, is $assignment. With $inherits, the flows in the body walk of a specialized call keep the slot
+     * of the call (see INHERITED_SLOT) under it: the loop is in the body, and iterates over what the call passed,
+     * which came from the element of the call's slot. Once the element is back under its key, so is that one for
+     * the call: what a function-like returns for each element of an element of an array (a recursive one, ...)
+     * can go back under the key of that element at the call site.
      *
      * @psalm-external-mutation-free
      */
-    private function getSlot(string $foreach_marker, int $assignment): int
+    private function getSlot(string $foreach_marker, int $assignment, bool $inherits = false): int
     {
-        $key = $assignment . ' ' . $foreach_marker;
+        $key = $assignment . ' ' . (int) $inherits . ' ' . $foreach_marker;
 
         if (!isset($this->slot_ids[$key])) {
             $this->slot_ids[$key] = count($this->slots);
-            $this->slots[] = [$foreach_marker, $assignment];
+            $this->slots[] = [$foreach_marker, $assignment, $inherits];
         }
 
         return $this->slot_ids[$key];
+    }
+
+    /**
+     * Whether flows with element slot $slot keep the slot of the call entering their context (see getSlot())
+     *
+     * @psalm-mutation-free
+     */
+    private function inheritsSlot(int $slot): bool
+    {
+        return $slot === self::INHERITED_SLOT || ($slot >= 0 && $this->slots[$slot][2]);
     }
 
     /**
@@ -1475,7 +1491,7 @@ final class TaintFlowResolution
                 && ($location->raw_file_start < $start
                     || $location->raw_file_end > $end
                     || ($location->raw_file_start >= $body_start && str_starts_with($node->label, '$')))
-                ? self::NO_SLOT
+                ? ($this->slots[$slot][2] ? self::INHERITED_SLOT : self::NO_SLOT)
                 : $slot;
         } else {
             return $open_assignments;
@@ -1562,17 +1578,19 @@ final class TaintFlowResolution
         if ($flow_slot === self::INHERITED_SLOT) {
             $slot = $call_slot;
         } elseif ($flow_slot >= 0) {
-            [$foreach_marker, $assignment] = $this->slots[$flow_slot];
-            $slot = $assignment < 0
-                ? $this->getSlot(
-                    $foreach_marker,
-                    $this->resolvePutBackAssignment(
+            [$foreach_marker, $assignment, $inherits] = $this->slots[$flow_slot];
+            // the call's slot is one it keeps under its own if it inherits it in turn
+            $slot = $this->getSlot(
+                $foreach_marker,
+                $assignment < 0
+                    ? $this->resolvePutBackAssignment(
                         $call_made[self::ARRAY_FAMILY] ?? [],
                         $call_closed[self::ARRAY_FAMILY] ?? self::NO_CALL,
                         -$assignment,
-                    ),
-                )
-                : $flow_slot;
+                    )
+                    : $assignment,
+                $inherits && $call_slot === self::INHERITED_SLOT,
+            );
         } else {
             $slot = $call_slot === self::INHERITED_SLOT || $call_slot === self::BLOCKED_SLOT
                 ? self::BLOCKED_SLOT
@@ -2180,7 +2198,9 @@ final class TaintFlowResolution
             $this->internOpenAssignments(
                 $known,
                 $known_count,
-                $slot >= 0 && $this->slots[$slot][1] >= 0 ? $slot : self::NO_SLOT,
+                $slot >= 0 && $this->slots[$slot][1] >= 0
+                    ? $this->getSlot($this->slots[$slot][0], $this->slots[$slot][1])
+                    : self::NO_SLOT,
                 $guards,
             ),
             $id,
