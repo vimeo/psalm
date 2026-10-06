@@ -1442,7 +1442,9 @@ final class TaintFlowResolution
      * may be kept: in a node without a location (a property, ...), in a variable of the body of the loop, which
      * the next iterations see, or in the function of the loop out of the loop, the function being called again
      * through its parameters and left through its return value. In the body walk of a specialized call, only
-     * the first is known.
+     * the first is known. The node of a specialized call keeps it, also for a call the function makes to itself:
+     * it only enters the body walk of the call, whose flows inherit the slot and give it back at the call site
+     * (see composeOpenAssignments()).
      *
      * @psalm-external-mutation-free
      */
@@ -1450,6 +1452,13 @@ final class TaintFlowResolution
     {
         $node = $this->getNode($node_id);
         $location = $node?->code_location;
+
+        if ($node?->specialization_key !== null
+            && isset($this->specialized_calls[$node->specialization_key])
+            && !isset($this->despecialized_calls[$node->specialization_key])
+        ) {
+            return $open_assignments;
+        }
 
         if ($node === null || $location === null) {
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
