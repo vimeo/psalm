@@ -1157,6 +1157,24 @@ final class TaintTest extends TestCase
                         echo (string) $link["url"];
                     }',
             ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["city"];',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughClosureVariables' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(
+                        static function (string $value): string {
+                            $trimmed = trim($value);
+                            return $trimmed;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -6103,6 +6121,35 @@ final class TaintTest extends TestCase
                     foreach ($links as $link) {
                         echo $link["title"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyOfTheElementArrayMapReturns' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["tail"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsByReferenceUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $previous = "";
+                    $params = array_map(
+                        static function (string $value) use (&$previous): string {
+                            $result = $previous;
+                            $previous = $value;
+                            return $result;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheElementsOfAnArrayMapOverTwoArraysUnderAnyKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $pairs = array_map(fn(string $a, string $b): string => $a . $b, $query, $query);
+                    echo $pairs[1];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapClosureIntoWholeArray' => [

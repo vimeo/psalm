@@ -6,14 +6,19 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
@@ -38,6 +43,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_map;
 use function array_shift;
 use function array_slice;
@@ -45,6 +51,7 @@ use function array_values;
 use function assert;
 use function count;
 use function explode;
+use function implode;
 use function in_array;
 use function reset;
 use function str_contains;
@@ -278,11 +285,87 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         $graph->addNode($element_node);
 
+        $element_marker = self::getElementMarker($statements_analyzer, $event->getCallArgs());
+        $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
+
         foreach ($mapping_return_type->parent_nodes as $parent_node) {
-            $graph->addPath($parent_node, $element_node, 'arrayvalue-assignment');
+            if ($element_marker !== null && $taint_graph instanceof TaintFlowGraph) {
+                // what the closure returns for an element, under the key of the element
+                $taint_graph->addPath($parent_node, $element_node, 'arrayvalue-assignment@' . $element_marker);
+
+                if ($graph instanceof CombinedFlowGraph) {
+                    $graph->variable_use_graph->addPath($parent_node, $element_node, 'arrayvalue-assignment');
+                }
+            } else {
+                $graph->addPath($parent_node, $element_node, 'arrayvalue-assignment');
+            }
         }
 
         return [$element_node->id => $element_node];
+    }
+
+    /**
+     * The marker (see ForeachAnalyzer::getForeachMarker()) of the iteration of the array_map() call with arguments
+     * $args over the elements of its array, if the array it returns keeps their keys (it is given one array) and
+     * its callback is a closure, whose body the marker bounds: the closure takes each element with its key (see
+     * ArgumentsAnalyzer::taintClosureParamWithArrayElements()) and what it returns for it goes back under that key
+     * (see getElementNodes()). A closure with a variable another call of it sees (a by-reference use, a static or
+     * global variable) may return what it took for another element: it has no marker.
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     */
+    public static function getElementMarker(StatementsAnalyzer $statements_analyzer, array $args): ?string
+    {
+        if (count($args) !== 2
+            || !isset($args[0], $args[1])
+            || $args[0]->unpack
+            || $args[1]->unpack
+            || $args[0]->name !== null
+            || $args[1]->name !== null
+            || $statements_analyzer->getTaintFlowGraphWithSuppressed() === null
+        ) {
+            return null;
+        }
+
+        $callback = $args[0]->value;
+        $array = $args[1]->value;
+
+        if (!$callback instanceof PhpParser\Node\Expr\ArrowFunction
+            && (!$callback instanceof PhpParser\Node\Expr\Closure
+                || array_filter($callback->uses, static fn(PhpParser\Node\ClosureUse $use): bool => $use->byRef))
+        ) {
+            return null;
+        }
+
+        // the variables of a call of the closure are its own, unless static or global
+        if ((new NodeFinder())->findFirst(
+            $callback,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt\Static_
+                || $node instanceof PhpParser\Node\Stmt\Global_,
+        ) !== null) {
+            return null;
+        }
+
+        $array_type = $statements_analyzer->node_data->getType($array);
+
+        if ($array_type === null || !ArrayAssignmentAnalyzer::hasElementsOfItsOwn($array_type)) {
+            return null;
+        }
+
+        $source = $statements_analyzer->getSource();
+        $function_location = $source instanceof FunctionLikeAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)->stmt_location
+            : null;
+
+        return implode(':', [
+            $function_location?->raw_file_start ?? $callback->getStartFilePos(),
+            $function_location?->raw_file_end ?? $array->getEndFilePos(),
+            $callback->getStartFilePos(),
+            $array->getEndFilePos(),
+            // no variable of the body of a loop: one of a call of the closure isn't seen by the next one
+            $array->getEndFilePos() + 1,
+            $statements_analyzer->getFilePath(),
+        ]);
     }
 
     /**

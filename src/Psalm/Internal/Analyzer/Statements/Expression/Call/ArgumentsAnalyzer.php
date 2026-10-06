@@ -25,6 +25,7 @@ use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -587,6 +588,9 @@ final class ArgumentsAnalyzer
                     $statements_analyzer,
                     $args[1 - $argument_offset]->value,
                     $param_storage,
+                    $method_id === 'array_map'
+                        ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $args)
+                        : null,
                 );
             }
         }
@@ -594,17 +598,26 @@ final class ArgumentsAnalyzer
 
     /**
      * The parameter of the closure array_map() or a function like array_filter() is given takes the elements of the
-     * array: through its type, or, if it has none to hold them, through the node the closure assigns it from.
+     * array: through its type, or, if it has none to hold them, through the node the closure assigns it from. With
+     * $element_marker, each with its own key (see ArrayMapReturnTypeProvider::getElementMarker()).
      */
     private static function taintClosureParamWithArrayElements(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $array,
         FunctionLikeParameter $param_storage,
+        ?string $element_marker,
     ): void {
         $temp = Type::getMixed();
 
         if ($param_storage->type) {
-            ArrayFetchAnalyzer::taintArrayFetch($statements_analyzer, $array, null, $param_storage->type, $temp);
+            ArrayFetchAnalyzer::taintArrayFetch(
+                $statements_analyzer,
+                $array,
+                null,
+                $param_storage->type,
+                $temp,
+                foreach_marker: $element_marker,
+            );
 
             return;
         }
@@ -614,7 +627,14 @@ final class ArgumentsAnalyzer
         }
 
         $element_type = Type::getMixed();
-        ArrayFetchAnalyzer::taintArrayFetch($statements_analyzer, $array, null, $element_type, $temp);
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_analyzer,
+            $array,
+            null,
+            $element_type,
+            $temp,
+            foreach_marker: $element_marker,
+        );
 
         // see FunctionLikeAnalyzer::processParams()
         $param_node = DataFlowNode::getForAssignment('$' . $param_storage->name, $param_storage->location);
