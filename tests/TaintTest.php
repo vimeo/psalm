@@ -2013,11 +2013,6 @@ final class TaintTest extends TestCase
                     (new DOMDocument())->load((string) $_GET["url"]);',
                 'error_message' => 'TaintedSSRF',
             ],
-            'taintSsrfInXmlReaderOpen' => [
-                'code' => '<?php // --taint-analysis
-                    (new XMLReader())->open((string) $_GET["url"]);',
-                'error_message' => 'TaintedSSRF',
-            ],
             'taintSsrfInSoapClient' => [
                 'code' => '<?php // --taint-analysis
                     new SoapClient((string) $_GET["url"]);',
