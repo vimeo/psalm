@@ -79,7 +79,10 @@ final class InheritedMethodTaints
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
 
+        // the taints of an object of a class specialized per instance already travel with the object
         if ($method_storage->is_static
+            || $declaring_class_storage->specialize_instance
+            || $class_storage->specialize_instance
             || $method_storage->abstract
             || $method_storage->location === null
             || !$declaring_class_storage->user_defined
