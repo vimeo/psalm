@@ -4767,6 +4767,62 @@ final class TaintTest extends TestCase
                     echo $a->x;',
                 'error_message' => 'InaccessibleProperty',
             ],
+            'taintPropertyOfObjectStoredInSpecializedInstanceChangedLater' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+                    }
+
+                    $a = new A();
+                    $b = new B($a);
+                    $a->x = $_GET["x"];
+                    echo $b->a->x;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPropertyOfObjectStoredInSpecializedInstanceChangedLaterThroughMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(private A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->x;
+                        }
+                    }
+
+                    $a = new A();
+                    $b = new B($a);
+                    $a->x = $_GET["x"];
+                    echo $b->getX();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'specializedInstanceStoredInAnotherCannotBeChanged' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public string $x = "";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+                    }
+
+                    $a = new A();
+                    $b = new B($a);
+                    $a->x = $_GET["x"];
+                    echo $b->a->x;',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'specializedInstanceCannotChangeAnotherObject' => [
                 'code' => '<?php
                     final class Registry {
