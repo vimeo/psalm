@@ -392,6 +392,76 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintSsrfAfterAnyOfTheStartsOfAUrlFixingItsServer' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-sink ssrf $url
+                     * @psalm-taint-sink file $url
+                     */
+                    function fetch(string $url): void {}
+
+                    $origin = match ((string) $_GET["host"]) {
+                        "example.com" => "https://example.com/",
+                        default => "https://example.org/",
+                    };
+                    $path = (string) $_GET["path"];
+                    fetch($origin . $path);
+                    fetch("{$origin}{$path}");
+                    $format = rand(0, 1) ? "https://example.com/%s" : "https://example.org/%s";
+                    fetch(sprintf($format, $path));
+                    fetch(sprintf("https://example.com/" . $path . "/%s", $path));',
+            ],
+            'dontTaintSsrfAfterTheStartOfAUrlFixingItsServer' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @psalm-taint-sink ssrf $url
+                     * @psalm-taint-sink file $url
+                     */
+                    function fetch(string $url): void {}
+
+                    $value = (string) $_GET["value"];
+                    fetch("https://api.example.com/search?q=" . $value);
+                    fetch("https://api.example.com/items/{$value}/details");
+                    fetch(sprintf("https://api.example.com/items/%s", $value));
+                    fetch("https://api.example.com/" . $value . "/" . $value);
+                    $origin = "https://api.example.com";
+                    fetch($origin . "/" . $value);
+                    fetch("https://api.example.com" . "/{$value}");',
+            ],
+            'dontTaintSsrfAfterAPathFromTheRoot' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ssrf $uri */
+                    function request(string $uri): void {}
+
+                    $value = (string) $_GET["value"];
+                    request("/v3/clusters/" . $value);
+                    request("/topics/{$value}/partitions");
+                    request(sprintf("/consumers/%s/instances/%s", $value, $value));',
+            ],
+            'dontTaintUrlPathInTheQueryOrTheFragmentOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    $value = urlencode((string) $_GET["value"]);
+                    file_get_contents("https://api.example.com/search?q=" . $value);
+                    file_get_contents("https://api.example.com?q={$value}");
+                    file_get_contents(sprintf("https://api.example.com/#%s", $value));
+                    file_get_contents("https://api.example.com/users/" . (int) $_GET["id"]);
+                    file_get_contents("https://api.example.com/" . http_build_query(["q" => $value]));',
+            ],
+            'dontTaintUrlComponentAfterEncodingIt' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    file_get_contents("https://api.example.com/search?q=" . rawurlencode($value));
+                    file_get_contents("https://api.example.com/search?" . http_build_query(["q" => $value]));
+                    echo rawurlencode($value);
+                    echo http_build_query(["q" => $value]);',
+            ],
+            'dontTaintWhatSprintfFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    file_get_contents(sprintf("https://api.example.com/items/%d", $value));
+                    file_get_contents(sprintf("https://api.example.com/items/%2\$s/%1\$05.2f", $value, "a"));
+                    echo sprintf("%x %\'*10d %%s", $value, $value);',
+            ],
             'dontTaintAPrivatePropertyWithWhatIsSetToTheOneOfAParentClass' => [
                 'code' => '<?php // --taint-analysis
                     class Model {
@@ -1869,6 +1939,137 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintSsrfAfterTwoSlashesOrABackslash' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ssrf $uri */
+                    function request(string $uri): void {}
+
+                    $value = (string) $_GET["value"];
+                    request("//" . $value);
+                    request("/\\\\" . $value);
+                    request("/" . $value);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintUrlComponentInTheQueryOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("https://api.example.com/search?q=" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'taintUrlComponentInThePathOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    file_get_contents("https://api.example.com/items/{$value}/details");',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'taintUrlComponentInTheFragmentOfAFormattedUrl' => [
+                'code' => '<?php // --taint-analysis
+                    curl_init(sprintf("https://example.com/#%s", (string) $_GET["value"]));',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'taintUrlPathInThePathOfAUrlAfterEncodingIt' => [
+                'code' => '<?php // --taint-analysis
+                    $id = rawurlencode((string) $_GET["id"]);
+                    file_get_contents("https://api.example.com/users/" . $id . "/profile");',
+                'error_message' => 'TaintedUrlPath',
+            ],
+            'taintUrlPathBeforeTheQueryOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    curl_init("https://api.example.com/users/" . urlencode((string) $_GET["id"]) . "?a=b");',
+                'error_message' => 'TaintedUrlPath',
+            ],
+            'taintUrlComponentFormattedAsACharacter' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents(sprintf("https://example.com/%d%c", 1, (string) $_GET["value"]));',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'taintHtmlFormattedAsAStringAndANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $value = (string) $_GET["value"];
+                    echo sprintf("%1\$d %1\$s", $value);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSsrfAfterRawurlencode' => [
+                'code' => '<?php // --taint-analysis
+                    curl_init(rawurlencode((string) $_GET["host"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInHttpBuildQuery' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents(http_build_query(["q" => (string) $_GET["value"]]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInFopen' => [
+                'code' => '<?php // --taint-analysis
+                    fopen((string) $_GET["url"], "r");',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInSimplexmlLoadFile' => [
+                'code' => '<?php // --taint-analysis
+                    simplexml_load_file((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInDomDocumentLoad' => [
+                'code' => '<?php // --taint-analysis
+                    (new DOMDocument())->load((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInSoapClient' => [
+                'code' => '<?php // --taint-analysis
+                    new SoapClient((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInFsockopen' => [
+                'code' => '<?php // --taint-analysis
+                    fsockopen((string) $_GET["host"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterTheStartOfAStreamWrapper' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("compress.zlib://https://" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterTheStartOfAStreamWrapperWithAPath' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ssrf $url */
+                    function fetch(string $url): void {}
+
+                    fetch("php://filter/resource=" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintFileAfterAFormatEscapingThePercentOfItsScheme' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink file $path */
+                    function read(string $path): void {}
+
+                    read(sprintf("ht%%tps://api.example.com/%s", (string) $_GET["value"]));',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintFileAfterTheStartOfAUrlWithoutScheme' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("//api.example.com/" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintSsrfAfterOneOfTheStartsOfAUrlNotEndingItsHost' => [
+                'code' => '<?php
+                    $origin = rand(0, 1) ? "https://example.com/" : "https://example.org";
+                    file_get_contents($origin . (string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfAfterAUrlStartNotEndingItsHost' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents("https://api.example.com" . (string) $_GET["value"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintSsrfInTheHostOfAFormattedUrl' => [
+                'code' => '<?php // --taint-analysis
+                    file_get_contents(sprintf("https://%s/items", (string) $_GET["value"]));',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintHtmlAfterTheStartOfAUrl' => [
+                'code' => '<?php // --taint-analysis
+                    echo "https://example.com/" . (string) $_GET["value"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThePropertyOfASubclassWithWhatAParentMethodSets' => [
                 'code' => '<?php // --taint-analysis
                     class Model {
