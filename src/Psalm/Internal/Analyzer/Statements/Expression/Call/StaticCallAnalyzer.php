@@ -381,7 +381,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_storage,
                 null,
-                $method_storage->taint_source_types,
+                $method_storage->taint_source_types
+                    & ~($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
             );
 
             $taint_flow_graph->addSource($method_node);
