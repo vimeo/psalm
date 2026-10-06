@@ -120,6 +120,17 @@ final class TaintFlowResolution
     private const CONVERGING_STATES = 12;
 
     /**
+     * How many states a node must have for the flows reaching it in more to be widened (see
+     * widenOpenAssignments()). The flows reaching a node in a body walk differ by their open assignments, whose
+     * number can grow with the product of the keys and depths of the arrays they went through: recursive functions
+     * putting what they return for an element back under its key, components passing arrays of options on through
+     * many levels, ... Convergence (see enterConvergence()) doesn't help in a body walk the flows of a single call
+     * reach, since it leaves through all the call sites. A node that holds that many states lets the flows reaching
+     * it in more forget what they would only use to tell apart deeper fetches.
+     */
+    private const WIDENING_STATES = 1024;
+
+    /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
      */
     private const ENTRY_CALL = 0;
@@ -255,6 +266,13 @@ final class TaintFlowResolution
      * @var array<int, array<int, int>>
      */
     private array $open_assignment_truncations = [];
+
+    /**
+     * Open assignments key => the open assignments widened (see widenOpenAssignments())
+     *
+     * @var array<int, int>
+     */
+    private array $open_assignment_widenings = [];
 
     /*
      * The states, as parallel lists indexed by state id
@@ -1229,6 +1247,35 @@ final class TaintFlowResolution
     }
 
     /**
+     * The open assignments $open_assignments of a flow reaching a node with WIDENING_STATES states: only their
+     * innermost open assignment of each expression type, and none of those of the call entering their context
+     * known. A fetch only ignores an open assignment the flow knows, so forgetting some only lets the flow go
+     * on through more fetches.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function widenOpenAssignments(int $open_assignments): int
+    {
+        if (isset($this->open_assignment_widenings[$open_assignments])) {
+            return $this->open_assignment_widenings[$open_assignments];
+        }
+
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        foreach (self::FAMILIES as $family => $_) {
+            $made[$family] ??= [];
+            $closed[$family] ??= self::NO_CALL;
+            self::capOpenAssignments($made, $closed, $family, 1);
+
+            if ($closed[$family] !== self::NO_CALL) {
+                $closed[$family] = self::FORGOTTEN;
+            }
+        }
+
+        return $this->open_assignment_widenings[$open_assignments] = $this->internOpenAssignments($made, $closed);
+    }
+
+    /**
      * The open assignments of $open_assignments a fetch reachable from $node_id can observe (see
      * computeObservableDepths())
      *
@@ -1285,6 +1332,11 @@ final class TaintFlowResolution
         }
 
         $open_assignments = $this->truncateOpenAssignments($open_assignments, $node_id);
+
+        if (isset($this->state_ids[$node_id]) && count($this->state_ids[$node_id]) >= self::WIDENING_STATES) {
+            $open_assignments = $this->widenOpenAssignments($open_assignments);
+        }
+
         $key = (($context + 1) << 32) | $open_assignments;
 
         if (!isset($this->state_ids[$node_id][$key])) {
