@@ -74,6 +74,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_merge;
 use function array_pop;
 use function array_shift;
@@ -87,7 +88,10 @@ use function preg_match;
 use function preg_split;
 use function reset;
 use function sprintf;
+use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 use function trim;
 use function usort;
 
@@ -2048,56 +2052,28 @@ final class ClassLikeNodeScanner
         ?array $type_aliases,
         ?string $self_fqcln,
     ): array {
-        $type_alias_tokens = [];
+        $declarations = [];
 
         foreach ($type_alias_comment_lines as $var_line) {
-            $var_line = trim($var_line);
+            $declaration = self::parseTypeAliasDeclarationLine($var_line);
 
-            if (!$var_line) {
-                continue;
+            if ($declaration !== null) {
+                // Last declaration wins; dedupe before ordering so an earlier
+                // declaration can't be reordered after the winner and overwrite it.
+                $declarations[$declaration[0]] = $declaration[1];
             }
+        }
 
-            $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $declarations = self::orderTypeAliasDeclarationsByDependency(
+            $declarations,
+            $aliases,
+            $type_aliases,
+            $self_fqcln,
+        );
 
-            if (!$var_line_parts) {
-                continue;
-            }
+        $type_alias_tokens = [];
 
-            $type_alias = array_shift($var_line_parts);
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            if ($var_line_parts[0] === '=') {
-                array_shift($var_line_parts);
-            }
-
-            if (!isset($var_line_parts[0])) {
-                continue;
-            }
-
-            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
-            $type_string = implode('', $var_line_parts);
-            $type_string = ltrim($type_string, "* \n\r");
-            try {
-                $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
-            } catch (DocblockParseException $e) {
-                throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
-            }
-            $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
-
+        foreach ($declarations as $type_alias => $type_string) {
             try {
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
@@ -2114,5 +2090,170 @@ final class ClassLikeNodeScanner
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     * @throws DocblockParseException if there was a problem parsing the docblock
+     */
+    private static function parseTypeAliasDeclarationLine(string $var_line): ?array
+    {
+        $var_line = trim($var_line);
+
+        if (!$var_line) {
+            return null;
+        }
+
+        $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
+        if (!$var_line_parts) {
+            return null;
+        }
+
+        $type_alias = array_shift($var_line_parts);
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        if ($var_line_parts[0] === '=') {
+            array_shift($var_line_parts);
+        }
+
+        if (!isset($var_line_parts[0])) {
+            return null;
+        }
+
+        while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+            array_shift($var_line_parts);
+        }
+
+        $type_string = implode('', $var_line_parts);
+        $type_string = ltrim($type_string, "* \n\r");
+        try {
+            $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+        } catch (DocblockParseException $e) {
+            throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+        }
+
+        return [$type_alias, CommentAnalyzer::sanitizeDocblockType($type_string)];
+    }
+
+    /**
+     * Marker spliced in place of a local alias reference by the placeholder pass in
+     * getLocalTypeAliasReferences(); never appears in real docblock type strings.
+     */
+    private const LOCAL_ALIAS_DEP_MARKER = "\0psalm-local-alias-dep\0";
+
+    /**
+     * Orders declarations so that each alias comes after the same-docblock aliases
+     * it references, keeping declaration order otherwise.
+     *
+     * @param  array<string, string> $declarations alias name => type string
+     * @param  array<string, TypeAlias>|null $type_aliases
+     * @return array<string, string>
+     */
+    private static function orderTypeAliasDeclarationsByDependency(
+        array $declarations,
+        Aliases $aliases,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
+        // Names already resolvable through $type_aliases (imports, aliases from
+        // preceding comments) aren't dependencies: references to them keep binding
+        // to whatever was in scope at their textual position.
+        $placeholders = [];
+
+        foreach ($declarations as $name => $_) {
+            if (!isset($type_aliases[$name])) {
+                $placeholders[$name] = new InlineTypeAlias([[self::LOCAL_ALIAS_DEP_MARKER . $name, 0]]);
+            }
+        }
+
+        $dependencies = [];
+
+        foreach ($declarations as $name => $type_string) {
+            $dependencies[$name] = self::getLocalTypeAliasReferences(
+                $type_string,
+                $aliases,
+                $placeholders,
+                $type_aliases,
+                $self_fqcln,
+            );
+            // Self-references can't be ordered; they fail in the tokenization pass.
+            unset($dependencies[$name][$name]);
+        }
+
+        $ordered = [];
+
+        while ($declarations) {
+            $remaining_count = count($declarations);
+
+            foreach ($declarations as $name => $type_string) {
+                if (!array_diff_key($dependencies[$name], $ordered)) {
+                    $ordered[$name] = $type_string;
+                    unset($declarations[$name]);
+                }
+            }
+
+            if (count($declarations) === $remaining_count) {
+                // The rest contain or depend on a cycle: keep declaration order so
+                // they hit the existing undefined/invalid alias error.
+                return $ordered + $declarations;
+            }
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * Returns the locally-declared aliases (represented by $placeholders) a type
+     * string binds to. Runs the real tokenizer substitution instead of copying its
+     * rules (keyed-array keys, `Name(` callables, `$param` suffixes, `::` constants):
+     * a placeholder's marker survives only where the alias would be spliced in.
+     *
+     * @param  array<string, InlineTypeAlias> $placeholders
+     * @param  array<string, TypeAlias>|null $type_aliases
+     * @return array<string, true>
+     */
+    private static function getLocalTypeAliasReferences(
+        string $type_string,
+        Aliases $aliases,
+        array $placeholders,
+        ?array $type_aliases,
+        ?string $self_fqcln,
+    ): array {
+        try {
+            // A malformed type is reported with its full message by the real
+            // tokenization pass; here it just has no detectable dependencies.
+            $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                $type_string,
+                $aliases,
+                null,
+                $placeholders + $type_aliases,
+                $self_fqcln,
+            );
+        } catch (TypeParseTreeException) {
+            return [];
+        }
+
+        $referenced_names = [];
+        $marker_length = strlen(self::LOCAL_ALIAS_DEP_MARKER);
+
+        foreach ($type_tokens as $token) {
+            if (str_starts_with($token[0], self::LOCAL_ALIAS_DEP_MARKER)) {
+                $referenced_names[substr($token[0], $marker_length)] = true;
+            }
+        }
+
+        return $referenced_names;
     }
 }
