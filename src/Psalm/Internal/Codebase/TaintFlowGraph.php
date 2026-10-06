@@ -484,6 +484,20 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Makes the values of the array given to a parameter a sink, but not its keys (see
+     * FunctionLikeParameter::$value_sinks): the parameter's node flows into the sink through a fetch of any
+     * value, so what the array holds only as a key doesn't reach it.
+     */
+    public function addArgumentValuesSink(DataFlowNode $param_node, int $taints): void
+    {
+        $sink = DataFlowNode::getForArgumentValues($param_node, $taints);
+        $this->addNode($param_node);
+        $this->addNode($sink);
+        $this->addSink($sink);
+        $this->addPath($param_node, $sink, 'arrayvalue-fetch');
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addGraph(self $other): void

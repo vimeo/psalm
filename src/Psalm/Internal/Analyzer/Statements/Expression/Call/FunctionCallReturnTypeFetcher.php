@@ -959,6 +959,10 @@ final class FunctionCallReturnTypeFetcher
                     $graph->addSink($param_node);
                 }
 
+                if ($param->value_sinks) {
+                    $graph->addArgumentValuesSink($param_node, $param->value_sinks);
+                }
+
                 foreach ($arg_type->parent_nodes as $parent_node) {
                     $graph->addPath($parent_node, $param_node, 'arg');
                 }

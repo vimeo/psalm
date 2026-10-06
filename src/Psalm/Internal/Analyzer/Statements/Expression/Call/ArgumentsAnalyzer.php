@@ -1102,7 +1102,7 @@ final class ArgumentsAnalyzer
                 foreach ($arg_function_params[$argument_offset] as $function_param) {
                     $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
 
-                    if ($sinks) {
+                    if ($sinks || $function_param->value_sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
@@ -1152,7 +1152,16 @@ final class ArgumentsAnalyzer
                             );
                         }
 
-                        $statements_analyzer->taint_flow_graph->addSink($sink);
+                        if ($sinks) {
+                            $statements_analyzer->taint_flow_graph->addSink($sink);
+                        }
+
+                        if ($function_param->value_sinks) {
+                            $statements_analyzer->taint_flow_graph->addArgumentValuesSink(
+                                $sink,
+                                $function_param->value_sinks,
+                            );
+                        }
                     }
                 }
             }
