@@ -306,13 +306,11 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-pure'])
         ) {
             $info->capabilities = Capabilities::NONE;
-            $info->taint_specialize = true;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {
             $info->capabilities = Capabilities::MUTATION_FREE;
-            $info->taint_specialize = true;
             $info->has_mutations_annotation = true;
         } elseif (isset($parsed_docblock->tags['psalm-external-mutation-free'])) {
             $info->capabilities = Capabilities::EXTERNAL_MUTATION_FREE;

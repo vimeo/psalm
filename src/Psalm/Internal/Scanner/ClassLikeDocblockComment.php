@@ -119,6 +119,7 @@ final class ClassLikeDocblockComment
 
     public bool $has_mutations_annotation = false;
 
+    /** Whether the class has `@psalm-taint-specialize` */
     public bool $taint_specialize = false;
 
     /**
