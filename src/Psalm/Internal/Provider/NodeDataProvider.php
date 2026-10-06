@@ -151,6 +151,7 @@ final class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @return list<string>|null
+     * @psalm-capabilities read-props
      */
     public function getLiteralPrefixes(Expr $node): ?array
     {
