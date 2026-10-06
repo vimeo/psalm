@@ -18,10 +18,13 @@ use function array_merge;
 use function array_pop;
 use function array_slice;
 use function count;
+use function explode;
 use function implode;
+use function in_array;
 use function ksort;
 use function max;
 use function min;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -2110,7 +2113,28 @@ final class TaintFlowResolution
             return $fetched_key === '';
         }
 
-        return $class === '' || $class === ':' . $fetched_key;
+        return $class === '' || in_array(substr($class, 1), self::getFetchedKeys($fetched_key), true);
+    }
+
+    /**
+     * The keys a fetch of key $fetched_key may fetch: the quoted keys a fetch of a key that is one of a few literals
+     * separates by '|' (see ArrayFetchAnalyzer::getFetchedKeys()), or that key
+     *
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    private static function getFetchedKeys(string $fetched_key): array
+    {
+        if (!str_starts_with($fetched_key, "'") || !str_contains($fetched_key, "'|'")) {
+            return [$fetched_key];
+        }
+
+        $keys = [];
+        foreach (explode("'|'", substr($fetched_key, 1, -1)) as $key) {
+            $keys[] = "'" . $key . "'";
+        }
+
+        return $keys;
     }
 
     /**
