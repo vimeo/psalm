@@ -4780,7 +4780,7 @@ final class TaintTest extends TestCase
 
                     $a = new A();
                     $b = new B($a);
-                    $a->x = $_GET["x"];
+                    $a->x = (string) $_GET["x"];
                     echo $b->a->x;',
                 'error_message' => 'TaintedHtml',
             ],
@@ -4801,7 +4801,7 @@ final class TaintTest extends TestCase
 
                     $a = new A();
                     $b = new B($a);
-                    $a->x = $_GET["x"];
+                    $a->x = (string) $_GET["x"];
                     echo $b->getX();',
                 'error_message' => 'TaintedHtml',
             ],
@@ -4819,7 +4819,7 @@ final class TaintTest extends TestCase
 
                     $a = new A();
                     $b = new B($a);
-                    $a->x = $_GET["x"];
+                    $a->x = (string) $_GET["x"];
                     echo $b->a->x;',
                 'error_message' => 'InaccessibleProperty',
             ],
