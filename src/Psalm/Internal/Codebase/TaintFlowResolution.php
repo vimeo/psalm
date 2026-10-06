@@ -78,9 +78,17 @@ final class TaintFlowResolution
     private const KEY_CLASS = 'key';
 
     /**
+     * The class (see getClass()) of an open assignment under an unknown key: only a conversion (see
+     * CONVERSION_KEY) ignores it. Apart from '', the class of none, or of one the flows don't know (see
+     * getAssignmentClass()), which no fetch ignores.
+     */
+    private const UNKNOWN_KEY_CLASS = '*';
+
+    /**
      * The key a scalar conversion (a cast, a concatenation) of a value that may be an array observes (see
-     * getPathTypeEffects()): no class passes it (see classPassesFetch()), since a converted array is "Array", or
-     * 0/1, never what it holds.
+     * getPathTypeEffects()): only the class of none, or of an open assignment the flows don't know, passes it
+     * (see classPassesFetch()). A converted array is "Array", or 0/1, never what it holds, but a value with
+     * no open array assignment (what may be an array may also be a string) can be the taint itself.
      */
     private const CONVERSION_KEY = '#';
 
@@ -2082,8 +2090,8 @@ final class TaintFlowResolution
 
     /**
      * The class of an open assignment of type $family: what decides whether a fetch ignores it (see
-     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, or '' if no fetch
-     * ignores it.
+     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, or UNKNOWN_KEY_CLASS
+     * for an unknown key.
      *
      * @psalm-mutation-free
      */
@@ -2099,7 +2107,7 @@ final class TaintFlowResolution
         return $assignment_type !== $expression_type . '-assignment'
             && str_starts_with($assignment_type, $expression_type . '-assignment-')
             ? ':' . substr($assignment_type, strlen($expression_type) + 12)
-            : '';
+            : self::UNKNOWN_KEY_CLASS;
     }
 
     /**
@@ -2118,7 +2126,7 @@ final class TaintFlowResolution
     private static function classPassesFetch(string $class, string $fetched_key): bool
     {
         if ($fetched_key === self::CONVERSION_KEY) {
-            return false;
+            return $class === '';
         }
 
         if (str_starts_with($fetched_key, '!')) {
@@ -2132,7 +2140,7 @@ final class TaintFlowResolution
             return $fetched_key === '';
         }
 
-        return $class === '' || $class === ':' . $fetched_key;
+        return $class === '' || $class === self::UNKNOWN_KEY_CLASS || $class === ':' . $fetched_key;
     }
 
     /**
