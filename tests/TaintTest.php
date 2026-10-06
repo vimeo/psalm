@@ -1482,6 +1482,39 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'dontTaintSpecializedInstanceStoredInAnotherWithOtherInstances' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public function __construct(public string $x) {}
+
+                        public function getX(): string {
+                            return $this->x;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->getX();
+                        }
+                    }
+
+                    $b1 = new B(new A("safe"));
+                    $b2 = new B(new A((string) $_GET["x"]));
+                    $a = new A("safe");
+                    $b3 = new B($a);
+                    $other = new A((string) $_GET["y"]);
+
+                    echo $b1->getX();
+                    echo $b1->a->x;
+                    echo $b1->a->getX();
+                    echo $b3->getX();
+                    echo $b3->a->x;
+                    echo $a->getX();',
+            ],
             'dontTaintSpecializedInstancePropertyOfChildClass' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -4821,6 +4854,111 @@ final class TaintTest extends TestCase
                     $b = new B($a);
                     $a->x = (string) $_GET["x"];
                     echo $b->a->x;',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'taintSpecializedInstanceStoredInAnotherThroughMethods' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public function __construct(public string $x) {}
+
+                        public function getX(): string {
+                            return $this->x;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->getX();
+                        }
+                    }
+
+                    $a = new A((string) $_GET["x"]);
+                    $b = new B($a);
+                    echo $b->getX();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedInstanceStoredInAnotherThroughProperties' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public function __construct(public string $x) {}
+
+                        public function getX(): string {
+                            return $this->x;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->getX();
+                        }
+                    }
+
+                    $a = new A((string) $_GET["x"]);
+                    $b = new B($a);
+                    echo $b->a->x;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedInstanceStoredInAnotherAmongOthers' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public function __construct(public string $x) {}
+
+                        public function getX(): string {
+                            return $this->x;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(public A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->getX();
+                        }
+                    }
+
+                    $b1 = new B(new A("safe"));
+                    $b2 = new B(new A((string) $_GET["x"]));
+                    echo $b2->getX();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'specializedInstanceStoredInAnotherCannotBeChangedByItsMethod' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class A {
+                        public string $x = "";
+
+                        public function setX(string $x): void {
+                            $this->x = $x;
+                        }
+
+                        public function getX(): string {
+                            return $this->x;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class B {
+                        public function __construct(private A $a) {}
+
+                        public function getX(): string {
+                            return $this->a->getX();
+                        }
+                    }
+
+                    $a = new A();
+                    $b = new B($a);
+                    $a->setX((string) $_GET["x"]);
+                    echo $b->getX();',
                 'error_message' => 'InaccessibleProperty',
             ],
             'specializedInstanceCannotChangeAnotherObject' => [
