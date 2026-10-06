@@ -437,6 +437,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void The unserialized ArrayObject
      *
      * @since 5.3.0
+     *
+     * @psalm-impure
      */
     public function unserialize($serialized) { }
 
@@ -447,6 +449,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return string The serialized representation of the ArrayObject.
      *
      * @since 5.3.0
+     *
+     * @psalm-impure
      */
     public function serialize() { }
 
@@ -501,6 +505,27 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-mutation-free
      */
     public function getIteratorClass() { }
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 interface Serializable {

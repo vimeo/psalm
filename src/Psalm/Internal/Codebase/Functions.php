@@ -464,6 +464,16 @@ final class Functions
             }
         }
 
+        // like class_exists(), they trigger the autoloader for a class name, unless told not to
+        if ($function_id === 'class_implements' || $function_id === 'class_parents' || $function_id === 'class_uses') {
+            $class_type = isset($args[0]) ? $type_provider?->getType($args[0]->value) : null;
+            $autoload_type = isset($args[1]) ? $type_provider?->getType($args[1]->value) : null;
+
+            return $class_type?->isObjectType() === true || $autoload_type?->isFalse() === true
+                ? Capabilities::NONE
+                : Capabilities::ALL;
+        }
+
         if (str_starts_with($function_id, 'image')) {
             return Capabilities::IO;
         }

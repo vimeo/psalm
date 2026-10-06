@@ -251,6 +251,113 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MissingPureAnnotation'],
+                'php_version' => '8.0',
+            ],
+            'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
+                'code' => '<?php
+                    /**
+                     * @param Iterator[pure]<int, string> $inner
+                     * @param RecursiveIterator[pure]<int, string> $tree
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function count_all(Iterator $inner, RecursiveIterator $tree): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        foreach (new RegexIterator($inner, "/a/") as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveIteratorIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveTreeIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new ParentIterator($tree) as $_) {
+                            $count++;
+                        }
+                        $count += iterator_count(new EmptyIterator());
+                        /** @var AppendIterator[pure]<int, string, Iterator[pure]<int, string>> */
+                        $append = new AppendIterator();
+                        $append->append($inner);
+                        foreach ($append as $_) {
+                            $count++;
+                        }
+                        /** @var MultipleIterator[pure]<int, string> */
+                        $multiple = new MultipleIterator();
+                        $multiple->attachIterator($inner);
+                        foreach ($multiple as $_) {
+                            $count++;
+                        }
+                        $cache = new CachingIterator($inner, CachingIterator::FULL_CACHE);
+                        foreach ($cache as $_) {}
+                        $recursive = new RecursiveIteratorIterator($tree);
+                        $recursive->setMaxDepth(2);
+                        return $count + count($cache->getCache()) + $recursive->getDepth();
+                    }',
+            ],
+            'splContainersSerializeTheirOwnState' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function copyContainers(ArrayObject $object, SplObjectStorage $storage): array {
+                        $copy = new ArrayObject();
+                        $copy->__unserialize($object->__serialize());
+                        return $copy->__debugInfo() + $storage->__serialize();
+                    }',
+            ],
+            'splFileInfoPathsAreMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function describe(SplFileInfo $file): string {
+                        return $file->getPath() . $file->getFilename() . $file->getExtension() . $file->getBasename(".txt");
+                    }',
+            ],
+            'splFilesAndDirectoriesRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function countLines(string $path): int {
+                        $count = 0;
+                        foreach (new SplFileObject($path) as $_) {
+                            $count++;
+                        }
+                        foreach (new DirectoryIterator($path) as $entry) {
+                            if (!$entry->isDot() && $entry->getMTime() > 0) {
+                                $count++;
+                            }
+                        }
+                        $temp = new SplTempFileObject();
+                        $temp->fwrite("line");
+                        return $count;
+                    }',
+            ],
+            'classImplementsOfAnObjectDoesNotAutoload' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function interfaces(object $object, string $class): array {
+                        return [class_implements($object), class_parents($class, false)];
+                    }',
+            ],
+            'splObserverBindingItsPurityIsMutationFree' => [
+                'code' => '<?php
+                    /** @implements SplObserver[pure] */
+                    final class Observer implements SplObserver {
+                        public int $updates = 0;
+
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        public function update(SplSubject $subject): void {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
             ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
@@ -1333,6 +1440,61 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency',
+            ],
+            'wrappingAnImpureIteratorIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function count_all(Iterator $inner): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        return $count;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'readingFileMetadataRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function modified(SplFileInfo $file): int {
+                        return (int) $file->getMTime();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The context is read-props but method SplFileInfo::getMTime requires io',
+            ],
+            'serializingAnSplDoublyLinkedListMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplDoublyLinkedList<int> $list
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplDoublyLinkedList $list): string {
+                        return $list->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'classUsesOfAClassNameMayAutoload' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function traits(string $class): array {
+                        return class_uses($class) ?: [];
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'splObserverNotBindingItsPurityMayDoAnything' => [
+                'code' => '<?php
+                    final class Observer implements SplObserver {
+                        #[Override]
+                        public function update(SplSubject $subject): void {
+                            echo "updated";
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
