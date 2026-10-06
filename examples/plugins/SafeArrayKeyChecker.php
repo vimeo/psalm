@@ -1,10 +1,7 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Example\Plugin;
 
-use Override;
 use PhpParser\Node\ArrayItem;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -16,9 +13,10 @@ final class SafeArrayKeyChecker implements RemoveTaintsInterface
     /**
      * Called to see what taints should be removed
      *
+     * @return int
      * @psalm-capabilities read-props
      */
-    #[Override]
+    #[\Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
         $item = $event->getExpr();

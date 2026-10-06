@@ -185,6 +185,42 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'splHeapSubclassesNeedNoAnnotationOnCompare' => [
+                'code' => '<?php
+                    /** @extends SplHeap<int> */
+                    final class IntHeap extends SplHeap {
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            return $value1 <=> $value2;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function useHeaps(): int {
+                        /** @var SplMinHeap<int> */
+                        $min = new SplMinHeap();
+                        $min->insert(1);
+                        /** @var SplMaxHeap<int> */
+                        $max = new SplMaxHeap();
+                        $max->insert(2);
+                        return $min->extract() + $max->extract();
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function resizeFixedArray(): int {
+                        /** @var SplFixedArray<int> */
+                        $fixed = new SplFixedArray(1);
+                        $fixed->setSize(2);
+                        $fixed[1] = 1;
+                        $sum = 0;
+                        foreach ($fixed->getIterator() as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+            ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**
@@ -1252,6 +1288,37 @@ final class CapabilitiesTest extends TestCase
                      */
                     function save(SplObjectStorage $storage): string {
                         return $storage->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'iteratingAnArrayObjectMayConstructAnyIteratorClass' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-pure
+                     */
+                    function first(ArrayObject $object): int {
+                        foreach ($object as $value) {
+                            return $value;
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'insertingIntoAnSplHeapSubclassCallsItsCompare' => [
+                'code' => '<?php
+                    /** @extends SplHeap<int> */
+                    final class LoudHeap extends SplHeap {
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            echo "comparing";
+                            return $value1 <=> $value2;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function add(LoudHeap $heap): void {
+                        $heap->insert(1);
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],

@@ -452,13 +452,15 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
 
     /**
      * Create a new iterator from an ArrayObject instance
+     *
+     * Not annotated: it constructs the iterator class, which may be a subclass of ArrayIterator
+     * with a constructor doing anything.
+     *
      * @link http://php.net/manual/en/arrayobject.getiterator.php
      *
      * @return ArrayIterator<TKey, TValue> An iterator from an ArrayObject.
      *
      * @since 5.0.0
-     *
-     * @psalm-mutation-free
      */
     public function getIterator() { }
 

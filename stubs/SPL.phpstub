@@ -336,6 +336,16 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
     public function getSize(): int {}
 
     /**
+     * Change the size of an array
+     * @link https://php.net/manual/en/splfixedarray.setsize.php
+     *
+     * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setSize(int $size) {}
+
+    /**
      * Returns the size of the array.
      * @link https://php.net/manual/en/splfixedarray.count.php
      *
@@ -459,6 +469,18 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @psalm-mutation-free
      */
     public function offsetGet(int $offset) {}
+
+    /**
+     * Returns an iterator over the array, which only reads it
+     * @link https://php.net/manual/en/splfixedarray.getiterator.php
+     *
+     * @return Iterator[read-props]<int, TValue>
+     *
+     * @since 8.0
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Iterator {}
 }
 
 
@@ -521,6 +543,10 @@ abstract class SplHeap implements Iterator, Countable {
 
     /**
      * Compare elements in order to place them correctly in the heap while sifting up
+     *
+     * Not annotated, since every subclass has to implement it: the methods calling it (insert(),
+     * extract(), next()) only have capabilities on SplMinHeap and SplMaxHeap.
+     *
      * @link https://php.net/manual/en/splheap.compare.php
      *
      * @param TValue $value1 The value of the first node being compared.
@@ -528,8 +554,6 @@ abstract class SplHeap implements Iterator, Countable {
      * @return int Positive integer if value1 is greater than value2, 0 if they are equal, negative integer otherwise.
      *
      * @since 5.3.0
-     *
-     * @psalm-mutation-free
      */
     protected abstract function compare($value1, $value2): int;
 
@@ -564,8 +588,6 @@ abstract class SplHeap implements Iterator, Countable {
      * @return TValue The current node value
      *
      * @since 5.3.0
-     *
-     * @psalm-capabilities read-props|write-this-props
      */
     public function extract() {}
 
@@ -577,8 +599,6 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
-     *
-     * @psalm-capabilities read-props|write-this-props
      */
     public function insert($value): void {}
 
@@ -625,8 +645,6 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
-     *
-     * @psalm-capabilities read-props|write-this-props
      */
     public function next(): void {}
 
@@ -688,6 +706,35 @@ abstract class SplHeap implements Iterator, Countable {
  * @template-extends SplHeap<TValue>
  */
 class SplMaxHeap extends SplHeap {
+    /**
+     * Compares the values with the comparison operators, keeping the maximum on the top
+     * @link https://php.net/manual/en/splmaxheap.compare.php
+     *
+     * @param TValue $value1
+     * @param TValue $value2
+     *
+     * @psalm-mutation-free
+     */
+    protected function compare($value1, $value2): int {}
+
+    /**
+     * @return TValue
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function extract() {}
+
+    /**
+     * @param TValue $value
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function insert($value): void {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function next(): void {}
 }
 
 /**
@@ -698,6 +745,35 @@ class SplMaxHeap extends SplHeap {
  * @template-extends SplHeap<TValue>
  */
 class SplMinHeap extends SplHeap {
+    /**
+     * Compares the values with the comparison operators, keeping the minimum on the top
+     * @link https://php.net/manual/en/splminheap.compare.php
+     *
+     * @param TValue $value1
+     * @param TValue $value2
+     *
+     * @psalm-mutation-free
+     */
+    protected function compare($value1, $value2): int {}
+
+    /**
+     * @return TValue
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function extract() {}
+
+    /**
+     * @param TValue $value
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function insert($value): void {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function next(): void {}
 }
 
 /**
@@ -1109,6 +1185,16 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @psalm-capabilities read-props|write-this-props
      */
     public function next() {}
+
+    /**
+     * Seeks the iterator to a position
+     * @link https://php.net/manual/en/splobjectstorage.seek.php
+     *
+     * @since 8.4
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function seek(int $offset) {}
 
     /**
      * Unserializes a storage from its string representation
