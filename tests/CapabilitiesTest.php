@@ -75,6 +75,116 @@ final class CapabilitiesTest extends TestCase
                         return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
                     }',
             ],
+            'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
+                'code' => '<?php
+                    /** @param SplQueue<int> $queue */
+                    function drainQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param SplQueue<int> $queue */
+                    function fillQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            $queue->enqueue(1);
+                            if ($queue->isEmpty()) {
+                                echo "still empty";
+                            }
+                        }
+                    }
+
+                    /** @param SplMinHeap<int> $heap */
+                    function drainHeap(SplMinHeap $heap): void {
+                        if ($heap->isEmpty()) {
+                            return;
+                        }
+                        $heap->extract();
+                        if ($heap->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param ArrayIterator<int, int> $iterator */
+                    function walk(ArrayIterator $iterator): void {
+                        if (!$iterator->valid()) {
+                            return;
+                        }
+                        $iterator->next();
+                        if (!$iterator->valid()) {
+                            echo "done";
+                        }
+                    }
+
+                    function drainFreshQueue(): void {
+                        /** @var SplQueue<int> */
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }',
+            ],
+            'mutatingAnObjectForgetsWhatItsMutationFreeMethodsReturned' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<int> */
+                        private array $items = [1];
+
+                        /** @psalm-mutation-free */
+                        public function isEmpty(): bool {
+                            return $this->items === [];
+                        }
+
+                        public function clear(): void {
+                            $this->items = [];
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function pop(): void {
+                            array_pop($this->items);
+                        }
+                    }
+
+                    function clearBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->clear();
+                        if ($box->isEmpty()) {
+                            echo "cleared";
+                        }
+                    }
+
+                    function popBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->pop();
+                        if ($box->isEmpty()) {
+                            echo "popped";
+                        }
+                    }
+
+                    function clearFreshBox(): void {
+                        $box = new Box();
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->clear();
+                        if ($box->isEmpty()) {
+                            echo "cleared";
+                        }
+                    }',
+            ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**

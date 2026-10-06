@@ -244,6 +244,10 @@ final class MethodCallPurityAnalyzer
                 }
 
                 $result->can_memoize = true;
+
+                if ($method_storage->containing_class_capabilities !== Capabilities::MUTATION_FREE) {
+                    $result->memoized_result_has_mutations = true;
+                }
             }
 
             if ($codebase->find_unused_variables
@@ -327,6 +331,14 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
+        } elseif ($method_storage->capabilities !== Capabilities::ALL
+            && ($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+        ) {
+            // the method is known to write properties, but not which ones (a stub, or a body
+            // writing `$this` by reference): what its receiver's methods returned before may have
+            // changed, even when the receiver is fresh and the caller is not charged. A method that
+            // may do anything is trusted not to, as with rememberPropertyAssignmentsAfterCall
+            $context->removeMutableObjectVars(true);
         }
     }
 
