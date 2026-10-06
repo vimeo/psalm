@@ -1787,8 +1787,10 @@ final class TaintFlowResolution
      * it (see dependOnClass()). Those of an entry are, and those of a filter knowing a single fact (e.g. the
      * key of the property its walk read) too: each of its walks only observes that one so far, so splitting
      * them by the class of another one (e.g. the key of the array that property holds, fetched further on)
-     * multiplies them by the classes of that one at most. A filter knowing more isn't split further: that
-     * would make a walk for every combination of classes of all the open assignments the walks observe.
+     * multiplies them by the classes of that one at most. A filter knowing more isn't split by class: that
+     * would make a walk for every combination of classes of all the open assignments the walks observe. A
+     * fetch in the walk of a call it makes is told apart in it by whether it ignores the open assignment
+     * only (see passesFetch()).
      *
      * @psalm-mutation-free
      */
@@ -1968,8 +1970,8 @@ final class TaintFlowResolution
     /**
      * Whether a fetch of key $fetched_key doesn't ignore the open assignment of type $family at depth $depth
      * of the flows of state $state, or null if they don't know it: it is one of those of the flows entering
-     * their context, which decides (see dependOnClass()), through $levels more convergences at most (see
-     * getAssignmentClass()).
+     * their context, which decides (see dependOnClass(), or getFilter() in a filter not split by class),
+     * through $levels more convergences at most (see getAssignmentClass()).
      */
     private function passesFetch(int $state, int $family, int $depth, string $fetched_key, int $levels): ?bool
     {
@@ -2012,6 +2014,17 @@ final class TaintFlowResolution
         }
 
         if (!$this->tracksClasses($context)) {
+            if (!$is_convergence) {
+                // A fetch in the walk of a call made there only asks whether it ignores that open assignment: the
+                // flows go on in the filter of their context for the calls whose open assignment it doesn't ignore
+                // (see getFilter()), one per fetched key and not per class. Else a call made past two observed
+                // open assignments would take everything assigned under any key (e.g. the values of an array as
+                // its keys).
+                $this->copyToFilter($state, $this->getFilter($context, $family, $call_depth, $fetched_key));
+
+                return null;
+            }
+
             // see getAssignmentClass()
             return true;
         }
