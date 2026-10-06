@@ -22,6 +22,7 @@ use function implode;
 use function ksort;
 use function max;
 use function min;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -68,12 +69,20 @@ final class TaintFlowResolution
      */
     private const FAMILIES = ['arrayvalue', 'property'];
     private const ARRAY_FAMILY = 0;
+    private const PROPERTY_FAMILY = 1;
 
     /**
      * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
      * it, a fetch of an array key doesn't.
      */
     private const KEY_CLASS = 'key';
+
+    /**
+     * The key a scalar conversion (a cast, a concatenation) of a value that may be an array observes (see
+     * getPathTypeEffects()): no class passes it (see classPassesFetch()), since a converted array is "Array", or
+     * 0/1, never what it holds.
+     */
+    private const CONVERSION_KEY = '#';
 
     /**
      * How many of its innermost open assignments of each expression type a flow outside of any context keeps
@@ -1004,6 +1013,11 @@ final class TaintFlowResolution
             return [-1, '!' . substr($path_type, 21), -1, -1];
         }
 
+        if (str_ends_with($path_type, TaintFlowGraph::ARRAY_CONVERSION_SUFFIX)) {
+            // a conversion of a value that may be the array the innermost open array assignment put the taint in
+            return [self::ARRAY_FAMILY, self::CONVERSION_KEY, -1, -1];
+        }
+
         $observed_family = -1;
         $observed_key = null;
         $closed_family = -1;
@@ -1146,7 +1160,11 @@ final class TaintFlowResolution
             // where the flow knows that's the innermost one: an unknown key is fetched too often for the walks
             // to be told apart by it in filters (see getFilter()).
             $next = self::IGNORED;
-        } elseif ($observed_family === -1) {
+        } elseif ($observed_family === -1
+            || ($observed_key === self::CONVERSION_KEY && ($made[self::PROPERTY_FAMILY] ?? []))
+        ) {
+            // (a conversion of what may also be an object the taint is in a property of keeps it: its
+            // __toString() may give it)
             $next = $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family]) {
             $next = self::classPassesFetch(
@@ -2099,6 +2117,10 @@ final class TaintFlowResolution
      */
     private static function classPassesFetch(string $class, string $fetched_key): bool
     {
+        if ($fetched_key === self::CONVERSION_KEY) {
+            return false;
+        }
+
         if (str_starts_with($fetched_key, '!')) {
             // the replacement of the value under a key (see getPathTypeEffects()): only what was assigned under
             // that key goes
