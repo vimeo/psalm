@@ -2619,6 +2619,52 @@ final class TaintTest extends TestCase
                     mail("admin@example.com", "Report", "body", "", "-f" . $_GET["from"]);',
                 'error_message' => 'TaintedShell',
             ],
+            'taintedSsrfInImageCreateFromJpeg' => [
+                'code' => '<?php
+                    imagecreatefromjpeg((string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedFileInPharDataExtractTo' => [
+                'code' => '<?php
+                    $archive = new PharData("/tmp/a.tar"); $archive->extractTo((string) $_GET["dir"]);',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintedSsrfInDomDocumentLoad' => [
+                'code' => '<?php
+                    (new DOMDocument())->load((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInSimplexmlLoadFile' => [
+                'code' => '<?php
+                    simplexml_load_file((string) $_GET["url"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInMd5File' => [
+                'code' => '<?php
+                    md5_file((string) $_GET["path"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedSsrfInSoapClient' => [
+                'code' => '<?php
+                    new SoapClient((string) $_GET["wsdl"]);',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'taintedHtmlFromDnsRecord' => [
+                'code' => '<?php
+                    $records = dns_get_record("example.com", DNS_TXT); echo (string) ($records[0]["txt"] ?? "");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlFromReverseDns' => [
+                'code' => '<?php
+                    echo (string) gethostbyaddr("127.0.0.1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedFileInPharAddFile' => [
+                'code' => '<?php
+                    $phar = new Phar("/tmp/a.phar");
+                    $phar->addFile((string) $_GET["path"]);',
+                'error_message' => 'TaintedFile',
+            ],
             'taintedSsrfInCurlSetoptArray' => [
                 'code' => '<?php
                     $ch = curl_init();
