@@ -1459,7 +1459,7 @@ final class CapabilitiesTest extends TestCase
                     function modified(SplFileInfo $file): int {
                         return (int) $file->getMTime();
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The context is read-props but method SplFileInfo::getMTime requires io',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38 - The context is read-props but method SplFileInfo::getMTime requires io',
             ],
             'serializingAnSplDoublyLinkedListMayDoAnything' => [
                 'code' => '<?php
