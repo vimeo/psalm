@@ -2936,6 +2936,68 @@ final class TaintTest extends TestCase
                     echo $rows[0]["name"];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintFlowReachingANodeThroughManySpecializedCallEntries' => [
+                // Each call enters keep() with an entry of its own, arriving a round later than the one before:
+                // past a few entries, Store::$value is widened, and the last flow must still be found
+                'code' => '<?php
+                    final class Store {
+                        /** @var array<string, string> */
+                        public static array $value = [];
+                    }
+
+                    /**
+                     * @param array<string, string> $s
+                     * @return array<string, string>
+                     * @psalm-taint-specialize
+                     */
+                    function keep(array $s): array {
+                        Store::$value = $s;
+                        return Store::$value;
+                    }
+
+                    $t0 = (string) ($_GET["x"] ?? "");
+                    $t1 = $t0;
+                    $t2 = $t1;
+                    $t3 = $t2;
+                    $t4 = $t3;
+                    $t5 = $t4;
+                    $t6 = $t5;
+                    $t7 = $t6;
+                    $t8 = $t7;
+                    $t9 = $t8;
+                    $t10 = $t9;
+                    $t11 = $t10;
+                    $t12 = $t11;
+                    $t13 = $t12;
+                    $t14 = $t13;
+                    $t15 = $t14;
+                    $t16 = $t15;
+                    $t17 = $t16;
+                    $t18 = $t17;
+                    $t19 = $t18;
+                    $t20 = $t19;
+                    keep(["k1" => $t1]);
+                    keep(["k2" => $t2]);
+                    keep(["k3" => $t3]);
+                    keep(["k4" => $t4]);
+                    keep(["k5" => $t5]);
+                    keep(["k6" => $t6]);
+                    keep(["k7" => $t7]);
+                    keep(["k8" => $t8]);
+                    keep(["k9" => $t9]);
+                    keep(["k10" => $t10]);
+                    keep(["k11" => $t11]);
+                    keep(["k12" => $t12]);
+                    keep(["k13" => $t13]);
+                    keep(["k14" => $t14]);
+                    keep(["k15" => $t15]);
+                    keep(["k16" => $t16]);
+                    keep(["k17" => $t17]);
+                    keep(["k18" => $t18]);
+                    keep(["k19" => $t19]);
+                    exec(keep(["k20" => $t20])["k20"]);',
+                'error_message' => 'TaintedShell',
+            ],
             'taintArrayItemWrittenByAForeachByReferenceBeforeABreak' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];

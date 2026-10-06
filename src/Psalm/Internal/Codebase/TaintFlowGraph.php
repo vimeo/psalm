@@ -87,6 +87,12 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
 
+    /**
+     * How many taint masks and specialized call entries a node is visited with before the flows reaching it are
+     * widened (see getChildNodes()).
+     */
+    private const MAX_NODE_CONTEXTS = 16;
+
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
 
@@ -1257,19 +1263,31 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
+            $path_type = $path->type;
+            $to_path_types = self::appendPathType($open_assignments, $path_type);
+            $to_context = $context;
+
+            // A node reached in the context of many specialized call entries (a property they all write, and
+            // everything reading it) would be walked once per entry: past a few, the flow forgets the entry and goes
+            // on as if outside of any call, exiting through all of the call sites. It forgets its open assignments
+            // too, so that any fetch takes it: outside of a call, flows with the same taints are merged, and the
+            // open assignments of the first would decide for all of them. Both can only add flows
+            if ($context !== null && count($visited_source_ids[$to_id] ?? []) >= self::MAX_NODE_CONTEXTS) {
+                $to_context = null;
+                $to_path_types = [$path_type];
+            }
+
             // The visited guard keeps the fixed point finite, so a visited node is never
             // propagated from again. A visited sink still gets to report, though: the flow
             // arriving through this edge may be a different one from the flow that visited it
             // first (it can arrive rounds later when its path is longer).
-            $state_key = self::getStateKey($new_taints, $context);
+            $state_key = self::getStateKey($new_taints, $to_context);
             $already_visited = isset($visited_source_ids[$to_id][$state_key]);
             $sink = $sinks[$to_id] ?? null;
 
             if ($already_visited && $sink === null) {
                 continue;
             }
-
-            $path_type = $path->type;
 
             if (self::shouldIgnoreFetch($path_type, 'arraykey', $open_assignments)) {
                 continue;
@@ -1297,8 +1315,15 @@ final class TaintFlowGraph extends DataFlowGraph
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
-                    if ($context !== null) {
-                        $this->addEntrySink($context, $sink, $generated_source, $matching_taints, $config, $codebase);
+                    if ($to_context !== null) {
+                        $this->addEntrySink(
+                            $to_context,
+                            $sink,
+                            $generated_source,
+                            $matching_taints,
+                            $config,
+                            $codebase,
+                        );
                     } else {
                         $this->reportTaintedFlowOnce($generated_source, $sink, $matching_taints, $config, $codebase);
                     }
@@ -1318,8 +1343,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_sources[$key] = $this->nodes[$to_id]->withFlow(
                 $new_taints,
                 $generated_source,
-                self::appendPathType($open_assignments, $path_type),
-                $context,
+                $to_path_types,
+                $to_context,
             );
         }
     }
