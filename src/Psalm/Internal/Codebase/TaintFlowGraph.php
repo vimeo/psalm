@@ -30,6 +30,8 @@ use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
+use Psalm\Issue\TaintedUrlComponent;
+use Psalm\Issue\TaintedUrlPath;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -1351,6 +1353,14 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
 
+        // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
+        // its path: each is reported as the most general issue alone
+        if ($unreported_taints & TaintKind::INPUT_SSRF) {
+            $unreported_taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
+        } elseif ($unreported_taints & TaintKind::INPUT_URL_COMPONENT) {
+            $unreported_taints &= ~TaintKind::INPUT_URL_PATH;
+        }
+
         if ($sink->code_location
             && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
         ) {
@@ -1438,6 +1448,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_SSRF => new TaintedSSRF(
                     'Detected tainted network request',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_COMPONENT => new TaintedUrlComponent(
+                    'Detected tainted URL component',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_PATH => new TaintedUrlPath(
+                    'Detected tainted URL path segment',
                     $issue_location,
                     $issue_trace,
                     $path,

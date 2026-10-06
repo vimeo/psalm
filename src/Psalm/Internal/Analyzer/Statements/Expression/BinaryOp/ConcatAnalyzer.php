@@ -49,11 +49,10 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function count;
-use function in_array;
 use function preg_match;
 use function reset;
 use function strlen;
-use function strtolower;
+use function strpbrk;
 
 /**
  * @internal
@@ -64,23 +63,28 @@ final class ConcatAnalyzer
 
     /**
      * The taints a value can't have once appended to $prefix, if $prefix is the start of a URL fixing its origin: a
-     * scheme or `//`, a host and the `/`, `?` or `#` ending it. What follows such a prefix can only change the path,
-     * the query or the fragment of the URL, never the server it is sent to (`ssrf` taint). With a network scheme it
-     * can't make the URL a local file either (`file` taint), unlike with `file://`, `php://`... or no scheme.
+     * network scheme or `//`, a host and the `/`, `?` or `#` ending it. What follows such a prefix can only change the
+     * path, the query or the fragment of the URL, never the server it is sent to (`ssrf` taint). With a network scheme
+     * it can't make the URL a local file either (`file` taint), unlike with no scheme. After any other scheme, a stream
+     * wrapper (`php://filter/resource=`, `compress.zlib://https://`...), it can still be the URL of any server. In the
+     * query or the fragment, it can't be a `..` segment of the path either (`url_path` taint).
      *
      * @psalm-pure
      */
     public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
     {
-        if (preg_match('~^(?:([a-z][a-z\d+.\-]*):)?//[^/?#]+[/?#]~i', $prefix, $matches) !== 1) {
+        if (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) !== 1) {
             return 0;
         }
 
-        $scheme = strtolower($matches[1] ?? '');
+        $removed_taints = ($matches[1] ?? '') === ''
+            ? TaintKind::INPUT_SSRF
+            : TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE;
 
-        return in_array($scheme, ['http', 'https', 'ftp', 'ftps'], true)
-            ? TaintKind::INPUT_SSRF | TaintKind::INPUT_FILE
-            : TaintKind::INPUT_SSRF;
+        // from the `/`, `?` or `#` ending the host
+        return strpbrk($matches[2] ?? '', '?#') === false
+            ? $removed_taints
+            : $removed_taints | TaintKind::INPUT_URL_PATH;
     }
 
     /**
@@ -104,69 +108,81 @@ final class ConcatAnalyzer
     }
 
     /**
-     * The literal strings $expr can start with, as far as they are known: none if it can start with anything
+     * The literal strings $expr, already analyzed, can start with as far as they are known: none if it can start with
+     * anything
      *
      * @return list<string>
      */
     public static function getLiteralPrefixes(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): array
     {
         $type = $statements_analyzer->node_data->getType($expr);
-        $literals = $type ? self::getLiteralStrings($type) : null;
 
-        if ($literals !== null) {
-            return $literals;
+        if ($type && $type->allStringLiterals()) {
+            return self::getLiteralValues($type);
         }
 
-        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
-            $left_prefixes = self::getLiteralPrefixes($statements_analyzer, $expr->left);
-
-            $left_type = $statements_analyzer->node_data->getType($expr->left);
-
-            // all of the left side is known: what the right side starts with follows it
-            if ($left_prefixes !== [] && $left_type && self::getLiteralStrings($left_type) !== null) {
-                $right_prefixes = self::getLiteralPrefixes($statements_analyzer, $expr->right) ?: [''];
-
-                if (count($left_prefixes) * count($right_prefixes) <= self::MAX_LITERALS) {
-                    $prefixes = [];
-
-                    foreach ($left_prefixes as $left_prefix) {
-                        foreach ($right_prefixes as $right_prefix) {
-                            $prefixes[] = $left_prefix . $right_prefix;
-                        }
-                    }
-
-                    return $prefixes;
-                }
-            }
-
-            return $left_prefixes;
-        }
-
-        if ($expr instanceof PhpParser\Node\Scalar\InterpolatedString) {
-            $first_part = $expr->parts[0] ?? null;
-
-            return $first_part instanceof PhpParser\Node\InterpolatedStringPart ? [$first_part->value] : [];
-        }
-
-        return [];
+        // the start of a concatenation or of an interpolated string, recorded when it was analyzed
+        return $statements_analyzer->node_data->getLiteralPrefixes($expr) ?? [];
     }
 
     /**
-     * The values of a type of string literals, null if it can be any other value
+     * The literal strings $left . $right, both already analyzed, can start with (see getLiteralPrefixes())
      *
-     * @return non-empty-list<string>|null
+     * @return list<string>
+     */
+    public static function getConcatLiteralPrefixes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+    ): array {
+        $left_type = $statements_analyzer->node_data->getType($left);
+
+        if (!$left_type || !$left_type->allStringLiterals()) {
+            return self::getLiteralPrefixes($statements_analyzer, $left);
+        }
+
+        $left_values = self::getLiteralValues($left_type);
+
+        // all of the left side is known: what the right side starts with follows it
+        return self::concatLiterals($left_values, self::getLiteralPrefixes($statements_analyzer, $right) ?: [''])
+            ?? $left_values;
+    }
+
+    /**
+     * Each of $prefixes followed by each of $suffixes, null if that's too many strings
+     *
+     * @param list<string> $prefixes
+     * @param list<string> $suffixes
+     * @return list<string>|null
+     * @psalm-pure
+     */
+    public static function concatLiterals(array $prefixes, array $suffixes): ?array
+    {
+        if (count($prefixes) * count($suffixes) > self::MAX_LITERALS) {
+            return null;
+        }
+
+        $strings = [];
+
+        foreach ($prefixes as $prefix) {
+            foreach ($suffixes as $suffix) {
+                $strings[] = $prefix . $suffix;
+            }
+        }
+
+        return $strings;
+    }
+
+    /**
+     * @return list<string>
      * @psalm-mutation-free
      */
-    private static function getLiteralStrings(Union $type): ?array
+    public static function getLiteralValues(Union $type): array
     {
         $values = [];
 
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if (!$atomic instanceof TLiteralString) {
-                return null;
-            }
-
-            $values[] = $atomic->value;
+        foreach ($type->getLiteralStrings() as $literal) {
+            $values[] = $literal->value;
         }
 
         return $values;

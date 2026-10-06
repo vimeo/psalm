@@ -482,6 +482,8 @@
             <xs:element name="TaintedSystemSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedTextWithQuotes" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUnserialize" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUrlComponent" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedUrlPath" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedUserSecret" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedXpath" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="ArgumentIssueHandlerType" minOccurs="0" />

@@ -33,6 +33,8 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `include` - used for strings that could contain a path being included
 - `eval` - used for strings that could contain code
 - `ssrf` - used for strings that could contain text passed to Curl or similar
+- `url_component` - used for strings that could contain URL syntax (`/`, `?`, `&`, `#`...) placed in the path, query or fragment of a URL
+- `url_path` - used for strings that could be a `.` or `..` segment of the path of a URL, even URL-encoded
 - `file` - used for strings that could contain a path
 - `cookie` - used for strings that could contain a http cookie
 - `header` - used for strings that could contain a http header
