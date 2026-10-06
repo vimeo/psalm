@@ -1338,6 +1338,8 @@ final class PreloaderList {
         \Psalm\Issue\TaintedSystemSecret::class,
         \Psalm\Issue\TaintedTextWithQuotes::class,
         \Psalm\Issue\TaintedUnserialize::class,
+        \Psalm\Issue\TaintedUrlComponent::class,
+        \Psalm\Issue\TaintedUrlPath::class,
         \Psalm\Issue\TaintedUserSecret::class,
         \Psalm\Issue\TaintedXpath::class,
         \Psalm\Issue\TooFewArguments::class,

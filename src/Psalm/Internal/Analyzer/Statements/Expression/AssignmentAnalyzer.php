@@ -929,6 +929,11 @@ final class AssignmentAnalyzer
             $flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
+        // what the assigned value cannot hold, given its type
+        if (!$flow_graph instanceof VariableUseGraph) {
+            $removed_taints |= $type->getTaintsToRemove();
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $flow_graph->addPath(
                 $parent_node,
@@ -1211,7 +1216,46 @@ final class AssignmentAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            self::taintByRefArrayItem($statements_analyzer, $stmt, $by_ref_out_type, $context);
+            // the array holds what the call leaves in the item, as if it was assigned to it; the argument
+            // itself keeps the type it was passed with
+            $arg_type = $statements_analyzer->node_data->getType($stmt);
+
+            ArrayAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                null,
+                $by_ref_out_type,
+            );
+
+            if ($arg_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $arg_type);
+            }
+
+            // and the call may read the item: the array is used
+            $root_var = $stmt->var;
+            while ($root_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $root_var = $root_var->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getExtendedVarId(
+                $root_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_var_id !== null
+                && isset($context->vars_in_scope[$root_var_id])
+                && ($variable_use_graph = $statements_analyzer->variable_use_graph)
+            ) {
+                foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $parent_node) {
+                    $variable_use_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'variable-use',
+                    );
+                }
+            }
         }
 
         if ($var_id) {
@@ -1435,67 +1479,6 @@ final class AssignmentAnalyzer
         }
 
         return $array->fallback_params[1];
-    }
-
-    /**
-     * The arrays an item passed by reference is in hold what the call leaves in it too (see
-     * ArrayFetchAnalyzer::taintArrayFetch() and ArrayAssignmentAnalyzer).
-     */
-    private static function taintByRefArrayItem(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\ArrayDimFetch $item,
-        Union $by_ref_out_type,
-        Context $context,
-    ): void {
-        if (!($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())) {
-            return;
-        }
-
-        $item_parent_nodes = $by_ref_out_type->parent_nodes;
-
-        while ($item_parent_nodes && $item instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            $array_var_id = ExpressionIdentifier::getExtendedVarId(
-                $item->var,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer,
-            );
-
-            if ($array_var_id === null || !isset($context->vars_in_scope[$array_var_id])) {
-                return;
-            }
-
-            $array_node = DataFlowNode::getForAssignment(
-                $array_var_id,
-                new CodeLocation($statements_analyzer->getSource(), $item->var),
-            );
-
-            $graph->addNode($array_node);
-
-            $dim_type = $item->dim ? $statements_analyzer->node_data->getType($item->dim) : null;
-            $path_type = 'arrayvalue-assignment';
-
-            if ($dim_type && $dim_type->isSingleStringLiteral()) {
-                $path_type .= '-\'' . $dim_type->getSingleStringLiteral()->value . '\'';
-            } elseif ($dim_type && $dim_type->isSingleIntLiteral()) {
-                $path_type .= '-\'' . $dim_type->getSingleIntLiteral()->value . '\'';
-            }
-
-            foreach ($item_parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $array_node, $path_type);
-            }
-
-            foreach ($context->vars_in_scope[$array_var_id]->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $array_node, '=');
-            }
-
-            $item_parent_nodes = [$array_node->id => $array_node];
-
-            $context->vars_in_scope[$array_var_id] = $context->vars_in_scope[$array_var_id]->setParentNodes(
-                $item_parent_nodes,
-            );
-
-            $item = $item->var;
-        }
     }
 
     /**

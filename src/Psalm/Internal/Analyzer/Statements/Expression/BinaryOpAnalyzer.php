@@ -185,14 +185,26 @@ final class BinaryOpAnalyzer
                     }
                 }
 
+                $literal_prefixes = ConcatAnalyzer::getConcatLiteralPrefixes(
+                    $statements_analyzer,
+                    $stmt->left,
+                    $stmt->right,
+                );
+                $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
+
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
+                    // after the start of a URL fixing its server (the left operand's, and the right operand's own
+                    // literal start when the left operand is a literal), the right operand can't choose it
+                    $right_removed_taints = $removed_taints
+                        | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
+
                     foreach ($stmt_right_type->parent_nodes as $parent_node) {
                         $graph->addPath(
                             $parent_node,
                             $new_parent_node,
                             'concat',
                             $added_taints,
-                            $removed_taints,
+                            $right_removed_taints,
                         );
                     }
                 }

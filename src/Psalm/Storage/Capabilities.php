@@ -67,6 +67,15 @@ final class Capabilities
     public const EXTERNAL_MUTATION_FREE = self::READ_PROPS | self::WRITE_THIS_PROPS | self::WRITE_REFS;
 
     /**
+     * What the methods of a class with `@psalm-taint-specialize` may do. Each instance of such a class
+     * holds its own taints, which only follow the variables the instance is assigned to: the instance
+     * may not change once constructed, as the change would not reach the other variables holding it,
+     * and its methods may not write other objects or global state, from which another call could read
+     * back what this one wrote, as only this call's taints come out of it.
+     */
+    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO;
+
+    /**
      * The capabilities a method call still requires from its caller when the receiver's own state
      * may be mutated freely (the receiver is freshly created or otherwise pure-compatible):
      * everything except what only concerns the receiver.

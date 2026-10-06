@@ -918,6 +918,7 @@ final class ClassLikeNodeScanner
             $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
             // `@psalm-capabilities pure` and `@psalm-capabilities read-props` are specialized like
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
+            $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
                     && $deferred_capabilities === []
