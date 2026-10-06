@@ -198,6 +198,18 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $specialize_instance = false;
 
     /**
+     * Whether the class, or a class it extends, has `@psalm-taint-specialize`: its instances are
+     * specialized, so they may not change once constructed and its methods may not change other
+     * objects or global state (see {@see Capabilities::TAINT_SPECIALIZED})
+     */
+    public bool $taint_specialize = false;
+
+    /**
+     * Whether the class is only specialized because a class it extends has `@psalm-taint-specialize`
+     */
+    public bool $inherits_taint_specialize = false;
+
+    /**
      * @var array<lowercase-string, MethodStorage>
      */
     public array $methods = [];

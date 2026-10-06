@@ -498,6 +498,17 @@ final class Populator
             }
         }
 
+        if ($storage->taint_specialize) {
+            $storage->capabilities &= Capabilities::TAINT_SPECIALIZED;
+
+            foreach ($storage->properties as $property) {
+                if (!$property->is_static) {
+                    $property->readonly = true;
+                    $property->allow_private_mutation = false;
+                }
+            }
+        }
+
         if ($storage->capabilities !== Capabilities::ALL) {
             foreach ($storage->methods as $method) {
                 if (!$method->has_mutations_annotation) {
@@ -832,8 +843,10 @@ final class Populator
         }
 
         // the instances of a child class are instances of its parent class: their properties hold per-instance
-        // taints in the methods of both
-        if ($parent_storage->specialize_instance) {
+        // taints in the methods of both, which may not change them once constructed (see ClassAnalyzer)
+        if ($parent_storage->taint_specialize && !$storage->taint_specialize) {
+            $storage->taint_specialize = true;
+            $storage->inherits_taint_specialize = !$storage->specialize_instance;
             $storage->specialize_instance = true;
         }
 

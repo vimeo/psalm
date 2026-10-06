@@ -2537,6 +2537,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
+
+            // the class is held to it all the same (see Populator), but should say so
+            if ($storage->inherits_taint_specialize && $parent_class_storage->taint_specialize) {
+                IssueBuffer::maybeAdd(
+                    new ImmutableDependency(
+                        $parent_fq_class_name . ' is marked with @psalm-taint-specialize, but '
+                            . $fq_class_name . ' is not',
+                        $code_location,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+            }
             $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->capabilities);
 
             if ($codebase->store_node_types) {

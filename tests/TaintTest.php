@@ -1254,8 +1254,10 @@ final class TaintTest extends TestCase
                             $this->id = $userId;
                         }
 
-                        public function setId(string $userId) : void {
-                            $this->id = $userId;
+                        public function withId(string $userId) : static {
+                            $new = clone $this;
+                            $new->id = $userId;
+                            return $new;
                         }
                     }
 
@@ -1265,7 +1267,7 @@ final class TaintTest extends TestCase
 
                     $u = new User("5");
                     echoId($u);
-                    $u->setId($_GET["user_id"]);',
+                    $v = $u->withId($_GET["user_id"]);',
             ],
             'specializeStaticMethod' => [
                 'code' => '<?php
@@ -1469,6 +1471,17 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     move_uploaded_file($_FILES["upload"]["tmp_name"], "/tmp/upload");',
             ],
+            'exceptionsAreNotSpecialized' => [
+                'code' => '<?php
+                    final class MyException extends Exception {
+                        private static int $count = 0;
+
+                        public function setMessage(string $message): void {
+                            $this->message = $message;
+                            self::$count++;
+                        }
+                    }',
+            ],
             'dontTaintSpecializedInstancePropertyOfChildClass' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -1476,6 +1489,7 @@ final class TaintTest extends TestCase
                         public string $x = "";
                     }
 
+                    /** @psalm-taint-specialize */
                     final class ChildStringHolder extends StringHolder {
                         public function __construct(string $x) {
                             $this->x = $x;
@@ -1515,6 +1529,7 @@ final class TaintTest extends TestCase
                         }
                     }
 
+                    /** @psalm-taint-specialize */
                     final class ChildStringHolder extends StringHolder {}
 
                     $tainted = new ChildStringHolder((string) $_GET["x"]);
@@ -3791,8 +3806,10 @@ final class TaintTest extends TestCase
                             $this->id = $userId;
                         }
 
-                        public function setId(string $userId) : void {
-                            $this->id = $userId;
+                        public function withId(string $userId) : static {
+                            $new = clone $this;
+                            $new->id = $userId;
+                            return $new;
                         }
                     }
 
@@ -3801,7 +3818,7 @@ final class TaintTest extends TestCase
                     }
 
                     $u = new User("5");
-                    $u->setId($_GET["user_id"]);
+                    $u = $u->withId($_GET["user_id"]);
                     echoId($u);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -3812,8 +3829,9 @@ final class TaintTest extends TestCase
                         public string $x = "";
                     }
 
+                    /** @psalm-taint-specialize */
                     final class ChildStringHolder extends StringHolder {
-                        public function setX(string $x): void {
+                        public function __construct(string $x) {
                             $this->x = $x;
                         }
                     }
@@ -3822,8 +3840,7 @@ final class TaintTest extends TestCase
                         echo $holder->x;
                     }
 
-                    $holder = new ChildStringHolder();
-                    $holder->setX($_GET["x"]);
+                    $holder = new ChildStringHolder($_GET["x"]);
                     echoX($holder);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -3842,6 +3859,7 @@ final class TaintTest extends TestCase
                         }
                     }
 
+                    /** @psalm-taint-specialize */
                     final class ChildStringHolder extends StringHolder {}
 
                     $tainted = new ChildStringHolder((string) $_GET["x"]);
@@ -4700,7 +4718,7 @@ final class TaintTest extends TestCase
                     echo (string) $c->p["v"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'taintSpecializedMethodCallOnInstanceTaintedByAPreviousCall' => [
+            'specializedInstanceCannotChange' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
                     final class Box {
@@ -4719,7 +4737,90 @@ final class TaintTest extends TestCase
                     $a = new Box();
                     $unused = $a->take($_GET["a"]);
                     echo $a->last();',
-                'error_message' => 'TaintedHtml',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'specializedInstanceCannotChangeThroughPrivateMutation' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Box {
+                        /**
+                         * @psalm-readonly-allow-private-mutation
+                         */
+                        public string $last = "";
+
+                        public function take(string $s): void {
+                            $this->last = $s;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'specializedInstanceCannotBeChangedOutsideOfIt' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Holder {
+                        public string $x = "";
+                    }
+
+                    $a = new Holder();
+                    $b = $a;
+                    $b->x = $_GET["x"];
+                    echo $a->x;',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'specializedInstanceCannotChangeAnotherObject' => [
+                'code' => '<?php
+                    final class Registry {
+                        public string $v = "";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Child {
+                        public function __construct(private Registry $r) {}
+
+                        public function remember(string $s): void {
+                            $this->r->v = $s;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'specializedInstanceCannotChangeGlobalState' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Child {
+                        private static string $last = "";
+
+                        public function remember(string $s): void {
+                            self::$last = $s;
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
+            ],
+            'childOfSpecializedClassMustBeSpecialized' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class Base {}
+
+                    final class Child extends Base {}',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'childOfSpecializedClassIsSpecializedWithoutTheAnnotation' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    class Base {}
+
+                    /** @psalm-suppress ImmutableDependency */
+                    final class Child extends Base {
+                        private static string $last = "";
+
+                        public function remember(string $s): void {
+                            self::$last = $s;
+                        }
+
+                        public function recall(): string {
+                            return self::$last;
+                        }
+                    }',
+                'error_message' => 'ImpureStaticProperty',
             ],
             'dontSpecializeImpureFunction' => [
                 'code' => '<?php

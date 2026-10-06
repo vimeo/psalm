@@ -256,7 +256,26 @@ $user2 = new User($_GET["name"]);
 echoUserName($user1);
 ```
 
-The classes that extend a class with `@psalm-taint-specialize` are specialized too.
+Each instance then holds its own taints, which only follow the variables the instance is assigned to. So Psalm makes sure the instance doesn't change once constructed, as the change wouldn't reach the other variables holding the same instance: its properties are readonly, and its methods can't write them. Nor can its methods write other objects, static properties or global variables, from which another instance could read back what this one wrote. To get a changed instance, create a new one, for instance by cloning it:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-specialize
+ */
+class User {
+    public function __construct(public string $name) {}
+
+    public function withName(string $name): static {
+        $new = clone $this;
+        $new->name = $name;
+        return $new;
+    }
+}
+```
+
+The classes that extend a class with `@psalm-taint-specialize` are specialized too, and held to the same rules: Psalm reports an [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md) issue for those that don't have the annotation themselves.
 
 And, because it’s form of purity enforcement, `@psalm-immutable` can also be used:
 
