@@ -53,14 +53,24 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        // parent::/self:: run the method on `$this`, an object of its class (see InheritedMethodTaints)
+        // parent::/self::, and A:: naming a class `$this` is an object of, run the method on `$this`, an object of
+        // its class (see InheritedMethodTaints)
         if ($stmt->class instanceof PhpParser\Node\Name
-            && in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
+            && $stmt->class->toLowerString() !== 'static'
             && !$stmt->isFirstClassCallable()
             && isset($context->vars_in_scope['$this'])
         ) {
+            $named_class = in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
+                ? null
+                : ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->class, $statements_analyzer->getAliases());
+
             foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $this_atomic) {
-                if ($this_atomic instanceof TNamedObject) {
+                if ($this_atomic instanceof TNamedObject
+                    && ($named_class === null
+                        || strtolower($named_class) === strtolower($this_atomic->value)
+                        || ($codebase->classlike_storage_provider->has($this_atomic->value)
+                            && $codebase->classlikes->classExtends($this_atomic->value, $named_class)))
+                ) {
                     $stmt->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
 
                     foreach ($stmt->getArgs() as $arg) {
