@@ -54,7 +54,6 @@ use function count;
 use function end;
 use function in_array;
 use function ksort;
-use function preg_match;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -81,6 +80,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * enterSpecializedCall()).
      */
     private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
+
+    /**
+     * How many taint masks and specialized call entries a node is visited with before the flows reaching it forget
+     * their entry (see getChildNodes()).
+     */
+    private const MAX_NODE_CONTEXTS = 16;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -1204,10 +1209,13 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            // A property is shared by every object of its class, so what reaches it no longer depends on the
-            // specialized call it went through: carrying the call's entry on would walk everything reading the
-            // property once per entry
-            $to_context = $context !== null && self::isSharedNode($this->nodes[$to_id]) ? null : $context;
+            // A node reached in the context of many specialized call entries (a property they all write, and
+            // everything reading it) would be walked once per entry: past a few, the flow forgets the entry and
+            // goes on as if outside of any call, exiting through all of the call sites, which can only add flows
+            $to_context = $context !== null
+                && count($visited_source_ids[$to_id] ?? []) >= self::MAX_NODE_CONTEXTS
+                ? null
+                : $context;
 
             // The visited guard keeps the fixed point finite, so a visited node is never
             // propagated from again. A visited sink still gets to report, though: the flow
@@ -1273,18 +1281,6 @@ final class TaintFlowGraph extends DataFlowGraph
                 $to_context,
             );
         }
-    }
-
-    /**
-     * Whether the node is the unspecialized node of a property, which all the objects of its class share.
-     *
-     * @psalm-pure
-     */
-    private static function isSharedNode(DataFlowNode $node): bool
-    {
-        return $node->specialization_key === null
-            && $node->code_location === null
-            && preg_match('/^[^ ]+::\$[^ ]+( inherited)?$/D', $node->id) === 1;
     }
 
     /**
