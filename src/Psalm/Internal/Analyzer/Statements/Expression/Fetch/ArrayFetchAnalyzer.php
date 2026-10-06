@@ -87,6 +87,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -99,8 +100,10 @@ use function implode;
 use function in_array;
 use function is_int;
 use function spl_object_id;
+use function str_starts_with;
 use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -381,6 +384,87 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The entries of $_SERVER the client sends, besides the request headers (HTTP_*): the URI, and what is taken
+     * from it (the CGI SAPI keeps the values it rewrites with an ORIG_ prefix, Apache those of a redirected request
+     * with a REDIRECT_ one), and argv, which PHP builds from the query string with register_argc_argv.
+     */
+    private const USER_CONTROLLED_SERVER_KEYS = [
+        'REQUEST_URI',
+        'UNENCODED_URL',
+        'DOCUMENT_URI',
+        'QUERY_STRING',
+        'argv',
+        'PATH_INFO',
+        'ORIG_PATH_INFO',
+        'PATH_TRANSLATED',
+        'ORIG_PATH_TRANSLATED',
+        'ORIG_SCRIPT_NAME',
+        'ORIG_SCRIPT_FILENAME',
+        'PHP_SELF',
+        'SCRIPT_URI',
+        'SCRIPT_URL',
+        'REDIRECT_URL',
+        'REQUEST_METHOD',
+        'CONTENT_TYPE',
+        'PHP_AUTH_USER',
+        'PHP_AUTH_PW',
+        'PHP_AUTH_DIGEST',
+    ];
+
+    /**
+     * Most entries of $_SERVER come from the server, but the client sends the request headers and the URI. The
+     * client also chooses the type of the files it uploads, and their path in a directory it uploads, in $_FILES
+     * (their names are tainted from $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
+     */
+    private static function taintSuperGlobalFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $var,
+        Union $offset_type,
+        Union &$stmt_type,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $key = $offset_type->isSingleStringLiteral() ? $offset_type->getSingleStringLiteral()->value : null;
+        if ($var instanceof PhpParser\Node\Expr\Variable && $var->name === '_SERVER') {
+            $server_key = $key;
+            while ($server_key !== null
+                && $server_key !== 'REDIRECT_URL'
+                && str_starts_with($server_key, 'REDIRECT_')
+            ) {
+                $server_key = substr($server_key, 9);
+            }
+
+            if ($server_key !== null
+                && !str_starts_with($server_key, 'HTTP_')
+                && !in_array($server_key, self::USER_CONTROLLED_SERVER_KEYS, true)
+            ) {
+                return;
+            }
+
+            $label = $key === null ? '$_SERVER[]' : '$_SERVER[\'' . $key . '\']';
+        } elseif ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && $var->var instanceof PhpParser\Node\Expr\Variable
+            && $var->var->name === '_FILES'
+            && ($key === 'type' || $key === 'full_path')
+        ) {
+            $label = '$_FILES[][\'' . $key . '\']';
+        } else {
+            return;
+        }
+
+        $taint_source = DataFlowNode::getForTaint(
+            $label,
+            new CodeLocation($statements_analyzer->getSource(), $var),
+            TaintKind::ALL_INPUT,
+        );
+        $graph->addSource($taint_source);
+
+        $stmt_type = $stmt_type->addParentNodes([$taint_source->id => $taint_source]);
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -485,6 +569,8 @@ final class ArrayFetchAnalyzer
                 $offset_type = $offset_type->setParentNodes([$array_key_node->id => $array_key_node]);
             }
         }
+
+        self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
     }
 
     /**

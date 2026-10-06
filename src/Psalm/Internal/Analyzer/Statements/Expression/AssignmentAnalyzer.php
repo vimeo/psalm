@@ -929,6 +929,11 @@ final class AssignmentAnalyzer
             $flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
+        // what the assigned value cannot hold, given its type
+        if (!$flow_graph instanceof VariableUseGraph) {
+            $removed_taints |= $type->getTaintsToRemove();
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $flow_graph->addPath(
                 $parent_node,

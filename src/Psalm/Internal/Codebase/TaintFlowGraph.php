@@ -1227,7 +1227,9 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            if ($sink !== null && $generated_source->code_location) {
+            // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
+            // connect a node without a location to a sink
+            if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
@@ -1346,7 +1348,13 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): void {
-        if ($predecessor->code_location === null) {
+        if ($sink->code_location
+            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+        ) {
+            $issue_location = $sink->code_location;
+        } elseif ($predecessor->code_location !== null) {
+            $issue_location = $predecessor->code_location;
+        } else {
             return;
         }
 
@@ -1364,14 +1372,6 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
-
-        if ($sink->code_location
-            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
-        ) {
-            $issue_location = $sink->code_location;
-        } else {
-            $issue_location = $predecessor->code_location;
-        }
 
         $issue_trace = $this->getIssueTrace($predecessor);
         $path = $this->getPredecessorPath($predecessor)

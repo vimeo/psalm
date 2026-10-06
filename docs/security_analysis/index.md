@@ -46,9 +46,12 @@ You're also free to define your own taint types when defining custom taint sourc
 Psalm defines the following default taint sources:
 
  - the `$_GET`, `$_POST`, `$_COOKIE` and `$_REQUEST` server variables;
+ - the entries of `$_SERVER` the client sends: the request headers (`HTTP_*`), the URI and what is taken from it (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE` and the HTTP authentication credentials, the same entries of a redirected request (`REDIRECT_*`), and any entry read with a key that is not a literal;
+ - the names, types and full paths of the uploaded files in `$_FILES`;
  - reading from the input stream: `fopen()`, `file_get_contents()` and `file()` called with a literal `php://input` or `php://stdin` path, and the stream reading functions (`fgets()`, `fread()`, `stream_get_contents()`, ...) applied to such a handle;
  - the predefined `STDIN` constant (the `php://stdin` stream).
  - reading from the network: `socket_read()`, the data `socket_recv()`, `socket_recvfrom()` and `socket_recvmsg()` write to their by-reference parameter, `stream_socket_recvfrom()`, `curl_exec()` and `curl_multi_getcontent()`, and the streams opened with `fsockopen()`, `pfsockopen()`, `stream_socket_client()`, `stream_socket_accept()` and `socket_export_stream()` (so reading from them with `fgets()`, `fread()`, ... is a source too).
+ - DNS answers, which whoever runs the name servers of a domain chooses: `dns_get_record()`, the hosts `getmxrr()` writes to its by-reference parameter, and `gethostbyaddr()`.
 
 You can also [define your own taint sources](custom_taint_sources.md).
 
