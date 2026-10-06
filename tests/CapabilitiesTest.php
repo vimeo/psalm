@@ -133,6 +133,34 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'iteratingACallersArrayObjectIsMutationFree' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function sum(ArrayObject $object): int {
+                        $sum = 0;
+                        foreach ($object as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+            ],
+            'movingAWrappingIteratorForgetsWhatValidReturned' => [
+                'code' => '<?php
+                    /** @param Iterator[pure]<int, int> $inner */
+                    function walk(Iterator $inner): void {
+                        $iterator = new IteratorIterator($inner);
+                        if (!$iterator->valid()) {
+                            return;
+                        }
+                        $iterator->next();
+                        if (!$iterator->valid()) {
+                            echo "done";
+                        }
+                    }',
+            ],
             'mutatingAnObjectForgetsWhatItsMutationFreeMethodsReturned' => [
                 'code' => '<?php
                     final class Box {
@@ -185,10 +213,11 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
-            'splHeapSubclassesNeedNoAnnotationOnCompare' => [
+            'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
                     /** @extends SplHeap<int> */
                     final class IntHeap extends SplHeap {
+                        /** @psalm-mutation-free */
                         #[Override]
                         protected function compare($value1, $value2): int {
                             return $value1 <=> $value2;
@@ -203,7 +232,9 @@ final class CapabilitiesTest extends TestCase
                         /** @var SplMaxHeap<int> */
                         $max = new SplMaxHeap();
                         $max->insert(2);
-                        return $min->extract() + $max->extract();
+                        $heap = new IntHeap();
+                        $heap->insert(3);
+                        return $min->extract() + $max->extract() + $heap->extract();
                     }
 
                     /** @psalm-capabilities read-props|write-props */
@@ -1291,21 +1322,7 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
-            'iteratingAnArrayObjectMayConstructAnyIteratorClass' => [
-                'code' => '<?php
-                    /**
-                     * @param ArrayObject<int, int> $object
-                     * @psalm-pure
-                     */
-                    function first(ArrayObject $object): int {
-                        foreach ($object as $value) {
-                            return $value;
-                        }
-                        return 0;
-                    }',
-                'error_message' => 'ImpureMethodCall',
-            ],
-            'insertingIntoAnSplHeapSubclassCallsItsCompare' => [
+            'splHeapSubclassesMustCompareWithoutSideEffects' => [
                 'code' => '<?php
                     /** @extends SplHeap<int> */
                     final class LoudHeap extends SplHeap {
@@ -1314,13 +1331,8 @@ final class CapabilitiesTest extends TestCase
                             echo "comparing";
                             return $value1 <=> $value2;
                         }
-                    }
-
-                    /** @psalm-capabilities read-props|write-props */
-                    function add(LoudHeap $heap): void {
-                        $heap->insert(1);
                     }',
-                'error_message' => 'ImpureMethodCall',
+                'error_message' => 'ImmutableDependency',
             ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
