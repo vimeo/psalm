@@ -428,6 +428,16 @@ final class TaintTest extends TestCase
                     fetch($origin . "/" . $value);
                     fetch("https://api.example.com" . "/{$value}");',
             ],
+            'dontTaintSsrfAfterAPathFromTheRoot' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ssrf $uri */
+                    function request(string $uri): void {}
+
+                    $value = (string) $_GET["value"];
+                    request("/v3/clusters/" . $value);
+                    request("/topics/{$value}/partitions");
+                    request(sprintf("/consumers/%s/instances/%s", $value, $value));',
+            ],
             'dontTaintUrlPathInTheQueryOrTheFragmentOfAUrl' => [
                 'code' => '<?php // --taint-analysis
                     $value = urlencode((string) $_GET["value"]);
@@ -1929,6 +1939,17 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintSsrfAfterTwoSlashesOrABackslash' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink ssrf $uri */
+                    function request(string $uri): void {}
+
+                    $value = (string) $_GET["value"];
+                    request("//" . $value);
+                    request("/\\\\" . $value);
+                    request("/" . $value);',
+                'error_message' => 'TaintedSSRF',
+            ],
             'taintUrlComponentInTheQueryOfAUrl' => [
                 'code' => '<?php // --taint-analysis
                     file_get_contents("https://api.example.com/search?q=" . (string) $_GET["value"]);',

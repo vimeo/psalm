@@ -69,10 +69,17 @@ final class ConcatAnalyzer
      * wrapper (`php://filter/resource=`, `compress.zlib://https://`...), it can still be the URL of any server. In the
      * query or the fragment, it can't be a `..` segment of the path either (`url_path` taint).
      *
+     * A path from the root (`/` followed by anything but another `/` or a backslash) is resolved against the server of the
+     * base URL it is sent with, or is a local file: what follows it can't choose a server either.
+     *
      * @psalm-pure
      */
     public static function getTaintsRemovedAfterUrlOrigin(string $prefix): int
     {
+        if (preg_match('~^/[^/\\\\]~', $prefix) === 1) {
+            return TaintKind::INPUT_SSRF;
+        }
+
         if (preg_match('~^(?:(https?|ftps?):)?//[^/?#]+([/?#].*)~is', $prefix, $matches) !== 1) {
             return 0;
         }
