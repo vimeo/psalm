@@ -1,6 +1,6 @@
 # TaintedUrlComponent
 
-This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
 Emitted when user-controlled input is placed, without being URL-encoded, in the path, the query or the fragment of a URL whose server is fixed, and the URL is then requested.
 

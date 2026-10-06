@@ -1,6 +1,6 @@
 # TaintedUrlPath
 
-This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
 Emitted when user-controlled input is placed in the path of a URL whose server is fixed, and the URL is then requested, even once URL-encoded: URL encoding leaves `.` as it is, so the input can still be a `..` segment of the path.
 
