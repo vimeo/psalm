@@ -640,6 +640,27 @@ final class TaintTest extends TestCase
                     new Comments(["comment" => (string) $_GET["comment"]]);
                     (new Activity([]))->printIds();',
             ],
+            'dontPassWhatAnInheritedBodyGivesSelfCallsToTheOverridesOfSubclasses' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function show(string $text): void {}
+
+                        public function run(string $text): void {
+                            self::show($text);
+                        }
+                    }
+
+                    class Child extends Base {}
+
+                    final class GrandChild extends Child {
+                        public function show(string $text): void {
+                            echo $text;
+                        }
+                    }
+
+                    // self:: runs Base::show, whatever the class of the object
+                    (new Child())->run((string) $_GET["text"]);',
+            ],
             'dontTaintThePropertiesOfASubclassWithWhatAParentConstructorSetsOnAnotherSubclass' => [
                 'code' => '<?php // --taint-analysis
                     class Field {

@@ -1908,10 +1908,12 @@ final class ArgumentAnalyzer
                 $specialization_location,
             );
 
+        // parent:: and self:: run the method they name, never one of a subclass overriding it
         if (!$specialize_taint
             && $taint_flow_graph
             && $method_id
             && $method_id->method_name !== '__construct'
+            && $called_body_suffix === null
         ) {
             $fq_classlike_name = $method_id->fq_class_name;
             $cased_method_name = explode('::', $cased_method_id)[1];
