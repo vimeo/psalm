@@ -26,6 +26,53 @@ function echoVar(string $str) : void {
 echoVar($_GET["text"]);
 ```
 
+## Types
+
+A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, a string can't be a NoSQL query document, and a literal string (a value the code wrote, or one Psalm knows is among such values) can't hold anything the client sent. An array holds what its keys and values can: `list<int>` holds no HTML, while the string keys of `array<string, int>` can hold anything. A union holds what any of its types can hold, and `null` holds nothing.
+
+Psalm removes the taints a value can't carry where it is cast, passed to a function, returned, or assigned to a variable or a property, using the type it infers for the value, and where PHP guarantees a type:
+
+- casts: `(int) $_GET['id']` is only left with the taints a number can carry;
+- the native type of a parameter, inside the function;
+- the native return type of a function or method, for what it returns, taint sources included: a method annotated `@psalm-taint-source input` with a `string` return type never returns a NoSQL query.
+
+```php
+<?php
+
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
+
+function getId(string $name): int {
+    return (int) getParam($name);
+}
+
+$collection->find(['name' => getParam('name')]); // a string can't inject query operators
+echo '<b>' . getId('id') . '</b>'; // an int can't carry HTML
+
+$direction = getParam('direction');
+if ($direction === 'asc' || $direction === 'desc') {
+    echo $direction; // 'asc'|'desc' is a literal
+}
+```
+
+A function that validates a value against data the code trusts can tell Psalm about it with `@psalm-assert-if-true literal-string`: once validated, the value can't hold anything the client chose.
+
+```php
+<?php
+
+/** @psalm-assert-if-true literal-string $city */
+function isKnownCity(string $city): bool {
+    return in_array($city, getCityKeysFromDatabase(), true);
+}
+
+$city = getParam('city');
+if (isKnownCity($city)) {
+    $organization->city = $city; // stored without any taint
+}
+```
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value

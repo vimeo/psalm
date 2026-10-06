@@ -50,6 +50,7 @@ use function array_splice;
 use function array_unshift;
 use function count;
 use function end;
+use function in_array;
 use function ksort;
 use function str_starts_with;
 use function strpos;
@@ -184,6 +185,19 @@ final class TaintFlowGraph extends DataFlowGraph
         CodeLocation $call_location,
     ): bool {
         if ($storage->specialize_call) {
+            return true;
+        }
+
+        // a builtin has no body: the taints flow through each of its calls as its declaration says, whether it is
+        // pure or not (`reset()` moves the pointer of the array it returns an element of)
+        if ($storage->location === null
+            ? $storage->cased_name !== null && InternalCallMapHandler::inCallMap(
+                $storage instanceof MethodStorage && $storage->defining_fqcln !== null
+                    ? $storage->defining_fqcln . '::' . $storage->cased_name
+                    : $storage->cased_name,
+            )
+            : in_array($storage->location->file_path, $codebase->config->internal_stubs, true)
+        ) {
             return true;
         }
 
@@ -1213,7 +1227,9 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            if ($sink !== null && $generated_source->code_location) {
+            // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
+            // connect a node without a location to a sink
+            if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
@@ -1332,7 +1348,13 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): void {
-        if ($predecessor->code_location === null) {
+        if ($sink->code_location
+            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+        ) {
+            $issue_location = $sink->code_location;
+        } elseif ($predecessor->code_location !== null) {
+            $issue_location = $predecessor->code_location;
+        } else {
             return;
         }
 
@@ -1350,14 +1372,6 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
-
-        if ($sink->code_location
-            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
-        ) {
-            $issue_location = $sink->code_location;
-        } else {
-            $issue_location = $predecessor->code_location;
-        }
 
         $issue_trace = $this->getIssueTrace($predecessor);
         $path = $this->getPredecessorPath($predecessor)

@@ -1,6 +1,6 @@
 # TaintedNosql
 
-This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability rather than a type error or a code-quality problem.
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
 
 Emitted when user-controlled input can be passed into a NoSQL query (e.g. a MongoDB filter or command).
 

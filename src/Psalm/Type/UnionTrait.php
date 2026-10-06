@@ -21,6 +21,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -28,6 +29,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -43,6 +45,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -1678,22 +1681,90 @@ trait UnionTrait
 
     public function getTaintsToRemove(): int
     {
-        // numeric types can't be tainted (except sleep & custom taints), neither can bool.
-        // isInt()/isString() already require every atomic member to match, so unions of
-        // literals such as int(0)|int(1) or ''|'1' (e.g. produced by casting a bool) are
-        // handled too; isFloat()/isBool() carry their own single-type checks.
-        if ($this->isInt() || $this->isFloat()) {
+        // a value has a taint only if every type it can have holds it
+        $taints_to_remove = TaintKind::ALL_INPUT;
+        foreach ($this->types as $atomic) {
+            $taints_to_remove &= self::getAtomicTaintsToRemove($atomic);
+            if ($taints_to_remove === 0) {
+                break;
+            }
+        }
+
+        return $taints_to_remove;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getAtomicTaintsToRemove(Atomic $atomic): int
+    {
+        // a value the code wrote, or null, cannot hold what the client sends
+        if ($atomic instanceof TLiteralString
+            || $atomic instanceof TNonspecificLiteralString
+            || $atomic instanceof TNull
+        ) {
+            return TaintKind::ALL_INPUT;
+        }
+
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        if ($atomic instanceof TInt || $atomic instanceof TFloat) {
             return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
         }
-        if ($this->isBool()) {
+
+        if ($atomic instanceof TBool) {
             return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
         }
+
         // a plain string can't carry a NoSQL query (only arrays/objects can),
         // so casting user input to string escapes the nosql taint
-        if ($this->isString()) {
+        if ($atomic instanceof TString) {
             return TaintKind::ARRAY_ONLY;
         }
+
+        // an array holds what its keys and its values can hold: the keys of an array shape are written by the code
+        if ($atomic instanceof TKeyedArray) {
+            $taints_to_remove = TaintKind::ALL_INPUT;
+            foreach ($atomic->properties as $property) {
+                $taints_to_remove &= $property->getTaintsToRemove();
+            }
+
+            if ($atomic->fallback_params !== null) {
+                $taints_to_remove &= self::getArrayKeyTaintsToRemove($atomic->fallback_params[0])
+                    & $atomic->fallback_params[1]->getTaintsToRemove();
+            }
+
+            return $taints_to_remove;
+        }
+
+        if ($atomic instanceof TArray) {
+            return self::getArrayKeyTaintsToRemove($atomic->type_params[0])
+                & $atomic->type_params[1]->getTaintsToRemove();
+        }
+
         return 0;
+    }
+
+    /**
+     * Unlike a string value, a string key can carry a NoSQL query operator.
+     *
+     * @psalm-pure
+     */
+    private static function getArrayKeyTaintsToRemove(Union $key_type): int
+    {
+        $taints_to_remove = TaintKind::ALL_INPUT;
+        foreach ($key_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralString || $atomic instanceof TNever) {
+                continue;
+            }
+
+            if (!$atomic instanceof TInt) {
+                return 0;
+            }
+
+            $taints_to_remove &= TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+        }
+
+        return $taints_to_remove;
     }
     #[Override]
     public function visit(TypeVisitor $visitor): bool

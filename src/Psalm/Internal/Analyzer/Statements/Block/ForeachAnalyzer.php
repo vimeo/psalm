@@ -13,6 +13,8 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -23,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
@@ -322,6 +325,8 @@ final class ForeachAnalyzer
             // When assigning as reference, it removes any previous
             // reference, so it's no longer from a previous confusing scope
             unset($foreach_context->references_possibly_from_confusing_scope['$' . $stmt->valueVar->name]);
+
+            FunctionLikeAnalyzer::unbindByRefParam($codebase, $foreach_context, '$' . $stmt->valueVar->name);
         }
 
         AssignmentAnalyzer::analyze(
@@ -390,6 +395,19 @@ final class ForeachAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
+        if ($stmt->byRef
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+        ) {
+            self::taintItemsWrittenByRef(
+                $statements_analyzer,
+                $stmt,
+                '$' . $stmt->valueVar->name,
+                $context,
+                $inner_loop_context,
+            );
+        }
+
         $foreach_context->loop_scope = null;
 
         $context->vars_possibly_in_scope = [
@@ -402,6 +420,92 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What a foreach by reference writes through its value variable is in the array it iterates over
+     * (see ArrayAssignmentAnalyzer): what the variable holds where an iteration ends, and where the loop
+     * is left.
+     */
+    private static function taintItemsWrittenByRef(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        string $value_var_id,
+        Context $context,
+        Context $inner_loop_context,
+    ): void {
+        if (!($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())) {
+            return;
+        }
+
+        $array_var_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt->expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        if ($array_var_id === null || !isset($context->vars_in_scope[$array_var_id])) {
+            return;
+        }
+
+        $item_parent_nodes = [];
+
+        foreach ([$inner_loop_context, $context] as $item_context) {
+            if (isset($item_context->vars_in_scope[$value_var_id])) {
+                $item_parent_nodes += $item_context->vars_in_scope[$value_var_id]->parent_nodes;
+            }
+        }
+
+        if (!$item_parent_nodes) {
+            return;
+        }
+
+        $array_node = DataFlowNode::getForAssignment(
+            $array_var_id,
+            new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+        );
+
+        $graph->addNode($array_node);
+
+        foreach ($item_parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $array_node, 'arrayvalue-assignment');
+        }
+
+        foreach ($context->vars_in_scope[$array_var_id]->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $array_node, '=');
+        }
+
+        $array_type = $context->vars_in_scope[$array_var_id]->setParentNodes([$array_node->id => $array_node]);
+
+        $context->vars_in_scope[$array_var_id] = $array_type;
+
+        // the property iterated over holds them too (see InstancePropertyAssignmentAnalyzer)
+        if ($stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && $stmt->expr->name instanceof PhpParser\Node\Identifier
+            && ($object_type = $statements_analyzer->node_data->getType($stmt->expr->var))
+            && $object_type->isSingle()
+            && ($object_atomic_type = $object_type->getSingleAtomic()) instanceof TNamedObject
+        ) {
+            $codebase = $statements_analyzer->getCodebase();
+            $property_id = $object_atomic_type->value . '::$' . $stmt->expr->name->name;
+            $declaring_class = $codebase->properties->getDeclaringClassForProperty($property_id, true);
+
+            if ($declaring_class !== null
+                && !($class_storage = $codebase->classlike_storage_provider->get($declaring_class))
+                    ->specialize_instance
+            ) {
+                InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
+                    $statements_analyzer,
+                    $graph,
+                    $stmt->expr,
+                    $property_id,
+                    $class_storage,
+                    $array_type,
+                    $context,
+                    $array_var_id,
+                );
+            }
+        }
     }
 
     /**

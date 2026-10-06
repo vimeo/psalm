@@ -27,6 +27,10 @@ return [
     'stream_socket_accept' => ['return' => TaintKind::ALL_INPUT],
     'stream_socket_recvfrom' => ['return' => TaintKind::ALL_INPUT],
     'socket_export_stream' => ['return' => TaintKind::ALL_INPUT],
+    // dns answers: whoever runs the name servers of a domain chooses them
+    'dns_get_record' => ['return' => TaintKind::ALL_INPUT],
+    'getmxrr' => ['hosts' => TaintKind::ALL_INPUT],
+    'gethostbyaddr' => ['return' => TaintKind::ALL_INPUT],
     // http clients
     'curl_exec' => ['return' => TaintKind::ALL_INPUT],
     'curl_multi_getcontent' => ['return' => TaintKind::ALL_INPUT],

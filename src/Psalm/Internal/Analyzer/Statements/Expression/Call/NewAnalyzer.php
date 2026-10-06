@@ -762,43 +762,126 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($statements_analyzer->taint_flow_graph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+        self::taintNewObject($statements_analyzer, $stmt, $method_id, $fq_class_name, $storage);
+    }
+
+    /**
+     * The new object takes its taints from what its constructor returns, and from what its `@psalm-flow`
+     * annotations say its arguments flow into.
+     */
+    private static function taintNewObject(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodIdentifier $method_id,
+        string $fq_class_name,
+        ClassLikeStorage $storage,
+    ): void {
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        if (!$statements_analyzer->taint_flow_graph
+            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            || !$stmt_type
         ) {
-            $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+            return;
+        }
 
-            $method_storage = null;
+        $codebase = $statements_analyzer->getCodebase();
 
-            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-            if ($declaring_method_id) {
-                $method_storage = $codebase->methods->getStorage($declaring_method_id);
+        $method_storage = null;
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id) {
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+        }
+
+        if (!$method_storage) {
+            $method_source = DataFlowNode::getForCallableReturn(
+                'builtin',
+                $fq_class_name . '::__construct',
+                $storage->isExternalMutationFree() ? $code_location : null,
+            );
+        } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
+            $method_source = DataFlowNode::getForMethodReturn(
+                $fq_class_name . '::__construct',
+                $method_storage,
+                $code_location,
+            );
+        } else {
+            $method_source = DataFlowNode::getForMethodReturn(
+                $fq_class_name . '::__construct',
+                $method_storage,
+            );
+        }
+
+        $statements_analyzer->taint_flow_graph->addNode($method_source);
+
+        if ($method_storage && $method_storage->return_source_params !== []) {
+            self::taintUsingConstructorFlows($statements_analyzer, $stmt, $method_storage, $method_source);
+        }
+
+        $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+    }
+
+    /**
+     * What the constructor's `@psalm-flow` annotations say the arguments of this call flow into the new object. The
+     * arguments' own nodes are used: the constructor's argument nodes are only this call's when the call is
+     * specialized, and the new object's node may be this call's (an external-mutation-free class) even when it isn't.
+     */
+    private static function taintUsingConstructorFlows(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodStorage $method_storage,
+        DataFlowNode $method_source,
+    ): void {
+        $graph = $statements_analyzer->taint_flow_graph;
+
+        if (!$graph) {
+            return;
+        }
+
+        foreach ($stmt->getArgs() as $argument_offset => $arg) {
+            $param_offset = $argument_offset;
+
+            if ($arg->name !== null) {
+                $param_offset = null;
+
+                foreach ($method_storage->params as $offset => $param) {
+                    if ($param->name === $arg->name->name) {
+                        $param_offset = $offset;
+                    }
+                }
             }
 
-            if (!$method_storage) {
-                $method_source = DataFlowNode::getForCallableReturn(
-                    'builtin',
-                    $fq_class_name . '::__construct',
-                    $storage->isExternalMutationFree() ? $code_location : null,
-                );
-            } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
-                    $method_storage,
-                    $code_location,
-                );
-            } else {
-                $method_source = DataFlowNode::getForMethodReturn(
-                    $fq_class_name . '::__construct',
-                    $method_storage,
-                );
+            // the arguments a variadic parameter takes flow as it does
+            $last_offset = count($method_storage->params) - 1;
+            if ($param_offset !== null
+                && $param_offset > $last_offset
+                && $last_offset >= 0
+                && $method_storage->params[$last_offset]->is_variadic
+            ) {
+                $param_offset = $last_offset;
             }
 
-            $statements_analyzer->taint_flow_graph->addNode($method_source);
+            $path_type = $param_offset !== null ? $method_storage->return_source_params[$param_offset] ?? null : null;
+            $arg_type = $statements_analyzer->node_data->getType($arg->value);
 
-            $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            if ($path_type === null || !$arg_type) {
+                continue;
+            }
+
+            foreach ($arg_type->parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $method_source,
+                    $path_type,
+                    $method_storage->added_taints,
+                    $method_storage->removed_taints,
+                );
+            }
         }
     }
 
