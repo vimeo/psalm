@@ -322,7 +322,12 @@ final class TaintFlowGraph extends DataFlowGraph
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                // A callee that only reads what other calls can see too (properties, globals) can't pass what one
+                // call gives it to another: its call stays specialized, and what it reads still flows out of all
+                // its calls (see the exits reached through shared state in TaintFlowResolution).
+                if ((($mutation_levels[$function_node_id] ?? Capabilities::ALL)
+                        & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) !== 0
+                ) {
                     $this->despecialized_calls[$specialization_key] = true;
                     break;
                 }
