@@ -1407,7 +1407,8 @@ final class TaintFlowResolution
             if (!isset($this->root_entries[$state])
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
                 && ($this->isOutsideOfCalls($this->state_contexts[$state])
-                    || count($this->call_entries_reaching[$id] ?? []) > 1)
+                    || count($this->call_entries_reaching[$id] ?? []) > 1
+                    || $this->getNode($id)?->code_location === null)
             ) {
                 $this->enterConvergence($state, $id);
             } else {
@@ -1687,9 +1688,11 @@ final class TaintFlowResolution
      * enter another one, which then gets their taints, past those of the flows entering the first one.
      *
      * The exits a convergence reaches lead to all their call sites, as outside of any specialized call (see
-     * walk()). Flows in specialized calls only converge at a node the walks of several entries reach: there,
-     * a value is shared by the calls (e.g. a property), and any call reading it may return it, so the call
-     * site each flow was entered through doesn't matter anymore.
+     * walk()). Flows in specialized calls only converge at a node the walks of several entries reach, or one
+     * without a location (a property, ...): there, a value is shared by the calls, and any call reading it may
+     * return it, so the call site each flow was entered through doesn't matter anymore. (The filters of an
+     * entry share its node, so a property only their walks reach would otherwise be walked in each of them,
+     * with all that its value reaches.)
      */
     private function enterConvergence(int $caller, string $id): void
     {
