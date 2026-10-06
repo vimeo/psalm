@@ -103,6 +103,7 @@ use function spl_object_id;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -384,19 +385,26 @@ final class ArrayFetchAnalyzer
 
     /**
      * The entries of $_SERVER the client sends, besides the request headers (HTTP_*): the URI, and what is taken
-     * from it.
+     * from it (the CGI SAPI keeps the values it rewrites with an ORIG_ prefix, Apache those of a redirected request
+     * with a REDIRECT_ one), and argv, which PHP builds from the query string with register_argc_argv.
      */
     private const USER_CONTROLLED_SERVER_KEYS = [
         'REQUEST_URI',
+        'UNENCODED_URL',
+        'DOCUMENT_URI',
         'QUERY_STRING',
+        'argv',
         'PATH_INFO',
         'ORIG_PATH_INFO',
         'PATH_TRANSLATED',
+        'ORIG_PATH_TRANSLATED',
+        'ORIG_SCRIPT_NAME',
+        'ORIG_SCRIPT_FILENAME',
         'PHP_SELF',
         'SCRIPT_URI',
         'SCRIPT_URL',
         'REDIRECT_URL',
-        'REDIRECT_QUERY_STRING',
+        'REQUEST_METHOD',
         'CONTENT_TYPE',
         'PHP_AUTH_USER',
         'PHP_AUTH_PW',
@@ -420,9 +428,17 @@ final class ArrayFetchAnalyzer
 
         $key = $offset_type->isSingleStringLiteral() ? $offset_type->getSingleStringLiteral()->value : null;
         if ($var instanceof PhpParser\Node\Expr\Variable && $var->name === '_SERVER') {
-            if ($key !== null
-                && !str_starts_with($key, 'HTTP_')
-                && !in_array($key, self::USER_CONTROLLED_SERVER_KEYS, true)
+            $server_key = $key;
+            while ($server_key !== null
+                && $server_key !== 'REDIRECT_URL'
+                && str_starts_with($server_key, 'REDIRECT_')
+            ) {
+                $server_key = substr($server_key, 9);
+            }
+
+            if ($server_key !== null
+                && !str_starts_with($server_key, 'HTTP_')
+                && !in_array($server_key, self::USER_CONTROLLED_SERVER_KEYS, true)
             ) {
                 return;
             }

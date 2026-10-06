@@ -1417,7 +1417,8 @@ final class TaintTest extends TestCase
             'dontTaintServerEntriesOfTheServer' => [
                 'code' => '<?php
                     include ($_SERVER["DOCUMENT_ROOT"] ?? "") . "/config.php";
-                    echo $_SERVER["SERVER_PROTOCOL"] ?? "";',
+                    echo $_SERVER["SERVER_PROTOCOL"] ?? "";
+                    echo $_SERVER["REDIRECT_STATUS"] ?? "";',
             ],
             'dontTaintUploadedFileTemporaryName' => [
                 'code' => '<?php
@@ -4023,6 +4024,23 @@ final class TaintTest extends TestCase
             'taintServerRequestHeader' => [
                 'code' => '<?php
                     echo $_SERVER["HTTP_USER_AGENT"] ?? "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintServerRequestMethod' => [
+                'code' => '<?php
+                    echo $_SERVER["REQUEST_METHOD"] ?? "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintServerRedirectedRequestHeader' => [
+                'code' => '<?php
+                    echo $_SERVER["REDIRECT_REDIRECT_HTTP_USER_AGENT"] ?? "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintServerArgvFromQueryString' => [
+                'code' => '<?php
+                    foreach ($_SERVER["argv"] ?? [] as $arg) {
+                        echo $arg;
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintServerPhpSelf' => [
