@@ -515,20 +515,16 @@ final class AtomicStaticCallAnalyzer
                     && isset($class_storage->pseudo_methods[$method_name_lc])
                     && $codebase->methodExists(
                         new MethodIdentifier($method_id->fq_class_name, '__call'),
-                        null,
-                        null,
-                        null,
-                        false,
+                        is_used: false,
                     )
                 ) {
                     // Same instance-context fallback as ordinary parent::xxx() calls below:
                     // the closure is bound to $this and dispatches through __call
                     $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
                     $return_type_candidate = new Union([new TClosure(
-                        'Closure',
                         $pseudo_method_storage->params,
                         $pseudo_method_storage->return_type,
-                        $pseudo_method_storage->pure,
+                        $pseudo_method_storage->capabilities,
                     )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
