@@ -516,6 +516,15 @@ final class TaintFlowResolution
     private array $entry_callers = [];
 
     /**
+     * Entry => the calls entering it, as their state, or as -1 minus that of a copy entering it as such (see
+     * addEntryCaller()) => how many times they had got more taints (see $later_reaches) when they last did, for a
+     * copy shifted 16 bits up, above the positions it was copied for (see getPositionBit())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_caller_versions = [];
+
+    /**
      * State of a call => the states of its copies (see copyToFilter()) => true
      *
      * @var array<int, array<int, true>>
@@ -1888,6 +1897,23 @@ final class TaintFlowResolution
         ?string $specialization_key,
         bool $as_copy = false,
     ): void {
+        // A filter is one of each filter it is a filter of (see addEntry()): a call enters it through each of them.
+        // What it gets only depends on its taints, and for a copy on the positions it was copied for: what the walks
+        // of an entry reach later is applied to the calls entering it then.
+        $version = count($this->later_reaches[$caller] ?? []);
+        $version_key = $caller;
+
+        if ($as_copy) {
+            $version = ($version << 16) | ($this->copy_positions[$caller] ?? 0);
+            $version_key = -1 - $caller;
+        }
+
+        if (($this->entry_caller_versions[$entry][$version_key] ?? null) === $version) {
+            return;
+        }
+
+        $this->entry_caller_versions[$entry][$version_key] = $version;
+
         if ($as_copy) {
             foreach ($this->entry_filters[$entry] as [$filter, $family, $depth, $fetched_key]) {
                 $this->addFilterCopy($filter, $family, $depth, $fetched_key, $caller, $specialization_key);
