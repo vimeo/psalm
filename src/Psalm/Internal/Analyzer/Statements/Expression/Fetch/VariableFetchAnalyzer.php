@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -295,7 +296,10 @@ final class VariableFetchAnalyzer
                     $type = Type::getMixed();
                     self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
-                    $statements_analyzer->node_data->setType($stmt, $type);
+                    $statements_analyzer->node_data->setType(
+                        $stmt,
+                        GlobalAnalyzer::taintGlobalRead($statements_analyzer, $context, $var_name, $type),
+                    );
 
                     return true;
                 }
@@ -368,7 +372,10 @@ final class VariableFetchAnalyzer
 
                 self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    GlobalAnalyzer::taintGlobalRead($statements_analyzer, $context, $var_name, $stmt_type),
+                );
 
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_name, $stmt);
 

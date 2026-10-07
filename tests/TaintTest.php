@@ -2437,6 +2437,60 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'taintFreeTopLevelVariableOfAnotherName' => [
+                'code' => '<?php
+                    $tainted = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $safe;
+                        echo (string) $safe;
+                        echo (string) $GLOBALS["other"];
+                    }',
+            ],
+            'taintFreeLocalVariableWithTheNameOfAGlobal' => [
+                'code' => '<?php
+                    function compute(): string {
+                        $value = (string) $_GET["a"];
+                        return $value;
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+            ],
+            'taintFreeLocalVariableAfterACallOfAFunctionBindingTheGlobal' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        $value = "safe";
+                        stash();
+                        echo (string) $value;
+                    }',
+            ],
+            'taintFreeTopLevelVariableSanitizedBeforeItIsRead' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+                    $value = htmlspecialchars($value, ENT_QUOTES);
+                    echo $value;',
+            ],
+            'taintFreeByRefParamOverwrittenBeforeReturning' => [
+                'code' => '<?php
+                    function fill(string &$out): void {
+                        $out = (string) $_GET["a"];
+                        $out = "safe";
+                    }
+
+                    function show(): void {
+                        $value = "";
+                        fill($value);
+                        echo $value;
+                    }',
+            ],
         ];
     }
 
@@ -2626,6 +2680,118 @@ final class TaintTest extends TestCase
                     stash("safe");
                     stash((string) $_GET["a"]);
                     echo show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableReadAsGlobal' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableReadThroughGlobals' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+
+                    function show(): void {
+                        echo (string) $GLOBALS["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelArrayItemReadAsGlobal' => [
+                'code' => '<?php
+                    $config = [];
+                    $config["value"] = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $config;
+                        echo (string) $config["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableAssignedInABranch' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableOverwrittenAfterACall' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    $value = (string) $_GET["a"];
+                    show();
+                    $value = "safe";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunction' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableOverwrittenAfterACall' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                        show();
+                        $value = "safe";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableChangedByACall' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        $value = "safe";
+                        stash();
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableAppendedToThenReset' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $values;
+                        foreach ((array) $values as $value) {
+                            echo (string) $value;
+                        }
+                    }
+
+                    function stash(): void {
+                        global $values;
+                        $values[] = (string) $_GET["a"];
+                        show();
+                        $values = [];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [

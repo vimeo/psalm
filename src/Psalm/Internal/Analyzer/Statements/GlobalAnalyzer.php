@@ -18,8 +18,11 @@ use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
+use Psalm\Type\Union;
 
 use function is_string;
+use function preg_match;
+use function substr;
 
 /**
  * @internal
@@ -149,6 +152,72 @@ final class GlobalAnalyzer
                 $global_context->referenced_globals[$var_id] = true;
             }
         }
+    }
+
+    /**
+     * A variable bound to a global is the global: what it holds after each statement flows into it, as any
+     * function-like called before the variable stops referencing it may read it (see
+     * FunctionLikeAnalyzer::unbindByRefParam() for the last value). At file scope, every variable is a global.
+     */
+    public static function taintBoundGlobals(StatementsAnalyzer $statements_analyzer, Context $context): void
+    {
+        if ((!$context->by_ref_param_out_nodes && !$context->is_global)
+            || !$taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()
+        ) {
+            return;
+        }
+
+        $var_ids = $context->is_global ? $context->vars_in_scope : $context->by_ref_param_out_nodes;
+
+        foreach ($var_ids as $var_id => $_) {
+            if (!self::isBoundToGlobal($context, $var_id)
+                || !isset($context->vars_in_scope[$var_id])
+                || !$context->vars_in_scope[$var_id]->parent_nodes
+            ) {
+                continue;
+            }
+
+            $global_node = self::getGlobalNode($taint_flow_graph, substr($var_id, 1));
+
+            foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $global_node, '=');
+            }
+        }
+    }
+
+    /**
+     * What the variable $var_id holds, of type $type, once the rest of the program may have written to it, if it
+     * is a global: when it isn't assigned yet at file scope, or after a call of a function-like binding it.
+     */
+    public static function taintGlobalRead(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        Union $type,
+    ): Union {
+        if (!self::isBoundToGlobal($context, $var_id)
+            || !$taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()
+        ) {
+            return $type;
+        }
+
+        return $type->addParentNodes(self::getGlobalReadNodes($taint_flow_graph, substr($var_id, 1)));
+    }
+
+    /**
+     * Whether $var_id is a global: bound by `global`, or any variable at file scope (but not $a['k'], $a->p, ...,
+     * which are part of $a, nor the superglobals).
+     */
+    private static function isBoundToGlobal(Context $context, string $var_id): bool
+    {
+        if (isset($context->by_ref_param_out_nodes[$var_id])) {
+            return $context->by_ref_param_out_nodes[$var_id]->id
+                === DataFlowNode::getForGlobalVariable(substr($var_id, 1))->id;
+        }
+
+        return $context->is_global
+            && preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D', $var_id) === 1
+            && !VariableFetchAnalyzer::isSuperGlobal($var_id);
     }
 
     /**
