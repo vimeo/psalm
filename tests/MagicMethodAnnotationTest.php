@@ -1180,6 +1180,29 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'SingleQuoteChild',
                 ],
             ],
+            'conditionalReturnTypeInMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @method ($asText is true ? string : list<string>) words(int $nb = 3, bool $asText = false)
+                     * @method static ($asText is true ? string : list<string>) staticWords(bool $asText = false)
+                     */
+                    class Gen {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $g = new Gen();
+                    $a = $g->words(3, false);
+                    $b = $g->words(3, true);
+                    $c = Gen::staticWords(false);
+                    $d = Gen::staticWords(true);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                    '$b' => 'string',
+                    '$c' => 'list<string>',
+                    '$d' => 'string',
+                ],
+            ],
         ];
     }
 
