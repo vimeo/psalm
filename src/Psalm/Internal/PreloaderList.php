@@ -709,6 +709,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NamedFunctionCallHandler::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\OutputStreamTaintAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\ExistingAtomicStaticCallAnalyzer::class,

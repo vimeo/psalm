@@ -3971,7 +3971,7 @@ final class TaintTest extends TestCase
             'taintedTextWithQuotesWrittenToAPhpOutputStream' => [
                 'code' => '<?php
                     /** @psalm-suppress PossiblyFalseArgument */
-                    fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
+                    fwrite(fopen("php://output", "w"), strip_tags((string) $_GET["x"]));',
                 'error_message' => 'TaintedTextWithQuotes',
             ],
             'taintedHtmlWrittenToAPhpOutputStreamHeldByAVariable' => [
