@@ -1229,6 +1229,10 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
+            if (self::isOverwritten($path_type, $open_assignments)) {
+                continue;
+            }
+
             // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
             // connect a node without a location to a sink
             if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {

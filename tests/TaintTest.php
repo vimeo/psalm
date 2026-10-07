@@ -677,6 +677,27 @@ final class TaintTest extends TestCase
                     echo "<p>{$tag}</p>";
                     echo "<p>" . $tag . "</p>";',
             ],
+            'dontTaintTheValueAnArrayHeldUnderAKeyAssignedSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = ["city" => (string) $_GET["city"], "zip" => "000"];
+                    $data["city"] = "msk";
+                    echo $data["city"];
+                    foreach ($data as $value) {
+                        echo $value;
+                    }',
+            ],
+            'dontTaintTheValueAnArrayHeldUnderAKeyUnsetSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = ["city" => (string) $_GET["city"], "zip" => "000"];
+                    unset($data["city"]);
+                    echo $data["city"] ?? "";',
+            ],
+            'dontTaintTheValueANestedArrayHeldUnderAKeyAssignedSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = ["address" => ["city" => (string) $_GET["city"], "zip" => "000"]];
+                    $data["address"]["city"] = "msk";
+                    echo $data["address"]["city"];',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -2512,6 +2533,102 @@ final class TaintTest extends TestCase
                     }
                     $value = rand(0, 1) ? new Tag("safe") : (string) $_GET["x"];
                     echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAForeachTransformAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    /** @param array<string, string> $input */
+                    function show(array $input): void {
+                        $input["zip"] = (string) $_GET["zip"];
+                        $output = [];
+                        foreach ($input as $key => $value) {
+                            $output[$key] = trim($value);
+                        }
+                        $output["city"] = "msk";
+                        echo $output["zip"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAnArrayIteratedOverAfterAKeyIsUnset' => [
+                'code' => '<?php
+                    $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
+                    unset($data["city"]);
+                    foreach ($data as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAnArrayGivenToAFunctionAssigningAKey' => [
+                'code' => '<?php
+                    function zip(array $data): string {
+                        $data["city"] = "msk";
+                        return (string) $data["zip"];
+                    }
+                    echo zip(["zip" => (string) $_GET["zip"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAnArrayAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
+                    $data["city"] = "spb";
+                    echo $data["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAnArrayAfterAKeyIsUnset' => [
+                'code' => '<?php
+                    $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
+                    unset($data["city"]);
+                    echo $data["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfANestedArrayAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = ["address" => ["city" => "msk", "zip" => (string) $_GET["zip"]]];
+                    $data["address"]["city"] = "spb";
+                    echo $data["address"]["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAnArrayIteratedOverAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
+                    $data["city"] = "spb";
+                    foreach ($data as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAKeyAssignedOnlyOnSomeBranch' => [
+                'code' => '<?php
+                    $data = ["city" => (string) $_GET["city"]];
+                    if (rand(0, 1)) {
+                        $data["city"] = "msk";
+                    }
+                    echo $data["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAKeyAfterAnAssignmentUnderAKeyNotKnown' => [
+                'code' => '<?php
+                    function show(string $key): void {
+                        $data = ["city" => (string) $_GET["city"]];
+                        $data[$key] = "msk";
+                        echo $data["city"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAnArrayAccessOffsetAssignedAgain' => [
+                'code' => '<?php
+                    function show(ArrayAccess $data): void {
+                        $data["city"] = (string) $_GET["city"];
+                        $data["city"] = "msk";
+                        echo (string) $data["city"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAWholeArrayAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $data["city"] = "msk";
+                    echo (string) $data["zip"];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayItemWrittenByAForeachByReference' => [
