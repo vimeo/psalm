@@ -34,3 +34,17 @@ function foo($a, $b) {
 The returned type will contain the properties of both `A` and `B`. In other words, it will be `{a: int, b: int}`.
 
 Intersections are only valid for lists of only *object types* and lists of only *object-like arrays*.
+
+An object shape can describe additional properties on a class:
+
+```php
+/** @param Model&object{pivot: Pivot} $model */
+function getPivot(Model $model): Pivot {
+    return $model->pivot;
+}
+```
+
+When the class does not declare the property, Psalm uses the explicit shape property
+before looking it up on a `@mixin` or another intersected class. For a final class,
+this requires a `__get` method on the class (possibly inherited); a getter on a mixin
+alone is not sufficient.

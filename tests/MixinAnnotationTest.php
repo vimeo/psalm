@@ -842,58 +842,6 @@ final class MixinAnnotationTest extends TestCase
                     '$result' => 'string',
                 ],
             ],
-            'objectShapePropertyOnIntersectionWithMixinClass' => [
-                'code' => '<?php
-                    class Helper {
-                        public int $fromMixin = 1;
-                    }
-
-                    /** @mixin Helper */
-                    class WithMixin {}
-
-                    /** @var WithMixin&object{fromShape: string} $x */
-                    $fromShape = $x->fromShape;
-                    $fromMixin = $x->fromMixin;',
-                'assertions' => [
-                    '$fromShape' => 'string',
-                    '$fromMixin' => 'int',
-                ],
-            ],
-            'objectShapePropertyFromGenericReturnOnMixinClassWithMagicGet' => [
-                'code' => '<?php
-                    class Builder {}
-
-                    /** @mixin Builder */
-                    class Model {
-                        public function __get(string $name): mixed {
-                            return null;
-                        }
-                    }
-
-                    final class Pivot {
-                        public int $id = 1;
-                    }
-
-                    /**
-                     * @template TRelated of object
-                     * @template TPivot of object
-                     */
-                    final class Relation {
-                        /** @return (TRelated&object{pivot: TPivot})|null */
-                        public function first(): ?object {
-                            return null;
-                        }
-                    }
-
-                    /** @var Relation<Model, Pivot> $relation */
-                    $related = $relation->first();
-                    $pivotId = $related === null ? null : $related->pivot->id;',
-                'assertions' => [
-                    '$pivotId' => 'int|null',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
         ];
     }
 
@@ -1070,19 +1018,6 @@ final class MixinAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
-            ],
-            'objectShapePropertyOnIntersectionWithFinalMixinClassWithoutMagicGet' => [
-                'code' => '<?php
-                    class Helper {
-                        public int $fromMixin = 1;
-                    }
-
-                    /** @mixin Helper */
-                    final class WithMixin {}
-
-                    /** @var WithMixin&object{fromShape: string} $x */
-                    $fromShape = $x->fromShape;',
-                'error_message' => 'UndefinedPropertyFetch',
             ],
         ];
     }

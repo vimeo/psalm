@@ -266,7 +266,36 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
-            $found_in_mixin = false;
+            // Resolve explicit shape properties before consulting other class-like types.
+            // Keep final classes closed unless they provide a magic getter.
+            if ($intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
+            ) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TObjectWithProperties
+                        || !isset($intersection_type->properties[$prop_name])
+                    ) {
+                        continue;
+                    }
+
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    return;
+                }
+            }
 
             if ($class_storage->namedMixins) {
                 foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
@@ -290,7 +319,6 @@ final class AtomicPropertyFetchAnalyzer
                         )
                             || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                     ) {
-                        $found_in_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
                         $class_storage = $new_class_storage;
@@ -302,15 +330,7 @@ final class AtomicPropertyFetchAnalyzer
                         $property_id = $new_property_id;
                     }
                 }
-            }
-
-            // An intersected object shape can declare a property the class only exposes at runtime,
-            // e.g. through __get, also when the class has a @mixin (Eloquent's `pivot`). A final class
-            // without __get cannot expose undeclared properties, so its shape stays undefined.
-            if (!$found_in_mixin
-                && $intersection_types !== []
-                && (!$class_storage->final || $codebase->methods->methodExists($get_method_id))
-            ) {
+            } elseif ($intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,
