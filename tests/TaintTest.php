@@ -583,6 +583,21 @@ final class TaintTest extends TestCase
                     (new Guest())->setName((string) $_GET["name"]);
                     (new SuperAdmin())->printName();',
             ],
+            'variableAssignedInEveryBranchHoldsOnlyItsLastValues' => [
+                'code' => '<?php
+                    function render(string $input, bool $html): string {
+                        if ($html) {
+                            $text = trim($input);
+                            $text = htmlspecialchars($text, ENT_QUOTES);
+                        } else {
+                            $text = "none";
+                        }
+
+                        return $text;
+                    }
+
+                    echo render($_GET["x"], true);',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
@@ -2381,6 +2396,23 @@ final class TaintTest extends TestCase
 
                     find(["city" => $_GET["city"]]);',
                 'error_message' => 'TaintedNosql',
+            ],
+            'variableDefinedByNarrowingInABranchKeepsItsTaints' => [
+                'code' => '<?php
+                    function render(array $names): string {
+                        foreach ($names as $name) {
+                            $first = $name;
+                            break;
+                        }
+                        if (empty($first)) {
+                            $first = "none";
+                        }
+
+                        return $first;
+                    }
+
+                    echo render($_GET["names"]);',
+                'error_message' => 'TaintedHtml',
             ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
                 'code' => '<?php // --taint-analysis
