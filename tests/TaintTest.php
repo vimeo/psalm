@@ -606,6 +606,12 @@ final class TaintTest extends TestCase
                     file_get_contents(sprintf("https://api.example.com/items/%2\$s/%1\$05.2f", $value, "a"));
                     echo sprintf("%x %\'*10d %%s", $value, $value);',
             ],
+            'dontTaintThePrintfOutputOfWhatIsFormattedAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    printf("%d", (string) $_GET["x"]);
+                    vprintf("%d items", [(string) $_GET["x"]]);
+                    printf("%2\$s %1\$05.2f", (string) $_GET["x"], "a");',
+            ],
             'dontTaintAPrivatePropertyWithWhatIsSetToTheOneOfAParentClass' => [
                 'code' => '<?php // --taint-analysis
                     class Model {
@@ -2637,6 +2643,26 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     $value = (string) $_GET["value"];
                     echo sprintf("%1\$d %1\$s", $value);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlPrintedByPrintfAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    printf("%s", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlPrintedByPrintfAsAStringAndANumber' => [
+                'code' => '<?php // --taint-analysis
+                    printf("%1\$d %1\$s", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlPrintedByPrintfAsAStringAfterANumber' => [
+                'code' => '<?php // --taint-analysis
+                    printf("%d %s", 1, (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlInTheValuesOfVprintfWithAStringConversion' => [
+                'code' => '<?php // --taint-analysis
+                    vprintf("%d %s", [(string) $_GET["x"], "a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSsrfAfterRawurlencode' => [
