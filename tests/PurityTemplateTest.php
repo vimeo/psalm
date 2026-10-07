@@ -1743,6 +1743,295 @@ final class PurityTemplateTest extends TestCase
                     '$sub' => 'Sub',
                 ],
             ],
+            'conditionalPurityArgumentOfAConstructorReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @return array<int, int> */
+                    function ints(): array {
+                        return [1, 2];
+                    }
+
+                    /** @return Container[io]<string, int> */
+                    function ioContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        $wrapper = new Wrapper([1, 2]);
+                        return $wrapper->run();
+                    }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @param Container[io]<string, int> $container
+                     */
+                    function viaContainer(Container $container): int {
+                        $wrapper = new Wrapper($container);
+                        return $wrapper->run();
+                    }
+
+                    $from_literals = new Wrapper([1, 2]);
+                    $from_array = new Wrapper(ints());
+                    $from_container = new Wrapper(ioContainer());',
+                'assertions' => [
+                    '$from_literals' => 'Wrapper[pure]<int<0, 1>, int>',
+                    '$from_array' => 'Wrapper[pure]<int, int>',
+                    '$from_container' => 'Wrapper[io]<string, int>',
+                ],
+            ],
+            'conditionalConstructorReturnTypeWithPurityAndTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return ($param is array ? self[pure]<K, V> : self[PP]<string, V>)
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class ArmWrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return ($param is array ? self[pure]<int, V> : self[PP]<K, mixed>)
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+                    }
+
+                    /** @return Container[io]<string, int> */
+                    function ioContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        $wrapper = new Wrapper(["a" => 1]);
+                        return $wrapper->run();
+                    }
+
+                    $from_array = new Wrapper(["a" => 1]);
+                    $from_container = new Wrapper(ioContainer());
+                    $arm_from_array = new ArmWrapper(["a" => 1]);
+                    $arm_from_container = new ArmWrapper(ioContainer());',
+                'assertions' => [
+                    '$from_array' => 'Wrapper[pure]<string, int>',
+                    '$from_container' => 'Wrapper[io]<string, int>',
+                    '$arm_from_array' => 'ArmWrapper[pure]<int, int>',
+                    '$arm_from_container' => 'ArmWrapper[io]<string, mixed>',
+                ],
+            ],
+            'conditionalPurityArgumentsBindEachPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P1
+                     * @psalm-purity-template P2
+                     */
+                    final class Pair {
+                        /**
+                         * @psalm-purity-template PA
+                         * @psalm-purity-template PB
+                         * @param list<T>|Container[PA]<int, T> $first
+                         * @param list<T>|Container[PB]<int, T> $second
+                         * @return self[$first is array ? pure : PA, $second is array ? pure : PB]<T>
+                         * @psalm-pure
+                         */
+                        public function __construct($first, $second) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P1
+                         */
+                        public function runFirst(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P2
+                         */
+                        public function runSecond(): int {
+                            return 2;
+                        }
+                    }
+
+                    /** @return Container[io]<int, int> */
+                    function ioContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Container[write-props]<int, int> */
+                    function writingContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[io]<int, int> $container
+                     */
+                    function viaFirstArray(Container $container): int {
+                        $pair = new Pair([1], $container);
+                        return $pair->runFirst();
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[io]<int, int> $container
+                     */
+                    function viaSecondArray(Container $container): int {
+                        $pair = new Pair($container, [1]);
+                        return $pair->runSecond();
+                    }
+
+                    $first_array = new Pair([1], ioContainer());
+                    $second_array = new Pair(writingContainer(), [1]);
+                    $both_containers = new Pair(writingContainer(), ioContainer());',
+                'assertions' => [
+                    '$first_array' => 'Pair[pure, io]<int>',
+                    '$second_array' => 'Pair[write-props, pure]<int>',
+                    '$both_containers' => 'Pair[write-props, io]<int>',
+                ],
+            ],
+            'conditionalPurityArgumentOfAnArgumentOfEitherKind' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+                    }
+
+                    /** @return array<string, int>|Container[io]<string, int> */
+                    function either() {
+                        throw new RuntimeException();
+                    }
+
+                    $from_either = new Wrapper(either());',
+                'assertions' => [
+                    '$from_either' => 'Wrapper[io]<string, int>',
+                ],
+            ],
+            'conditionalPurityArgumentOfAnUnboundArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P(write-props) <= write-props|io
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P(io) <= write-props|io
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP <= write-props|io
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+                    }
+
+                    /** @return Container<string, int> */
+                    function defaultContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Container */
+                    function anyContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    $from_default = new Wrapper(defaultContainer());
+                    $from_any = new Wrapper(anyContainer());',
+                'assertions' => [
+                    '$from_default' => 'Wrapper[write-props]<string, int>',
+                    '$from_any' => 'Wrapper[write-props|io]<array-key, mixed>',
+                ],
+            ],
         ];
     }
 
@@ -3490,6 +3779,279 @@ final class PurityTemplateTest extends TestCase
                         public function __construct() {}
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The @return of Maker::__construct must be the type of the object it constructs, Maker',
+            ],
+            'conditionalPurityArgumentChargesTheBindingOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[io]<string, int> $container
+                     */
+                    function viaContainer(Container $container): int {
+                        $wrapper = new Wrapper($container);
+                        return $wrapper->run();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:38:32 - The context is pure but method Wrapper::run requires io',
+            ],
+            'conditionalConstructorReturnTypeChargesTheBindingOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return ($param is array ? self[pure]<K, V> : self[PP]<string, V>)
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[io]<string, int> $container
+                     */
+                    function viaContainer(Container $container): int {
+                        $wrapper = new Wrapper($container);
+                        return $wrapper->run();
+                    }',
+                'error_message' => 'The context is pure but method Wrapper::run requires io',
+            ],
+            'conditionalPurityArgumentsChargeTheSecondPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P1
+                     * @psalm-purity-template P2
+                     */
+                    final class Pair {
+                        /**
+                         * @psalm-purity-template PA
+                         * @psalm-purity-template PB
+                         * @param list<T>|Container[PA]<int, T> $first
+                         * @param list<T>|Container[PB]<int, T> $second
+                         * @return self[$first is array ? pure : PA, $second is array ? pure : PB]<T>
+                         * @psalm-pure
+                         */
+                        public function __construct($first, $second) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P1
+                         */
+                        public function runFirst(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P2
+                         */
+                        public function runSecond(): int {
+                            return 2;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[io]<int, int> $container
+                     */
+                    function viaSecondContainer(Container $container): int {
+                        $pair = new Pair([1], $container);
+                        return $pair->runSecond();
+                    }',
+                'error_message' => 'The context is pure but method Pair::runSecond requires io',
+            ],
+            'conditionalPurityArgumentsChargeTheFirstPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P1
+                     * @psalm-purity-template P2
+                     */
+                    final class Pair {
+                        /**
+                         * @psalm-purity-template PA
+                         * @psalm-purity-template PB
+                         * @param list<T>|Container[PA]<int, T> $first
+                         * @param list<T>|Container[PB]<int, T> $second
+                         * @return self[$first is array ? pure : PA, $second is array ? pure : PB]<T>
+                         * @psalm-pure
+                         */
+                        public function __construct($first, $second) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P1
+                         */
+                        public function runFirst(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P2
+                         */
+                        public function runSecond(): int {
+                            return 2;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container[write-props]<int, int> $first
+                     * @param Container[io]<int, int> $second
+                     */
+                    function viaFirstContainer(Container $first, Container $second): int {
+                        $pair = new Pair($first, $second);
+                        return $pair->runFirst();
+                    }',
+                'error_message' => 'The context is pure but method Pair::runFirst requires write-props',
+            ],
+            'conditionalPurityArgumentOfAnArgumentOfEitherKindChargesTheBinding' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string, int>|Container[io]<string, int> $either
+                     */
+                    function viaEither($either): int {
+                        $wrapper = new Wrapper($either);
+                        return $wrapper->run();
+                    }',
+                'error_message' => 'The context is pure but method Wrapper::run requires io',
+            ],
+            'conditionalPurityArgumentOfAnUnboundArgumentChargesTheDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P(write-props) <= write-props|io
+                     */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P(io) <= write-props|io
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Wrapper {
+                        /**
+                         * @psalm-purity-template PP <= write-props|io
+                         * @param array<K, V>|Container[PP]<K, V> $param
+                         * @return self[$param is array ? pure : PP]<K, V>
+                         * @psalm-pure
+                         */
+                        public function __construct($param) {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Container<string, int> $container
+                     */
+                    function viaDefault(Container $container): int {
+                        $wrapper = new Wrapper($container);
+                        return $wrapper->run();
+                    }',
+                'error_message' => 'The context is pure but method Wrapper::run requires write-props',
             ],
         ];
     }
