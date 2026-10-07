@@ -94,6 +94,48 @@ final class ArrayAssignmentTest extends TestCase
                     '$j===' => 'int|string',
                 ],
             ],
+            'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
+                'code' => '<?php
+                    /** @var array{x: array<string, int>, y: int} $a */
+                    $a = ["x" => [], "y" => 1];
+                    $a["z"] = "z";
+                    $a["x"][(string) rand()] = 1;
+                    $b = $a["y"];
+                    $c = $a["z"];
+
+                    /** @var array<string, array<string, int|string>> $d */
+                    $d = [];
+                    $d["any"]["x"] = 5;
+                    $d["any"]["y"] = 6;
+                    $d[(string) rand()]["x"] = "s";
+                    $e = $d["any"]["x"];
+                    $f = $d["any"]["y"];
+
+                    /** @var array<string, array<string, int|string>> $g */
+                    $g = [];
+                    $k = (string) rand();
+                    $g[$k]["other"] = 5;
+                    $g[$k]["lit"] = 6;
+                    $g["x"]["lit"] = "s";
+                    $h = $g[$k]["other"];
+                    $i = $g[$k]["lit"];
+
+                    /** @var array<int, array<string, int|string>> $j */
+                    $j = [];
+                    $n = rand();
+                    $j[$n]["x"] = 5;
+                    $j[]["x"] = "s";
+                    $l = $j[$n]["x"];',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => "'z'",
+                    '$e===' => 'int|string',
+                    '$f===' => '6',
+                    '$h===' => '5',
+                    '$i===' => 'int|string',
+                    '$l===' => '5',
+                ],
+            ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
                     class a {}
@@ -2198,6 +2240,26 @@ final class ArrayAssignmentTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a["any"]["x"] = 5;
+                        $a[$k]["x"] = "s";
+                        return $a["any"]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalKeyAssignmentForgetsTheOffsetsOfAnUnknownParentItMayBe' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a[$k]["x"] = 5;
+                        $a["y"]["x"] = "s";
+                        return $a[$k]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'objectAssignment' => [
                 'code' => '<?php
                     class A {}
