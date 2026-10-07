@@ -18,6 +18,7 @@ use LogicException;
 use OutOfBoundsException;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\Namespace_;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
@@ -2452,6 +2453,7 @@ final class Config
     private function scanAutoloadableClassesRedeclaredByStubs(Codebase $codebase): void
     {
         $queued = false;
+        $node_finder = new NodeFinder();
 
         foreach ($this->stub_files as $stub_path) {
             $has_errors = false;
@@ -2463,16 +2465,15 @@ final class Config
 
             foreach ($statements as $stmt) {
                 $namespace = '';
+                $nodes = [$stmt];
 
                 if ($stmt instanceof Namespace_) {
                     $namespace = $stmt->name ? $stmt->name->toString() . '\\' : '';
-                    $classlikes = $stmt->stmts;
-                } else {
-                    $classlikes = [$stmt];
+                    $nodes = $stmt->stmts;
                 }
 
-                foreach ($classlikes as $classlike) {
-                    if (!$classlike instanceof ClassLike || $classlike->name === null) {
+                foreach ($node_finder->findInstanceOf($nodes, ClassLike::class) as $classlike) {
+                    if ($classlike->name === null) {
                         continue;
                     }
 
