@@ -24,6 +24,7 @@ use function implode;
 use function ksort;
 use function max;
 use function min;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -71,12 +72,28 @@ final class TaintFlowResolution
      */
     private const FAMILIES = ['arrayvalue', 'property'];
     private const ARRAY_FAMILY = 0;
+    private const PROPERTY_FAMILY = 1;
 
     /**
      * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
      * it, a fetch of an array key doesn't.
      */
     private const KEY_CLASS = 'key';
+
+    /**
+     * The class (see getClass()) of an open assignment under an unknown key: only a conversion (see
+     * CONVERSION_KEY) ignores it. Apart from '', the class of none, or of one the flows don't know (see
+     * getAssignmentClass()), which no fetch ignores.
+     */
+    private const UNKNOWN_KEY_CLASS = '*';
+
+    /**
+     * The key a scalar conversion (a cast, a concatenation) of a value that may be an array observes (see
+     * getPathTypeEffects()): only the class of none, or of an open assignment the flows don't know, passes it
+     * (see classPassesFetch()). A converted array is "Array", or 0/1, never what it holds, but a value with
+     * no open array assignment (what may be an array may also be a string) can be the taint itself.
+     */
+    private const CONVERSION_KEY = '#';
 
     /**
      * How many of its innermost open assignments of each expression type a flow outside of any context keeps
@@ -1137,6 +1154,11 @@ final class TaintFlowResolution
             return [-1, '!' . substr($path_type, 21), -1, -1, null, false];
         }
 
+        if (str_ends_with($path_type, TaintFlowGraph::ARRAY_CONVERSION_SUFFIX)) {
+            // a conversion of a value that may be the array the innermost open array assignment put the taint in
+            return [self::ARRAY_FAMILY, self::CONVERSION_KEY, -1, -1, null, false];
+        }
+
         $observed_family = -1;
         $observed_key = null;
         $closed_family = -1;
@@ -1301,7 +1323,11 @@ final class TaintFlowResolution
             // where the flow knows that's the innermost one: an unknown key is fetched too often for the walks
             // to be told apart by it in filters (see getFilter()).
             $next = self::IGNORED;
-        } elseif ($observed_family === -1) {
+        } elseif ($observed_family === -1
+            || ($observed_key === self::CONVERSION_KEY && ($made[self::PROPERTY_FAMILY] ?? []))
+        ) {
+            // (a conversion of what may also be an object the taint is in a property of keeps it: its
+            // __toString() may give it)
             $next = $this->applyPathType($open_assignments, $path_type);
         } elseif ($made[$observed_family] && $made[$observed_family][count($made[$observed_family]) - 1] < 0) {
             // one of the call put back
@@ -2503,7 +2529,7 @@ final class TaintFlowResolution
     /**
      * The class of an open assignment of type $family: what decides whether a fetch ignores it (see
      * shouldIgnoreFetch()). That's its key, prefixed with ':' (see DataFlowGraph::keysMayBeEqual()), KEY_CLASS
-     * for an array key, or '' if no fetch ignores it.
+     * for an array key, or UNKNOWN_KEY_CLASS for an unknown key.
      *
      * @psalm-mutation-free
      */
@@ -2519,7 +2545,7 @@ final class TaintFlowResolution
         return $assignment_type !== $expression_type . '-assignment'
             && str_starts_with($assignment_type, $expression_type . '-assignment-')
             ? ':' . substr($assignment_type, strlen($expression_type) + 12)
-            : '';
+            : self::UNKNOWN_KEY_CLASS;
     }
 
     /**
@@ -2537,6 +2563,10 @@ final class TaintFlowResolution
      */
     private static function classPassesFetch(string $class, string $fetched_key): bool
     {
+        if ($fetched_key === self::CONVERSION_KEY) {
+            return $class === '';
+        }
+
         if (str_starts_with($fetched_key, '!')) {
             // the replacement of the value under a key (see getPathTypeEffects()): only what was assigned under
             // that key goes
@@ -2549,7 +2579,10 @@ final class TaintFlowResolution
         }
 
         // a fetch of the keys ('') takes nothing assigned as a value, under any key
-        return $fetched_key !== '' && ($class === '' || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key));
+        return $class === ''
+            || ($fetched_key !== ''
+                && ($class === self::UNKNOWN_KEY_CLASS
+                    || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key)));
     }
 
     /**
