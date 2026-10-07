@@ -440,6 +440,28 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
+                'code' => '<?php
+                    $stream = fopen("php://stderr", "w");
+                    if ($stream !== false) {
+                        fwrite($stream, (string) $_GET["x"]);
+                    }',
+            ],
+            'writingToAFileIsNotAnHtmlSink' => [
+                'code' => '<?php
+                    file_put_contents("/var/log/x", (string) $_GET["x"]);
+                    $stream = fopen("/var/log/x", "w");
+                    if ($stream !== false) {
+                        fwrite($stream, (string) $_GET["x"]);
+                    }',
+            ],
+            'writingToAStreamOfUnknownTargetIsNotAnHtmlSink' => [
+                'code' => '<?php
+                    /** @param resource $stream */
+                    function writeTo($stream): void {
+                        fwrite($stream, (string) $_GET["x"]);
+                    }',
+            ],
             'closurePassedToMagicStaticMethod' => [
                 'code' => '<?php
                     /** @method static string run(Closure $c) */
@@ -3922,6 +3944,68 @@ final class TaintTest extends TestCase
             'taintedInputFromStdinViaStreamGetContents' => [
                 'code' => '<?php
                     echo stream_get_contents(STDIN);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlWrittenToPhpOutputWithFilePutContents' => [
+                'code' => '<?php
+                    file_put_contents("php://output", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlWrittenToPhpStdoutWithFilePutContents' => [
+                'code' => '<?php
+                    file_put_contents("php://stdout", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlWrittenToAPhpOutputStream' => [
+                'code' => '<?php
+                    /** @psalm-suppress PossiblyFalseArgument */
+                    fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlWrittenToAPhpStdoutStream' => [
+                'code' => '<?php
+                    /** @psalm-suppress PossiblyFalseArgument */
+                    fwrite(fopen("php://stdout", "w"), (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedTextWithQuotesWrittenToAPhpOutputStream' => [
+                'code' => '<?php
+                    /** @psalm-suppress PossiblyFalseArgument */
+                    fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
+                'error_message' => 'TaintedTextWithQuotes',
+            ],
+            'taintedHtmlWrittenToAPhpOutputStreamHeldByAVariable' => [
+                'code' => '<?php
+                    $stream = fopen("php://output", "w");
+                    if ($stream !== false) {
+                        $output = $stream;
+                        fputs($output, "<p>");
+                        fputcsv($output, [(string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlFormattedToAPhpOutputStream' => [
+                'code' => '<?php
+                    $stream = fopen("php://output", "w");
+                    if ($stream !== false) {
+                        fprintf($stream, "<p>%s</p>", (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedInputCopiedToAPhpOutputStream' => [
+                'code' => '<?php
+                    $input = fopen("php://input", "r");
+                    $output = fopen("php://output", "w");
+                    if ($input !== false && $output !== false) {
+                        stream_copy_to_stream($input, $output);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlWrittenToAPhpOutputSplFileObject' => [
+                'code' => '<?php
+                    $file = new SplFileObject("php://output", "w");
+                    $file->fwrite("<p>");
+                    $file->fwrite((string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedInputFromSocketRead' => [

@@ -541,8 +541,6 @@ function debug_zval_dump($value, ...$values): void {}
 function print_r($value, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -598,8 +596,6 @@ function stream_get_contents($stream, ?int $length = null, int $offset = -1) {}
 function stream_get_line($stream, int $length, string $ending = "") {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -614,8 +610,6 @@ function show_source($filename, bool $return = false) {}
 function php_strip_whitespace(string $filename) : string {}
 
 /**
- * @psalm-pure
- *
  * @param mixed $string
  * @return ($return is true ? string : bool)
  *
@@ -1488,8 +1482,6 @@ function vsprintf(string $format, array $values) {}
 function wordwrap(string $string, int $width = 75, string $break = "\n", bool $cut_long_words = false) : string {}
 
 /**
- * @psalm-pure
- *
  * @param string|int|float $values
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
@@ -1512,7 +1504,6 @@ function printf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink has_quotes $format
