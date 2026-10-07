@@ -673,7 +673,9 @@ A condition can also be given to each purity argument, inside the brackets, and 
 purity template of the constructor, bound from the argument. With
 `@param array<K, V>|Container[PP]<K, V> $param` and `@return self[$param is array ? pure : PP]<K, V>`,
 `new Wrapper($container)` takes the purity argument of `$container`, `io` for a
-`Container[io]<string, int>`.
+`Container[io]<string, int>`. Such conditional purity arguments are resolved per call in the
+`@return` of any function or method, also nested (`list<Box[$x is array ? pure : io]<int>>`), and in
+`@psalm-self-out`.
 
 The `@return` of a constructor may only name its own class (or `self` or `static`); anything else
 is an `InvalidDocblock`. Since it names the class itself, a subclass inheriting the constructor,

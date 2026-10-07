@@ -1555,6 +1555,16 @@ final class FunctionLikeDocblockScanner
                     $function_template_types + $class_template_types,
                     $type_aliases,
                 );
+
+                $storage->self_out_type_location = new CodeLocation(
+                    $file_scanner,
+                    $stmt,
+                    null,
+                    true,
+                    null,
+                    null,
+                    $docblock_info->self_out['line_number'],
+                );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
