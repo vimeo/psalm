@@ -21,7 +21,6 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -31,9 +30,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -544,35 +541,34 @@ final class SimpleTypeInferer
             if (count($callables) === 1) {
                 return $callables[0]->return_type;
             }
-            $all_args_literal = true;
             foreach ($stmt->getArgs() as $arg) {
-                $arg_type = self::infer($codebase, $nodes, $arg->value, $aliases);
-                $atomic = $arg_type?->isSingle() ? $arg_type->getSingleAtomic() : null;
-                if ($arg_type === null || (!$atomic instanceof TTrue && !$atomic instanceof TFalse
-                    && !$atomic instanceof TLiteralInt && !$atomic instanceof TLiteralFloat
-                    && !$atomic instanceof TNull)) {
-                    $all_args_literal = false;
-                    continue;
+                $arg_type = self::infer(
+                    $codebase,
+                    $nodes,
+                    $arg->value,
+                    $aliases,
+                    null,
+                    $existing_class_constants,
+                    $fq_classlike_name,
+                );
+                if (!$arg_type || !($arg_type->isTrue() || $arg_type->isFalse() || $arg_type->isNull()
+                    || $arg_type->isSingleIntLiteral() || $arg_type->isSingleFloatLiteral())
+                ) {
+                    $return_types = [];
+                    foreach ($callables as $callable) {
+                        $return_types[] = $callable->return_type ?? Type::getMixed();
+                    }
+                    return Type::combineUnionTypeArray($return_types, null);
                 }
                 $nodes->setType($arg->value, $arg_type);
             }
-            if ($all_args_literal) {
-                return InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
-                    $codebase,
-                    $callables,
-                    $stmt->getArgs(),
-                    $nodes,
-                    $stmt->name->toString(),
-                )->return_type;
-            }
-            $return_types = [];
-            foreach ($callables as $callable) {
-                if ($callable->return_type === null) {
-                    return null;
-                }
-                $return_types[] = $callable->return_type;
-            }
-            return Type::combineUnionTypeArray($return_types, null);
+            return InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
+                $codebase,
+                $callables,
+                $stmt->getArgs(),
+                $nodes,
+                $stmt->name->toString(),
+            )->return_type;
         }
 
         return null;
