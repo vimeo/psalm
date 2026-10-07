@@ -1721,6 +1721,67 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'error_message' => 'ImmutableDependency',
             ],
+            'traitMethodNeedingMoreThanTheBoundOfAPurityTemplateTheClassDoesNotBind' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P <= read-props|write-props */
+                    interface Getter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function get(): string;
+                    }
+
+                    trait EchoingGetter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    final class Doer implements Getter {
+                        use EchoingGetter;
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'methodNeedingMoreThanTheBoundOfAPurityTemplateTheClassDoesNotBind' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P <= read-props|write-props */
+                    interface Getter {
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function get(): string;
+                    }
+
+                    final class Doer implements Getter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'traitMethodNeedingMoreThanAMethodWithoutPurityTemplate' => [
+                'code' => '<?php
+                    interface Getter {
+                        /** @psalm-capabilities read-props */
+                        public function get(): string;
+                    }
+
+                    trait EchoingGetter {
+                        public function get(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    final class Doer implements Getter {
+                        use EchoingGetter;
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
             'purityArgumentLeftOutWithoutDefaultIsItsUpperBound' => [
                 'code' => '<?php
                     /**
