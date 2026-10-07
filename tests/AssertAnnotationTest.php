@@ -159,6 +159,42 @@ final class AssertAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'assertKeyOfAClassConstantNarrowsToItsKeys' => [
+                'code' => '<?php
+                    final class OwnerTypes {
+                        public const ALLOWED = ["organization" => true, "prof" => true];
+                    }
+
+                    /** @psalm-assert key-of<OwnerTypes::ALLOWED> $type */
+                    function assertOwnerType(string $type): void {
+                        if (!array_key_exists($type, OwnerTypes::ALLOWED)) {
+                            throw new InvalidArgumentException("unknown owner type");
+                        }
+                    }
+
+                    $type = (string) rand();
+                    assertOwnerType($type);',
+                'assertions' => [
+                    '$type===' => "'organization'|'prof'",
+                ],
+            ],
+            'assertTemplateBoundToAUnionNarrowsToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $expected
+                     * @psalm-assert T $actual
+                     */
+                    function assertSame(string $expected, string $actual): void {}
+
+                    /** @var "a"|"b" $expected */
+                    $expected = rand(0, 1) ? "a" : "b";
+                    $actual = (string) rand();
+                    assertSame($expected, $actual);',
+                'assertions' => [
+                    '$actual===' => "'a'|'b'",
+                ],
+            ],
             'implicitAssertInstanceOfB' => [
                 'code' => '<?php
                     namespace Bar;
