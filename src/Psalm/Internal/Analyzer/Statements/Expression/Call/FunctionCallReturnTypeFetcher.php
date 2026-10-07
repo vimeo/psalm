@@ -825,6 +825,11 @@ final class FunctionCallReturnTypeFetcher
     /**
      * A callable passed to a parameter of a function-like: the calls of the parameter in its body give what the
      * callable returns, and what they pass flows into its parameters (see taintCallableParamCall()).
+     *
+     * When the calls of the callable are specialized, those of the parameter are a call of its own, specialized where
+     * it is passed: its unspecialized nodes belong to its body, which all of its calls share, and an edge out of its
+     * unspecialized return node would keep what the body returns from leaving through the calls specialized at their
+     * own call sites.
      */
     public static function taintCallablePassedToParam(
         StatementsAnalyzer $statements_analyzer,
@@ -834,6 +839,7 @@ final class FunctionCallReturnTypeFetcher
         FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location,
         Union $input_type,
+        CodeLocation $callable_location,
     ): void {
         foreach ($input_type->getAtomicTypes() as $atomic) {
             if (!$atomic instanceof TClosure && !$atomic instanceof TCallable) {
@@ -859,11 +865,24 @@ final class FunctionCallReturnTypeFetcher
             $callable_storage = self::getCallableStorage($statements_analyzer, $atomic->callable_id);
 
             if ($callable_storage !== null) {
-                $callable_return_node = DataFlowNode::getForMethodReturn($atomic->callable_id, $callable_storage);
+                $callable_specialization_location = TaintFlowGraph::isCallSpecialized(
+                    $graph,
+                    $statements_analyzer->getCodebase(),
+                    $callable_storage,
+                    $callable_location,
+                ) ? $callable_location : null;
+
+                $callable_return_node = DataFlowNode::getForMethodReturn(
+                    $atomic->callable_id,
+                    $callable_storage,
+                    $callable_specialization_location,
+                );
                 $graph->addNode($callable_return_node);
                 self::taintUsingStorage($callable_storage, $graph, $callable_return_node);
                 $graph->addPath($callable_return_node, $return_node, 'callable-return');
             } else {
+                $callable_specialization_location = null;
+
                 $callable_storage = self::getClosureStorage($statements_analyzer, $atomic->callable_id);
 
                 if ($callable_storage === null) {
@@ -890,7 +909,12 @@ final class FunctionCallReturnTypeFetcher
                 );
                 $graph->addNode($argument_node);
 
-                $param_node = DataFlowNode::getForMethodArgument($atomic->callable_id, $i, $callable_storage);
+                $param_node = DataFlowNode::getForMethodArgument(
+                    $atomic->callable_id,
+                    $i,
+                    $callable_storage,
+                    $callable_specialization_location,
+                );
                 $graph->addNode($param_node);
 
                 if ($param->sinks) {
@@ -962,6 +986,7 @@ final class FunctionCallReturnTypeFetcher
                         $storage,
                         $specialization_location,
                         $arg_type,
+                        new CodeLocation($statements_analyzer->getSource(), $args[$arg_index]->value),
                     );
                 }
             }

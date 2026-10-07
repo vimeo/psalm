@@ -1964,6 +1964,7 @@ final class ArgumentAnalyzer
                 $callable_param_storage,
                 $specialization_location,
                 $input_type,
+                $arg_location,
             );
         }
 
