@@ -897,6 +897,21 @@ final class TaintTest extends TestCase
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
             ],
+            'dontTaintAContainerWithWhatAnotherOneHolds' => [
+                'code' => '<?php // --taint-analysis
+                    $tainted = new SplQueue();
+                    $tainted->enqueue((string) $_GET["a"]);
+                    $safe = new SplQueue();
+                    $safe->enqueue("safe");
+                    echo (string) $safe->dequeue();',
+            ],
+            'dontTaintTheOtherOffsetsOfAContainer' => [
+                'code' => '<?php // --taint-analysis
+                    $container = new ArrayObject();
+                    $container->offsetSet("a", (string) $_GET["a"]);
+                    $container->offsetSet("b", "safe");
+                    echo (string) $container->offsetGet("b");',
+            ],
             'dontTaintAnObjectBuiltFromAnotherCallsArgument' => [
                 'code' => '<?php // --taint-analysis
                     final class Url {
@@ -3347,6 +3362,52 @@ final class TaintTest extends TestCase
 
                     fetch(new Url("https:", "", (string) $_GET["host"]));',
                 'error_message' => 'TaintedSSRF',
+            ],
+            'taintedThroughTheMethodsOfAContainer' => [
+                'code' => '<?php // --taint-analysis
+                    $queue = new SplQueue();
+                    $queue->enqueue((string) $_GET["a"]);
+                    echo (string) $queue->dequeue();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedThroughWhatAContainerIsBuiltFrom' => [
+                'code' => '<?php // --taint-analysis
+                    $iterator = new LimitIterator(new ArrayIterator([(string) $_GET["a"]]), 0, 1);
+                    echo (string) $iterator->current();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedThroughAContainerHeldInAProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Registry {
+                        /** @var SplObjectStorage<object, string> */
+                        private SplObjectStorage $names;
+
+                        public function __construct() {
+                            $this->names = new SplObjectStorage();
+                        }
+
+                        public function add(object $object, string $name): void {
+                            $this->names->attach($object, $name);
+                        }
+
+                        public function show(object $object): void {
+                            echo $this->names->offsetGet($object);
+                        }
+                    }
+
+                    $registry = new Registry();
+                    $object = new stdClass();
+                    $registry->add($object, (string) $_GET["a"]);
+                    $registry->show($object);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedThroughWhatIsWrittenToAFileObject' => [
+                'code' => '<?php // --taint-analysis
+                    $file = new SplTempFileObject();
+                    $file->fwrite((string) $_GET["a"]);
+                    $file->rewind();
+                    echo (string) $file->fgets();',
+                'error_message' => 'TaintedHtml',
             ],
             'taintAnObjectThroughTheFlowOfItsConstructor' => [
                 'code' => '<?php // --taint-analysis
