@@ -62,6 +62,38 @@ final class ArrayAssignmentTest extends TestCase
                     '$resultOpt===' => 'array{a?: true, b?: true}',
                 ],
             ],
+            'unknownKeyAssignmentForgetsTheOffsetsItMayBe' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = [];
+                    $a["x"] = 1;
+                    $a[(string) rand()] = "b";
+                    $b = $a["x"];
+
+                    /** @var array<string, array<string, int|string>> $e */
+                    $e = [];
+                    $e["x"]["y"] = 1;
+                    $e["x"][(string) rand()] = "b";
+                    $f = $e["x"]["y"];
+
+                    $g = ["y" => 1];
+                    $g["x"] = 1;
+                    $g[] = "b";
+                    $h = $g["x"];
+
+                    /** @var array<string, int|string> $i */
+                    $i = [];
+                    $k = (string) rand();
+                    $i[$k] = 1;
+                    $i["x"] = "b";
+                    $j = $i[$k];',
+                'assertions' => [
+                    '$b===' => '1|string',
+                    '$f===' => "'b'|1",
+                    '$h===' => '1',
+                    '$j===' => 'int|string',
+                ],
+            ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
                     class a {}
