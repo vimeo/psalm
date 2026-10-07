@@ -981,20 +981,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && $this->function instanceof ClassMethod
             && $cased_method_id
             && $storage->specialize_call
+            && $storage->location
             && isset($context->vars_in_scope['$this'])
             && $context->vars_in_scope['$this']->parent_nodes
         ) {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $storage,
-            );
+            // what the method leaves in the object, apart from what it returns: see MethodCallReturnTypeFetcher
+            $this_out_node = DataFlowNode::getForAssignment('$this out of ' . $cased_method_id, $storage->location);
 
-            $codebase->taint_flow_graph->addNode($method_source);
+            $codebase->taint_flow_graph->addNode($this_out_node);
 
             foreach ($context->vars_in_scope['$this']->parent_nodes as $parent_node) {
                 $codebase->taint_flow_graph->addPath(
                     $parent_node,
-                    $method_source,
+                    $this_out_node,
                     '$this',
                 );
             }

@@ -17,7 +17,6 @@ return [
     'hebrev' => ['string'],
     'number_format' => ['decimal_separator', 'thousands_separator'],
     'strtok' => ['string'],
-    'strtr' => ['string', 'from', 'to'],
     'utf8_decode' => ['string'],
     'utf8_encode' => ['string'],
     // standard: arrays

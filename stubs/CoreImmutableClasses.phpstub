@@ -131,13 +131,11 @@ class DatePeriod implements Traversable
     public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
 }
 
-/**
- * @psalm-taint-specialize
- */
 interface Throwable
 {
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public function getMessage() : string;
 
@@ -182,9 +180,6 @@ interface Throwable
     public function __toString();
 }
 
-/**
- * @psalm-taint-specialize
- */
 class Exception implements Throwable
 {
     /**
@@ -218,6 +213,7 @@ class Exception implements Throwable
 
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public final function getMessage() : string {}
 
@@ -262,9 +258,6 @@ class Exception implements Throwable
     public function __toString() {}
 }
 
-/**
- * @psalm-taint-specialize
- */
 class Error implements Throwable
 {
     /**
@@ -298,6 +291,7 @@ class Error implements Throwable
 
     /**
      * @psalm-mutation-free
+     * @psalm-taint-source input
      */
     public final function getMessage() : string {}
 

@@ -132,6 +132,17 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The values a property gets through its class (as opposed to the node of the property, which also gets those
+     * set through the subclasses), which the objects of its subclasses may have too.
+     *
+     * @psalm-pure
+     */
+    public static function getForInheritedProperty(string $property_id): self
+    {
+        return self::make($property_id . ' inherited', $property_id, null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.

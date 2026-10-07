@@ -1060,9 +1060,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallReturnTypeFetcher.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$method_id]]></code>
-    </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>

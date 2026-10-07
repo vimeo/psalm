@@ -475,6 +475,11 @@ class DOMDocument extends DOMNode implements DOMParentNode
     /**
      * @return bool
      * @psalm-ignore-falsable-return
+     *
+     * @psalm-taint-sink file $filename
+     * @psalm-taint-sink ssrf $filename
+     * @psalm-taint-sink url_component $filename
+     * @psalm-taint-sink url_path $filename
      **/
     public function load(string $filename, int $options = 0) {}
 
@@ -497,7 +502,14 @@ class DOMDocument extends DOMNode implements DOMParentNode
     /** @return bool */
     public function loadHTML(string $source, int $options = 0) {}
 
-    /** @return bool */
+    /**
+     * @return bool
+     *
+     * @psalm-taint-sink file $filename
+     * @psalm-taint-sink ssrf $filename
+     * @psalm-taint-sink url_component $filename
+     * @psalm-taint-sink url_path $filename
+     */
     public function loadHTMLFile(string $filename, int $options = 0) {}
 
     /**
