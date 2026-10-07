@@ -7,6 +7,7 @@ namespace Psalm\Storage;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
@@ -287,6 +288,14 @@ final class Capabilities
                 continue;
             }
 
+            // `[$param is array ? pure : P]`, resolved per call like a conditional return type
+            if ($atomic instanceof TConditional
+                && self::isPurityType($atomic->if_type)
+                && self::isPurityType($atomic->else_type)
+            ) {
+                continue;
+            }
+
             return false;
         }
 
@@ -308,6 +317,13 @@ final class Capabilities
             }
 
             if ($atomic instanceof TTemplateParam && self::isPurityArgument($atomic->as)) {
+                continue;
+            }
+
+            if ($atomic instanceof TConditional
+                && self::isPurityArgument($atomic->if_type)
+                && self::isPurityArgument($atomic->else_type)
+            ) {
                 continue;
             }
 
