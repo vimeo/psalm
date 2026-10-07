@@ -49,7 +49,18 @@ final class CapabilitiesTest extends TestCase
 
                         $heap = new SplMinHeap();
                         $heap->insert(4);
-                        return $sum + $heap->count();
+                        $sum += $heap->count();
+
+                        $object = new ArrayObject([5]);
+                        $object->append(6);
+                        $object[] = 7;
+                        $object->asort();
+                        $sum += count($object);
+
+                        $iterator = new ArrayIterator([8]);
+                        $iterator[] = 9;
+                        $iterator->offsetUnset(0);
+                        return $sum + count($iterator);
                     }
 
                     /**
@@ -61,10 +72,10 @@ final class CapabilitiesTest extends TestCase
                         return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
                     }',
             ],
-            'splObjectStorageWithVarAndArrayObjectStillRequireWritingProps' => [
+            'splObjectStorageWithVarStillRequiresWritingProps' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-props|write-props */
-                    function useContainers(): int {
+                    function useStorage(): int {
                         // new SplObjectStorage() infers its templates as never, so it needs a @var,
                         // which drops that the object is fresh until
                         // https://github.com/vimeo/psalm/pull/12178
@@ -73,13 +84,7 @@ final class CapabilitiesTest extends TestCase
                         $key = new stdClass();
                         $storage->attach($key, 1);
                         $storage[$key] = 2;
-                        $sum = $storage[$key] + (int) $storage->contains($key);
-
-                        // the storage of an ArrayObject may be another object, passed to the
-                        // constructor or to exchangeArray(), whose properties its mutators then write
-                        $object = new ArrayObject([5]);
-                        $object->append(6);
-                        return $sum + count($object);
+                        return $storage[$key] + (int) $storage->contains($key);
                     }',
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
@@ -1540,6 +1545,59 @@ final class CapabilitiesTest extends TestCase
                         return true;
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'arrayObjectBackedByAnObjectWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $object = new ArrayObject($storage);
+                        $object["key"] = 1;
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'arrayIteratorBackedByAnObjectWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $iterator = new ArrayIterator($storage);
+                        $iterator["key"] = 1;
+                        return count($iterator);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+            ],
+            'arrayObjectExchangingItsStorageWritesProps' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function swap(stdClass $storage): int {
+                        $object = new ArrayObject(["key" => 0]);
+                        $object->exchangeArray($storage);
+                        $object["key"] = 1;
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+            ],
+            'arrayObjectOfUnknownStorageWritesProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function fill(ArrayObject $object): void {
+                        $object->append(1);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method ArrayObject::append requires write-props',
+            ],
+            'arrayIteratorOfUnknownStorageWritesProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayIterator<int, int> $iterator
+                     * @psalm-mutation-free
+                     */
+                    function fill(ArrayIterator $iterator): void {
+                        $iterator->append(1);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method ArrayIterator::append requires write-props',
             ],
             'splContainerSubclassesKeepTheirContract' => [
                 'code' => '<?php
