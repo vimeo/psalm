@@ -48,8 +48,10 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -669,44 +671,18 @@ final class NewAnalyzer extends CallAnalyzer
                     ]);
                 }
 
-                if ($method_storage && $method_storage->self_out_type) {
-                    $self_out_candidate = $method_storage->self_out_type;
-
-                    if ($template_result->lower_bounds) {
-                        $self_out_candidate = TypeExpander::expandUnion(
-                            $codebase,
-                            $self_out_candidate,
-                            $fq_class_name,
-                            null,
-                            $storage->parent_class,
-                            true,
-                            false,
-                            false,
-                            true,
-                        );
-                    }
-
-                    $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
-                        $self_out_candidate,
-                        $template_result,
-                        $method_id,
-                        count($stmt->getArgs()),
-                        $codebase,
-                    );
-
-                    $self_out_candidate = TypeExpander::expandUnion(
-                        $codebase,
-                        $self_out_candidate,
-                        $fq_class_name,
-                        $fq_class_name,
-                        $storage->parent_class,
-                        true,
-                        false,
-                        false,
-                        true,
-                    );
-                    $statements_analyzer->node_data->setType($stmt, $self_out_candidate);
-                }
+                $self_out_candidate = self::getSelfOutType(
+                    $statements_analyzer,
+                    $stmt,
+                    $storage,
+                    $fq_class_name,
+                    $from_static,
+                    $method_storage,
+                    $declaring_method_id,
+                    $method_id,
+                    $template_result,
+                    $generic_param_types,
+                );
             }
 
             // XXX: what if we need both?
@@ -1401,6 +1377,134 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * The type of `new` when the constructor says what it constructs: through `@psalm-this-out`, or
+     * through a `@return` naming the class (`Store[pure]<TValue>`), whose class templates are bound
+     * to what the plain type of `new` has. A subclass inheriting a constructor with a `@return`, or
+     * `new static` from a class that may have some, gets the plain type instead.
+     *
+     * @param list<Union> $generic_param_types
+     */
+    private static function getSelfOutType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+        bool $from_static,
+        ?MethodStorage $method_storage,
+        ?MethodIdentifier $declaring_method_id,
+        MethodIdentifier $method_id,
+        TemplateResult $template_result,
+        array $generic_param_types,
+    ): ?Union {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($method_storage && $method_storage->self_out_type) {
+            $self_out_candidate = $method_storage->self_out_type;
+
+            if ($template_result->lower_bounds) {
+                $self_out_candidate = TypeExpander::expandUnion(
+                    $codebase,
+                    $self_out_candidate,
+                    $fq_class_name,
+                    null,
+                    $storage->parent_class,
+                    true,
+                    false,
+                    false,
+                    true,
+                );
+            }
+        } elseif ($method_storage
+            && $declaring_method_id
+            && (!$from_static || $storage->final)
+            && strtolower($declaring_method_id->fq_class_name) === strtolower($fq_class_name)
+            && $method_storage->return_type
+            && self::isConstructedType($method_storage->return_type)
+        ) {
+            $self_out_candidate = $method_storage->return_type;
+            $bound_template_result = new TemplateResult($template_result->template_types, []);
+            $bound_template_result->lower_bounds = $template_result->lower_bounds;
+            $offset = 0;
+
+            foreach ($storage->template_types ?? [] as $template_name => $_) {
+                $bound_template_result->lower_bounds[$template_name][$fq_class_name] = [
+                    new TemplateBound($generic_param_types[$offset]),
+                ];
+                $offset++;
+            }
+
+            $template_result = $bound_template_result;
+        } else {
+            return null;
+        }
+
+        $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+            $self_out_candidate,
+            $template_result,
+            $method_id,
+            count($stmt->getArgs()),
+            $codebase,
+        );
+
+        $self_out_candidate = TypeExpander::expandUnion(
+            $codebase,
+            $self_out_candidate,
+            $fq_class_name,
+            $fq_class_name,
+            $storage->parent_class,
+            true,
+            false,
+            false,
+            true,
+        );
+
+        $statements_analyzer->node_data->setType($stmt, $self_out_candidate);
+
+        return $self_out_candidate;
+    }
+
+    /**
+     * The types a constructor's @return may give the object it constructs, through its conditional
+     * branches: an object type, which the docblock scanner checks names the class itself.
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    public static function getConstructedAtomics(Union $type): array
+    {
+        $atomics = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            $atomics = $atomic instanceof TConditional
+                ? [
+                    ...$atomics,
+                    ...self::getConstructedAtomics($atomic->if_type),
+                    ...self::getConstructedAtomics($atomic->else_type),
+                ]
+                : [...$atomics, $atomic];
+        }
+
+        return $atomics;
+    }
+
+    /**
+     * Whether a constructor's @return gives the type of the object it constructs, and is not a
+     * `@return void` or similar.
+     *
+     * @psalm-pure
+     */
+    private static function isConstructedType(Union $type): bool
+    {
+        foreach (self::getConstructedAtomics($type) as $atomic) {
+            if (!$atomic instanceof TNamedObject) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

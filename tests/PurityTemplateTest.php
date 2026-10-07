@@ -1621,6 +1621,105 @@ final class PurityTemplateTest extends TestCase
                         return false;
                     }',
             ],
+            'constructorReturnTypeBindsAPurityTemplateFromTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Store {
+                        private int $writes = 0;
+
+                        /**
+                         * @param array<TValue>|object $storage
+                         * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+                         * @psalm-pure
+                         */
+                        public function __construct($storage = []) {}
+
+                        /**
+                         * @param TValue $value
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function add($value): void {
+                            $this->writes++;
+                        }
+
+                        /** @psalm-pure */
+                        public static function make(): int {
+                            $store = new static([1]);
+                            $store->add(2);
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function arrayBacked(): int {
+                        $store = new Store([1]);
+                        $store->add(2);
+                        $empty = new Store();
+                        $empty->add(3);
+                        return 1;
+                    }
+
+                    $array_backed = new Store(["a"]);
+                    $object_backed = new Store(new stdClass());',
+                'assertions' => [
+                    '$array_backed' => 'Store[pure]<string>',
+                    '$object_backed' => 'Store[write-props]<mixed>',
+                ],
+            ],
+            'constructorReturnTypeBindsATypeTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @return Box<int> */
+                        public function __construct() {}
+                    }
+
+                    $box = new Box();',
+                'assertions' => [
+                    '$box' => 'Box<int>',
+                ],
+            ],
+            'subclassInheritingAConstructorWithAReturnTypeGetsThePlainType' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class Store {
+                        private int $writes = 0;
+
+                        /**
+                         * @param array<TValue>|object $storage
+                         * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+                         * @psalm-pure
+                         */
+                        public function __construct($storage = []) {}
+
+                        /**
+                         * @param TValue $value
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function add($value): void {
+                            $this->writes++;
+                        }
+                    }
+
+                    /**
+                     * @extends Store<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Sub extends Store {}
+
+                    $sub = new Sub([1]);',
+                'assertions' => [
+                    '$sub' => 'Sub',
+                ],
+            ],
         ];
     }
 
@@ -3250,6 +3349,124 @@ final class PurityTemplateTest extends TestCase
                     }
 ',
                 'error_message' => 'constructor Base::__construct requires impure',
+            ],
+            'constructorReturnTypeOfAnObjectArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Store {
+                        private int $writes = 0;
+
+                        /**
+                         * @param array<TValue>|object $storage
+                         * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+                         * @psalm-pure
+                         */
+                        public function __construct($storage = []) {}
+
+                        /**
+                         * @param TValue $value
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function add($value): void {
+                            $this->writes++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function objectBacked(stdClass $object): int {
+                        $store = new Store($object);
+                        $store->add(1);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:25 - The context is pure but method Store::add requires write-props',
+            ],
+            'constructorReturnTypeOfAnArgumentOfUnknownKind' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Store {
+                        private int $writes = 0;
+
+                        /**
+                         * @param array<TValue>|object $storage
+                         * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+                         * @psalm-pure
+                         */
+                        public function __construct($storage = []) {}
+
+                        /**
+                         * @param TValue $value
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function add($value): void {
+                            $this->writes++;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<int>|stdClass $storage
+                     */
+                    function unknownBacked($storage): int {
+                        $store = new Store($storage);
+                        $store->add(1);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'newStaticFromANonFinalClassGetsThePlainType' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @psalm-capabilities read-props|write-this-props
+                     * @psalm-consistent-constructor
+                     */
+                    class Store {
+                        private int $writes = 0;
+
+                        /**
+                         * @param array<TValue>|object $storage
+                         * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+                         * @psalm-pure
+                         */
+                        public function __construct($storage = []) {}
+
+                        /**
+                         * @param TValue $value
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function add($value): void {
+                            $this->writes++;
+                        }
+
+                        /** @psalm-pure */
+                        public static function make(): int {
+                            $store = new static([1]);
+                            $store->add(2);
+                            return 1;
+                        }
+                    }
+',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:29 - The context is pure but method Store::add requires write-props',
+            ],
+            'constructorReturnTypeNamingAnotherClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    final class Maker {
+                        /** @return Box<int> */
+                        public function __construct() {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The @return of Maker::__construct must be the type of the object it constructs, Maker',
             ],
         ];
     }
