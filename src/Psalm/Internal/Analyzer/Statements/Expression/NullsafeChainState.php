@@ -49,6 +49,7 @@ enum NullsafeChainState
      * which MUST NOT be None.
      *
      * @param bool $own_nullable whether the link's own result, analysed on the non-null receiver parts, is nullable
+     * @psalm-capabilities read-props
      */
     public function afterLink(bool $own_nullable): self
     {

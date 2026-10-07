@@ -2295,6 +2295,7 @@ final class ClassLikeNodeScanner
     /**
      * @return array{0: string, 1: string}|null
      * @throws DocblockParseException if there was a problem parsing the docblock
+     * @psalm-capabilities read-props
      */
     private static function parseTypeAliasDeclarationLine(string $var_line): ?array
     {
@@ -2360,6 +2361,7 @@ final class ClassLikeNodeScanner
      * @param  array<string, string> $declarations alias name => type string
      * @param  array<string, TypeAlias>|null $type_aliases
      * @return array<string, string>
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function orderTypeAliasDeclarationsByDependency(
         array $declarations,
@@ -2423,6 +2425,7 @@ final class ClassLikeNodeScanner
      * @param  array<string, InlineTypeAlias> $placeholders
      * @param  array<string, TypeAlias>|null $type_aliases
      * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getLocalTypeAliasReferences(
         string $type_string,

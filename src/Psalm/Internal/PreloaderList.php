@@ -705,6 +705,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NamedFunctionCallHandler::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer::class,
