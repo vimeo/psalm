@@ -611,6 +611,56 @@ final class TaintTest extends TestCase
                     relay(["name" => "safe"]);
                 ',
             ],
+            'specializedFetchOfAWrappedKeyWhereTheKeysOfALargeArrayConverge' => [
+                // The values of the 34 keys of the array converge at $row, each with its own key: more than 32
+                // keys, which a convergence of $row still tells apart. The fetch of "wrapper" there, and then of
+                // "name" in the specialized call, ignores the value of "other" next to it.
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function getName(array $p): string { return (string) $p["name"]; }
+
+                    function show(array $row): void {
+                        echo getName($row["wrapper"]);
+                    }
+
+                    show([
+                        "k0" => (string)($_GET["k0"] ?? ""),
+                        "k1" => (string)($_GET["k1"] ?? ""),
+                        "k2" => (string)($_GET["k2"] ?? ""),
+                        "k3" => (string)($_GET["k3"] ?? ""),
+                        "k4" => (string)($_GET["k4"] ?? ""),
+                        "k5" => (string)($_GET["k5"] ?? ""),
+                        "k6" => (string)($_GET["k6"] ?? ""),
+                        "k7" => (string)($_GET["k7"] ?? ""),
+                        "k8" => (string)($_GET["k8"] ?? ""),
+                        "k9" => (string)($_GET["k9"] ?? ""),
+                        "k10" => (string)($_GET["k10"] ?? ""),
+                        "k11" => (string)($_GET["k11"] ?? ""),
+                        "k12" => (string)($_GET["k12"] ?? ""),
+                        "k13" => (string)($_GET["k13"] ?? ""),
+                        "k14" => (string)($_GET["k14"] ?? ""),
+                        "k15" => (string)($_GET["k15"] ?? ""),
+                        "k16" => (string)($_GET["k16"] ?? ""),
+                        "k17" => (string)($_GET["k17"] ?? ""),
+                        "k18" => (string)($_GET["k18"] ?? ""),
+                        "k19" => (string)($_GET["k19"] ?? ""),
+                        "k20" => (string)($_GET["k20"] ?? ""),
+                        "k21" => (string)($_GET["k21"] ?? ""),
+                        "k22" => (string)($_GET["k22"] ?? ""),
+                        "k23" => (string)($_GET["k23"] ?? ""),
+                        "k24" => (string)($_GET["k24"] ?? ""),
+                        "k25" => (string)($_GET["k25"] ?? ""),
+                        "k26" => (string)($_GET["k26"] ?? ""),
+                        "k27" => (string)($_GET["k27"] ?? ""),
+                        "k28" => (string)($_GET["k28"] ?? ""),
+                        "k29" => (string)($_GET["k29"] ?? ""),
+                        "k30" => (string)($_GET["k30"] ?? ""),
+                        "k31" => (string)($_GET["k31"] ?? ""),
+                        "k32" => (string)($_GET["k32"] ?? ""),
+                        "wrapper" => ["name" => "safe", "other" => (string)($_GET["other"] ?? "")],
+                    ]);
+                ',
+            ],
             'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
                 'code' => '<?php
                     $stream = fopen("php://stderr", "w");

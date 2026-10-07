@@ -145,10 +145,12 @@ final class TaintFlowResolution
     private const CONVERGENCE_LEVELS = 12;
 
     /**
-     * How many convergences of a node know the innermost open assignments of the flows entering them at most
-     * (see getConvergenceOpenAssignments())
+     * How many convergences of a node know the innermost open assignments of the flows entering them at least
+     * (see getConvergenceOpenAssignments()), whatever the largest array or object of the graph (see
+     * $max_convergence_keys): enough for the flows of the few differently keyed arrays usually passed to a
+     * function.
      */
-    private const MAX_CONVERGENCE_KEYS = 32;
+    private const MIN_CONVERGENCE_KEYS = 32;
 
     /**
      * The bits of a packed observable depth (see computeObservableDepths()) for each expression type
@@ -438,6 +440,12 @@ final class TaintFlowResolution
     private array $convergence_open_assignments = [];
 
     /**
+     * How many convergences of a node know the innermost open assignments of the flows entering them at most
+     * (see getConvergenceOpenAssignments() and computeMaxConvergenceKeys()), MIN_CONVERGENCE_KEYS at least
+     */
+    private int $max_convergence_keys = self::MIN_CONVERGENCE_KEYS;
+
+    /**
      * Root state => its entry
      *
      * @var array<int, int>
@@ -712,6 +720,52 @@ final class TaintFlowResolution
         $this->computeObservableDepths($reverse);
         $this->computeTaintAddingReachable($reverse);
         $this->computeCallees();
+        $this->computeMaxConvergenceKeys();
+    }
+
+    /**
+     * Computes how many convergences of a node tell apart the flows entering them by their innermost open
+     * assignments (see getConvergenceOpenAssignments()).
+     *
+     * The flows converging at a node often differ only by the key or property they were assigned to in one
+     * array or object: e.g. the fields of a record read from storage, which a fetch past the convergence takes
+     * one of. So the convergences of a node tell apart as many of them as the array or object of the graph with
+     * the most keys and properties assigned has, which are assigned to the node holding it, or each to a node of
+     * its own linked to the nodes it flows to (the items of an array literal). Past that, the flows of several
+     * arrays reach the node: a convergence for each of their keys would walk what is reachable from it as many
+     * times as the keys of all of them, for keys a fetch past it seldom tells apart.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function computeMaxConvergenceKeys(): void
+    {
+        // node id => the types of the assignments to it => true
+        $assignments = [];
+
+        foreach ($this->forward_edges as $destinations) {
+            foreach ($destinations as $to_id => $path) {
+                $path_type = $this->path_type_ids[$path->type] ?? $this->getPathTypeId($path->type);
+
+                if ($this->path_type_effects[$path_type][3] !== -1) {
+                    $assignments[$to_id][$path_type] = true;
+                }
+            }
+        }
+
+        // node id => the types of the assignments to it and to the nodes linked to it => true
+        $linked_assignments = $assignments;
+
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            if (isset($assignments[$from_id])) {
+                foreach ($destinations as $to_id => $_) {
+                    $linked_assignments[$to_id] = ($linked_assignments[$to_id] ?? []) + $assignments[$from_id];
+                }
+            }
+        }
+
+        foreach ($linked_assignments as $path_types) {
+            $this->max_convergence_keys = max($this->max_convergence_keys, count($path_types));
+        }
     }
 
     /**
@@ -1708,8 +1762,9 @@ final class TaintFlowResolution
      * object, each assigned to its own array key, converge at the array of all of them. A fetch past the
      * convergence ignores all of them but one there, and in any convergence their flows enter later on, where
      * the open assignments of the flows entering it are only known through those of the flows entering the
-     * first one (see getAssignmentClass()). Past MAX_CONVERGENCE_KEYS of them at a node, the flows share one
-     * convergence that knows none.
+     * first one (see getAssignmentClass()). Past $max_convergence_keys of them at a node, the flows share one
+     * convergence that knows none: it tells them apart by those only in filters for the fetches observing them
+     * (see getFilter()), which can't tell them apart by the open assignments below those anymore.
      *
      * @psalm-external-mutation-free
      */
@@ -1727,7 +1782,7 @@ final class TaintFlowResolution
         $open_assignments = $this->truncateOpenAssignments($this->internOpenAssignments($known, $known_count), $id);
 
         if (!isset($this->convergence_open_assignments[$id][$open_assignments])) {
-            if (count($this->convergence_open_assignments[$id] ?? []) >= self::MAX_CONVERGENCE_KEYS) {
+            if (count($this->convergence_open_assignments[$id] ?? []) >= $this->max_convergence_keys) {
                 return self::CALL_OPEN_ASSIGNMENTS;
             }
 
