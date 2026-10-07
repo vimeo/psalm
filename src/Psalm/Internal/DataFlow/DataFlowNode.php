@@ -284,6 +284,61 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the body of a function-like gets calling one of its callable parameters: what the callables passed to
+     * that parameter return.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamReturn(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' call',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' call',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like passes as argument $callable_argument_offset calling one of its callable
+     * parameters: what the parameters of the callables passed to that parameter are given.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamArgument(
+        string $cased_method_id,
+        int $argument_offset,
+        int $callable_argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        $suffix = '#' . ($argument_offset + 1) . ' call#' . ($callable_argument_offset + 1);
+
+        return self::make(
+            strtolower($cased_method_id) . $suffix,
+            $cased_method_id . $suffix,
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no

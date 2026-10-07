@@ -1469,9 +1469,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
-                if ($cased_method_id !== null) {
+                // the arguments a closure is called with through a variable flow into its parameters, see
+                // FunctionCallReturnTypeFetcher::taintCallableReturnType()
+                $param_method_id = $cased_method_id
+                    ?? ($this instanceof ClosureAnalyzer ? $this->getClosureId() : null);
+
+                if ($param_method_id !== null) {
                     $type_source = DataFlowNode::getForMethodArgument(
-                        $cased_method_id,
+                        $param_method_id,
                         $offset,
                         $storage,
                         null,

@@ -367,6 +367,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        if ($function_call_info->callable_ids === []) {
+            FunctionCallReturnTypeFetcher::taintCallableParamCall($statements_analyzer, $stmt, $real_stmt, $context);
+        }
+
         foreach ($function_call_info->defined_constants as $const_name => $const_type) {
             $context->constants[$const_name] = $const_type;
             $context->vars_in_scope[$const_name] = $const_type;
