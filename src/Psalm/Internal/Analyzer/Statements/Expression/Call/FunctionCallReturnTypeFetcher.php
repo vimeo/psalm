@@ -1243,6 +1243,10 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
+        if ($function_id === 'array_column' && self::taintArrayColumn($statements_analyzer, $graph, $stmt, $stmt_type)) {
+            return;
+        }
+
         $params = $callmap_callable->params ?? [];
         $flows = InternalCallMapHandler::getReturnTaintFlows($function_id, $params);
 
@@ -1283,6 +1287,108 @@ final class FunctionCallReturnTypeFetcher
         }
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+    }
+
+    /**
+     * What array_column() returns holds, as its values, what each row of the array holds under the column key (the
+     * whole rows if it is null) and, as its keys, what they hold under the index key: a literal key fetches only that
+     * key of each row, as `$row['key']` does. A row that may not be an array (an object, whose public properties
+     * array_column() also reads) gives everything it holds.
+     *
+     * @return bool false if the arguments can't be told apart (an unpacked argument)
+     */
+    private static function taintArrayColumn(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Union &$stmt_type,
+    ): bool {
+        $args = [];
+
+        foreach ($stmt->getArgs() as $offset => $arg) {
+            $name = $arg->name?->name ?? (['array', 'column_key', 'index_key'][$offset] ?? null);
+
+            if ($arg->unpack || $name === null) {
+                return false;
+            }
+
+            $args[$name] = $statements_analyzer->node_data->getType($arg->value);
+        }
+
+        $array_type = $args['array'] ?? null;
+
+        if ($array_type === null || !$array_type->parent_nodes) {
+            return true;
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $row_node = DataFlowNode::getForAssignment('array_column row', $location);
+        $graph->addNode($row_node);
+
+        foreach ($array_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $row_node, 'arrayvalue-fetch', 0, $array_type->getTaintsToRemove());
+        }
+
+        $rows_are_arrays = true;
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            $row_type = match (true) {
+                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericValueType(),
+                $atomic_type instanceof TArray => $atomic_type->type_params[1],
+                default => null,
+            };
+
+            foreach ($row_type?->getAtomicTypes() ?? [null] as $row_atomic_type) {
+                if (!$row_atomic_type instanceof TArray && !$row_atomic_type instanceof TKeyedArray) {
+                    $rows_are_arrays = false;
+                }
+            }
+        }
+
+        $return_node = DataFlowNode::getForCallableReturn('builtin', 'array_column', $location);
+        $graph->addNode($return_node);
+
+        foreach (['column_key' => 'arrayvalue-assignment', 'index_key' => 'arraykey-assignment'] as $key => $path_type) {
+            $key_type = $args[$key] ?? null;
+
+            // without an index key, the keys are a list's
+            if ($key === 'index_key' && ($key_type === null || $key_type->isNull())) {
+                continue;
+            }
+
+            if ($key_type !== null && $key_type->isNull()) {
+                // the whole rows
+                $graph->addPath($row_node, $return_node, $path_type);
+
+                continue;
+            }
+
+            $literal_key = $key_type?->isSingleStringLiteral()
+                ? $key_type->getSingleStringLiteral()->value
+                : ($key_type?->isSingleIntLiteral() ? $key_type->getSingleIntLiteral()->value : null);
+
+            $column_node = DataFlowNode::getForAssignment('array_column ' . $key, $location);
+            $graph->addNode($column_node);
+            $graph->addPath(
+                $row_node,
+                $column_node,
+                'arrayvalue-fetch' . ($literal_key !== null ? '-\'' . $literal_key . '\'' : ''),
+            );
+
+            if (!$rows_are_arrays) {
+                $object_column_node = DataFlowNode::getForAssignment('array_column object ' . $key, $location);
+                $graph->addNode($object_column_node);
+                $graph->addPath($row_node, $object_column_node, '=');
+                $graph->addPath($object_column_node, $return_node, $path_type);
+            }
+
+            $graph->addPath($column_node, $return_node, $path_type);
+        }
+
+        $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+
+        return true;
     }
 
     private static function taintReturnType(
