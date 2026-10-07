@@ -604,9 +604,6 @@ final class ForeachAnalyzer
     }
 
     /**
-     * @return false|null
-     */
-    /**
      * The keys and values an object iterated over gives come from what it holds: a generator, what it yields (see
      * YieldAnalyzer::taintGenerator()), another Traversable, what it was given. An array gives its keys and values
      * through their own types.
@@ -672,6 +669,9 @@ final class ForeachAnalyzer
         ];
     }
 
+    /**
+     * @return false|null
+     */
     public static function checkIteratorType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $expr,

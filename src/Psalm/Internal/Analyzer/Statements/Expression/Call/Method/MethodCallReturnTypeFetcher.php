@@ -346,7 +346,6 @@ final class MethodCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
-
         $is_declaring = (string) $declaring_method_id === (string) $method_id;
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
