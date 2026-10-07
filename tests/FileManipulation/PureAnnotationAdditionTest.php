@@ -687,6 +687,341 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPurityWildcardToGenericReceivers' => [
+                'input' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface SubBox extends Box {}
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template R
+                     * @extends SubBox[R]<T>
+                     */
+                    interface SubSubBox extends SubBox {}
+
+                    /**
+                     * @template-covariant T of object
+                     * @psalm-purity-template P
+                     * @implements Box[P]<T>
+                     */
+                    abstract class ObjectBox implements Box {}
+
+                    /**
+                     * @param Box<int> $b
+                     */
+                    function useBox(Box $b): int {
+                        return $b->get();
+                    }
+
+                    function nativeBox(Box $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param list<Box<int>> $bs
+                     */
+                    function sumBoxes(array $bs): int {
+                        $s = 0;
+                        foreach ($bs as $b) {
+                            $s += $b->get();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{box: Box<int>, n: int} $o
+                     */
+                    function viaShape(array $o): int {
+                        return $o["box"]->get() + $o["n"];
+                    }
+
+                    /**
+                     * @param Pair<string, int> $p
+                     */
+                    function usePair(Pair $p): int {
+                        return $p->value();
+                    }
+
+                    /**
+                     * @param SubBox<int> $b
+                     */
+                    function useSubBox(SubBox $b): int {
+                        return $b->get();
+                    }
+
+                    function nativeSubSubBox(SubSubBox $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    function nativeObjectBox(ObjectBox $b): object {
+                        return $b->get();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface SubBox extends Box {}
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template R
+                     * @extends SubBox[R]<T>
+                     */
+                    interface SubSubBox extends SubBox {}
+
+                    /**
+                     * @template-covariant T of object
+                     * @psalm-purity-template P
+                     * @implements Box[P]<T>
+                     */
+                    abstract class ObjectBox implements Box {}
+
+                    /**
+                     * @param Box[_]<int> $b
+                     *
+                     * @psalm-pure
+                     */
+                    function useBox(Box $b): int {
+                        return $b->get();
+                    }
+
+                    /**
+                     * @param Box[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeBox(Box $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param list<Box[_]<int>> $bs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumBoxes(array $bs): int {
+                        $s = 0;
+                        foreach ($bs as $b) {
+                            $s += $b->get();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{box: Box[_]<int>, n: int} $o
+                     *
+                     * @psalm-pure
+                     */
+                    function viaShape(array $o): int {
+                        return $o["box"]->get() + $o["n"];
+                    }
+
+                    /**
+                     * @param Pair[impure, _]<string, int> $p
+                     *
+                     * @psalm-pure
+                     */
+                    function usePair(Pair $p): int {
+                        return $p->value();
+                    }
+
+                    /**
+                     * @param SubBox[_]<int> $b
+                     *
+                     * @psalm-pure
+                     */
+                    function useSubBox(SubBox $b): int {
+                        return $b->get();
+                    }
+
+                    /**
+                     * @param SubSubBox[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeSubSubBox(SubSubBox $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param ObjectBox[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeObjectBox(ObjectBox $b): object {
+                        return $b->get();
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPurityWildcardLeavingOutInvariantTypeArguments' => [
+                'input' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface InvariantBox extends Box {}
+
+                    function nativePair(Pair $p): bool {
+                        return $p->value() !== null;
+                    }
+
+                    /**
+                     * @param list<Pair> $ps
+                     */
+                    function firstPair(array $ps): bool {
+                        return $ps[0]->value() !== null;
+                    }
+
+                    function nativeInvariantBox(InvariantBox $b): bool {
+                        return $b->get() !== null;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface InvariantBox extends Box {}
+
+                    function nativePair(Pair $p): bool {
+                        return $p->value() !== null;
+                    }
+
+                    /**
+                     * @param list<Pair> $ps
+                     */
+                    function firstPair(array $ps): bool {
+                        return $ps[0]->value() !== null;
+                    }
+
+                    function nativeInvariantBox(InvariantBox $b): bool {
+                        return $b->get() !== null;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'addPurityWildcardToTheTypePsalmReads' => [
                 'input' => '<?php
                     /**

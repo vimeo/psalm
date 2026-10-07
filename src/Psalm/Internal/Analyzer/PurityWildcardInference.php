@@ -8,6 +8,7 @@ use PhpParser\Node\Expr;
 use Psalm\Codebase;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -113,20 +114,30 @@ final class PurityWildcardInference
 
         $receiver_storage = $codebase->classlike_storage_provider->get($receiver_class);
 
+        // for each purity template of the receiver's class, the class template params standing for it
         $purity_templates = [];
         // what the purity arguments are here, written for those that don't take the `_` when the
         // type has none written
         $current_purities = [];
+        // whether the type must have its type arguments written to take the `_`, see
+        // PurityWildcardPaths::purityArgument()
+        $type_args_required = false;
+        $template_index = 0;
 
         foreach ($receiver_storage->template_types ?? [] as $template_name => $bounds) {
             foreach ($bounds as $bound) {
-                if (Capabilities::isPurityType($bound)) {
-                    $purity_templates[] = $template_name;
-                    $current = self::getClassTemplateParam(
-                        $class_template_params,
-                        $template_name,
-                        $receiver_storage->name,
-                    );
+                if (!Capabilities::isPurityType($bound)) {
+                    $type_args_required = $type_args_required
+                        || !($receiver_storage->template_covariants[$template_index] ?? false);
+                } else {
+                    $standing_for = self::getTemplatesStandingFor($receiver_storage, $template_name);
+                    $purity_templates[] = $standing_for;
+                    $current = null;
+
+                    foreach ($standing_for as [$name, $class]) {
+                        $current ??= self::getClassTemplateParam($class_template_params, $name, $class);
+                    }
+
                     $current_purities[] = Capabilities::toString(Capabilities::fromType(
                         $current !== null && Capabilities::isPurityType($current) ? $current : $bound,
                     ));
@@ -134,38 +145,80 @@ final class PurityWildcardInference
 
                 break;
             }
+
+            $template_index++;
         }
 
         $marked = false;
 
-        foreach ($purity_templates as $index => $template_name) {
-            foreach ($class_template_params[$template_name] ?? [] as $defining_class => $type) {
-                if (strtolower($defining_class) !== strtolower($receiver_storage->name)
-                    || !self::isDefaultPurity($type)
-                ) {
-                    continue;
+        foreach ($purity_templates as $index => $standing_for) {
+            foreach ($standing_for as [$template_name, $class]) {
+                foreach ($class_template_params[$template_name] ?? [] as $defining_class => $type) {
+                    if (strtolower($defining_class) !== strtolower($class) || !self::isDefaultPurity($type)) {
+                        continue;
+                    }
+
+                    $marker_name = '_$' . $param_name . '#' . count($source->purity_wildcard_markers);
+
+                    $source->purity_wildcard_markers[$marker_name] = [
+                        $param_name,
+                        PurityWildcardPaths::purityArgument(
+                            $steps,
+                            $receiver_storage->name,
+                            $index,
+                            $current_purities,
+                            $type_args_required,
+                        ),
+                    ];
+
+                    $class_template_params[$template_name][$defining_class] = new Union([
+                        new TTemplateParam(
+                            $marker_name,
+                            new Union([new TCapabilities(Capabilities::ALL)]),
+                            self::MARKER_CLASS,
+                        ),
+                    ]);
+
+                    $marked = true;
                 }
-
-                $marker_name = '_$' . $param_name . '#' . count($source->purity_wildcard_markers);
-
-                $source->purity_wildcard_markers[$marker_name] = [
-                    $param_name,
-                    PurityWildcardPaths::purityArgument($steps, $receiver_storage->name, $index, $current_purities),
-                ];
-
-                $class_template_params[$template_name][$defining_class] = new Union([
-                    new TTemplateParam(
-                        $marker_name,
-                        new Union([new TCapabilities(Capabilities::ALL)]),
-                        self::MARKER_CLASS,
-                    ),
-                ]);
-
-                $marked = true;
             }
         }
 
         return $marked ? $class_template_params : null;
+    }
+
+    /**
+     * The template of the class and those of its ancestors it is given as is, also through other
+     * ancestors (`@extends Doer[P]<T>`): the class template params of a call on the class are those
+     * of the class declaring the method (template name and class).
+     *
+     * @return non-empty-array<string, array{string, string}>
+     * @psalm-mutation-free
+     */
+    private static function getTemplatesStandingFor(ClassLikeStorage $storage, string $template_name): array
+    {
+        $templates = [$template_name . '@' . strtolower($storage->name) => [$template_name, $storage->name]];
+
+        do {
+            $count = count($templates);
+
+            foreach ($storage->template_extended_params ?? [] as $ancestor => $extended_params) {
+                foreach ($extended_params as $ancestor_template_name => $type) {
+                    $atomic = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+                    if ($atomic instanceof TTemplateParam
+                        && isset($templates[$atomic->param_name . '@' . strtolower($atomic->defining_class)])
+                    ) {
+                        $templates[$ancestor_template_name . '@' . strtolower($ancestor)] = [
+                            $ancestor_template_name,
+                            $ancestor,
+                        ];
+                    }
+                }
+            }
+        } while (count($templates) > $count);
+
+        return $templates;
     }
 
     /**

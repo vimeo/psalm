@@ -43,7 +43,8 @@ use function substr_replace;
  * arguments or the values of an array shape, and `r`, into the return type of a callable; never
  * into the parameters of a callable, which the function-like does not call. The purity arguments
  * of a generic object are given by the short name of its class, the index of the purity argument
- * that takes the `_`, and the default of each of them, written when the type has none.
+ * that takes the `_`, the default of each of them, written when the type has none, and `t` if the
+ * type must have type arguments written for the `_` to be added.
  *
  * @internal
  */
@@ -61,13 +62,23 @@ final class PurityWildcardPaths
 
     /**
      * @param list<string> $defaults the default of each purity argument of the class
+     * @param bool $type_args_required whether the class has an invariant type template: written
+     *        without type arguments, the class takes any of them, but given purity arguments it takes
+     *        those of the template bounds only (`Foo[_]` is `Foo[_]<mixed>`), so the `_` can't be
+     *        added there
      * @psalm-pure
      */
-    public static function purityArgument(string $steps, string $class, int $index, array $defaults): string
-    {
+    public static function purityArgument(
+        string $steps,
+        string $class,
+        int $index,
+        array $defaults,
+        bool $type_args_required = false,
+    ): string {
         $short_name = strtolower(substr($class, (int) strrpos('\\' . $class, '\\')));
 
-        return $steps . '|p|' . $short_name . '|' . $index . '|' . implode(',', $defaults);
+        return $steps . '|p|' . $short_name . '|' . $index . '|' . implode(',', $defaults)
+            . ($type_args_required ? '|t' : '');
     }
 
     /**
@@ -168,6 +179,7 @@ final class PurityWildcardPaths
                 $node->offset_start,
                 $node->offset_end,
                 $node->purity === null ? null : [$node->purity],
+                false,
                 $steps,
                 $wanted,
                 $found,
@@ -181,6 +193,7 @@ final class PurityWildcardPaths
                 $node->offset_start,
                 $node->offset_end,
                 $node->purity instanceof PurityTree ? $node->purity->children : null,
+                $node->children !== [],
                 $steps,
                 $wanted,
                 $found,
@@ -204,6 +217,7 @@ final class PurityWildcardPaths
                 $node->offset_start,
                 $node->offset_end,
                 null,
+                false,
                 $steps,
                 $wanted,
                 $found,
@@ -219,6 +233,7 @@ final class PurityWildcardPaths
      * wants it there.
      *
      * @param list<ParseTree>|null $purity_arguments the purity in brackets after the keyword, if any
+     * @param bool $has_type_args whether type arguments follow the keyword (`<...>`)
      * @param array<string, true> $wanted
      * @param array<string, true> $found
      * @param array<int, array{int, int, string}> $edits
@@ -229,6 +244,7 @@ final class PurityWildcardPaths
         ?int $offset_start,
         ?int $offset_end,
         ?array $purity_arguments,
+        bool $has_type_args,
         string $steps,
         array $wanted,
         array &$found,
@@ -269,6 +285,10 @@ final class PurityWildcardPaths
 
             if ($parts[0] !== $steps || ($parts[1] ?? null) !== 'p' || ($parts[2] ?? null) !== $short_name) {
                 continue;
+            }
+
+            if (($parts[5] ?? null) === 't' && !$has_type_args) {
+                return false;
             }
 
             $found[$path] = true;
