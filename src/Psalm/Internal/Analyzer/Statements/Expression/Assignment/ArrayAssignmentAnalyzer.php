@@ -48,8 +48,11 @@ use function count;
 use function end;
 use function implode;
 use function is_string;
+use function preg_match;
 use function str_contains;
+use function str_starts_with;
 use function strlen;
+use function substr;
 
 /**
  * @internal
@@ -797,6 +800,10 @@ final class ArrayAssignmentAnalyzer
 
             $extended_var_id = $root_var_id . implode('', $var_id_additions);
 
+            if ($root_var_id !== null) {
+                self::removeAliasedOffsets($context, $parent_var_id ?? $root_var_id, end($var_id_additions));
+            }
+
             if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
@@ -1004,6 +1011,39 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Forgets what is known about the offsets of an array that the offset being written may be: every other
+     * offset when the written one isn't a literal, and every offset that isn't a literal otherwise. An
+     * appended offset is a new one, so it can't be any of them.
+     */
+    private static function removeAliasedOffsets(Context $context, string $array_var_id, string $offset): void
+    {
+        if ($offset === '') {
+            return;
+        }
+
+        $offset_is_literal = self::isLiteralOffset($offset);
+        $written_var_id = $array_var_id . $offset;
+
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if (str_starts_with($var_id, $array_var_id . '[')
+                && !str_starts_with($var_id, $written_var_id)
+                && (!$offset_is_literal || !self::isLiteralOffset(substr($var_id, strlen($array_var_id))))
+            ) {
+                $context->remove($var_id, false);
+                $context->removeVarFromConflictingClauses($var_id);
+            }
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isLiteralOffset(string $offset): bool
+    {
+        return preg_match('/^\[(\'|-?\d)/', $offset) === 1;
     }
 
     /**
