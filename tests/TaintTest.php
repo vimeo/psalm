@@ -7961,6 +7961,8 @@ final class TaintTest extends TestCase
                     var_export($_GET["e"]);
                     $printed = print_r($_GET["f"], true);
                     $exported = var_export($_GET["g"], true);
+                    debug_zval_dump($_GET["h"]);
+                    debug_zval_dump(1, $_GET["i"]);
                 ',
                 'expectedIssueTypes' => [
                     'TaintedHtml{ printf("%s", (string) $_GET["a"]); }',
@@ -7973,6 +7975,10 @@ final class TaintTest extends TestCase
                     'TaintedTextWithQuotes{ var_dump($_GET["d"]); }',
                     'TaintedHtml{ var_export($_GET["e"]); }',
                     'TaintedTextWithQuotes{ var_export($_GET["e"]); }',
+                    'TaintedHtml{ debug_zval_dump($_GET["h"]); }',
+                    'TaintedTextWithQuotes{ debug_zval_dump($_GET["h"]); }',
+                    'TaintedHtml{ debug_zval_dump(1, $_GET["i"]); }',
+                    'TaintedTextWithQuotes{ debug_zval_dump(1, $_GET["i"]); }',
                 ],
             ],
             'outputFunctionsLeakSecretsLikeEcho' => [
@@ -7988,6 +7994,7 @@ final class TaintTest extends TestCase
                     var_dump(systemSecret());
                     var_export(userSecret());
                     $printed = print_r(systemSecret(), true);
+                    debug_zval_dump(systemSecret());
                 ',
                 'expectedIssueTypes' => [
                     'TaintedUserSecret{ printf("%s", userSecret()); }',
@@ -7995,6 +8002,7 @@ final class TaintTest extends TestCase
                     'TaintedUserSecret{ print_r(userSecret()); }',
                     'TaintedSystemSecret{ var_dump(systemSecret()); }',
                     'TaintedUserSecret{ var_export(userSecret()); }',
+                    'TaintedSystemSecret{ debug_zval_dump(systemSecret()); }',
                 ],
             ],
         ];
