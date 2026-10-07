@@ -1220,6 +1220,196 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainKeepsNullOnlyForTheShortCircuit' => [
+                'code' => '<?php
+                    abstract class C {
+                        public int $id = 0;
+                        abstract public function c(): int;
+                        public static function done(): int {
+                            return 1;
+                        }
+                    }
+                    abstract class B {
+                        public C $prop;
+                        public ?C $nullableProp = null;
+                        /** @return array{C} */
+                        abstract public function items(): array;
+                        /** @return array{C|null} */
+                        abstract public function nullableItems(): array;
+                        abstract public function next(): self;
+                        abstract public function maybe(): ?C;
+                        abstract public function c(): int;
+                    }
+                    abstract class A {
+                        public B $bProp;
+                        abstract public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $a = aOrNull();
+                    $viaExpression = aOrNull()?->b()->next()->c();
+                    $viaVariable = $a?->b()->next()->c();
+                    $viaProperty = $a?->bProp->next()->c();
+                    $property = aOrNull()?->b()->prop->id;
+                    $array = aOrNull()?->b()->items()[0]->c();
+                    $static = aOrNull()?->b()->prop::done();
+                    $nested = aOrNull()?->b()->maybe()?->c();
+                    $coalesced = aOrNull()?->b()->nullableItems()[0]?->c() ?? 0;',
+                'assertions' => [
+                    '$viaExpression' => 'int|null',
+                    '$viaVariable' => 'int|null',
+                    '$viaProperty' => 'int|null',
+                    '$property' => 'int|null',
+                    '$array' => 'int|null',
+                    '$static' => 'int|null',
+                    '$nested' => 'int|null',
+                    '$coalesced' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainKeepsShortCircuitNullInsideIssetEmptyAndCoalesce' => [
+                'code' => '<?php
+                    abstract class C {
+                        public int $id = 0;
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public C $prop;
+                        public ?C $nullableProp = null;
+                        public bool $flag = true;
+                        /** @return array{C|null} */
+                        abstract public function nullableItems(): array;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    $empty = empty(aOrNull()?->b()->prop);
+                    $emptyFlag = empty(aOrNull()?->b()->flag);
+                    $isset = isset(aOrNull()?->b()->nullableItems()[0]->id);
+                    $coalesced = aOrNull()?->b()->prop?->c() ?? 0;
+                    $coalescedFlag = aOrNull()?->b()->flag ?? true;
+                    $coalescedProperty = aOrNull()?->b()->nullableProp->id ?? 0;',
+                'assertions' => [
+                    '$empty' => 'bool',
+                    '$emptyFlag' => 'bool',
+                    '$isset' => 'bool',
+                    '$coalesced' => 'int',
+                    '$coalescedFlag' => 'bool',
+                    '$coalescedProperty' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeOnNonNullableReceiverNeverShortCircuits' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        public C $prop;
+                        abstract public function next(): self;
+                        abstract public function c(): int;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                        public function viaThis(): int {
+                            return $this?->b()->c();
+                        }
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+                    function guarded(?A $a): int {
+                        if ($a === null) {
+                            return 0;
+                        }
+
+                        return $a?->b()->c();
+                    }
+
+                    $a = a();
+                    $viaVariable = $a?->b()->c();
+                    $viaExpression = a()?->b()->c();
+                    $consecutive = $a?->b()?->next()->c();
+                    $property = $a?->b()?->prop->c();
+                    $coalesced = a()?->b()->prop->c() ?? 0;',
+                'assertions' => [
+                    '$viaVariable' => 'int',
+                    '$viaExpression' => 'int',
+                    '$consecutive' => 'int',
+                    '$property' => 'int',
+                    '$coalesced' => 'int',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainStateIsRecomputedInLoop' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /** @return array{C} */
+                        abstract public function items(): array;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+                    function a(): A {
+                        throw new Exception();
+                    }
+
+                    $a = a();
+                    $last = null;
+                    $fallback = null;
+                    for ($i = 0; $i < 2; $i++) {
+                        $last = $a?->b()->items()[0]->c();
+                        $fallback = $a?->b()->items()[0]->c() ?? 0;
+                        $a = rand(0, 1) ? a() : null;
+                    }',
+                'assertions' => [
+                    '$last' => 'int|null',
+                    '$fallback' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainNormalizesNullWithNever' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function stop(): never;
+                        abstract public static function halt(): never;
+                        abstract public function run(): void;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+                    function aOrNull(): ?A {
+                        return null;
+                    }
+
+                    function callsStop(?A $a): bool {
+                        return !$a?->b()->stop();
+                    }
+
+                    function callsHalt(?A $a): bool {
+                        return !$a?->b()::halt();
+                    }
+
+                    $ran = aOrNull()?->b()->run();',
+                'assertions' => [
+                    '$ran' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'parentMagicMethodCall' => [
                 'code' => '<?php
                     /** @psalm-no-seal-methods */
@@ -1834,6 +2024,134 @@ final class MethodCallTest extends TestCase
                     }
                     $a = fooOrNull()?->getBar();
                     $a->doBaz();',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullReturnedByLaterMethod' => [
+                'code' => '<?php
+                    abstract class B {
+                        abstract public function maybeB(): ?B;
+                        abstract public function next(): self;
+                    }
+                    abstract class A {
+                        abstract public function nullableB(): ?B;
+                    }
+
+                    function f(A $a): void {
+                        $a->nullableB()?->maybeB()->next();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullReturnedByMethodAfterShortCircuit' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        abstract public function maybe(): ?C;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->maybe()->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullArrayElementMethodCall' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public function c(): int;
+                    }
+                    abstract class B {
+                        /** @return array{C|null} */
+                        abstract public function nullableItems(): array;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableItems()[0]->c();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullPropertyFetch' => [
+                'code' => '<?php
+                    abstract class C {
+                        public int $id = 0;
+                    }
+                    abstract class B {
+                        public ?C $nullableProp = null;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableProp->id;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullNestedArrayAccess' => [
+                'code' => '<?php
+                    abstract class B {
+                        /** @return array{array{int}|null} */
+                        abstract public function nullableNested(): array;
+                    }
+                    abstract class A {
+                        abstract public function b(): B;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->b()->nullableNested()[0][0];
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsNullReturnedByMethodUsedAsClass' => [
+                'code' => '<?php
+                    abstract class C {
+                        abstract public static function done(): int;
+                    }
+                    abstract class A {
+                        abstract public function maybe(): ?C;
+                    }
+
+                    function f(?A $a): void {
+                        $a?->maybe()::done();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainReportsPossiblyUndefinedArrayElementInCoalesce' => [
+                'code' => '<?php
+                    interface C {
+                        public function c(): int;
+                    }
+                    interface B {
+                        /** @return array{0?: C} */
+                        public function optionalItems(): array;
+                    }
+                    interface A {
+                        public function b(): B;
+                    }
+
+                    function f(?A $a): int {
+                        return $a?->b()->optionalItems()[0]->c() ?? 0;
+                    }',
                 'error_message' => 'PossiblyNullReference',
                 'ignored_issues' => [],
                 'php_version' => '8.0',

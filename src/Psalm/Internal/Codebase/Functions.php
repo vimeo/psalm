@@ -112,6 +112,8 @@ final class Functions
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
             }
+        } elseif ($root_file_path !== null) {
+            $file_storage = $this->file_storage_provider->get($root_file_path);
         }
 
         if (!$root_file_path || !$checked_file_path) {

@@ -1495,7 +1495,8 @@ final class Psalm
 
             --find-dead-code[=auto]
             --find-unused-code[=auto]
-                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
+                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'.
+                Unused code detection is already on by default (see the findUnusedCode config option)
 
             --find-unused-psalm-suppress
                 Finds all @psalm-suppress annotations that aren’t used, including those on

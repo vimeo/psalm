@@ -734,6 +734,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\MagicConstAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\MatchAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\NullsafeAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState::class,
         \Psalm\Internal\Analyzer\Statements\Expression\PrintAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\TernaryAnalyzer::class,
