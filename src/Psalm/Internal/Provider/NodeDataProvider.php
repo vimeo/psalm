@@ -44,6 +44,9 @@ final class NodeDataProvider implements NodeTypeProvider
 
     public bool $cache_assertions = true;
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public function __construct()
     {
         $this->node_types = new SplObjectStorage();
@@ -64,6 +67,7 @@ final class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @param Expr|Name|Return_ $node
+     * @psalm-capabilities read-props
      */
     #[Override]
     public function getType(NodeAbstract $node): ?Union
@@ -85,6 +89,7 @@ final class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>|null
+     * @psalm-capabilities read-props
      */
     public function getAssertions(Expr $node): ?array
     {
@@ -107,6 +112,7 @@ final class NodeDataProvider implements NodeTypeProvider
     /**
      * @param Expr\FuncCall|MethodCall|StaticCall|New_ $node
      * @return array<int, Possibilities>|null
+     * @psalm-capabilities read-props
      */
     public function getIfTrueAssertions(Expr $node): ?array
     {
@@ -125,6 +131,7 @@ final class NodeDataProvider implements NodeTypeProvider
     /**
      * @param FuncCall|MethodCall|StaticCall|New_ $node
      * @return array<int, Possibilities>|null
+     * @psalm-capabilities read-props
      */
     public function getIfFalseAssertions(Expr $node): ?array
     {
@@ -144,6 +151,7 @@ final class NodeDataProvider implements NodeTypeProvider
 
     /**
      * @return list<string>|null
+     * @psalm-capabilities read-props
      */
     public function getLiteralPrefixes(Expr $node): ?array
     {

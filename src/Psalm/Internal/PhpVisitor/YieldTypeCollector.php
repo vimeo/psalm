@@ -31,6 +31,9 @@ final class YieldTypeCollector extends NodeVisitorAbstract
     ) {
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     public function enterNode(Node $node): ?int
     {
