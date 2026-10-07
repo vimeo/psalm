@@ -10,4 +10,9 @@ class Factory
     {
         return new Foo();
     }
+
+    public static function makeConditional(): object
+    {
+        return new ConditionalFoo();
+    }
 }

@@ -1398,10 +1398,16 @@ final class StubTest extends TestCase
 
                 takesPositive(Factory::make()->stubbed());
                 echo Factory::make()->notStubbed();
+                takesPositive(Factory::makeConditional()->stubbed());
+                echo Factory::makeConditional()->notStubbed();
                 echo (new StubOnly())->bar();',
         );
 
         $this->analyzeFile($file_path, new Context());
+
+        $constant = $this->project_analyzer->getCodebase()->classlike_storage_provider
+            ->get('autoloadablestubmerge\\constholder')->constants['VALUE'];
+        $this->assertSame('int<1, max>', $constant->type?->getId());
     }
 
     public function testStubReplacingInterfaceDocblock(): void
