@@ -389,7 +389,10 @@ final class DeprecatedAnnotationTest extends TestCase
                     /** @deprecated */
                     interface MyInterface {}
 
-                    /** @extends ArrayObject<array-key, MyInterface> */
+                    /**
+                     * @extends ArrayObject<array-key, MyInterface>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
                     class MyClass extends ArrayObject {}
                 ',
                 'error_message' => 'DeprecatedInterface',

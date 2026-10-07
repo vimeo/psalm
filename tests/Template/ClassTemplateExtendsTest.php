@@ -720,6 +720,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -747,14 +748,17 @@ final class ClassTemplateExtendsTest extends TestCase
                      * @template TKey as array-key
                      * @template TValue
                      * @template-extends ArrayIterator<TKey, TValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection1 extends ArrayIterator{}
 
                     /**
                      * @psalm-suppress MissingTemplateParam
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection2 extends Collection1{}
 
+                    /** @psalm-capabilities read-props|write-this-props */
                     class Collection3 extends Collection2{}
 
                     foreach ((new Collection1(["a" => "b"])) as $a) {}
@@ -783,6 +787,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -816,6 +821,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -851,6 +857,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -870,6 +877,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -945,6 +953,7 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T as O
                      * @template-extends ArrayObject<int, T>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject
                     {
@@ -1077,6 +1086,7 @@ final class ClassTemplateExtendsTest extends TestCase
 
                     /**
                      * @template-extends ArrayIterator<array-key, User>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Users extends ArrayIterator
                     {
@@ -1145,6 +1155,9 @@ final class ClassTemplateExtendsTest extends TestCase
                             }
                         }
                     }',
+                // bar() echoes, which the read-props|write-this-props contract of ArrayObject doesn't allow
+                'assertions' => [],
+                'ignored_issues' => ['ImmutableDependency'],
             ],
             'templateExtendsOnceWithSpecificStaticCall' => [
                 'code' => '<?php
@@ -1401,6 +1414,7 @@ final class ClassTemplateExtendsTest extends TestCase
                      * @template TKey of array-key
                      * @template TValue
                      * @template-extends \ArrayObject<TKey,TValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class C extends \ArrayObject {
                         /**
@@ -2105,12 +2119,14 @@ final class ClassTemplateExtendsTest extends TestCase
                     /**
                      * @template T1
                      * @template-extends ArrayObject<int, T1>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends ArrayObject {}
 
                     /**
                      * @template T2 as Obj
                      * @template-extends Collection<T2>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection2 extends Collection {
                         /**

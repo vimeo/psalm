@@ -2098,7 +2098,10 @@ final class ClassTemplateTest extends TestCase
             ],
             'yieldFromGenericObjectNotExtendingIterator' => [
                 'code' => '<?php
-                    /** @extends \ArrayObject<int, int> */
+                    /**
+                     * @extends \ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
                     class Foo extends \ArrayObject {}
 
                     class A {

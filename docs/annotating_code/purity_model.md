@@ -621,8 +621,9 @@ binds the template to, or its default or upper bound when `Sub` doesn't bind it,
 typed `Closure[P]` binds it from the purity of a closure. To bind it from the *kind* of argument
 instead, give the constructor a `@return`: the type of the `new` expression, which is the class
 itself with its template and purity arguments. Like any return type, it may be conditional.
-`ArrayObject` is the typical case: its mutators only write the object itself when it stores an
-array, but also write the object it wraps when given one. A class like it can say so:
+`ArrayObject` and `ArrayIterator` are declared this way: their mutators only write the object
+itself when it stores an array, but also write the object it wraps when given one. A class like
+them can say so:
 
 ```php
 <?php
