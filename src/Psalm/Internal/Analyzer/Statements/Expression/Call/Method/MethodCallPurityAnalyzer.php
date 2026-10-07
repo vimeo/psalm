@@ -324,6 +324,9 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
+        } elseif (!$config->remember_property_assignments_after_call) {
+            // the method cannot write properties, but may still write static ones
+            $context->removeMutableObjectVars(false, $method_capabilities);
         }
     }
 
