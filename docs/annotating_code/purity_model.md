@@ -554,11 +554,5 @@ What changes for your code:
   now be written, as in `Closure[io](int): void`. The capability names (`pure`, `impure`,
   `read-props`, …) are now reserved type names.
 
-If you used a Psalm 7 beta: `@psalm-purity-from $param` was removed (use `Closure[_]`, or a named
-purity template with `@psalm-purity-from-template`); purity arguments moved from angle brackets
-to square brackets (`Traversable[pure]<int, string>` instead of `Traversable<int, string, pure>`);
-and the `self-accessing-*` and `self-mutating-*` callable types were removed (use
-`Closure[read-props](...)` and `Closure[read-props|write-this-props|write-refs](...)`).
-
 The full list of changes is in
 [UPGRADING.md](https://github.com/vimeo/psalm/blob/master/UPGRADING.md).
