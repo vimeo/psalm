@@ -1946,10 +1946,19 @@ final class TaintFlowResolution
 
         $facts = $this->entry_facts[$entry];
         $position = self::getPosition($family, $depth);
-        $fact = $facts[$position] ?? [null, []];
-        $passed_keys = $fact[1];
-        $passed_keys[$fetched_key] = true;
-        $facts[$position] = [$fact[0], $passed_keys];
+
+        if ($fetched_key === self::CONVERSION_KEY) {
+            // Only the class of none passes a conversion (see classPassesFetch()), and it passes any fetch. A
+            // conversion leaves the open assignment it observes open (see getPathTypeEffects()): the flows past it
+            // observe that one again, and knowing only that the calls pass it, the filter would be told apart by
+            // the keys they fetch there.
+            $facts[$position] = ['', []];
+        } else {
+            $fact = $facts[$position] ?? [null, []];
+            $passed_keys = $fact[1];
+            $passed_keys[$fetched_key] = true;
+            $facts[$position] = [$fact[0], $passed_keys];
+        }
 
         $filter = $this->addEntry(
             $this->entry_nodes[$entry],
