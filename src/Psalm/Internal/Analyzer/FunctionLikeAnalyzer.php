@@ -524,6 +524,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $check_stmts = false;
         }
 
+        // the type @psalm-self-out gives is checked like a @return type: its classes must exist, and its
+        // template and purity arguments must fit their bounds
+        if ($storage instanceof MethodStorage && $storage->self_out_type && $storage->self_out_type_location) {
+            $classlike_storage = $context->self ? $codebase->classlike_storage_provider->get($context->self) : null;
+
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+            TypeExpander::expandUnion(
+                $codebase,
+                $storage->self_out_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $classlike_storage->parent_class ?? null,
+                true,
+                true,
+            )->setFromDocblock()->check(
+                $this,
+                $storage->self_out_type_location,
+                $storage->suppressed_issues,
+                [],
+                false,
+                false,
+                false,
+                $context,
+            );
+        }
+
         if (!$check_stmts) {
             return false;
         }

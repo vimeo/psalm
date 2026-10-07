@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Psalm\CodeLocation;
 use Psalm\Type\Union;
 
 /**
@@ -50,6 +51,8 @@ final class MethodStorage extends FunctionLikeStorage
     public ?array $this_property_mutations = null;
 
     public ?Union $self_out_type = null;
+
+    public ?CodeLocation $self_out_type_location = null;
 
     public ?Union $if_this_is_type = null;
     public bool $stubbed = false;
