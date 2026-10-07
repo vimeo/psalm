@@ -17,6 +17,7 @@ use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -312,6 +313,18 @@ final class TryAnalyzer
                         $catch_var_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',
+                    );
+                }
+
+                $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+                if ($taint_flow_graph) {
+                    // the analysis does not follow an exception from where it is thrown to where it is caught: what
+                    // it holds (its message, the arguments in its trace) may come from any data, which dumping it
+                    // (print_r(), var_export()) prints. The variable's own node is the source: a node specialized to
+                    // the catch would make the calls on the exception specialized to it, which every call of the
+                    // same method elsewhere reaches through their shared node.
+                    $taint_flow_graph->addSource(
+                        DataFlowNode::getForAssignment($catch_var_id, $location)->setTaints(TaintKind::ALL_INPUT),
                     );
                 }
             }
