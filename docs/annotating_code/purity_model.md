@@ -15,7 +15,7 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 
 | Capability         | Allows                                                                          |
 |--------------------|---------------------------------------------------------------------------------|
-| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it) |
+| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor [new objects](#method-calls) of some classes) |
 | `write-this-props` | writing or unsetting properties of `$this`                                      |
 | `write-props`      | writing or unsetting properties of any other object                             |
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
@@ -270,6 +270,36 @@ function countTwice(): int {
 function bump(Counter $counter): int {
     $counter->inc(); // ImpureMethodCall: The context is read-props but method Counter::inc requires write-props
     return $counter->get();
+}
+```
+
+Reading or unsetting a property gets the same waiver: it is free on an object the caller created
+with `new`, from a class whose contract needs at most `read-props|write-this-props|write-refs`, as
+nobody else can change it. Reading a property of any other mutable object, including `$this`, a
+parameter or an object held in a property, costs `read-props`, whatever the class's contract:
+
+```php
+<?php
+/** @psalm-capabilities read-props|write-this-props */
+final class Tally {
+    public int $n = 0;
+
+    public function inc(): void {
+        $this->n++;
+    }
+}
+
+/** @psalm-pure */
+function tallyTwice(): int {
+    $tally = new Tally();
+    $tally->inc();
+    $tally->inc();
+    return $tally->n; // fine: $tally was created here
+}
+
+/** @psalm-pure */
+function currentTally(Tally $tally): int {
+    return $tally->n; // ImpurePropertyFetch: The context is pure but accessing a property on a mutable object requires read-props
 }
 ```
 

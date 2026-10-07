@@ -470,9 +470,7 @@ final class InstancePropertyFetchAnalyzer
                         );
                     }
 
-                    if (!($class_storage->isExternalMutationFree()
-                        && $stmt_type->allow_mutations)
-                    ) {
+                    if (!AtomicPropertyFetchAnalyzer::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
                         if ($context->inside_unset) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'

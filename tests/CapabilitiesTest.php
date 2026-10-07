@@ -1067,6 +1067,28 @@ final class CapabilitiesTest extends TestCase
                         return $b;
                     }',
             ],
+            'pureFunctionMayReadPropertiesOfAnObjectItCreated' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function countTwice(): int {
+                        $counter = new Counter();
+                        $counter->inc();
+                        $counter->inc();
+                        if ($counter->n !== 2) {
+                            return $counter->n;
+                        }
+                        return $counter->n + (new Counter())->n;
+                    }',
+            ],
         ];
     }
 
@@ -2242,6 +2264,59 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'TooManyTemplateParams',
+            ],
+            'pureFunctionCannotReadPropertiesOfAContractedParameter' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function currentCount(Counter $counter): int {
+                        return $counter->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - The context is pure but accessing a property on a mutable object requires read-props',
+            ],
+            'writeThisPropsCannotReadPropertiesOfAContractedProperty' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Holder {
+                        public function __construct(private Counter $counter) {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function current(): int {
+                            return $this->counter->n;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - The context is write-this-props but accessing a property on a mutable object requires read-props',
+            ],
+            'pureFunctionCannotReadNestedPropertiesOfAContractedParameter' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Holder {
+                        public function __construct(public Counter $counter) {}
+                    }
+
+                    /** @psalm-pure */
+                    function currentCount(Holder $holder): int {
+                        return $holder->counter->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
             ],
         ];
     }
