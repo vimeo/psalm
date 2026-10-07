@@ -235,8 +235,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];
                 } elseif ($result->return_type !== null) {
+                    // forgotten by calls that may mutate the receiver, unless the class is immutable
                     $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
-                        'has_mutations' => false,
+                        'has_mutations' => $result->can_memoize && $result->memoized_result_has_mutations,
                     ]);
                 }
 
