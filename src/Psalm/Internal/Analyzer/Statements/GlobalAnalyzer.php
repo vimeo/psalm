@@ -113,6 +113,16 @@ final class GlobalAnalyzer
                 'parent_nodes' => [$assignment_node->id => $assignment_node],
                 'from_global_state' => true,
             ]);
+
+            if ($var_id === '$argv' && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())) {
+                $graph->addNode($assignment_node);
+                $graph->addPath(
+                    VariableFetchAnalyzer::getArgvTaintSource($statements_analyzer, $graph, $var),
+                    $assignment_node,
+                    '=',
+                );
+            }
+
             $context->references_to_external_scope[$var_id] = true;
 
             if (isset($context->references_in_scope[$var_id])) {

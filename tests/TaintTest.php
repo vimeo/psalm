@@ -1885,6 +1885,12 @@ final class TaintTest extends TestCase
                     echo $_SERVER["SERVER_PROTOCOL"] ?? "";
                     echo $_SERVER["REDIRECT_STATUS"] ?? "";',
             ],
+            'dontTaintAParameterNamedArgv' => [
+                'code' => '<?php
+                    function first(array $argv): void {
+                        echo (string) $argv[0];
+                    }',
+            ],
             'dontTaintUploadedFileTemporaryName' => [
                 'code' => '<?php
                     move_uploaded_file($_FILES["upload"]["tmp_name"], "/tmp/upload");',
@@ -5587,6 +5593,26 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     foreach ($_SERVER["argv"] ?? [] as $arg) {
                         echo $arg;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvAtFileScope' => [
+                'code' => '<?php
+                    echo $argv[1] ?? "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvBoundWithGlobal' => [
+                'code' => '<?php
+                    function run(): void {
+                        global $argv;
+                        echo $argv[1] ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvReadThroughGlobals' => [
+                'code' => '<?php
+                    function run(): void {
+                        echo (string) ($GLOBALS["argv"][1] ?? "");
                     }',
                 'error_message' => 'TaintedHtml',
             ],
