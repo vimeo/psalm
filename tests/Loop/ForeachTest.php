@@ -50,6 +50,37 @@ final class ForeachTest extends TestCase
                     '$counts===' => "array<string, 'many'|int>",
                 ],
             ],
+            'foreachByReferenceWritesWhatTheValueVariableHoldsWhereTheLoopIsBrokenOutOf' => [
+                'code' => '<?php
+                    /** @var array<string, int> */
+                    $counts = [];
+                    foreach ($counts as &$count) {
+                        if (rand(0, 1)) {
+                            $count = "many";
+                            break;
+                        }
+                    }
+                    unset($count);',
+                'assertions' => [
+                    '$counts===' => "array<string, 'many'|int>",
+                ],
+            ],
+            'foreachByReferenceDoesNotWriteWhatTheValueVariableHeldBefore' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $value
+                     * @param array<string, array<string, string>> $groups
+                     * @return array<string, array<string, string>>
+                     */
+                    function sortGroups(array $value, array $groups): array {
+                        foreach ($groups as &$value) {
+                            ksort($value);
+                        }
+                        unset($value);
+
+                        return $groups;
+                    }',
+            ],
             'switchVariableWithContinue' => [
                 'code' => '<?php
                     foreach (["a", "b", "c"] as $letter) {
