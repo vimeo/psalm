@@ -1954,7 +1954,13 @@ final class TaintFlowResolution
         $fact = $facts[$position] ?? [null, []];
         $passed_keys = $fact[1];
         $passed_keys[$fetched_key] = true;
-        $facts[$position] = [$fact[0], $passed_keys];
+
+        // Only the class of none passes fetches of two different keys (see classPassesFetch()), and it passes any:
+        // the filter knows it. Else the filters would be told apart by every set of keys fetched there: a call
+        // made in a filter is copied into a filter of its context for each key fetched in its walk (see
+        // passesFetch()), and its copy, which still observes the same open assignment, into a filter of that one
+        // for each other key (e.g. a function-like whose walk reaches a call of itself passing it its parameter).
+        $facts[$position] = count($passed_keys) > 1 ? ['', []] : [$fact[0], $passed_keys];
 
         $filter = $this->addEntry(
             $this->entry_nodes[$entry],
