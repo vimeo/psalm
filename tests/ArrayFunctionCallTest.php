@@ -394,6 +394,7 @@ final class ArrayFunctionCallTest extends TestCase
                      */
                     function f(array $a, array $b): void {
                         $r = array_replace_recursive($a, $b);
+                        /** @psalm-check-type-exact $r = array<string, int|string> */
                     }
                     $r = array_replace_recursive(["a" => 1], ["b" => "x"]);',
                 'assertions' => [
@@ -406,6 +407,38 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$r===' => "array{x: array{a: 1, b: 'y'}}",
                 ],
+            ],
+            'arrayReplaceRecursiveReplacesNonArrayValues' => [
+                'code' => '<?php
+                    $r = array_replace_recursive(["x" => ["a" => 1], "y" => 1], ["x" => 2], ["y" => ["b" => 1]]);',
+                'assertions' => [
+                    '$r===' => 'array{x: 2, y: array{b: 1}}',
+                ],
+            ],
+            'arrayReplaceRecursiveOfAPossiblyUndefinedKey' => [
+                'code' => '<?php
+                    /** @param array{x?: array{a: int}} $a */
+                    function f(array $a): void {
+                        $r = array_replace_recursive($a, ["x" => ["b" => "y"]]);
+                        /** @psalm-check-type-exact $r = array{x: array{a?: int, b: \'y\'}} */
+                    }',
+            ],
+            'arrayReplaceRecursiveOfValuesThatCanBeAnyArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param array{x: mixed} $a
+                     * @param array{x: T} $b
+                     * @param array{x: iterable<string, int>} $c
+                     */
+                    function f(array $a, array $b, array $c): void {
+                        $r1 = array_replace_recursive($a, ["x" => ["b" => "y"]]);
+                        /** @psalm-check-type-exact $r1 = array{x: array{b: \'y\', ...<array-key, mixed>}} */
+                        $r2 = array_replace_recursive($b, ["x" => ["b" => "y"]]);
+                        /** @psalm-check-type-exact $r2 = array{x: array{b: \'y\', ...<array-key, mixed>}} */
+                        $r3 = array_replace_recursive($c, ["x" => ["b" => "y"]]);
+                        /** @psalm-check-type-exact $r3 = array{x: array{b: \'y\', ...<array-key, mixed>}} */
+                    }',
             ],
             'arrayReplaceRecursiveLists' => [
                 'code' => '<?php
@@ -453,10 +486,10 @@ final class ArrayFunctionCallTest extends TestCase
                      * @template TValue2
                      * @param array<TKey, TValue> $a
                      * @param array<TKey2, TValue2> $b
-                     * @return array<TKey|TKey2, TValue|TValue2|array<array-key, mixed>>
                      */
-                    function f(array $a, array $b): array {
-                        return array_replace_recursive($a, $b);
+                    function f(array $a, array $b): void {
+                        $r = array_replace_recursive($a, $b);
+                        /** @psalm-check-type-exact $r = array<TKey|TKey2, TValue|TValue2|array<array-key, mixed>> */
                     }',
             ],
             'arrayReplaceIntArrays' => [

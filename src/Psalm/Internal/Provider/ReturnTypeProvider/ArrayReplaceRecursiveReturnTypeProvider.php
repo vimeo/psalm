@@ -7,18 +7,21 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function count;
+use function assert;
 
 /**
  * array_replace_recursive() returns the keys of all its arrays, each with the value of the last array having it, or
@@ -136,30 +139,23 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
             }
         }
 
-        $fallback = null;
+        $fallback_keys = [];
+        $fallback_values = [];
 
-        if ($replaced_fallback !== null || $replacement_fallback !== null) {
-            $fallback_keys = [];
-            $fallback_values = [];
-
-            foreach ([$replaced_fallback, $replacement_fallback] as $shape_fallback) {
-                if ($shape_fallback !== null) {
-                    [$fallback_keys[], $fallback_values[]] = $shape_fallback;
-                }
-            }
-
-            if ($fallback_keys !== [] && $fallback_values !== []) {
-                $fallback = [
-                    Type::combineUnionTypeArray($fallback_keys, $codebase),
-                    self::getMergedValueType(Type::combineUnionTypeArray($fallback_values, $codebase), $codebase),
-                ];
+        foreach ([$replaced_fallback, $replacement_fallback] as $shape_fallback) {
+            if ($shape_fallback !== null) {
+                [$fallback_keys[], $fallback_values[]] = $shape_fallback;
             }
         }
 
+        $fallback = $fallback_keys === [] || $fallback_values === [] ? null : [
+            Type::combineUnionTypeArray($fallback_keys, $codebase),
+            self::getMergedValueType(Type::combineUnionTypeArray($fallback_values, $codebase), $codebase),
+        ];
+
         if ($properties === []) {
-            if ($fallback === null) {
-                return new TArray([Type::getNever(), Type::getNever()]);
-            }
+            // neither array is a shape, so both have generic params (empty arrays are handled above)
+            assert($fallback !== null);
 
             return self::isNonEmpty($replaced) || self::isNonEmpty($replacement)
                 ? new TNonEmptyArray($fallback)
@@ -202,10 +198,21 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
     private static function replaceValue(Union $replaced, Union $replacement, Codebase $codebase): Union
     {
         $replaced_arrays = [];
+        // a key the replaced array may not have, or a value that may not be an array, just takes the replacement
+        $can_be_not_array = $replaced->possibly_undefined;
 
         foreach ($replaced->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TArray || $atomic instanceof TKeyedArray) {
                 $replaced_arrays[] = $atomic;
+
+                continue;
+            }
+
+            $can_be_not_array = true;
+
+            if (self::canBeArray($atomic, $codebase)) {
+                // mixed, iterable, callable or a template: an array with any keys
+                $replaced_arrays[] = Type::getArrayAtomic();
             }
         }
 
@@ -217,8 +224,7 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
                     $atomics[] = self::replaceArray($replaced_array, $atomic, $codebase);
                 }
 
-                // what is replaced may also not be an array
-                if (count($replaced_arrays) !== count($replaced->getAtomicTypes())) {
+                if ($can_be_not_array) {
                     $atomics[] = $atomic;
                 }
             } else {
@@ -247,8 +253,9 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
                     $all_lists = $all_lists && self::isList($atomic);
                 }
             } else {
-                // a template that can be an array may be merged with another array: that array is any array
-                if ($atomic instanceof TTemplateParam && ($atomic->as->hasArray() || $atomic->as->hasMixed())) {
+                // a value that can be an array (iterable, callable or a template) may be merged with another array:
+                // that array is any array (mixed already covers it)
+                if (!$atomic instanceof TMixed && self::canBeArray($atomic, $codebase)) {
                     $key_types[] = Type::getArrayKey();
                     $value_types[] = Type::getMixed();
                     $all_lists = false;
@@ -270,6 +277,17 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
             : new TArray([Type::combineUnionTypeArray($key_types, $codebase), $merged_value_type]);
 
         return TypeCombiner::combine($other_atomics, $codebase);
+    }
+
+    /**
+     * Whether a type other than TArray and TKeyedArray can be an array
+     */
+    private static function canBeArray(Atomic $atomic, Codebase $codebase): bool
+    {
+        return $atomic instanceof TIterable
+            // [$object_or_class, $method]
+            || $atomic instanceof TCallable
+            || AtomicTypeComparator::canBeIdentical($codebase, $atomic, Type::getArrayAtomic());
     }
 
     /**

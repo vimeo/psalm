@@ -79,12 +79,12 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayFilterReturnTypeProvider::class);
         $this->registerClass(ArrayMapReturnTypeProvider::class);
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
-        $this->registerClass(ArrayReplaceRecursiveReturnTypeProvider::class);
         $this->registerClass(ArrayPadReturnTypeProvider::class);
         $this->registerClass(ArrayPointerAdjustmentReturnTypeProvider::class);
         $this->registerClass(ArrayPopReturnTypeProvider::class);
         $this->registerClass(ArrayRandReturnTypeProvider::class);
         $this->registerClass(ArrayReduceReturnTypeProvider::class);
+        $this->registerClass(ArrayReplaceRecursiveReturnTypeProvider::class);
         $this->registerClass(ArraySliceReturnTypeProvider::class);
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
