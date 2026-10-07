@@ -1590,8 +1590,17 @@ final class TaintTest extends TestCase
             ],
             'escapeShellArgEscapesShell' => [
                 'code' => '<?php
-                    exec("ls " . escapeshellarg((string) $_GET["x"]));
-                    exec(escapeshellcmd((string) $_GET["x"]));',
+                    exec("ls " . escapeshellarg((string) $_GET["x"]));',
+            ],
+            'dontTaintOtherCallsOfABuiltinStaticMethod' => [
+                'code' => '<?php
+                    $tainted = Normalizer::normalize((string) $_GET["x"]);
+                    echo (string) Normalizer::normalize("safe");',
+            ],
+            'dontTaintWhatAnArrayMapClosureReturnsWithoutItsParam' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureParamType */
+                    echo implode(",", array_map(fn($s) => "safe", $_GET["a"]));',
             ],
             'dontTaintPromotedPropertyOfOtherInstance' => [
                 'code' => '<?php
@@ -4692,6 +4701,51 @@ final class TaintTest extends TestCase
             'taintHtmlThroughShellEscape' => [
                 'code' => '<?php
                     echo escapeshellarg((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintShellThroughEscapeShellCmd' => [
+                'code' => '<?php
+                    exec(escapeshellcmd("curl " . (string) $_GET["x"]));',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintThroughBuiltinStaticMethod' => [
+                'code' => '<?php
+                    echo (string) Normalizer::normalize((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughNamedArgumentsOfCallMapOnlyFunction' => [
+                'code' => '<?php
+                    echo mb_substr(start: 1, string: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughNamedArgumentOfAParameterPastTheArguments' => [
+                'code' => '<?php
+                    echo http_build_query(data: ["a" => "b"], arg_separator: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHeaderThroughTheNumericPrefixOfHttpBuildQuery' => [
+                'code' => '<?php
+                    header("X: " . http_build_query([1 => "a"], (string) $_GET["x"]));',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintWhatStrtokReturnsFromTheStringOfAnEarlierCall' => [
+                'code' => '<?php
+                    strtok((string) $_GET["x"], ",");
+                    echo (string) strtok(",");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayMapUntypedClosureOverMixedArray' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
+                    echo implode(",", array_map(fn($s) => $s, $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughArrayMapUntypedClosureIntoItsElements' => [
+                'code' => '<?php
+                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
+                    foreach (array_map(fn($s) => $s, $_GET["a"]) as $value) {
+                        echo (string) $value;
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintPromotedProperty' => [

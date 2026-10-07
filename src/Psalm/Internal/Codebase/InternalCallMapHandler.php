@@ -57,6 +57,9 @@ final class InternalCallMapHandler
     private const MIN_CALLMAP_VERSION = 70;
     private const MAX_CALLMAP_VERSION = 85;
 
+    /** see keepsStateBetweenCalls() */
+    private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
+
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
 
@@ -429,6 +432,17 @@ final class InternalCallMapHandler
         }
 
         $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
+    }
+
+    /**
+     * Whether the calls of the builtin function $function_id can return data given to its other calls: strtok() goes
+     * on through the string it was given last, inflate_add() through the data given with the same context.
+     *
+     * @psalm-pure
+     */
+    public static function keepsStateBetweenCalls(string $function_id): bool
+    {
+        return isset(self::STATEFUL_FUNCTIONS[strtolower($function_id)]);
     }
 
     /**
