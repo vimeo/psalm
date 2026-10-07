@@ -1621,6 +1621,29 @@ final class PurityTemplateTest extends TestCase
                         return false;
                     }',
             ],
+            'omittedPurityArgumentOfAReceiverIsItsDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P(write-props) <= write-props
+                     */
+                    class Box {
+                        /**
+                         * @param T $value
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function set($value): void {}
+                    }
+
+                    /**
+                     * @psalm-capabilities read-props|write-props
+                     * @param Box<int> $box
+                     */
+                    function fill(Box $box): void {
+                        $box->set(1);
+                    }',
+            ],
             'constructorReturnTypeBindsAPurityTemplateFromTheArgument' => [
                 'code' => '<?php
                     /**
