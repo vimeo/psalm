@@ -2854,6 +2854,14 @@ final class TaintTest extends TestCase
                     $registry->show($object);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedThroughWhatIsWrittenToAFileObject' => [
+                'code' => '<?php // --taint-analysis
+                    $file = new SplTempFileObject();
+                    $file->fwrite((string) $_GET["a"]);
+                    $file->rewind();
+                    echo (string) $file->fgets();',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAnObjectThroughTheFlowOfItsConstructor' => [
                 'code' => '<?php // --taint-analysis
                     final class Url {

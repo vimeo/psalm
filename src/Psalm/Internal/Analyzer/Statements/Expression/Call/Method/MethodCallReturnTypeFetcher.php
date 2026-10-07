@@ -272,7 +272,7 @@ final class MethodCallReturnTypeFetcher
             $context,
         );
 
-        return ContainerTaintAnalyzer::taint(
+        return NativeClassTaintAnalyzer::taint(
             $statements_analyzer,
             $stmt,
             $context,
