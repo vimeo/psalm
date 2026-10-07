@@ -375,7 +375,12 @@ final class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            $assign_value_type = $comment_type->setParentNodes($parent_nodes);
+            // whether the value is a fresh object or was reached from global state is a property of
+            // the value, not of its declared type
+            $assign_value_type = $comment_type->setParentNodes($parent_nodes)->setProperties([
+                'reference_free' => $temp_assign_value_type->reference_free ?? false,
+                'from_global_state' => $temp_assign_value_type->from_global_state ?? false,
+            ]);
         } elseif (!$assign_value_type) {
             if ($assign_value) {
                 $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
