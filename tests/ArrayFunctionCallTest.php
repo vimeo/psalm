@@ -492,6 +492,26 @@ final class ArrayFunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $r = array<TKey|TKey2, TValue|TValue2|array<array-key, mixed>> */
                     }',
             ],
+            'arrayReplaceRecursiveOfUnpackedArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{x: array{b: string}}> $l
+                     * @param non-empty-list<array{x: array{b: string}}> $n
+                     */
+                    function f(array $l, array $n): void {
+                        $r1 = array_replace_recursive(["x" => ["a" => 1]], ...$l);
+                        /** @psalm-check-type-exact $r1 = array{x: array{a: 1, b?: string}} */
+                        $r2 = array_replace_recursive(["x" => ["a" => 1]], ...$n);
+                        /** @psalm-check-type-exact $r2 = array{x: array{a: 1, b: string}} */
+                        $r3 = array_replace_recursive(...$n);
+                        /** @psalm-check-type-exact $r3 = array{x: array{b: string}} */
+                    }
+                    $arrays = [["x" => ["a" => 1]], ["x" => ["b" => 2]]];
+                    $r = array_replace_recursive(["y" => 1], ...$arrays);',
+                'assertions' => [
+                    '$r===' => 'array{x: array{a: 1, b: 2}, y: 1}',
+                ],
+            ],
             'arrayReplaceIntArrays' => [
                 'code' => '<?php
                     $d = array_replace(["a", "b", "c", "d"], [1, 2, 3]);',

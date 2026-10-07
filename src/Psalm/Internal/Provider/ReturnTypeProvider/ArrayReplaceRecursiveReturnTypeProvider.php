@@ -33,6 +33,11 @@ use function assert;
 final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
+     * How many more arrays of an unpacked argument are tried before giving up on a result they all fit
+     */
+    private const MAX_UNPACKED_REPLACEMENTS = 5;
+
+    /**
      * @return array<lowercase-string>
      * @psalm-pure
      */
@@ -57,16 +62,102 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
         $result = null;
 
         foreach ($call_args as $call_arg) {
-            $arg_type = $call_arg->unpack ? null : $statements_source->node_data->getType($call_arg->value);
+            $arg_type = $statements_source->node_data->getType($call_arg->value);
 
             if ($arg_type === null || !$arg_type->isArray()) {
                 return null;
             }
 
-            $result = $result === null ? $arg_type : self::replaceArrays($result, $arg_type, $codebase);
+            if ($call_arg->unpack) {
+                $result = self::replaceWithUnpacked($result, $arg_type, $codebase);
+
+                if ($result === null) {
+                    return null;
+                }
+            } else {
+                $result = $result === null ? $arg_type : self::replaceArrays($result, $arg_type, $codebase);
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * What replacing the arrays $replaced can be (null if there are none before) with the arrays unpacked from what
+     * $unpacked can be gives, or null if it can't be inferred
+     */
+    private static function replaceWithUnpacked(?Union $replaced, Union $unpacked, Codebase $codebase): ?Union
+    {
+        $results = [];
+
+        foreach ($unpacked->getAtomicTypes() as $atomic) {
+            $result = self::replaceWithUnpackedArray($replaced, $atomic, $codebase);
+
+            if ($result === null) {
+                return null;
+            }
+
+            $results[] = $result;
+        }
+
+        return Type::combineUnionTypeArray($results, $codebase);
+    }
+
+    private static function replaceWithUnpackedArray(?Union $replaced, Atomic $unpacked, Codebase $codebase): ?Union
+    {
+        if (self::isEmptyArray($unpacked)) {
+            return $replaced;
+        }
+
+        [$key_type, $value_type] = self::getGenericParams($unpacked);
+
+        // string keys would be named arguments
+        if (!$key_type->isInt() || !$value_type->isArray()) {
+            return null;
+        }
+
+        if ($unpacked instanceof TKeyedArray
+            && $unpacked->is_list
+            && $unpacked->fallback_params === null
+            && $unpacked->getMinCount() === $unpacked->getMaxCount()
+        ) {
+            // a known number of arrays, replaced one after another
+            for ($i = 0; $i < $unpacked->getMaxCount(); $i++) {
+                $arg_type = $unpacked->properties[$i];
+                $replaced = $replaced === null ? $arg_type : self::replaceArrays($replaced, $arg_type, $codebase);
+            }
+
+            return $replaced;
+        }
+
+        // any number of arrays of $value_type: a possibly empty unpack may replace nothing (and the first array is
+        // always passed, the call fails without one)
+        $value_type = $value_type->setPossiblyUndefined(false);
+
+        if ($replaced === null) {
+            $result = $value_type;
+        } elseif (self::isNonEmpty($unpacked)) {
+            $result = self::replaceArrays($replaced, $value_type, $codebase);
+        } else {
+            $result = $replaced;
+        }
+
+        // replacing with one more array until that gives nothing new
+        for ($i = 0; $i < self::MAX_UNPACKED_REPLACEMENTS; $i++) {
+            $next_result = Type::combineUnionTypes(
+                $result,
+                self::replaceArrays($result, $value_type, $codebase),
+                $codebase,
+            );
+
+            if ($next_result->getId() === $result->getId()) {
+                return $result;
+            }
+
+            $result = $next_result;
+        }
+
+        return null;
     }
 
     /**
