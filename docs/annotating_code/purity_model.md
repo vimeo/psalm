@@ -669,6 +669,12 @@ An argument that may be either an array or an object gives the union of both typ
 `add()` on the result costs `write-props`. A `@return` without a condition binds type templates
 the same way: with `@return Box<int>` on its constructor, `new Box()` is a `Box<int>`.
 
+A condition can also be given to each purity argument, inside the brackets, and a branch may be a
+purity template of the constructor, bound from the argument. With
+`@param array<K, V>|Container[PP]<K, V> $param` and `@return self[$param is array ? pure : PP]<K, V>`,
+`new Wrapper($container)` takes the purity argument of `$container`, `io` for a
+`Container[io]<string, int>`.
+
 The `@return` of a constructor may only name its own class (or `self` or `static`); anything else
 is an `InvalidDocblock`. Since it names the class itself, a subclass inheriting the constructor,
 and `new static()` in a class that isn't final, get the type `new` would give without it.
