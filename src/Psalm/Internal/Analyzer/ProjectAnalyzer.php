@@ -866,6 +866,17 @@ final class ProjectAnalyzer
         $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
+        if (!$this->project_files_initialized) {
+            // issues raised while scanning need to know which files are being checked
+            $this->project_files = [];
+            foreach ($this->file_provider->getFilesInDir(
+                $dir_name,
+                $this->config->getFileExtensions(),
+            ) as $file_path) {
+                $this->project_files[$file_path] = $file_path;
+            }
+        }
+
         $this->file_reference_provider->loadReferenceCache();
 
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
