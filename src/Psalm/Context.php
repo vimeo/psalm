@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -33,8 +34,10 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use function str_contains;
+use function strcspn;
 use function strpos;
 use function strtolower;
+use function substr;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -776,10 +779,10 @@ final class Context
     }
 
     /**
-     * Forgets what is known about property and static property expressions after a call, since the
-     * callee may have changed them: property expressions when the callee may write properties, static
-     * property expressions when it may write globals. A callee that may do neither, e.g. a pure or
-     * read-globals function, leaves every refinement in place.
+     * Forgets what is known about property, static property and superglobal expressions after a call, since
+     * the callee may have changed them: property expressions when the callee may write properties, static
+     * property and superglobal expressions when it may write globals. A callee that may do neither, e.g. a
+     * pure or read-globals function, leaves every refinement in place.
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
@@ -798,7 +801,7 @@ final class Context
         foreach ($this->vars_in_scope as $var_id => $type) {
             if ($type->has_mutations
                 && (($forget_properties && str_contains($var_id, '->'))
-                    || ($forget_statics && str_contains($var_id, '::')))
+                    || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
             ) {
                 $vars_to_remove[] = $var_id;
@@ -820,7 +823,7 @@ final class Context
 
             foreach ($clause->possibilities as $key => $_) {
                 if ((($forget_properties && str_contains($key, '->'))
-                        || ($forget_statics && str_contains($key, '::')))
+                        || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;
@@ -834,6 +837,14 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isInSuperGlobal(string $var_id): bool
+    {
+        return VariableFetchAnalyzer::isSuperGlobal(substr($var_id, 0, strcspn($var_id, '[-', 1) + 1));
     }
 
     /**
