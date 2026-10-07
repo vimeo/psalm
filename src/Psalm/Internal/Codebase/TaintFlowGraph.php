@@ -1063,8 +1063,11 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        // an exit of the function-like entered: the call site doesn't use it
-        if ($this->isExitOfEntered($exit->id, $caller->id)) {
+        // an exit of the function-like entered: the call site doesn't use it. Its specialization of the exit,
+        // if any, was left out with the others that have no outgoing edge (see connectSinksAndSources()).
+        if (isset($this->nodes[$exit->id . self::SPECIALIZATION_SEPARATOR . $specialization_key])
+            || $this->isExitOfEntered($exit->id, $caller->id)
+        ) {
             return [];
         }
 

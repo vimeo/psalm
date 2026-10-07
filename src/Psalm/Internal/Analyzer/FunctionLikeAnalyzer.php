@@ -1293,6 +1293,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * A call of a method a method overrides may run it: what it leaves in its by-reference parameters is
      * left to that call too.
      *
+     * When the calls of the method are specialized, its by-reference parameter out nodes are the exits of
+     * its body, which only lead to its call sites through their specializations (see
+     * TaintFlowGraph::connectSinksAndSources()): an edge of their own would cut its calls off from them.
+     * The calls of the overridden method are then linked to as a call of its own, specialized at the
+     * location of the method, which the flows a specialized call of it brings into its body don't exit
+     * through.
+     *
      * @param array<string, MethodIdentifier> $overridden_method_ids
      */
     private static function taintOverriddenByRefParamsOut(
@@ -1308,6 +1315,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $overridden_method_ids = array_map(strval(...), $overridden_method_ids);
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        // specialized like the by-reference parameter out nodes of its calls (see
+        // ArgumentsAnalyzer::getByRefParamOutNode())
+        $specialization_location = $storage->specialize_call ? $storage->location : null;
 
         // the classes a method overridden is called through (see getByRefParamsOutMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
@@ -1331,7 +1342,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     continue;
                 }
 
-                $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+                $out_node = DataFlowNode::getForMethodArgumentOut(
+                    $cased_method_id,
+                    $offset,
+                    $storage,
+                    $specialization_location,
+                );
                 $overridden_out_node = DataFlowNode::getForMethodArgumentOut(
                     $overridden_cased_method_id,
                     $offset,
