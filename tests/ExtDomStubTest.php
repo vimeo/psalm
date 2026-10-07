@@ -82,6 +82,15 @@ final class ExtDomStubTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'Dom\Node class constant resolves' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $flag = Dom\Node::DOCUMENT_POSITION_CONTAINS;
+                    PHP,
+                'assertions' => ['$flag===' => '8'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 

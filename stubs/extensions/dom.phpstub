@@ -1032,6 +1032,13 @@ namespace Dom {
     /** @since 8.4 */
     class Node
     {
+        public const DOCUMENT_POSITION_DISCONNECTED = 0x01;
+        public const DOCUMENT_POSITION_PRECEDING = 0x02;
+        public const DOCUMENT_POSITION_FOLLOWING = 0x04;
+        public const DOCUMENT_POSITION_CONTAINS = 0x08;
+        public const DOCUMENT_POSITION_CONTAINED_BY = 0x10;
+        public const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+
         /** @readonly */
         public int $nodeType;
         /** @readonly */
