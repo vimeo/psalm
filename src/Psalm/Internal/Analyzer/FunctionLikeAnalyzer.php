@@ -297,6 +297,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
+        // A method can be analyzed again to collect the properties it initializes or mutates, in the context of a
+        // class calling or inheriting it (see CallAnalyzer::collectSpecialInformation()): its parameters stay those of
+        // every call, so linking its nodes to those of that class there would make any call to it, on any object,
+        // reach the properties of that class. Its regular analysis adds its taint paths.
+        if ($context->collect_initializations || $context->collect_mutations) {
+            $statements_analyzer->taint_flow_graph = null;
+            $statements_analyzer->data_flow_graph = $statements_analyzer->variable_use_graph;
+        }
+
         $byref_uses = [];
         if ($this instanceof ClosureAnalyzer && $this->function instanceof Closure) {
             foreach ($this->function->uses as $use) {
