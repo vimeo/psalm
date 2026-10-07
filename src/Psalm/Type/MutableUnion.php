@@ -53,6 +53,13 @@ final class MutableUnion implements TypeNode
     public bool $from_calculation = false;
 
     /**
+     * Set when the value is a bit set: declared as `int-mask` or `int-mask-of`, or derived from one
+     * with `&`, `|` or `^`. It holds every bit the value may have. Such a value may only be compared
+     * by value with 0 (no bit set) or with all of these bits, see IntMaskComparison.
+     */
+    public ?int $int_mask_bits = null;
+
+    /**
      * Whether the type originated from a property
      *
      * This helps turn isset($foo->bar) into a different sort of issue

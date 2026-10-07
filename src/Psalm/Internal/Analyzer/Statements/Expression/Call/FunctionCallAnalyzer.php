@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -269,6 +270,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $template_result,
                 $code_location,
                 $context,
+            );
+        }
+
+        if (!$is_first_class_callable
+            && $function_call_info->function_id !== null
+            && ($function_call_info->in_call_map || $function_call_info->is_stubbed)
+        ) {
+            IntMaskComparisonAnalyzer::analyzeSearch(
+                $statements_analyzer,
+                $stmt,
+                $function_call_info->function_id,
+                $code_location,
             );
         }
 

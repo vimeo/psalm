@@ -58,6 +58,7 @@
  - [InaccessibleProperty](issues/InaccessibleProperty.md)
  - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
  - [InheritorViolation](issues/InheritorViolation.md)
+ - [IntMaskComparison](issues/IntMaskComparison.md)
  - [InterfaceInstantiation](issues/InterfaceInstantiation.md)
  - [InternalClass](issues/InternalClass.md)
  - [InternalMethod](issues/InternalMethod.md)

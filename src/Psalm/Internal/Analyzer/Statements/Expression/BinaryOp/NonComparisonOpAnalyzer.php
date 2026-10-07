@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -62,18 +63,30 @@ final class NonComparisonOpAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
         ) {
-            ArithmeticOpAnalyzer::analyze(
-                $statements_analyzer,
-                $statements_analyzer->node_data,
-                $stmt->left,
-                $stmt->right,
-                $stmt,
-                $result_type,
-                $context,
-            );
+            $int_mask_bits = IntMask::getBitwiseOpBits($stmt, $stmt_left_type, $stmt_right_type);
+
+            $result_type = $int_mask_bits === null
+                ? null
+                : IntMask::getBitwiseOpType($stmt_left_type, $stmt_right_type, $int_mask_bits);
+
+            if (!$result_type) {
+                ArithmeticOpAnalyzer::analyze(
+                    $statements_analyzer,
+                    $statements_analyzer->node_data,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type,
+                    $context,
+                );
+            }
 
             if (!$result_type) {
                 $result_type = new Union([new TInt(), new TFloat()]);
+            }
+
+            if ($int_mask_bits !== null && $result_type->isInt()) {
+                $result_type = $result_type->setProperties(['int_mask_bits' => $int_mask_bits]);
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);

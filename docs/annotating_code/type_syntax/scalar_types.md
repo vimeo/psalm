@@ -31,6 +31,10 @@ Represents the type that is the result of a bitmask combination of its parameter
 Represents the type that is the result of a bitmask combination of its parameters.  
 This is the same concept as [`int-mask`](#int-mask1-2-4) but this type is used with a reference to constants in code: `int-mask-of<MyClass::CLASS_CONSTANT_*>` will correspond to `0|1|2|3|4|5|6|7` if there are three constants called `CLASS_CONSTANT_{A,B,C}` with values 1, 2 and 4.  
 
+### Comparing masks
+
+A value of an `int-mask` or `int-mask-of` type is a set of bits, and Psalm remembers it through `&`, `|` and `^`: `$mask & B` is a narrowed mask of the bits of `B`. A mask may only be compared by value with `0` (no bit set) or with all of its bits: any other comparison only matches one exact set of bits, where testing some bits with `($mask & B) === B` or `($mask & B) !== 0` is usually meant, and is reported as [IntMaskComparison](../../running_psalm/issues/IntMaskComparison.md).  
+
 ## array-key
 
 `array-key` is the supertype (but not a union) of `int` and `string`.

@@ -250,7 +250,18 @@ final class MatchAnalyzer
                 $match_condition->getAttributes(),
             );
 
+            // each arm's comparison was checked already
+            $was_int_mask_comparison_suppressed = in_array('IntMaskComparison', $suppressed_issues, true);
+
+            if (!$was_int_mask_comparison_suppressed) {
+                $statements_analyzer->addSuppressedIssues(['IntMaskComparison']);
+            }
+
             ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
+
+            if (!$was_int_mask_comparison_suppressed) {
+                $statements_analyzer->removeSuppressedIssues(['IntMaskComparison']);
+            }
 
             $clauses = FormulaGenerator::getFormula(
                 spl_object_id($all_match_condition),

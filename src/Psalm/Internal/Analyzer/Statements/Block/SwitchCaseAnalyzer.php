@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
@@ -230,12 +231,16 @@ final class SwitchCaseAnalyzer
                     $case->cond,
                     $case->cond->getAttributes(),
                 );
+
+                IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $case_equality_expr);
             } else {
                 $case_equality_expr = new VirtualEqual(
                     $switch_condition,
                     $case->cond,
                     $case->cond->getAttributes(),
                 );
+
+                IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $case_equality_expr);
             }
         }
 
