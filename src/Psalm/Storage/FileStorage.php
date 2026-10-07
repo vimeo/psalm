@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage;
 
 use Psalm\Aliases;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
@@ -52,6 +53,13 @@ final class FileStorage
 
     /** @var array<string, string> */
     public array $declaring_constants = [];
+
+    /**
+     * The values of the constants whose types depend on classes, e.g. enum cases, resolved when they are fetched
+     *
+     * @var array<string, UnresolvedConstantComponent>
+     */
+    public array $unresolved_constants = [];
 
     /** @var array<lowercase-string, string> */
     public array $required_file_paths = [];

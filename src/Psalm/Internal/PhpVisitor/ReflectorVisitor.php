@@ -309,7 +309,14 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     new NodeDataProvider(),
                     $const->value,
                     $this->aliases,
-                ) ?? Type::getMixed();
+                );
+
+                // a value depending on classes not known yet, e.g. an enum case, is resolved when it is fetched
+                $unresolved = $const_type === null
+                    ? ExpressionResolver::getUnresolvedClassConstExpr($const->value, $this->aliases, null)
+                    : null;
+
+                $const_type ??= Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
 
@@ -319,10 +326,18 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     ) && (!defined($fq_const_name) || !$const_type->isMixed())
                 ) {
                     $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
+
+                    if ($unresolved !== null) {
+                        $this->codebase->addUnresolvedGlobalConstant($fq_const_name, $unresolved);
+                    }
                 }
 
                 $this->file_storage->constants[$fq_const_name] = $const_type;
                 $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
+
+                if ($unresolved !== null) {
+                    $this->file_storage->unresolved_constants[$fq_const_name] = $unresolved;
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && !$this->skip_if_descendants) {
             if (!$this->functionlike_node_scanners) {
