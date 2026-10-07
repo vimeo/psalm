@@ -202,7 +202,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
         if (false === $options) {
             throw new RuntimeException('Failed to parse CLI options');
         }
