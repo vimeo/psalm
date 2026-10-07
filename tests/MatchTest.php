@@ -40,14 +40,18 @@ final class MatchTest extends TestCase
                         return $type;
                     }
 
-                    $type = (string) rand();
+                    function getType(): string {
+                        return "";
+                    }
+
+                    $type = getType();
                     match ($type) {
                         "organization" => 1,
                         "prof", "masterprice" => 2,
                     };
                     $kept = $type;
 
-                    $other = (string) rand();
+                    $other = getType();
                     match ($other) {
                         "organization" => 1,
                         default => 2,
