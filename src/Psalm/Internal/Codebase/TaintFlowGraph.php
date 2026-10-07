@@ -53,6 +53,7 @@ use function array_unshift;
 use function count;
 use function end;
 use function ksort;
+use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -72,6 +73,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * The expression types whose assignments and fetches shouldIgnoreFetch() matches.
      */
     private const STRUCTURAL_PATH_TYPE_FAMILIES = ['arraykey', 'arrayvalue', 'property'];
+
+    /**
+     * The suffix of the type of an edge converting to a scalar a value that may be an array (see
+     * CastAnalyzer::getArrayConversionSuffix() and convertsTheArrayHoldingTheTaint()).
+     */
+    public const ARRAY_CONVERSION_SUFFIX = '-of-array';
 
     /**
      * How many of the innermost open assignments (see appendPathType()) of a flow
@@ -1280,6 +1287,10 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
+            if (self::convertsTheArrayHoldingTheTaint($path_type, $open_assignments)) {
+                continue;
+            }
+
             // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
             // connect a node without a location to a sink
             if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {
@@ -1369,6 +1380,30 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         return $path_types;
+    }
+
+    /**
+     * Whether the edge of type $path_type converts to a scalar (a cast, a concatenation) a value that may be the
+     * array the innermost of the flow's open assignments $open_assignments put the taint in, under a key or as a
+     * key: an array converts to "Array", or to 0/1, never to what it holds.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function convertsTheArrayHoldingTheTaint(string $path_type, array $open_assignments): bool
+    {
+        if (!str_ends_with($path_type, self::ARRAY_CONVERSION_SUFFIX)) {
+            return false;
+        }
+
+        for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+            if (self::isStructuralAssignment($open_assignments[$i])) {
+                return str_starts_with($open_assignments[$i], 'arrayvalue-assignment')
+                    || str_starts_with($open_assignments[$i], 'arraykey-assignment');
+            }
+        }
+
+        return false;
     }
 
     /**

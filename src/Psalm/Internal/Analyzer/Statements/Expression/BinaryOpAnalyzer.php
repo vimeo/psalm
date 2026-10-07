@@ -555,7 +555,7 @@ final class BinaryOpAnalyzer
                 $graph->addPath(
                     $parent_node,
                     $new_parent_node,
-                    'concat',
+                    'concat' . CastAnalyzer::getArrayConversionSuffix($operand_type),
                     $added_taints,
                     $operand_removed_taints[$offset],
                 );

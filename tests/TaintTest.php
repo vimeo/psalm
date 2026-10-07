@@ -468,6 +468,24 @@ final class TaintTest extends TestCase
                     }
                     echo $keys;',
              ],
+            'castOrConcatenationOfAnArrayHoldsNoneOfItsElements' => [
+                'code' => '<?php
+                    function toString(mixed $value): string {
+                        if (is_array($value)) {
+                            return "array";
+                        }
+
+                        return (string) $value;
+                    }
+
+                    function prefix(mixed $value): string {
+                        return is_array($value) ? "b" : "a{$value}";
+                    }
+
+                    // converted, an array is "Array": the elements are not in what a conversion of it gives
+                    echo toString(["key" => $_GET["a"]]);
+                    echo prefix(["key" => $_GET["b"]]);',
+            ],
             'dontTaintSsrfAfterAnyOfTheStartsOfAUrlFixingItsServer' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -2251,6 +2269,67 @@ final class TaintTest extends TestCase
                             echo $key;
                         }
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'concatenationOfAStringMadeOfTheElementsOfAnArray' => [
+                'code' => '<?php
+                    $values = [$_GET["a"]];
+                    echo "<b>" . implode(",", $values);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'concatenationOfAnElementFetchedFromAnArray' => [
+                'code' => '<?php
+                    $values = ["key" => $_GET["a"]];
+                    echo "<b>" . $values["key"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'castOfAValueWhoseTypeMayBeAnArrayAfterItsElementIsFetched' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $values */
+                    function show(array $values): void {
+                        foreach ($values as $value) {
+                            echo "<b>" . (string) $value;
+                        }
+                    }
+
+                    show(["key" => $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'castOfAMixedValueThatIsItselfTheTaintInsideASpecializedFunction' => [
+                // a value that may be an array may also be the tainted string itself: only a taint that sits in
+                // an element of it is not in its conversion
+                'code' => '<?php
+                    function toString(mixed $value): string {
+                        return (string) $value;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function show(mixed $value): string {
+                        return toString($value);
+                    }
+
+                    echo show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'concatenationOfATemplatedValueFetchedFromAnArrayInsideASpecializedFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     */
+                    function prefix($value): string {
+                        return "a{$value}";
+                    }
+
+                    /**
+                     * @psalm-taint-specialize
+                     * @param array<string, string|list<string>> $values
+                     */
+                    function show(array $values, string $key): string {
+                        return prefix($values[$key]);
+                    }
+
+                    echo show(["key" => $_GET["a"]], "key");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSsrfAfterTwoSlashesOrABackslash' => [

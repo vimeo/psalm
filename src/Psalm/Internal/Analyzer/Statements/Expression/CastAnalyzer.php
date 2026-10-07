@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -162,6 +163,7 @@ final class CastAnalyzer
                     $stmt,
                     $maybe_type->parent_nodes ?? [],
                     'bool',
+                    $maybe_type,
                 );
             }
 
@@ -530,6 +532,7 @@ final class CastAnalyzer
             $stmt,
             $parent_nodes,
             'int',
+            $stmt_type,
         );
     }
 
@@ -729,6 +732,7 @@ final class CastAnalyzer
             $stmt,
             $parent_nodes,
             'float',
+            $stmt_type,
         );
     }
 
@@ -945,6 +949,7 @@ final class CastAnalyzer
             $stmt,
             $parent_nodes,
             'string',
+            $stmt_type,
         );
     }
 
@@ -1157,6 +1162,7 @@ final class CastAnalyzer
         PhpParser\Node\Expr $stmt,
         array $parent_nodes,
         string $cast_type,
+        ?Union $cast_value_type,
     ): Union {
         if (!$graph = $statements_analyzer->data_flow_graph) {
             return $result_type;
@@ -1175,7 +1181,7 @@ final class CastAnalyzer
                 $graph->addPath(
                     $parent_node,
                     $cast_node,
-                    $cast_type . '-cast',
+                    $cast_type . '-cast' . self::getArrayConversionSuffix($cast_value_type),
                     0,
                     $removed_taints,
                 );
@@ -1185,6 +1191,34 @@ final class CastAnalyzer
         }
 
         return $result_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * The suffix of the type of an edge converting a value of type $type to a scalar when that value may be an
+     * array: converted, an array becomes "Array" (or 0/1), so the conversion takes no taint the flow put in an
+     * element of it, or in a key (see TaintFlowGraph::convertsTheArrayHoldingTheTaint()). Without its type, the value
+     * may be an array.
+     *
+     * @psalm-pure
+     */
+    public static function getArrayConversionSuffix(?Union $type): string
+    {
+        if ($type === null) {
+            return TaintFlowGraph::ARRAY_CONVERSION_SUFFIX;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TArray
+                || $atomic instanceof TKeyedArray
+                || $atomic instanceof TMixed
+                || $atomic instanceof TIterable
+                || ($atomic instanceof TTemplateParam && self::getArrayConversionSuffix($atomic->as) !== '')
+            ) {
+                return TaintFlowGraph::ARRAY_CONVERSION_SUFFIX;
+            }
+        }
+
+        return '';
     }
 
     private static function checkExprGeneralUse(
