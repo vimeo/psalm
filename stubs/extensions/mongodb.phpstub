@@ -37,6 +37,13 @@ namespace MongoDB\BSON
         /**
          * Its 24 hexadecimal digits: nothing the client sends can be in them
          *
+         * The constructor validates its argument: it throws a
+         * MongoDB\Driver\Exception\InvalidArgumentException unless it gets 24 hexadecimal
+         * digits, so the string is safe whatever the id was built from. That's also why
+         * the constructor is intentionally not a taint sink: new ObjectId($_GET['id']) is
+         * the usual way to validate an id. The input reappears only in the message of the
+         * exception, which getMessage() already taints.
+         *
          * @psalm-mutation-free
          * @psalm-taint-escape input
          */
@@ -405,5 +412,18 @@ namespace MongoDB\Driver
         final public function count(): int
         {
         }
+    }
+}
+
+namespace MongoDB\Driver\Exception
+{
+    use Throwable;
+
+    interface Exception extends Throwable
+    {
+    }
+
+    class InvalidArgumentException extends \InvalidArgumentException implements Exception
+    {
     }
 }

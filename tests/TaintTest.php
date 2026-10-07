@@ -842,6 +842,13 @@ final class TaintTest extends TestCase
 
                     echo show($_GET["id"]);',
             ],
+            'objectIdBuiltFromInputHoldsNoInput' => [
+                'code' => '<?php // --taint-analysis
+                    // the constructor throws unless it gets 24 hexadecimal digits
+                    $id = new MongoDB\BSON\ObjectId((string) $_GET["id"]);
+                    echo (string) $id;
+                    echo "<a href=\'/o/{$id}\'>";',
+            ],
             'dontTaintTheStringConversionOfAnObjectWhoseToStringEscapesIt' => [
                 'code' => '<?php // --taint-analysis
                     final class Tag {
@@ -6841,6 +6848,16 @@ final class TaintTest extends TestCase
                         foo();
                     } catch (RuntimeException $e) {
                         echo print_r($e, true);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionAnObjectIdThrowsOnInvalidInput' => [
+                'code' => '<?php
+                    try {
+                        new MongoDB\BSON\ObjectId((string) $_GET["id"]);
+                    } catch (MongoDB\Driver\Exception\InvalidArgumentException $e) {
+                        // it repeats the input
+                        echo $e->getMessage();
                     }',
                 'error_message' => 'TaintedHtml',
             ],
