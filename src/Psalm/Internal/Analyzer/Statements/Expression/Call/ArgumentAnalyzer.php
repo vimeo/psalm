@@ -1880,69 +1880,60 @@ final class ArgumentAnalyzer
                 $specialization_location,
             );
 
-        // the node the argument goes into: the parameter, or the node dispatching the call to the overrides
-        $entry_node = $method_node;
+        // A virtual call of a method on a class may run an override of a class extending it: the call goes to
+        // them, as well as to the parameter of its method. But that parameter is also where the calls on the
+        // classes extending it go when they inherit the method, which can't run those overrides: what the call
+        // dispatches to the overrides goes through a node of its own, not the parameter. That node is shared by
+        // the virtual calls of the method on the class, so that their number doesn't multiply its paths.
+        $dispatch_node = null;
 
         if (!$specialize_taint
             && $taint_flow_graph
             && $method_id
             && $method_id->method_name !== '__construct'
-        ) {
-            $fq_classlike_name = $method_id->fq_class_name;
-            $cased_method_name = explode('::', $cased_method_id)[1];
-
-            $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-
-            // A call of a method on the class declaring it may run an override of a class extending it: the
-            // call goes to them, as well as to the parameter of the declared method. But that parameter is also
-            // where the calls on the other classes inheriting the method go, which can't run those overrides:
-            // what a call dispatches to the overrides goes through a node of its own, not the parameter.
             // a call naming its class (parent::, self::, A::) runs that method only (see StaticCallAnalyzer)
-            $dependent_classlikes = $expr->getAttribute(self::NON_VIRTUAL_CALL_ATTRIBUTE) === true
-                ? []
-                : $class_storage->dependent_classlikes;
+            && $expr->getAttribute(self::NON_VIRTUAL_CALL_ATTRIBUTE) !== true
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
 
-            $declaring_method_id = $dependent_classlikes === []
-                ? null
-                : $codebase->methods->getDeclaringMethodId($method_id);
-            if ($declaring_method_id !== null && (string) $declaring_method_id === (string) $method_id) {
-                $entry_node = DataFlowNode::getForAssignment(
-                    'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1),
-                    $arg_location,
-                );
-                $graph->addNode($entry_node);
-                $graph->addPath($entry_node, $method_node, 'arg', $added_taints, $removed_taints);
-            }
+            if ($class_storage->dependent_classlikes !== []) {
+                $param_offset = $function_storage
+                    ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
+                    : $argument_offset;
 
-            foreach ($dependent_classlikes as $dependent_classlike_lc => $_) {
-                $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
-                    $dependent_classlike_lc,
-                );
+                $dispatch_node = DataFlowNode::getForDispatch($cased_method_id, $param_offset);
 
-                // Resolve the declaring method's storage (a dependent class usually inherits the
-                // method, so it has no storage under its own id) so this node's location -- and the
-                // declared parameter it is keyed by -- is the same canonical one used wherever else
-                // the node id is created.
-                $new_sink = DataFlowNode::getForMethodArgumentById(
-                    $codebase->methods,
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $argument_offset,
-                    null,
-                    $function_param,
-                ) ?? DataFlowNode::getForCallableArg(
-                    'inherited-method',
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $argument_offset,
-                );
+                // the first of these calls links it to the overrides
+                if (!$taint_flow_graph->hasNode($dispatch_node)) {
+                    $taint_flow_graph->addNode($dispatch_node);
 
-                $taint_flow_graph->addNode($new_sink);
-                $taint_flow_graph->addPath(
-                    $entry_node,
-                    $new_sink,
-                    'arg',
-                    $added_taints,
-                    $removed_taints,
-                );
+                    $cased_method_name = explode('::', $cased_method_id)[1];
+
+                    foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
+                            $dependent_classlike_lc,
+                        );
+
+                        // Resolve the declaring method's storage (a dependent class usually inherits the
+                        // method, so it has no storage under its own id) so this node's location -- and the
+                        // declared parameter it is keyed by -- is the same canonical one used wherever else
+                        // the node id is created.
+                        $new_sink = DataFlowNode::getForMethodArgumentById(
+                            $codebase->methods,
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $param_offset,
+                            null,
+                            $function_param,
+                        ) ?? DataFlowNode::getForCallableArg(
+                            'inherited-method',
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $param_offset,
+                        );
+
+                        $taint_flow_graph->addNode($new_sink);
+                        $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
+                    }
+                }
             }
         }
 
@@ -2006,11 +1997,15 @@ final class ArgumentAnalyzer
 
         $graph->addPath(
             $argument_value_node,
-            $entry_node,
+            $method_node,
             'arg',
             $added_taints,
             $removed_taints,
         );
+
+        if ($dispatch_node && $taint_flow_graph) {
+            $taint_flow_graph->addPath($argument_value_node, $dispatch_node, 'arg', $added_taints, $removed_taints);
+        }
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);

@@ -1030,8 +1030,64 @@ final class TaintTest extends TestCase
                         $mapper->find((string) $_GET["id"]);
                     }
 
-                    function findAny(Mapper $mapper): void {
-                        $mapper->find("literal");
+                    function findAny(Mapper $mapper, string $id): void {
+                        $mapper->find($id);
+                    }',
+            ],
+            'dontTaintAnOverrideThroughACallOnASiblingOfAnIntermediateClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    abstract class SiteMapper extends Mapper {}
+
+                    final class TownMapper extends SiteMapper {
+                        public function find(string $id): string {
+                            return parent::find($id);
+                        }
+                    }
+
+                    final class CommentMapper extends SiteMapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    function findTown(TownMapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }
+
+                    function findAny(SiteMapper $mapper, string $id): void {
+                        $mapper->find($id);
+                    }',
+            ],
+            'dontTaintAStaticOverrideThroughACallNamingAnIntermediateClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public static function create(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    abstract class SiteMapper extends Mapper {}
+
+                    final class CommentMapper extends SiteMapper {
+                        public static function create(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    function createSite(): void {
+                        SiteMapper::create((string) $_GET["id"]);
+                    }
+
+                    function createAny(SiteMapper $mapper, string $id): void {
+                        $mapper::create($id);
                     }',
             ],
             'firstClassCallableOfTaintPropagatingFunction' => [
@@ -3740,6 +3796,78 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintAnOverrideThroughACallOnAnIntermediateClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    abstract class SiteMapper extends Mapper {}
+
+                    final class TownMapper extends SiteMapper {
+                        public function find(string $id): string {
+                            return parent::find($id);
+                        }
+                    }
+
+                    final class CommentMapper extends SiteMapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    function findAny(SiteMapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheInheritedMethodThroughACallOnAnIntermediateClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public function find(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    abstract class SiteMapper extends Mapper {}
+
+                    final class CommentMapper extends SiteMapper {
+                        public function find(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    function findAny(SiteMapper $mapper): void {
+                        $mapper->find((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAStaticOverrideThroughACallOnAnIntermediateClass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Mapper {
+                        public static function create(string $id): string {
+                            return $id;
+                        }
+                    }
+
+                    abstract class SiteMapper extends Mapper {}
+
+                    final class CommentMapper extends SiteMapper {
+                        public static function create(string $id): string {
+                            echo $id;
+                            return $id;
+                        }
+                    }
+
+                    function createAny(SiteMapper $mapper): void {
+                        $mapper::create((string) $_GET["id"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheDeclaredMethodThroughACallOnAClassInheritingIt' => [
                 'code' => '<?php // --taint-analysis
                     abstract class Mapper {
@@ -4585,7 +4713,7 @@ final class TaintTest extends TestCase
                     }
 
                     (new C)->foo((string) $_GET["user_id"]);',
-                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> dispatch of A::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
+                'error_message' => 'TaintedSql - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44 - Detected tainted SQL in path: $_GET (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> $_GET[\'user_id\'] (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> string-cast (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:43) -> call to C::foo (src' . DIRECTORY_SEPARATOR . 'somefile.php:28:34) -> C::foo#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:45) -> $user_id (src' . DIRECTORY_SEPARATOR . 'somefile.php:23:52) -> call to AGrandChild::loadFull (src' . DIRECTORY_SEPARATOR . 'somefile.php:24:51) -> A::loadFull#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64) -> call to A::loadPartial (src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49) -> dispatch of A::loadPartial#1 -> AChild::loadPartial#1 (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:60) -> $sink (src' . DIRECTORY_SEPARATOR . 'somefile.php:15:67) -> call to PDO::exec (src' . DIRECTORY_SEPARATOR . 'somefile.php:16:44) -> PDO::exec#1',
             ],
             'taintedInputFromProperty' => [
                 'code' => '<?php
