@@ -41,6 +41,7 @@ use function array_shift;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -303,6 +304,35 @@ final class MatchAnalyzer
                             $statements_analyzer->getSuppressedIssues(),
                         );
                     }
+                }
+            }
+
+            // Without a default arm, a match throws an UnhandledMatchError for any value its arms don't match: past
+            // it, the subject is one of the values they match
+            $match_truths = Algebra::getTruthsFromFormula($clauses);
+
+            if (!str_starts_with($switch_var_id, '$__tmp_switch__')
+                && isset($match_truths[$switch_var_id], $context->vars_in_scope[$switch_var_id])
+            ) {
+                $changed_var_ids = [];
+
+                [$narrowed_vars_in_scope, $_] = Reconciler::reconcileKeyedTypes(
+                    [$switch_var_id => $match_truths[$switch_var_id]],
+                    [],
+                    $context->vars_in_scope,
+                    $context->references_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    [],
+                    $context->inside_loop,
+                    null,
+                );
+
+                if (isset($narrowed_vars_in_scope[$switch_var_id])
+                    && !$narrowed_vars_in_scope[$switch_var_id]->isNever()
+                ) {
+                    $context->vars_in_scope[$switch_var_id] = $narrowed_vars_in_scope[$switch_var_id];
                 }
             }
         }
