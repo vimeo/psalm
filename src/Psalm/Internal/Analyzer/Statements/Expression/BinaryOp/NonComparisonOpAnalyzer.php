@@ -65,11 +65,9 @@ final class NonComparisonOpAnalyzer
         ) {
             $int_mask_bits = IntMask::getBitwiseOpBits($stmt, $stmt_left_type, $stmt_right_type);
 
-            $result_type = $int_mask_bits === null
-                ? null
-                : IntMask::getBitwiseOpType($stmt_left_type, $stmt_right_type, $int_mask_bits);
+            $result_type = null;
 
-            if (!$result_type) {
+            if ($int_mask_bits === null || !IntMask::isTooCostlyPairwise($stmt_left_type, $stmt_right_type)) {
                 ArithmeticOpAnalyzer::analyze(
                     $statements_analyzer,
                     $statements_analyzer->node_data,
@@ -81,12 +79,16 @@ final class NonComparisonOpAnalyzer
                 );
             }
 
-            if (!$result_type) {
-                $result_type = new Union([new TInt(), new TFloat()]);
+            if ($int_mask_bits !== null) {
+                // also when the literals are not combined pair by pair, e.g. in loops
+                $result_type = ($result_type && $result_type->allIntLiterals()
+                    ? $result_type
+                    : IntMask::getType($int_mask_bits)
+                )->setProperties(['int_mask_bits' => $int_mask_bits]);
             }
 
-            if ($int_mask_bits !== null && $result_type->isInt()) {
-                $result_type = $result_type->setProperties(['int_mask_bits' => $int_mask_bits]);
+            if (!$result_type) {
+                $result_type = new Union([new TInt(), new TFloat()]);
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);

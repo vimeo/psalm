@@ -121,6 +121,22 @@ final class IntMaskComparisonTest extends TestCase
                         return ($m | Flag::A) === Flag::ALL;
                     }',
             ],
+            'combineMasksInLoop' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param list<int-mask-of<Flag::*>> $masks
+                     * @return int-mask-of<Flag::*>
+                     */
+                    function union(array $masks): int {
+                        $all = 0;
+
+                        foreach ($masks as $mask) {
+                            $all |= $mask;
+                        }
+
+                        return $all;
+                    }',
+            ],
             'plainIntIsNotAMask' => [
                 'code' => '<?php' . self::FLAG . '
                     function check(int $flags): bool {

@@ -155,17 +155,22 @@ final class IntMask
     }
 
     /**
-     * The type of the result of a bitwise operation on a mask, when computing it pair by pair of
-     * literal operands would be too costly; null otherwise.
+     * Whether computing a bitwise operation pair by pair of literal operands would be too costly.
      *
      * @psalm-pure
      */
-    public static function getBitwiseOpType(Union $left_type, Union $right_type, int $bits): ?Union
+    public static function isTooCostlyPairwise(Union $left_type, Union $right_type): bool
     {
-        if (count($left_type->getAtomicTypes()) * count($right_type->getAtomicTypes()) <= self::MAX_LITERAL_PAIRS) {
-            return null;
-        }
+        return count($left_type->getAtomicTypes()) * count($right_type->getAtomicTypes()) > self::MAX_LITERAL_PAIRS;
+    }
 
+    /**
+     * Every set of the given bits.
+     *
+     * @psalm-pure
+     */
+    public static function getType(int $bits): Union
+    {
         $single_bits = [];
 
         for ($i = 0; $i < PHP_INT_SIZE * 8; $i++) {
