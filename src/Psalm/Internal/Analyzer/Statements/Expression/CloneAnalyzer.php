@@ -597,6 +597,9 @@ final class CloneAnalyzer
         return $atomic->value;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getLiteralPropertyName(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $key,

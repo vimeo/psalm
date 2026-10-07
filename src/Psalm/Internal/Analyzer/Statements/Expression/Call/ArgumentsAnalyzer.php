@@ -2369,6 +2369,7 @@ final class ArgumentsAnalyzer
      * nothing then, so their output sinks don't apply.
      *
      * @param array<int, PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
      */
     private static function returnsInsteadOfOutputting(
         StatementsAnalyzer $statements_analyzer,
