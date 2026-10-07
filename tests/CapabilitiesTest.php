@@ -30,6 +30,293 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'splContainersOnlyRequireWritingTheirOwnContents' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function useContainers(): int {
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $queue->push(2);
+                        $sum = 0;
+                        foreach ($queue as $value) {
+                            $sum += $value;
+                        }
+                        $sum += $queue->dequeue() + $queue->count();
+
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $sum += $fixed->getSize();
+
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        return $sum + $heap->count();
+                    }
+
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function readContainers(SplQueue $queue, ArrayObject $object): int {
+                        return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
+                    }',
+            ],
+            'splObjectStorageWithVarAndArrayObjectStillRequireWritingProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props */
+                    function useContainers(): int {
+                        // new SplObjectStorage() infers its templates as never, so it needs a @var,
+                        // which drops that the object is fresh until
+                        // https://github.com/vimeo/psalm/pull/12178
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $key = new stdClass();
+                        $storage->attach($key, 1);
+                        $storage[$key] = 2;
+                        $sum = $storage[$key] + (int) $storage->contains($key);
+
+                        // the storage of an ArrayObject may be another object, passed to the
+                        // constructor or to exchangeArray(), whose properties its mutators then write
+                        $object = new ArrayObject([5]);
+                        $object->append(6);
+                        return $sum + count($object);
+                    }',
+            ],
+            'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
+                'code' => '<?php
+                    /** @param SplQueue<int> $queue */
+                    function drainQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param SplQueue<int> $queue */
+                    function fillQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            $queue->enqueue(1);
+                            if ($queue->isEmpty()) {
+                                echo "still empty";
+                            }
+                        }
+                    }
+
+                    /** @param SplMinHeap<int> $heap */
+                    function drainHeap(SplMinHeap $heap): void {
+                        if ($heap->isEmpty()) {
+                            return;
+                        }
+                        $heap->extract();
+                        if ($heap->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param ArrayIterator<int, int> $iterator */
+                    function walk(ArrayIterator $iterator): void {
+                        if (!$iterator->valid()) {
+                            return;
+                        }
+                        $iterator->next();
+                        if (!$iterator->valid()) {
+                            echo "done";
+                        }
+                    }
+
+                    function drainFreshQueue(): void {
+                        /** @var SplQueue<int> */
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }',
+            ],
+            'iteratingACallersArrayObjectIsMutationFree' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function sum(ArrayObject $object): int {
+                        $sum = 0;
+                        foreach ($object as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+            ],
+            'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class IntHeap extends SplHeap {
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            return $value1 <=> $value2;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function useHeaps(): int {
+                        /** @var SplMinHeap<int> */
+                        $min = new SplMinHeap();
+                        $min->insert(1);
+                        /** @var SplMaxHeap<int> */
+                        $max = new SplMaxHeap();
+                        $max->insert(2);
+                        $heap = new IntHeap();
+                        $heap->insert(3);
+                        return $min->extract() + $max->extract() + $heap->extract();
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function resizeFixedArray(): int {
+                        /** @var SplFixedArray<int> */
+                        $fixed = new SplFixedArray(1);
+                        $fixed->setSize(2);
+                        $fixed[1] = 1;
+                        $sum = 0;
+                        foreach ($fixed->getIterator() as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+                'php_version' => '8.0',
+            ],
+            'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
+                'code' => '<?php
+                    /**
+                     * @param Iterator[pure]<int, string> $inner
+                     * @param RecursiveIterator[pure]<int, string> $tree
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function count_all(Iterator $inner, RecursiveIterator $tree): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        foreach (new RegexIterator($inner, "/a/") as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveIteratorIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveTreeIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new ParentIterator($tree) as $_) {
+                            $count++;
+                        }
+                        $count += iterator_count(new EmptyIterator());
+                        /** @var AppendIterator[pure]<int, string, Iterator[pure]<int, string>> */
+                        $append = new AppendIterator();
+                        $append->append($inner);
+                        foreach ($append as $_) {
+                            $count++;
+                        }
+                        /** @var MultipleIterator[pure]<int, string> */
+                        $multiple = new MultipleIterator();
+                        $multiple->attachIterator($inner);
+                        foreach ($multiple as $_) {
+                            $count++;
+                        }
+                        $cache = new CachingIterator($inner, CachingIterator::FULL_CACHE);
+                        foreach ($cache as $_) {}
+                        $recursive = new RecursiveIteratorIterator($tree);
+                        $recursive->setMaxDepth(2);
+                        return $count + count($cache->getCache()) + $recursive->getDepth();
+                    }',
+            ],
+            'splContainersSerializeTheirOwnState' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function copyContainers(ArrayObject $object, SplObjectStorage $storage): array {
+                        $copy = new ArrayObject();
+                        $copy->__unserialize($object->__serialize());
+                        return $copy->__debugInfo() + $storage->__serialize();
+                    }',
+            ],
+            'splFileInfoPathsAreMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function describe(SplFileInfo $file): string {
+                        return $file->getPath() . $file->getFilename() . $file->getExtension() . $file->getBasename(".txt");
+                    }',
+            ],
+            'splFilesAndDirectoriesRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function countLines(string $path): int {
+                        $count = 0;
+                        foreach (new SplFileObject($path) as $_) {
+                            $count++;
+                        }
+                        foreach (new DirectoryIterator($path) as $entry) {
+                            if (!$entry->isDot() && $entry->getMTime() > 0) {
+                                $count++;
+                            }
+                        }
+                        $temp = new SplTempFileObject();
+                        $temp->fwrite("line");
+                        return $count;
+                    }',
+            ],
+            'splObserverBindingItsPurityIsMutationFree' => [
+                'code' => '<?php
+                    /** @implements SplObserver[pure] */
+                    final class Observer implements SplObserver {
+                        public int $updates = 0;
+
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        public function update(SplSubject $subject): void {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
+            ],
+            'mutatingAFreshSplContainerIsMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function useFreshContainers(): int {
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $stack = new SplStack();
+                        $stack->push(2);
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $fixed->setSize(2);
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        $priority_queue = new SplPriorityQueue();
+                        $priority_queue->insert(5, 1);
+                        $queue->dequeue();
+                        $stack->pop();
+                        $heap->extract();
+                        return count($queue) + count($stack) + count($heap) + count($fixed) + count($priority_queue);
+                    }',
+            ],
             'mutatingAnObjectForgetsWhatItsMutationFreeMethodsReturned' => [
                 'code' => '<?php
                     final class Box {
@@ -1169,6 +1456,106 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'writingACallersSplQueueRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @psalm-mutation-free
+                     */
+                    function add(SplQueue $queue): int {
+                        $queue->enqueue(1);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method SplQueue::enqueue requires write-props',
+            ],
+            'serializingAnSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplObjectStorage $storage): string {
+                        return $storage->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splHeapSubclassesMustCompareWithoutSideEffects' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class LoudHeap extends SplHeap {
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            echo "comparing";
+                            return $value1 <=> $value2;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'wrappingAnImpureIteratorIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function count_all(Iterator $inner): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        return $count;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'readingFileMetadataRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function modified(SplFileInfo $file): int {
+                        return (int) $file->getMTime();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38 - The context is read-props but method SplFileInfo::getMTime requires io',
+            ],
+            'serializingAnSplDoublyLinkedListMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplDoublyLinkedList<int> $list
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplDoublyLinkedList $list): string {
+                        return $list->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splObserverNotBindingItsPurityMayDoAnything' => [
+                'code' => '<?php
+                    final class Observer implements SplObserver {
+                        #[Override]
+                        public function update(SplSubject $subject): void {
+                            echo "updated";
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splContainerSubclassesKeepTheirContract' => [
+                'code' => '<?php
+                    /** @extends SplQueue<int> */
+                    final class Queue extends SplQueue {}',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:47 - SplQueue is marked with @psalm-capabilities read-props|write-this-props, but Queue is not',
+            ],
+            'serializingAFreshSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function save(): string {
+                        $queue = new SplQueue();
+                        return $queue->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
                     /** @psalm-pure */

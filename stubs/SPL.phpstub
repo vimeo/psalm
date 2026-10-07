@@ -7,9 +7,14 @@
  * @template TValue
  * @template-implements Iterator<int, TValue>
  * @template-implements ArrayAccess<int, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializable
 {
+    /**
+     * @psalm-pure
+     */
     public function __construct() {}
 
     /**
@@ -21,6 +26,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      *
      * @link https://php.net/spldoublylinkedlist.add
      * @since 5.5.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function add($offset, $value) {}
 
@@ -31,6 +38,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the popped node.
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function pop() {}
 
@@ -41,6 +50,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the shifted node.
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function shift() {}
 
@@ -52,6 +63,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function push($value) {}
 
@@ -63,6 +76,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function unshift($value) {}
 
@@ -73,6 +88,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the last node.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function top() {}
 
@@ -83,6 +100,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value of the first node.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function bottom() {}
 
@@ -93,6 +112,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return int the number of elements in the doubly linked list.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function count() {}
 
@@ -103,6 +124,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return bool whether the doubly linked list is empty.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function isEmpty() {}
 
@@ -114,6 +137,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) {}
 
@@ -125,6 +150,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The value at the specified index.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) {}
 
@@ -137,6 +164,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetSet($offset, $value) {}
 
@@ -148,6 +177,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetUnset($offset) {}
 
@@ -158,6 +189,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return TValue The current node value.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -168,8 +201,115 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
      * @return int The current node index.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
+
+    /**
+     * Rewind iterator back to the start
+     * @link https://php.net/manual/en/spldoublylinkedlist.rewind.php
+     *
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function rewind() {}
+
+    /**
+     * Check whether the doubly linked list contains more nodes
+     * @link https://php.net/manual/en/spldoublylinkedlist.valid.php
+     *
+     * @return bool true if the doubly linked list contains any more nodes, false otherwise.
+     *
+     * @psalm-mutation-free
+     */
+    public function valid() {}
+
+    /**
+     * Move to next entry
+     * @link https://php.net/manual/en/spldoublylinkedlist.next.php
+     *
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function next() {}
+
+    /**
+     * Move to previous entry
+     * @link https://php.net/manual/en/spldoublylinkedlist.prev.php
+     *
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function prev() {}
+
+    /**
+     * Sets the mode of iteration
+     * @link https://php.net/manual/en/spldoublylinkedlist.setiteratormode.php
+     *
+     * @param int $mode
+     * @return int
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setIteratorMode($mode) {}
+
+    /**
+     * Returns the mode of iteration
+     * @link https://php.net/manual/en/spldoublylinkedlist.getiteratormode.php
+     *
+     * @return int
+     *
+     * @psalm-mutation-free
+     */
+    public function getIteratorMode() {}
+
+    /**
+     * Runs the __serialize() or __sleep() of the elements.
+     *
+     * @return string
+     *
+     * @since 5.4.0
+     *
+     * @psalm-impure
+     */
+    public function serialize() {}
+
+    /**
+     * Runs the __unserialize() or __wakeup() of the elements.
+     *
+     * @param string $data
+     * @return void
+     *
+     * @since 5.4.0
+     *
+     * @psalm-impure
+     */
+    public function unserialize($data) {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 /**
@@ -183,6 +323,8 @@ class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializa
  * @template TValue
  * @template-implements ArrayAccess<int, TValue>
  * @template-implements Iterator<int, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplFixedArray implements Iterator, ArrayAccess, Countable {
     /**
@@ -194,6 +336,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @param int $size The size of the fixed array. This expects a number between 0 and PHP_INT_MAX.
 
      * @since 5.3.0
+     *
+     * @psalm-pure
      */
     public function __construct(int $size = 0) {}
 
@@ -209,6 +353,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
 
      * @since 5.3.0
      * @psalm-flow ($array) -> return
+     *
+     * @psalm-pure
      */
     public static function fromArray(array $array, bool $save_indexes = true): SplFixedArray {}
 
@@ -219,6 +365,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return array<int, TValue>
 
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function toArray(): array {}
 
@@ -231,8 +379,20 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @see SplFixedArray::count()
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function getSize(): int {}
+
+    /**
+     * Change the size of an array
+     * @link https://php.net/manual/en/splfixedarray.setsize.php
+     *
+     * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setSize(int $size) {}
 
     /**
      * Returns the size of the array.
@@ -241,6 +401,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return int The size of the array
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function count(): int {}
 
@@ -251,6 +413,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind(): void {}
 
@@ -261,6 +425,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return bool true if the array contains any more elements, false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function valid(): bool {}
 
@@ -271,6 +437,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return int The current array index
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function key(): int {}
 
@@ -281,6 +449,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return TValue The current element value
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -291,6 +461,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next(): void {}
 
@@ -302,6 +474,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return bool true if the requested index exists, and false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists(int $offset): bool {}
 
@@ -314,6 +488,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetSet(int $offset, $value): void {}
 
@@ -325,6 +501,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetUnset(int $offset): void {}
 
@@ -336,8 +514,50 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
      * @return TValue The value at the specified index
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet(int $offset) {}
+
+    /**
+     * Returns an iterator over the array, which only reads it
+     * @link https://php.net/manual/en/splfixedarray.getiterator.php
+     *
+     * @return Iterator[read-props]<int, TValue>
+     *
+     * @psalm-mutation-free
+     */
+    public function getIterator(): Iterator {}
+
+    /**
+     * @return void
+     *
+     * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __wakeup() {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function jsonSerialize(): array {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
 }
 
 
@@ -347,6 +567,8 @@ class SplFixedArray implements Iterator, ArrayAccess, Countable {
  *
  * @template TValue
  * @template-extends SplDoublyLinkedList<TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplStack extends SplDoublyLinkedList {
 }
@@ -357,6 +579,8 @@ class SplStack extends SplDoublyLinkedList {
  *
  * @template TValue
  * @template-extends SplDoublyLinkedList<TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplQueue extends SplDoublyLinkedList {
     /**
@@ -367,6 +591,8 @@ class SplQueue extends SplDoublyLinkedList {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function enqueue($value) {}
 
@@ -377,6 +603,8 @@ class SplQueue extends SplDoublyLinkedList {
      * @return TValue The value of the dequeued node.
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function dequeue() {}
 }
@@ -387,8 +615,13 @@ class SplQueue extends SplDoublyLinkedList {
  *
  * @template TValue
  * @template-implements Iterator<int, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 abstract class SplHeap implements Iterator, Countable {
+    /**
+     * @psalm-pure
+     */
     public function __construct() {}
 
     /**
@@ -400,6 +633,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return int Positive integer if value1 is greater than value2, 0 if they are equal, negative integer otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     protected abstract function compare($value1, $value2): int;
 
@@ -410,6 +645,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return int The number of elements in the heap.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function count(): int {}
 
@@ -420,6 +657,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return TValue The current node value
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -430,6 +669,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return TValue The current node value
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function extract() {}
 
@@ -441,6 +682,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function insert($value): void {}
 
@@ -451,6 +694,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return bool true if the heap is corrupted, false otherwise.
      *
      * @since 7.0.0
+     *
+     * @psalm-mutation-free
      */
     public function isCorrupted(): bool {}
 
@@ -461,6 +706,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return bool Whether the heap is empty
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function isEmpty(): bool {}
 
@@ -471,6 +718,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return int The current node index
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 
@@ -481,6 +730,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next(): void {}
 
@@ -491,6 +742,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function recoverFromCorruption(): void {}
 
@@ -501,6 +754,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind(): void {}
 
@@ -511,6 +766,8 @@ abstract class SplHeap implements Iterator, Countable {
      * @return TValue The value of the node on the top.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function top() {}
 
@@ -521,8 +778,31 @@ abstract class SplHeap implements Iterator, Countable {
      * @return bool Returns true if the heap contains any more nodes, false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function valid(): bool {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 
@@ -532,8 +812,20 @@ abstract class SplHeap implements Iterator, Countable {
  *
  * @template TValue
  * @template-extends SplHeap<TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplMaxHeap extends SplHeap {
+    /**
+     * Compares the values with the comparison operators, keeping the maximum on the top
+     * @link https://php.net/manual/en/splmaxheap.compare.php
+     *
+     * @param TValue $value1
+     * @param TValue $value2
+     *
+     * @psalm-mutation-free
+     */
+    protected function compare($value1, $value2): int {}
 }
 
 /**
@@ -542,8 +834,20 @@ class SplMaxHeap extends SplHeap {
  *
  * @template TValue
  * @template-extends SplHeap<TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplMinHeap extends SplHeap {
+    /**
+     * Compares the values with the comparison operators, keeping the minimum on the top
+     * @link https://php.net/manual/en/splminheap.compare.php
+     *
+     * @param TValue $value1
+     * @param TValue $value2
+     *
+     * @psalm-mutation-free
+     */
+    protected function compare($value1, $value2): int {}
 }
 
 /**
@@ -553,6 +857,8 @@ class SplMinHeap extends SplHeap {
  * @template TPriority
  * @template TValue
  * @template-implements Iterator<int, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplPriorityQueue implements Iterator, Countable {
     /**
@@ -568,6 +874,9 @@ class SplPriorityQueue implements Iterator, Countable {
      */
     const EXTR_BOTH = 0x00000003;
 
+    /**
+     * @psalm-pure
+     */
     public function __construct() {}
 
     /**
@@ -579,6 +888,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return int Positive integer if priority1 is greater than priority2, 0 if they are equal, negative integer otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function compare($priority1, $priority2): int {}
 
@@ -589,6 +900,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return int The number of elements in the queue.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function count(): int {}
 
@@ -599,6 +912,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return TValue The current node value
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -609,6 +924,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return TValue The current node value
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function extract() {}
 
@@ -621,6 +938,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @see SplPriorityQueue::setExtractFlags
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function getExtractFlags(): int {}
 
@@ -633,6 +952,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return true
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function insert($value, $priority): bool {}
 
@@ -643,6 +964,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return bool true if the queue is corrupted, false otherwise.
      *
      * @since 7.0.0
+     *
+     * @psalm-mutation-free
      */
     public function isCorrupted(): bool {}
 
@@ -653,6 +976,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return bool Whether the queue is empty
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function isEmpty(): bool {}
 
@@ -663,6 +988,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return int The current node index
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 
@@ -673,6 +1000,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next(): void {}
 
@@ -683,6 +1012,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function recoverFromCorruption(): void {}
 
@@ -693,6 +1024,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind(): void {}
 
@@ -705,6 +1038,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setExtractFlags(int $flags): void {}
 
@@ -715,6 +1050,8 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return TValue The value of the node on the top.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function top() {}
 
@@ -725,8 +1062,31 @@ class SplPriorityQueue implements Iterator, Countable {
      * @return bool Returns true if the queue contains any more nodes, false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function valid(): bool {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 
@@ -739,9 +1099,14 @@ class SplPriorityQueue implements Iterator, Countable {
  * @template TObject as object
  * @template TArrayValue
  * @template-implements ArrayAccess<TObject, TArrayValue>
- * @template-implements Iterator<int, TObject>
+ * @template-implements SeekableIterator<int, TObject>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
-class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess {
+class SplObjectStorage implements Countable, SeekableIterator, Serializable, ArrayAccess {
+    /**
+     * @psalm-pure
+     */
     public function __construct() {}
 
     /**
@@ -753,6 +1118,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function attach($object, $info = null) {}
 
@@ -764,6 +1131,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function detach($object) {}
 
@@ -775,6 +1144,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the object is in the storage, false otherwise.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function contains($object) {}
 
@@ -786,6 +1157,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function addAll($storage) {}
 
@@ -797,6 +1170,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function removeAll($storage) {}
 
@@ -808,6 +1183,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.6
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function removeAllExcept($storage) {}
 
@@ -818,6 +1195,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TArrayValue The data associated with the current iterator position.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function getInfo() {}
 
@@ -829,6 +1208,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setInfo($data) {}
 
@@ -839,6 +1220,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return int The number of objects in the storage.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function count() {}
 
@@ -849,6 +1232,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind() {}
 
@@ -859,6 +1244,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the iterator entry is valid, false otherwise.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function valid() {}
 
@@ -869,6 +1256,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return int The index corresponding to the position of the iterator.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 
@@ -879,6 +1268,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TObject The object at the current iterator position.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -889,8 +1280,18 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next() {}
+
+    /**
+     * Seeks the iterator to a position
+     * @link https://php.net/manual/en/splobjectstorage.seek.php
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function seek(int $offset) {}
 
     /**
      * Unserializes a storage from its string representation
@@ -900,6 +1301,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.2.2
+     *
+     * @psalm-impure
      */
     public function unserialize($serialized) {}
 
@@ -910,6 +1313,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return string A string representing the storage.
      *
      * @since 5.2.2
+     *
+     * @psalm-impure
      */
     public function serialize() {}
 
@@ -921,6 +1326,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the object exists in the storage, and false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($object) {}
 
@@ -933,6 +1340,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetSet($object, $data = null) {}
 
@@ -944,6 +1353,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetUnset($object) {}
 
@@ -955,6 +1366,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TArrayValue The data previously associated with the object in the storage.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($object) {}
 
@@ -966,7 +1379,440 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return string A string with the calculated identifier.
      *
      * @since 5.4.0
+     *
+     * @psalm-mutation-free
      */
     public function getHash($object) {}
 
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
+}
+
+/**
+ * TPurity is what update() may do: implementations that do not bind it may do anything there,
+ * one binding it (`@implements SplObserver[pure]`) must update within it.
+ *
+ * @psalm-purity-template TPurity(impure)
+ */
+interface SplObserver {
+    /**
+     * @return void
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
+     */
+    public function update(SplSubject $subject);
+}
+
+/**
+ * TPurity is what attaching, detaching and notifying observers may do, beyond keeping track of
+ * them: implementations that do not bind it may do anything there.
+ *
+ * @psalm-purity-template TPurity(impure)
+ */
+interface SplSubject {
+    /**
+     * @return void
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TPurity
+     */
+    public function attach(SplObserver $observer);
+
+    /**
+     * @return void
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TPurity
+     */
+    public function detach(SplObserver $observer);
+
+    /**
+     * @return void
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
+     */
+    public function notify();
+}
+
+/**
+ * Its path is a string: what only depends on it is mutation-free, what looks at the file is io.
+ *
+ * @link https://php.net/manual/en/class.splfileinfo.php
+ */
+class SplFileInfo implements Stringable {
+    /**
+     * @psalm-pure
+     */
+    public function __construct(string $filename) {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getPath() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getFilename() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getExtension() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getBasename(string $suffix = "") {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getPathname() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getPerms() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getInode() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getSize() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getOwner() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getGroup() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getATime() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getMTime() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getCTime() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getType() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isWritable() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isReadable() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isExecutable() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isFile() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isDir() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function isLink() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getLinkTarget() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function getRealPath() {}
+
+    /**
+     * @param class-string|null $class
+     *
+     * @psalm-mutation-free
+     */
+    public function getFileInfo(?string $class = null) {}
+
+    /**
+     * @param class-string|null $class
+     *
+     * @psalm-mutation-free
+     */
+    public function getPathInfo(?string $class = null) {}
+
+    /**
+     * @param null|resource $context
+     *
+     * @psalm-capabilities read-props|io
+     */
+    public function openFile(string $mode = "r", bool $useIncludePath = false, $context = null) {}
+
+    /**
+     * @param class-string $class
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setFileClass(string $class = "SplFileObject") {}
+
+    /**
+     * @param class-string $class
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setInfoClass(string $class = "SplFileInfo") {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function __toString() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function __debugInfo() {}
+
+    /**
+     * @psalm-pure
+     */
+    final public function _bad_state_ex() {}
+}
+
+/**
+ * Reading and writing move the file position and the current line, besides being io.
+ *
+ * @link https://php.net/manual/en/class.splfileobject.php
+ *
+ * @template-implements RecursiveIterator<int, array<array-key, mixed>|false|string>
+ * @template-implements SeekableIterator<int, array<array-key, mixed>|false|string>
+ */
+class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIterator {
+    const DROP_NEW_LINE = 1;
+    const READ_AHEAD = 2;
+    const SKIP_EMPTY = 4;
+    const READ_CSV = 8;
+
+    /**
+     * @param null|resource $context
+     *
+     * @psalm-capabilities io
+     */
+    public function __construct(string $filename, string $mode = "r", bool $useIncludePath = false, $context = null) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function eof() {}
+
+    /**
+     * With READ_AHEAD, reads the next line.
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fgets() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fread(int $length) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fgetcsv(string $separator = ",", string $enclosure = "\"", string $escape = "\\") {}
+
+    /**
+     * @param array<array-key, Stringable|null|scalar> $fields
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fputcsv(array $fields, string $separator = ",", string $enclosure = "\"", string $escape = "\\", string $eol = "\n") {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setCsvControl(string $separator = ",", string $enclosure = "\"", string $escape = "\\") {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getCsvControl() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function flock(int $operation, &$wouldBlock = null) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fflush() {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function ftell() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fseek(int $offset, int $whence = SEEK_SET) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fgetc() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fpassthru() {}
+
+    /**
+     * @param float|int|string $vars
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fscanf(string $format, mixed &...$vars) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function fwrite(string $data, ?int $length = null) {}
+
+    /**
+     * @psalm-capabilities read-props|io
+     */
+    public function fstat() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function ftruncate(int $size) {}
+
+    /**
+     * Reads the current line, unless it was read already.
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function current() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function key() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function next() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setFlags(int $flags) {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getFlags() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setMaxLineLen(int $maxLength) {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getMaxLineLen() {}
+
+    /**
+     * @psalm-pure
+     */
+    public function hasChildren() {}
+
+    /**
+     * @psalm-pure
+     */
+    public function getChildren() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function seek(int $line) {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function getCurrentLine() {}
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function __toString() {}
+}
+
+/**
+ * @link https://php.net/manual/en/class.spltempfileobject.php
+ */
+class SplTempFileObject extends SplFileObject {
+    /**
+     * @psalm-capabilities io
+     */
+    public function __construct(int $maxMemory = 2097152) {}
 }
