@@ -110,6 +110,9 @@ final class MethodCallPurityAnalyzer
         return $capabilities;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public static function isFromGlobalState(StatementsAnalyzer $statements_analyzer, Expr $var): bool
     {
         $receiver_type = $statements_analyzer->node_data->getType($var);
@@ -241,6 +244,10 @@ final class MethodCallPurityAnalyzer
                 }
 
                 $result->can_memoize = true;
+
+                if ($method_storage->containing_class_capabilities !== Capabilities::MUTATION_FREE) {
+                    $result->memoized_result_has_mutations = true;
+                }
             }
 
             if ($codebase->find_unused_variables
@@ -324,9 +331,25 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
-        } elseif (!$config->remember_property_assignments_after_call) {
-            // the method cannot write properties, but may still write static ones
-            $context->removeMutableObjectVars(false, $method_capabilities);
+        } else {
+            if (!$config->remember_property_assignments_after_call) {
+                // the method cannot write properties, but may still write static ones
+                $context->removeMutableObjectVars(false, $method_capabilities);
+            }
+
+            $writes_properties = ($method_storage->capabilities
+                & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
+
+            if (($writes_properties && $method_storage->capabilities !== Capabilities::ALL)
+                || self::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                // the method is known to write properties, but not which ones (a stub, or a body
+                // writing `$this` by reference), or moves engine state (the position of an iterator):
+                // what its receiver's methods returned before may have changed, even when the receiver
+                // is fresh and the caller is not charged. A method that may do anything is trusted not
+                // to, as with rememberPropertyAssignmentsAfterCall
+                $context->removeMutableObjectVars(true);
+            }
         }
     }
 
