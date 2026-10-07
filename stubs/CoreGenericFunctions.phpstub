@@ -486,6 +486,9 @@ function sodium_memzero(string &$string): void
  * @psalm-taint-specialize
  * @psalm-flow ($value) -> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  */
 function var_export($value, bool $return = false) {}
 
@@ -497,7 +500,13 @@ function var_export($value, bool $return = false) {}
  * @psalm-taint-specialize
  * @psalm-flow ($value, $values) -> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function var_dump($value, ...$values) {}
 
@@ -509,6 +518,9 @@ function var_dump($value, ...$values) {}
  * @psalm-taint-specialize
  * @psalm-flow ($value) -> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  */
 function print_r($value, bool $return = false) {}
 
@@ -1469,7 +1481,13 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
  * @psalm-taint-sink html $format
+ * @psalm-taint-sink has_quotes $format
+ * @psalm-taint-sink user_secret $format
+ * @psalm-taint-sink system_secret $format
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function printf(string $format, ...$values) {}
 
@@ -1481,7 +1499,13 @@ function printf(string $format, ...$values) {}
  * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
+ * @psalm-taint-sink has_quotes $format
+ * @psalm-taint-sink user_secret $format
+ * @psalm-taint-sink system_secret $format
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function vprintf(string $format, array $values) {}
 
