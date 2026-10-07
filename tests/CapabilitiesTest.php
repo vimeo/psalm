@@ -1570,6 +1570,21 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
             ],
+            'varDocblockOnAssignmentKeepsAGlobalObjectGlobal' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $x = 0;
+                        public static ?Box $g = null;
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function leak(): void {
+                        /** @var Box */
+                        $b = Box::$g;
+                        $b->x = 1;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'readGlobalsGetterResultCannotBeMutated' => [
                 'code' => '<?php
                     final class Box {
