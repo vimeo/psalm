@@ -222,6 +222,29 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingThrowsDocblock'],
                 'safe_types' => true,
             ],
+            'addThrowsAnnotationToSingleLineDocblockWithoutTrailingSpace' => [
+                'input' => '<?php
+                    class A {
+                        /** @return array{a: int} */
+                        public function a(): array {
+                            throw new \RuntimeException();
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        /**
+                         * @return array{a: int}
+                         *
+                         * @throws RuntimeException
+                         */
+                        public function a(): array {
+                            throw new \RuntimeException();
+                        }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

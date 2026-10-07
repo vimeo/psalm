@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner;
 
 use function explode;
+use function rtrim;
 use function trim;
 
 /**
@@ -52,6 +53,7 @@ final class ParsedDocblock
                 }
 
                 foreach ($lines as $line) {
+                    $line = rtrim($line);
                     $doc_comment_text .= $left_padding . ' * @' . $type . ($line !== '' ? ' ' . $line : '') . "\n";
                 }
 
