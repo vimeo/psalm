@@ -2390,6 +2390,90 @@ final class CapabilitiesTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testWriteGlobalsMethodCallForgetsStaticPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public static ?int $x = null; }
+
+                final class G {
+                    /** @psalm-capabilities write-globals */
+                    public function touch(): void { A::$x = null; }
+                }
+
+                function forget(G $g): int {
+                    if (A::$x === null) {
+                        return 0;
+                    }
+                    $g->touch();
+                    return A::$x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMethodCallsThatCannotWriteGlobalsKeepStaticPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        // refined inside the `if`, as refining a static property by an early return alone
+        // already turns it into mixed, which would hide whether the call kept the refinement
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public static ?int $x = null; }
+
+                final class ReadGlobals {
+                    /** @psalm-capabilities read-globals */
+                    public function touch(): ?int { return A::$x; }
+                }
+
+                final class MutationFree {
+                    private int $n = 0;
+                    /** @psalm-mutation-free */
+                    public function touch(): int { return $this->n; }
+                }
+
+                final class WriteOwnProps {
+                    private int $n = 0;
+                    /** @psalm-capabilities read-props, write-this-props */
+                    public function touch(): void { $this->n++; }
+                }
+
+                function keepAfterReadGlobals(ReadGlobals $g): int {
+                    if (A::$x !== null) {
+                        $g->touch();
+                        return A::$x;
+                    }
+                    return 0;
+                }
+
+                function keepAfterMutationFree(MutationFree $g): int {
+                    if (A::$x !== null) {
+                        $g->touch();
+                        return A::$x;
+                    }
+                    return 0;
+                }
+
+                function keepAfterWriteOwnProps(WriteOwnProps $g): int {
+                    if (A::$x !== null) {
+                        $g->touch();
+                        return A::$x;
+                    }
+                    return 0;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testCapabilityNamesDenoteOneCapabilityEach(): void
     {
         $this->assertSame(Capabilities::WRITE_PROPS, Capabilities::fromList('write-props'));
