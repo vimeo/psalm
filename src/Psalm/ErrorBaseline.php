@@ -162,10 +162,10 @@ final class ErrorBaseline
                     $existingIssueType['o'],
                     $newIssues[$file][$issueType]['o'],
                 );
-                $existingIssuesCount[$issueType]['s'] = array_intersect(
+                $existingIssuesCount[$issueType]['s'] = array_values(array_intersect(
                     $existingIssueType['s'],
                     $newIssues[$file][$issueType]['s'],
-                );
+                ));
             }
         }
 
