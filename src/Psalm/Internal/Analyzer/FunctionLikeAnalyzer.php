@@ -2362,7 +2362,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         return null;
                     }
                 }
-            } elseif ($context->self) {
+            } elseif ($context->self !== null) {
                 if ($appearing_class_storage->template_types) {
                     $template_params = [];
 
