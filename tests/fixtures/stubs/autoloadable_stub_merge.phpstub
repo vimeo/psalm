@@ -1,0 +1,25 @@
+<?php
+
+namespace AutoloadableStubMerge;
+
+class Factory
+{
+    public static function make(): Foo
+    {
+    }
+}
+
+class Foo
+{
+    /** @return positive-int */
+    public function stubbed(): int
+    {
+    }
+}
+
+class StubOnly
+{
+    public function bar(): string
+    {
+    }
+}
