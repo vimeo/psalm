@@ -1243,7 +1243,9 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        if ($function_id === 'array_column' && self::taintArrayColumn($statements_analyzer, $graph, $stmt, $stmt_type)) {
+        if ($function_id === 'array_column'
+            && self::taintArrayColumn($statements_analyzer, $graph, $stmt, $stmt_type)
+        ) {
             return;
         }
 
@@ -1303,12 +1305,19 @@ final class FunctionCallReturnTypeFetcher
         PhpParser\Node\Expr\FuncCall $stmt,
         Union &$stmt_type,
     ): bool {
+        $param_names = ['array', 'column_key', 'index_key'];
         $args = [];
 
         foreach ($stmt->getArgs() as $offset => $arg) {
-            $name = $arg->name?->name ?? (['array', 'column_key', 'index_key'][$offset] ?? null);
+            if ($arg->unpack) {
+                return false;
+            }
 
-            if ($arg->unpack || $name === null) {
+            if ($arg->name !== null) {
+                $name = $arg->name->name;
+            } elseif (isset($param_names[$offset])) {
+                $name = $param_names[$offset];
+            } else {
                 return false;
             }
 
@@ -1330,43 +1339,32 @@ final class FunctionCallReturnTypeFetcher
             $graph->addPath($parent_node, $row_node, 'arrayvalue-fetch', 0, $array_type->getTaintsToRemove());
         }
 
-        $rows_are_arrays = true;
-
-        foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            $row_type = match (true) {
-                $atomic_type instanceof TKeyedArray => $atomic_type->getGenericValueType(),
-                $atomic_type instanceof TArray => $atomic_type->type_params[1],
-                default => null,
-            };
-
-            foreach ($row_type?->getAtomicTypes() ?? [null] as $row_atomic_type) {
-                if (!$row_atomic_type instanceof TArray && !$row_atomic_type instanceof TKeyedArray) {
-                    $rows_are_arrays = false;
-                }
-            }
-        }
-
         $return_node = DataFlowNode::getForCallableReturn('builtin', 'array_column', $location);
         $graph->addNode($return_node);
 
-        foreach (['column_key' => 'arrayvalue-assignment', 'index_key' => 'arraykey-assignment'] as $key => $path_type) {
+        $rows_are_arrays = self::holdsOnlyArrays($array_type);
+
+        $key_paths = ['column_key' => 'arrayvalue-assignment', 'index_key' => 'arraykey-assignment'];
+
+        foreach ($key_paths as $key => $path_type) {
             $key_type = $args[$key] ?? null;
 
-            // without an index key, the keys are a list's
-            if ($key === 'index_key' && ($key_type === null || $key_type->isNull())) {
-                continue;
-            }
-
-            if ($key_type !== null && $key_type->isNull()) {
-                // the whole rows
-                $graph->addPath($row_node, $return_node, $path_type);
+            if ($key_type === null || $key_type->isNull()) {
+                // the whole rows, or without an index key the keys of a list
+                if ($key === 'column_key') {
+                    $graph->addPath($row_node, $return_node, $path_type);
+                }
 
                 continue;
             }
 
-            $literal_key = $key_type?->isSingleStringLiteral()
-                ? $key_type->getSingleStringLiteral()->value
-                : ($key_type?->isSingleIntLiteral() ? $key_type->getSingleIntLiteral()->value : null);
+            $literal_key = null;
+
+            if ($key_type->isSingleStringLiteral()) {
+                $literal_key = $key_type->getSingleStringLiteral()->value;
+            } elseif ($key_type->isSingleIntLiteral()) {
+                $literal_key = (string) $key_type->getSingleIntLiteral()->value;
+            }
 
             $column_node = DataFlowNode::getForAssignment('array_column ' . $key, $location);
             $graph->addNode($column_node);
@@ -1375,6 +1373,7 @@ final class FunctionCallReturnTypeFetcher
                 $column_node,
                 'arrayvalue-fetch' . ($literal_key !== null ? '-\'' . $literal_key . '\'' : ''),
             );
+            $graph->addPath($column_node, $return_node, $path_type);
 
             if (!$rows_are_arrays) {
                 $object_column_node = DataFlowNode::getForAssignment('array_column object ' . $key, $location);
@@ -1382,11 +1381,35 @@ final class FunctionCallReturnTypeFetcher
                 $graph->addPath($row_node, $object_column_node, '=');
                 $graph->addPath($object_column_node, $return_node, $path_type);
             }
-
-            $graph->addPath($column_node, $return_node, $path_type);
         }
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
+
+        return true;
+    }
+
+    /**
+     * Whether the values of the arrays of $type are arrays only
+     *
+     * @psalm-mutation-free
+     */
+    private static function holdsOnlyArrays(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                $value_type = $atomic_type->getGenericValueType();
+            } elseif ($atomic_type instanceof TArray) {
+                $value_type = $atomic_type->type_params[1];
+            } else {
+                return false;
+            }
+
+            foreach ($value_type->getAtomicTypes() as $value_atomic_type) {
+                if (!$value_atomic_type instanceof TArray && !$value_atomic_type instanceof TKeyedArray) {
+                    return false;
+                }
+            }
+        }
 
         return true;
     }
