@@ -731,7 +731,7 @@ contexts are types: `abstract const ctx C super [write_props, io] as [write_this
 
 ```php
 <?php
-/** @psalm-purity-template write-this-props <= C(write-this-props) <= write-props|io */
+/** @psalm-purity-template write-this-props <= C(write-this-props) <= write-this-props|write-props|io */
 abstract class Doer {
     public int $runs = 0;
 
