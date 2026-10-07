@@ -518,6 +518,21 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What is sent to the generators a function-like returns (see Generator::send()): the value of its yield
+     * expressions.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForGeneratorSend(string $cased_method_id, FunctionLikeStorage $storage): self
+    {
+        return self::make(
+            strtolower($cased_method_id) . ' sent',
+            'what is sent to ' . $cased_method_id,
+            $storage->location,
+        );
+    }
+
+    /**
      * @psalm-mutation-free
      */
     private static function getReturnLocation(FunctionLikeStorage $storage): ?CodeLocation

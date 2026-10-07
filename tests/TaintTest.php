@@ -486,6 +486,45 @@ final class TaintTest extends TestCase
                     echo toString(["key" => $_GET["a"]]);
                     echo prefix(["key" => $_GET["b"]]);',
             ],
+            'dontTaintTheYieldResultOfALiteralSentToAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send("literal");',
+            ],
+            'dontTaintAnUnusedYieldResult' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        yield 1;
+                        echo "done";
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+            ],
+            'dontTaintWhatAnotherCallOfASpecializedGeneratorIsSent' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function relay(): Generator {
+                        $sent = yield "";
+                        yield $sent;
+                    }
+
+                    $tainted = relay();
+                    $tainted->current();
+                    $tainted->send((string) $_GET["value"]);
+
+                    $literal = relay();
+                    $literal->current();
+                    $literal->send("literal");
+                    echo $literal->current();',
+            ],
             'dontTaintAnotherKeyOfWhatAGeneratorYields' => [
                 'code' => '<?php // --taint-analysis
                     /** @return Generator<int, array{a: string, b: string}> */
@@ -2377,6 +2416,62 @@ final class TaintTest extends TestCase
                     }
 
                     echo show(["key" => $_GET["a"]], "key");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGeneratorDelegatingToAnother' => [
+                'code' => '<?php // --taint-analysis
+                    function inner(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    function outer(): Generator {
+                        yield from inner();
+                    }
+
+                    $values = outer();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGeneratorMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Rows {
+                        public function values(): Generator {
+                            $sent = yield 1;
+                            echo $sent;
+                        }
+                    }
+
+                    $values = (new Rows())->values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatASpecializedGeneratorIsSent' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function relay(): Generator {
+                        $sent = yield "";
+                        yield $sent;
+                    }
+
+                    $tainted = relay();
+                    $tainted->current();
+                    $tainted->send((string) $_GET["value"]);
+                    echo $tainted->current();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintWhatAGeneratorYields' => [
