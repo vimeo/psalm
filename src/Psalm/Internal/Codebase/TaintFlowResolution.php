@@ -18,6 +18,7 @@ use function array_merge;
 use function array_pop;
 use function array_slice;
 use function count;
+use function explode;
 use function implode;
 use function ksort;
 use function max;
@@ -164,6 +165,13 @@ final class TaintFlowResolution
     private const MAX_PARAM_GUARDS = 4;
 
     /**
+     * How many nested unspecialized calls a flow knows the array keys of at most (see bindCall()), and what
+     * separates them in the open assignments
+     */
+    private const MAX_BOUND_CALLS = 4;
+    private const BOUND_CALL_SEPARATOR = "\n";
+
+    /**
      * The taints a state of a body walk keeps of the call when it starts: all
      */
     private const ALL_TAINTS = -1;
@@ -250,6 +258,13 @@ final class TaintFlowResolution
     private array $call_ranges = [];
 
     /**
+     * The specialization keys of the calls passing a literal array key to a parameter (see $param_keys)
+     *
+     * @var array<string, true>
+     */
+    private array $literal_key_calls = [];
+
+    /**
      * Open assignments => key (see internOpenAssignments())
      *
      * @var array<string, int>
@@ -265,8 +280,8 @@ final class TaintFlowResolution
      *     the fetches under a parameter key the flow took outside of any specialized call, as the class of the
      *     open assignment each fetched (see getClass()) by the unspecialized argument node of the parameter,
      *     until it leaves through a call site (see resolveParamKey()),
-     *     the specialization key of the unspecialized call whose body the flow entered through its arguments, or
-     *     '' (see bindCall()),
+     *     the specialization keys of the nested unspecialized calls whose bodies the flow entered through their
+     *     arguments, innermost first, or '' (see bindCall()),
      * ]
      *
      * @var list<array{array<int, list<int>>, array<int, int>, array<string, string>, string}>
@@ -651,6 +666,14 @@ final class TaintFlowResolution
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
         $this->internOpenAssignments([[], []], [0, 0]);
+
+        foreach ($param_keys as $keys) {
+            foreach ($keys as $specialization_key => $key) {
+                if (!str_starts_with($key, '@')) {
+                    $this->literal_key_calls[$specialization_key] = true;
+                }
+            }
+        }
     }
 
     public function resolve(Progress $progress): void
@@ -1669,9 +1692,9 @@ final class TaintFlowResolution
 
         if (isset($this->path_type_params[$path_type])) {
             [$param, $base] = $this->path_type_params[$path_type];
-            $bound_key = $this->param_keys[$param][$this->open_assignments[$open_assignments][3]] ?? null;
+            $bound_key = $this->resolveBoundKey($param, $this->open_assignments[$open_assignments][3]);
 
-            if ($bound_key !== null && !str_starts_with($bound_key, '@')) {
+            if ($bound_key !== null) {
                 // the flow entered the body through the arguments of an unspecialized call passing it
                 $key = $bound_key;
             } elseif ($this->isOutsideOfCalls($context)) {
@@ -2550,6 +2573,10 @@ final class TaintFlowResolution
      * passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not those of a
      * call the body makes to its own function-like: the body would know them past that call.
      *
+     * The flow keeps the calls whose bodies it is in, innermost first (see resolveBoundKey()), up to
+     * MAX_BOUND_CALLS of them, and none if it enters one of those function-likes again. It forgets the outermost
+     * ones as long as they pass no literal key, as it knows nothing from them.
+     *
      * @psalm-external-mutation-free
      */
     private function bindCall(int $open_assignments, string $argument_id): int
@@ -2561,37 +2588,102 @@ final class TaintFlowResolution
             return $this->bindRecursiveCall($open_assignments, $new_call);
         }
 
-        $previous = $this->call_ranges[$call] ?? null;
-        $this->call_ranges[$new_call] = [$file_path, $start, $end];
+        $range = [$file_path, $start, $end];
+        $this->call_ranges[$new_call] = $range;
+        $calls = [$new_call];
+
+        foreach ($call === '' ? [] : explode(self::BOUND_CALL_SEPARATOR, $call) as $outer_call) {
+            if ($this->call_ranges[$outer_call] === $range) {
+                return $this->internOpenAssignments($made, $closed, $guards);
+            }
+
+            if (!str_starts_with($outer_call, '^')) {
+                $calls[] = $outer_call;
+            }
+        }
+
+        $calls = array_slice($calls, 0, self::MAX_BOUND_CALLS);
+        $kept = 1;
+
+        foreach ($calls as $depth => $bound_call) {
+            if (isset($this->literal_key_calls[$bound_call])) {
+                $kept = $depth + 1;
+            }
+        }
 
         return $this->internOpenAssignments(
             $made,
             $closed,
             $guards,
-            $previous === [$file_path, $start, $end] ? '' : $new_call,
+            implode(self::BOUND_CALL_SEPARATOR, array_slice($calls, 0, $kept)),
         );
     }
 
     /**
-     * The open assignments $open_assignments of a flow reaching node $node_id: without the unspecialized call it
-     * entered the body of (see bindCall()) if the node is out of that body. That's where the keys the call passes
-     * may be those of another call: in a node without a location (a property, ...), or one of another
-     * function-like (the call sites the call returns to, ...).
+     * The literal array key that the unspecialized calls whose bodies a flow is in ($call, see bindCall()) pass to
+     * the parameter of unspecialized argument node $param, if they do: the one the innermost call of its
+     * function-like passes (the calls before it, of other function-likes, are calls it returned from), or, if that
+     * call passes on a parameter of the function-like it is made in, the key the call of that function-like passes,
+     * and so on.
+     *
+     * @psalm-mutation-free
+     */
+    private function resolveBoundKey(string $param, string $call): ?string
+    {
+        foreach ($call === '' ? [] : explode(self::BOUND_CALL_SEPARATOR, $call) as $bound_call) {
+            $key = $this->param_keys[$param][$bound_call] ?? null;
+
+            if ($key === null) {
+                // a call of another function-like, which the flow returned from
+                continue;
+            }
+
+            if (!str_starts_with($key, '@')) {
+                return $key;
+            }
+
+            $param = substr($key, 1);
+        }
+
+        return null;
+    }
+
+    /**
+     * The open assignments $open_assignments of a flow reaching node $node_id: without the unspecialized calls it
+     * entered the bodies of (see bindCall()) that the node is out of, up to the innermost one whose body it is in.
+     * Out of a body, the keys its call passes may be those of another call: in a node without a location (a
+     * property, ...), or one of another function-like (the call sites a call returns to, ...). Back in the body
+     * of an outer call, from a call it makes, they are that call's.
      *
      * @psalm-external-mutation-free
      */
     private function scopeCall(int $open_assignments, string $node_id): int
     {
         [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
-        [$file_path, $start, $end] = $this->call_ranges[$call];
         $location = $this->getNode($node_id)?->code_location;
 
-        if ($location !== null
-            && $location->file_path === $file_path
-            && $location->raw_file_start >= $start
-            && $location->raw_file_end <= $end
-        ) {
-            return $open_assignments;
+        if ($location === null) {
+            return $this->internOpenAssignments($made, $closed, $guards);
+        }
+
+        $calls = explode(self::BOUND_CALL_SEPARATOR, $call);
+
+        foreach ($calls as $depth => $bound_call) {
+            [$file_path, $start, $end] = $this->call_ranges[$bound_call];
+
+            if ($location->file_path === $file_path
+                && $location->raw_file_start >= $start
+                && $location->raw_file_end <= $end
+            ) {
+                return $depth === 0
+                    ? $open_assignments
+                    : $this->internOpenAssignments(
+                        $made,
+                        $closed,
+                        $guards,
+                        implode(self::BOUND_CALL_SEPARATOR, array_slice($calls, $depth)),
+                    );
+            }
         }
 
         return $this->internOpenAssignments($made, $closed, $guards);
