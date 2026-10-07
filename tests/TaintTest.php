@@ -2699,6 +2699,42 @@ final class TaintTest extends TestCase
                     $holder->fill((string) $_GET["value"]);
                     echo $holder->get("b");',
             ],
+            'taintFreeAssignmentUnderParamKeysOfManyUnspecializedCalls' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    // as many calls as make their flows converge in the body
+                    function send(Mail $mail): void {
+                        $mail->setOption("a", (string) $_GET["a"]);
+                        $mail->setOption("b", (string) $_GET["b"]);
+                        $mail->setOption("c", (string) $_GET["c"]);
+                        $mail->setOption("d", (string) $_GET["d"]);
+                        $mail->setOption("e", (string) $_GET["e"]);
+                        $mail->setOption("f", (string) $_GET["f"]);
+                        $mail->setOption("g", (string) $_GET["g"]);
+                        $mail->setOption("h", (string) $_GET["h"]);
+                        $mail->setOption("i", (string) $_GET["i"]);
+                        $mail->setOption("j", (string) $_GET["j"]);
+                        $mail->setOption("k", (string) $_GET["k"]);
+                        $mail->setOption("l", (string) $_GET["l"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
             'taintFreeAssignmentUnderParamKeyOfOtherUnspecializedCall' => [
                 'code' => '<?php
                     class Base {
@@ -2957,6 +2993,43 @@ final class TaintTest extends TestCase
                     $holder->fill((string) $_GET["value"]);
                     $holder->get("a");
                     echo $holder->get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfOneOfManyUnspecializedCalls' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    // as many calls as make their flows converge in the body
+                    function send(Mail $mail): void {
+                        $mail->setOption("a", (string) $_GET["a"]);
+                        $mail->setOption("b", (string) $_GET["b"]);
+                        $mail->setOption("c", (string) $_GET["c"]);
+                        $mail->setOption("d", (string) $_GET["d"]);
+                        $mail->setOption("e", (string) $_GET["e"]);
+                        $mail->setOption("f", (string) $_GET["f"]);
+                        $mail->setOption("g", (string) $_GET["g"]);
+                        $mail->setOption("h", (string) $_GET["h"]);
+                        $mail->setOption("i", (string) $_GET["i"]);
+                        $mail->setOption("j", (string) $_GET["j"]);
+                        $mail->setOption("k", (string) $_GET["k"]);
+                        $mail->setOption("l", (string) $_GET["l"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAssignmentUnderParamKeyOfSameUnspecializedCall' => [
