@@ -950,7 +950,7 @@ final class FunctionCallReturnTypeFetcher
 
         // the callables passed, which the body may call (see taintCallableParamCall())
         foreach ($storage->params as $i => $_) {
-            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
                 $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
 
                 if ($arg_type !== null) {
