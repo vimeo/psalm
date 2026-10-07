@@ -706,6 +706,10 @@ with a `Generator[pure]<int, string, mixed, void>`, is a `Foo[pure]<int, string,
 Together with `@psalm-purity-from-template`, it makes a function-like's purity depend on the
 closures it is given, like Hack's `[ctx $f]` contexts.
 
+A constructor may also take its purity from a class purity template: `new Sub()` then costs what
+`Sub` binds the template to (its default or upper bound when it does not bind it), and
+`new static()` costs the template itself, as it may instantiate any class extending the class.
+
 The bounds of a purity template are written as a chain around its name,
 `lower <= Name(default) <= upper`, where every part but the name may be omitted:
 
