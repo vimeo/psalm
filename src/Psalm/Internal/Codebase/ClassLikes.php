@@ -945,6 +945,8 @@ final class ClassLikes
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
 
+        $subclass_capabilities = $this->getSubclassCapabilities($codebase->analyzer->mutable_classes);
+
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
@@ -1016,7 +1018,9 @@ final class ClassLikes
                 }
 
                 $mut = Capabilities::toNamedLevel(
-                    $codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE,
+                    ($codebase->analyzer->mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE)
+                    | $this->getRequiredContractCapabilities($classlike_storage)
+                    | ($subclass_capabilities[$fq_class_name_lc] ?? Capabilities::NONE),
                 );
                 if ($mut === Capabilities::NONE) {
                     foreach ($classlike_storage->properties as $property) {
@@ -1068,6 +1072,81 @@ final class ClassLikes
                 }
             }
         }
+    }
+
+    /**
+     * A class contract binds the subclasses too: what the known subclasses of each class need,
+     * apart from what they inherit from it. A subclass with a contract needs what its contract allows.
+     *
+     * @param array<string, int> $mutable_classes
+     * @return array<lowercase-string, int>
+     * @psalm-capabilities read-props
+     */
+    private function getSubclassCapabilities(array $mutable_classes): array
+    {
+        $subclass_capabilities = [];
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if ($classlike_storage->parent_classes === []
+                || !$classlike_storage->location
+                || !$this->config->isInProjectDirs($classlike_storage->location->file_path)
+            ) {
+                continue;
+            }
+
+            $capabilities = $classlike_storage->has_mutations_annotation
+                ? $classlike_storage->capabilities
+                : $mutable_classes[$fq_class_name_lc] ?? Capabilities::NONE;
+
+            foreach ($classlike_storage->parent_classes as $parent_class_lc => $_) {
+                $subclass_capabilities[$parent_class_lc]
+                    = ($subclass_capabilities[$parent_class_lc] ?? Capabilities::NONE) | $capabilities;
+            }
+        }
+
+        return $subclass_capabilities;
+    }
+
+    /**
+     * What a contract of the class must allow whatever its methods do: the contract of its parent
+     * class, whose methods it inherits, and the upper bounds of its purity templates, which its
+     * subclasses may bind up to.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function getRequiredContractCapabilities(ClassLikeStorage $classlike_storage): int
+    {
+        $capabilities = Capabilities::NONE;
+
+        if ($classlike_storage->parent_class !== null) {
+            try {
+                $capabilities |= $this->classlike_storage_provider->get($classlike_storage->parent_class)
+                    ->capabilities;
+            } catch (InvalidArgumentException) {
+                $capabilities |= Capabilities::ALL;
+            }
+        }
+
+        if ($classlike_storage->is_interface) {
+            // an interface is only asked for an annotation, not for a particular one
+            return $capabilities;
+        }
+
+        foreach ($classlike_storage->template_types ?? [] as $template_type) {
+            foreach ($template_type as $bound) {
+                if (Capabilities::isPurityArgument($bound)) {
+                    $capabilities |= Capabilities::fromType($bound);
+                }
+            }
+        }
+
+        return $capabilities;
     }
 
     private static function makeImmutable(
