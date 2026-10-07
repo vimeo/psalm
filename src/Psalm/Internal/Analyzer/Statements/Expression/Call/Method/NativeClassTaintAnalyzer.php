@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OutputStreamTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\DataFlowGraph;
@@ -53,6 +54,8 @@ final class NativeClassTaintAnalyzer
         if (!$graph) {
             return $return_type;
         }
+
+        OutputStreamTaintAnalyzer::taintMethodWrite($statements_analyzer, $stmt, (string) $method_id, $args);
 
         $flow = self::getObjectFlow($statements_analyzer, $method_id);
 
@@ -200,6 +203,13 @@ final class NativeClassTaintAnalyzer
         $object_type = $object_id !== null && isset($context->vars_in_scope[$object_id])
             ? $context->vars_in_scope[$object_id]
             : $statements_analyzer->node_data->getType($stmt->var);
+
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        // the object still writes where it did
+        if ($object_type && $taint_flow_graph && $taint_flow_graph->isOutputStream($object_type)) {
+            $taint_flow_graph->addOutputStream($object_node);
+        }
 
         foreach ($object_type->parent_nodes ?? [] as $parent_node) {
             $graph->addPath($parent_node, $object_node, '=');
