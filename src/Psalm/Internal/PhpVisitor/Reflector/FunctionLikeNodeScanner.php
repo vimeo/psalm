@@ -725,8 +725,9 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
-                    if ($storage->mutation_free_assumed) {
-                        // like an annotation in the docblock, it replaces what a getter is assumed to do
+                    if (!$storage->has_mutations_annotation) {
+                        // like an annotation in the docblock, it replaces what a getter or a constructor
+                        // is assumed to do
                         $storage->capabilities = Capabilities::ALL;
                         $storage->mutation_free_assumed = false;
                     }

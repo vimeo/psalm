@@ -1067,6 +1067,23 @@ final class CapabilitiesTest extends TestCase
                         return $b;
                     }',
             ],
+            'annotatedFinalGetterUsesItsDeclaredCapabilities' => [
+                'code' => '<?php
+                    final class Sensor {
+                        private ?int $value = null;
+
+                        /** @psalm-capabilities read-props|io */
+                        public function read(): ?int {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function readTwice(Sensor $sensor): ?int {
+                        $sensor->read();
+                        return $sensor->read();
+                    }',
+            ],
         ];
     }
 
@@ -2242,6 +2259,65 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'TooManyTemplateParams',
+            ],
+            'annotatedFinalGetterWithoutReadPropsCannotReadProperties' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+
+                        /** @psalm-capabilities write-this-props */
+                        public function get(): int { return $this->n; }
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:61 - The context is write-this-props but accessing a property on a mutable object requires read-props',
+            ],
+            'finalGetterWithExternalMutationFreeAttributeIsNotRemembered' => [
+                'code' => '<?php
+                    namespace Psalm {
+                        #[\\Attribute(\\Attribute::TARGET_METHOD)]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        use Psalm\\ExternalMutationFree;
+
+                        final class Sensor {
+                            private ?int $value = null;
+
+                            #[ExternalMutationFree]
+                            public function read(): ?int {
+                                return $this->value;
+                            }
+                        }
+
+                        function firstValue(Sensor $sensor): int {
+                            if ($sensor->read() !== null) {
+                                return $sensor->read();
+                            }
+
+                            return 0;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'annotatedFinalGetterResultIsNotRemembered' => [
+                'code' => '<?php
+                    final class Sensor {
+                        private ?int $value = null;
+
+                        /** @psalm-capabilities read-props|io */
+                        public function read(): ?int {
+                            return $this->value;
+                        }
+                    }
+
+                    function firstValue(Sensor $sensor): int {
+                        if ($sensor->read() !== null) {
+                            return $sensor->read();
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }
