@@ -14,12 +14,14 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -29,7 +31,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -527,6 +531,48 @@ final class SimpleTypeInferer
             return new Union([
                 new Type\Atomic\TNamedObject($resolved_class_name),
             ]);
+        }
+
+        // Callers with $file_source analyze calls using richer node types.
+        if ($file_source === null
+            && $stmt instanceof PhpParser\Node\Expr\FuncCall
+            && $stmt->name instanceof PhpParser\Node\Name
+            && !$stmt->isFirstClassCallable()
+            && !isset($aliases->functions[strtolower($stmt->name->toString())])
+            && ($callables = InternalCallMapHandler::getCallablesFromCallMap($stmt->name->toString()))
+        ) {
+            if (count($callables) === 1) {
+                return $callables[0]->return_type;
+            }
+            $all_args_literal = true;
+            foreach ($stmt->getArgs() as $arg) {
+                $arg_type = self::infer($codebase, $nodes, $arg->value, $aliases);
+                $atomic = $arg_type?->isSingle() ? $arg_type->getSingleAtomic() : null;
+                if ($arg_type === null || (!$atomic instanceof TTrue && !$atomic instanceof TFalse
+                    && !$atomic instanceof TLiteralInt && !$atomic instanceof TLiteralFloat
+                    && !$atomic instanceof TNull)) {
+                    $all_args_literal = false;
+                    continue;
+                }
+                $nodes->setType($arg->value, $arg_type);
+            }
+            if ($all_args_literal) {
+                return InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
+                    $codebase,
+                    $callables,
+                    $stmt->getArgs(),
+                    $nodes,
+                    $stmt->name->toString(),
+                )->return_type;
+            }
+            $return_types = [];
+            foreach ($callables as $callable) {
+                if ($callable->return_type === null) {
+                    return null;
+                }
+                $return_types[] = $callable->return_type;
+            }
+            return Type::combineUnionTypeArray($return_types, null);
         }
 
         return null;
