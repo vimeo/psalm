@@ -634,6 +634,14 @@ final class TaintTest extends TestCase
                     vprintf("%d items", [(string) $_GET["x"]]);
                     printf("%2\$s %1\$05.2f", (string) $_GET["x"], "a");',
             ],
+            'dontTaintThePhpOutputStreamWritesOfWhatIsFormattedAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    $out = fopen("php://output", "w");
+                    if ($out !== false) {
+                        fprintf($out, "%d", (string) $_GET["x"]);
+                        vfprintf($out, "%d items", [(string) $_GET["x"]]);
+                    }',
+            ],
             'dontTaintAPrivatePropertyWithWhatIsSetToTheOneOfAParentClass' => [
                 'code' => '<?php // --taint-analysis
                     class Model {
@@ -4015,6 +4023,22 @@ final class TaintTest extends TestCase
                     $stream = fopen("php://output", "w");
                     if ($stream !== false) {
                         fprintf($stream, "<p>%s</p>", (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlFormattedAsAStringByFprintfToAPhpOutputStream' => [
+                'code' => '<?php
+                    $out = fopen("php://output", "w");
+                    if ($out !== false) {
+                        fprintf($out, "%s", (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedHtmlFormattedAsAStringByVfprintfToAPhpOutputStream' => [
+                'code' => '<?php
+                    $out = fopen("php://output", "w");
+                    if ($out !== false) {
+                        vfprintf($out, "%s items", [(string) $_GET["x"]]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
