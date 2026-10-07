@@ -4121,7 +4121,7 @@ final class TaintTest extends TestCase
                     md5_file((string) $_GET["path"]);',
                 'error_message' => 'TaintedSSRF',
             ],
-            'taintedSsrfInSoapClient' => [
+            'taintedSsrfInSoapClientWithCastWsdl' => [
                 'code' => '<?php
                     new SoapClient((string) $_GET["wsdl"]);',
                 'error_message' => 'TaintedSSRF',
