@@ -7868,6 +7868,51 @@ final class TaintTest extends TestCase
                 'expectedSourceLines' => [10, 10, 13, 13],
                 'findUnusedVariables' => true,
             ],
+            'outputFunctionsAreSinksOfTheKindsOfEcho' => [
+                'code' => '<?php
+                    printf("%s", (string) $_GET["a"]);
+                    vprintf("%s", [(string) $_GET["b"]]);
+                    print_r($_GET["c"]);
+                    var_dump($_GET["d"]);
+                    var_export($_GET["e"]);
+                    $printed = print_r($_GET["f"], true);
+                    $exported = var_export($_GET["g"], true);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ printf("%s", (string) $_GET["a"]); }',
+                    'TaintedTextWithQuotes{ printf("%s", (string) $_GET["a"]); }',
+                    'TaintedHtml{ vprintf("%s", [(string) $_GET["b"]]); }',
+                    'TaintedTextWithQuotes{ vprintf("%s", [(string) $_GET["b"]]); }',
+                    'TaintedHtml{ print_r($_GET["c"]); }',
+                    'TaintedTextWithQuotes{ print_r($_GET["c"]); }',
+                    'TaintedHtml{ var_dump($_GET["d"]); }',
+                    'TaintedTextWithQuotes{ var_dump($_GET["d"]); }',
+                    'TaintedHtml{ var_export($_GET["e"]); }',
+                    'TaintedTextWithQuotes{ var_export($_GET["e"]); }',
+                ],
+            ],
+            'outputFunctionsLeakSecretsLikeEcho' => [
+                'code' => '<?php
+                    /** @psalm-taint-source user_secret */
+                    function userSecret(): string { return ""; }
+                    /** @psalm-taint-source system_secret */
+                    function systemSecret(): string { return ""; }
+
+                    printf("%s", userSecret());
+                    vprintf("%s", [systemSecret()]);
+                    print_r(userSecret());
+                    var_dump(systemSecret());
+                    var_export(userSecret());
+                    $printed = print_r(systemSecret(), true);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedUserSecret{ printf("%s", userSecret()); }',
+                    'TaintedSystemSecret{ vprintf("%s", [systemSecret()]); }',
+                    'TaintedUserSecret{ print_r(userSecret()); }',
+                    'TaintedSystemSecret{ var_dump(systemSecret()); }',
+                    'TaintedUserSecret{ var_export(userSecret()); }',
+                ],
+            ],
         ];
     }
 }
