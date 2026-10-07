@@ -1011,6 +1011,43 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'overrideMayRequireFewerCapabilitiesThanClassLevelCapabilities' => [
+                'code' => '<?php
+                    final class Box { public int $x = 0; }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    abstract class P {
+                        abstract public function m(Box $b): int;
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    final class C extends P {
+                        /** @psalm-capabilities read-props */
+                        public function m(Box $b): int {
+                            return $b->x;
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    /** @psalm-capabilities io */
+                    final class D implements I {
+                        public function m(): int {
+                            echo "x";
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    final class E implements I {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }',
+            ],
             'unannotatedAbstractMethodsMayBeImplementedImpurely' => [
                 'code' => '<?php
                     abstract class P {
@@ -1284,6 +1321,56 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency',
+            ],
+            'overrideMayNotAddWritePropsToClassLevelCapabilities' => [
+                'code' => '<?php
+                    final class Box { public int $x = 0; }
+
+                    /** @psalm-capabilities read-props */
+                    abstract class P {
+                        abstract public function m(Box $b): int;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    final class C extends P {
+                        /** @psalm-capabilities read-props|write-props */
+                        public function m(Box $b): int {
+                            $b->x = 1;
+                            return $b->x;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src/somefile.php:12:25 - P::m is read-props, but C::m additionally requires write-props',
+                'ignored_issues' => ['ImpureFunctionCall'],
+            ],
+            'classLevelCapabilitiesOfImplementerMayNotExceedInterfaceClassLevelCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    /** @psalm-capabilities io */
+                    final class D implements I {
+                        public function m(): int {
+                            echo "x";
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'I is marked with @psalm-immutable, but D is not',
+            ],
+            'unannotatedImplementationOfClassLevelCapabilitiesInterfaceIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    final class D implements I {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'I is marked with @psalm-capabilities io, but D is not',
             ],
             'unannotatedOverrideOfPureAbstractIsImpure' => [
                 'code' => '<?php

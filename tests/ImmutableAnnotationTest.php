@@ -590,6 +590,31 @@ final class ImmutableAnnotationTest extends TestCase
                         abstract public function d(): int;
                     }',
             ],
+            'classLevelCapabilitiesCoverAbstractMethods' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface ReadingInterface {
+                        public function a(): int;
+
+                        /** @psalm-pure */
+                        public function b(): int;
+                    }
+
+                    /** @psalm-capabilities io */
+                    abstract class LoggingBase {
+                        abstract public function c(): int;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    trait ReadingTrait {
+                        abstract public function d(): int;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    abstract class UsesReadingTrait {
+                        use ReadingTrait;
+                    }',
+            ],
         ];
     }
 
@@ -781,6 +806,29 @@ final class ImmutableAnnotationTest extends TestCase
                         public function somePure(int $a) : int;
                     }',
                 'error_message' => 'MissingAbstractPureAnnotation',
+            ],
+            'classLevelCapabilitiesOfImplementerDoNotCoverInterfaceMethods' => [
+                'code' => '<?php
+                    interface I {
+                        public function m(): int;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    abstract class B implements I {}',
+                'error_message' => 'MissingAbstractPureAnnotation',
+            ],
+            'classLevelCapabilitiesOfUserDoNotCoverTraitMethods' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function m(): int;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    abstract class B {
+                        use T;
+                    }',
+                'error_message' => 'MissingAbstractPureAnnotation',
+                'ignored_issues' => ['MutableDependency'],
             ],
             'mustBeImmutableLikeInterfaces' => [
                 'code' => '<?php
