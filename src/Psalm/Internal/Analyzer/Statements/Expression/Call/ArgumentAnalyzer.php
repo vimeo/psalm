@@ -2008,8 +2008,13 @@ final class ArgumentAnalyzer
 
         $callee_location = $declaring_storage?->stmt_location;
 
-        if ($taint_flow_graph && !$specialize_taint && $callee_location !== null) {
-            $taint_flow_graph->addCallArgument($argument_value_node, $function_call_location, $callee_location);
+        if ($taint_flow_graph && $callee_location !== null) {
+            $taint_flow_graph->addCallArgument(
+                $argument_value_node,
+                $function_call_location,
+                $callee_location,
+                $specialize_taint,
+            );
         }
 
         if ($taint_flow_graph

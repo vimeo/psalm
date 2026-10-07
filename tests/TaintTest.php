@@ -2813,6 +2813,77 @@ final class TaintTest extends TestCase
                         echo (string) $mail->getOptions()["greeting"];
                     }',
             ],
+            'taintFreeAssignmentUnderParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setOption("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyOfPrivateMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setFrom(string $value): void {
+                            $this->setOption("from", $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setFrom((string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyPassedOnByFinalMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        final public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setVia("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
             'taintFreeAssignmentAndFetchUnderParamKeys' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3244,6 +3315,102 @@ final class TaintTest extends TestCase
                     $base = new Base();
                     $base->setOption("from", (string) $_GET["value"], true);
                     echo (string) $base->getOptions()["greeting"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setOption("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfPrivateMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setFrom(string $value): void {
+                            $this->setOption("from", $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setFrom((string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyPassedOnByFinalMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        final public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setVia("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options, string $key): void {
+                        $options->setOption($key, (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAssignmentAndFetchUnderSameParamKeys' => [

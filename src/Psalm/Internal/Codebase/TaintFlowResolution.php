@@ -2568,10 +2568,10 @@ final class TaintFlowResolution
     }
 
     /**
-     * The open assignments $open_assignments of a flow entering the body of an unspecialized call through its
-     * argument node $argument_id (see TaintFlowGraph::$call_arguments): the flow knows the array keys the call
-     * passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not those of a
-     * call the body makes to its own function-like: the body would know them past that call.
+     * The open assignments $open_assignments of a flow entering the body of an unspecialized or despecialized call
+     * through its argument node $argument_id (see TaintFlowGraph::$call_arguments): the flow knows the array keys
+     * the call passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not
+     * those of a call the body makes to its own function-like: the body would know them past that call.
      *
      * The flow keeps the calls whose bodies it is in, innermost first (see resolveBoundKey()), up to
      * MAX_BOUND_CALLS of them, and none if it enters one of those function-likes again. It forgets the outermost
