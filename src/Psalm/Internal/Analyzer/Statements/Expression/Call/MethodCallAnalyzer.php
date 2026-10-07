@@ -458,19 +458,4 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         return true;
     }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public static function hasNullsafe(PhpParser\Node\Expr $expr): bool
-    {
-        if ($expr instanceof PhpParser\Node\Expr\MethodCall
-            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
-        ) {
-            return self::hasNullsafe($expr->var);
-        }
-
-        return $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch;
-    }
 }
