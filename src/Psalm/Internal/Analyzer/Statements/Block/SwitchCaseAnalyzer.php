@@ -219,28 +219,8 @@ final class SwitchCaseAnalyzer
                 && $switch_condition->name->getParts() === ['true']
             ) {
                 $case_equality_expr = $case->cond;
-            } elseif (($switch_condition_type = $statements_analyzer->node_data->getType($switch_condition))
-                && ($case_cond_type = $statements_analyzer->node_data->getType($case->cond))
-                && (($switch_condition_type->isString() && $case_cond_type->isString())
-                    || ($switch_condition_type->isInt() && $case_cond_type->isInt())
-                    || ($switch_condition_type->isFloat() && $case_cond_type->isFloat())
-                )
-            ) {
-                $case_equality_expr = new VirtualIdentical(
-                    $switch_condition,
-                    $case->cond,
-                    $case->cond->getAttributes(),
-                );
-
-                IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $case_equality_expr);
             } else {
-                $case_equality_expr = new VirtualEqual(
-                    $switch_condition,
-                    $case->cond,
-                    $case->cond->getAttributes(),
-                );
-
-                IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $case_equality_expr);
+                $case_equality_expr = self::getCaseEqualityExpr($statements_analyzer, $switch_condition, $case->cond);
             }
         }
 
@@ -560,6 +540,33 @@ final class SwitchCaseAnalyzer
     /**
      * @return null|false
      */
+    /**
+     * The comparison of a case with the switch condition: `===` when both have the same scalar type, `==` otherwise.
+     */
+    private static function getCaseEqualityExpr(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $switch_condition,
+        PhpParser\Node\Expr $case_cond,
+    ): VirtualIdentical|VirtualEqual {
+        $switch_condition_type = $statements_analyzer->node_data->getType($switch_condition);
+        $case_cond_type = $statements_analyzer->node_data->getType($case_cond);
+
+        $is_identical = $switch_condition_type
+            && $case_cond_type
+            && (($switch_condition_type->isString() && $case_cond_type->isString())
+                || ($switch_condition_type->isInt() && $case_cond_type->isInt())
+                || ($switch_condition_type->isFloat() && $case_cond_type->isFloat())
+            );
+
+        $case_equality_expr = $is_identical
+            ? new VirtualIdentical($switch_condition, $case_cond, $case_cond->getAttributes())
+            : new VirtualEqual($switch_condition, $case_cond, $case_cond->getAttributes());
+
+        IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $case_equality_expr);
+
+        return $case_equality_expr;
+    }
+
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
         ?string $switch_var_id,

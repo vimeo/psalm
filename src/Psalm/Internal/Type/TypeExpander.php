@@ -142,7 +142,7 @@ final class TypeExpander
             return false;
         }
 
-        $declaring_fq_classlike_name = $atomic->declaring_fq_classlike_name === 'self' && $self_class
+        $declaring_fq_classlike_name = $atomic->declaring_fq_classlike_name === 'self' && $self_class !== null
             ? $self_class
             : $atomic->declaring_fq_classlike_name;
 

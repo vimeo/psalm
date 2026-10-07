@@ -23,6 +23,7 @@ use const PHP_INT_SIZE;
 /**
  * The bit sets of int-mask types, tracked by Union::$int_mask_bits.
  *
+ * @psalm-immutable
  * @internal
  */
 final class IntMask

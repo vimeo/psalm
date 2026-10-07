@@ -23,6 +23,9 @@ final class IntMaskComparisonTest extends TestCase
         }
     ';
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerValidCodeParse(): iterable
     {
@@ -148,6 +151,9 @@ final class IntMaskComparisonTest extends TestCase
                                 default => false,
                             };
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'matchOnEmptyAndFullSets' => [
                 'code' => '<?php' . self::FLAG . '
@@ -159,6 +165,9 @@ final class IntMaskComparisonTest extends TestCase
                             default => "some",
                         };
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'searchEmptyAndFullSets' => [
                 'code' => '<?php' . self::FLAG . '
@@ -184,6 +193,9 @@ final class IntMaskComparisonTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
@@ -336,6 +348,8 @@ final class IntMaskComparisonTest extends TestCase
                         };
                     }',
                 'error_message' => 'IntMaskComparison',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'matchArmWithSeveralConditions' => [
                 'code' => '<?php' . self::FLAG . '
@@ -347,6 +361,8 @@ final class IntMaskComparisonTest extends TestCase
                         };
                     }',
                 'error_message' => 'IntMaskComparison',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'switchCase' => [
                 'code' => '<?php' . self::FLAG . '
@@ -413,6 +429,8 @@ final class IntMaskComparisonTest extends TestCase
                         }
                     }',
                 'error_message' => 'IntMaskComparison',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'masksTooLargeToCombinePairwise' => [
                 'code' => '<?php
