@@ -159,7 +159,7 @@ If false, disallows comparing a boolean to a literal boolean (mostly a codestyle
   rememberPropertyAssignmentsAfterCall="[bool]"
 >
 ```
-Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
+Setting this to `false` means that function calls will cause Psalm to forget what it knew about object properties within the scope of the function it's currently analysing, unless the callee can't write them (see [property refinements after calls](../annotating_code/purity_model.md#property-refinements-after-calls)). This duplicates functionality that Hack has. Defaults to `true`.
 
 #### allowStringToStandInForClass
 

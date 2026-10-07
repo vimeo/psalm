@@ -6,7 +6,7 @@ model comes from Hack's [contexts and capabilities](https://docs.hhvm.com/hack/c
 It replaces the three fixed levels of Psalm 6 (`@psalm-pure`, `@psalm-mutation-free` and
 `@psalm-external-mutation-free`), which are now three points in a larger space.
 
-This page explains how the model works. The reference for each annotation is in
+This page explains how the model works. The annotations are listed in
 [Supported Annotations](supported_annotations.md#purity-and-capabilities). The examples only
 mark the issues they are about: Psalm also suggests annotations for the unannotated code in them
 (see [Inferring annotations](#inferring-annotations)).
@@ -15,24 +15,33 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 
 | Capability         | Allows                                                                          |
 |--------------------|---------------------------------------------------------------------------------|
-| `read-props`       | reading properties of mutable objects, including `$this`                        |
-| `write-this-props` | writing properties of `$this`                                                   |
-| `write-props`      | writing properties of any other object                                          |
-| `read-globals`     | reading static properties, superglobals and `global` variables                  |
-| `write-globals`    | writing them, and using `static` variables                                      |
-| `write-refs`       | writing through by-reference parameters                                         |
-| `io`               | `echo`, `print`, and builtins with side effects (`time`, `random_int`, `file_put_contents`, …) |
+| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it) |
+| `write-this-props` | writing or unsetting properties of `$this`                                      |
+| `write-props`      | writing or unsetting properties of any other object                             |
+| `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
+| `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables |
+| `write-refs`       | writing through by-reference parameters and other references into another scope |
+| `io`               | `echo`, `print`, `exit` with a message, and builtins with side effects (`time`, `random_int`, `file_put_contents`, …) |
 
-Two names stand for the extremes: `pure` is the empty set and `impure` is every capability. A
-set is written with `|` or commas: `read-props|write-this-props`.
+Builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need
+`write-globals` instead of `io`.
+
+Two names stand for the extremes: `pure` is the empty set, a
+[pure function](https://en.wikipedia.org/wiki/Pure_function) whose result depends only on its
+arguments, and `impure` is every capability. A set is written with `|` or commas:
+`read-props|write-this-props`.
 
 A function-like may only do something, or call something, when its own set contains every
 capability that needs. Code without an annotation is `impure`: it may do anything, and nothing
 inside it is checked.
 
 Each name means that one capability only. Writing does not include reading, so `$this->n++`
-needs `read-props|write-this-props`. `write-props` does not include `write-this-props`, and
-`write-globals` does not include `read-globals`.
+needs `read-props|write-this-props`, and code that writes both `$this` and other objects needs
+`write-this-props|write-props`. `write-props` does not include `write-this-props`, and
+`write-globals` does not include `read-globals`. A plain assignment only needs the write
+capability: `$this->n = 0` needs `write-this-props`, `Counter::$count = 0` needs `write-globals`.
+Using `$this` at all needs `read-props` or `write-this-props`, so a setter returning `$this` may be
+`write-this-props`.
 
 ```php
 <?php
@@ -63,6 +72,35 @@ function resetTotal(): int {
 }
 ```
 
+### Global state
+
+Values reached from global state stay bound to it. An object read from a static property, a
+superglobal or a `global` variable, returned by a function that may read globals, or fetched from
+such an object, can only have its properties written, its mutating methods called, or be passed
+to a function that may write properties, by code that has `write-globals`. This makes
+`read-globals` a read-only view of global state, like Hack's `readonly` values:
+
+```php
+<?php
+final class Config {
+    public string $env = "prod";
+    public static ?Config $instance = null;
+}
+
+/** @psalm-capabilities read-globals */
+function config(): ?Config {
+    return Config::$instance;
+}
+
+/** @psalm-capabilities read-globals|write-props */
+function tamper(): void {
+    $config = config();
+    if ($config !== null) {
+        $config->env = "dev"; // ImpurePropertyAssignment: The context is write-props|read-globals but property assignment to Config::$env on an object reached from global state requires write-props|write-globals
+    }
+}
+```
+
 ## Annotations
 
 Every purity annotation is a name for a capability set:
@@ -82,11 +120,77 @@ Every purity annotation is a name for a capability set:
 `@psalm-pure`; `#[Psalm\Immutable]` and `#[JetBrains\PhpStorm\Immutable]` the same as
 `@psalm-immutable`; `#[Psalm\ExternalMutationFree]` the same as `@psalm-external-mutation-free`.
 
+### Capability aliases
+
+A capability set can be named once with a type alias and used in `@psalm-capabilities`, in
+closure types and as a purity argument, like Hack's context constants. Aliases of other classes
+are imported with `@psalm-import-type`:
+
+```php
+<?php
+/** @psalm-type Storage = write-props|io */
+final class Repo {
+    /** @psalm-capabilities Storage */
+    public function save(): void { echo "saved"; }
+}
+
+/** @psalm-import-type Storage from Repo */
+final class Service {
+    /**
+     * @psalm-capabilities Storage
+     * @param Closure[Storage](): void $after
+     */
+    public function run(Repo $repo, Closure $after): void {
+        $repo->save();
+        $after();
+    }
+}
+```
+
+### Closures
+
 Closures don't need an annotation. Psalm infers their capabilities from their bodies and keeps
 them in their type, for example `Closure[io](int): void` (see
 [callable types](type_syntax/callable_types.md#pure-callables)). Creating a closure is not an
 effect: a pure function may build and return an impure closure. Calling it, or passing it to a
 parameter that expects fewer capabilities, is checked.
+
+A closure that captures a variable by reference (`use (&$x)`) shares it with the enclosing
+scope: reading it needs `read-props` and writing it `write-this-props`, as if it were a property
+of the closure, so such a closure is not pure. The enclosing scope may still call it freely,
+since the variable is its own, and only needs a capability when the variable is shared further:
+`write-refs` for a by-reference parameter, `write-globals` for a global.
+
+```php
+<?php
+/**
+ * @psalm-pure
+ * @param list<int> $numbers
+ */
+function sum(array $numbers): int {
+    $total = 0;
+    $add = function (int $value) use (&$total): void { $total += $value; };
+    foreach ($numbers as $number) {
+        $add($number); // fine: $total belongs to sum()
+    }
+    return $total;
+}
+
+/**
+ * @psalm-pure
+ * @param Closure[pure](int): void $callback
+ */
+function callWithOne(Closure $callback): int {
+    $callback(1);
+    return 1;
+}
+
+/** @psalm-pure */
+function leak(): int {
+    $total = 0;
+    return callWithOne(function (int $value) use (&$total): void { $total += $value; }); // ArgumentTypeCoercion: Argument 1 of callWithOne expects Closure[pure](int):void, but parent type Closure[read-props|write-this-props](int):void provided
+}
+```
 
 ## Class-level contracts
 
@@ -115,7 +219,8 @@ A class extending or implementing one with a contract must have a contract that 
 otherwise Psalm reports [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md).
 Abstract methods, and the methods of interfaces, have no body to infer anything from, so each of
 them needs its own annotation, even inside a class with a contract
-([MissingAbstractPureAnnotation](../running_psalm/issues/MissingAbstractPureAnnotation.md)).
+([MissingAbstractPureAnnotation](../running_psalm/issues/MissingAbstractPureAnnotation.md)); use
+`@psalm-impure` for one that may do anything.
 
 ## How calls are charged
 
@@ -172,20 +277,65 @@ The waiver for new objects needs the class-level contract. If `Counter` had no
 `@psalm-capabilities` on the class, `new Counter()` followed by `->inc()` would cost
 `write-props`, because a subclass could do more.
 
+The `write-this-props` that a class purity template of the receiver is bound to
+(`Doer[write-this-props]`, see [Purity templates](#purity-templates)) is charged the same way,
+except that it is never waived for a new object. A receiver reached from
+[global state](#global-state) also costs `write-globals`.
+
 ### By-reference arguments
 
 A call to a function-like with `write-refs` does not cost `write-refs` itself. Each argument
 passed by reference costs what writing it directly would cost: nothing for a local variable,
 `write-refs` for one of the caller's own by-reference parameters, `write-this-props` for a property
 of `$this`, `write-props` for another object's property, and `write-globals` for global state.
-This includes builtins such as `sort()`, so a pure function may sort a local array.
+The callee itself still only has `write-refs`. This includes builtins such as `sort()`, so a pure
+function may sort a local array.
 
-### Everything else
+```php
+<?php
+final class Stats {
+    public static int $n = 0;
+}
 
-Implicit calls are checked too: `clone`, string conversion (`__toString`), `$object()`,
-`ArrayAccess`, `foreach` over an object, destructors, and parameter default values. Objects reached
-from global state can only be mutated with `write-globals`. See
-[Purity and capabilities](supported_annotations.md#purity-and-capabilities) for the details.
+/** @psalm-capabilities write-refs */
+function inc(int &$i): void {
+    $i++;
+}
+
+/** @psalm-capabilities write-refs */
+function update(int &$ref): void {
+    $local = 0;
+    inc($local);    // fine: $local belongs to update()
+    inc($ref);      // fine: like writing $ref directly, costs write-refs
+    // both reported on the next line:
+    // ImpureStaticProperty: The context is write-refs but reading a static property requires read-globals
+    // ImpureFunctionCall: The context is write-refs but function call on inc requires write-globals
+    inc(Stats::$n);
+}
+```
+
+### Implicit calls
+
+Everything a function-like does is checked, including what happens implicitly: `clone` calls
+`__clone`, string interpolation and casts call `__toString`, `$object()` calls `__invoke`, array
+access on objects calls the `ArrayAccess` methods, `throw new` and `new $className` call the
+constructor (an unknown class may do anything), and `foreach` over an object calls its iteration
+methods (see [Iterators and generators](#iterators-and-generators)). A callable string or array
+whose target is not known may do anything, so a pure function may not call one.
+
+### Destructors
+
+Destroying an object calls its destructor, where the object dies. So a pure function may not
+hold, in a local variable, an object it created with `new` whose `__destruct` has effects, unless
+the object leaves the function (returned, stored, passed on, captured). Nor may it `unset()` a
+variable holding such an object, or discard one (`new Guard();`).
+
+### Parameter default values
+
+Parameter default values are evaluated like in Hack: with no capabilities at all, or with
+`read-globals|write-globals` when the function-like has `write-globals`, whatever else it may do.
+Only function-likes without a purity annotation may use anything in a default value, so `new` in
+the defaults of unannotated code stays free.
 
 ## Purity templates
 
@@ -202,14 +352,27 @@ Purity arguments are written in square brackets, before any type arguments, as i
 - `Handler[pure]`, `Box[io]<int>`: the purity argument of a class with a purity template;
 - `@extends Handler[pure]`, `@implements Iterator[pure]<int, string>`: a subclass binding it.
 
-Purity templates are covariant: a `Handler[pure]` can be used where a `Handler[io]` is expected.
+The purity templates of a class come after its type templates, whatever the order of the
+`@template` and `@psalm-purity-template` tags. A class with `@template T` and
+`@psalm-purity-template P` is used as `Box[pure]<int>`, as `Box<int>` for its default purity, or
+as `Box[pure]` for its default type arguments. Several purity arguments are separated by commas
+(`Pair[pure, io]<int>`), and each is a capability set (`write-props|io`) or a purity template.
 An empty set is written `pure`; `Handler[]` is an array of `Handler`.
+
+Purity templates are covariant: a `Handler[pure]` can be used where a `Handler[io]` is expected.
+
+The bounds of type templates may use purity templates, which are then inferred with them: a
+class with `@template TIterator as Traversable[P]<K, V>` and `@psalm-purity-template P`,
+constructed with a `Generator[pure]<int, string, mixed, void>`, is a
+`Foo[pure]<int, string, Generator[pure]<int, string, mixed, void>>`.
 
 ### `@psalm-purity-from-template`
 
 [`@psalm-purity-from-template P`](supported_annotations.md#psalm-purity-from-template) says that
 each call needs the function-like's own capabilities plus whatever `P` is bound to at that call.
-Inside the body, calling a closure whose purity is `P` is not an effect: each caller pays for it.
+Inside the body, calling a closure whose purity is `P` is not an effect: each caller pays for it,
+like with Hack's `[ctx $f]` contexts. It works for functions, methods, static methods and constructors. `P` may be a purity template of
+the function-like or of its class, or a type template bound to a closure or callable type.
 
 With a class-level template, subclasses decide the purity:
 
@@ -254,6 +417,16 @@ function viaPureHandler(Handler $handler): string {
     return $handler->handle('a'); // fine
 }
 
+/**
+ * @psalm-pure
+ * @psalm-purity-template Q
+ * @param Handler[Q] $handler
+ * @psalm-purity-from-template Q
+ */
+function viaSomeHandler(Handler $handler): string {
+    return $handler->handle('a'); // fine: pure when given an Upper, io when given a Printer
+}
+
 /** @psalm-pure */
 function viaAnyHandler(Handler $handler): string {
     return $handler->handle('a'); // ImpureMethodCall: The context is pure but method Handler::handle requires impure
@@ -279,9 +452,52 @@ function usePure(): int {
     return apply(fn(int $x): int => $x + 1); // fine: the closure is pure
 }
 
+/** @psalm-capabilities io */
+function useIo(): int {
+    return apply(function (int $x): int { echo $x; return $x; }); // fine: the call costs io
+}
+
 /** @psalm-pure */
 function usePrinting(): int {
     return apply(function (int $x): int { echo $x; return $x; }); // ImpureFunctionCall: The context is pure but function call on apply requires io
+}
+```
+
+A type template bound to a closure type carries the closure's purity, so it works with
+`@psalm-purity-from-template` too:
+
+```php
+<?php
+/**
+ * @template T of callable(): void
+ */
+final class Deferred {
+    /** @var T */
+    private $callback;
+
+    /**
+     * @param T $callback
+     * @psalm-capabilities write-this-props
+     */
+    public function __construct($callback) {
+        $this->callback = $callback;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template T
+     */
+    public function run(): void {
+        ($this->callback)();
+    }
+}
+
+/**
+ * @psalm-capabilities read-props
+ * @param Deferred<pure-Closure(): void> $deferred
+ */
+function runPure(Deferred $deferred): void {
+    $deferred->run(); // fine: T is a pure closure
 }
 ```
 
@@ -304,17 +520,66 @@ function apply(Closure $callback): int {
 ```
 
 `_` may appear anywhere in a parameter's type (`list<Closure[_](int): int>`,
-`Traversable[_]<int, string>`), but only in `@param` types.
+`Traversable[_]<int, string>`). Every `_` in one parameter's type stands for the same template,
+which has no name of its own, so it never clashes with a template declared in the docblock. `_`
+can only be used in `@param` types: in `@return`, `@param-out`, `@psalm-assert`, `@var`,
+`@property` or `@template` bounds it has no parameter to stand for.
+
+On a promoted constructor parameter, `_` makes `new` take the purity of the closure passed for
+it, as for any other parameter. The property, though, outlives that call, so its type uses the
+template's bound: here `$f` is an `impure-Closure(): int`, and calling it needs every capability,
+whatever closure was passed.
+
+```php
+<?php
+final class Holder {
+    /**
+     * @psalm-pure
+     * @param Closure[_](): int $f
+     */
+    public function __construct(public Closure $f) {}
+}
+```
+
+To keep the closure's purity in the property, use a class purity template instead
+(`@psalm-purity-template P` on the class, `@param Closure[P](): int $f` on the constructor): then
+`new Holder(fn(): int => 1)` is a `Holder[pure]`, whose `$f` is a pure closure.
+
+The parameters of an `@method` may use `_` too. A call to such a method needs what `__call` (or
+`__callStatic`) needs, plus the capabilities of the closures passed for its `_` parameters:
+
+```php
+<?php
+/**
+ * @method int run(Closure[_](): int $callback)
+ */
+final class Runner {
+    /** @psalm-pure */
+    public function __call(string $name, array $args): int { return 1; }
+}
+
+/** @psalm-pure */
+function usePure(Runner $runner): int {
+    return $runner->run(fn(): int => 1); // fine: the closure is pure
+}
+```
 
 ### Defaults and bounds
 
 The bounds of a purity template are written as a chain, `lower <= Name(default) <= upper`, where
 every part but the name is optional:
 
-- the upper bound is the most a value may need (`impure` when left out);
+- the upper bound is the most a value may need (`impure` when left out): `P <= write-props|io`;
 - on a class, the lower bound is what every value needs, which the methods depending on the
-  template may then use unconditionally;
-- the default applies to subclasses that don't bind the template.
+  template may then use unconditionally: `write-this-props <= C`;
+- the default, in parentheses, applies to subclasses that don't bind the template: `C(pure)`.
+
+Several templates can be declared in one tag, separated by commas (`P <= io, Q`). In a chain with
+a single bound, the side that is a capability is the bound: `io <= C` is a lower bound and
+`C <= io` an upper bound. A type alias used as a lower bound needs the upper bound written out
+as well (`Alias <= C <= impure`). In Hack these are the bounds and default of a context
+constant, with the keywords reversed as contexts are types:
+`abstract const ctx C super [write_props, io] as [write_this_props] = [write_this_props]`.
 
 A binding must include the lower bound itself: `Doer[io]` is rejected, write `Doer[write-this-props|io]`.
 
@@ -346,13 +611,90 @@ final class PureDoer extends Doer {} // InvalidTemplateParam: Extended template 
 final class DefaultDoer extends Doer {} // C is write-this-props
 ```
 
+### Constructors
+
+A constructor may take its purity from a class purity template. `new Sub()` then costs what `Sub`
+binds the template to, or its default or upper bound when `Sub` doesn't bind it, and
+`new static()` costs the template itself, as it may instantiate any class extending the class.
+
 ### Iterators and generators
 
-`Traversable`, `Iterator`, `IteratorAggregate`, `Generator` and `iterable` have a purity
-template, `TPurity`: what iterating over them may do. It defaults to `impure`, so a pure function
-may iterate over an `iterable[pure]<int, string>` or an array, but not over a plain
-`Traversable<int, string>`. A generator function with a purity annotation binds `TPurity` to its
-own capabilities. See [Iterators and generators](supported_annotations.md#iterators-and-generators).
+`Traversable`, `Iterator`, `IteratorAggregate` and `Generator` have a purity template besides
+their key and value templates, `TPurity`: what iterating over them may do.
+`Iterator[pure]<int, string>` can be iterated by a pure function, and
+`Generator[io]<int, int, mixed, void>` prints when consumed. It defaults to `impure`, so
+`Iterator<int, string>` still means an iterator about which nothing is known.
+
+Iterating over a value known only by one of these types costs its `TPurity` and nothing else: a
+pure function may consume any `Iterator[pure]<int, string>` or
+`Generator[pure]<int, int, mixed, mixed>`, including one it was given (where a generator is
+paused is internal engine state). Iterating over an object of an iterator class calls that
+class's own methods (`rewind`, `valid`, `current`, `key`, `next`, or `getIterator()` and then the
+methods of the iterator it returns, which counts as new), so it costs what they need like any
+other [method call](#method-calls).
+
+`iterable` has a purity too: `iterable[pure]<int, string>` accepts arrays (iterating over an array
+does nothing) and `Traversable[pure]<int, string>`, and a pure function may iterate over it. A
+plain `iterable<int, string>` is `iterable[impure]<int, string>`, since it may be any
+`Traversable`. The purity of an `iterable` parameter may be a purity template
+(`iterable[P]<int, string>`), bound by each call to what iterating over the argument does.
+
+A generator function-like with a purity annotation binds the `TPurity` of the `Generator` (or
+`Iterator`, `Traversable`) it returns, or the purity of the `iterable` it returns, to its own
+capabilities and purity templates, which every call resolves: consuming the generator costs what
+running its body costs.
+
+```php
+<?php
+/**
+ * @psalm-pure
+ * @param Closure[_](): int $f
+ * @return Generator<int, int>
+ */
+function map(Closure $f): Generator { yield $f(); return 0; }
+
+/** @psalm-pure */
+function sum(): int {
+    $total = 0;
+    foreach (map(fn(): int => 1) as $x) { // fine: a Generator[pure]<int, int, mixed, mixed>
+        $total += $x;
+    }
+    return $total;
+}
+
+/**
+ * @psalm-pure
+ * @param Generator[io]<int, int> $generator for example map(function (): int { echo "x"; return 1; })
+ */
+function printAll(Generator $generator): int {
+    foreach ($generator as $x) {} // ImpureMethodCall: The context is pure but iterating over Generator[io]<int, int, mixed, mixed> requires io
+    return 0;
+}
+```
+
+A class implementing `Iterator` or `IteratorAggregate` may bind `TPurity` in its `@implements`
+(`@implements Iterator[pure]<int, string>`); its iteration methods (or its `getIterator()` and
+what that returns) must then fit the binding. A class that doesn't bind it gets it from those
+methods, as whoever iterates over it sees them: a method writing the iterator's own properties
+makes it `write-this-props|write-props`. So `MyIterator` is accepted where
+`Iterator[pure]<int, string>` is expected exactly when its iteration methods are pure.
+
+The SPL iterators wrapping another one (`IteratorIterator`, `FilterIterator`,
+`CallbackFilterIterator`, `LimitIterator`, `NoRewindIterator`, `InfiniteIterator`) have a
+`TPurity` too, bound at construction to what iterating over the inner iterator (and calling the
+callback of a `CallbackFilterIterator`) does: `new CallbackFilterIterator(gen(), fn(int $v): bool => $v > 0)`
+is a `CallbackFilterIterator[pure]<...>` when `gen()` returns a `Generator[pure]<...>`. A subclass of
+`FilterIterator` that doesn't bind `TPurity` iterates impurely, whatever its `accept()` does.
+
+### Builtins taking callbacks
+
+The builtins that call the closures they are given work the same way: `array_map`, `usort`,
+`preg_replace_callback`, `ArrayObject::uasort`, `Ds\Vector::map`, … need what their callbacks
+need and nothing else, and `iterator_to_array` and `iterator_count` what iterating over their
+argument does. `Fiber` has a purity template for what its callback does, which starting or
+resuming the fiber costs. `Closure::bind()` and `bindTo()` keep the type of the closure they
+rebind, and `$closure->call($newThis, ...)` is a call of the closure that writes `$newThis`
+where the closure writes `$this`.
 
 ## Overrides
 
@@ -398,12 +740,12 @@ final class LoggedUnit implements Shape {
 [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md) is a level 1 issue, so it is
 reported as info at the default level 2.
 
-An override of a method with `@psalm-purity-from-template` may use the template only as the
-parent does: what it needs unconditionally must fit what the parent's method needs
-unconditionally, plus the template's lower bound.
-
-Psalm doesn't suggest an annotation for an unannotated method that is overridden somewhere,
-since the annotation would restrict its overrides. Annotate it yourself when you want a contract.
+A subclass may bind a class purity template of its parent to one of its own
+(`@psalm-purity-template P` with `@extends Filter[P]`), which each `new` then binds, possibly to
+`pure`. So an override of a method with `@psalm-purity-from-template` may use the template only as
+the parent does: what it needs unconditionally must fit what the parent's method needs
+unconditionally, plus the template's lower bound. This is like overrides in Hack, which may only
+use an abstract context constant through `this::C`.
 
 ## Property refinements after calls
 
@@ -456,8 +798,11 @@ function forgotten(Order $order, Order $other): int {
 
 ## Inferring annotations
 
-Psalm infers the capabilities of unannotated code from its body and the callees it uses, after
-the whole codebase has been analysed. It reports code that could be annotated:
+Psalm infers the capabilities of unannotated code from its body and the callees it uses. It does
+so as a fixpoint over the call graph, after the whole codebase has been analysed: a function-like
+that only calls pure function-likes, annotated or inferred, is pure itself, whatever the order in
+which they are declared, and mutual recursion, recursive closures and closures assigned to a
+variable are handled. It reports code that could be annotated:
 
 - [MissingPureAnnotation](../running_psalm/issues/MissingPureAnnotation.md): a function or method
   that could have `@psalm-pure` or `@psalm-capabilities`;
@@ -500,6 +845,12 @@ to `Cart` and `addItem()`. Suggestions use the four named levels only: `pure`, `
 `read-props|write-this-props|write-refs` and `impure` (`@psalm-immutable` for a class at
 `read-props`). Write a narrower set by hand if you want one.
 
+Psalm doesn't suggest an annotation for an unannotated method that is overridden somewhere, nor
+for the code calling it, since the annotation would restrict its overrides. Annotate it yourself
+when you want a contract. It doesn't suggest one either when the function-like's
+[parameter default values](#parameter-default-values) need capabilities the annotation wouldn't
+give them. A function-like marked `@psalm-impure` is never reported.
+
 These issues are always reported as errors. To turn them off, or to adopt them gradually, use
 `issueHandlers`:
 
@@ -511,8 +862,6 @@ These issues are always reported as errors. To turn them off, or to adopt them g
     <MissingInterfaceImmutableAnnotation errorLevel="suppress" />
 </issueHandlers>
 ```
-
-A function-like marked `@psalm-impure` is never reported.
 
 ## Migrating from Psalm 6
 
