@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -426,7 +427,7 @@ final class InstancePropertyFetchAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $stmt_type,
-                        $property_id,
+                        InheritedMethodTaints::getPropertyIdInBody($codebase, $context, $stmt, $property_id),
                         $class_storage,
                         $in_assignment,
                     );

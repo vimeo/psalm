@@ -82,6 +82,20 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * Taint analysis of the body of an inherited method for a class inheriting it (see InheritedMethodTaints): the
+     * suffix of the ids of the nodes at its locations, null elsewhere
+     */
+    public static ?string $body_suffix = null;
+
+    /**
+     * Method id (lowercase) => the suffix of the ids of the nodes of its parameters and return value: those of
+     * its body analyzed for a class inheriting it (see InheritedMethodTaints)
+     *
+     * @var array<lowercase-string, string>
+     */
+    public static array $method_suffixes = [];
+
+    /**
      * @psalm-pure
      */
     private static function make(
@@ -114,7 +128,8 @@ final class DataFlowNode implements Stringable
      */
     public static function getSpecializationKey(CodeLocation $specialization_location): string
     {
-        return strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start;
+        return strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+            . (self::$body_suffix ?? '');
     }
 
     /**
@@ -238,7 +253,8 @@ final class DataFlowNode implements Stringable
         FunctionLikeStorage $storage,
         ?CodeLocation $specialization_location = null,
     ): self {
-        $arg_id = strtolower($cased_method_id) . '#' . ($argument_offset + 1);
+        $arg_id = strtolower($cased_method_id) . '#' . ($argument_offset + 1)
+            . (self::$method_suffixes[strtolower($cased_method_id)] ?? '');
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
 
@@ -276,7 +292,8 @@ final class DataFlowNode implements Stringable
         $param = self::getParameter($storage, $argument_offset);
 
         return self::make(
-            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out',
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out'
+                . (self::$method_suffixes[strtolower($cased_method_id)] ?? ''),
             $cased_method_id . '#' . ($argument_offset + 1) . ' out',
             $param?->location,
             $specialization_key,
@@ -489,9 +506,24 @@ final class DataFlowNode implements Stringable
         // different locations get different ids. This is the only sanctioned way to attach a
         // location that is not derived from a FunctionLikeStorage.
         $id = $var_id . ' from ' . strtolower($assignment_location->file_name)
-            . ':' . $assignment_location->raw_file_start . '-' . $assignment_location->raw_file_end;
+            . ':' . $assignment_location->raw_file_start . '-' . $assignment_location->raw_file_end
+            . self::getAssignmentSuffix($var_id);
 
         return self::make($id, $var_id, $assignment_location, $specialization_key);
+    }
+
+    /**
+     * The object a method is run on belongs to its body (see $method_suffixes)
+     */
+    private static function getAssignmentSuffix(string $var_id): string
+    {
+        foreach (['$this in ', '$this out of '] as $prefix) {
+            if (str_starts_with($var_id, $prefix)) {
+                return self::$method_suffixes[strtolower(substr($var_id, strlen($prefix)))] ?? '';
+            }
+        }
+
+        return self::$body_suffix ?? '';
     }
 
     /**
@@ -509,7 +541,7 @@ final class DataFlowNode implements Stringable
         }
 
         return self::make(
-            strtolower($cased_method_id),
+            strtolower($cased_method_id) . (self::$method_suffixes[strtolower($cased_method_id)] ?? ''),
             $cased_method_id,
             self::getReturnLocation($storage),
             $specialization_key,

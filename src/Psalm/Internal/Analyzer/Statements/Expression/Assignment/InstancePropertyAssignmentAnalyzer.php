@@ -16,6 +16,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -1342,9 +1343,13 @@ final class InstancePropertyAssignmentAnalyzer
 
         $has_regular_setter = true;
 
+        // in the body of an inherited method analyzed for a class inheriting it, `$this` is an object of that class
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
             && $stmt->var->name === 'this'
             && $context->self
+            && (DataFlowNode::$body_suffix === null
+                || !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+                || InheritedMethodTaints::isPrivateIn($codebase, $context->self, $prop_name))
         ) {
             $self_property_id = $context->self . '::$' . $prop_name;
 

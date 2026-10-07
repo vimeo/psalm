@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -428,9 +429,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             : null;
         $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
+        // in the body of an inherited method analyzed for a class inheriting it, `$this` is an object of that class
         if ($lhs_var_id === '$this'
             && $context->self
             && $fq_class_name !== $context->self
+            && DataFlowNode::$body_suffix === null
             && $codebase->methodExists(
                 new MethodIdentifier($context->self, $method_name_lc),
             )
