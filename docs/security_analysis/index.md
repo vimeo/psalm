@@ -62,6 +62,8 @@ You can also [define your own taint sources](custom_taint_sources.md).
 
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
+What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
+
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
 ## Avoiding False-Positives

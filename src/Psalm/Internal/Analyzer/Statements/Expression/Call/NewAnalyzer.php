@@ -816,7 +816,13 @@ final class NewAnalyzer extends CallAnalyzer
             $parent_nodes[$this_out_node->id] = $this_out_node;
         }
 
-        $stmt_type = $stmt_type->setParentNodes($parent_nodes);
+        $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+            $statements_analyzer,
+            $fq_class_name . '::__construct',
+            $stmt->getArgs(),
+            $stmt_type->setParentNodes($parent_nodes),
+            $code_location,
+        );
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 
