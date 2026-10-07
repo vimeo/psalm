@@ -158,6 +158,23 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $call_arguments = [];
 
     /**
+     * The specialization keys of the call sites passing an array key to a parameter (see addParamKey()), for the
+     * analysis of their results (see getCallResult()): specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $keyed_calls = [];
+
+    /**
+     * The results of unspecialized calls passing an array key to a parameter (see getCallResult()): result node id
+     * => [the specialization key of the call site, the function-like node of the method called, the id of its
+     * return node, the id of the return node of its declaration]
+     *
+     * @var array<string, array{string, string, string, string}>
+     */
+    private array $call_results = [];
+
+    /**
      * The calls a function-like makes to itself, specialized or not: specialization key of the call site => [the
      * file path and lowercase file name, start and end of the declaration of the function-like, the id of its
      * return node]. A flow entering one returns to a call site in that declaration (see
@@ -388,8 +405,43 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function addParamKey(DataFlowNode $argument_node, string $key, CodeLocation $call_location): void
     {
-        $this->param_keys[$argument_node->unspecialized_id ?? $argument_node->id]
-            [DataFlowNode::getSpecializationKey($call_location)] = $key;
+        $specialization_key = DataFlowNode::getSpecializationKey($call_location);
+        $this->param_keys[$argument_node->unspecialized_id ?? $argument_node->id][$specialization_key] = $key;
+        $this->keyed_calls[$specialization_key] = true;
+    }
+
+    /**
+     * The node the result of the unspecialized call at $call_location, of the method of storage $storage, is taken
+     * from: $return_node, its return node, or, if the call passes an array key to a parameter (see addParamKey()),
+     * a node of the call site past it (see $call_results). A body that only reads, and fetches under the key of a
+     * parameter, returns what it fetched only to the calls passing that key (see TaintFlowResolution::walkEdges()).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function getCallResult(
+        DataFlowNode $return_node,
+        DataFlowNode $declaring_return_node,
+        FunctionLikeStorage $storage,
+        CodeLocation $call_location,
+    ): DataFlowNode {
+        $specialization_key = DataFlowNode::getSpecializationKey($call_location);
+        $function_node_id = CodeUseGraph::functionLikeNodeForStorage($storage);
+
+        if (!isset($this->keyed_calls[$specialization_key]) || $function_node_id === null) {
+            return $return_node;
+        }
+
+        $result_node = DataFlowNode::getForAssignment($return_node->label, $call_location);
+        $this->addNode($result_node);
+        $this->addPath($return_node, $result_node, '=');
+        $this->call_results[$result_node->id] = [
+            $specialization_key,
+            $function_node_id,
+            $return_node->id,
+            $declaring_return_node->id,
+        ];
+
+        return $result_node;
     }
 
     /**
@@ -604,6 +656,7 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $this->call_arguments += $other->call_arguments;
+        $this->call_results += $other->call_results;
         $this->recursive_calls += $other->recursive_calls;
 
         foreach ($other->speculative_calls as $key => $map) {
@@ -753,6 +806,24 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
+        // the results of the calls of methods that only read (see getCallResult())
+        $mutation_levels = $codebase->code_use_graph->getMutationLevels();
+        $call_results = [];
+        $call_result_sources = [];
+
+        foreach ($this->call_results as $result_id => $call_result) {
+            [$specialization_key, $function_node_id, $return_id, $declaring_id] = $call_result;
+            $mutation_level = $mutation_levels[$function_node_id] ?? Capabilities::ALL;
+
+            if (($mutation_level & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) === 0) {
+                $call_results[$result_id] = $specialization_key;
+                $call_result_sources[$return_id] = true;
+                $call_result_sources[$declaring_id] = true;
+            }
+        }
+
+        $this->call_results = [];
+
         $resolution = new TaintFlowResolution(
             $this,
             $this->forward_edges,
@@ -766,6 +837,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->param_keys,
             $this->call_arguments,
             $this->recursive_calls,
+            $call_results,
+            $call_result_sources,
             Config::getInstance(),
             $project_analyzer,
             $codebase,

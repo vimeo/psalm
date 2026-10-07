@@ -387,7 +387,22 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            // the result of an unspecialized call of the method declared (see TaintFlowGraph::getCallResult())
+            $result_node = $method_storage
+                && $specialization_location === null
+                && (string) $declaring_method_id === (string) $method_id
+                    ? $statements_analyzer->getTaintFlowGraphWithSuppressed()?->getCallResult(
+                        $method_source,
+                        $method_source,
+                        $method_storage,
+                        $node_location,
+                    )
+                    : null;
+            $result_node ??= $method_source;
+
+            $return_type_candidate = $return_type_candidate->setParentNodes([$result_node->id => $result_node]);
         }
 
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();

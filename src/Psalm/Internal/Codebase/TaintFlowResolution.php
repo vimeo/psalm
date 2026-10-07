@@ -644,6 +644,11 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $param_keys
      * @param array<string, array{string, string, int, int}> $call_arguments
      * @param array<string, array{string, string, int, int, string}> $recursive_calls
+     * @param array<string, string> $call_results the result nodes of the unspecialized calls passing an array key
+     *     to a parameter of a method that only reads (see TaintFlowGraph::getCallResult()) => the specialization key
+     *     of the call site
+     * @param array<string, true> $call_result_sources the return nodes those result nodes are past, and the return
+     *     nodes of the declarations of their methods
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -659,6 +664,8 @@ final class TaintFlowResolution
         private readonly array $param_keys,
         private readonly array $call_arguments,
         private readonly array $recursive_calls,
+        private readonly array $call_results,
+        private readonly array $call_result_sources,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -1643,15 +1650,38 @@ final class TaintFlowResolution
         $kept = $this->state_kept[$state];
         $added = $this->state_added[$state];
 
-        if ($this->open_assignments[$open_assignments][2] && isset($this->specializations[$from_id])) {
+        $guarded_open_assignments = $open_assignments;
+
+        if ($this->open_assignments[$open_assignments][2]
+            && (isset($this->specializations[$from_id]) || isset($this->call_result_sources[$from_id]))
+        ) {
             // leaving the function-like of a fetch under a parameter other than through a specialized call site
-            // (see passParamGuards())
+            // (see passParamGuards()), or through the result of an unspecialized call (see $call_results)
             [$made, $closed, , $call] = $this->open_assignments[$open_assignments];
             $open_assignments = $this->internOpenAssignments($made, $closed, [], $call);
         }
 
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
-            if ($this->leavesRecursiveCall($open_assignments, $from_id, null, $to_id)) {
+            $edge_open_assignments = $open_assignments;
+
+            if ($guarded_open_assignments !== $open_assignments) {
+                if (isset($this->call_results[$to_id])) {
+                    // a body that only reads returns what it fetched under a parameter to the calls passing its key
+                    $edge_open_assignments = $this->passParamGuards(
+                        $guarded_open_assignments,
+                        $this->call_results[$to_id],
+                    );
+
+                    if ($edge_open_assignments === self::IGNORED) {
+                        continue;
+                    }
+                } elseif (isset($this->call_result_sources[$to_id])) {
+                    // the return node of a method inheriting it
+                    $edge_open_assignments = $guarded_open_assignments;
+                }
+            }
+
+            if ($this->leavesRecursiveCall($edge_open_assignments, $from_id, null, $to_id)) {
                 continue;
             }
 
@@ -1659,7 +1689,7 @@ final class TaintFlowResolution
 
             $this->takeEdge(
                 $context,
-                $open_assignments,
+                $edge_open_assignments,
                 $kept & ~$removed_taints,
                 ($added | $path->added_taints) & ~$removed_taints,
                 $state,
@@ -2530,8 +2560,8 @@ final class TaintFlowResolution
      * function-like whose parameters they were, or one it calls.
      *
      * The value fetched in a call can't go out through another call site of a specialized function-like: its
-     * calls don't share anything. Nor of a despecialized one that only reads. Another one may keep it for another
-     * call to return.
+     * calls don't share anything. Nor of a despecialized or unspecialized one that only reads (see walkEdges()).
+     * Another one may keep it for another call to return.
      *
      * @psalm-external-mutation-free
      */
