@@ -138,6 +138,32 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    final class PureResult {
+                        public function getError(): ?string {
+                            return null;
+                        }
+                    }
+
+                    final class Box {
+                        /** @var list<int> */
+                        private array $items = [1];
+
+                        public function clear(): void {
+                            $this->items = [];
+                        }
+                    }
+
+                    function errorAfterClear(PureResult $result, Box $box): string {
+                        if ($result->getError() !== null) {
+                            $box->clear();
+                            return $result->getError();
+                        }
+                        return "";
+                    }',
+            ],
             'movingAWrappingIteratorForgetsWhatValidReturned' => [
                 'code' => '<?php
                     /** @param Iterator[pure]<int, int> $inner */
