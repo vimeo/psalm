@@ -9,7 +9,8 @@ Psalm uses the following PHPDoc tags to understand your code:
 - [`@var`](https://docs.phpdoc.org/guide/references/phpdoc/tags/var.html)
   Used for specifying the types of properties and variables
 - [`@return`](https://docs.phpdoc.org/guide/references/phpdoc/tags/return.html)
-  Used for specifying the return types of functions, methods and closures
+  Used for specifying the return types of functions, methods and closures. On a constructor, it
+  gives the type of the object `new` creates (see [Constructors](purity_model.md#constructors))
 - [`@param`](https://docs.phpdoc.org/guide/references/phpdoc/tags/param.html)
   Used for specifying types of parameters passed to functions, methods and closures
 - [`@property`](https://docs.phpdoc.org/guide/references/phpdoc/tags/property.html)

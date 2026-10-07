@@ -617,6 +617,62 @@ A constructor may take its purity from a class purity template. `new Sub()` then
 binds the template to, or its default or upper bound when `Sub` doesn't bind it, and
 `new static()` costs the template itself, as it may instantiate any class extending the class.
 
+`new` can also bind a class purity template from what the constructor is given. A parameter
+typed `Closure[P]` binds it from the purity of a closure. To bind it from the *kind* of argument
+instead, give the constructor a `@return`: the type of the `new` expression, which is the class
+itself with its template and purity arguments. Like any return type, it may be conditional.
+`ArrayObject` is the typical case: its mutators only write the object itself when it stores an
+array, but also write the object it wraps when given one. A class like it can say so:
+
+```php
+<?php
+/**
+ * @template TValue
+ * @psalm-purity-template TStorage(write-props) <= write-props
+ * @psalm-capabilities read-props|write-this-props
+ */
+final class Store {
+    private int $writes = 0;
+
+    /**
+     * @param array<TValue>|object $storage
+     * @return ($storage is array ? Store[pure]<TValue> : Store[write-props]<TValue>)
+     * @psalm-pure
+     */
+    public function __construct(array|object $storage = []) {}
+
+    /**
+     * @param TValue $value
+     * @psalm-purity-from-template TStorage
+     */
+    public function add($value): void {
+        $this->writes++;
+    }
+}
+
+/** @psalm-pure */
+function fromArray(): int {
+    $store = new Store([1]); // Store[pure]<int>
+    $store->add(2); // fine: TStorage is pure, and $store was created here
+    return 1;
+}
+
+/** @psalm-pure */
+function fromObject(stdClass $object): int {
+    $store = new Store($object); // Store[write-props]<mixed>
+    $store->add(1); // ImpureMethodCall: The context is pure but method Store::add requires write-props
+    return 1;
+}
+```
+
+An argument that may be either an array or an object gives the union of both types, so calling
+`add()` on the result costs `write-props`. A `@return` without a condition binds type templates
+the same way: with `@return Box<int>` on its constructor, `new Box()` is a `Box<int>`.
+
+The `@return` of a constructor may only name its own class (or `self` or `static`); anything else
+is an `InvalidDocblock`. Since it names the class itself, a subclass inheriting the constructor,
+and `new static()` in a class that isn't final, get the type `new` would give without it.
+
 ### Iterators and generators
 
 `Traversable`, `Iterator`, `IteratorAggregate` and `Generator` have a purity template besides
