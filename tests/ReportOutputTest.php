@@ -679,6 +679,67 @@ final class ReportOutputTest extends TestCase
         //);
     }
 
+    public function testXmlReportsEscapeIssueText(): void
+    {
+        // Issue messages and snippets quote the analyzed code, docblocks included
+        $message = 'Docblock says <b class="x">a & b</b> ]]> \'c\'';
+        $snippet = '/** @var <b>&"]]> */';
+        $issues_data = [
+            'somefile.php' => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    1,
+                    1,
+                    'InvalidDocblock',
+                    $message,
+                    'somefile.php',
+                    'somefile.php',
+                    $snippet,
+                    $snippet,
+                    0,
+                    20,
+                    0,
+                    20,
+                    1,
+                    21,
+                ),
+            ],
+        ];
+
+        $checkstyle_output = IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0],
+        );
+        $this->assertStringNotContainsString('<b', $checkstyle_output);
+        $checkstyle = new DOMDocument();
+        $this->assertTrue($checkstyle->loadXML($checkstyle_output));
+        $error = $checkstyle->getElementsByTagName('error')->item(0);
+        $this->assertNotNull($error);
+        $this->assertSame('InvalidDocblock: ' . $message, $error->getAttribute('message'));
+
+        $junit_output = IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0],
+        );
+        $this->assertStringNotContainsString('<b', $junit_output);
+        $junit = new DOMDocument();
+        $this->assertTrue($junit->loadXML($junit_output));
+        $failure = $junit->getElementsByTagName('failure')->item(0);
+        $this->assertNotNull($failure);
+        $this->assertStringContainsString('message: ' . $message . "\n", $failure->textContent);
+        $this->assertStringContainsString('snippet: ' . $snippet . "\n", $failure->textContent);
+
+        $xml_output = IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.xml'])[0],
+        );
+        $this->assertStringNotContainsString('<b', $xml_output);
+        $xml = new DOMDocument();
+        $this->assertTrue($xml->loadXML($xml_output));
+        $this->assertSame($message, $xml->getElementsByTagName('message')->item(0)?->textContent);
+        $this->assertSame($snippet, $xml->getElementsByTagName('snippet')->item(0)?->textContent);
+    }
+
     public function testGithubActionsOutput(): void
     {
         $this->analyzeFileForReport();

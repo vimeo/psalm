@@ -2355,6 +2355,10 @@ final class TaintTest extends TestCase
                     echo (string) $b[0];
                     echo (string) $b[2];',
             ],
+            'writingToTheTerminalIsNotAnHtmlSink' => [
+                'code' => '<?php
+                    fwrite(STDOUT, (string) $_GET["a"]);',
+            ],
         ];
     }
 

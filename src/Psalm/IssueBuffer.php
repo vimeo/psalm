@@ -83,6 +83,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
+use const STDOUT;
 
 /**
  * @api
@@ -711,10 +712,14 @@ final class IssueBuffer
             }
         }
 
-        echo self::getOutput(
-            $issues_data,
-            $project_analyzer->stdout_report_options,
-            $codebase->analyzer->getTotalTypeCoverage($codebase),
+        // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
+        fwrite(
+            STDOUT,
+            self::getOutput(
+                $issues_data,
+                $project_analyzer->stdout_report_options,
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+            ),
         );
 
         foreach ($issues_data as $file_issues) {
