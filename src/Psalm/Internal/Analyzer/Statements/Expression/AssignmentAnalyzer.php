@@ -939,6 +939,12 @@ final class AssignmentAnalyzer
             $removed_taints |= $type->getTaintsToRemove();
         }
 
+        // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
+        $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
+        if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
+            $taint_flow_graph->addOutputStream($new_parent_node);
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $flow_graph->addPath(
                 $parent_node,

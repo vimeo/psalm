@@ -484,7 +484,9 @@ final class Functions
             return Capabilities::IO;
         }
 
-        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+        if (($function_id === 'var_export' || $function_id === 'print_r' || $function_id === 'highlight_string')
+            && !isset($args[1])
+        ) {
             return Capabilities::IO;
         }
 
