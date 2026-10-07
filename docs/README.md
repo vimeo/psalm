@@ -67,6 +67,7 @@ There are two main inspirations for Psalm:
     - [Supported Annotations](annotating_code/supported_annotations.md)
     - [Template Annotations](annotating_code/templated_annotations.md)
     - [Type Variables](annotating_code/type_variables.md)
+    - [The Purity Model](annotating_code/purity_model.md)
 - Manipulating code:
     - [Fixing code](manipulating_code/fixing.md)
     - [Refactoring code](manipulating_code/refactoring.md)

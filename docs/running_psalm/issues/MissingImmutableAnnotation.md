@@ -24,3 +24,5 @@ final class CouldBeImmutable {
 }
 
 ```
+
+See [inferring annotations](../../annotating_code/purity_model.md#inferring-annotations) in the purity model.

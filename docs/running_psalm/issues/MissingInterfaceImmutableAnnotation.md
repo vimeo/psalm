@@ -18,3 +18,5 @@ final class A implements SomethingPotentiallyImmutable {
     }
 }
 ```
+
+See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) in the purity model.

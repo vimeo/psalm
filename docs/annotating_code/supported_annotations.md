@@ -372,6 +372,8 @@ $b->s = "boo"; // disallowed
 
 ### Purity and capabilities
 
+For an overview of the model, see [The Purity Model](purity_model.md).
+
 Psalm tracks which side effects a function, method or closure may have as a set of
 **capabilities**. A function-like may only perform an operation, or call another function-like,
 when its own capabilities include every capability the operation or callee requires. Code without
