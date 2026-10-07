@@ -40,18 +40,18 @@ final class MatchTest extends TestCase
                         return $type;
                     }
 
-                    function getType(): string {
+                    function getOwnerType(): string {
                         return "";
                     }
 
-                    $type = getType();
+                    $type = getOwnerType();
                     match ($type) {
                         "organization" => 1,
                         "prof", "masterprice" => 2,
                     };
                     $kept = $type;
 
-                    $other = getType();
+                    $other = getOwnerType();
                     match ($other) {
                         "organization" => 1,
                         default => 2,
