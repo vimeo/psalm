@@ -172,11 +172,11 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    function getType(): string {
+                    function getOwnerType(): string {
                         return "";
                     }
 
-                    $type = getType();
+                    $type = getOwnerType();
                     assertOwnerType($type);',
                 'assertions' => [
                     '$type===' => "'organization'|'prof'",
