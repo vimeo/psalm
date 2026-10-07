@@ -418,6 +418,21 @@ final class IntMaskComparisonTest extends TestCase
                     }',
                 'error_message' => 'IntMaskComparison',
             ],
+            'byReferenceParameter' => [
+                'code' => '<?php' . self::FLAG . '
+                    /** @param int-mask<Flag::A, Flag::B> $m */
+                    function setA(int &$m): void {
+                        $m = Flag::A;
+                    }
+
+                    function isA(): bool {
+                        $m = 0;
+                        setA($m);
+
+                        return $m === Flag::A;
+                    }',
+                'error_message' => 'IntMaskComparison',
+            ],
             'property' => [
                 'code' => '<?php' . self::FLAG . '
                     final class Holder {
