@@ -30,6 +30,20 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'classImplementsOfAnObjectDoesNotAutoload' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function interfaces(object $object, string $class): array {
+                        return [class_implements($object), class_parents($class, false)];
+                    }',
+            ],
+            'listingTheAutoloadersOnlyReadsGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function autoloaders(): array {
+                        return spl_autoload_functions();
+                    }',
+            ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**
@@ -1077,6 +1091,22 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'classUsesOfAClassNameMayAutoload' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hasTraits(string $class): bool {
+                        return class_uses($class) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'settingTheAutoloadExtensionsWritesGlobals' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function useExtensions(): string {
+                        return spl_autoload_extensions(".php");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
                     /** @psalm-pure */

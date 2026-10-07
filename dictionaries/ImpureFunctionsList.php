@@ -284,6 +284,10 @@ return [
     'putenv' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'spl_autoload_register' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'spl_autoload_unregister' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
+    'spl_autoload' => Capabilities::ALL, // includes the class file
+    'spl_autoload_call' => Capabilities::ALL, // runs the autoloaders
+    'spl_autoload_extensions' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
+    'spl_autoload_functions' => Capabilities::READ_GLOBALS,
     'microtime' => Capabilities::IO,
     'time' => Capabilities::IO,
     'hrtime' => Capabilities::IO,
