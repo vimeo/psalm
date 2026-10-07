@@ -49,6 +49,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class AtomicTypeComparator
 {
@@ -921,6 +922,7 @@ final class AtomicTypeComparator
      * The capabilities every value of a purity template has: its lower bound
      * (`@psalm-purity-template write-props <= C`), which only a class purity template can declare.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getPurityTemplateLowerBound(Codebase $codebase, TTemplateParam $template): int

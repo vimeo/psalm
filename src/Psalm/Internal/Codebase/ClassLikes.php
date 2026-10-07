@@ -86,6 +86,7 @@ use const T_WHITESPACE;
  * @internal
  *
  * Handles information about classes, interfaces and traits
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikes
 {
@@ -1070,6 +1071,9 @@ final class ClassLikes
         }
     }
 
+    /**
+     * @param CapabilitySet $capabilities
+     */
     private static function makeImmutable(
         int $capabilities,
         bool $change,

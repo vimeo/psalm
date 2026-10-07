@@ -21,6 +21,7 @@ use function implode;
 /**
  * @psalm-immutable
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 trait CallableTrait
 {
@@ -54,6 +55,7 @@ trait CallableTrait
         return $cloned;
     }
     /**
+     * @param CapabilitySet|Union $purity
      * @return static
      */
     public function setPurity(int|Union $purity): self
@@ -72,6 +74,7 @@ trait CallableTrait
      * counts as its upper bound (any capability): use {@see CallPurityResolver} where the
      * enclosing function-like's own purity templates must be taken into account.
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public function getCapabilities(): int
@@ -96,6 +99,7 @@ trait CallableTrait
     }
 
     /**
+     * @param CapabilitySet|Union $purity
      * @psalm-pure
      */
     public static function purityFrom(int|Union $purity): Union

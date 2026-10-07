@@ -59,6 +59,7 @@ use function strtolower;
  * @internal
  *
  * Populates file and class information so that analysis can work properly
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Populator
 {
@@ -305,6 +306,7 @@ final class Populator
      * reading its properties is like reading an argument. A method that is missing, or whose
      * purity depends on templates, counts for the worst.
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private function getIterationMethodCapabilities(ClassLikeStorage $storage, string $method_name): int
@@ -333,6 +335,8 @@ final class Populator
     /**
      * What iterating over a value of a type getIterator() returns may do: the purity template of a
      * Generator/Iterator type, or the one bound for a class, or anything for the rest.
+     *
+     * @return CapabilitySet
      */
     private function getIterationPurityOfType(Atomic $iterator_atomic_type, int $depth): int
     {
@@ -364,6 +368,7 @@ final class Populator
     }
 
     /**
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private function resolveCapabilitiesType(Union $type, int $depth = 0): int

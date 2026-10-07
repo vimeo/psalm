@@ -36,11 +36,12 @@ use function array_pop;
  * call graph, so that call chains in any order and recursive cycles (direct,
  * mutual, or through closures) all converge.
  *
+ * @psalm-import-type CapabilitySet from Capabilities
  * @psalm-type MutationInfo = array{
- *     intrinsic: int,
- *     allowed: int,
+ *     intrinsic: CapabilitySet,
+ *     allowed: CapabilitySet,
  *     callees: array<string, bool>,
- *     default_intrinsic: int,
+ *     default_intrinsic: CapabilitySet,
  *     default_callees: array<string, bool>,
  *     location: CodeLocation,
  *     cased_name: string,
@@ -59,7 +60,7 @@ final class MutationLevelResolver
      * mutation info: node id => level.
      *
      * @param array<string, MutationInfo> $infos
-     * @return array<string, int> node id => bitmask of {@see Capabilities} constants
+     * @return array<string, CapabilitySet> node id => bitmask of {@see Capabilities} constants
      * @psalm-pure
      */
     public static function resolveLevels(array $infos): array
@@ -145,7 +146,7 @@ final class MutationLevelResolver
      * @param array<string, MutationInfo> $infos
      * @param array<string, array<string, true>> $callers
      * @param array<string, array<string, true>> $default_callers
-     * @param array<string, int> $levels
+     * @param array<string, CapabilitySet> $levels
      * @param list<string> $queue
      * @param array<string, true> $default_checks
      * @param-out list<never> $queue
@@ -175,7 +176,7 @@ final class MutationLevelResolver
                 $level |= $callee_level;
             }
 
-            if ($level !== $levels[$node_id]) {
+            if (!Capabilities::equals($level, $levels[$node_id])) {
                 // levels only ever increase and are bounded, so this terminates even with cycles
                 $levels[$node_id] = $level;
 
@@ -228,7 +229,7 @@ final class MutationLevelResolver
 
             if (!$info['report']
                 || !Capabilities::allows($info['allowed'], $level)
-                || $level === Capabilities::toNamedLevel($info['allowed'])
+                || Capabilities::equals($level, Capabilities::toNamedLevel($info['allowed']))
             ) {
                 continue;
             }

@@ -81,6 +81,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class NewAnalyzer extends CallAnalyzer
 {
@@ -886,14 +887,18 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * The capabilities recorded in the CALLEE_CAPABILITIES_ATTRIBUTE of a `new` or static call,
      * null when none were.
+     *
+     * @return CapabilitySet|null
      */
     public static function getCalleeCapabilities(PhpParser\Node $stmt): ?int
     {
-        if (!is_int($stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE))) {
+        $capabilities = $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+
+        if (!is_int($capabilities) || $capabilities < Capabilities::NONE || $capabilities > Capabilities::ALL) {
             return null;
         }
 
-        return (int) $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+        return $capabilities;
     }
 
     /**

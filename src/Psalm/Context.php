@@ -43,6 +43,7 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Context
 {
@@ -113,7 +114,7 @@ final class Context
      * The value is what the enclosing scope itself needs to write the variable (nothing for a
      * local of its own, write-refs for a by-reference parameter, ...), which the closure needs too.
      *
-     * @var array<string, int>
+     * @var array<string, CapabilitySet>
      */
     public array $captured_by_ref = [];
 
@@ -350,6 +351,8 @@ final class Context
     /**
      * The capabilities (side effects) the code being analysed may use,
      * a bitmask of {@see Capabilities} constants.
+     *
+     * @var CapabilitySet
      */
     public int $capabilities = Capabilities::ALL;
 
@@ -783,6 +786,8 @@ final class Context
      * the callee may have changed them: property expressions when the callee may write properties, static
      * property and superglobal expressions when it may write globals. A callee that may do neither, e.g. a
      * pure or read-globals function, leaves every refinement in place.
+     *
+     * @param CapabilitySet $callee_capabilities
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
@@ -982,6 +987,7 @@ final class Context
     }
 
     /**
+     * @param CapabilitySet $required_capabilities
      * @psalm-mutation-free
      */
     public function getImpureMessage(string $expression, int $required_capabilities): string

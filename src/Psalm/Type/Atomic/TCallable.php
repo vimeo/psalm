@@ -19,6 +19,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class TCallable extends Atomic
 {
@@ -31,7 +32,7 @@ final class TCallable extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param list<FunctionLikeParameter> $params
-     * @param int|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
+     * @param CapabilitySet|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
      * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
      *                                        known. Metadata only - it does not affect the structural
      *                                        type - and is used to re-dispatch taint sinks/sources on invocation.

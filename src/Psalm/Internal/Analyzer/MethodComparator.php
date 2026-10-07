@@ -50,6 +50,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodComparator
 {
@@ -464,6 +465,7 @@ final class MethodComparator
      * will be bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and an override may
      * use the rest only through `@psalm-purity-from-template P`, like Hack's abstract context constants.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getBoundCapabilities(

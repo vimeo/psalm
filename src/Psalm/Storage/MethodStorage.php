@@ -9,6 +9,7 @@ use Psalm\Type\Union;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodStorage extends FunctionLikeStorage
 {
@@ -43,6 +44,7 @@ final class MethodStorage extends FunctionLikeStorage
      */
     public bool $mutation_free_assumed = false;
     
+    /** @var CapabilitySet */
     public int $containing_class_capabilities = Capabilities::ALL;
 
     /**

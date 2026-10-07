@@ -36,6 +36,7 @@ use function substr;
  * unreferenced code) is correctly reported as unused.
  *
  * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type CapabilitySet from Capabilities
  * @internal
  */
 final class CodeUseGraph
@@ -185,7 +186,7 @@ final class CodeUseGraph
     /**
      * The levels resolved from $mutation_info, see {@see self::getMutationLevels()}.
      *
-     * @var array<string, int>|null
+     * @var array<string, CapabilitySet>|null
      */
     private ?array $mutation_levels = null;
 
@@ -574,7 +575,7 @@ final class CodeUseGraph
      * The final mutation level of every function-like with mutation info, resolved once
      * the whole codebase has been analysed and cached until the mutation info changes.
      *
-     * @return array<string, int> node id => bitmask of {@see Capabilities} constants
+     * @return array<string, CapabilitySet> node id => bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
     public function getMutationLevels(): array

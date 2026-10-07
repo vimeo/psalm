@@ -85,6 +85,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ForeachAnalyzer
 {
@@ -1354,6 +1355,8 @@ final class ForeachAnalyzer
      * iterator's own state is fine when it is `$this` or was just created (a generator function
      * always returns a new generator). Iterating an object whose methods are not known may do
      * anything.
+     *
+     * @return CapabilitySet
      */
     private static function getIterationCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -1483,6 +1486,8 @@ final class ForeachAnalyzer
      * capabilities, less mutating the iterator itself when that is fresh, plus the iterator's
      * purity template (`Iterator[pure]<int, int>`, `Generator[io]<int, int, mixed, void>`) when
      * the method depends on it.
+     *
+     * @return CapabilitySet
      */
     private static function getImplicitMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,

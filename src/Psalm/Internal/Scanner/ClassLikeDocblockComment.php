@@ -9,6 +9,7 @@ use Psalm\Storage\Capabilities;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikeDocblockComment
 {
@@ -113,8 +114,11 @@ final class ClassLikeDocblockComment
 
     public bool $override_method_visibility = false;
 
-    /** @var int */
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet
+     */
     public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
