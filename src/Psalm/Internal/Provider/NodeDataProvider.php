@@ -39,6 +39,9 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Node, array<int, Possibilities>> */
     private SplObjectStorage $node_if_false_assertions;
 
+    /** @var SplObjectStorage<Expr, list<string>> */
+    private SplObjectStorage $node_literal_prefixes;
+
     public bool $cache_assertions = true;
 
     public function __construct()
@@ -47,6 +50,7 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_assertions = new SplObjectStorage();
         $this->node_if_true_assertions = new SplObjectStorage();
         $this->node_if_false_assertions = new SplObjectStorage();
+        $this->node_literal_prefixes = new SplObjectStorage();
     }
 
     /**
@@ -127,6 +131,25 @@ final class NodeDataProvider implements NodeTypeProvider
         return $this->node_if_false_assertions[$node] ?? null;
     }
 
+    /**
+     * The literal strings a string concatenation or interpolation can start with (see
+     * ConcatAnalyzer::getLiteralPrefixes())
+     *
+     * @param list<string> $prefixes
+     */
+    public function setLiteralPrefixes(Expr $node, array $prefixes): void
+    {
+        $this->node_literal_prefixes[$node] = $prefixes;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    public function getLiteralPrefixes(Expr $node): ?array
+    {
+        return $this->node_literal_prefixes[$node] ?? null;
+    }
+
     public function isPureCompatible(Expr $node): bool
     {
         $node_type = $this->getType($node);
@@ -136,6 +159,6 @@ final class NodeDataProvider implements NodeTypeProvider
 
     public function clearNodeOfTypeAndAssertions(Expr $node): void
     {
-        unset($this->node_types[$node], $this->node_assertions[$node]);
+        unset($this->node_types[$node], $this->node_assertions[$node], $this->node_literal_prefixes[$node]);
     }
 }

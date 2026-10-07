@@ -1261,8 +1261,9 @@ final class FunctionLikeNodeScanner
     }
 
     /**
-     * A stub of a builtin replaces its call map entry, but not the taint sinks of its parameters (see
-     * dictionaries/InternalTaintSinkMap.php): adds them to the function-like scanned by start().
+     * Marks the function-like scanned by start() as a builtin if it is declared by one of Psalm's stubs. A stub of a
+     * builtin replaces its call map entry, but not the taint sinks of its parameters (see
+     * dictionaries/InternalTaintSinkMap.php): adds them to it.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals
      */
@@ -1274,6 +1275,8 @@ final class FunctionLikeNodeScanner
         ) {
             return;
         }
+
+        $this->storage->builtin = true;
 
         $function_id = $this->classlike_storage !== null
             ? $this->classlike_storage->name . '::' . $this->storage->cased_name

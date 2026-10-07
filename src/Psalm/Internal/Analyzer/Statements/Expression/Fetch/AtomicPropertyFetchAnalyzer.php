@@ -69,6 +69,7 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function count;
+use function explode;
 use function in_array;
 use function strtolower;
 
@@ -1028,6 +1029,36 @@ final class AtomicPropertyFetchAnalyzer
                 $added_taints,
                 $removed_taints,
             );
+
+            if ($statements_analyzer->taint_flow_graph
+                && $stmt instanceof PropertyFetch
+                && $stmt->name instanceof PhpParser\Node\Identifier
+            ) {
+                // The object may have got its property through a parent class (see
+                // InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty())
+                [$fq_class_name] = explode('::$', $property_id, 2);
+                $prop_name = $stmt->name->name;
+                $inheriting_node = $localized_property_node;
+
+                foreach (InstancePropertyAssignmentAnalyzer::getPropertyAncestors(
+                    $statements_analyzer->getCodebase(),
+                    $fq_class_name,
+                    $prop_name,
+                ) as $ancestor) {
+                    $inherited_property_node = DataFlowNode::getForInheritedProperty($ancestor . '::$' . $prop_name);
+
+                    $statements_analyzer->taint_flow_graph->addNode($inherited_property_node);
+                    $statements_analyzer->taint_flow_graph->addPath(
+                        $inherited_property_node,
+                        $inheriting_node,
+                        $inheriting_node === $localized_property_node ? 'property-fetch' : 'property-assignment',
+                        $added_taints,
+                        $removed_taints,
+                    );
+
+                    $inheriting_node = $inherited_property_node;
+                }
+            }
         }
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);

@@ -399,6 +399,14 @@ final class ForeachAnalyzer
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
             && is_string($stmt->valueVar->name)
         ) {
+            self::addItemsWrittenByRef(
+                $statements_analyzer,
+                $stmt,
+                '$' . $stmt->valueVar->name,
+                $context,
+                $inner_loop_context,
+            );
+
             self::taintItemsWrittenByRef(
                 $statements_analyzer,
                 $stmt,
@@ -420,6 +428,84 @@ final class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The items of the array a foreach by reference iterates over may hold, after the loop, what the value variable
+     * holds where an iteration ends or where the loop is left, under each of their keys.
+     */
+    private static function addItemsWrittenByRef(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        string $value_var_id,
+        Context $context,
+        Context $inner_loop_context,
+    ): void {
+        $array_var_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt->expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        if ($array_var_id === null || !isset($context->vars_in_scope[$array_var_id])) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        $written_type = null;
+
+        foreach ([$inner_loop_context, $context] as $item_context) {
+            if (isset($item_context->vars_in_scope[$value_var_id])) {
+                $written_type = Type::combineUnionTypes(
+                    $item_context->vars_in_scope[$value_var_id],
+                    $written_type,
+                    $codebase,
+                );
+            }
+        }
+
+        if ($written_type === null) {
+            return;
+        }
+
+        $written_type = $written_type->setProperties(['by_ref' => false, 'parent_nodes' => []]);
+
+        $array_type = $context->vars_in_scope[$array_var_id];
+
+        $atomic_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                $properties = [];
+
+                foreach ($atomic_type->properties as $key => $property) {
+                    $properties[$key] = Type::combineUnionTypes($property, $written_type, $codebase)
+                        ->setPossiblyUndefined($property->possibly_undefined);
+                }
+
+                $atomic_type = TKeyedArray::make(
+                    $properties,
+                    $atomic_type->class_strings,
+                    $atomic_type->fallback_params === null ? null : [
+                        $atomic_type->fallback_params[0],
+                        Type::combineUnionTypes($atomic_type->fallback_params[1], $written_type, $codebase),
+                    ],
+                    $atomic_type->is_list,
+                    $atomic_type->from_docblock,
+                );
+            } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
+                $atomic_type = $atomic_type->setTypeParams([
+                    $atomic_type->type_params[0],
+                    Type::combineUnionTypes($atomic_type->type_params[1], $written_type, $codebase),
+                ]);
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        $context->vars_in_scope[$array_var_id] = $array_type->setTypes($atomic_types);
+        $context->removeDescendents($array_var_id, $array_type, null, $statements_analyzer);
     }
 
     /**

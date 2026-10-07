@@ -30,6 +30,8 @@ use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
+use Psalm\Issue\TaintedUrlComponent;
+use Psalm\Issue\TaintedUrlPath;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -50,7 +52,6 @@ use function array_splice;
 use function array_unshift;
 use function count;
 use function end;
-use function in_array;
 use function ksort;
 use function str_starts_with;
 use function strpos;
@@ -189,16 +190,12 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         // a builtin has no body: the taints flow through each of its calls as its declaration says, whether it is
-        // pure or not (`reset()` moves the pointer of the array it returns an element of)
-        if ($storage->location === null
-            ? $storage->cased_name !== null && InternalCallMapHandler::inCallMap(
-                $storage instanceof MethodStorage && $storage->defining_fqcln !== null
-                    ? $storage->defining_fqcln . '::' . $storage->cased_name
-                    : $storage->cased_name,
-            )
-            : in_array($storage->location->file_path, $codebase->config->internal_stubs, true)
-        ) {
-            return true;
+        // pure or not (`reset()` moves the pointer of the array it returns an element of), unless its calls return
+        // what was given to the others
+        if ($storage->builtin) {
+            return $storage instanceof MethodStorage
+                || $storage->cased_name === null
+                || !InternalCallMapHandler::keepsStateBetweenCalls($storage->cased_name);
         }
 
         if ($graph === null
@@ -1227,7 +1224,13 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            if ($sink !== null && $generated_source->code_location) {
+            if (self::isOverwritten($path_type, $open_assignments)) {
+                continue;
+            }
+
+            // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
+            // connect a node without a location to a sink
+            if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
@@ -1346,7 +1349,13 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): void {
-        if ($predecessor->code_location === null) {
+        if ($sink->code_location
+            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+        ) {
+            $issue_location = $sink->code_location;
+        } elseif ($predecessor->code_location !== null) {
+            $issue_location = $predecessor->code_location;
+        } else {
             return;
         }
 
@@ -1365,12 +1374,12 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
 
-        if ($sink->code_location
-            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
-        ) {
-            $issue_location = $sink->code_location;
-        } else {
-            $issue_location = $predecessor->code_location;
+        // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
+        // its path: each is reported as the most general issue alone
+        if ($unreported_taints & TaintKind::INPUT_SSRF) {
+            $unreported_taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
+        } elseif ($unreported_taints & TaintKind::INPUT_URL_COMPONENT) {
+            $unreported_taints &= ~TaintKind::INPUT_URL_PATH;
         }
 
         $issue_trace = $this->getIssueTrace($predecessor);
@@ -1452,6 +1461,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_SSRF => new TaintedSSRF(
                     'Detected tainted network request',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_COMPONENT => new TaintedUrlComponent(
+                    'Detected tainted URL component',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_PATH => new TaintedUrlPath(
+                    'Detected tainted URL path segment',
                     $issue_location,
                     $issue_trace,
                     $path,

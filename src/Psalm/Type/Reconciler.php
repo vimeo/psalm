@@ -317,8 +317,10 @@ class Reconciler
                 continue;
             }
 
-            $can_carry_taints = !$result_type->hasScalarType()
-                || ($result_type->hasString() && !$result_type->hasLiteralString());
+            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            $can_carry_taints = (!$result_type->hasScalarType()
+                    || ($result_type->hasString() && !$result_type->hasLiteralString()))
+                && ($result_type->getTaintsToRemove() & TaintKind::ALL_INPUT) !== TaintKind::ALL_INPUT;
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;

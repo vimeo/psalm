@@ -483,6 +483,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $declaring_method_id,
                     $method_storage,
                     $template_result,
+                    $fq_class_name,
                 );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -766,8 +767,8 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The new object takes its taints from what its constructor returns, and from what its `@psalm-flow`
-     * annotations say its arguments flow into.
+     * The new object takes its taints from what its constructor returns and leaves in it, and from what its
+     * `@psalm-flow` annotations say its arguments flow into.
      */
     private static function taintNewObject(
         StatementsAnalyzer $statements_analyzer,
@@ -803,16 +804,16 @@ final class NewAnalyzer extends CallAnalyzer
                 $fq_class_name . '::__construct',
                 $storage->isExternalMutationFree() ? $code_location : null,
             );
-        } elseif ($storage->isExternalMutationFree() || $method_storage->specialize_call) {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $fq_class_name . '::__construct',
-                $method_storage,
-                $code_location,
-            );
         } else {
+            // the node the body of the constructor returns into, wherever it is declared
+            $cased_constructor_id = $declaring_method_id
+                ? $codebase->methods->getCasedMethodId($declaring_method_id)
+                : $fq_class_name . '::__construct';
+
             $method_source = DataFlowNode::getForMethodReturn(
-                $fq_class_name . '::__construct',
+                $cased_constructor_id,
                 $method_storage,
+                $storage->isExternalMutationFree() || $method_storage->specialize_call ? $code_location : null,
             );
         }
 
@@ -822,7 +823,24 @@ final class NewAnalyzer extends CallAnalyzer
             self::taintUsingConstructorFlows($statements_analyzer, $stmt, $method_storage, $method_source);
         }
 
-        $stmt_type = $stmt_type->setParentNodes([$method_source->id => $method_source]);
+        $parent_nodes = [$method_source->id => $method_source];
+
+        // the object is what the constructor leaves in it (see FunctionLikeAnalyzer)
+        $constructor_location = $method_storage !== null && $method_storage->specialize_call
+            ? $method_storage->location
+            : null;
+        if ($constructor_location) {
+            $this_out_node = DataFlowNode::getForAssignment(
+                '$this out of ' . $codebase->methods->getCasedMethodId($declaring_method_id ?? $method_id),
+                $constructor_location,
+                $method_source->specialization_key,
+            );
+
+            $statements_analyzer->taint_flow_graph->addNode($this_out_node);
+            $parent_nodes[$this_out_node->id] = $this_out_node;
+        }
+
+        $stmt_type = $stmt_type->setParentNodes($parent_nodes);
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 
@@ -915,6 +933,7 @@ final class NewAnalyzer extends CallAnalyzer
         MethodIdentifier $declaring_method_id,
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
+        string $fq_class_name,
     ): void {
         $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
 
@@ -925,6 +944,7 @@ final class NewAnalyzer extends CallAnalyzer
             $method_storage,
             Capabilities::NONE,
             $template_result,
+            self::getConstructorClassTemplateParams($codebase, $context, $method_storage, $fq_class_name),
         );
         $resolved_capabilities = $template_capabilities
             | ($method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
@@ -1000,6 +1020,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $declaring_method_id,
                 $codebase->methods->getStorage($declaring_method_id),
                 null,
+                $fq_class_name,
             );
 
             return;
@@ -1470,5 +1491,85 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $unconstrainable;
+    }
+
+    /**
+     * The templates of the class the parameters of its constructor mention, which the arguments
+     * of a `new` bind.
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    private static function getConstructorParamTemplates(Codebase $codebase, ClassLikeStorage $storage): array
+    {
+        $constructor_id = $storage->declaring_method_ids['__construct'] ?? null;
+
+        if ($constructor_id === null) {
+            return [];
+        }
+
+        $templates = [];
+
+        foreach ($codebase->methods->getStorage($constructor_id)->params as $param) {
+            foreach ($param->type?->getTemplateTypes() ?? [] as $template_type) {
+                if (isset($storage->template_types[$template_type->param_name])) {
+                    $templates[$template_type->param_name] = true;
+                }
+            }
+        }
+
+        return $templates;
+    }
+
+    /**
+     * What the class purity templates a constructor's purity comes from are bound to for the class
+     * instantiated, when its arguments do not bind them: what the class binds them to, their default
+     * or upper bound for a class that does not, and, for `new self()` and `new static()` in a class
+     * that does not, the templates themselves, which the class may be instantiated with any value
+     * of (and which the methods inheriting their purity from them may use).
+     *
+     * @return array<string, array<string, Union>>
+     */
+    private static function getConstructorClassTemplateParams(
+        Codebase $codebase,
+        Context $context,
+        MethodStorage $method_storage,
+        string $fq_class_name,
+    ): array {
+        $defining_class = $method_storage->defining_fqcln;
+
+        if ($method_storage->purity_from_templates === []
+            || $defining_class === null
+            || !$codebase->classlike_storage_provider->has($fq_class_name)
+        ) {
+            return [];
+        }
+
+        $defining_storage = $codebase->classlike_storage_provider->get($defining_class);
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $bound_by_arguments = self::getConstructorParamTemplates($codebase, $defining_storage);
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $defining_storage,
+            $class_storage,
+            '__construct',
+            new TNamedObject($fq_class_name),
+        ) ?? [];
+
+        foreach ($method_storage->purity_from_templates as $template_name) {
+            $bound = $defining_storage->template_types[$template_name][$defining_class] ?? null;
+
+            if ($bound === null || isset($bound_by_arguments[$template_name])) {
+                unset($class_template_params[$template_name]);
+            } elseif (!isset($class_storage->template_extended_params[$defining_class][$template_name])) {
+                $class_template_params[$template_name] = [
+                    $defining_class => $fq_class_name === $context->self
+                        ? new Union([new TTemplateParam($template_name, $bound, $defining_class)])
+                        : $defining_storage->template_defaults[$template_name] ?? $bound,
+                ];
+            }
+        }
+
+        return $class_template_params;
     }
 }
