@@ -711,11 +711,19 @@ final class IssueBuffer
             }
         }
 
-        echo self::getOutput(
+        // The report holds what the analyzed code says (issue messages quote its docblocks, exception messages and
+        // code), and is printed to the terminal of whoever runs Psalm, not into an HTML page.
+        /**
+         * @psalm-taint-escape html
+         * @psalm-taint-escape has_quotes
+         */
+        $output = self::getOutput(
             $issues_data,
             $project_analyzer->stdout_report_options,
             $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
+
+        echo $output;
 
         foreach ($issues_data as $file_issues) {
             foreach ($file_issues as $issue_data) {
