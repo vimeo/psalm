@@ -6589,6 +6589,7 @@ final class TaintTest extends TestCase
                         return (string) $callback();
                     };
                     echo $run(fn(): string => (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
             ],
             'taintCaughtExceptionMessage' => [
                 'code' => '<?php
