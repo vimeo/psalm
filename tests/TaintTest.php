@@ -1690,6 +1690,31 @@ final class TaintTest extends TestCase
 
                     echo (new Escaper())->escape((string) $_GET["x"]);',
             ],
+            'jsonEncodeEscapesHeaderTaint' => [
+                'code' => '<?php
+                    header("X: " . json_encode($_GET["x"]));',
+            ],
+            'jsonEncodeWithLiteralFlagsEscapesHeaderTaint' => [
+                'code' => '<?php
+                    header("X: " . json_encode($_GET["x"], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));',
+            ],
+            'jsonEncodeOfNestedArrayEscapesHeaderTaint' => [
+                'code' => '<?php
+                    function trigger(string $message): void {
+                        header("HX-Trigger: " . json_encode(["notification:show" => ["message" => $message]], \\JSON_THROW_ON_ERROR));
+                    }
+                    trigger($_GET["x"]);',
+            ],
+            'jsonEncodeImportedUnderAliasEscapesHeaderTaint' => [
+                'code' => '<?php
+                    namespace Foo;
+                    use function json_encode as encode;
+                    header("X: " . encode($_GET["x"]));',
+            ],
+            'jsonEncodeWithNamedFlagsEscapesHeaderTaint' => [
+                'code' => '<?php
+                    header("X: " . json_encode(flags: \\JSON_THROW_ON_ERROR, value: $_GET["x"]));',
+            ],
             'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
                 'code' => '<?php
                     $stream = fopen("php://stderr", "w");
@@ -8457,6 +8482,42 @@ final class TaintTest extends TestCase
                     apcu_store("a", (string) $_GET["x"]);
                     echo (string) apcu_fetch("a");',
                 'error_message' => 'TaintedHtml',
+            ],
+            'jsonEncodeKeepsHtmlTaint' => [
+                'code' => '<?php
+                    echo json_encode($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'jsonEncodePrettyPrintKeepsHeaderTaint' => [
+                'code' => '<?php
+                    header("X: " . json_encode($_GET["x"], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));',
+                'error_message' => 'TaintedHeader',
+            ],
+            'jsonEncodeNamedPrettyPrintAfterDepthKeepsHeaderTaint' => [
+                'code' => '<?php
+                    header("X: " . json_encode($_GET["x"], depth: 5, flags: JSON_PRETTY_PRINT));',
+                'error_message' => 'TaintedHeader',
+            ],
+            'jsonEncodeNonLiteralFlagsKeepsHeaderTaint' => [
+                'code' => '<?php
+                    function f(int $flags): void {
+                        header("X: " . json_encode($_GET["x"], $flags));
+                    }',
+                'error_message' => 'TaintedHeader',
+            ],
+            'jsonEncodeShadowedInNamespaceKeepsHeaderTaint' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /** @psalm-flow ($value) -> return */
+                    function json_encode(mixed $value): string { return (string) $value; }
+                    header("X: " . json_encode($_GET["x"]));',
+                'error_message' => 'TaintedHeader',
+            ],
+            'jsonEncodeSpreadArgsKeepsHeaderTaint' => [
+                'code' => '<?php
+                    $args = [$_GET["x"]];
+                    header("X: " . json_encode(...$args));',
+                'error_message' => 'TaintedHeader',
             ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
