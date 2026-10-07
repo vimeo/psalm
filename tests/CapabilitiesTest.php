@@ -1153,6 +1153,57 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on highlight_file requires io',
             ],
+            'fileReadingTheLinesRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function hasLines(string $file): bool {
+                        return file($file) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on file requires io',
+            ],
+            'fgetcRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param resource $file
+                     * @psalm-pure
+                     */
+                    function hasChar($file): bool {
+                        return fgetc($file) !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - The context is pure but function call on fgetc requires io',
+            ],
+            'phpStripWhitespaceReadingTheFileRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function strip(string $file): string {
+                        return php_strip_whitespace($file);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on php_strip_whitespace requires io',
+            ],
+            'gzopenRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function canOpen(string $file): bool {
+                        return gzopen($file, "r") !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on gzopen requires io',
+            ],
+            'filesizeRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function isEmptyFile(string $file): bool {
+                        return filesize($file) === 0;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on filesize requires io',
+            ],
+            'isUploadedFileReadsGlobals' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function isUpload(string $file): bool {
+                        return is_uploaded_file($file);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on is_uploaded_file requires read-globals',
+            ],
             'gzpassthruRequiresIo' => [
                 'code' => '<?php
                     /**

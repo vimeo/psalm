@@ -587,8 +587,6 @@ function stream_get_line($stream, int $length, string $ending = "") {}
 function show_source($filename, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  */
 function php_strip_whitespace(string $filename) : string {}
@@ -1770,8 +1768,6 @@ function base64_encode(string $string) : string {}
 function bin2hex(string $string): string {}
 
 /**
- * @psalm-pure
- *
  * @param resource|null $context
  *
  * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
@@ -1783,8 +1779,6 @@ function bin2hex(string $string): string {}
 function get_headers(string $url, int $associative = 0, $context = null) : array|false {}
 
 /**
- * @psalm-pure
- *
  * @return array<lowercase-string, string>|false
  *
  * @psalm-taint-sink ssrf $filename
