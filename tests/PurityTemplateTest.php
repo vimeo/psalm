@@ -2032,6 +2032,315 @@ final class PurityTemplateTest extends TestCase
                     '$from_any' => 'Wrapper[write-props|io]<array-key, mixed>',
                 ],
             ],
+            'conditionalPurityArgumentOfASelfOutType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|Container $storage
+                         * @psalm-self-out self[$storage is array ? pure : write-props]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function setStorage($storage): void {}
+
+                        /**
+                         * @psalm-purity-template PP
+                         * @param list<T>|Container[PP] $storage
+                         * @psalm-this-out self[$storage is array ? pure : PP]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function setContainer($storage): void {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @return Box[io]<int>
+                     * @psalm-pure
+                     */
+                    function box(): Box {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @return Container[io]
+                     * @psalm-pure
+                     */
+                    function ioContainer(): Container {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        $box = box();
+                        $box->setStorage([1]);
+                        return $box->run();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArrayContainer(): int {
+                        $box = box();
+                        $box->setContainer([1]);
+                        return $box->run();
+                    }
+
+                    $from_array = box();
+                    $from_array->setStorage([1]);
+                    $from_object = box();
+                    $from_object->setStorage(new Container());
+                    $from_container = box();
+                    $from_container->setContainer(ioContainer());
+                    $from_container_array = box();
+                    $from_container_array->setContainer([1]);',
+                'assertions' => [
+                    '$from_array' => 'Box[pure]<int>',
+                    '$from_object' => 'Box[write-props]<int>',
+                    '$from_container' => 'Box[io]<int>',
+                    '$from_container_array' => 'Box[pure]<int>',
+                ],
+            ],
+            'conditionalPurityArgumentsOfASelfOutType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @psalm-purity-template P1 <= write-props|io
+                     * @psalm-purity-template P2 <= write-props|io
+                     */
+                    final class Pair {
+                        /**
+                         * @param list<int>|Container $first
+                         * @param list<int>|Container $second
+                         * @psalm-self-out self[$first is array ? pure : io, $second is array ? pure : write-props]
+                         * @psalm-mutation-free
+                         */
+                        public function set($first, $second): void {}
+                    }
+
+                    /** @return Pair[io, io] */
+                    function pair(): Pair {
+                        throw new RuntimeException();
+                    }
+
+                    $first_array = pair();
+                    $first_array->set([1], new Container());
+                    $second_array = pair();
+                    $second_array->set(new Container(), [1]);',
+                'assertions' => [
+                    '$first_array' => 'Pair[pure, write-props]',
+                    '$second_array' => 'Pair[io, pure]',
+                ],
+            ],
+            'conditionalPurityArgumentOfAMethodReturnType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|Container $storage
+                         * @return static[$storage is array ? pure : P]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function withStorage($storage): static {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param list<T>|Container $storage
+                         * @return self[$storage is array ? pure : write-props]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function withSelf($storage): self {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @return Box[io]<int>
+                     * @psalm-pure
+                     */
+                    function box(): Box {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        return box()->withStorage([1])->run();
+                    }
+
+                    $static_array = box()->withStorage([1]);
+                    $static_object = box()->withStorage(new Container());
+                    $self_array = box()->withSelf([1]);
+                    $self_object = box()->withSelf(new Container());',
+                'assertions' => [
+                    '$static_array' => 'Box[pure]<int>',
+                    '$static_object' => 'Box[io]<int>',
+                    '$self_array' => 'Box[pure]<int>',
+                    '$self_object' => 'Box[write-props]<int>',
+                ],
+            ],
+            'conditionalPurityArgumentOfAStaticFactoryReturnType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template P
+                     */
+                    final class Map {
+                        /**
+                         * @template TK of array-key
+                         * @template TV
+                         * @param array<TK, TV>|Container $storage
+                         * @return self[$storage is array ? pure : write-props]<TK, TV>
+                         * @psalm-pure
+                         */
+                        public static function from($storage): self {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        return Map::from(["a" => 1])->run();
+                    }
+
+                    $from_array = Map::from(["a" => 1]);
+                    $from_object = Map::from(new Container());',
+                'assertions' => [
+                    '$from_array' => 'Map[pure]<string, int>',
+                    '$from_object' => 'Map[write-props]<array-key, mixed>',
+                ],
+            ],
+            'conditionalPurityArgumentOfAFunctionReturnType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param list<int>|Container $storage
+                     * @return Box[$storage is array ? pure : write-props]<int>
+                     * @psalm-pure
+                     */
+                    function box($storage): Box {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        return box([1])->run();
+                    }
+
+                    $from_array = box([1]);
+                    $from_object = box(new Container());',
+                'assertions' => [
+                    '$from_array' => 'Box[pure]<int>',
+                    '$from_object' => 'Box[write-props]<int>',
+                ],
+            ],
+            'conditionalPurityArgumentNestedInAReturnType' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param list<int>|Container $storage
+                     * @return list<Box[$storage is array ? pure : io]<int>>
+                     * @psalm-pure
+                     */
+                    function boxes($storage): array {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @param list<int>|Container $storage
+                     * @return Box[$storage is array ? pure : io]<int>|null
+                     * @psalm-pure
+                     */
+                    function maybeBox($storage): ?Box {
+                        return null;
+                    }
+
+                    /** @psalm-pure */
+                    function viaArray(): int {
+                        return boxes([1])[0]->run();
+                    }
+
+                    $list_array = boxes([1]);
+                    $list_object = boxes(new Container());
+                    $union_array = maybeBox([1]);
+                    $union_object = maybeBox(new Container());',
+                'assertions' => [
+                    '$list_array' => 'list<Box[pure]<int>>',
+                    '$list_object' => 'list<Box[io]<int>>',
+                    '$union_array' => 'Box[pure]<int>|null',
+                    '$union_object' => 'Box[io]<int>|null',
+                ],
+            ],
         ];
     }
 
@@ -4052,6 +4361,266 @@ final class PurityTemplateTest extends TestCase
                         return $wrapper->run();
                     }',
                 'error_message' => 'The context is pure but method Wrapper::run requires write-props',
+            ],
+            'conditionalPurityArgumentOfASelfOutTypeChargesTheBindingOfTheArgument' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-purity-template PP
+                         * @param list<T>|Container[PP] $storage
+                         * @psalm-self-out self[$storage is array ? pure : PP]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function setContainer($storage): void {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Box[pure]<int> $box
+                     * @param Container[io] $container
+                     */
+                    function viaContainer(Box $box, Container $container): int {
+                        $box->setContainer($container);
+                        return $box->run();
+                    }',
+                'error_message' => 'The context is pure but method Box::run requires io',
+            ],
+            'conditionalPurityArgumentOfAMethodReturnTypeChargesTheElseBranch' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|Container $storage
+                         * @return static[$storage is array ? pure : P]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function withStorage($storage): static {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Box[io]<int> $box
+                     */
+                    function viaObject(Box $box): int {
+                        return $box->withStorage(new Container())->run();
+                    }',
+                'error_message' => 'The context is pure but method Box::run requires io',
+            ],
+            'conditionalPurityArgumentOfAStaticFactoryReturnTypeChargesTheElseBranch' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|Container $storage
+                         * @return self[$storage is array ? pure : write-props]<T>
+                         * @psalm-pure
+                         */
+                        public static function from($storage): self {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function viaObject(): int {
+                        return Box::from(new Container())->run();
+                    }',
+                'error_message' => 'The context is pure but method Box::run requires write-props',
+            ],
+            'conditionalPurityArgumentOfAFunctionReturnTypeChargesTheElseBranch' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param list<int>|Container $storage
+                     * @return Box[$storage is array ? pure : write-props]<int>
+                     * @psalm-pure
+                     */
+                    function box($storage): Box {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaObject(): int {
+                        return box(new Container())->run();
+                    }',
+                'error_message' => 'The context is pure but method Box::run requires write-props',
+            ],
+            'conditionalPurityArgumentNestedInAReturnTypeChargesTheElseBranch' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    final class Container {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @param list<int>|Container $storage
+                     * @return list<Box[$storage is array ? pure : io]<int>>
+                     * @psalm-pure
+                     */
+                    function boxes($storage): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @psalm-pure */
+                    function viaObject(): int {
+                        return boxes(new Container())[0]->run();
+                    }',
+                'error_message' => 'The context is pure but method Box::run requires io',
+            ],
+            'conditionalPurityArgumentOfASelfOutTypeOutsideTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P <= read-props
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|object $storage
+                         * @psalm-self-out self[$storage is array ? pure : io]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function setStorage($storage): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:28 - Extended template param P of Box[io]<T:Box as mixed> expects type read-props, type io given',
+            ],
+            'purityArgumentOfASelfOutTypeOutsideTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P <= read-props
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-self-out self[io]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function open(): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:28 - Extended template param P of Box[io]<T:Box as mixed> expects type read-props, type io given',
+            ],
+            'conditionalPurityArgumentOfAFunctionReturnTypeOutsideTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P <= read-props
+                     */
+                    final class Box {}
+
+                    /**
+                     * @param list<int>|object $storage
+                     * @return Box[$storage is array ? pure : io]<int>
+                     * @psalm-pure
+                     */
+                    function box($storage): Box {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'conditionalPurityArgumentOfASelfOutTypeOnAnUnknownParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {
+                        /**
+                         * @param list<T>|object $storage
+                         * @psalm-self-out self[$other is array ? pure : io]<T>
+                         * @psalm-mutation-free
+                         */
+                        public function setStorage($storage): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:25 - Unrecognized template \'$other\' in docblock for Box::setStorage',
+            ],
+            'conditionalPurityArgumentOfAFunctionReturnTypeOnAnUnknownParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     */
+                    final class Box {}
+
+                    /**
+                     * @param list<int>|object $storage
+                     * @return Box[$other is array ? pure : io]<int>
+                     * @psalm-pure
+                     */
+                    function box($storage): Box {
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - Unrecognized template \'$other\' in docblock for box',
             ],
         ];
     }
