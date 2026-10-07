@@ -172,7 +172,11 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    $type = (string) rand();
+                    function getType(): string {
+                        return "";
+                    }
+
+                    $type = getType();
                     assertOwnerType($type);',
                 'assertions' => [
                     '$type===' => "'organization'|'prof'",
@@ -189,7 +193,11 @@ final class AssertAnnotationTest extends TestCase
 
                     /** @var "a"|"b" $expected */
                     $expected = rand(0, 1) ? "a" : "b";
-                    $actual = (string) rand();
+                    function getActual(): string {
+                        return "";
+                    }
+
+                    $actual = getActual();
                     assertSame($expected, $actual);',
                 'assertions' => [
                     '$actual===' => "'a'|'b'",
