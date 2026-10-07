@@ -2548,7 +2548,8 @@ final class TaintFlowResolution
             return $fetched_key === '';
         }
 
-        return $class === '' || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key);
+        // a fetch of the keys ('') takes nothing assigned as a value, under any key
+        return $fetched_key !== '' && ($class === '' || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key));
     }
 
     /**
