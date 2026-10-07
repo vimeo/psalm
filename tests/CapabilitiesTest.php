@@ -2326,6 +2326,70 @@ final class CapabilitiesTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testWriteGlobalsStaticCallForgetsSuperGlobalRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class S {
+                    /** @psalm-capabilities read-globals, write-globals */
+                    public static function touchGlobals(): void { $_GET["x"] = "a"; }
+                }
+
+                function forget(): int {
+                    $_GET["x"] = 1;
+                    S::touchGlobals();
+                    return $_GET["x"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCallsThatCannotWriteGlobalsKeepSuperGlobalRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                /** @psalm-capabilities read-globals */
+                function readGlobals(): int { return count($_GET); }
+
+                /** @psalm-capabilities read-props, write-props */
+                function writeProps(A $a): void { $a->x = 2; }
+
+                /** @psalm-pure */
+                function pure(): int { return 1; }
+
+                function keepAfterReadGlobals(): int {
+                    $_GET["x"] = 1;
+                    readGlobals();
+                    return $_GET["x"];
+                }
+
+                function keepAfterWriteProps(A $a): int {
+                    $_GET["x"] = 1;
+                    writeProps($a);
+                    return $_GET["x"];
+                }
+
+                function keepAfterPure(): int {
+                    $_GET["x"] = 1;
+                    pure();
+                    return $_GET["x"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testCapabilityNamesDenoteOneCapabilityEach(): void
     {
         $this->assertSame(Capabilities::WRITE_PROPS, Capabilities::fromList('write-props'));
