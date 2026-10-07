@@ -440,6 +440,23 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'keysOfAnArrayDontHoldTheValuesAssignedUnderAVariableKey' => [
+                'code' => '<?php
+                    /** @return array<string, array{url: string}> */
+                    function getData(string $town): array {
+                        $result = [];
+                        foreach (["a", "b"] as $key) {
+                            $result[$key] = ["url" => "/" . $town];
+                        }
+                        return $result;
+                    }
+
+                    $keys = "";
+                    foreach (getData($_GET["town"]) as $category => $_) {
+                        $keys .= $category;
+                    }
+                    echo $keys;',
+             ],
             'dontTaintSsrfAfterAnyOfTheStartsOfAUrlFixingItsServer' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -2137,6 +2154,17 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
+                'code' => '<?php
+                    $outer = [];
+                    $outer[] = [$_GET["key"] => 1];
+                    foreach ($outer as $inner) {
+                        foreach ($inner as $key => $_) {
+                            echo $key;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSsrfAfterTwoSlashesOrABackslash' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-sink ssrf $uri */
