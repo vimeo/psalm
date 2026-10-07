@@ -176,7 +176,10 @@ final class VariableFetchAnalyzer
                 self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
                 $context->vars_in_scope[$var_name] = $type;
-                $statements_analyzer->node_data->setType($stmt, $type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                );
 
                 return true;
             }
@@ -185,7 +188,10 @@ final class VariableFetchAnalyzer
 
             self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
-            $statements_analyzer->node_data->setType($stmt, $type);
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+            );
             $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
@@ -567,6 +573,30 @@ final class VariableFetchAnalyzer
         $type = $type->setParentNodes([
             $taint_source->id => $taint_source,
         ]);
+    }
+
+    /**
+     * $GLOBALS holds what the whole program writes to the global variables (see GlobalAnalyzer::getGlobalNode()).
+     * The variable in scope doesn't, and neither does $GLOBALS assigned to: reading a global by its name gets
+     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()).
+     */
+    private static function taintGlobals(
+        StatementsAnalyzer $statements_analyzer,
+        string $var_name,
+        Union $type,
+        bool $array_assignment,
+    ): Union {
+        if ($var_name !== '$GLOBALS'
+            || $array_assignment
+            || !($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            return $type;
+        }
+
+        $globals_node = DataFlowNode::getForGlobals();
+        $graph->addNode($globals_node);
+
+        return $type->addParentNodes([$globals_node->id => $globals_node]);
     }
 
     /**
