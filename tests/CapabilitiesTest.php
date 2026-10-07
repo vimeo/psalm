@@ -37,6 +37,20 @@ final class CapabilitiesTest extends TestCase
                         return [class_implements($object), class_parents($class, false)];
                     }',
             ],
+            'debugZvalDumpOnlyRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function dump(int $value): void {
+                        debug_zval_dump($value);
+                    }',
+            ],
+            'highlightStringReturningTheMarkupIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function highlight(string $code): string {
+                        return highlight_string($code, true);
+                    }',
+            ],
             'listingTheAutoloadersOnlyReadsGlobals' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals */
@@ -1106,6 +1120,49 @@ final class CapabilitiesTest extends TestCase
                         return spl_autoload_extensions(".php");
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'vprintfRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function show(string $value): int {
+                        return vprintf("%s", [$value]);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on vprintf requires io',
+            ],
+            'vfprintfRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function show(string $value): int {
+                        return vfprintf(STDOUT, "%s", [$value]);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on vfprintf requires io',
+            ],
+            'highlightStringPrintingTheMarkupRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function highlight(string $code): bool {
+                        return highlight_string($code);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on highlight_string requires io',
+            ],
+            'highlightFileRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function highlight(string $file): string {
+                        return highlight_file($file, true);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on highlight_file requires io',
+            ],
+            'gzpassthruRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param resource $file
+                     * @psalm-pure
+                     */
+                    function show($file): int {
+                        return gzpassthru($file);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - The context is pure but function call on gzpassthru requires io',
             ],
             'fsockopenRequiresIo' => [
                 'code' => '<?php
