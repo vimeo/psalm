@@ -32,9 +32,8 @@ final class CapabilitiesTest extends TestCase
         return [
             'splContainersOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
-                    /** @psalm-capabilities read-props|write-props */
+                    /** @psalm-pure */
                     function useContainers(): int {
-                        /** @var SplQueue<int> */
                         $queue = new SplQueue();
                         $queue->enqueue(1);
                         $queue->push(2);
@@ -44,26 +43,13 @@ final class CapabilitiesTest extends TestCase
                         }
                         $sum += $queue->dequeue() + $queue->count();
 
-                        /** @var SplObjectStorage<stdClass, int> */
-                        $storage = new SplObjectStorage();
-                        $key = new stdClass();
-                        $storage->attach($key, 1);
-                        $storage[$key] = 2;
-                        $sum += $storage[$key] + (int) $storage->contains($key);
-
-                        /** @var SplFixedArray<int> */
                         $fixed = new SplFixedArray(1);
                         $fixed[0] = 3;
                         $sum += $fixed->getSize();
 
-                        /** @var SplMinHeap<int> */
                         $heap = new SplMinHeap();
                         $heap->insert(4);
-                        $sum += $heap->top();
-
-                        $object = new ArrayObject([5]);
-                        $object->append(6);
-                        return $sum + count($object);
+                        return $sum + $heap->count();
                     }
 
                     /**
@@ -73,6 +59,27 @@ final class CapabilitiesTest extends TestCase
                      */
                     function readContainers(SplQueue $queue, ArrayObject $object): int {
                         return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
+                    }',
+            ],
+            'splObjectStorageWithVarAndArrayObjectStillRequireWritingProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props */
+                    function useContainers(): int {
+                        // new SplObjectStorage() infers its templates as never, so it needs a @var,
+                        // which drops that the object is fresh until
+                        // https://github.com/vimeo/psalm/pull/12178
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $key = new stdClass();
+                        $storage->attach($key, 1);
+                        $storage[$key] = 2;
+                        $sum = $storage[$key] + (int) $storage->contains($key);
+
+                        // the storage of an ArrayObject may be another object, passed to the
+                        // constructor or to exchangeArray(), whose properties its mutators then write
+                        $object = new ArrayObject([5]);
+                        $object->append(6);
+                        return $sum + count($object);
                     }',
             ],
             'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
@@ -1527,7 +1534,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /** @extends SplQueue<int> */
                     final class Queue extends SplQueue {}',
-                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - SplQueue is marked with @psalm-capabilities read-props|write-this-props, but Queue is not',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:47 - SplQueue is marked with @psalm-capabilities read-props|write-this-props, but Queue is not',
             ],
             'serializingAFreshSplContainerMayDoAnything' => [
                 'code' => '<?php
