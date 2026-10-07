@@ -642,6 +642,33 @@ final class PurityTemplateTest extends TestCase
                         return makeBox(fn(): int => 1)->fire();
                     }',
             ],
+            'newStaticOfClassWithPurityTemplateItsConstructorDoesNotTake' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @psalm-purity-template C
+                     */
+                    abstract class Base {
+                        /** @psalm-pure */
+                        public function __construct() {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template C
+                         */
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    /** @extends Base[pure] */
+                    final class PureBase extends Base {}
+
+                    /** @psalm-pure */
+                    function make(): PureBase {
+                        return PureBase::make();
+                    }',
+            ],
             'classPurityTemplateDefault' => [
                 'code' => '<?php
                     /** @psalm-purity-template C(pure) <= write-this-props|write-props */
@@ -3082,6 +3109,60 @@ final class PurityTemplateTest extends TestCase
 
                     takePure(new EchoDriver());',
                 'error_message' => 'InvalidArgument',
+            ],
+            'newStaticOfClassWithPurityTemplateItsConstructorTakes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @psalm-purity-template C
+                     */
+                    abstract class Base {
+                        /**
+                         * @param Closure[C](): void $cb
+                         * @psalm-pure
+                         */
+                        public function __construct(public Closure $cb) {}
+
+                        public static function make(): static {
+                            return new static(function (): void {});
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticOfClassWithTypeTemplateBoundedByATypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type Item = array{id: int} */
+                    final class Items {}
+
+                    /**
+                     * @psalm-import-type Item from Items
+                     * @template T as Item
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Repo {
+                        public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticOfClassWithPurityTemplateAndInconsistentConstructor' => [
+                'code' => '<?php
+                    /** @psalm-purity-template C */
+                    abstract class Base {
+                        public function __construct() {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template C
+                         */
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation',
             ],
         ];
     }

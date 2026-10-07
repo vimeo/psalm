@@ -344,7 +344,7 @@ final class NewAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
-            } elseif ($storage->template_types
+            } elseif (self::hasTemplatesInferredByConstructor($codebase, $storage)
                 && !$storage->enforce_template_inheritance
             ) {
                 $source = $statements_analyzer->getSource();
@@ -1487,5 +1487,39 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $unconstrainable;
+    }
+
+    /**
+     * Whether `new static()` may infer a template of the class differently from what a child class
+     * binds it to: a type template, or a purity template the constructor's parameters take (a
+     * `Closure[C]` argument), as the others are only bound by the classes extending it.
+     *
+     * @psalm-mutation-free
+     */
+    private static function hasTemplatesInferredByConstructor(Codebase $codebase, ClassLikeStorage $storage): bool
+    {
+        // every purity template the class declares has a default (its upper bound without one),
+        // which tells it apart from a type template bounded by a type alias or a purity template
+        foreach ($storage->template_types ?? [] as $template_name => $_) {
+            if (!isset($storage->template_defaults[$template_name])) {
+                return true;
+            }
+        }
+
+        $constructor_id = $storage->declaring_method_ids['__construct'] ?? null;
+
+        if ($constructor_id === null) {
+            return false;
+        }
+
+        foreach ($codebase->methods->getStorage($constructor_id)->params as $param) {
+            foreach ($param->type?->getTemplateTypes() ?? [] as $template_type) {
+                if (isset($storage->template_types[$template_type->param_name])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

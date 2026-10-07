@@ -155,3 +155,6 @@ class Container {
  */
 class LazyLoadingContainer extends Container {}
 ```
+
+A purity template (`@psalm-purity-template`) only makes `new static()` unsafe when the constructor's
+parameters take it (`Closure[C]`): the arguments cannot infer the others, only the child classes bind them.
