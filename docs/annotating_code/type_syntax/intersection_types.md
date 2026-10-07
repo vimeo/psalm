@@ -35,16 +35,32 @@ The returned type will contain the properties of both `A` and `B`. In other word
 
 Intersections are only valid for lists of only *object types* and lists of only *object-like arrays*.
 
-An object shape can describe additional properties on a class:
+You can also intersect a class with an object shape to describe properties the class doesn't declare. This helps with
+classes that read properties through the magic `__get` method, where Psalm can't know which properties exist:
 
 ```php
-/** @param Model&object{pivot: Pivot} $model */
-function getPivot(Model $model): Pivot {
-    return $model->pivot;
+<?php
+
+class Row
+{
+    /** @param array<string, mixed> $columns */
+    public function __construct(private array $columns) {}
+
+    public function __get(string $name): mixed
+    {
+        return $this->columns[$name] ?? null;
+    }
+}
+
+/** @param Row&object{email: string} $user */
+function sendWelcomeEmail(Row $user): void
+{
+    mail($user->email, 'Welcome!', 'Thanks for signing up.');
 }
 ```
 
-When the class does not declare the property, Psalm uses the explicit shape property
-before looking it up on a `@mixin` or another intersected class. For a final class,
-this requires a `__get` method on the class (possibly inherited); a getter on a mixin
-alone is not sufficient.
+With a plain `Row`, `$user->email` would be `mixed`. With `Row&object{email: string}` it is a `string`.
+
+Psalm takes a property from the shape only when the class doesn't declare it. The shape takes priority over a property
+that comes from a `@mixin`. A `final` class can only have undeclared properties through `__get`, so for a final class
+without `__get` (its own or inherited) Psalm still reports `UndefinedPropertyFetch`.
