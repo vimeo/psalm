@@ -2573,4 +2573,47 @@ final class CapabilitiesTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    public function testPureClassMethodCallsAreRememberedLikeImmutableOnes(): void
+    {
+        // without this setting, only the results of the mutation-free methods of immutable
+        // classes are remembered: a pure class, which cannot have state at all, is one
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-immutable */
+                final class ImmutableResult {
+                    public function __construct(private ?string $error) {}
+
+                    public function getError(): ?string {
+                        return $this->error;
+                    }
+                }
+
+                /** @psalm-pure */
+                final class PureResult {
+                    public function getError(): ?string {
+                        return null;
+                    }
+                }
+
+                function immutableError(ImmutableResult $result): string {
+                    if ($result->getError() !== null) {
+                        return $result->getError();
+                    }
+                    return "";
+                }
+
+                function pureError(PureResult $result): string {
+                    if ($result->getError() !== null) {
+                        return $result->getError();
+                    }
+                    return "";
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
