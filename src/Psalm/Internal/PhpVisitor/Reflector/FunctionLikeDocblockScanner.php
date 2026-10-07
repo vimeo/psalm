@@ -16,6 +16,7 @@ use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -48,6 +49,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -1116,6 +1118,31 @@ final class FunctionLikeDocblockScanner
                         )
                     ) {
                         $storage->return_type = $storage->return_type->getBuilder()->addType(new TNull())->freeze();
+                    }
+                }
+            }
+
+            // the @return of a constructor gives the type of the object it constructs, so it may only
+            // name the class itself (with its template and purity arguments)
+            if ($storage instanceof MethodStorage
+                && $classlike_storage
+                && !$classlike_storage->is_trait
+                && strtolower((string) $storage->cased_name) === '__construct'
+            ) {
+                foreach (NewAnalyzer::getConstructedAtomics($storage->return_type) as $atomic) {
+                    $constructed_names = [strtolower($classlike_storage->name), 'self', 'static'];
+
+                    if ($atomic instanceof TNamedObject
+                        && !in_array(strtolower($atomic->value), $constructed_names, true)
+                    ) {
+                        $storage->docblock_issues[] = new InvalidDocblock(
+                            'The @return of ' . $cased_function_id . ' must be the type of the object it constructs, '
+                            . $classlike_storage->name . ', not ' . $atomic->getId(),
+                            new CodeLocation($file_scanner, $stmt, null, true),
+                        );
+                        $storage->return_type = null;
+
+                        return;
                     }
                 }
             }
