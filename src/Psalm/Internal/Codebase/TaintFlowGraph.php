@@ -97,6 +97,14 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $specializations = [];
 
     /**
+     * Unspecialized node entered by a specialized call => exit node id => whether
+     * the exit is one of the same function-like (see isExitOfEntered())
+     *
+     * @var array<string, array<string, bool>>
+     */
+    private array $exits_of_entered = [];
+
+    /**
      * Specialization key => true
      *
      * @var array<string, true>
@@ -906,10 +914,13 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Continues $exit, reached by the body walk of $entry, in the context of one
      * call entering $entry: at that call's specialization of the exit node if it
-     * has one, else -- the flow leaves through an enclosing call, e.g. after
-     * passing through a static property -- as an exit of the entry the call is
-     * made from. Outside of any specialized call the flow cannot be matched to a
-     * call site and ends.
+     * has one. Else, if the exit is one of the function-like the call enters, the
+     * call site doesn't use it, and the flow ends. If it is one of another
+     * function-like, reached through something the calls share (a property, a
+     * static property, ...), any call to it may return what the flow holds: as an
+     * exit of the entry the call is made from, so that it leaves through an
+     * enclosing call of that function-like if any, and outside of any specialized
+     * call through all of its call sites, as a flow reaching it there would.
      *
      * The walk itself carries the trace of the first call entering $entry. For
      * any other call, the walk is summarized as a single step from the entered
@@ -939,11 +950,52 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        if ($caller->context === null) {
+        // an exit of the function-like entered: the call site doesn't use it
+        if ($this->isExitOfEntered($exit->id, $caller->id)) {
             return [];
         }
 
-        return $this->addEntryExit($caller->context, $exit);
+        if ($caller->context !== null) {
+            return $this->addEntryExit($caller->context, $exit);
+        }
+
+        $nodes = [];
+
+        // the call sites of despecialized calls were all left from the exit already
+        foreach ($this->specializations[$exit->id] as $exit_specialization_key => $specialized_id) {
+            if (!isset($this->despecialized_calls[$exit_specialization_key])) {
+                $nodes[] = $exit->withSpecialization($specialized_id, $exit->id, $exit_specialization_key, null);
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * Whether exit $exit_id is one of the function-like of the unspecialized node
+     * $entered_id a specialized call entered: that one is specialized for some of
+     * the calls the exit is (whether or not a given call uses the exit, that is
+     * whether it has a specialization of it: see connectSinksAndSources()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isExitOfEntered(string $exit_id, string $entered_id): bool
+    {
+        if (!isset($this->exits_of_entered[$entered_id][$exit_id])) {
+            $is_exit = false;
+
+            foreach ($this->specializations[$exit_id] ?? [] as $specialization_key => $_) {
+                if (isset($this->nodes[$entered_id . self::SPECIALIZATION_SEPARATOR . $specialization_key])) {
+                    $is_exit = true;
+
+                    break;
+                }
+            }
+
+            $this->exits_of_entered[$entered_id][$exit_id] = $is_exit;
+        }
+
+        return $this->exits_of_entered[$entered_id][$exit_id];
     }
 
     /**

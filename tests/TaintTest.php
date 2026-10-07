@@ -598,6 +598,68 @@ final class TaintTest extends TestCase
 
                     echo render($_GET["x"], true);',
             ],
+            'taintFreeSpecializedCallWhoseReturnTheTaintedCallSiteDoesNotUse' => [
+                'code' => '<?php
+                    final class Storage {
+                        private string $baseUrl = "https://example.com";
+
+                        /** @psalm-taint-specialize */
+                        public function getUrl(string $path): string {
+                            return sprintf("%s/%s", $this->baseUrl, ltrim($path, "/"));
+                        }
+
+                        public function request(string $method, string $path): bool {
+                            return ($method . $this->getUrl($path)) !== "";
+                        }
+                    }
+
+                    function upload(Storage $storage): void {
+                        $storage->request("HEAD", (string) $_GET["path"]);
+                    }
+
+                    function show(Storage $storage): void {
+                        echo $storage->getUrl("safe");
+                    }',
+            ],
+            'taintFreeSpecializedInstanceBuiltInAnotherOne' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    final class Tag {
+                        public string $content;
+
+                        public function __construct(string $content) {
+                            $this->content = $content;
+                        }
+                    }
+
+                    /** @psalm-taint-specialize */
+                    final class Inline {
+                        public Tag $tag;
+
+                        public function __construct(string $content) {
+                            $this->tag = new Tag($content);
+                        }
+                    }
+
+                    function geo(): void {
+                        new Inline((string) $_GET["owner"]);
+                    }
+
+                    function phone(): void {
+                        $tag = new Tag("safe");
+                        echo $tag->content;
+                    }',
+            ],
+            'taintFreeUnusedReturnOfSpecializedCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function identity(string $value): string {
+                        return $value;
+                    }
+
+                    identity((string) $_GET["value"]);
+                    echo identity("safe");',
+            ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
                     $files = ["tmp_name" => ["name" => (string) $_GET["name"]]];
@@ -2412,6 +2474,49 @@ final class TaintTest extends TestCase
                     }
 
                     echo render($_GET["names"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPropertySetInSpecializedCallAndReadInAnother' => [
+                'code' => '<?php
+                    final class Holder {
+                        private string $value = "";
+
+                        /** @psalm-taint-specialize */
+                        public function set(string $value): void {
+                            $this->value = $value;
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->set((string) $_GET["value"]);
+                    echo $holder->get();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayPropertySetInSpecializedCallAndReadInAnother' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        /** @psalm-taint-specialize */
+                        public function set(string $key, string $value): void {
+                            $this->data[$key] = $value;
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key] ?? "";
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->set("a", (string) $_GET["value"]);
+                    echo $holder->get("a");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheKeysOfAFlippedArrayWithItsValues' => [
