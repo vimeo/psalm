@@ -65,6 +65,7 @@ final class LanguageServer
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         $clientConfiguration = new ClientConfiguration();
         gc_disable();
         ErrorHandler::install($argv);

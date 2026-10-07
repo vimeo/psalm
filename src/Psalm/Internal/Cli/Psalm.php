@@ -193,6 +193,7 @@ final class Psalm
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         gc_collect_cycles();
         gc_disable();
 
