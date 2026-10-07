@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnaly
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidDocblock;
@@ -24,6 +25,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function array_values;
 
@@ -132,6 +134,12 @@ final class YieldAnalyzer
                 return false;
             }
             $context->inside_call = false;
+
+            self::taintGenerator(
+                $statements_analyzer,
+                $statements_analyzer->node_data->getType($stmt->key),
+                'arraykey-assignment',
+            );
         }
 
         if ($stmt->value) {
@@ -140,6 +148,12 @@ final class YieldAnalyzer
                 return false;
             }
             $context->inside_call = false;
+
+            self::taintGenerator(
+                $statements_analyzer,
+                $statements_analyzer->node_data->getType($stmt->value),
+                'arrayvalue-assignment',
+            );
 
             if ($var_comment_type) {
                 $expression_type = $var_comment_type;
@@ -261,6 +275,110 @@ final class YieldAnalyzer
             }
         }
 
+        self::taintYieldResult($statements_analyzer, $stmt);
+
         return true;
+    }
+
+    /**
+     * The value of a yield expression is what is sent to the generator (see TaintFlowGraph::linkGeneratorSends())
+     */
+    private static function taintYieldResult(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Yield_ $stmt,
+    ): void {
+        $sent_node = self::getSentNode($statements_analyzer);
+        $yield_type = $statements_analyzer->node_data->getType($stmt);
+
+        if (!$sent_node || !$yield_type || !$statements_analyzer->taint_flow_graph) {
+            return;
+        }
+
+        $yield_node = DataFlowNode::getForAssignment('yield', new CodeLocation($statements_analyzer, $stmt));
+
+        $statements_analyzer->taint_flow_graph->addNode($yield_node);
+        $statements_analyzer->taint_flow_graph->addPath($sent_node, $yield_node, '=');
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            $yield_type->addParentNodes([$yield_node->id => $yield_node]),
+        );
+    }
+
+    /**
+     * What is sent to a generator delegating to another (`yield from`) is sent to the latter
+     */
+    public static function taintDelegatedSends(StatementsAnalyzer $statements_analyzer, Union $delegate_type): void
+    {
+        $sent_node = self::getSentNode($statements_analyzer);
+
+        if (!$sent_node || !$delegate_type->parent_nodes || !$statements_analyzer->taint_flow_graph) {
+            return;
+        }
+
+        $statements_analyzer->taint_flow_graph->addGeneratorSend($sent_node, $delegate_type->parent_nodes);
+    }
+
+    /**
+     * The node of what is sent to the generators of the function-like analyzed, recorded in the taint graph
+     */
+    private static function getSentNode(StatementsAnalyzer $statements_analyzer): ?DataFlowNode
+    {
+        $graph = $statements_analyzer->taint_flow_graph;
+        $source = $statements_analyzer->getSource();
+
+        if (!$graph || !$source instanceof FunctionLikeAnalyzer) {
+            return null;
+        }
+
+        $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+        if (!$storage->location) {
+            return null;
+        }
+
+        $cased_method_id = $source->getCorrectlyCasedMethodId();
+
+        $sent_node = DataFlowNode::getForGeneratorSend($cased_method_id, $storage);
+
+        $graph->addNode($sent_node);
+        $graph->addGenerator(DataFlowNode::getForMethodReturn($cased_method_id, $storage), $sent_node);
+
+        return $sent_node;
+    }
+
+    /**
+     * What a generator yields flows into what it returns, which a foreach iterates over (see ForeachAnalyzer)
+     *
+     * @param 'arraykey-assignment'|'arrayvalue-assignment'|'yield-from' $path_type
+     */
+    public static function taintGenerator(
+        StatementsAnalyzer $statements_analyzer,
+        ?Union $yielded_type,
+        string $path_type,
+    ): void {
+        $source = $statements_analyzer->getSource();
+
+        if (!$statements_analyzer->data_flow_graph
+            || !$yielded_type
+            || !$yielded_type->parent_nodes
+            || !$source instanceof FunctionLikeAnalyzer
+        ) {
+            return;
+        }
+
+        $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+        if (!$storage->location) {
+            return;
+        }
+
+        $generator_node = DataFlowNode::getForMethodReturn($source->getCorrectlyCasedMethodId(), $storage);
+
+        $statements_analyzer->data_flow_graph->addNode($generator_node);
+
+        foreach ($yielded_type->parent_nodes as $parent_node) {
+            $statements_analyzer->data_flow_graph->addPath($parent_node, $generator_node, $path_type);
+        }
     }
 }

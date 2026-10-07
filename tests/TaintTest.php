@@ -486,6 +486,56 @@ final class TaintTest extends TestCase
                     echo toString(["key" => $_GET["a"]]);
                     echo prefix(["key" => $_GET["b"]]);',
             ],
+            'dontTaintTheYieldResultOfALiteralSentToAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send("literal");',
+            ],
+            'dontTaintAnUnusedYieldResult' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        yield 1;
+                        echo "done";
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+            ],
+            'dontTaintWhatAnotherCallOfASpecializedGeneratorIsSent' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function relay(): Generator {
+                        $sent = yield "";
+                        yield $sent;
+                    }
+
+                    $tainted = relay();
+                    $tainted->current();
+                    $tainted->send((string) $_GET["value"]);
+
+                    $literal = relay();
+                    $literal->current();
+                    $literal->send("literal");
+                    echo $literal->current();',
+            ],
+            'dontTaintAnotherKeyOfWhatAGeneratorYields' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, array{a: string, b: string}> */
+                    function rows(): Generator {
+                        yield ["a" => (string) $_GET["value"], "b" => "literal"];
+                    }
+
+                    foreach (rows() as $row) {
+                        echo $row["b"];
+                    }',
+            ],
             'dontTaintSsrfAfterAnyOfTheStartsOfAUrlFixingItsServer' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -2366,6 +2416,155 @@ final class TaintTest extends TestCase
                     }
 
                     echo show(["key" => $_GET["a"]], "key");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    function values(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    $values = values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGeneratorDelegatingToAnother' => [
+                'code' => '<?php // --taint-analysis
+                    function inner(): Generator {
+                        $sent = yield 1;
+                        echo $sent;
+                    }
+
+                    function outer(): Generator {
+                        yield from inner();
+                    }
+
+                    $values = outer();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatIsSentToAGeneratorMethod' => [
+                'code' => '<?php // --taint-analysis
+                    final class Rows {
+                        public function values(): Generator {
+                            $sent = yield 1;
+                            echo $sent;
+                        }
+                    }
+
+                    $values = (new Rows())->values();
+                    $values->current();
+                    $values->send((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatASpecializedGeneratorIsSent' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function relay(): Generator {
+                        $sent = yield "";
+                        yield $sent;
+                    }
+
+                    $tainted = relay();
+                    $tainted->current();
+                    $tainted->send((string) $_GET["value"]);
+                    echo $tainted->current();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAGeneratorYields' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    foreach (values() as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyAGeneratorYields' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<string, int> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"] => 1;
+                    }
+
+                    foreach (values() as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAGeneratorYieldsFrom' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield from [(string) $_GET["value"]];
+                    }
+
+                    foreach (values() as $value) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheCurrentValueOfAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    echo values()->current();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheArrayOfAGenerator' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    echo iterator_to_array(values())[0];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatATraversableParamGives' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    /** @param Traversable<int, string> $values */
+                    function show(Traversable $values): void {
+                        foreach ($values as $value) {
+                            echo $value;
+                        }
+                    }
+
+                    show(values());',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatATemplateTraversableParamGives' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return Generator<int, string> */
+                    function values(): Generator {
+                        yield (string) $_GET["value"];
+                    }
+
+                    /**
+                     * @template T of Traversable<int, string>
+                     * @param T $values
+                     */
+                    function show(Traversable $values): void {
+                        foreach ($values as $value) {
+                            echo $value;
+                        }
+                    }
+
+                    show(values());',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSsrfAfterTwoSlashesOrABackslash' => [
