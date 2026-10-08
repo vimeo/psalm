@@ -1966,6 +1966,33 @@ final class TaintTest extends TestCase
                     remember((string) $_GET["x"]);
                     echo remember("safe");',
             ],
+            'dontTaintWithAStaticVariableCounter' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function countCalls(string $label): string {
+                        /** @var int */
+                        static $count = 0;
+                        $count++;
+                        return $label . (string) $count;
+                    }
+
+                    countCalls((string) $_GET["x"]);
+                    echo countCalls("safe");',
+            ],
+            'dontTaintSpecializedCallWithWhatAnotherLeavesInAStaticVariable' => [
+                // what the calls leave in the static variable doesn't leak into what they return
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $last = $v;
+                        return $v;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+            ],
             'dontTaintSpecializedInstanceWithWhatItsMethodReturns' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -7139,6 +7166,117 @@ final class TaintTest extends TestCase
 
                     remember((string) $_GET["x"]);
                     echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMethodCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    final class A {
+                        public function remember(string $v): string {
+                            /** @var string */
+                            static $last = "";
+                            $prev = $last;
+                            $last = $v;
+                            return $prev;
+                        }
+                    }
+
+                    $a = new A();
+                    $a->remember((string) $_GET["x"]);
+                    echo $a->remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintClosureCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    $remember = function (string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    };
+
+                    $remember((string) $_GET["x"]);
+                    echo $remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCallReturningWhatAnotherLeftInAStaticVariableMemo' => [
+                'code' => '<?php
+                    function memo(string $k, ?string $v = null): ?string {
+                        /** @var array<string, string> */
+                        static $cache = [];
+                        if ($v !== null) {
+                            $cache[$k] = $v;
+                            return null;
+                        }
+                        return $cache[$k] ?? null;
+                    }
+
+                    memo("a", (string) $_GET["x"]);
+                    echo (string) memo("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedCallReturningWhatAnotherLeftInAStaticVariableMemo' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function memo(string $k, ?string $v = null): ?string {
+                        /** @var array<string, string> */
+                        static $cache = [];
+                        if ($v !== null) {
+                            $cache[$k] = $v;
+                            return null;
+                        }
+                        return $cache[$k] ?? null;
+                    }
+
+                    memo("a", (string) $_GET["x"]);
+                    echo (string) memo("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallReadingWhatTheOuterCallLeftInAStaticVariable' => [
+                // the outer call overwrites the static variable before it returns, after the nested call read it
+                'code' => '<?php
+                    function reenter(?string $v): string {
+                        /** @var string */
+                        static $s = "";
+                        if ($v !== null) {
+                            $s = $v;
+                            echo reenter(null);
+                            $s = "";
+                            return "";
+                        }
+                        return $s;
+                    }
+
+                    reenter((string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedNewCall' => [

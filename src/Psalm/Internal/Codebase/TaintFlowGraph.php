@@ -540,6 +540,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function isSharedState(DataFlowNode $node): bool
+    {
+        return isset($this->shared_state[$node->id]);
+    }
+
+    /**
      * Whether a value of $type may be a stream writing to the response
      *
      * @psalm-mutation-free
