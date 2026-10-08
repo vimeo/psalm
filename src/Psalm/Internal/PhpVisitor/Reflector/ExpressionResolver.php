@@ -17,6 +17,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClosureValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
@@ -55,13 +56,25 @@ final class ExpressionResolver
         Aliases $aliases,
         ?string $fq_classlike_name,
         ?string $parent_fq_class_name = null,
+        ?string $file_path = null,
     ): ?UnresolvedConstantComponent {
+        if ($file_path !== null && $stmt instanceof PhpParser\Node\Expr\Closure) {
+            return new ClosureValue(
+                $file_path,
+                strtolower($file_path)
+                . ':' . $stmt->getLine()
+                . ':' . (int) $stmt->getAttribute('startFilePos')
+                . ':-:closure',
+            );
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
                 $stmt->left,
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $right = self::getUnresolvedClassConstExpr(
@@ -69,6 +82,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$left || !$right) {
@@ -114,6 +128,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $if = null;
@@ -124,6 +139,7 @@ final class ExpressionResolver
                     $aliases,
                     $fq_classlike_name,
                     $parent_fq_class_name,
+                    $file_path,
                 );
 
                 if ($if === null) {
@@ -136,6 +152,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if ($cond && $else && $if !== false) {
@@ -177,6 +194,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             $right = self::getUnresolvedClassConstExpr(
@@ -184,6 +202,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if ($left && $right) {
@@ -231,6 +250,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$right) {
@@ -249,6 +269,7 @@ final class ExpressionResolver
                 $aliases,
                 $fq_classlike_name,
                 $parent_fq_class_name,
+                $file_path,
             );
 
             if (!$right) {
@@ -275,6 +296,7 @@ final class ExpressionResolver
                         $aliases,
                         $fq_classlike_name,
                         $parent_fq_class_name,
+                        $file_path,
                     );
 
                     if (!$item_key_type) {
@@ -289,6 +311,7 @@ final class ExpressionResolver
                     $aliases,
                     $fq_classlike_name,
                     $parent_fq_class_name,
+                    $file_path,
                 );
 
                 if (!$item_value_type) {

@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -319,6 +320,12 @@ final class ConstFetchAnalyzer
         Context $context,
     ): void {
         foreach ($stmt->consts as $const) {
+            ConstExprClosureValidator::validate(
+                $statements_analyzer,
+                $const->value,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
 
             self::setConstType(

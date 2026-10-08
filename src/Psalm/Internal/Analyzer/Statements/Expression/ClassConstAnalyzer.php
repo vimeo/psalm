@@ -722,6 +722,12 @@ final class ClassConstAnalyzer
         }
 
         foreach ($stmt->consts as $const) {
+            ConstExprClosureValidator::validate(
+                $statements_analyzer,
+                $const->value,
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
             $const_storage = $class_storage->constants[$const->name->name];
 
