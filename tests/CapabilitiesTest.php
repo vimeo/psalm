@@ -44,6 +44,34 @@ final class CapabilitiesTest extends TestCase
                         debug_zval_dump($value);
                     }',
             ],
+            'debugBacktraceOnlyReadsGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function callers(): array {
+                        return [debug_backtrace(), debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)];
+                    }',
+            ],
+            'debugPrintBacktraceOnlyRequiresIoAndReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io|read-globals */
+                    function showCallers(): void {
+                        debug_print_backtrace();
+                    }',
+            ],
+            'currentScopeIntrospectionIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function locals(int $value): array {
+                        return [get_defined_vars(), func_get_args()];
+                    }
+
+                    abstract class Model {
+                        /** @psalm-pure */
+                        public static function name(): string {
+                            return get_called_class();
+                        }
+                    }',
+            ],
             'highlightStringReturningTheMarkupIsPure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1120,6 +1148,30 @@ final class CapabilitiesTest extends TestCase
                         return spl_autoload_extensions(".php");
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'debugBacktraceRequiresReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function callers(): array {
+                        return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on debug_backtrace requires read-globals',
+            ],
+            'debugBacktraceWithoutArgumentsRequiresReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function callers(): array {
+                        return debug_backtrace();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is read-props but function call on debug_backtrace requires read-globals',
+            ],
+            'debugPrintBacktraceRequiresReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function showCallers(): void {
+                        debug_print_backtrace();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - The context is io but function call on debug_print_backtrace requires read-globals|io',
             ],
             'vprintfRequiresIo' => [
                 'code' => '<?php
