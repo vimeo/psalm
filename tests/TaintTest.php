@@ -18,8 +18,10 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function implode;
 use function in_array;
 use function preg_quote;
+use function range;
 use function sort;
 use function str_starts_with;
 use function strpos;
@@ -440,6 +442,199 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'keysOfArraysPassedToASpecializedFunctionFromManyCalls' => [
+                // more calls than a node can hold states before widening: the copies of the call of render() in
+                // the filters of the walk of tag() for each key keep the open assignments of the calls
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
+                    range(1, 1100),
+                )),
+            ],
+            'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
+                // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
+                // fetch still ignores those of other keys.
+                'code' => '<?php
+                    function show(array $r): void {
+                        echo (string) $r["name"];
+                    }
+
+                    function relay(array $row): void {
+                        show($row);
+                    }
+
+                    relay(["a" => (string)($_GET["a"] ?? "")]);
+                    relay(["b" => (string)($_GET["b"] ?? "")]);
+                    relay(["c" => (string)($_GET["c"] ?? "")]);
+                    relay(["d" => (string)($_GET["d"] ?? "")]);
+                    relay(["e" => (string)($_GET["e"] ?? "")]);
+                    relay(["f" => (string)($_GET["f"] ?? "")]);
+                    relay(["g" => (string)($_GET["g"] ?? "")]);
+                    relay(["h" => (string)($_GET["h"] ?? "")]);
+                    relay(["name" => "safe"]);
+                    show(["i" => (string)($_GET["i"] ?? "")]);
+                    show(["j" => (string)($_GET["j"] ?? "")]);
+                    show(["k" => (string)($_GET["k"] ?? "")]);
+                    show(["l" => (string)($_GET["l"] ?? "")]);
+                    show(["m" => (string)($_GET["m"] ?? "")]);
+                    show(["n" => (string)($_GET["n"] ?? "")]);
+                    show(["o" => (string)($_GET["o"] ?? "")]);
+                    show(["p" => (string)($_GET["p"] ?? "")]);
+                ',
+            ],
+            'fetchOfAKeyOfAWrappedArrayThroughFiveConvergences' => [
+                // The flows of differently keyed arrays converge at the parameter of each relay, and the fetch of
+                // key "name" past five of them still ignores those of other keys of the wrapped array.
+                'code' => '<?php
+                    function show(array $r): void {
+                        echo (string) ($r["wrapper"]["name"] ?? "");
+                    }
+
+                    function relay5(array $row): void {
+                        show($row);
+                    }
+
+                    function relay4(array $row): void {
+                        relay5($row);
+                    }
+
+                    function relay3(array $row): void {
+                        relay4($row);
+                    }
+
+                    function relay2(array $row): void {
+                        relay3($row);
+                    }
+
+                    function relay1(array $row): void {
+                        relay2($row);
+                    }
+
+                    relay1(["wrapper" => ["k1_0" => (string)($_GET["k1_0"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_1" => (string)($_GET["k1_1"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_2" => (string)($_GET["k1_2"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_3" => (string)($_GET["k1_3"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_4" => (string)($_GET["k1_4"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_5" => (string)($_GET["k1_5"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_6" => (string)($_GET["k1_6"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_7" => (string)($_GET["k1_7"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_8" => (string)($_GET["k1_8"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_9" => (string)($_GET["k1_9"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_10" => (string)($_GET["k1_10"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_11" => (string)($_GET["k1_11"] ?? "")]]);
+                    relay1(["wrapper" => ["k1_12" => (string)($_GET["k1_12"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_0" => (string)($_GET["k2_0"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_1" => (string)($_GET["k2_1"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_2" => (string)($_GET["k2_2"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_3" => (string)($_GET["k2_3"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_4" => (string)($_GET["k2_4"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_5" => (string)($_GET["k2_5"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_6" => (string)($_GET["k2_6"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_7" => (string)($_GET["k2_7"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_8" => (string)($_GET["k2_8"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_9" => (string)($_GET["k2_9"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_10" => (string)($_GET["k2_10"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_11" => (string)($_GET["k2_11"] ?? "")]]);
+                    relay2(["wrapper" => ["k2_12" => (string)($_GET["k2_12"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_0" => (string)($_GET["k3_0"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_1" => (string)($_GET["k3_1"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_2" => (string)($_GET["k3_2"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_3" => (string)($_GET["k3_3"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_4" => (string)($_GET["k3_4"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_5" => (string)($_GET["k3_5"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_6" => (string)($_GET["k3_6"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_7" => (string)($_GET["k3_7"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_8" => (string)($_GET["k3_8"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_9" => (string)($_GET["k3_9"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_10" => (string)($_GET["k3_10"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_11" => (string)($_GET["k3_11"] ?? "")]]);
+                    relay3(["wrapper" => ["k3_12" => (string)($_GET["k3_12"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_0" => (string)($_GET["k4_0"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_1" => (string)($_GET["k4_1"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_2" => (string)($_GET["k4_2"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_3" => (string)($_GET["k4_3"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_4" => (string)($_GET["k4_4"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_5" => (string)($_GET["k4_5"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_6" => (string)($_GET["k4_6"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_7" => (string)($_GET["k4_7"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_8" => (string)($_GET["k4_8"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_9" => (string)($_GET["k4_9"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_10" => (string)($_GET["k4_10"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_11" => (string)($_GET["k4_11"] ?? "")]]);
+                    relay4(["wrapper" => ["k4_12" => (string)($_GET["k4_12"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_0" => (string)($_GET["k5_0"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_1" => (string)($_GET["k5_1"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_2" => (string)($_GET["k5_2"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_3" => (string)($_GET["k5_3"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_4" => (string)($_GET["k5_4"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_5" => (string)($_GET["k5_5"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_6" => (string)($_GET["k5_6"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_7" => (string)($_GET["k5_7"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_8" => (string)($_GET["k5_8"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_9" => (string)($_GET["k5_9"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_10" => (string)($_GET["k5_10"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_11" => (string)($_GET["k5_11"] ?? "")]]);
+                    relay5(["wrapper" => ["k5_12" => (string)($_GET["k5_12"] ?? "")]]);
+                    relay1(["wrapper" => ["name" => "safe"]]);
+                ',
+            ],
+            'fetchOfAKeySixLevelsDeep' => [
+                // The value assigned to key "cost" is wrapped in five more arrays: the fetch of key "callback"
+                // past the fetches of those still ignores it, whatever the keys of the unkeyed ones.
+                'code' => '<?php
+                    /** @param array<string, array{children: array<string, array{children: list<array<string, string>>}>}> $pack */
+                    function render(array $pack): void {
+                        foreach ($pack as $category) {
+                            foreach ($category["children"] as $subcategory) {
+                                foreach ($subcategory["children"] as $dish) {
+                                    echo $dish["callback"] ?? "";
+                                }
+                            }
+                        }
+                    }
+
+                    $cat = (string)($_GET["cat"] ?? "");
+                    $sub = (string)($_GET["sub"] ?? "");
+                    $pack = [];
+                    $pack[$cat]["children"][$sub]["children"][] = ["cost" => (string)($_GET["cost"] ?? "")];
+                    render($pack);
+                ',
+            ],
+            'specializedFetchOfOneKeyWhereManyKeyedArraysConverge' => [
+                // Enough differently keyed arrays reach $row for what is reachable from it to be walked once,
+                // relative to them: the fetch in the specialized call still ignores those of other keys.
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function getName(array $p): string { return (string) $p["name"]; }
+
+                    function relay(array $row): void {
+                        echo getName($row);
+                    }
+
+                    relay(["a" => (string)($_GET["a"] ?? "")]);
+                    relay(["b" => (string)($_GET["b"] ?? "")]);
+                    relay(["c" => (string)($_GET["c"] ?? "")]);
+                    relay(["d" => (string)($_GET["d"] ?? "")]);
+                    relay(["e" => (string)($_GET["e"] ?? "")]);
+                    relay(["f" => (string)($_GET["f"] ?? "")]);
+                    relay(["g" => (string)($_GET["g"] ?? "")]);
+                    relay(["h" => (string)($_GET["h"] ?? "")]);
+                    relay(["name" => "safe"]);
+                ',
+            ],
             'writingToTheStandardErrorStreamIsNotAnHtmlSink' => [
                 'code' => '<?php
                     $stream = fopen("php://stderr", "w");
@@ -2162,6 +2357,40 @@ final class TaintTest extends TestCase
                     echo U::foo($_GET["foo"], true);
                     echo U::foo($_GET["foo"]);',
             ],
+            'valuesOfAnArrayWhoseKeysAreTaintedAreNotTainted' => [
+                // The taint is in a key: a fetch of a value doesn't take it.
+                'code' => '<?php
+                    /** @param array<string, string> $arr */
+                    function takesArray(array $arr): void {
+                        echo $arr["city"] ?? "";
+                    }
+
+                    takesArray([(string)$_GET["bad"] => "good"]);',
+            ],
+            'valuesOfAPropertyWhoseKeysAreTaintedAreNotTainted' => [
+                'code' => '<?php
+                    final class Version {
+                        /** @var array<string, string> */
+                        public array $data = [];
+                    }
+
+                    function save(Version $version, string $field_id): void {
+                        $version->data = ["val_" . $field_id => "good"];
+                    }
+
+                    function show(Version $version): void {
+                        echo $version->data["comment_count"] ?? "";
+                    }
+
+                    save(new Version(), (string)$_GET["field_id"]);',
+            ],
+            'valuesOfAnArrayIteratedOverWhoseKeysAreTaintedAreNotTainted' => [
+                'code' => '<?php
+                    $arr = [(string)$_GET["bad"] => "good"];
+                    foreach ($arr as $value) {
+                        echo $value;
+                    }',
+            ],
             'keysAreNotTainted' => [
                 'code' => '<?php
                     function takesArray(array $arr): void {
@@ -2391,6 +2620,28 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'keyOfAnArrayPassedToASpecializedFunctionFromOneOfManyCalls' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
+                    range(1, 1100),
+                )) . '
+                    echo tag([(string) $_GET["q"] => "x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
                     $outer = [];
@@ -6859,6 +7110,38 @@ final class TaintTest extends TestCase
                     $res = Wdb::query("SELECT blah FROM tablea ORDER BY ". $order. " DESC");',
                 'error_message' => 'TaintedSql',
             ],
+            'keysOfAValueOfAnArrayAreTainted' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, string>> $arr */
+                    function takesArray(array $arr): void {
+                        foreach ($arr["inner"] as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    takesArray(["inner" => [(string)$_GET["bad"] => "good"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keysOfAPropertyAreTainted' => [
+                'code' => '<?php
+                    final class Version {
+                        /** @var array<string, string> */
+                        public array $data = [];
+                    }
+
+                    function save(Version $version, string $field_id): void {
+                        $version->data = ["val_" . $field_id => "good"];
+                    }
+
+                    function show(Version $version): void {
+                        foreach ($version->data as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    save(new Version(), (string)$_GET["field_id"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysAreTainted' => [
                 'code' => '<?php
                     function takesArray(array $arr): void {
@@ -7897,6 +8180,30 @@ final class TaintTest extends TestCase
                     'TaintedShell{ exec(getX(["x" => (string)($_GET["c"] ?? ""), "y" => "safe"])); }',
                 ],
                 'expectedSourceLines' => [5, 7],
+            ],
+            'arrayKeysStayApartWhereManyFlowsConverge' => [
+                // Enough differently keyed arrays reach $task for what is reachable from it to be walked once,
+                // relative to them: the fetch still only takes the one with the key it fetches.
+                'code' => '<?php
+                    function show(array $task): void {
+                        echo (string) $task["name"];
+                    }
+
+                    show(["a" => (string)($_GET["a"] ?? "")]);
+                    show(["b" => (string)($_GET["b"] ?? "")]);
+                    show(["c" => (string)($_GET["c"] ?? "")]);
+                    show(["d" => (string)($_GET["d"] ?? "")]);
+                    show(["e" => (string)($_GET["e"] ?? "")]);
+                    show(["f" => (string)($_GET["f"] ?? "")]);
+                    show(["g" => (string)($_GET["g"] ?? "")]);
+                    show(["h" => (string)($_GET["h"] ?? "")]);
+                    show(["name" => (string)($_GET["name"] ?? "")]);
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ echo (string) $task["name"]; }',
+                    'TaintedTextWithQuotes{ echo (string) $task["name"]; }',
+                ],
+                'expectedSourceLines' => [14, 14],
             ],
             'specializedMethodCallSitesStayApart' => [
                 // With unused-variable tracking on, as in the CLI. Fresh instances, so no taint is carried over
