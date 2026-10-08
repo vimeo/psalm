@@ -165,6 +165,14 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $output_streams = [];
 
+    /**
+     * The ids of the nodes holding what all the calls share, such as static properties: what one call leaves in them,
+     * any other call may read (see addSharedState())
+     *
+     * @var array<string, true>
+     */
+    private array $shared_state = [];
+
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
      * Empty outside of connectSinksAndSources().
@@ -521,6 +529,17 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records that $node holds what all the calls share: a flow reaching it in a specialized call leaves the call
+     * there (see connectSinksAndSources()), as any other call may read it, then return it.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addSharedState(DataFlowNode $node): void
+    {
+        $this->shared_state[$node->id] = true;
+    }
+
+    /**
      * Whether a value of $type may be a stream writing to the response
      *
      * @psalm-mutation-free
@@ -546,6 +565,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->nodes += $other->nodes;
         $this->specialized_calls += $other->specialized_calls;
         $this->generator_sent_nodes += $other->generator_sent_nodes;
+        $this->shared_state += $other->shared_state;
 
         foreach ($other->generator_sends as $key => $map) {
             $this->generator_sends[$key] = ($this->generator_sends[$key] ?? []) + $map;
@@ -739,9 +759,28 @@ final class TaintFlowGraph extends DataFlowGraph
                 $visited_source_ids[$source->id][self::getStateKey($source->taints, $source->context)]
                     [$this->getOpenAssignmentsKey($source->id, $source->path_types)] = true;
 
-                // If we have one or more edges starting at this node,
-                // process destinations of those edges.
-                if (isset($this->forward_edges[$source->id])) {
+                if ($source->context !== null
+                    && isset($this->shared_state[$source->id])
+                    && isset($this->forward_edges[$source->id])
+                ) {
+                    // What a specialized call leaves in shared state, any other call may read: the flow leaves the
+                    // call there, as an exit of its entry (see exitThroughCaller()), rather than staying in it until
+                    // it reaches an exit of the call, which would then only lead back to the call site.
+                    foreach ($this->addEntryExit($source->context, $source) as $generated_source) {
+                        $this->getChildNodes(
+                            $new_sources,
+                            $generated_source,
+                            $visited_source_ids,
+                            $sinks,
+                            $sink_reachable,
+                            $config,
+                            $project_analyzer,
+                            $codebase,
+                        );
+                    }
+                } elseif (isset($this->forward_edges[$source->id])) {
+                    // If we have one or more edges starting at this node,
+                    // process destinations of those edges.
                     $this->getChildNodes(
                         $new_sources,
                         $source,
@@ -1031,15 +1070,17 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * The body walk of $entry reached $exit, an unspecialized node whose
-     * specializations lead back to call sites. Continues it at the call site of
-     * each call entering $entry.
+     * specializations lead back to call sites, or shared state (see
+     * addSharedState()). Continues it at the call site of each call entering
+     * $entry. The open assignments of the flow tell its exits apart, as they
+     * decide the fetches it takes past them.
      *
      * @return list<DataFlowNode>
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addEntryExit(int $entry, DataFlowNode $exit): array
     {
-        $exit_key = $exit->id . ' ' . $exit->taints;
+        $exit_key = $exit->id . ' ' . $exit->taints . ' ' . $this->getOpenAssignmentsKey($exit->id, $exit->path_types);
 
         if (isset($this->entry_exits[$entry][$exit_key])) {
             return [];
@@ -1068,6 +1109,8 @@ final class TaintFlowGraph extends DataFlowGraph
      * exit of the entry the call is made from, so that it leaves through an
      * enclosing call of that function-like if any, and outside of any specialized
      * call through all of its call sites, as a flow reaching it there would.
+     * Shared state is left the same way, outside of any specialized call: from
+     * there, it reaches every call reading it.
      *
      * The walk itself carries the trace of the first call entering $entry. For
      * any other call, the walk is summarized as a single step from the entered
@@ -1086,6 +1129,12 @@ final class TaintFlowGraph extends DataFlowGraph
         if ($caller !== $this->entry_callers[$entry][0][0]) {
             // the call and the start of the walk have the same open assignments: see enterSpecializedCall()
             $exit = $exit->withFlow($exit->taints, $caller, $exit->path_types, $caller->context);
+        }
+
+        if (isset($this->shared_state[$exit->id])) {
+            return $caller->context !== null
+                ? $this->addEntryExit($caller->context, $exit)
+                : [$exit->withSpecialization($exit->id, null, null, null)];
         }
 
         if (isset($this->specializations[$exit->id][$specialization_key])) {

@@ -669,6 +669,10 @@ final class InstancePropertyAssignmentAnalyzer
 
         $graph->addNode($property_node);
 
+        if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch && $statements_analyzer->taint_flow_graph) {
+            $statements_analyzer->taint_flow_graph->addSharedState($property_node);
+        }
+
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
