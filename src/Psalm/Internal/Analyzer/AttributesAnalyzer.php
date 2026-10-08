@@ -64,12 +64,17 @@ final class AttributesAnalyzer
     ): void {
         $codebase = $source->getCodebase();
         $appearing_non_repeatable_attributes = [];
+        $has_delayed_target_validation = false;
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
-            if ($attribute->name instanceof FullyQualified) {
-                $fq_attribute_name = (string) $attribute->name;
-            } else {
-                $fq_attribute_name = ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
+            if (strtolower(self::getFqAttributeName($source, $attribute)) === 'delayedtargetvalidation') {
+                // PHP defers the target check of every internal attribute (even #[\Attribute]) to runtime.
+                $has_delayed_target_validation = true;
+                break;
             }
+        }
+
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            $fq_attribute_name = self::getFqAttributeName($source, $attribute);
 
             $attribute_name = (string) $attribute->name;
             $attribute_name_location = new CodeLocation($source, $attribute->name);
@@ -110,7 +115,9 @@ final class AttributesAnalyzer
                 $appearing_non_repeatable_attributes[$fq_attribute_name] = true;
             }
 
-            if (($attribute_class_flags & $target) === 0) {
+            if (($attribute_class_flags & $target) === 0
+                && !($has_delayed_target_validation && $attribute_class_storage?->user_defined === false)
+            ) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         "Attribute {$attribute_name} cannot be used on a "
@@ -139,6 +146,13 @@ final class AttributesAnalyzer
                 );
             }
         }
+    }
+
+    private static function getFqAttributeName(SourceAnalyzer $source, Attribute $attribute): string
+    {
+        return $attribute->name instanceof FullyQualified
+            ? (string) $attribute->name
+            : ClassLikeAnalyzer::getFQCLNFromNameObject($attribute->name, $source->getAliases());
     }
 
     /**
