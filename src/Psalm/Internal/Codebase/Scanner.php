@@ -38,6 +38,7 @@ use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
+use function in_array;
 use function interface_exists;
 use function ltrim;
 use function min;
@@ -136,6 +137,8 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $store_scan_failure = [];
+
+    private bool $scanning_internal_stub = false;
 
     /**
      * @var array<string, bool>
@@ -252,6 +255,17 @@ final class Scanner
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         if ($fq_classlike_name_lc === 'static') {
+            return;
+        }
+
+        // An internal stub can mention classes of an extension the runtime lacks (e.g. finfo);
+        // looking them up would run the project's autoloader for something that cannot exist.
+        // The stubs that declare such classes are scanned directly.
+        if ($this->scanning_internal_stub
+            && !class_exists($fq_classlike_name, false)
+            && !interface_exists($fq_classlike_name, false)
+            && !trait_exists($fq_classlike_name, false)
+        ) {
             return;
         }
 
@@ -488,6 +502,9 @@ final class Scanner
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
+        $this->scanning_internal_stub = $this->codebase->register_stub_files
+            && in_array($file_path, $this->config->internal_stubs, true);
+
         $file_scanner->scan(
             $this->codebase,
             $file_storage,
@@ -555,6 +572,8 @@ final class Scanner
                 $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
             }
         }
+
+        $this->scanning_internal_stub = false;
     }
 
     /**

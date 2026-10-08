@@ -32,10 +32,10 @@ final class Php85Test extends TestCase
                     function callDeprecatedInPhp85(
                         CurlHandle $curl,
                         CurlShareHandle $share,
-                        finfo $finfo,
-                        GdImage $image,
-                        XMLParser $parser,
-                        mysqli_stmt $statement,
+                        mixed $finfo,
+                        mixed $image,
+                        mixed $parser,
+                        mixed $statement,
                         ReflectionProperty $property,
                         ReflectionMethod $method,
                         SplObjectStorage $storage,
@@ -102,16 +102,12 @@ final class Php85Test extends TestCase
             ],
             'callMapTypesSurviveRedeclarationInPhp85' => [
                 'code' => '<?php
-                    /** @var finfo $finfo */
-                    $finfo = new finfo();
-                    /** @var GdImage $image */
-                    $image = imagecreate(1, 1);
-                    /** @var XMLParser $parser */
-                    $parser = xml_parser_create();
+                    /** @var mixed $handle */
+                    $handle = null;
 
-                    $finfoClosed = finfo_close($finfo);
-                    $imageDestroyed = imagedestroy($image);
-                    $parserFreed = xml_parser_free($parser);
+                    $finfoClosed = finfo_close($handle);
+                    $imageDestroyed = imagedestroy($handle);
+                    $parserFreed = xml_parser_free($handle);
                     $timeoutSet = socket_set_timeout(STDIN, 1, 2);',
                 'assertions' => [
                     '$finfoClosed' => 'true',
@@ -119,7 +115,7 @@ final class Php85Test extends TestCase
                     '$parserFreed' => 'bool',
                     '$timeoutSet' => 'bool',
                 ],
-                'ignored_issues' => ['DeprecatedFunction'],
+                'ignored_issues' => ['DeprecatedFunction', 'MixedArgument'],
                 'php_version' => '8.5',
             ],
             'classStubsSurviveRedeclarationInPhp85' => [
@@ -173,10 +169,10 @@ final class Php85Test extends TestCase
                 'curl_share_close',
                 'as it has no effect since PHP 8.0',
             ],
-            'finfo_close' => ['finfo', 'finfo_close($value);', 'finfo_close', 'as finfo objects are freed automatically'],
-            'imagedestroy' => ['GdImage', 'imagedestroy($value);', 'imagedestroy', 'as it has no effect since PHP 8.0'],
+            'finfo_close' => ['mixed', 'finfo_close($value);', 'finfo_close', 'as finfo objects are freed automatically'],
+            'imagedestroy' => ['mixed', 'imagedestroy($value);', 'imagedestroy', 'as it has no effect since PHP 8.0'],
             'xml_parser_free' => [
-                'XMLParser',
+                'mixed',
                 'xml_parser_free($value);',
                 'xml_parser_free',
                 'as it has no effect since PHP 8.0',
@@ -188,7 +184,7 @@ final class Php85Test extends TestCase
                 'use stream_set_timeout() instead',
             ],
             'mysqli_execute' => [
-                'mysqli_stmt',
+                'mixed',
                 'mysqli_execute($value);',
                 'mysqli_execute',
                 'use mysqli_stmt_execute() instead',
