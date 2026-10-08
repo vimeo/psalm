@@ -14,7 +14,12 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 final class IsGreaterThanOrEqualTo extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    public function __construct(public readonly int $value)
+    /**
+     * @param bool $is_negatable false when the assertion is only implied by the condition rather than
+     *                           equivalent to it (e.g. derived from the bounds of another int range operand),
+     *                           so its negation must not be applied when the condition is false
+     */
+    public function __construct(public readonly int $value, public readonly bool $is_negatable = true)
     {
     }
 
@@ -27,22 +32,33 @@ final class IsGreaterThanOrEqualTo extends Assertion
     #[Override]
     public function getNegation(): Assertion
     {
-        return new IsLessThan($this->value);
+        return $this->is_negatable ? new IsLessThan($this->value) : new Any();
+    }
+
+    #[Override]
+    public function hasEquality(): bool
+    {
+        return !$this->is_negatable;
     }
 
     public function __toString(): string
     {
-        return '!<' . $this->value;
+        return '!' . ($this->is_negatable ? '' : '=') . '<' . $this->value;
     }
 
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsLessThan && $this->value === $assertion->value;
+        return $assertion instanceof IsLessThan
+            && $this->is_negatable
+            && $assertion->is_negatable
+            && $this->value === $assertion->value;
     }
 
     public function doesFilterNullOrFalse(): bool
     {
-        return $this->value !== 0;
+        // null and false compare as bools, so a bound taken from another operand cannot filter them
+        // (e.g. `null < $b` is true for $b = -1 even though `null < 0` is false)
+        return $this->is_negatable && $this->value !== 0;
     }
 }
