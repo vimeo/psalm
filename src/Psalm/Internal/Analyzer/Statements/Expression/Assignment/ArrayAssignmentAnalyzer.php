@@ -20,8 +20,10 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -239,6 +241,8 @@ final class ArrayAssignmentAnalyzer
                     $context,
                     false,
                 );
+
+                self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
@@ -280,6 +284,42 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Writing an element of a property writes the object holding the property.
+     * InstancePropertyAssignmentAnalyzer::trackPropertyImpurity() charges this when the object is in
+     * a variable, or was reached from global state, but not when it is anything else, like what a
+     * call returns: `$box->get()->items[] = 1`. That object is not known to be fresh or `$this`.
+     */
+    private static function trackPropertyElementImpurity(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $property_fetch,
+        Context $context,
+    ): void {
+        $object_var_id = ExpressionIdentifier::getVarId(
+            $property_fetch->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        $object_type = $statements_analyzer->node_data->getType($property_fetch->var);
+
+        if (($object_var_id !== null && isset($context->vars_in_scope[$object_var_id]))
+            || ($object_type !== null && $object_type->from_global_state)
+        ) {
+            return;
+        }
+
+        $statements_analyzer->signalMutation(
+            $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
+                ? Capabilities::NONE
+                : Capabilities::WRITE_PROPS,
+            $context,
+            'property assignment',
+            ImpurePropertyAssignment::class,
+            $property_fetch,
+            Capabilities::WRITE_PROPS,
+        );
     }
 
     /**
