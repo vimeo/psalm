@@ -518,6 +518,19 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the virtual calls of a method on a class get from the methods of the classes extending it that may run
+     * instead: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForReturnDispatch(string $cased_method_id): self
+    {
+        $label = 'dispatch of ' . $cased_method_id;
+
+        return self::make(strtolower($label), $label, null);
+    }
+
+    /**
      * What is sent to the generators a function-like returns (see Generator::send()): the value of its yield
      * expressions.
      *

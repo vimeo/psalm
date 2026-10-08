@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -24,6 +25,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -576,6 +578,12 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
+        $dispatch_node = self::getReturnDispatchNode($codebase, $taint_flow_graph, $method_id, $method_storage);
+
+        if ($dispatch_node) {
+            $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+        }
+
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $method_storage,
             $taint_flow_graph,
@@ -591,6 +599,84 @@ final class MethodCallReturnTypeFetcher
             $taint_flow_graph,
             $method_call_node,
         );
+    }
+
+    /**
+     * The node of what a virtual call of a method gets from the methods that may run instead, those of the classes
+     * extending the class it is called on (see DataFlowNode::getForReturnDispatch()), null if there are none. That
+     * can't be the return node of the method: the calls on the classes inheriting it go there too, and they can't
+     * run the methods of the others. The node is shared by the virtual calls of the method on the class, so that
+     * their number doesn't multiply its paths: the first of them links it.
+     */
+    public static function getReturnDispatchNode(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): ?DataFlowNode {
+        // a constructor is called on the class it constructs, a private method is not overridden
+        if ($method_id->method_name === '__construct'
+            || $method_storage->final
+            || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        if ($class_storage->dependent_classlikes === []) {
+            return null;
+        }
+
+        $dispatch_node = DataFlowNode::getForReturnDispatch(
+            $class_storage->name . '::' . (string) $method_storage->cased_name,
+        );
+
+        if (!$taint_flow_graph->hasNode($dispatch_node)) {
+            $taint_flow_graph->addNode($dispatch_node);
+
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
+
+                // the method the objects of the class run, which it may inherit from a class not extending this one
+                $dependent_appearing_method_id = $codebase->methods->getAppearingMethodId($dependent_method_id);
+                $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+
+                if ($dependent_appearing_method_id === null
+                    || $dependent_declaring_method_id === null
+                    || (string) $dependent_appearing_method_id === (string) $appearing_method_id
+                ) {
+                    continue;
+                }
+
+                $dependent_storage = $codebase->methods->getStorage($dependent_declaring_method_id);
+
+                // What the body of a method specialized by call site returns leaves its return node through the
+                // specializations of the node, and only when the node has no path of its own: the dispatch is
+                // then one more call site of it, keyed by the location of the method
+                $specialization_location = $dependent_storage->location !== null
+                    && TaintFlowGraph::isCallSpecialized(
+                        $taint_flow_graph,
+                        $codebase,
+                        $dependent_storage,
+                        $dependent_storage->location,
+                    ) ? $dependent_storage->location : null;
+
+                // the body of a method of a trait is analyzed as one of each class using it
+                $return_node = DataFlowNode::getForMethodReturn(
+                    $dependent_appearing_method_id->fq_class_name . '::' . (string) $dependent_storage->cased_name,
+                    $dependent_storage,
+                    $specialization_location,
+                );
+
+                $taint_flow_graph->addNode($return_node);
+                $taint_flow_graph->addPath($return_node, $dispatch_node, 'dispatch');
+            }
+        }
+
+        return $dispatch_node;
     }
 
     public static function replaceTemplateTypes(

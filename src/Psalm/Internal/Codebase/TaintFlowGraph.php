@@ -442,6 +442,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function hasNode(DataFlowNode $node): bool
+    {
+        return isset($this->nodes[$node->id]);
+    }
+
+    /**
      * Leaves out the paths no taint goes through, and those to the uses only the variable use
      * graph tracks: the analysis adds every path to the data flow graph, whichever graphs it
      * builds, so that types get the same parent nodes either way.
