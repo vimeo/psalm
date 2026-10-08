@@ -1198,6 +1198,35 @@ final class TaintTest extends TestCase
                     // a plain string can never be a NoSQL query, so this is safe
                     query((string) $_GET["username"]);',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    /**
+                     * @psalm-taint-source input
+                     * @return array-key
+                     */
+                    function inputKey(): int|string {
+                        return 0;
+                    }
+
+                    // scalar, array-key and numeric values can never be a NoSQL query document
+                    $scalar = input();
+                    if (is_scalar($scalar)) {
+                        query(["name" => $scalar]);
+                    }
+                    query(["name" => inputKey()]);
+                    $number = input();
+                    if (is_numeric($number)) {
+                        query(["name" => $number]);
+                    }',
+            ],
             'nosqlSinkNotTaintedByIntCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -4222,6 +4251,22 @@ final class TaintTest extends TestCase
 
                     echo first((array) $_GET["names"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedNosqlKeepsTaintWithoutScalarNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query($filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if (!is_string($value)) {
+                        query(["name" => $value]);
+                    }',
+                'error_message' => 'TaintedNosql',
             ],
             'taintedNosqlFromFunctionReturningArray' => [
                 'code' => '<?php
