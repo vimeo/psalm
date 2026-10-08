@@ -2538,13 +2538,33 @@ final class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
+                // the storage object is shared down the parent chain, so the class whose map first holds
+                // it (the declaring class, or the importing class for a trait constant) owns relative types
+                $owner = $class_like_storage;
+                $visited_owners = [strtolower($owner->name) => true];
+                while ($owner->parent_class !== null
+                    && !isset($visited_owners[strtolower($owner->parent_class)])
+                    && ($parent_storage = $this->getStorageFor($owner->parent_class)) !== null
+                    && ($parent_storage->constants[$filtered_constant_name] ?? null) === $constant_storage
+                ) {
+                    $owner = $parent_storage;
+                    $visited_owners[strtolower($owner->name)] = true;
+                }
+
                 /** @psalm-suppress InaccessibleProperty Lazy resolution */
-                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
-                    $this,
-                    $constant_storage->unresolved_node,
-                    $statements_analyzer,
-                    $visited_constant_ids,
-                )]);
+                $constant_storage->inferred_type = TypeExpander::expandUnion(
+                    ProjectAnalyzer::getInstance()->getCodebase(),
+                    new Union([ConstantTypeResolver::resolve(
+                        $this,
+                        $constant_storage->unresolved_node,
+                        $statements_analyzer,
+                        $visited_constant_ids,
+                    )]),
+                    $owner->name,
+                    $owner->name,
+                    $owner->parent_class,
+                    false,
+                );
 
                 if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
                     /** @psalm-suppress InaccessibleProperty Lazy resolution */

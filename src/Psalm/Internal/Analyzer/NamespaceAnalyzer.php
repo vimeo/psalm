@@ -9,6 +9,7 @@ use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -110,6 +111,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $fq_class_name,
                 new InterfaceAnalyzer($stmt, $this, $fq_class_name),
             );
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            // TraitAnalyzer looks storage up by short name, so namespaced traits are validated here instead
+            ConstExprClosureValidator::validateTraitMembers($this, $stmt);
         }
     }
 

@@ -20,6 +20,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -1199,6 +1200,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $parser_param = $this->function->getParams()[$offset] ?? null;
 
+            if ($parser_param && $parser_param->default) {
+                ConstExprClosureValidator::validate(
+                    $statements_analyzer,
+                    $parser_param->default,
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($function_param->location) {
                 $statements_analyzer->registerVariable(
                     $function_param_id,
@@ -1288,6 +1297,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 if ($default_type
                     && !$default_type->isNull()
+                    && !$parser_param->default instanceof Closure
                     && $param_type->isSingleAndMaybeNullable()
                     && $param_type->getCallableTypes()
                 ) {
