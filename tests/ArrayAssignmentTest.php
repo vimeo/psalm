@@ -1614,7 +1614,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'list{int, int, ...<int>}'],
+                'assertions' => ['$x===' => 'non-empty-list<int>'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -1704,7 +1704,7 @@ final class ArrayAssignmentTest extends TestCase
                     $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
                 ',
                 'assertions' => [
-                    '$x===' => 'array{0: 3, bar: 2, foo: 1, ...<array-key, 4|5|6>}',
+                    '$x===' => 'array{bar: 2, foo: 1, ...<array-key, 3|4|5|6>}',
                     '$y===' => 'array{0: 3, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
                 ],
                 'ignored_issues' => [],
@@ -1739,6 +1739,33 @@ final class ArrayAssignmentTest extends TestCase
                         takesWhere(["OR", ...$conditions]);
                     }
                 ',
+            ],
+            'itemsAfterUnpackedListOfUnknownLengthGoToTheRest' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $strings = [];
+                    /** @var non-empty-list<int> */
+                    $ints = [];
+
+                    $a = ["OR", "AND", ...$strings, "x"];
+                    $b = ["OR", ...$ints, "x"];
+                    $c = ["OR", ...$ints, ...["a", "b"]];
+                    $d = [...$strings, "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'AND', ...<string>}",
+                    '$b===' => "list{'OR', int, ...<'x'|int>}",
+                    '$c===' => "list{'OR', int, ...<'a'|'b'|int>}",
+                    '$d===' => 'non-empty-list<string>',
+                ],
+            ],
+            'itemsAfterUnpackedListOfKnownLengthKeepTheirSlots' => [
+                'code' => '<?php
+                    $a = ["OR", ...["a", "b"], "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'a', 'b', 'x'}",
+                ],
             ],
             'unpackNonObjectlike' => [
                 'code' => '<?php
