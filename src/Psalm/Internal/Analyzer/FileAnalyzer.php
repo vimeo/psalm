@@ -141,7 +141,10 @@ class FileAnalyzer extends SourceAnalyzer
             $this->context->strict_types = true;
         }
 
-        $this->context->is_global = true;
+        // a file included from a function-like is in its scope, not the global one
+        if (!$this->parent_file_paths) {
+            $this->context->is_global = true;
+        }
         $this->context->defineGlobals();
         $this->context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
 

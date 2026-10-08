@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -487,6 +488,23 @@ final class ArrayAssignmentAnalyzer
                             0,
                             $removed_taints,
                         );
+                    }
+                }
+            }
+
+            // a global variable, by its name if known
+            if ($expr->var instanceof Variable
+                && $expr->var->name === 'GLOBALS'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                foreach ($key_values === [] ? [null] : $key_values as $key_value) {
+                    $global_node = GlobalAnalyzer::getGlobalNode(
+                        $taint_flow_graph,
+                        $key_value === null ? null : (string) $key_value->value,
+                    );
+
+                    foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
+                        $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
                     }
                 }
             }

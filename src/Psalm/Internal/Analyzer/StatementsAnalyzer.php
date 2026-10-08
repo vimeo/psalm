@@ -711,6 +711,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
+        GlobalAnalyzer::taintBoundGlobals($statements_analyzer, $context);
+
         if (self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }
