@@ -283,6 +283,27 @@ final class CallableTypeComparator
     }
 
     /**
+     * The closure created by `$function_id(...)`, or null if the function is unknown.
+     */
+    public static function getClosureFromFunctionId(
+        Codebase $codebase,
+        string $function_id,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): ?TClosure {
+        $callable = self::getCallableFromAtomic(
+            $codebase,
+            Type::getAtomicStringFromLiteral($function_id),
+            null,
+            $statements_analyzer,
+            true,
+        );
+
+        return $callable
+            ? new TClosure('Closure', $callable->params, $callable->return_type, $callable->is_pure)
+            : null;
+    }
+
+    /**
      * @return TCallable|TClosure|null
      */
     public static function getCallableFromAtomic(

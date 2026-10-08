@@ -6,8 +6,10 @@ namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
@@ -16,6 +18,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\FirstClassCallable;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBinaryOp;
@@ -28,9 +31,12 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -46,12 +52,14 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnitEnum;
 
+use function array_values;
 use function ctype_digit;
 use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
 use function spl_object_id;
+use function strtolower;
 
 /**
  * @internal
@@ -360,7 +368,63 @@ final class ConstantTypeResolver
             }
         }
 
+        if ($c instanceof FirstClassCallable) {
+            return self::resolveFirstClassCallable($classlikes, $c, $statements_analyzer) ?? new TMixed;
+        }
+
         return new TMixed;
+    }
+
+    private static function resolveFirstClassCallable(
+        ClassLikes $classlikes,
+        FirstClassCallable $c,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): ?TClosure {
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+
+        if ($c->fqcln === null) {
+            return CallableTypeComparator::getClosureFromFunctionId($codebase, $c->name, $statements_analyzer)
+                ?? ($c->global_fallback_name !== null
+                    ? CallableTypeComparator::getClosureFromFunctionId(
+                        $codebase,
+                        $c->global_fallback_name,
+                        $statements_analyzer,
+                    )
+                    : null);
+        }
+
+        if (!$classlikes->classOrInterfaceOrEnumExists($c->fqcln) && !$classlikes->traitExists($c->fqcln)) {
+            return null;
+        }
+
+        $method_id = new MethodIdentifier($c->fqcln, strtolower($c->name));
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null) {
+            return null;
+        }
+
+        $self_class = $c->fqcln;
+        $return_type = $codebase->getMethodReturnType($method_id, $self_class);
+        $closure = new TClosure(
+            'Closure',
+            array_values($codebase->getMethodParams($method_id)),
+            $return_type,
+            $codebase->methods->getStorage($declaring_method_id)->pure,
+        );
+
+        $expanded = TypeExpander::expandUnion(
+            $codebase,
+            new Union([$closure]),
+            $c->fqcln,
+            $c->fqcln,
+            $codebase->classlike_storage_provider->get($c->fqcln)->parent_class,
+            true,
+            false,
+            true,
+        )->getSingleAtomic();
+
+        return $expanded instanceof TClosure ? $expanded : null;
     }
 
     /**

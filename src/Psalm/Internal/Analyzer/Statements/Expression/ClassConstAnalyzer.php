@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -13,11 +14,13 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\AmbiguousConstantInheritance;
 use Psalm\Issue\CircularReference;
@@ -709,6 +712,108 @@ final class ClassConstAnalyzer
         return true;
     }
 
+    /**
+     * PHP 8.5 only allows `name(...)` and `Foo::name(...)` (a static method) in constant expressions.
+     */
+    public static function checkFirstClassCallables(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        // closure bodies are ordinary code, where `$f(...)` is valid
+        $finder = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr\CallLike> */
+            public array $calls = [];
+
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\CallLike
+                    && !$node instanceof PhpParser\Node\Expr\New_
+                    && $node->isFirstClassCallable()
+                ) {
+                    $this->calls[] = $node;
+                }
+
+                return null;
+            }
+        };
+        (new PhpParser\NodeTraverser($finder))->traverse([$expr]);
+
+        foreach ($finder->calls as $call) {
+            $error = null;
+
+            if ($codebase->analysis_php_version_id < 8_05_00) {
+                $error = 'First-class callables in constant expressions require PHP 8.5';
+            } elseif ($call instanceof PhpParser\Node\Expr\FuncCall) {
+                if (!$call->name instanceof PhpParser\Node\Name) {
+                    $error = 'Constant expression contains invalid operations';
+                }
+            } elseif ($call instanceof PhpParser\Node\Expr\StaticCall) {
+                if (!$call->class instanceof PhpParser\Node\Name) {
+                    $error = 'Constant expression contains invalid operations';
+                } elseif (!$call->name instanceof PhpParser\Node\Identifier) {
+                    $error = 'Cannot use dynamic method name in constant expression';
+                } elseif (strtolower($call->class->getFirst()) === 'static') {
+                    $error = '"static" is not allowed in compile-time constants';
+                } else {
+                    self::checkStaticMethodIsStatic($statements_analyzer, $call, $call->class, $call->name, $context);
+                }
+            } else {
+                $error = 'Constant expression contains invalid operations';
+            }
+
+            if ($error !== null) {
+                IssueBuffer::maybeAdd(
+                    new ParseError($error, new CodeLocation($statements_analyzer, $call)),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+    }
+
+    private static function checkStaticMethodIsStatic(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $call,
+        PhpParser\Node\Name $class,
+        PhpParser\Node\Identifier $name,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $class_lc = strtolower($class->getFirst());
+
+        $fq_class_name = match ($class_lc) {
+            'self' => $context->self,
+            'parent' => $context->parent,
+            default => ClassLikeAnalyzer::getFQCLNFromNameObject($class, $statements_analyzer->getAliases()),
+        };
+
+        if ($fq_class_name === null || !$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name)) {
+            return;
+        }
+
+        $method_id = new MethodIdentifier($fq_class_name, strtolower($name->name));
+
+        if ($codebase->methods->getDeclaringMethodId($method_id, true) === null) {
+            return;
+        }
+
+        MethodAnalyzer::checkStatic(
+            $method_id,
+            $class_lc === 'self' || $context->self === $fq_class_name,
+            false,
+            $codebase,
+            new CodeLocation($statements_analyzer, $call),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
     public static function analyzeAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\ClassConst $stmt,
@@ -723,6 +828,7 @@ final class ClassConstAnalyzer
 
         foreach ($stmt->consts as $const) {
             ExpressionAnalyzer::analyze($statements_analyzer, $const->value, $context);
+            self::checkFirstClassCallables($statements_analyzer, $const->value, $context);
             $const_storage = $class_storage->constants[$const->name->name];
 
             // Check assigned type matches docblock type

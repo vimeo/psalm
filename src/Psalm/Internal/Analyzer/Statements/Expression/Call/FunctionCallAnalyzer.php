@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
@@ -452,9 +453,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $original_function_id = $function_name->toString();
 
         if (!$function_name instanceof PhpParser\Node\Name\FullyQualified) {
-            $function_call_info->function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
+            $function_call_info->function_id = Functions::getFullyQualifiedFunctionNameFromString(
                 $original_function_id,
-                $statements_analyzer,
+                $statements_analyzer->getAliases(),
             );
         } else {
             $function_call_info->function_id = $original_function_id;
