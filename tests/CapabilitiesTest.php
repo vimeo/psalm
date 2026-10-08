@@ -427,6 +427,44 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'freshObjectsMayBeWrittenOutsideOfClasses' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                        /** @var list<int> */
+                        public array $items = [];
+                        /** @var array<string, int> */
+                        public array $map = [];
+                        public ?int $last = null;
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Box {
+                        $b = new Box();
+                        $b->n = 5;
+                        $b->n += 1;
+                        $b->items[] = 5;
+                        $b->map["a"] = 5;
+                        unset($b->map["a"]);
+                        $b->last = 5;
+                        unset($b->last);
+                        return $b;
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @return Closure(): Box
+                     */
+                    function maker(): Closure {
+                        return /** @psalm-pure */ static function (): Box {
+                            $b = new Box();
+                            $b->n = 5;
+                            $b->items[] = 5;
+                            return $b;
+                        };
+                    }',
+            ],
             'builtinFirstClassCallableCarriesItsCapabilities' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals|write-globals */
@@ -1366,6 +1404,42 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+            ],
+            'pureFunctionCannotWriteAParameterObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-pure */
+                    function set(Box $b): Box {
+                        $b->n = 5;
+                        return $b;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - The context is pure but property assignment to Box::$n requires write-props',
+            ],
+            'functionCannotWriteAnObjectReachedFromAStaticProperty' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                    }
+
+                    final class Holder {
+                        public static ?Box $box = null;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    function set(): int {
+                        $b = Holder::$box;
+                        if ($b === null) {
+                            return 0;
+                        }
+                        $b->n = 5;
+                        return $b->n;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-globals but property assignment to Box::$n on an object reached from global state requires write-props|write-globals',
             ],
             'staticVariableNeedsWriteGlobals' => [
                 'code' => '<?php

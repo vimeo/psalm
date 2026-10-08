@@ -433,11 +433,16 @@ final class InstancePropertyAssignmentAnalyzer
             $real = $lhs_var_id === '$this'
                 ? Capabilities::WRITE_THIS_PROPS
                 : Capabilities::WRITE_PROPS;
-            $mut = $can_set_readonly_property ?
-                ($property_var_pure_compatible
+            // Only whether a readonly property may be set depends on the class scope: nothing else
+            // holds a fresh object, so writing it is free in a function as in a method. `$this` is
+            // the caller's own instance, never a fresh one, even where its type is reference-free.
+            $mut = match (true) {
+                $can_set_readonly_property => $property_var_pure_compatible
                     ? Capabilities::NONE
-                    : Capabilities::READ_PROPS
-                ) : $real;
+                    : Capabilities::READ_PROPS,
+                $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
+                default => $real,
+            };
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;
