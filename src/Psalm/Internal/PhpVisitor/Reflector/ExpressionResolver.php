@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\ConstFetch;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
@@ -20,6 +21,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\FirstClassCallable;
 use Psalm\Internal\Scanner\UnresolvedConstant\KeyValuePair;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
@@ -333,6 +335,38 @@ final class ExpressionResolver
                 return new EnumValueFetch($enum_fq_class_name, $stmt->var->name->name);
             } else /*if ($stmt->name->name === 'name')*/ {
                 return new EnumNameFetch($enum_fq_class_name, $stmt->var->name->name);
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall
+            && $stmt->name instanceof PhpParser\Node\Name
+            && $stmt->isFirstClassCallable()
+        ) {
+            $name = $stmt->name->toString();
+
+            return $stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                ? new FirstClassCallable($name)
+                : new FirstClassCallable(
+                    Functions::getFullyQualifiedFunctionNameFromString($name, $aliases),
+                    null,
+                    $name,
+                );
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\StaticCall
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            && $stmt->isFirstClassCallable()
+            && $stmt->class->toLowerString() !== 'static'
+        ) {
+            $fqcln = match ($stmt->class->toLowerString()) {
+                'self' => $fq_classlike_name,
+                'parent' => $parent_fq_class_name,
+                default => ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->class, $aliases),
+            };
+
+            if ($fqcln !== null) {
+                return new FirstClassCallable($stmt->name->name, $fqcln);
             }
         }
 
