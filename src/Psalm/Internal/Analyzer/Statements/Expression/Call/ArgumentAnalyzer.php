@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -1824,6 +1825,16 @@ final class ArgumentAnalyzer
 
         $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove() : 0;
 
+        // the array key the parameter is in this call, if it is one (see TaintFlowGraph::addParamKey())
+        if ($input_type->isSingleStringLiteral()) {
+            $param_key = '\'' . $input_type->getSingleStringLiteral()->value . '\'';
+        } elseif ($input_type->isSingleIntLiteral()) {
+            $param_key = '\'' . $input_type->getSingleIntLiteral()->value . '\'';
+        } else {
+            $forwarded_param = ArrayFetchAnalyzer::getParamKey($statements_analyzer, $expr);
+            $param_key = $forwarded_param !== null ? '@' . $forwarded_param : null;
+        }
+
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -1940,7 +1951,15 @@ final class ArgumentAnalyzer
                     $added_taints,
                     $removed_taints,
                 );
+
+                if ($param_key !== null) {
+                    $taint_flow_graph->addParamKey($new_sink, $param_key);
+                }
             }
+        }
+
+        if ($param_key !== null) {
+            $taint_flow_graph?->addParamKey($method_node, $param_key);
         }
 
         $graph->addNode($method_node);
