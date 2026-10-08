@@ -241,6 +241,8 @@ final class CliUtils
      * @psalm-taint-escape callable
      * @psalm-taint-escape html
      * @psalm-taint-escape has_quotes
+     * @psalm-taint-escape url_component
+     * @psalm-taint-escape url_path
      */
     public static function chosenByOperator(array $arguments): array
     {
