@@ -1133,6 +1133,29 @@ final class CapabilitiesTest extends TestCase
                         return $b;
                     }',
             ],
+            'appendingToAPropertyOfThisOrOfAFreshObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {}
+
+                        /** @psalm-external-mutation-free */
+                        public function add(int $item): void {
+                            $this->items[] = $item;
+                        }
+
+                        /** @psalm-pure */
+                        public static function of(int $item): self {
+                            $box = new Box();
+                            $box->items[] = $item;
+                            return $box;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2403,6 +2426,157 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'TooManyTemplateParams',
+            ],
+            'appendingToAPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        $box->get()->items[] = 5;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'settingAKeyOfAPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<string, int> */
+                        public array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        $box->get()->items["k"] = 5;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'appendingToANestedPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Inner {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    final class Box {
+                        public function __construct(public Inner $inner) {}
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        $box->get()->inner->items[] = 5;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'appendingToAPropertyOfAnotherObjectFromThisWritesProps' => [
+                'code' => '<?php
+                    final class Inner {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    final class Box {
+                        public function __construct(private Inner $inner) {}
+
+                        /** @psalm-mutation-free */
+                        public function getInner(): Inner {
+                            return $this->inner;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function add(): void {
+                            $this->getInner()->items[] = 5;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:29 - The context is read-props|write-this-props|write-refs but property assignment requires write-props',
+            ],
+            'unsettingAnElementOfAPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<string, int> */
+                        public array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        unset($box->get()->items["k"]);
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:31 - The context is read-props but unsetting a property on a mutable object requires write-props',
+            ],
+            'concatenatingToAPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        public string $s = "";
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        $box->get()->s .= "x";
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'addingToAnElementOfAPropertyOfACallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array<string, int> */
+                        public array $items = ["k" => 0];
+
+                        /** @psalm-mutation-free */
+                        public function get(): Box {
+                            return $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        $box->get()->items["k"] += 5;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'appendingToAPropertyOfAStaticCallResultWritesProps' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        /** @psalm-pure */
+                        public static function of(Box $box): Box {
+                            return $box;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function f(Box $box): void {
+                        Box::of($box)->items[] = 5;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - The context is read-props but property assignment requires write-props',
             ],
         ];
     }
