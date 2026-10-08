@@ -1861,10 +1861,25 @@ final class ArrayFetchAnalyzer
 
                     if (!$stmt->dim) {
                         if ($type->is_list) {
+                            // The item goes past the items the list surely has, which keep their values:
+                            // it may only be one of those it may not have yet, the first of which it now has.
+                            $properties = $type->properties;
+                            $is_first_possibly_undefined = true;
+                            foreach ($properties as $key => $property) {
+                                if ($property->possibly_undefined) {
+                                    $properties[$key] = Type::combineUnionTypes($property, $replacement_type)
+                                        ->setPossiblyUndefined(!$is_first_possibly_undefined);
+                                    $is_first_possibly_undefined = false;
+                                }
+                            }
+
                             $type = TKeyedArray::make(
-                                $type->properties,
+                                $properties,
                                 null,
-                                [$new_key_type, $generic_params],
+                                [
+                                    $new_key_type,
+                                    Type::combineUnionTypes($type->fallback_params[1] ?? null, $replacement_type),
+                                ],
                                 true,
                             );
                         } else {

@@ -690,6 +690,35 @@ final class ArrayAssignmentAnalyzer
             }
         }
 
+        if ($array_atomic_type === null && !$current_dim && $array_atomic_type_list !== null) {
+            $atomic_root_type_array = $root_type->getAtomicTypes()['array'] ?? null;
+
+            // Items are appended to a list (any number of them in a loop) past the items it surely has, which
+            // keep their values: only the items it may not have yet and the rest of it can be appended ones.
+            if ($atomic_root_type_array instanceof TKeyedArray && $atomic_root_type_array->is_list) {
+                $properties = [];
+                foreach ($atomic_root_type_array->properties as $key => $property) {
+                    $properties[$key] = $property->possibly_undefined
+                        ? Type::combineUnionTypes($property, $array_atomic_type_list, $codebase)
+                        : $property;
+                }
+
+                $array_atomic_type = TKeyedArray::make(
+                    $properties,
+                    null,
+                    [
+                        Type::getListKey(),
+                        Type::combineUnionTypes(
+                            $atomic_root_type_array->fallback_params[1] ?? null,
+                            $array_atomic_type_list,
+                            $codebase,
+                        ),
+                    ],
+                    true,
+                );
+            }
+        }
+
         $array_atomic_type ??= $array_atomic_type_class_string
             ?? ($array_atomic_type_list !== null
                 ? Type::getNonEmptyListAtomic($array_atomic_type_list)

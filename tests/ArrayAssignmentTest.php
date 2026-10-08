@@ -2101,6 +2101,62 @@ final class ArrayAssignmentTest extends TestCase
                     '$b===' => 'list{0, 1, 2}',
                 ],
             ],
+            'listAppendKeepsKnownItems' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $items = [];
+
+                    $a = ["OR"];
+                    foreach ($items as $item) {
+                        $a[] = $item;
+                    }
+
+                    $b = ["OR", "AND"];
+                    foreach ($items as $_) {
+                        $b[] = "x";
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $c = ["OR"];
+                    foreach ($items as $item) {
+                        $c[] = $item;
+                    }
+
+                    /** @var list{0: "OR", 1?: "AND"} */
+                    $d = ["OR"];
+                    foreach ($items as $item) {
+                        $d[] = $item;
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $e = ["OR"];
+                    $e[] = new X;
+                ',
+                'assertions' => [
+                    '$a===' => "list{0: 'OR', 1?: X, ...<X>}",
+                    '$b===' => "list{0: 'OR', 1: 'AND', 2?: 'x', ...<'x'>}",
+                    '$c===' => "list{'OR', ...<X>}",
+                    '$d===' => "list{0: 'OR', 1?: 'AND'|X, 2?: X, ...<X>}",
+                    '$e===' => "list{'OR', ...<X>}",
+                ],
+            ],
+            'listAppendInLoopKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $periods */
+                    function orWhere(array $periods): void {
+                        $conditions = ["OR"];
+                        foreach ($periods as $period) {
+                            $conditions[] = $period;
+                        }
+                        takesWhere($conditions);
+                    }
+                ',
+            ],
             'appendValuesToMap' => [
                 'code' => '<?php
                     /**
