@@ -45,7 +45,6 @@ use function array_values;
 use function assert;
 use function count;
 use function explode;
-use function in_array;
 use function reset;
 use function str_contains;
 use function substr;
@@ -300,11 +299,11 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('MixedArrayOffset', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['MixedArrayOffset'])) {
             $statements_analyzer->addSuppressedIssues(['MixedArrayOffset']);
         }
 
@@ -349,11 +348,11 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         $context->inside_call = $was_inside_call;
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('MixedArrayOffset', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['MixedArrayOffset'])) {
             $statements_analyzer->removeSuppressedIssues(['MixedArrayOffset']);
         }
 

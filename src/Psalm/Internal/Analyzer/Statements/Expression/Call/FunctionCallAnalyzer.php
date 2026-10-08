@@ -1001,7 +1001,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_name_type->parent_nodes
-                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !$codebase->config->suppressesIssueType(
+                    $statements_analyzer->getSuppressedIssues(),
+                    'TaintedInput',
+                )
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -1066,7 +1069,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['InternalMethod'])) {
             $statements_analyzer->addSuppressedIssues(['InternalMethod']);
         }
 
@@ -1079,7 +1082,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             false,
         );
 
-        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['InternalMethod'])) {
             $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
         }
 

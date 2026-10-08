@@ -91,6 +91,8 @@ function (int $a) : string {
 
 If you wish to suppress all issues, you can use `@psalm-suppress all` instead of multiple annotations.
 
+The issues listed in [`<unsuppressibleIssues>`](configuration.md#unsuppressibleissues) can't be suppressed, neither this way nor with `<issueHandlers>` or a baseline.
+
 ## Using a baseline file
 
 If you have a bunch of errors and you don't want to fix them all at once, Psalm can grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
