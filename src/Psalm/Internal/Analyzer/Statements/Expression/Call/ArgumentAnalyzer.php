@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -1824,6 +1825,16 @@ final class ArgumentAnalyzer
 
         $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove() : 0;
 
+        // the array key the parameter is in this call, if it is one (see TaintFlowGraph::addParamKey())
+        if ($input_type->isSingleStringLiteral()) {
+            $param_key = '\'' . $input_type->getSingleStringLiteral()->value . '\'';
+        } elseif ($input_type->isSingleIntLiteral()) {
+            $param_key = '\'' . $input_type->getSingleIntLiteral()->value . '\'';
+        } else {
+            $forwarded_param = ArrayFetchAnalyzer::getParamKey($statements_analyzer, $expr);
+            $param_key = $forwarded_param !== null ? '@' . $forwarded_param : null;
+        }
+
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -1916,11 +1927,16 @@ final class ArgumentAnalyzer
             }
         }
 
+        // the function-like whose body the argument enters
+        $declaring_storage = $function_storage;
+        $declaring_return_id = strtolower($cased_method_id);
+
         if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                $declaring_return_id = strtolower($codebase->methods->getCasedMethodId($declaring_method_id));
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
@@ -1940,7 +1956,15 @@ final class ArgumentAnalyzer
                     $added_taints,
                     $removed_taints,
                 );
+
+                if ($param_key !== null) {
+                    $taint_flow_graph->addParamKey($new_sink, $param_key, $function_call_location);
+                }
             }
+        }
+
+        if ($param_key !== null) {
+            $taint_flow_graph?->addParamKey($method_node, $param_key, $function_call_location);
         }
 
         $graph->addNode($method_node);
@@ -1981,6 +2005,22 @@ final class ArgumentAnalyzer
             $added_taints,
             $removed_taints,
         );
+
+        $callee_location = $declaring_storage?->stmt_location;
+
+        if ($taint_flow_graph && !$specialize_taint && $callee_location !== null) {
+            $taint_flow_graph->addCallArgument($argument_value_node, $function_call_location, $callee_location);
+        }
+
+        if ($taint_flow_graph
+            && $callee_location !== null
+            && $function_call_location->file_path === $callee_location->file_path
+            && $function_call_location->raw_file_start >= $callee_location->raw_file_start
+            && $function_call_location->raw_file_end <= $callee_location->raw_file_end
+        ) {
+            // a call the function-like makes to itself
+            $taint_flow_graph->addRecursiveCall($function_call_location, $callee_location, $declaring_return_id);
+        }
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);
