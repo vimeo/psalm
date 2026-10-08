@@ -374,8 +374,8 @@ $b->s = "boo"; // disallowed
 ### Purity and capabilities
 
 Psalm tracks the side effects a function, method or closure may have as a set of capabilities:
-`read-props`, `write-this-props`, `write-props`, `read-globals`, `write-globals`, `write-refs` and
-`io`, with `pure` for none of them and `impure` for all of them. [The Purity Model](purity_model.md)
+`read-props`, `write-this-props`, `write-props`, `read-globals`, `write-globals`, `write-refs`, `io`
+and `time`, with `pure` for none of them and `impure` for all of them. [The Purity Model](purity_model.md)
 explains what each capability allows, how calls are charged and how purity templates work. The
 annotations are listed below.
 

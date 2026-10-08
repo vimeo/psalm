@@ -253,6 +253,7 @@ abstract class Atomic implements TypeNode, Stringable
             case 'write-globals':
             case 'write-refs':
             case 'io':
+            case 'time':
                 return new TCapabilities(Capabilities::NAMES[$value], $from_docblock);
 
             case 'array':
