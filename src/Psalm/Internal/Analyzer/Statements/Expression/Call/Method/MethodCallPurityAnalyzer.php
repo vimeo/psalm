@@ -133,7 +133,16 @@ final class MethodCallPurityAnalyzer
     public static function isReceiverThis(Expr $var): bool
     {
         return self::isThis($var)
-            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+            || (($var instanceof Expr\MethodCall || $var instanceof Expr\StaticCall)
+                && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * Flags a `parent::f()`, `self::f()` or `static::f()` call as giving back the caller's own `$this`
+     */
+    public static function setReturnsThis(Expr\StaticCall $stmt, bool $returns_this): void
+    {
+        $stmt->setAttribute(self::RETURNS_THIS, $returns_this);
     }
 
     /**
