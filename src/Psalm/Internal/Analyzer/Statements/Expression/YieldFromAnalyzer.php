@@ -38,8 +38,8 @@ final class YieldFromAnalyzer
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
             // what it delegates to yields for the generator
-            YieldAnalyzer::taintGenerator($statements_analyzer, $stmt_expr_type, 'yield-from');
-            YieldAnalyzer::taintDelegatedSends($statements_analyzer, $stmt_expr_type);
+            YieldAnalyzer::taintGenerator($statements_analyzer, $context, $stmt_expr_type, 'yield-from');
+            YieldAnalyzer::taintDelegatedSends($statements_analyzer, $context, $stmt_expr_type);
 
             $key_type = null;
             $value_type = null;

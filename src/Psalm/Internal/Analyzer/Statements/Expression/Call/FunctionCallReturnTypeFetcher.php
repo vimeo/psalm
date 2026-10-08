@@ -781,9 +781,10 @@ final class FunctionCallReturnTypeFetcher
         $source = $statements_analyzer->getSource();
 
         if ($source instanceof MethodAnalyzer) {
-            $method_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId(
+            // the body of a method of a trait is analyzed as one of the class using it
+            $method_id = FunctionLikeAnalyzer::getCasedBodyMethodId(
                 $statements_analyzer->getCodebase(),
-                $source->getMethodId(),
+                $source->getMethodId($context->self),
             );
         } elseif ($source instanceof FunctionAnalyzer || $source instanceof ClosureAnalyzer) {
             $method_id = $source->getCorrectlyCasedMethodId();
