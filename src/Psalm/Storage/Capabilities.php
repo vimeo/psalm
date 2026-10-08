@@ -26,6 +26,18 @@ use function trim;
  * capabilities include every capability the operation or callee requires. The empty set is
  * "pure": the return value depends only on the arguments.
  *
+ * Being sets, capabilities may only be compared with {@see self::NONE} and {@see self::ALL}:
+ * test them with {@see self::allows()}, or with {@see self::equals()} for an exact set.
+ *
+ * @psalm-type CapabilitySet = int-mask<
+ *     Capabilities::READ_PROPS,
+ *     Capabilities::WRITE_THIS_PROPS,
+ *     Capabilities::WRITE_PROPS,
+ *     Capabilities::READ_GLOBALS,
+ *     Capabilities::WRITE_GLOBALS,
+ *     Capabilities::WRITE_REFS,
+ *     Capabilities::IO
+ * >
  * @psalm-immutable
  * @api
  */
@@ -122,6 +134,8 @@ final class Capabilities
      * The smallest of the named purity levels (pure, mutation-free, external-mutation-free,
      * impure) that allows a capability set: the granularity at which annotations are suggested.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function toNamedLevel(int $capabilities): int
@@ -139,6 +153,8 @@ final class Capabilities
      * Whether a context with $available capabilities may perform an operation
      * that requires $required.
      *
+     * @param CapabilitySet $available
+     * @param CapabilitySet $required
      * @psalm-pure
      */
     public static function allows(int $available, int $required): bool
@@ -147,8 +163,22 @@ final class Capabilities
     }
 
     /**
+     * Whether two capability sets are exactly the same set, e.g. to tell whether a fixpoint was
+     * reached; use {@see self::allows()} to test whether a set is enough for another.
+     *
+     * The parameters are plain ints: comparing sets by value is what this function is for.
+     *
+     * @psalm-pure
+     */
+    public static function equals(int $capabilities, int $other_capabilities): bool
+    {
+        return $capabilities === $other_capabilities;
+    }
+
+    /**
      * Parses the value of a `@psalm-capabilities` tag, e.g. `write-props, io` or `read-globals|io`.
      *
+     * @return CapabilitySet
      * @throws CapabilitiesParseException
      * @psalm-pure
      */
@@ -161,18 +191,26 @@ final class Capabilities
                 continue;
             }
 
-            $name = strtolower($name);
-
-            if (!isset(self::NAMES[$name])) {
-                throw new CapabilitiesParseException(
-                    'Unknown capability ' . $name . ', expected one of ' . implode(', ', array_keys(self::NAMES)),
-                );
-            }
-
-            $capabilities |= self::NAMES[$name];
+            $capabilities |= self::fromName(strtolower($name));
         }
 
         return $capabilities;
+    }
+
+    /**
+     * @return CapabilitySet
+     * @throws CapabilitiesParseException
+     * @psalm-pure
+     */
+    private static function fromName(string $name): int
+    {
+        if (!isset(self::NAMES[$name])) {
+            throw new CapabilitiesParseException(
+                'Unknown capability ' . $name . ', expected one of ' . implode(', ', array_keys(self::NAMES)),
+            );
+        }
+
+        return self::NAMES[$name];
     }
 
     /**
@@ -180,6 +218,8 @@ final class Capabilities
      * with $besides, of what the set has beyond those capabilities (`write-props|io` for
      * `read-props|write-props|io` beyond `read-props`).
      *
+     * @param CapabilitySet $capabilities
+     * @param CapabilitySet $besides
      * @psalm-pure
      */
     public static function toString(int $capabilities, int $besides = self::NONE): string
@@ -209,6 +249,7 @@ final class Capabilities
      * The docblock annotation describing a capability set, without the leading `@`:
      * `@psalm-mutation-free` and `@psalm-external-mutation-free` are only accepted.
      *
+     * @param CapabilitySet $capabilities
      * @return non-empty-string
      * @psalm-pure
      */
@@ -224,15 +265,19 @@ final class Capabilities
     /**
      * The docblock annotation describing a capability set on a class, without the leading `@`.
      *
+     * @param CapabilitySet $capabilities
      * @return non-empty-string
      * @psalm-pure
      */
     public static function toClassAnnotation(int $capabilities): string
     {
+        // exactly read-props, which also makes the properties readonly
+        if (self::equals($capabilities, self::MUTATION_FREE)) {
+            return 'psalm-immutable';
+        }
+
         return match ($capabilities) {
             self::NONE => 'psalm-pure',
-            // also makes the properties readonly
-            self::MUTATION_FREE => 'psalm-immutable',
             self::ALL => 'psalm-mutable',
             default => 'psalm-capabilities ' . self::toString($capabilities),
         };
@@ -243,6 +288,7 @@ final class Capabilities
      * of a purity template, or a purity template bound. Unbound purity templates count as their
      * upper bound; anything that is not a purity type counts as impure.
      *
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function fromType(Union $type): int
@@ -259,7 +305,7 @@ final class Capabilities
                 $capabilities |= self::fromType($atomic->purity);
             } else {
                 // including a type alias that has not been expanded yet
-                $capabilities |= self::ALL;
+                return self::ALL;
             }
         }
 

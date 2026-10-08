@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class DynamicFunctionStorage
 {
@@ -43,6 +44,8 @@ final class DynamicFunctionStorage
 
     /**
      * Function purity.
+     *
+     * @var CapabilitySet
      */
     public int $capabilities = Capabilities::ALL;
 

@@ -19,6 +19,7 @@ use function implode;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
@@ -145,6 +146,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The capabilities (side effects) this function-like may use: a bitmask of
      * {@see Capabilities} constants, {@see Capabilities::ALL} when unannotated.
+     *
+     * @var CapabilitySet
      */
     public int $capabilities = Capabilities::ALL;
 
@@ -252,6 +255,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *
      * @param array<string, non-empty-array<string, Union>> $class_template_types the templates of the
      *                                                                             containing class, if any
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public function getWorstCaseCapabilities(array $class_template_types = []): int

@@ -23,6 +23,7 @@ use function is_string;
  * property is write-props (write-this-props on `$this`), global state is write-globals.
  *
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ByRefArgumentAnalyzer
 {
@@ -30,8 +31,10 @@ final class ByRefArgumentAnalyzer
      * The capabilities a call needs, with the callee's write-refs replaced by the cost of the
      * arguments actually passed by reference.
      *
+     * @param CapabilitySet $capabilities
      * @param array<int, FunctionLikeParameter>|null $params the callee's parameters, null when unknown
      * @param list<Arg|PhpParser\Node\VariadicPlaceholder> $args
+     * @return CapabilitySet
      */
     public static function adjustCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -101,6 +104,8 @@ final class ByRefArgumentAnalyzer
 
     /**
      * What writing the given expression through a reference costs the current scope.
+     *
+     * @return CapabilitySet
      */
     private static function getWriteCapabilities(
         StatementsAnalyzer $statements_analyzer,

@@ -26,6 +26,7 @@ use function in_array;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikeStorage implements HasAttributesInterface
 {
@@ -185,6 +186,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
+    /** @var CapabilitySet */
     public int $capabilities = Capabilities::ALL;
 
     /**
@@ -338,7 +340,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * what every value of the template requires, so the methods depending on it get these
      * capabilities unconditionally, and subclasses may not bind it to less.
      *
-     * @var array<string, int>
+     * @var array<string, CapabilitySet>
      */
     public array $template_lower_bounds = [];
 

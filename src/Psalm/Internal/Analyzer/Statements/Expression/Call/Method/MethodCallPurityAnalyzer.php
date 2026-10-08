@@ -30,6 +30,7 @@ use Psalm\Type\Union;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodCallPurityAnalyzer
 {
@@ -58,6 +59,8 @@ final class MethodCallPurityAnalyzer
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
      * `$this` and write-props otherwise, as writing its properties directly would. Callers that
      * know the receiver to be fresh by other means say so with $receiver_is_fresh.
+     *
+     * @return CapabilitySet
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -85,6 +88,8 @@ final class MethodCallPurityAnalyzer
      * write-this-props when the receiver is the caller's `$this`, write-props otherwise, plus
      * write-globals when the receiver was reached from global state.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getCapabilitiesForReceiver(

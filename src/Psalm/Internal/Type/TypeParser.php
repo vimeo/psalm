@@ -115,6 +115,7 @@ use function substr;
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class TypeParser
 {
@@ -1097,6 +1098,7 @@ final class TypeParser
             }
 
             $potential_ints = [];
+            $int_mask_bits = 0;
 
             foreach ($atomic_types as $atomic_type) {
                 if (!$atomic_type instanceof TLiteralInt) {
@@ -1104,9 +1106,13 @@ final class TypeParser
                 }
 
                 $potential_ints[] = $atomic_type->value;
+                $int_mask_bits |= $atomic_type->value;
             }
 
-            return new Union(self::getComputedIntsFromMask($potential_ints, $from_docblock));
+            return new Union(
+                self::getComputedIntsFromMask($potential_ints, $from_docblock),
+                ['int_mask_bits' => $int_mask_bits],
+            );
         }
 
         if ($generic_type_value === 'int-mask-of') {
@@ -1281,6 +1287,8 @@ final class TypeParser
 
         $atomic_types = [];
 
+        $int_mask_bits = null;
+
         foreach ($parse_tree->children as $child_tree) {
             if ($child_tree instanceof NullableTree) {
                 if (!isset($child_tree->children[0])) {
@@ -1312,6 +1320,11 @@ final class TypeParser
                     $atomic_types[] = $type;
                 }
 
+                // e.g. `int-mask<1, 2>|null`
+                if ($atomic_type->int_mask_bits !== null) {
+                    $int_mask_bits = ($int_mask_bits ?? 0) | $atomic_type->int_mask_bits;
+                }
+
                 continue;
             }
 
@@ -1328,7 +1341,11 @@ final class TypeParser
             );
         }
 
-        return TypeCombiner::combine($atomic_types);
+        $union = TypeCombiner::combine($atomic_types);
+
+        return $int_mask_bits !== null && IntMask::fits($union, $int_mask_bits)
+            ? $union->setProperties(['int_mask_bits' => $int_mask_bits])
+            : $union;
     }
 
     /**
@@ -1649,7 +1666,7 @@ final class TypeParser
      *
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return array{string, int|Union} the bare keyword and the purity
+     * @return array{string, CapabilitySet|Union} the bare keyword and the purity
      * @throws TypeParseTreeException
      */
     private static function getCallablePurity(

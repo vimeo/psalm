@@ -28,13 +28,14 @@ use function trim;
  *     }
  *
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class CapabilitiesExpressionResolver
 {
     /**
      * @param array<string, non-empty-array<string, Union>> $template_types
      * @param array<string, TypeAlias> $type_aliases
-     * @return int|Union the capabilities, or the purity type when it names imported type aliases
+     * @return CapabilitySet|Union the capabilities, or the purity type when it names imported type aliases
      *                   that can only be resolved once every class is scanned
      * @throws TypeParseTreeException
      */
@@ -79,6 +80,7 @@ final class CapabilitiesExpressionResolver
      * The purity type holding both the capabilities already known and the aliases still to be
      * resolved, for the populator.
      *
+     * @param CapabilitySet $capabilities
      * @param list<Union> $deferred
      * @psalm-capabilities read-props
      */

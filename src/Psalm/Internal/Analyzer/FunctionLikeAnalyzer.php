@@ -109,6 +109,7 @@ use const SORT_NUMERIC;
 /**
  * @internal
  * @template-covariant TFunction as Closure|Function_|ClassMethod|ArrowFunction
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
@@ -140,11 +141,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
+    /** @var CapabilitySet */
     public int $inferred_capabilities = Capabilities::NONE;
 
     /**
      * The mutations performed by this function-like itself, excluding those of
      * the unannotated callees in $deferred_callees.
+     *
+     * @var CapabilitySet
      */
     public int $intrinsic_capabilities = Capabilities::NONE;
 
@@ -165,6 +169,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * The mutations performed by the parameter default values themselves.
+     *
+     * @var CapabilitySet
      */
     public int $param_default_intrinsic_capabilities = Capabilities::NONE;
 
@@ -1381,6 +1387,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * The capabilities the parameter default values of a function-like with $capabilities may use.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getParamDefaultCapabilities(int $capabilities): int
@@ -2040,6 +2048,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    // as the parameter's own type, e.g. with the class constants of an int-mask resolved
+                    $param_out_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $param_out_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $actual_type,
@@ -2114,6 +2131,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * A purity made of capabilities and purity templates, where no capabilities (`pure`) are left
      * out of a union with templates: `P|pure` is just `P`.
      *
+     * @param CapabilitySet $capabilities
      * @param array<string, TTemplateParam> $templates
      * @psalm-pure
      */
