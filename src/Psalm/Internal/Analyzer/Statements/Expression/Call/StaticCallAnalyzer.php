@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -393,6 +394,23 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
         if (!$taint_flow_graph) {
             return;
+        }
+
+        // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
+        if ($method_storage
+            && (!$stmt->class instanceof PhpParser\Node\Name || $stmt->class->toLowerString() === 'static')
+        ) {
+            $dispatch_node = MethodCallReturnTypeFetcher::getReturnDispatchNode(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $method_storage,
+                $node_location,
+            );
+
+            if ($dispatch_node) {
+                $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+            }
         }
 
         if ($method_storage

@@ -2381,6 +2381,50 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     fwrite(STDOUT, (string) $_GET["a"]);',
             ],
+            'dontTaintTheResultOfACallOnAClassInheritingTheMethodWithTheReturnOfASiblingOverride' => [
+                'code' => '<?php
+                    class Named {
+                        public function name(): string { return "safe"; }
+                    }
+                    final class Tainted extends Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+                    final class Inheriting extends Named {}
+
+                    function show(Inheriting $named): void {
+                        echo $named->name();
+                    }',
+            ],
+            'dontTaintTheResultOfAParentCallWithTheReturnOfASiblingOverride' => [
+                'code' => '<?php
+                    class Named {
+                        public function name(): string { return "safe"; }
+                    }
+                    final class Tainted extends Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+                    final class Shown extends Named {
+                        public function show(): void {
+                            echo parent::name();
+                        }
+                    }',
+            ],
+            'dontTaintTheResultOfACallOnAnInterfaceWithWhatASpecializedCallOfTheImplementationReturns' => [
+                'code' => '<?php
+                    interface Identity {
+                        public function get(string $value): string;
+                    }
+                    final class Implementation implements Identity {
+                        public function get(string $value): string { return $value; }
+                    }
+
+                    function run(Implementation $identity): string {
+                        return $identity->get((string) $_GET["value"]);
+                    }
+                    function show(Identity $identity, string $value): void {
+                        echo $identity->get($value);
+                    }',
+            ],
         ];
     }
 
@@ -7390,6 +7434,79 @@ final class TaintTest extends TestCase
                     }
                     B::test($foo);',
                 'error_message' => 'TaintedCallable',
+            ],
+            'taintTheResultOfACallOnAnInterfaceWithTheReturnOfAnImplementation' => [
+                'code' => '<?php
+                    interface Named {
+                        public function name(): string;
+                    }
+                    final class Tainted implements Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+
+                    function show(Named $named): void {
+                        echo $named->name();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheResultOfACallOnAParentClassWithTheReturnOfAnOverride' => [
+                'code' => '<?php
+                    class Named {
+                        public function name(): string { return "safe"; }
+                    }
+                    final class Tainted extends Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+
+                    function show(Named $named): void {
+                        echo $named->name();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheResultOfACallOfAnAbstractMethodWithTheReturnOfAnImplementation' => [
+                'code' => '<?php
+                    abstract class Named {
+                        abstract public function name(): string;
+                    }
+                    final class Tainted extends Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+
+                    function show(Named $named): void {
+                        echo $named->name();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheResultOfAStaticCallOnStaticWithTheReturnOfAnOverride' => [
+                'code' => '<?php
+                    class Named {
+                        public static function name(): string { return "safe"; }
+
+                        public static function show(): void {
+                            echo static::name();
+                        }
+                    }
+                    final class Tainted extends Named {
+                        public static function name(): string { return (string) $_GET["name"]; }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheResultOfACallOnAnImplementationAlsoCalledOnItsInterface' => [
+                'code' => '<?php
+                    interface Named {
+                        public function name(): string;
+                    }
+                    final class Tainted implements Named {
+                        public function name(): string { return (string) $_GET["name"]; }
+                    }
+
+                    function get(Named $named): string {
+                        return $named->name();
+                    }
+                    function show(Tainted $named): void {
+                        echo $named->name();
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
         ];
     }

@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -24,6 +25,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -576,6 +578,18 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
+        $dispatch_node = self::getReturnDispatchNode(
+            $codebase,
+            $taint_flow_graph,
+            $method_id,
+            $method_storage,
+            $node_location,
+        );
+
+        if ($dispatch_node) {
+            $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+        }
+
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $method_storage,
             $taint_flow_graph,
@@ -591,6 +605,102 @@ final class MethodCallReturnTypeFetcher
             $taint_flow_graph,
             $method_call_node,
         );
+    }
+
+    /**
+     * The node of what a virtual call of a method at $call_location gets from the methods that may run instead, those
+     * of the classes extending the class it is called on, or null if there are none.
+     *
+     * That can't be the return node of the method: the calls on the classes inheriting it go there too, and they
+     * can't run the methods of the others. The methods are linked to a dispatch node (see
+     * DataFlowNode::getForReturnDispatch()) shared by the virtual calls of the method on the class, once, so that
+     * the number of calls doesn't multiply its paths. Each call takes it through a node of its own, so that what is
+     * added to the result of a call doesn't go to the others.
+     */
+    public static function getReturnDispatchNode(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+        CodeLocation $call_location,
+    ): ?DataFlowNode {
+        // a constructor is called on the class it constructs, a private method is not overridden
+        if ($method_id->method_name === '__construct'
+            || $method_storage->final
+            || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        if ($class_storage->dependent_classlikes === []) {
+            return null;
+        }
+
+        $cased_method_id = $class_storage->name . '::' . (string) $method_storage->cased_name;
+        $dispatch_node = DataFlowNode::getForReturnDispatch($cased_method_id);
+
+        if (!$taint_flow_graph->hasNode($dispatch_node)) {
+            $return_nodes = [];
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
+
+                // the method the objects of the class run, which it may inherit from a class not extending this one
+                $dependent_appearing_method_id = $codebase->methods->getAppearingMethodId($dependent_method_id);
+                $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+
+                if ($dependent_appearing_method_id === null
+                    || $dependent_declaring_method_id === null
+                    || (string) $dependent_appearing_method_id === (string) $appearing_method_id
+                ) {
+                    continue;
+                }
+
+                $dependent_storage = $codebase->methods->getStorage($dependent_declaring_method_id);
+
+                // What the body of a method specialized by call site returns leaves its return node through the
+                // specializations of the node, and only when the node has no path of its own: the dispatch is
+                // then one more call site of it, keyed by the location of the method
+                $specialization_location = $dependent_storage->location !== null
+                    && TaintFlowGraph::isCallSpecialized(
+                        $taint_flow_graph,
+                        $codebase,
+                        $dependent_storage,
+                        $dependent_storage->location,
+                    ) ? $dependent_storage->location : null;
+
+                // the body of a method of a trait is analyzed as one of each class using it
+                $return_node = DataFlowNode::getForMethodReturn(
+                    $dependent_appearing_method_id->fq_class_name . '::' . (string) $dependent_storage->cased_name,
+                    $dependent_storage,
+                    $specialization_location,
+                );
+
+                $return_nodes[$return_node->id] = $return_node;
+            }
+
+            // no other method may run: the classes extending this one inherit the method
+            if ($return_nodes === []) {
+                return null;
+            }
+
+            $taint_flow_graph->addNode($dispatch_node);
+
+            foreach ($return_nodes as $return_node) {
+                $taint_flow_graph->addNode($return_node);
+                $taint_flow_graph->addPath($return_node, $dispatch_node, 'dispatch');
+            }
+        }
+
+        $call_node = DataFlowNode::getForAssignment($dispatch_node->label, $call_location);
+
+        $taint_flow_graph->addNode($call_node);
+        $taint_flow_graph->addPath($dispatch_node, $call_node, 'dispatch');
+
+        return $call_node;
     }
 
     public static function replaceTemplateTypes(
