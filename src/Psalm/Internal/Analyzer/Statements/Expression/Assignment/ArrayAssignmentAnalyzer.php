@@ -467,6 +467,8 @@ final class ArrayAssignmentAnalyzer
             // what the assigned value cannot hold, given its type
             $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
 
+            $param_key = $key_values ? null : ArrayFetchAnalyzer::getParamKey($statements_analyzer, $expr->dim);
+
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if ($key_values) {
@@ -483,7 +485,7 @@ final class ArrayAssignmentAnalyzer
                         $graph->addPath(
                             $child_parent_node,
                             $parent_node,
-                            'arrayvalue-assignment',
+                            'arrayvalue-assignment' . ($param_key !== null ? '-@' . $param_key : ''),
                             0,
                             $removed_taints,
                         );
