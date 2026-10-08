@@ -12,6 +12,7 @@ use function array_key_last;
 use function array_keys;
 use function array_sum;
 use function count;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -97,16 +98,66 @@ abstract class DataFlowGraph
                         continue;
                     }
 
-                    if (substr($previous_path_type, $el + 12) === substr($path_type, $el + 7)) {
-                        return false;
-                    }
-
-                    return true;
+                    return !self::keysMayBeEqual(substr($previous_path_type, $el + 12), substr($path_type, $el + 7));
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether the array key or property assigned by an edge of type $expression_type . '-assignment-' .
+     * $assigned_key and the one fetched by an edge of type $expression_type . '-fetch-' . $fetched_key can be
+     * the same.
+     *
+     * An array key known exactly is quoted ('k'), and one whose start only is known is quoted and followed by
+     * a star ('k'*: any key starting with k). A property name is bare. An array key fetch fetches the key ''.
+     *
+     * @psalm-pure
+     */
+    public static function keysMayBeEqual(string $assigned_key, string $fetched_key): bool
+    {
+        $assigned_prefix = self::getKeyPrefix($assigned_key);
+        $fetched_prefix = self::getKeyPrefix($fetched_key);
+
+        if ($assigned_prefix === null && $fetched_prefix === null) {
+            return $assigned_key === $fetched_key;
+        }
+
+        if ($assigned_prefix === null) {
+            return str_starts_with(self::getKeyValue($assigned_key), $fetched_prefix);
+        }
+
+        if ($fetched_prefix === null) {
+            return str_starts_with(self::getKeyValue($fetched_key), $assigned_prefix);
+        }
+
+        return str_starts_with($assigned_prefix, $fetched_prefix) || str_starts_with($fetched_prefix, $assigned_prefix);
+    }
+
+    /**
+     * The start of the array key of a path type whose key only that is known (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    private static function getKeyPrefix(string $key): ?string
+    {
+        return strlen($key) > 3 && str_starts_with($key, "'") && str_ends_with($key, "'*")
+            ? substr($key, 1, -2)
+            : null;
+    }
+
+    /**
+     * The array key or property name of a path type whose key is known exactly (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    private static function getKeyValue(string $key): string
+    {
+        return strlen($key) > 1 && str_starts_with($key, "'") && str_ends_with($key, "'")
+            ? substr($key, 1, -1)
+            : $key;
     }
 
     /**

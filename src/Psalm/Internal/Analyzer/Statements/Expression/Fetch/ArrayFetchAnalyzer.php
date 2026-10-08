@@ -17,6 +17,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -197,6 +199,7 @@ final class ArrayFetchAnalyzer
                 $stmt_type,
                 $used_key_type,
                 $context,
+                key_prefix_path_suffix: self::getKeyPrefixPathSuffix($statements_analyzer, $stmt->dim),
             );
 
             // what is written through a reference to the item doesn't flow through the array
@@ -385,6 +388,7 @@ final class ArrayFetchAnalyzer
             $stmt_type,
             $used_key_type,
             $context,
+            key_prefix_path_suffix: self::getKeyPrefixPathSuffix($statements_analyzer, $stmt->dim),
         );
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -490,6 +494,9 @@ final class ArrayFetchAnalyzer
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
      * foreach goes over, ...).
+     *
+     * @param ?string $key_prefix_path_suffix how the paths encode the key, if only its start is known (see
+     *                                        getKeyPrefixPathSuffix())
      */
     public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -499,6 +506,8 @@ final class ArrayFetchAnalyzer
         Union &$offset_type,
         ?Context $context = null,
         ?Union $var_type = null,
+        ?string $key_prefix_path_suffix = null,
+        ?string $foreach_marker = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $var_type ?? $statements_analyzer->node_data->getType($var))
@@ -554,20 +563,50 @@ final class ArrayFetchAnalyzer
                 $graph->addNode($array_key_node);
             }
 
+            $key_path_suffix = $dim_value !== null
+                ? '-\'' . $dim_value . '\''
+                : $key_prefix_path_suffix ?? '';
+
+            // the taint flow graph tells the element values a foreach loop fetches (see ForeachAnalyzer)
+            $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
+            $marks_elements = $foreach_marker !== null
+                && $key_path_suffix === ''
+                && $taint_graph instanceof TaintFlowGraph;
+
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
-                    $added_taints,
-                    $removed_taints,
-                );
+                if ($marks_elements && $taint_graph instanceof TaintFlowGraph) {
+                    $taint_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch@' . $foreach_marker,
+                        $added_taints,
+                        $removed_taints,
+                    );
+
+                    if ($graph instanceof CombinedFlowGraph) {
+                        $graph->variable_use_graph->addPath(
+                            $parent_node,
+                            $new_parent_node,
+                            'arrayvalue-fetch',
+                            $added_taints,
+                            $removed_taints,
+                        );
+                    }
+                } else {
+                    $graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                }
 
                 if ($stmt_type->by_ref) {
                     $graph->addPath(
                         $new_parent_node,
                         $parent_node,
-                        'arrayvalue-assignment' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
+                        'arrayvalue-assignment' . $key_path_suffix,
                         $added_taints,
                         $removed_taints,
                     );
@@ -592,6 +631,71 @@ final class ArrayFetchAnalyzer
         }
 
         self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
+    }
+
+    /**
+     * How the paths of the fetches and assignments of the array key $dim encode it when only its start is
+     * known statically, as for "k{$x}" or 'k' . $x: quoted and followed by a star (see
+     * DataFlowGraph::keysMayBeEqual()). Null if not even its start is known, or if it is known exactly (the
+     * paths encode it quoted then).
+     */
+    public static function getKeyPrefixPathSuffix(
+        StatementsAnalyzer $statements_analyzer,
+        ?PhpParser\Node\Expr $dim,
+    ): ?string {
+        if ($dim === null) {
+            return null;
+        }
+
+        $dim_type = $statements_analyzer->node_data->getType($dim);
+
+        if ($dim_type !== null && ($dim_type->isSingleStringLiteral() || $dim_type->isSingleIntLiteral())) {
+            return null;
+        }
+
+        $prefix = self::getLiteralStart($statements_analyzer, $dim);
+
+        return $prefix === null || $prefix === '' ? null : '-\'' . $prefix . '\'*';
+    }
+
+    /**
+     * The literal string $expr starts with, as far as it is known statically
+     */
+    private static function getLiteralStart(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): ?string
+    {
+        $type = $statements_analyzer->node_data->getType($expr);
+
+        if ($type !== null && $type->isSingleStringLiteral()) {
+            return $type->getSingleStringLiteral()->value;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            $left_start = self::getLiteralStart($statements_analyzer, $expr->left);
+            $left_type = $statements_analyzer->node_data->getType($expr->left);
+
+            // all of the left side is known: the start of the right side follows it
+            if ($left_start !== null && $left_type !== null && $left_type->isSingleStringLiteral()) {
+                return $left_start . (self::getLiteralStart($statements_analyzer, $expr->right) ?? '');
+            }
+
+            return $left_start;
+        }
+
+        if ($expr instanceof PhpParser\Node\Scalar\InterpolatedString) {
+            $start = '';
+
+            foreach ($expr->parts as $part) {
+                if (!$part instanceof PhpParser\Node\InterpolatedStringPart) {
+                    break;
+                }
+
+                $start .= $part->value;
+            }
+
+            return $start;
+        }
+
+        return null;
     }
 
     /**
