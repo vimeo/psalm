@@ -71,6 +71,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function ltrim;
 use function mb_ord;
 use function preg_split;
 use function reset;
@@ -897,6 +898,15 @@ final class ArgumentAnalyzer
             // their accumulated bounds (`callable(`_0 >: Foo):void` checks as
             // `callable(Foo):void`)
             $param_type = self::resolveTypeVariablesInCallables($param_type, $codebase);
+
+            self::recordCallableStringReferences(
+                $statements_analyzer,
+                $codebase,
+                $param_type,
+                $input_type,
+                $arg_location,
+                $context,
+            );
         }
 
         if ($param_type->hasCallableType() && $param_type->isSingle()) {
@@ -1488,6 +1498,55 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whatever calls a callable parameter uses the functions named by the
+     * literal strings the argument can be, e.g. a name reaching it through a
+     * variable or a constant. Recorded before the strings are replaced by the
+     * callable types they resolve to. Names written in the argument itself may
+     * already have been resolved to a callable type before the argument's type
+     * is checked, so verifyExplicitParam() records those from the expression.
+     */
+    private static function recordCallableStringReferences(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Union $param_type,
+        Union $input_type,
+        CodeLocation $arg_location,
+        Context $context,
+    ): void {
+        $takes_function_names = false;
+
+        foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
+            // unlike a Closure parameter
+            if ($param_atomic_type instanceof TCallable) {
+                $takes_function_names = true;
+                break;
+            }
+        }
+
+        if (!$takes_function_names) {
+            return;
+        }
+
+        foreach ($input_type->getLiteralStrings() as $literal_string) {
+            // PHP resolves a callable string against neither the namespace nor
+            // the imports of the code that calls it: the name is always fully
+            // qualified, with an optional leading backslash
+            $function_id = ltrim($literal_string->value, '\\');
+
+            // Class::method strings are recorded as method references
+            if ($function_id !== '' && !str_contains($function_id, '::')) {
+                FunctionCallAnalyzer::recordFunctionReference(
+                    $statements_analyzer,
+                    $codebase,
+                    $function_id,
+                    $arg_location,
+                    $context,
+                );
+            }
+        }
+    }
+
+    /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $input_expr
      */
     private static function verifyExplicitParam(
@@ -1663,6 +1722,15 @@ final class ArgumentAnalyzer
                             ) {
                                 return;
                             }
+
+                            // whatever calls the callable uses the function
+                            FunctionCallAnalyzer::recordFunctionReference(
+                                $statements_analyzer,
+                                $codebase,
+                                $function_id,
+                                $arg_location,
+                                $context,
+                            );
                         }
                     }
                 }
