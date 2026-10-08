@@ -16,7 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
@@ -183,8 +183,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (!$class_type) {
             $class_type = Type::getMixed();
         }
-        
-        $class_type = TypeVariableTracker::resolveTypeVariables($class_type, $codebase);
+
+        // A bare type variable minted for a class template resolves to its
+        // construction-site shape: the concrete object it stands for is what a
+        // method is actually being called on. Only top-level variables resolve —
+        // one nested in a generic object (e.g. `Box<`_0>`) stays live so later
+        // calls can still constrain it.
+        $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
 
         $lhs_types = $class_type->getAtomicTypes();
 
@@ -428,13 +433,19 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && ($class_type->from_docblock || $class_type->isNullable())
             && $real_method_call
         ) {
+            // the method call may have written a bare type variable back into
+            // scope; resolve it again so the narrowed type keeps a concrete
+            // object
+            $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
+
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                // A type variable that survived here is a valid method-call
-                // receiver — the call landed on its inferred object bound — so
-                // it belongs with the concrete object types rather than being
-                // stripped as a non-object, which would leave nothing behind.
+                // A type variable that survived here (one with no bounds to
+                // resolve it through) is a valid method-call receiver — the
+                // call landed on it — so it belongs with the concrete object
+                // types rather than being stripped as a non-object, which
+                // would leave nothing behind.
                 if (!$type instanceof TNamedObject
                     && !$type instanceof TObject
                     && !$type instanceof TConditional
@@ -445,6 +456,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
                     $type = $type->setFromDocblock(false);
                 }
             }
+            unset($type);
+
             if (!$types) {
                 throw new AssertionError("We must have some types here!");
             }
