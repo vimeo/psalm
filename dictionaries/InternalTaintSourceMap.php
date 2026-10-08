@@ -34,4 +34,6 @@ return [
     // http clients
     'curl_exec' => ['return' => TaintKind::ALL_INPUT],
     'curl_multi_getcontent' => ['return' => TaintKind::ALL_INPUT],
+    // command-line options: whoever runs the script chooses them, as with $argv
+    'getopt' => ['return' => TaintKind::ALL_INPUT],
 ];

@@ -1914,6 +1914,12 @@ final class TaintTest extends TestCase
                     echo $_SERVER["SERVER_PROTOCOL"] ?? "";
                     echo $_SERVER["REDIRECT_STATUS"] ?? "";',
             ],
+            'dontTaintAParameterNamedArgv' => [
+                'code' => '<?php
+                    function first(array $argv): void {
+                        echo (string) $argv[0];
+                    }',
+            ],
             'dontTaintUploadedFileTemporaryName' => [
                 'code' => '<?php
                     move_uploaded_file($_FILES["upload"]["tmp_name"], "/tmp/upload");',
@@ -2409,6 +2415,11 @@ final class TaintTest extends TestCase
             'writingToTheTerminalIsNotAnHtmlSink' => [
                 'code' => '<?php
                     fwrite(STDOUT, (string) $_GET["a"]);',
+            ],
+            'getoptOptionCastToInt' => [
+                'code' => '<?php
+                    $options = getopt("n:");
+                    echo (int) ($options["n"] ?? 0);',
             ],
         ];
     }
@@ -4331,6 +4342,12 @@ final class TaintTest extends TestCase
                     echo (string) gethostbyaddr("127.0.0.1");',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedHtmlFromGetopt' => [
+                'code' => '<?php
+                    $options = getopt("a:");
+                    echo (string) ($options["a"] ?? "");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintedFileInPharAddFile' => [
                 'code' => '<?php
                     $phar = new Phar("/tmp/a.phar");
@@ -5655,6 +5672,26 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     foreach ($_SERVER["argv"] ?? [] as $arg) {
                         echo $arg;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvAtFileScope' => [
+                'code' => '<?php
+                    echo $argv[1] ?? "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvBoundWithGlobal' => [
+                'code' => '<?php
+                    function run(): void {
+                        global $argv;
+                        echo $argv[1] ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArgvReadThroughGlobals' => [
+                'code' => '<?php
+                    function run(): void {
+                        echo (string) ($GLOBALS["argv"][1] ?? "");
                     }',
                 'error_message' => 'TaintedHtml',
             ],

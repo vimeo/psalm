@@ -471,6 +471,9 @@ final class ArrayFetchAnalyzer
             && ($key === 'type' || $key === 'full_path')
         ) {
             $label = '$_FILES[][\'' . $key . '\']';
+        } elseif ($var instanceof PhpParser\Node\Expr\Variable && $var->name === 'GLOBALS' && $key === 'argv') {
+            // see VariableFetchAnalyzer::getArgvTaintSource()
+            $label = '$GLOBALS[\'argv\']';
         } else {
             return;
         }
