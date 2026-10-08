@@ -1546,7 +1546,7 @@ final class ArgumentsAnalyzer
         CodeLocation $call_location,
     ): DataFlowNode {
         if ($method_id !== null) {
-            $cased_function_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
+            $cased_function_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
             $storage = $codebase->methods->getStorage(
                 $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
             );

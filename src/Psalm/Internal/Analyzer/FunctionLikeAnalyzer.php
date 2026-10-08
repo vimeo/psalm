@@ -1274,18 +1274,40 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * The method id of the out nodes of the by-reference parameters of a method called as $method_id
-     * (see DataFlowNode::getForMethodArgumentOut()): the body of a method of a trait is analyzed as one
-     * of each class using it.
+     * The id of the method whose body a call of $method_id runs, as the nodes of that body are keyed: the
+     * body of a method of a trait is analyzed as one of each class using it, by its name in the trait.
      *
      * @psalm-capabilities read-props
      */
-    public static function getByRefParamsOutMethodId(Codebase $codebase, MethodIdentifier $method_id): string
+    public static function getBodyMethodId(Codebase $codebase, MethodIdentifier $method_id): MethodIdentifier
     {
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id;
 
-        return $appearing_method_id->fq_class_name
+        $body_method_id = new MethodIdentifier(
+            $appearing_method_id->fq_class_name,
+            $declaring_method_id->method_name,
+        );
+
+        // a class using a trait method under an alias only, as it declares a method of the same name, doesn't
+        // analyze the body of the trait method (see ClassAnalyzer::analyzeClassMethod())
+        return (string) $codebase->methods->getDeclaringMethodId($body_method_id) === (string) $declaring_method_id
+            ? $body_method_id
+            : $declaring_method_id;
+    }
+
+    /**
+     * The cased id of the method whose body a call of $method_id runs (see getBodyMethodId()), which keys the
+     * nodes of its parameters, its by-reference parameters (see DataFlowNode::getForMethodArgumentOut()), its
+     * return and the `$this` it takes and leaves.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getCasedBodyMethodId(Codebase $codebase, MethodIdentifier $method_id): string
+    {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+        return self::getBodyMethodId($codebase, $method_id)->fq_class_name
             . '::' . $codebase->methods->getStorage($declaring_method_id)->cased_name;
     }
 
@@ -1309,7 +1331,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $overridden_method_ids = array_map(strval(...), $overridden_method_ids);
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-        // the classes a method overridden is called through (see getByRefParamsOutMethodId())
+        // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
             $ancestor_method_id = new MethodIdentifier($ancestor, strtolower((string) $storage->cased_name));
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($ancestor_method_id);
@@ -1321,7 +1343,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $overridden_storage = $codebase->methods->getStorage($declaring_method_id);
-            $overridden_cased_method_id = self::getByRefParamsOutMethodId($codebase, $ancestor_method_id);
+            $overridden_cased_method_id = self::getCasedBodyMethodId($codebase, $ancestor_method_id);
 
             foreach ($storage->params as $offset => $param) {
                 if (!$param->by_ref

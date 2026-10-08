@@ -222,8 +222,31 @@ final class ReturnAnalyzer
         $context->has_returned = true;
 
         if ($source instanceof FunctionLikeAnalyzer
-            && !($source->getSource() instanceof TraitAnalyzer)
+            && $source->getSource() instanceof TraitAnalyzer
         ) {
+            // the body of a method of a trait is analyzed as one of each class using it: what it returns is
+            // returned by the calls of the method on that class (see FunctionLikeAnalyzer::getBodyMethodId())
+            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
+
+            $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($stmt->expr && $storage->location) {
+                self::handleTaints(
+                    $statements_analyzer,
+                    $stmt,
+                    $source->getCorrectlyCasedMethodId($context->self),
+                    TypeExpander::expandUnion(
+                        $codebase,
+                        $stmt_type,
+                        $context->self,
+                        $context->self,
+                        $context->parent,
+                    ),
+                    $storage,
+                    $context,
+                );
+            }
+        } elseif ($source instanceof FunctionLikeAnalyzer) {
             $source->addReturnTypes($context);
 
             $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
