@@ -909,6 +909,51 @@ to `Cart` and `addItem()`. Suggestions use the four named levels only: `pure`, `
 `read-props|write-this-props|write-refs` and `impure` (`@psalm-immutable` for a class at
 `read-props`). Write a narrower set by hand if you want one.
 
+A [class-level contract](#class-level-contracts) binds every subclass too, so the one suggested
+for a class is the smallest of these levels that allows:
+
+- what the class's own methods need;
+- the contract of its parent class;
+- what each known subclass needs, or what its contract allows if it has one;
+- for a class but not an interface, the upper bounds of its [purity templates](#defaults-and-bounds), up to which
+  subclasses may bind them.
+
+So an abstract base class whose subclasses do more, or a class with a purity template whose upper
+bound is left as `impure`, gets no class-level suggestion. A subclass without an annotation is
+suggested a contract on the next run, once its parent has one.
+
+```php
+<?php
+abstract class Shape { // fine: no suggestion, as only impure covers Circle
+    /** @psalm-pure */
+    public function name(): string {
+        return 'shape';
+    }
+}
+
+final class Circle extends Shape {
+    public function draw(): void {
+        echo 'o';
+    }
+}
+
+class Base { // MissingImmutableAnnotation: Base must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+    /** @psalm-pure */
+    public function name(): string {
+        return 'base';
+    }
+}
+
+final class Child extends Base {
+    private int $count = 0;
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function increment(): void {
+        $this->count++;
+    }
+}
+```
+
 Psalm doesn't suggest an annotation for an unannotated method that is overridden somewhere, nor
 for the code calling it, since the annotation would restrict its overrides. Annotate it yourself
 when you want a contract. It doesn't suggest one either when the function-like's

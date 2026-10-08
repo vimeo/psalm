@@ -2549,7 +2549,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->capabilities);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(
