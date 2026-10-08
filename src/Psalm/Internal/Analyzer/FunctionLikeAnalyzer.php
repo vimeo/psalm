@@ -2040,6 +2040,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    // as the parameter's own type, e.g. with the class constants of an int-mask resolved
+                    $param_out_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $param_out_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $actual_type,

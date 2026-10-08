@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_all;
 use function array_any;
 use function array_filter;
 use function array_map;
@@ -72,8 +73,11 @@ final class TypeExpander
         bool $throw_on_unresolvable_constant = false,
     ): Union {
         $new_return_type_parts = [];
+        $int_mask_bits = $return_type->int_mask_bits;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
+            $is_int_mask = self::isIntMask($codebase, $return_type_part, $self_class);
+
             $parts = self::expandAtomic(
                 $codebase,
                 $return_type_part,
@@ -87,6 +91,12 @@ final class TypeExpander
                 $expand_templates,
                 $throw_on_unresolvable_constant,
             );
+
+            $part_int_mask_bits = $is_int_mask ? IntMask::getExpandedBits($parts) : null;
+
+            if ($part_int_mask_bits !== null) {
+                $int_mask_bits = ($int_mask_bits ?? 0) | $part_int_mask_bits;
+            }
 
             $new_return_type_parts = [...$new_return_type_parts, ...$parts];
         }
@@ -109,8 +119,50 @@ final class TypeExpander
         $fleshed_out_type->explicit_never = $return_type->explicit_never;
         $fleshed_out_type->had_template = $return_type->had_template;
         $fleshed_out_type->parent_nodes = $return_type->parent_nodes;
+        $fleshed_out_type->int_mask_bits = $int_mask_bits !== null && IntMask::fits($fleshed_out_type, $int_mask_bits)
+            ? $int_mask_bits
+            : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * Whether an atomic type is an int-mask type, or an alias of one, before it is expanded to the
+     * literals of its bits.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isIntMask(Codebase $codebase, Atomic $atomic, ?string $self_class): bool
+    {
+        if ($atomic instanceof TIntMask || $atomic instanceof TIntMaskOf) {
+            return true;
+        }
+
+        if (!$atomic instanceof TTypeAlias) {
+            return false;
+        }
+
+        $declaring_fq_classlike_name = $atomic->declaring_fq_classlike_name === 'self' && $self_class !== null
+            ? $self_class
+            : $atomic->declaring_fq_classlike_name;
+
+        if (!$codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))) {
+            return false;
+        }
+
+        $type_aliases = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name)->type_aliases;
+
+        if (!isset($type_aliases[$atomic->alias_name])) {
+            return false;
+        }
+
+        $replacement_atomic_types = $type_aliases[$atomic->alias_name]->replacement_atomic_types;
+
+        return $replacement_atomic_types !== [] && array_all(
+            $replacement_atomic_types,
+            static fn(Atomic $replacement): bool => $replacement instanceof TIntMask
+                || $replacement instanceof TIntMaskOf,
+        );
     }
 
     /**

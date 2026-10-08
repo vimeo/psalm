@@ -1393,8 +1393,17 @@ final class ArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = $by_ref_type ?: Type::getMixed();
-            $by_ref_out_type = $by_ref_out_type ?: $by_ref_type;
+            // the declared types as the caller sees them, with e.g. the class constants, int-masks and
+            // type aliases resolved, as for the other parameters
+            $self_class = $function_storage instanceof MethodStorage ? $function_storage->defining_fqcln : null;
+            $static_class = $method_identifier?->fq_class_name ?? $self_class;
+
+            $by_ref_type = $by_ref_type
+                ? TypeExpander::expandUnion($codebase, $by_ref_type, $self_class, $static_class, null)
+                : Type::getMixed();
+            $by_ref_out_type = $by_ref_out_type
+                ? TypeExpander::expandUnion($codebase, $by_ref_out_type, $self_class, $static_class, null)
+                : $by_ref_type;
 
             // what the function-like leaves in the parameter (see FunctionLikeAnalyzer::taintByRefParamsOut())
             $out_type_holds_value = false;

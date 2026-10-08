@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -732,6 +733,8 @@ abstract class Type
             if ($type_1->reference_free && $type_2->reference_free) {
                 $combined_type->reference_free = true;
             }
+
+            $combined_type->int_mask_bits = IntMask::combineBits($type_1, $type_2);
 
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;

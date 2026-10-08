@@ -3811,7 +3811,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!strpos($key, '$')]]></code>
       <code><![CDATA[!strpos($key, '[')]]></code>
-      <code><![CDATA[$failed_reconciliation]]></code>
       <code><![CDATA[strpos($base_key, '::')]]></code>
       <code><![CDATA[strpos($key, '::')]]></code>
       <code><![CDATA[strpos($nk, '->')]]></code>
@@ -3822,9 +3821,6 @@
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[TypeNode]]></code>
     </MissingInterfaceImmutableAnnotation>
-    <ReferenceConstraintViolation>
-      <code><![CDATA[$node]]></code>
-    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Type/TypeVisitor.php">
     <ImpureMethodCall>
