@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_diff_key;
 use function array_pop;
 use function array_values;
 
