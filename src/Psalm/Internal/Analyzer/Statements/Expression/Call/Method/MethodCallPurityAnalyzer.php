@@ -28,6 +28,8 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+use function array_diff_key;
+
 /**
  * @internal
  */
