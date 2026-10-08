@@ -512,6 +512,22 @@ function var_dump($value, ...$values) {}
 
 /**
  * @param mixed $value
+ * @param mixed $values
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
+ * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
+ */
+function debug_zval_dump($value, ...$values): void {}
+
+/**
+ * @param mixed $value
  * @param bool $return
  * @return ($return is true ? string : true)
  *
@@ -525,8 +541,6 @@ function var_dump($value, ...$values) {}
 function print_r($value, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -582,8 +596,6 @@ function stream_get_contents($stream, ?int $length = null, int $offset = -1) {}
 function stream_get_line($stream, int $length, string $ending = "") {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -598,8 +610,6 @@ function show_source($filename, bool $return = false) {}
 function php_strip_whitespace(string $filename) : string {}
 
 /**
- * @psalm-pure
- *
  * @param mixed $string
  * @return ($return is true ? string : bool)
  *
@@ -808,7 +818,7 @@ function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
  * )
  *
  * @psalm-flow ($separator) -> return
- * @psalm-flow ($array) -(array-fetch)-> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function implode($separator, array $array = []) : string {}
 
@@ -841,7 +851,7 @@ function implode($separator, array $array = []) : string {}
  * )
  *
  * @psalm-flow ($separator) -> return
- * @psalm-flow ($array) -(array-fetch)-> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function join($separator, array $array = []): string
 {
@@ -1472,8 +1482,6 @@ function vsprintf(string $format, array $values) {}
 function wordwrap(string $string, int $width = 75, string $break = "\n", bool $cut_long_words = false) : string {}
 
 /**
- * @psalm-pure
- *
  * @param string|int|float $values
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
@@ -1496,7 +1504,6 @@ function printf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink has_quotes $format

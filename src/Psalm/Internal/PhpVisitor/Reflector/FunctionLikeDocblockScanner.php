@@ -1082,6 +1082,11 @@ final class FunctionLikeDocblockScanner
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;
+
+                // the type of `$this` is `static`, but the annotation also promises the receiver itself
+                if ($docblock_return_type === '$this' && !$fake_method && !$storage->is_static) {
+                    $storage->returns_this = true;
+                }
             }
 
             if ($storage->signature_return_type) {

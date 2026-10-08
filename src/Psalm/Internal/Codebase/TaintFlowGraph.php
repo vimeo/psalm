@@ -157,6 +157,14 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $generator_sends = [];
 
+    /**
+     * The ids of the nodes holding a stream that writes to the response (see OutputStreamTaintAnalyzer). Only used
+     * while analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $output_streams = [];
+
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
      * Empty outside of connectSinksAndSources().
@@ -500,6 +508,32 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks[$node->id] = $node;
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $node;
+    }
+
+    /**
+     * Records that $node holds a stream writing to the response
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addOutputStream(DataFlowNode $node): void
+    {
+        $this->output_streams[$node->id] = true;
+    }
+
+    /**
+     * Whether a value of $type may be a stream writing to the response
+     *
+     * @psalm-mutation-free
+     */
+    public function isOutputStream(Union $type): bool
+    {
+        foreach ($type->parent_nodes as $parent_node_id => $_) {
+            if (isset($this->output_streams[$parent_node_id])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

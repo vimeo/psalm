@@ -127,6 +127,46 @@ function checkFileRegression(): int
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
     }
 
+    public function testCheckDirReportsIssueWithoutInitialisedProjectFiles(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $dir_path = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject';
+
+        $this->file_provider->registerFile(
+            $dir_path . DIRECTORY_SEPARATOR . 'CheckDirRegression.php',
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+function checkDirRegression(): int
+{
+    return "not an int";
+}
+',
+        );
+
+        // Must not throw; the issue in the file must still be reported.
+        $this->project_analyzer->checkDir($dir_path);
+
+        $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
+    }
+
     public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

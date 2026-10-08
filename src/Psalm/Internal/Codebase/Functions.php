@@ -484,7 +484,9 @@ final class Functions
             return Capabilities::IO;
         }
 
-        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+        if (($function_id === 'var_export' || $function_id === 'print_r' || $function_id === 'highlight_string')
+            && !isset($args[1])
+        ) {
             return Capabilities::IO;
         }
 
@@ -504,7 +506,8 @@ final class Functions
             return Capabilities::NONE;
         }
 
-        if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
+        // they read only the current scope, like compact() and static::class
+        if (in_array($function_id, ['func_num_args', 'func_get_args', 'get_defined_vars', 'get_called_class'], true)) {
             return Capabilities::NONE;
         }
 

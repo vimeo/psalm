@@ -724,7 +724,11 @@ final class ArrayAnalyzer
             }
 
             // Unpacked array might overwrite known properties, so values are merged when the keys intersect.
+            // Only string keys can be overwritten: unpacked integer keys are renumbered past the known ones.
             foreach ($array_creation_info->property_types as $prop_key_val => $prop_val) {
+                if (is_int($prop_key_val)) {
+                    continue;
+                }
                 $prop_key = new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($prop_key_val)]);
                 // Since $prop_key is a single literal type, the types intersect iff $prop_key is contained by the
                 // template type (ie $prop_key cannot overlap with the template type without being contained by it).

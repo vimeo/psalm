@@ -279,6 +279,14 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type,
                 $context,
             );
+            $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+                $statements_analyzer,
+                $function_id,
+                $stmt->getArgs(),
+                $stmt_type,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+            OutputStreamTaintAnalyzer::taintFunctionWrite($statements_analyzer, $function_id, $stmt->getArgs());
             self::taintInternalSource(
                 $statements_analyzer,
                 $stmt,
@@ -627,6 +635,15 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type,
             $context,
         );
+        // callmap-only conditional sinks (writes to fopen('php://output'))
+        $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+            $statements_analyzer,
+            $callable_id,
+            $stmt->getArgs(),
+            $stmt_type,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+        OutputStreamTaintAnalyzer::taintFunctionWrite($statements_analyzer, $callable_id, $stmt->getArgs());
         // callmap-only unconditional sources (socket_read(), curl_exec(), ...)
         self::taintInternalSource(
             $statements_analyzer,
