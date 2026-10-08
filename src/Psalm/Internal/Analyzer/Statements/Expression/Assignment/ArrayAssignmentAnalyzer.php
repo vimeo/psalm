@@ -16,6 +16,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -60,6 +62,11 @@ use function strlen;
  */
 final class ArrayAssignmentAnalyzer
 {
+    /**
+     * How many literals the key of an array assignment can be, at most, to be assigned under each of them
+     */
+    private const MAX_KEY_VALUES = 8;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -467,18 +474,29 @@ final class ArrayAssignmentAnalyzer
             // what the assigned value cannot hold, given its type
             $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
 
+            if (count($key_values) > self::MAX_KEY_VALUES) {
+                $key_values = [];
+            }
+
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
-                    if ($key_values) {
-                        foreach ($key_values as $key_value) {
-                            $graph->addPath(
-                                $child_parent_node,
-                                $parent_node,
-                                'arrayvalue-assignment-\'' . $key_value->value . '\'',
-                                0,
-                                $removed_taints,
-                            );
-                        }
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys(
+                            $graph,
+                            $child_parent_node,
+                            $parent_node,
+                            $key_values,
+                            $var_location,
+                            $removed_taints,
+                        );
+                    } elseif ($key_values) {
+                        $graph->addPath(
+                            $child_parent_node,
+                            $parent_node,
+                            'arrayvalue-assignment-\'' . $key_values[0]->value . '\'',
+                            0,
+                            $removed_taints,
+                        );
                     } else {
                         $graph->addPath(
                             $child_parent_node,
@@ -490,6 +508,47 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Adds the paths of the assignment of $value to array $array at $location under a key that is one of
+     * $key_values: one for each, in the taint flow graph, the others than the first through a node of their own (a
+     * path between two nodes has one type). The variable use graph only knows the key is one of them: an unkeyed
+     * assignment there.
+     *
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     */
+    private static function taintAssignmentUnderKeys(
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        DataFlowNode $value,
+        DataFlowNode $array,
+        array $key_values,
+        CodeLocation $location,
+        int $removed_taints,
+    ): void {
+        if ($graph instanceof CombinedFlowGraph) {
+            $graph->variable_use_graph->addPath($value, $array, 'arrayvalue-assignment');
+            $graph = $graph->taint_flow_graph;
+        } elseif ($graph instanceof VariableUseGraph) {
+            $graph->addPath($value, $array, 'arrayvalue-assignment');
+
+            return;
+        }
+
+        foreach ($key_values as $index => $key_value) {
+            $path_type = 'arrayvalue-assignment-\'' . $key_value->value . '\'';
+
+            if ($index === 0) {
+                $graph->addPath($value, $array, $path_type, 0, $removed_taints);
+
+                continue;
+            }
+
+            $key_node = DataFlowNode::getForAssignment($array->label . ' ' . $path_type, $location);
+            $graph->addNode($key_node);
+            $graph->addPath($value, $key_node, $path_type, 0, $removed_taints);
+            $graph->addPath($key_node, $array, '=');
         }
     }
 
@@ -948,7 +1007,9 @@ final class ArrayAssignmentAnalyzer
                             $statements_analyzer->getFQCLN(),
                             $statements_analyzer,
                         ),
-                        $offset_type !== null ? [$offset_type] : [],
+                        $offset_type !== null
+                            ? [$offset_type]
+                            : ($child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : []),
                     );
                 }
             }
