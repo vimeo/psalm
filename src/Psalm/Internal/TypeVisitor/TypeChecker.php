@@ -231,7 +231,7 @@ final class TypeChecker extends TypeVisitor
         }
 
         $expected_type_param_keys = array_keys($expected_type_params);
-        $template_result = new TemplateResult($expected_type_params, []);
+        $template_result = TemplateResult::make($expected_type_params, []);
 
         // the bounds of type templates may use purity templates, which come after them
         foreach ($atomic->type_params as $i => $type_param) {

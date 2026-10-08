@@ -370,7 +370,7 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
-        $replace_template_result = new TemplateResult(
+        $replace_template_result = TemplateResult::make(
             $template_types,
             [],
         );
@@ -467,7 +467,7 @@ final class ArgumentsAnalyzer
                 );
             }
         }
-        $replace_template_result = new TemplateResult(
+        $replace_template_result = TemplateResult::make(
             $new_bounds,
             [],
         );
@@ -1911,7 +1911,7 @@ final class ArgumentsAnalyzer
         }
 
         if (!$template_result) {
-            return new TemplateResult($template_types, []);
+            return TemplateResult::make($template_types, []);
         }
 
         if (!$template_result->template_types) {

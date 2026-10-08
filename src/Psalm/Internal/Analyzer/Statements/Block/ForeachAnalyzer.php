@@ -1408,7 +1408,7 @@ final class ForeachAnalyzer
             // `Traversable[TPurity]<TKey, TValue>` as bound by the aggregate
             $iterator_type = TemplateInferredTypeReplacer::replace(
                 $iterator_type,
-                new TemplateResult([], self::collectClassTemplateParams(
+                TemplateResult::make([], self::collectClassTemplateParams(
                     $codebase,
                     $iterator_atomic_type,
                     $expr,

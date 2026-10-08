@@ -22,7 +22,6 @@ use Psalm\Storage\CapabilitiesParseException;
 
 use function array_keys;
 use function array_shift;
-use function array_unique;
 use function count;
 use function explode;
 use function implode;
@@ -67,7 +66,12 @@ final class FunctionLikeDocblockParser
 
         $info = new FunctionDocblockComment();
 
-        self::checkDuplicatedTags($parsed_docblock);
+        if (count($parsed_docblock->tags['return'] ?? []) > 1
+            || count($parsed_docblock->tags['psalm-return'] ?? []) > 1
+            || count($parsed_docblock->tags['phpstan-return'] ?? []) > 1
+        ) {
+            throw new DocblockParseException('Found duplicated @return or prefixed @return tag');
+        }
         self::checkUnexpectedTags($parsed_docblock, $info, $comment);
 
         if (isset($parsed_docblock->combined_tags['return'])) {
@@ -80,8 +84,13 @@ final class FunctionLikeDocblockParser
             );
         }
 
-        if (isset($parsed_docblock->combined_tags['param'])) {
-            foreach ($parsed_docblock->combined_tags['param'] as $offset => $param) {
+        foreach ([
+            $parsed_docblock->tags['param'] ?? [],
+            $parsed_docblock->tags['phpstan-param'] ?? [],
+            $parsed_docblock->tags['psalm-param'] ?? [],
+        ] as $tags) {
+            $had = [];
+            foreach ($tags as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
@@ -107,8 +116,14 @@ final class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
+                        $name = trim($line_parts[1]);
+                        if (isset($had[$name])) {
+                            throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
+                        }
+                        $had[$name] = true;
+
                         $info_param = [
-                            'name' => trim($line_parts[1]),
+                            'name' => $name,
                             'type' => $line_parts[0],
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
@@ -709,58 +724,6 @@ final class FunctionLikeDocblockParser
 
             break;
         }
-    }
-
-    /**
-     * @throws DocblockParseException if a duplicate is found
-     * @psalm-mutation-free
-     */
-    private static function checkDuplicatedTags(ParsedDocblock $parsed_docblock): void
-    {
-        if (count($parsed_docblock->tags['return'] ?? []) > 1
-            || count($parsed_docblock->tags['psalm-return'] ?? []) > 1
-            || count($parsed_docblock->tags['phpstan-return'] ?? []) > 1
-        ) {
-            throw new DocblockParseException('Found duplicated @return or prefixed @return tag');
-        }
-
-        self::checkDuplicatedParams($parsed_docblock->tags['param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['psalm-param'] ?? []);
-        self::checkDuplicatedParams($parsed_docblock->tags['phpstan-param'] ?? []);
-    }
-
-    /**
-     * @param array<int, string> $param
-     * @throws DocblockParseException  if a duplicate is found
-     * @psalm-pure
-     */
-    private static function checkDuplicatedParams(array $param): void
-    {
-        $list_names = self::extractAllParamNames($param);
-
-        if (count($list_names) !== count(array_unique($list_names))) {
-            throw new DocblockParseException('Found duplicated @param or prefixed @param tag');
-        }
-    }
-
-    /**
-     * @param array<int, string> $lines
-     * @return list<string>
-     * @psalm-pure
-     */
-    private static function extractAllParamNames(array $lines): array
-    {
-        $names = [];
-
-        foreach ($lines as $line) {
-            $split_by_dollar = explode('$', $line, 2);
-            if (count($split_by_dollar) > 1) {
-                $split_by_space = explode(' ', $split_by_dollar[1], 2);
-                $names[] = $split_by_space[0];
-            }
-        }
-
-        return $names;
     }
 
     private static function checkUnexpectedTags(
