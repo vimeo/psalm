@@ -975,7 +975,7 @@ final class TaintTest extends TestCase
                     $a = [];
                     $a["k"] = (string) $_GET["x"];
                     $a["other"] = "safe";
-                    $b = json_decode(json_encode($a), true);
+                    $b = json_decode(json_encode($a, JSON_THROW_ON_ERROR), true);
                     echo (string) $b["other"];',
             ],
             'dontTaintTheOtherItemsDestructuredFromAnUnshapedArray' => [
@@ -3143,6 +3143,7 @@ final class TaintTest extends TestCase
                         return serialize($a);
                     }
 
+                    /** @psalm-suppress MixedOperand */
                     echo "<b>" . serializedAsMixed();',
                 'error_message' => 'TaintedHtml',
             ],
