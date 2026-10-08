@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -268,6 +269,23 @@ final class ReturnAnalyzer
                     $storage,
                     $context,
                 );
+
+                if ($storage instanceof MethodStorage
+                    // the purity of the calls, telling which of them return `$this`, is only analyzed then
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                    && !MethodCallPurityAnalyzer::isReceiverThis($stmt->expr)
+                    && self::mustReturnThis($codebase, $storage, MethodIdentifier::wrap($cased_method_id))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidReturnStatement(
+                            'The declared return type \'$this\' for ' . $cased_method_id
+                                . ' requires returning $this, but this may return another object',
+                            new CodeLocation($source, $stmt->expr),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
 
                 if ($storage instanceof MethodStorage && $context->self) {
                     $self_class = $context->self;
@@ -601,6 +619,32 @@ final class ReturnAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Callers treat what a method returning `$this` gives back as their receiver, so the method,
+     * and every override of it, must return nothing else.
+     *
+     * @psalm-mutation-free
+     */
+    private static function mustReturnThis(
+        Codebase $codebase,
+        MethodStorage $storage,
+        MethodIdentifier $method_id,
+    ): bool {
+        if ($storage->returns_this) {
+            return true;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if ($codebase->methods->getStorage($overridden_method_id)->returns_this) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function handleTaints(

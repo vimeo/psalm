@@ -868,6 +868,7 @@ final class PreloaderList {
         \Psalm\Internal\PhpVisitor\Reflector\TypeHintResolver::class,
         \Psalm\Internal\PhpVisitor\ShortClosureVisitor::class,
         \Psalm\Internal\PhpVisitor\SimpleNameResolver::class,
+        \Psalm\Internal\PhpVisitor\ThisReturnVisitor::class,
         \Psalm\Internal\PhpVisitor\TraitFinder::class,
         \Psalm\Internal\PhpVisitor\TypeMappingVisitor::class,
         \Psalm\Internal\PhpVisitor\YieldTypeCollector::class,

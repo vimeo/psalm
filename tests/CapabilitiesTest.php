@@ -1066,6 +1066,49 @@ final class CapabilitiesTest extends TestCase
                         return $flag ? $a : $c;
                     }',
             ],
+            'fluentChainOnThisOnlyMutatesThis' => [
+                'code' => '<?php
+                    abstract class Query {
+                        /** @var list<string> */
+                        protected array $conditions = [];
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        protected function where(string $condition): static {
+                            $this->conditions[] = $condition;
+                            return $this;
+                        }
+
+                        /**
+                         * @return $this
+                         * @psalm-external-mutation-free
+                         */
+                        public function whereBetween(string $from, string $to): static {
+                            return $this->where($from)->where($to);
+                        }
+                    }
+
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function inc(): self {
+                            if ($this->n > 10) {
+                                return $this;
+                            }
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incTwice(): self {
+                            $this->inc()->inc()->n = 0;
+                            return $this->inc()->inc();
+                        }
+                    }',
+            ],
             'purityTemplatesComeAfterTypeTemplates' => [
                 'code' => '<?php
                     /**
@@ -2301,6 +2344,72 @@ final class CapabilitiesTest extends TestCase
                         return sum($xs);
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - Argument 1 of sum expects iterable[pure]<int, int>, but iterable<int, int> provided',
+            ],
+            'chainingAMethodReturningANewObjectCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function inc(): self {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function copy(): static {
+                            return new static();
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incCopy(): self {
+                            return $this->copy()->inc();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:36 - The context is read-props|write-this-props|write-refs but method Counter::inc requires write-props',
+            ],
+            'chainingAnOverridableMethodReturningStaticCostsWriteProps' => [
+                'code' => '<?php
+                    abstract class Counter {
+                        public int $n = 0;
+
+                        /** @psalm-external-mutation-free */
+                        public function inc(): static {
+                            $this->n++;
+                            return $this;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function incTwice(): static {
+                            return $this->inc()->inc();
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - The context is read-props|write-this-props|write-refs but method Counter::inc requires write-props',
+            ],
+            'methodDeclaringThisMustReturnThis' => [
+                'code' => '<?php
+                    final class Counter {
+                        /** @return $this */
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - The declared return type \'$this\' for Counter::copy requires returning $this, but this may return another object',
+            ],
+            'overrideOfMethodDeclaringThisMustReturnThis' => [
+                'code' => '<?php
+                    abstract class Counter {
+                        /** @return $this */
+                        abstract public function inc(): static;
+                    }
+
+                    final class Copying extends Counter {
+                        #[Override]
+                        public function inc(): static {
+                            return clone $this;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - The declared return type \'$this\' for Copying::inc requires returning $this, but this may return another object',
             ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
