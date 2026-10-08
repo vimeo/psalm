@@ -912,6 +912,59 @@ final class TaintTest extends TestCase
                     $data["address"]["city"] = "msk";
                     echo $data["address"]["city"];',
             ],
+            'dontTaintTheValueAWholeArrayHeldUnderAKeyAssignedSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    $data["city"] = htmlspecialchars((string) $data["city"]);
+                    echo $data["city"];',
+            ],
+            'dontTaintTheValuesAWholeArrayHeldUnderKeysAssignedSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    $data["city"] = htmlspecialchars((string) $data["city"]);
+                    $data["zip"] = htmlspecialchars((string) $data["zip"]);
+                    $data["city"] = htmlspecialchars($data["city"]);
+                    echo $data["city"];
+                    echo $data["zip"];',
+            ],
+            'dontTaintTheValueAWholeArrayHeldUnderAKeyUnsetSinceThen' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    unset($data["city"]);
+                    echo (string) ($data["city"] ?? "");',
+            ],
+            'dontTaintTheValueAWholeArrayHeldUnderAKeyAssignedSinceThenOnceWrapped' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    $data["city"] = htmlspecialchars((string) $data["city"]);
+                    $wrapped = ["data" => $data];
+                    echo $wrapped["data"]["city"];',
+            ],
+            'dontTaintTheValueWholeArraysMappedHeldUnderAKeyAssigned' => [
+                'code' => '<?php // --taint-analysis
+                    $items = array_map(
+                        function (array $item): array {
+                            $item["city"] = htmlspecialchars((string) $item["city"]);
+                            return $item;
+                        },
+                        (array) $_GET["items"],
+                    );
+                    foreach ($items as $item) {
+                        echo $item["city"];
+                    }',
+            ],
+            'dontTaintTheValueWholeArraysIteratedOverHeldUnderAKeyAssigned' => [
+                'code' => '<?php // --taint-analysis
+                    $items = [];
+                    foreach ((array) $_GET["items"] as $item) {
+                        $item = (array) $item;
+                        $item["city"] = htmlspecialchars((string) $item["city"]);
+                        $items[] = $item;
+                    }
+                    foreach ($items as $item) {
+                        echo $item["city"];
+                    }',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -3166,6 +3219,76 @@ final class TaintTest extends TestCase
                         $data["city"] = "msk";
                         echo (string) $data["city"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfWholeArraysMappedAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $items = array_map(
+                        function (array $item): array {
+                            $item["city"] = htmlspecialchars((string) $item["city"]);
+                            return $item;
+                        },
+                        (array) $_GET["items"],
+                    );
+                    foreach ($items as $item) {
+                        echo (string) $item["zip"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfWholeArraysIteratedOverAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $items = [];
+                    foreach ((array) $_GET["items"] as $item) {
+                        $item = (array) $item;
+                        $item["city"] = htmlspecialchars((string) $item["city"]);
+                        $items[] = $item;
+                    }
+                    foreach ($items as $item) {
+                        echo (string) $item["zip"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueUnderAnAssignedKeyOfAnotherValueOfAWholeArray' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $data["city"] = "msk";
+                    $zip = (array) $data["zip"];
+                    echo (string) $zip["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeysOfAWholeArrayAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $data["city"] = "msk";
+                    foreach ($data as $key => $_) {
+                        echo $key;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValuesOfAWholeArrayIteratedOverAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $data["city"] = "msk";
+                    foreach ($data as $value) {
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAWholeArrayWrappedAfterAKeyIsAssigned' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $data["city"] = "msk";
+                    $wrapped = ["data" => $data];
+                    echo (string) $wrapped["data"]["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAWholeArrayKeyAssignedOnlyOnSomeBranch' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    if (rand(0, 1)) {
+                        $data["city"] = htmlspecialchars((string) $data["city"]);
+                    }
+                    echo (string) $data["city"];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAWholeArrayAfterAKeyIsAssigned' => [
