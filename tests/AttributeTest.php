@@ -369,19 +369,6 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'deprecatedAttributeOnTrait' => [
-                'code' => '<?php
-                    #[\Deprecated("t")]
-                    trait T {}
-
-                    final class U {
-                        use T;
-                    }
-                ',
-                'assertions' => [],
-                'ignored_issues' => ['DeprecatedTrait'],
-                'php_version' => '8.5',
-            ],
             'createObjectAsAttributeArg' => [
                 'code' => '<?php
                     #[Attribute]
@@ -951,7 +938,7 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
-            'deprecatedAttributeOnTraitMessage' => [
+            'deprecatedAttributeOnTrait' => [
                 'code' => '<?php
                     #[\Deprecated("t")]
                     trait T {}
