@@ -223,13 +223,21 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         true,
                         $context->insideUse(),
                     )) {
-                        $method_storage = $codebase->methods->getStorage($method_identifier);
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier);
 
-                        $return_type_candidate = new Union([new TClosure(
-                            $method_storage->params,
-                            $method_storage->return_type,
-                            $method_storage->capabilities,
-                        )]);
+                        // A method confirmed only by an existence provider has no declaring id;
+                        // hasStorage() is a defensive guard.
+                        if ($declaring_method_id !== null
+                            && $codebase->methods->hasStorage($declaring_method_id)
+                        ) {
+                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+                            $return_type_candidate = new Union([new TClosure(
+                                $method_storage->params,
+                                $method_storage->return_type,
+                                $method_storage->capabilities,
+                            )]);
+                        }
                     }
                 }
 

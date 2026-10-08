@@ -41,7 +41,11 @@ final class FooMethodProvider implements
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
+        if ($method_name_lowercase === 'magicmethod'
+            || $method_name_lowercase === 'magicmethod2'
+            || $method_name_lowercase === 'sourcedmagicmethod'
+            || $method_name_lowercase === 'paramlessmagicmethod'
+        ) {
             return true;
         }
 
@@ -57,6 +61,13 @@ final class FooMethodProvider implements
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
+        }
+
+        // Mirrors providers that need the codebase, which they reach through the statements source.
+        if (($method_name_lowercase === 'sourcedmagicmethod' || $method_name_lowercase === 'sourcedrealmethod')
+            && $event->getStatementsSource() !== null
+        ) {
+            return [new FunctionLikeParameter('first', false, Type::getInt(), Type::getInt())];
         }
 
         return null;
