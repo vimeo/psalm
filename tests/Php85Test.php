@@ -39,6 +39,7 @@ final class Php85Test extends TestCase
                         ReflectionProperty $property,
                         ReflectionMethod $method,
                         SplObjectStorage $storage,
+                        DateTimeInterface $dateTimeInterface,
                         DateTime $dateTime,
                         DateTimeImmutable $immutable,
                         DateTimeZone $zone,
@@ -57,6 +58,7 @@ final class Php85Test extends TestCase
                         $storage->attach(new stdClass());
                         $storage->contains(new stdClass());
                         $storage->detach(new stdClass());
+                        $dateTimeInterface->__wakeup();
                         $dateTime->__wakeup();
                         $immutable->__wakeup();
                         $zone->__wakeup();
@@ -225,7 +227,7 @@ final class Php85Test extends TestCase
             ],
         ];
 
-        foreach (['DateTime', 'DateTimeImmutable', 'DateTimeZone', 'DateInterval', 'DatePeriod'] as $class) {
+        foreach (['DateTimeInterface', 'DateTime', 'DateTimeImmutable', 'DateTimeZone', 'DateInterval', 'DatePeriod'] as $class) {
             $symbols[$class . '::__wakeup'] = [$class, '$value->__wakeup();', '__wakeup', self::WAKEUP_REASON];
         }
 
