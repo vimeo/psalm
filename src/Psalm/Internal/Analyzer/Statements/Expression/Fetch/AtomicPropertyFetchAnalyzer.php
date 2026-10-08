@@ -267,7 +267,7 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$naive_property_exists) {
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
+                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -415,6 +415,21 @@ final class AtomicPropertyFetchAnalyzer
             ) === false) {
                 return;
             }
+
+            // unsetting a property is a write, so the set visibility applies
+            if ($context->inside_unset
+                && ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                ) === false
+            ) {
+                return;
+            }
         }
 
         // FIXME: the following line look superfluous, but removing it makes
@@ -459,6 +474,29 @@ final class AtomicPropertyFetchAnalyzer
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
             $property_storage = $declaring_class_storage->properties[$prop_name];
+
+            // A property inherits the availability of its (native) declaring class unless it
+            // carries a later `@since` of its own, which then takes priority. Reported when the
+            // owning value came from e.g. a native factory return, so the class is never named in
+            // the analysed code and would otherwise go unchecked.
+            $property_since_id = $property_storage->since_php_version_id
+                ?? $declaring_class_storage->since_php_version_id;
+
+            if (!$declaring_class_storage->user_defined
+                && $property_since_id !== null
+                && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                    < $property_since_id
+                && !$codebase->isClassLikePolyfilled($declaring_class_storage->name)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedPropertyFetch(
+                        $property_id . ' ' . $codebase->getUnavailableSymbolMessageSuffix($property_since_id),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(

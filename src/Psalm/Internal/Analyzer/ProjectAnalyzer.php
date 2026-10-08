@@ -319,6 +319,8 @@ final class ProjectAnalyzer
         $server->logInfo("Initializing: Initialize Plugins...");
         $this->config->initializePlugins($this);
 
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
+
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $this->checkDirWithConfig($dir_name, $this->config);
         }
@@ -823,6 +825,10 @@ final class ProjectAnalyzer
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
+
         $this->progress->startAnalyzingFiles();
 
         $this->codebase->analyzer->analyzeFiles(
@@ -920,6 +926,10 @@ final class ProjectAnalyzer
         $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
         $this->progress->startAnalyzingFiles();
 

@@ -1043,6 +1043,9 @@ final class ArrayAccessTest extends TestCase
                             yield $img["src"] ?? "";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertOnArrayAccess' => [
                 'code' => '<?php

@@ -972,9 +972,11 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
-        $implementer_class_is_final = $codebase->classlike_storage_provider
-            ->get($implementer_called_class_name)
-            ->final;
+        // PHP 8.5 allows a final class to satisfy a `static` return type with `self`
+        // or its own class name. Earlier versions reject that substitution.
+        $resolve_static_to_final_class = $codebase->analysis_php_version_id >= 8_05_00
+            && $implementer_classlike_storage->final
+            && !$implementer_classlike_storage->final_from_docblock;
 
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -983,15 +985,16 @@ final class MethodComparator
                 ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
-                || $implementer_class_is_final
-                ? $implementer_called_class_name
+                || $guide_classlike_storage->final
+                || $resolve_static_to_final_class
+                ? $implementer_classlike_storage->name
                 : $guide_classlike_storage->name,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                 ? $implementer_classlike_storage->parent_class
                 : $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_class_is_final,
+            $resolve_static_to_final_class,
         );
 
         $implementer_signature_return_type = $implementer_method_storage->signature_return_type
@@ -1007,7 +1010,7 @@ final class MethodComparator
                 $implementer_classlike_storage->parent_class,
                 true,
                 false,
-                $implementer_class_is_final,
+                $resolve_static_to_final_class,
             ) : null;
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
