@@ -1026,6 +1026,17 @@ final class TaintFlowResolution
             return [self::ARRAY_FAMILY, self::CONVERSION_KEY, -1, -1];
         }
 
+        if ($path_type === TaintFlowGraph::SERIALIZATION_PATH_TYPE) {
+            // the string all of an array is encoded in: an open array assignment of the class of none (see
+            // getClass()), which every fetch and conversion takes
+            return [-1, null, -1, self::ARRAY_FAMILY];
+        }
+
+        if ($path_type === TaintFlowGraph::UNSERIALIZATION_PATH_TYPE) {
+            // the value decoded from such a string, which observes nothing and closes it
+            return [-1, null, self::ARRAY_FAMILY, -1];
+        }
+
         $observed_family = -1;
         $observed_key = null;
         $closed_family = -1;
@@ -2090,8 +2101,8 @@ final class TaintFlowResolution
 
     /**
      * The class of an open assignment of type $family: what decides whether a fetch ignores it (see
-     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, or UNKNOWN_KEY_CLASS
-     * for an unknown key.
+     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, UNKNOWN_KEY_CLASS
+     * for an unknown key, or '' for a serialization (see DataFlowGraph::SERIALIZATION_PATH_TYPE).
      *
      * @psalm-mutation-free
      */
@@ -2102,6 +2113,10 @@ final class TaintFlowResolution
 
         if ($assignment_type === 'arraykey-assignment') {
             return self::KEY_CLASS;
+        }
+
+        if ($assignment_type === TaintFlowGraph::SERIALIZATION_PATH_TYPE) {
+            return '';
         }
 
         return $assignment_type !== $expression_type . '-assignment'
