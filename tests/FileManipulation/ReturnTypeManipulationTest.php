@@ -180,6 +180,42 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MismatchingDocblockReturnType'],
                 'safe_types' => true,
             ],
+            'fixMismatchingDocblockReturnTypeOnInterfaceMethod70' => [
+                'input' => '<?php
+                    interface I {
+                        /**
+                         * @return int
+                         */
+                        public function foo(): string;
+                    }',
+                'output' => '<?php
+                    interface I {
+                        public function foo(): string;
+                    }',
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockReturnType'],
+                'safe_types' => true,
+            ],
+            'fixMismatchingDocblockReturnTypeOnInterfaceMethodWithNamespacedTypehint70' => [
+                'input' => '<?php
+                    namespace App;
+
+                    interface I {
+                        /**
+                         * @return int
+                         */
+                        public function foo(): \DateTime;
+                    }',
+                'output' => '<?php
+                    namespace App;
+
+                    interface I {
+                        public function foo(): \DateTime;
+                    }',
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockReturnType'],
+                'safe_types' => true,
+            ],
             'preserveFormat' => [
                 'input' => '<?php
                     /**
