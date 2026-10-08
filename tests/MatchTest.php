@@ -20,6 +20,50 @@ final class MatchTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'subjectIsOneOfTheArmValuesAfterAMatchWithoutDefault' => [
+                'code' => '<?php
+                    function f(string $type): int {
+                        $id = match ($type) {
+                            "organization" => 1,
+                            "prof", "masterprice" => 2,
+                        };
+
+                        return $id;
+                    }
+
+                    function g(string $type): string {
+                        $id = match ($type) {
+                            "organization" => 1,
+                            "prof" => 2,
+                        };
+
+                        return $type;
+                    }
+
+                    function getOwnerType(): string {
+                        return "";
+                    }
+
+                    $type = getOwnerType();
+                    match ($type) {
+                        "organization" => 1,
+                        "prof", "masterprice" => 2,
+                    };
+                    $kept = $type;
+
+                    $other = getOwnerType();
+                    match ($other) {
+                        "organization" => 1,
+                        default => 2,
+                    };
+                    $unchanged = $other;',
+                'assertions' => [
+                    '$kept===' => "'masterprice'|'organization'|'prof'",
+                    '$unchanged===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'switchTruthy' => [
                 'code' => '<?php
                     class A {
