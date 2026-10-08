@@ -483,7 +483,8 @@ final class ArrayAssignmentAnalyzer
                         $graph->addPath(
                             $child_parent_node,
                             $parent_node,
-                            'arrayvalue-assignment',
+                            'arrayvalue-assignment'
+                                . (ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim) ?? ''),
                             0,
                             $removed_taints,
                         );
