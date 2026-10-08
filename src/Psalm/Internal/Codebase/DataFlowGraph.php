@@ -88,6 +88,17 @@ abstract class DataFlowGraph
 
             for ($x = count($previous_path_types)-1; $x >= 0; $x--) {
                 $previous_path_type = $previous_path_types[$x];
+                if ($previous_path_type === self::SERIALIZATION_PATH_TYPE && $expression_type !== 'property') {
+                    if ($fetch_nesting === 0) {
+                        // a fetch from a string holding all of the value
+                        return false;
+                    }
+
+                    $fetch_nesting--;
+
+                    continue;
+                }
+
                 if ($previous_path_type === $expression_type . '-assignment') {
                     if ($fetch_nesting === 0) {
                         // a value assigned under any key: the keys of the array don't hold it
