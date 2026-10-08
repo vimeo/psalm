@@ -110,7 +110,14 @@ final class AttributesAnalyzer
                 $appearing_non_repeatable_attributes[$fq_attribute_name] = true;
             }
 
-            if (($attribute_class_flags & $target) === 0) {
+            // PHP 8.5 accepts #[\Deprecated] on traits (but still not on classes, interfaces or enums)
+            // through a special-case validator rather than via the attribute's declared targets.
+            $is_deprecated_on_trait = $fq_attribute_name === 'Deprecated'
+                && $storage instanceof ClassLikeStorage
+                && $storage->is_trait
+                && $codebase->analysis_php_version_id >= 8_05_00;
+
+            if (($attribute_class_flags & $target) === 0 && !$is_deprecated_on_trait) {
                 IssueBuffer::maybeAdd(
                     new InvalidAttribute(
                         "Attribute {$attribute_name} cannot be used on a "
