@@ -22,6 +22,16 @@ use function substr;
  */
 abstract class DataFlowGraph
 {
+    /**
+     * The type of the edge from a value to the string a builtin encodes all of it in (json_encode(), serialize(),
+     * print_r(), ...): an open array assignment, under no key in particular, that a fetch or conversion of the
+     * string takes, as the string holds everything the value holds. The edge from such a string to the value a
+     * builtin decodes from it (json_decode(), unserialize(), ...) closes it, so the fetches of the decoded value
+     * tell its keys apart again.
+     */
+    public const SERIALIZATION_PATH_TYPE = 'serialization';
+    public const UNSERIALIZATION_PATH_TYPE = 'unserialization';
+
     /** @var array<string, array<string, Path>> */
     protected array $forward_edges = [];
 
