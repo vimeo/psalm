@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -381,6 +382,30 @@ final class ForeachAnalyzer
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
+        }
+
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
+            $value_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->valueVar->name]->parent_nodes);
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $iterator_type->parent_nodes,
+                ];
+            }
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);
