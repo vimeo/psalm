@@ -382,7 +382,7 @@ final class AttributeTest extends TestCase
             'delayedTargetValidationInSeparateGroupAfterInternalAttribute' => [
                 'code' => '<?php
                     class A {
-                        #[\Override]
+                        #[\NoDiscard]
                         #[\DelayedTargetValidation]
                         public int $foo = 1;
                     }
