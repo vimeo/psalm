@@ -436,11 +436,15 @@ final class InstancePropertyAssignmentAnalyzer
             // Only whether a readonly property may be set depends on the class scope: nothing else
             // holds a fresh object, so writing it is free in a function as in a method. `$this` is
             // the caller's own instance, never a fresh one, even where its type is reference-free.
+            // PHP lets a class set the readonly properties of any of its instances, but only `$this`
+            // belongs to the method: writing another, non-fresh instance mutates state held elsewhere.
             $mut = match (true) {
+                $lhs_var_id !== '$this' => $property_var_pure_compatible
+                    ? Capabilities::NONE
+                    : $real,
                 $can_set_readonly_property => $property_var_pure_compatible
                     ? Capabilities::NONE
                     : Capabilities::READ_PROPS,
-                $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
                 default => $real,
             };
 
