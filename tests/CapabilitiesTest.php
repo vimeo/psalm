@@ -2724,6 +2724,48 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticCallReanalyzedInTraitDoesNotKeepStaleThisFlag' => [
+                'code' => '<?php
+                    class A {
+                        public int $x = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-mutation-free
+                         */
+                        public function f(A $other): static {
+                            return $this;
+                        }
+                    }
+
+                    trait T {
+                        /** @psalm-external-mutation-free */
+                        public function g(self $other): void {
+                            parent::f($other)->x = 1;
+                        }
+                    }
+
+                    class B extends A {
+                        use T;
+                    }
+
+                    /** @method static C f(C $other) */
+                    class D {
+                        public int $x = 0;
+
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return $args[0] ?? null;
+                        }
+                    }
+
+                    class C extends D {
+                        use T;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
                     /** @param Traversable<int, int, pure> $t */
