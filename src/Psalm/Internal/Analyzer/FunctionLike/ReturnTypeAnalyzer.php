@@ -428,16 +428,11 @@ final class ReturnTypeAnalyzer
             $parent_class = $codebase->classlike_storage_provider->get($self_fq_class_name)->parent_class;
         }
 
-        // `static` is only resolvable to a concrete class when the late-static-bound class is final.
-        // `$self_fq_class_name` may point at the class the docblock was inherited from, so the
-        // finality of `$static_fq_class_name` is what matters here.
-        $static_class_is_final = false;
-
-        if ($static_fq_class_name !== null
+        // `static` resolves to a concrete class only when the late-static-bound class is final.
+        // `$self_fq_class_name` may be the class the docblock was inherited from, so check `$static_fq_class_name`.
+        $static_class_is_final = $static_fq_class_name !== null
             && $codebase->classlike_storage_provider->has($static_fq_class_name)
-        ) {
-            $static_class_is_final = $codebase->classlike_storage_provider->get($static_fq_class_name)->final;
-        }
+            && $codebase->classlike_storage_provider->get($static_fq_class_name)->final;
 
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = TypeExpander::expandUnion(

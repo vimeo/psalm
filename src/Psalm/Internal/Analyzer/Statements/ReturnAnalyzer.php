@@ -298,15 +298,16 @@ final class ReturnAnalyzer
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {
+                    $local_return_type = $source->getLocalReturnType(
+                        $declared_return_type,
+                        $storage instanceof MethodStorage
+                            && $codebase->classlike_storage_provider->get(explode('::', $cased_method_id)[0])->final,
+                    );
+
                     if ($storage instanceof MethodStorage) {
                         [$fq_class_name, $method_name] = explode('::', $cased_method_id);
 
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                        $local_return_type = $source->getLocalReturnType(
-                            $declared_return_type,
-                            $class_storage->final,
-                        );
 
                         $found_generic_params = ClassTemplateParamCollector::collect(
                             $codebase,
@@ -328,11 +329,6 @@ final class ReturnAnalyzer
                                 $codebase,
                             );
                         }
-                    } else {
-                        $local_return_type = $source->getLocalReturnType(
-                            $declared_return_type,
-                            false,
-                        );
                     }
 
                     if ($local_return_type->isGenerator() && $storage->has_yield) {
