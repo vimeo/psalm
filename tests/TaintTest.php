@@ -5158,6 +5158,28 @@ final class TaintTest extends TestCase
                     echo implode(" ", $unsafe);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintImplodedArrayCastAsMixed' => [
+                'code' => '<?php
+                    function joinedAsMixed(): mixed {
+                        $parts = [];
+                        $parts[] = (string) $_GET["x"];
+                        return implode(" ", $parts);
+                    }
+
+                    echo (string) joinedAsMixed();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintJoinedArrayConcatenatedAsMixed' => [
+                'code' => '<?php
+                    function joinedAsMixed(): mixed {
+                        $parts = [];
+                        $parts[] = (string) $_GET["x"];
+                        return join(" ", $parts);
+                    }
+
+                    echo "<b>" . joinedAsMixed();',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThroughPregReplaceCallback' => [
                 'code' => '<?php
                     $a = $_GET["bad"];
