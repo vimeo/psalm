@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
@@ -86,6 +87,7 @@ use const PHP_EOL;
  *     file_storage:array<lowercase-string, FileStorage>,
  *     taint_data: ?TaintFlowGraph,
  *     global_constants: array<string, Union>,
+ *     unresolved_global_constants: array<string, UnresolvedConstantComponent>,
  *     global_functions: array<lowercase-string, FunctionStorage>
  * }
  */
@@ -413,6 +415,7 @@ final class Scanner
                 $this->addThreadData($pool_data['scanner_data']);
 
                 $this->codebase->addGlobalConstantTypes($pool_data['global_constants']);
+                $this->codebase->addUnresolvedGlobalConstants($pool_data['unresolved_global_constants']);
                 $this->codebase->functions->addGlobalFunctions($pool_data['global_functions']);
             }
         } else {
@@ -578,6 +581,10 @@ final class Scanner
             ) {
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);
+                }
+
+                foreach ($file_storage->unresolved_constants as $name => $value) {
+                    $this->codebase->addUnresolvedGlobalConstant($name, $value);
                 }
             }
 

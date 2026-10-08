@@ -2017,7 +2017,6 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionResolver.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$fq_classlike_name]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>

@@ -194,11 +194,12 @@ final class ExpressionResolver
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if ($stmt->class instanceof PhpParser\Node\Name
                 && $stmt->name instanceof PhpParser\Node\Identifier
-                && $fq_classlike_name
                 && $stmt->class->getParts() !== ['static']
+                && ($stmt->class->getParts() !== ['self'] || $fq_classlike_name !== null)
                 && ($stmt->class->getParts() !== ['parent'] || $parent_fq_class_name !== null)
             ) {
                 if ($stmt->class->getParts() === ['self']) {
+                    assert($fq_classlike_name !== null);
                     $const_fq_class_name = $fq_classlike_name;
                 } else {
                     if ($stmt->class->getParts() === ['parent']) {

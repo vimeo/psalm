@@ -51,6 +51,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
@@ -150,6 +151,11 @@ final class Codebase
      * @var array<string, Union>
      */
     private static array $stubbed_constants = [];
+
+    /**
+     * @var array<string, UnresolvedConstantComponent>
+     */
+    private static array $unresolved_stubbed_constants = [];
 
     /**
      * Whether to register autoloaded information
@@ -310,6 +316,7 @@ final class Codebase
         $this->code_use_graph = $providers->file_reference_provider->code_use_graph;
 
         self::$stubbed_constants = [];
+        self::$unresolved_stubbed_constants = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -1061,6 +1068,42 @@ final class Codebase
     public function getAllStubbedConstants(): array
     {
         return self::$stubbed_constants;
+    }
+
+    /**
+     * The value of a global constant whose type depends on classes, e.g. an enum case, resolved when it is fetched
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addUnresolvedGlobalConstant(string $const_id, UnresolvedConstantComponent $value): void
+    {
+        self::$unresolved_stubbed_constants[$const_id] = $value;
+    }
+
+    /**
+     * @psalm-capabilities read-globals
+     */
+    public function getUnresolvedGlobalConstant(string $const_id): ?UnresolvedConstantComponent
+    {
+        return self::$unresolved_stubbed_constants[$const_id] ?? null;
+    }
+
+    /**
+     * @param array<string, UnresolvedConstantComponent> $values
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addUnresolvedGlobalConstants(array $values): void
+    {
+        self::$unresolved_stubbed_constants += $values;
+    }
+
+    /**
+     * @return array<string, UnresolvedConstantComponent>
+     * @psalm-capabilities read-globals
+     */
+    public function getAllUnresolvedGlobalConstants(): array
+    {
+        return self::$unresolved_stubbed_constants;
     }
 
     public function fileExists(string $file_path): bool
