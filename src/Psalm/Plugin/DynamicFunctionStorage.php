@@ -38,6 +38,11 @@ final class DynamicFunctionStorage
     public bool $allow_named_arg_calls = true;
 
     /**
+     * Determines if a function must be called with named arguments.
+     */
+    public bool $require_named_arg_calls = false;
+
+    /**
      * Function purity.
      * If function is pure then plugin hook should set it to true.
      */
@@ -58,6 +63,7 @@ final class DynamicFunctionStorage
         $storage->setParams($this->params);
         $storage->return_type = $this->return_type;
         $storage->allow_named_arg_calls = $this->allow_named_arg_calls;
+        $storage->require_named_arg_calls = $this->require_named_arg_calls;
         $storage->pure = $this->pure;
         $storage->variadic = $this->variadic;
 

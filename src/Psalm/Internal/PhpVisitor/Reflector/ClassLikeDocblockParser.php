@@ -222,6 +222,10 @@ final class ClassLikeDocblockParser
             $info->final = true;
         }
 
+        if (isset($parsed_docblock->tags['no-named-arguments'])) {
+            $info->no_named_args = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-consistent-constructor'])) {
             $info->consistent_constructor = true;
         }
