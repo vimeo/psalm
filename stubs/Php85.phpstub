@@ -99,6 +99,14 @@ namespace {
         public function contains($object) {}
     }
 
+    interface DateTimeInterface
+    {
+        /**
+         * @deprecated this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize()
+         */
+        public function __wakeup(): void;
+    }
+
     class DateTime implements DateTimeInterface
     {
         /**
