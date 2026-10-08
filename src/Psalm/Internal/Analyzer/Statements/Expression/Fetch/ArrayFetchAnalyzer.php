@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -486,6 +487,35 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The key of the path of a fetch whose key is one of a few literals (two to eight, as for assignments, see
+     * ArrayAssignmentAnalyzer::MAX_KEY_VALUES): each quoted, separated by '|' (see
+     * TaintFlowResolution::getFetchedKeys()). What it fetches is what is under one of them. Null if the key isn't
+     * one of a few literals.
+     *
+     * @psalm-mutation-free
+     */
+    private static function getFetchedKeys(Union $offset_type): ?string
+    {
+        $string_literals = $offset_type->getLiteralStrings();
+        $int_literals = $offset_type->getLiteralInts();
+        $count = count($string_literals) + count($int_literals);
+
+        if ($count < 2 || $count > 8 || $count !== count($offset_type->getAtomicTypes())) {
+            return null;
+        }
+
+        $keys = [];
+        foreach ($string_literals as $string_literal) {
+            $keys[] = '\'' . $string_literal->value . '\'';
+        }
+        foreach ($int_literals as $int_literal) {
+            $keys[] = '\'' . $int_literal->value . '\'';
+        }
+
+        return implode('|', $keys);
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -554,14 +584,40 @@ final class ArrayFetchAnalyzer
                 $graph->addNode($array_key_node);
             }
 
+            // a key that is one of a few literals fetches what is under one of them (see getFetchedKeys())
+            $fetched_keys = $dim_value === null ? self::getFetchedKeys($offset_type) : null;
+            $key_path_suffix = $dim_value !== null
+                ? '-\'' . $dim_value . '\''
+                : ($fetched_keys !== null ? '-' . $fetched_keys : '');
+
             foreach ($stmt_var_type->parent_nodes as $parent_node) {
-                $graph->addPath(
-                    $parent_node,
-                    $new_parent_node,
-                    'arrayvalue-fetch' . ($dim_value !== null ? '-\'' . $dim_value . '\'' : ''),
-                    $added_taints,
-                    $removed_taints,
-                );
+                if ($fetched_keys !== null && $graph instanceof CombinedFlowGraph) {
+                    // the variable use graph only knows the key is one of them: an unkeyed fetch there
+                    $graph->taint_flow_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                    $graph->variable_use_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch',
+                        $added_taints,
+                        $removed_taints,
+                    );
+                } else {
+                    $graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        $fetched_keys !== null && $graph instanceof VariableUseGraph
+                            ? 'arrayvalue-fetch'
+                            : 'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                }
 
                 if ($stmt_type->by_ref) {
                     $graph->addPath(
