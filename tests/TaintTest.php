@@ -1797,6 +1797,25 @@ final class TaintTest extends TestCase
                     $cities[] = $city;
                     echo implode(",", $cities);',
             ],
+            'dontTaintTheOtherColumnsOfTheRowsArrayColumnIsGiven' => [
+                'code' => '<?php
+                    /** @param list<array{name: string, color: string}> $rows */
+                    function printColors(array $rows): void {
+                        foreach (array_column($rows, "color") as $color) {
+                            echo $color;
+                        }
+
+                        foreach (array_column($rows, "color", "color") as $key => $_) {
+                            echo $key;
+                        }
+
+                        foreach (array_column($rows, "name") as $key => $_) {
+                            echo $key;
+                        }
+                    }
+
+                    printColors([["name" => (string) $_GET["name"], "color" => "red"]]);',
+            ],
             'dontTaintLiteralStringType' => [
                 'code' => '<?php
                     /** @var "asc"|"desc" $direction */
@@ -4199,6 +4218,42 @@ final class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'TaintedSql',
+            ],
+            'taintTheColumnArrayColumnTakesOfTheRows' => [
+                'code' => '<?php
+                    /** @param list<array{name: string, color: string}> $rows */
+                    function printNames(array $rows): void {
+                        foreach (array_column($rows, "name") as $name) {
+                            echo $name;
+                        }
+                    }
+
+                    printNames([["name" => (string) $_GET["name"], "color" => "red"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheIndexColumnArrayColumnTakesOfTheRows' => [
+                'code' => '<?php
+                    /** @param list<array{name: string, color: string}> $rows */
+                    function printNames(array $rows): void {
+                        foreach (array_column($rows, "color", "name") as $name => $_) {
+                            echo $name;
+                        }
+                    }
+
+                    printNames([["name" => (string) $_GET["name"], "color" => "red"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheWholeRowsArrayColumnTakesWithoutAColumnKey' => [
+                'code' => '<?php
+                    /** @param list<array{name: string, color: string}> $rows */
+                    function printNames(array $rows): void {
+                        foreach (array_column($rows, null) as $row) {
+                            echo $row["name"];
+                        }
+                    }
+
+                    printNames([["name" => (string) $_GET["name"], "color" => "red"]]);',
+                'error_message' => 'TaintedHtml',
             ],
             'taintedHtmlFromSourceReturningString' => [
                 'code' => '<?php
