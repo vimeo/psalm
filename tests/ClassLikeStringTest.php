@@ -1049,6 +1049,37 @@ final class ClassLikeStringTest extends TestCase
                     '$r' => 'class-string<A>',
                 ],
             ],
+            'traitClassConstantIntoTraitString' => [
+                'code' => '<?php
+                    trait Foo {}
+
+                    /** @param trait-string $t */
+                    function f(string $t): void {}
+
+                    f(Foo::class);',
+            ],
+            'traitClassConstantIntoClassString' => [
+                'code' => '<?php
+                    trait Foo {}
+
+                    /** @param class-string $t */
+                    function f(string $t): void {}
+
+                    f(Foo::class);',
+            ],
+            'traitClassConstantIntoTraitStringAttribute' => [
+                'code' => '<?php
+                    trait Foo {}
+
+                    #[Attribute(Attribute::TARGET_CLASS)]
+                    final class CoversTrait {
+                        /** @param trait-string $traitName */
+                        public function __construct(public string $traitName) {}
+                    }
+
+                    #[CoversTrait(Foo::class)]
+                    final class FooTest {}',
+            ],
         ];
     }
 
@@ -1184,6 +1215,16 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'classConstantIntoTraitString' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    /** @param trait-string $t */
+                    function f(string $t): void {}
+
+                    f(Foo::class);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
