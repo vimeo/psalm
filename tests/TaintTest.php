@@ -2381,6 +2381,62 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     fwrite(STDOUT, (string) $_GET["a"]);',
             ],
+            'taintFreeGlobalOfAnotherName' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["tainted"] = (string) $_GET["a"];
+                    }
+
+                    function bind(): void {
+                        global $bound;
+                        $bound = (string) $_GET["b"];
+                    }
+
+                    function show(): void {
+                        global $safe;
+                        echo (string) $safe;
+                        echo (string) $GLOBALS["other"];
+                    }',
+            ],
+            'taintFreeSanitizedGlobal' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = htmlspecialchars((string) $_GET["a"], ENT_QUOTES);
+                    }
+
+                    function bind(): void {
+                        global $bound;
+                        $bound = htmlspecialchars((string) $_GET["b"], ENT_QUOTES);
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                        echo (string) $GLOBALS["bound"];
+                    }',
+            ],
+            'taintFreeOtherKeyOfAGlobalArray' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["config"] = ["safe" => "ok", "tainted" => (string) $_GET["a"]];
+                    }
+
+                    function show(): void {
+                        echo $GLOBALS["config"]["safe"];
+                    }',
+            ],
+            'taintFreeNamesOfTheGlobals' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        foreach ($GLOBALS as $name => $_) {
+                            echo $name;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2391,6 +2447,187 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintGlobalsItemSetInOneFunctionAndReadInAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        echo (string) $GLOBALS["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableSetInOneFunctionAndReadInAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableSetThroughGlobalsAndReadAsGlobal' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableSetAsGlobalAndReadThroughGlobals' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        echo (string) $GLOBALS["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableAppendedTo' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $values;
+                        $values[] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $values;
+                        foreach ((array) $values as $value) {
+                            echo (string) $value;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedGlobalsItem' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["config"]["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        echo (string) $GLOBALS["config"]["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsItemSetByDynamicName' => [
+                'code' => '<?php
+                    function stash(string $name): void {
+                        $GLOBALS[$name] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        echo (string) $GLOBALS["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsItemReadByDynamicName' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(string $name): void {
+                        echo (string) $GLOBALS[$name];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsIteratedOver' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        foreach ($GLOBALS as $global) {
+                            echo (string) $global;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsCopied' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        $globals = $GLOBALS;
+                        echo (string) $globals["value"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsExtracted' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        extract($GLOBALS);
+                    }',
+                'error_message' => 'TaintedExtract',
+            ],
+            'taintGlobalsItemMemoizedByAFunction' => [
+                'code' => '<?php
+                    function previous(string $value): string {
+                        $previous = (string) ($GLOBALS["previous"] ?? "");
+                        $GLOBALS["previous"] = $value;
+                        return $previous;
+                    }
+
+                    previous((string) $_GET["a"]);
+                    echo previous("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalsItemSetInSpecializedCallAndReadInAnother' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function stash(string $value): void {
+                        $GLOBALS["value"] = $value;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function show(): string {
+                        return (string) $GLOBALS["value"];
+                    }
+
+                    stash("safe");
+                    stash((string) $_GET["a"]);
+                    echo show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableSetInSpecializedCallAndReadInAnother' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function stash(string $value): void {
+                        global $stashed;
+                        $stashed = $value;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function show(): string {
+                        global $stashed;
+                        return (string) $stashed;
+                    }
+
+                    stash("safe");
+                    stash((string) $_GET["a"]);
+                    echo show();',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
                     $outer = [];

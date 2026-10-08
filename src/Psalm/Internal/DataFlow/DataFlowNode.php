@@ -143,6 +143,30 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the global variable $name holds, for the whole program as a static property's: what any function-like
+     * writes to it through `global` or $GLOBALS, any other may read. A null $name stands for the globals written by
+     * a name not known statically, which may be any of them.
+     *
+     * @psalm-pure
+     */
+    public static function getForGlobalVariable(?string $name): self
+    {
+        $id = $name === null ? '$GLOBALS[]' : '$GLOBALS[\'' . $name . '\']';
+
+        return self::make($id, $id, null);
+    }
+
+    /**
+     * $GLOBALS as a whole, with all the global variables (see getForGlobalVariable()) under their names.
+     *
+     * @psalm-pure
+     */
+    public static function getForGlobals(): self
+    {
+        return self::make('$GLOBALS', '$GLOBALS', null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.

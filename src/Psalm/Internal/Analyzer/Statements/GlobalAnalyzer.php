@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -65,7 +66,8 @@ final class GlobalAnalyzer
                 continue;
             }
 
-            $var_id = '$' . $var->name;
+            $var_name = $var->name;
+            $var_id = '$' . $var_name;
 
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
 
@@ -113,6 +115,18 @@ final class GlobalAnalyzer
                 'parent_nodes' => [$assignment_node->id => $assignment_node],
                 'from_global_state' => true,
             ]);
+
+            if ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+                $taint_flow_graph->addNode($assignment_node);
+
+                foreach (self::getGlobalReadNodes($taint_flow_graph, $var_name) as $global_node) {
+                    $taint_flow_graph->addPath($global_node, $assignment_node, '=');
+                }
+
+                // what the variable holds when it stops referencing the global, as for a by-reference parameter
+                $context->by_ref_param_out_nodes[$var_id] = self::getGlobalNode($taint_flow_graph, $var_name);
+            }
+
             $context->references_to_external_scope[$var_id] = true;
 
             if (isset($context->references_in_scope[$var_id])) {
@@ -135,5 +149,39 @@ final class GlobalAnalyzer
                 $global_context->referenced_globals[$var_id] = true;
             }
         }
+    }
+
+    /**
+     * The node of the global variable $name (null: of those written by a name not known statically), which
+     * $GLOBALS holds under its name.
+     */
+    public static function getGlobalNode(TaintFlowGraph $graph, ?string $name): DataFlowNode
+    {
+        $global_node = DataFlowNode::getForGlobalVariable($name);
+        $globals_node = DataFlowNode::getForGlobals();
+
+        $graph->addNode($global_node);
+        $graph->addNode($globals_node);
+        $graph->addPath(
+            $global_node,
+            $globals_node,
+            $name === null ? 'arrayvalue-assignment' : 'arrayvalue-assignment-\'' . $name . '\'',
+        );
+
+        return $global_node;
+    }
+
+    /**
+     * What reading the global variable $name gets: what is written to it, by its name or by one not known
+     * statically.
+     *
+     * @return array<string, DataFlowNode>
+     */
+    public static function getGlobalReadNodes(TaintFlowGraph $graph, string $name): array
+    {
+        $global_node = self::getGlobalNode($graph, $name);
+        $unknown_global_node = self::getGlobalNode($graph, null);
+
+        return [$global_node->id => $global_node, $unknown_global_node->id => $unknown_global_node];
     }
 }
