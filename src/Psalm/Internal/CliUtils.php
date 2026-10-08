@@ -220,7 +220,35 @@ final class CliUtils
             return [];
         }
 
-        return array_slice($argv, 1);
+        return self::chosenByOperator(array_slice($argv, 1));
+    }
+
+    /**
+     * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
+     *
+     * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
+     * the config, plugins and autoloaders it loads, the Shepherd and language client addresses it
+     * connects to, and the symbols psalm-refactor moves; Psalm prints them back to that person. Psalm
+     * is meant to act on them: they aren't input from a third party, like the paths read from STDIN
+     * (see getPathsToCheckFromStdin()). The other kinds of taint stay, so that an argument still has
+     * to be escaped for a shell, for example.
+     *
+     * @template T of array|false
+     * @param T $arguments
+     * @return T
+     * @psalm-pure
+     * @psalm-taint-escape file
+     * @psalm-taint-escape ssrf
+     * @psalm-taint-escape include
+     * @psalm-taint-escape callable
+     * @psalm-taint-escape html
+     * @psalm-taint-escape has_quotes
+     * @psalm-taint-escape url_component
+     * @psalm-taint-escape url_path
+     */
+    public static function chosenByOperator(array|false $arguments): array|false
+    {
+        return $arguments;
     }
 
     /**

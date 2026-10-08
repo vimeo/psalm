@@ -188,6 +188,7 @@ return [
     'printf' => Capabilities::IO,
     'var_dump' => Capabilities::IO,
     'debug_zval_dump' => Capabilities::IO,
+    'debug_print_backtrace' => Capabilities::IO | Capabilities::READ_GLOBALS,
     'phpinfo' => Capabilities::IO,
     'ob_implicit_flush' => Capabilities::IO,
     'vprintf' => Capabilities::IO,
@@ -310,6 +311,8 @@ return [
     'ini_get' => Capabilities::READ_GLOBALS,
     'date_default_timezone_get' => Capabilities::READ_GLOBALS,
     'error_get_last' => Capabilities::READ_GLOBALS,
+    // the call stack differs per call site
+    'debug_backtrace' => Capabilities::READ_GLOBALS,
     'error_clear_last' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'array_rand' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'set_include_path' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,

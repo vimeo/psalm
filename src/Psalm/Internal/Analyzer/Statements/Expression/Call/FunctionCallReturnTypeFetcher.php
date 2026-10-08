@@ -782,9 +782,10 @@ final class FunctionCallReturnTypeFetcher
         $source = $statements_analyzer->getSource();
 
         if ($source instanceof MethodAnalyzer) {
-            $method_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId(
+            // the body of a method of a trait is analyzed as one of the class using it
+            $method_id = FunctionLikeAnalyzer::getCasedBodyMethodId(
                 $statements_analyzer->getCodebase(),
-                $source->getMethodId(),
+                $source->getMethodId($context->self),
             );
         } elseif ($source instanceof FunctionAnalyzer || $source instanceof ClosureAnalyzer) {
             $method_id = $source->getCorrectlyCasedMethodId();
@@ -1448,12 +1449,16 @@ final class FunctionCallReturnTypeFetcher
                 $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($prefixes);
             }
 
-            $format_type = $function_id === 'sprintf' && isset($args[0])
+            $format_type = ($function_id === 'sprintf' || $function_id === 'vsprintf') && isset($args[0])
                 ? $statements_analyzer->node_data->getType($args[0]->value)
                 : null;
 
             $arg_removed_taints = $format_type && $format_type->allStringLiterals()
-                ? self::getTaintsRemovedBySprintfFormats(ConcatAnalyzer::getLiteralValues($format_type), $args)
+                ? self::getTaintsRemovedBySprintfFormats(
+                    ConcatAnalyzer::getLiteralValues($format_type),
+                    $args,
+                    $function_id === 'vsprintf',
+                )
                 : [];
 
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -1480,16 +1485,20 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * The taints the values of a sprintf() call can't have once formatted with any of $formats: those of a number, for
-     * the values they only format as numbers (or not at all)
+     * The taints the values of a sprintf() or printf() call can't have once formatted with any of $formats: those of
+     * a number, for the values they only format as numbers (or not at all). With $values_in_array, $args are the
+     * format and the array of the values (vsprintf(), vprintf()), which holds those of every conversion.
      *
      * @param list<string> $formats
      * @param array<PhpParser\Node\Arg> $args
      * @return array<int, int> by index in $args
      * @psalm-mutation-free
      */
-    private static function getTaintsRemovedBySprintfFormats(array $formats, array $args): array
-    {
+    public static function getTaintsRemovedBySprintfFormats(
+        array $formats,
+        array $args,
+        bool $values_in_array = false,
+    ): array {
         $string_args = [];
 
         foreach ($formats as $format) {
@@ -1530,7 +1539,13 @@ final class FunctionCallReturnTypeFetcher
                 return [];
             }
 
-            if ($i > 0 && !isset($string_args[$i])) {
+            if ($i === 0) {
+                continue;
+            }
+
+            $is_formatted_as_string = $values_in_array ? $string_args !== [] : isset($string_args[$i]);
+
+            if (!$is_formatted_as_string) {
                 $removed_taints[$i] = TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
             }
         }

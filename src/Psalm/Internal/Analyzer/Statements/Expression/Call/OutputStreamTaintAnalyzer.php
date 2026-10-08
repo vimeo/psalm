@@ -6,12 +6,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+use function array_slice;
 use function strtolower;
 
 /**
@@ -115,11 +117,49 @@ final class OutputStreamTaintAnalyzer
             return;
         }
 
+        $removed_taints = self::getTaintsRemovedByFormat($statements_analyzer, $function_id, $args);
+
         foreach ($args as $offset => $arg) {
             if ($arg->name !== null ? $arg->name->name !== $stream_name : $offset !== $stream_offset) {
-                self::addSink($statements_analyzer, $graph, $function_id, $arg);
+                self::addSink($statements_analyzer, $graph, $function_id, $arg, $removed_taints[$offset] ?? 0);
             }
         }
+    }
+
+    /**
+     * The taints the values fprintf() or vfprintf() is given can't write, by offset in $args: those of a string, for
+     * the values a literal format only formats as numbers, as for printf() and vprintf() (see ArgumentsAnalyzer)
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @return array<int, int>
+     */
+    private static function getTaintsRemovedByFormat(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        array $args,
+    ): array {
+        if (($function_id !== 'fprintf' && $function_id !== 'vfprintf') || !isset($args[1])) {
+            return [];
+        }
+
+        $format_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if (!$format_type || !$format_type->allStringLiterals()) {
+            return [];
+        }
+
+        $removed_taints = [];
+
+        // the format and the values are given after the stream, so offsets are one past those of printf()
+        foreach (FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
+            ConcatAnalyzer::getLiteralValues($format_type),
+            array_slice($args, 1),
+            $function_id === 'vfprintf',
+        ) as $offset => $taints) {
+            $removed_taints[$offset + 1] = $taints;
+        }
+
+        return $removed_taints;
     }
 
     /**
@@ -192,6 +232,7 @@ final class OutputStreamTaintAnalyzer
         TaintFlowGraph $graph,
         string $function_id,
         PhpParser\Node\Arg $arg,
+        int $removed_taints = 0,
     ): void {
         $arg_type = $statements_analyzer->node_data->getType($arg->value);
 
@@ -201,7 +242,11 @@ final class OutputStreamTaintAnalyzer
 
         $location = new CodeLocation($statements_analyzer, $arg->value);
 
-        $sink = DataFlowNode::getForTaint($function_id . ' writing to the response', $location, self::SINKS);
+        $sink = DataFlowNode::getForTaint(
+            $function_id . ' writing to the response',
+            $location,
+            self::SINKS & ~$removed_taints,
+        );
 
         $graph->addSink($sink);
 
