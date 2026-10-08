@@ -502,78 +502,81 @@ final class Scanner
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
+        $was_scanning_internal_stub = $this->scanning_internal_stub;
         $this->scanning_internal_stub = $this->codebase->register_stub_files
             && in_array($file_path, $this->config->internal_stubs, true);
 
-        $file_scanner->scan(
-            $this->codebase,
-            $file_storage,
-            $from_cache,
-            $this->progress,
-        );
+        try {
+            $file_scanner->scan(
+                $this->codebase,
+                $file_storage,
+                $from_cache,
+                $this->progress,
+            );
 
-        if (!$from_cache) {
-            if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
-                $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
-            }
-        } else {
-            $this->codebase->statements_provider->setUnchangedFile($file_path);
-
-            foreach ($file_storage->required_file_paths as $required_file_path) {
-                if ($will_analyze) {
-                    $this->addFileToDeepScan($required_file_path);
-                } else {
-                    $this->addFileToShallowScan($required_file_path);
+            if (!$from_cache) {
+                if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
+                    $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
                 }
-            }
+            } else {
+                $this->codebase->statements_provider->setUnchangedFile($file_path);
 
-            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
-            }
-
-            foreach ($file_storage->required_classes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $will_analyze, false);
-            }
-
-            foreach ($file_storage->required_interfaces as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, false, false);
-            }
-
-            foreach ($file_storage->referenced_classlikes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, false, false);
-            }
-
-            if ($this->codebase->register_autoload_files
-                || $this->codebase->all_functions_global
-            ) {
-                foreach ($file_storage->functions as $function_storage) {
-                    // like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native
-                    // function the analysed version predates doesn't replace the native signature
-                    if ($function_storage->cased_name
-                        && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
-                        && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
-                    ) {
-                        $this->codebase->functions->addGlobalFunction(
-                            $function_storage->cased_name,
-                            $function_storage,
-                        );
+                foreach ($file_storage->required_file_paths as $required_file_path) {
+                    if ($will_analyze) {
+                        $this->addFileToDeepScan($required_file_path);
+                    } else {
+                        $this->addFileToShallowScan($required_file_path);
                     }
                 }
-            }
-            if ($this->codebase->register_autoload_files
-                || $this->codebase->all_constants_global
-            ) {
-                foreach ($file_storage->constants as $name => $type) {
-                    $this->codebase->addGlobalConstantType($name, $type);
+
+                foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                    $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
+                }
+
+                foreach ($file_storage->required_classes as $fq_classlike_name) {
+                    $this->queueClassLikeForScanning($fq_classlike_name, $will_analyze, false);
+                }
+
+                foreach ($file_storage->required_interfaces as $fq_classlike_name) {
+                    $this->queueClassLikeForScanning($fq_classlike_name, false, false);
+                }
+
+                foreach ($file_storage->referenced_classlikes as $fq_classlike_name) {
+                    $this->queueClassLikeForScanning($fq_classlike_name, false, false);
+                }
+
+                if ($this->codebase->register_autoload_files
+                    || $this->codebase->all_functions_global
+                ) {
+                    foreach ($file_storage->functions as $function_storage) {
+                        // like on a fresh scan (see FunctionLikeNodeScanner), a polyfill of a native
+                        // function the analysed version predates doesn't replace the native signature
+                        if ($function_storage->cased_name
+                            && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
+                            && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
+                        ) {
+                            $this->codebase->functions->addGlobalFunction(
+                                $function_storage->cased_name,
+                                $function_storage,
+                            );
+                        }
+                    }
+                }
+                if ($this->codebase->register_autoload_files
+                    || $this->codebase->all_constants_global
+                ) {
+                    foreach ($file_storage->constants as $name => $type) {
+                        $this->codebase->addGlobalConstantType($name, $type);
+                    }
+                }
+
+                foreach ($file_storage->classlike_aliases as $aliased_name => $unaliased_name) {
+                    $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
                 }
             }
-
-            foreach ($file_storage->classlike_aliases as $aliased_name => $unaliased_name) {
-                $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
-            }
+        } finally {
+            $this->scanning_internal_stub = $was_scanning_internal_stub;
         }
-
-        $this->scanning_internal_stub = false;
     }
 
     /**
