@@ -113,7 +113,10 @@ final class ProjectCheckerTest extends TestCase
         );
     }
 
-    public function testAfterCodebasePopulatedIsInvoked(): void
+    /**
+     * @dataProvider entryPointProvider
+     */
+    public function testAfterCodebasePopulatedIsInvoked(string $entry_point): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
             public static bool $called = false;
@@ -144,12 +147,31 @@ final class ProjectCheckerTest extends TestCase
         $hook_class = get_class($hook);
 
         $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
+        $hook::$called = false;
+
+        $file_path = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php');
 
         ob_start();
-        $this->project_analyzer->check('tests/fixtures/DummyProject');
+        match ($entry_point) {
+            'check' => $this->project_analyzer->check('tests/fixtures/DummyProject'),
+            'checkDir' => $this->project_analyzer->checkDir('tests/fixtures/DummyProject'),
+            'checkFile' => $this->project_analyzer->checkFile($file_path),
+            'checkPaths' => $this->project_analyzer->checkPaths([$file_path]),
+        };
         ob_end_clean();
 
         $this->assertTrue($hook::$called);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function entryPointProvider(): iterable
+    {
+        yield 'check' => ['check'];
+        yield 'checkDir' => ['checkDir'];
+        yield 'checkFile' => ['checkFile'];
+        yield 'checkPaths' => ['checkPaths'];
     }
 
     public function testCheckAfterNoChange(): void
