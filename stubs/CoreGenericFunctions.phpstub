@@ -484,7 +484,7 @@ function sodium_memzero(string &$string): void
  * @return ($return is true ? string : void)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
  * @psalm-taint-sink has_quotes $value
  * @psalm-taint-sink user_secret $value
@@ -532,7 +532,7 @@ function debug_zval_dump($value, ...$values): void {}
  * @return ($return is true ? string : true)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
  * @psalm-taint-sink has_quotes $value
  * @psalm-taint-sink user_secret $value
@@ -1064,7 +1064,8 @@ function rawurlencode(string $string) : string {}
  * @psalm-taint-escape url_component
  * @psalm-taint-escape url_path
  * @psalm-taint-escape header
- * @psalm-flow ($data, $numeric_prefix, $arg_separator) -> return
+ * @psalm-flow ($data) -(serialization)-> return
+ * @psalm-flow ($numeric_prefix, $arg_separator) -> return
  */
 function http_build_query(array|object $data, string $numeric_prefix = "", ?string $arg_separator = null, int $encoding_type = PHP_QUERY_RFC1738) : string {}
 
@@ -1469,7 +1470,8 @@ function sprintf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($format, $values) -> return
+ * @psalm-flow ($format) -> return
+ * @psalm-flow ($values) -(arrayvalue-fetch)-> return
  */
 function vsprintf(string $format, array $values) {}
 
@@ -1698,7 +1700,7 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
- * @psalm-flow ($json) -> return
+ * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
@@ -1710,7 +1712,7 @@ function json_decode(string $json, ?bool $associative = null, int $depth = 512, 
  * @param int<1, 2147483647> $depth
  * @return ($flags is int<4194304, 8388607> ? non-empty-string : non-empty-string|false)
  *
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-ignore-falsable-return
  */
 function json_encode(mixed $value, int $flags = 0, int $depth = 512) {}

@@ -791,6 +791,22 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
             ],
+            'dontTaintAnotherKeyOfAnUnserializedArray' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["k"] = (string) $_GET["x"];
+                    $a["other"] = "safe";
+                    $b = unserialize(serialize($a));
+                    echo (string) $b["other"];',
+            ],
+            'dontTaintAnotherKeyOfAJsonDecodedArray' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["k"] = (string) $_GET["x"];
+                    $a["other"] = "safe";
+                    $b = json_decode(json_encode($a, JSON_THROW_ON_ERROR), true);
+                    echo (string) $b["other"];',
+            ],
             'dontTaintTheOtherItemsDestructuredFromAnUnshapedArray' => [
                 'code' => '<?php // --taint-analysis
                     function getComment(): array {
@@ -2901,6 +2917,60 @@ final class TaintTest extends TestCase
             'taintHtmlThroughSerialize' => [
                 'code' => '<?php // --taint-analysis
                     echo serialize((string) $_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintJsonEncodedArrayCastAsMixed' => [
+                'code' => '<?php
+                    function encodedAsMixed(): mixed {
+                        $a = [];
+                        $a[] = (string) $_GET["x"];
+                        return json_encode($a);
+                    }
+
+                    echo (string) encodedAsMixed();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSerializedArrayConcatenatedAsMixed' => [
+                'code' => '<?php
+                    function serializedAsMixed(): mixed {
+                        $a = [];
+                        $a["k"] = (string) $_GET["x"];
+                        return serialize($a);
+                    }
+
+                    /** @psalm-suppress MixedOperand */
+                    echo "<b>" . serializedAsMixed();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPrintedNestedArrayCastAsMixed' => [
+                'code' => '<?php
+                    function printedAsMixed(): mixed {
+                        $a = [];
+                        $a["x"]["y"] = (string) $_GET["x"];
+                        return print_r($a, true);
+                    }
+
+                    echo (string) printedAsMixed();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyOfAnUnserializedArrayPutInAnotherArray' => [
+                'code' => '<?php
+                    $a = [];
+                    $a["k"] = (string) $_GET["x"];
+                    $wrapper = ["payload" => serialize($a)];
+                    $b = unserialize($wrapper["payload"]);
+                    echo (string) $b["k"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintVsprintfValuesCastAsMixed' => [
+                'code' => '<?php
+                    function formattedAsMixed(): mixed {
+                        $a = [];
+                        $a[] = (string) $_GET["x"];
+                        return vsprintf("%s", $a);
+                    }
+
+                    echo (string) formattedAsMixed();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheItemDestructuredFromAnUnshapedArray' => [

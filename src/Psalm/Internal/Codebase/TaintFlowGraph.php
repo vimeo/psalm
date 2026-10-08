@@ -1738,13 +1738,29 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function appendPathType(array $open_assignments, string $path_type): array
     {
+        if ($path_type === self::UNSERIALIZATION_PATH_TYPE) {
+            // what was decoded from the string is the value encoded in it: the innermost open array assignment
+            for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+                if ($open_assignments[$i] === self::SERIALIZATION_PATH_TYPE
+                    || str_starts_with($open_assignments[$i], 'arrayvalue-assignment')
+                    || str_starts_with($open_assignments[$i], 'arraykey-assignment')
+                ) {
+                    array_splice($open_assignments, $i, 1);
+
+                    break;
+                }
+            }
+        }
+
         foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
             if (!str_starts_with($path_type, $family . '-fetch')) {
                 continue;
             }
 
             for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
-                if (str_starts_with($open_assignments[$i], $family . '-assignment')) {
+                if (str_starts_with($open_assignments[$i], $family . '-assignment')
+                    || ($family !== 'property' && $open_assignments[$i] === self::SERIALIZATION_PATH_TYPE)
+                ) {
                     array_splice($open_assignments, $i, 1);
 
                     break;
@@ -1807,6 +1823,10 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function isStructuralAssignment(string $path_type): bool
     {
+        if ($path_type === self::SERIALIZATION_PATH_TYPE) {
+            return true;
+        }
+
         foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
             if (str_starts_with($path_type, $family . '-assignment')) {
                 return true;
