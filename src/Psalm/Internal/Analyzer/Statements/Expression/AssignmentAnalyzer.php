@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -1949,8 +1950,7 @@ final class AssignmentAnalyzer
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
-        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
-            && $assign_var->var->name === 'this';
+        $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
         
         $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
