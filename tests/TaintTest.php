@@ -5177,6 +5177,7 @@ final class TaintTest extends TestCase
                         return join(" ", $parts);
                     }
 
+                    /** @psalm-suppress MixedOperand */
                     echo "<b>" . joinedAsMixed();',
                 'error_message' => 'TaintedHtml',
             ],
