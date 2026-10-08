@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
@@ -14,6 +15,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -77,6 +79,7 @@ use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
+use function implode;
 use function in_array;
 use function is_string;
 use function reset;
@@ -261,6 +264,8 @@ final class ForeachAnalyzer
             $iterator_type = null;
         }
 
+        $foreach_marker = $iterator_type ? self::getForeachMarker($statements_analyzer, $stmt, $iterator_type) : null;
+
         if ($iterator_type) {
             if (self::checkIteratorType(
                 $statements_analyzer,
@@ -271,6 +276,7 @@ final class ForeachAnalyzer
                 $key_type,
                 $value_type,
                 $always_non_empty_array,
+                $foreach_marker,
             ) === false
             ) {
                 return false;
@@ -381,6 +387,42 @@ final class ForeachAnalyzer
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
+        }
+
+        if (!$stmt->byRef
+            && $iterator_type !== null
+            && $iterator_type->parent_nodes
+            && ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+            && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
+        ) {
+            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
+            $value_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->valueVar->name]->parent_nodes);
+
+            if ($key_node_ids !== [] && $value_node_ids !== []) {
+                $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
+                    '$' . $stmt->keyVar->name,
+                    $key_node_ids,
+                    $value_node_ids,
+                    $iterator_type->parent_nodes,
+                ];
+            }
+        }
+
+        if ($foreach_marker !== null
+            && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->keyVar->name)
+            && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
+        ) {
+            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
+
+            if ($key_node_ids !== []) {
+                $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
+            }
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);
@@ -675,6 +717,57 @@ final class ForeachAnalyzer
     }
 
     /**
+     * The marker of foreach loop $stmt if an assignment in its body may put the values of the elements it
+     * iterates over back under their key (see ArrayAssignmentAnalyzer::getForeachMarker()): where its function,
+     * the loop and its body are, for the taint analysis to know where the value of an element is that of the
+     * iteration it was fetched in (see TaintFlowResolution::scopeSlot()).
+     */
+    private static function getForeachMarker(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        Union $iterator_type,
+    ): ?string {
+        if ($statements_analyzer->getTaintFlowGraphWithSuppressed() === null
+            || $stmt->byRef
+            || !$stmt->keyVar instanceof PhpParser\Node\Expr\Variable
+            || !is_string($stmt->keyVar->name)
+            || $stmt->stmts === []
+            || !$iterator_type->parent_nodes
+            || !ArrayAssignmentAnalyzer::hasElementsOfItsOwn($iterator_type)
+        ) {
+            return null;
+        }
+
+        $key_name = $stmt->keyVar->name;
+
+        $assignment = (new NodeFinder())->findFirst(
+            $stmt->stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                && $node->var instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && $node->var->dim instanceof PhpParser\Node\Expr\Variable
+                && $node->var->dim->name === $key_name,
+        );
+
+        if ($assignment === null) {
+            return null;
+        }
+
+        $source = $statements_analyzer->getSource();
+        $function_location = $source instanceof FunctionLikeAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)->stmt_location
+            : null;
+
+        return implode(':', [
+            $function_location?->raw_file_start ?? $stmt->getStartFilePos(),
+            $function_location?->raw_file_end ?? $stmt->getEndFilePos(),
+            $stmt->getStartFilePos(),
+            $stmt->getEndFilePos(),
+            $stmt->stmts[0]->getStartFilePos(),
+            $statements_analyzer->getFilePath(),
+        ]);
+    }
+
+    /**
      * @return false|null
      */
     public static function checkIteratorType(
@@ -686,6 +779,7 @@ final class ForeachAnalyzer
         ?Union &$key_type,
         ?Union &$value_type,
         bool &$always_non_empty_array,
+        ?string $foreach_marker = null,
     ): ?bool {
         if ($iterator_type->isNull()) {
             IssueBuffer::maybeAdd(
@@ -776,6 +870,7 @@ final class ForeachAnalyzer
                     null,
                     $value_type,
                     $key_type,
+                    foreach_marker: $foreach_marker,
                 );
 
                 $has_valid_iterator = true;
@@ -802,6 +897,7 @@ final class ForeachAnalyzer
                     null,
                     $value_type,
                     $key_type,
+                    foreach_marker: $foreach_marker,
                 );
 
                 $statements_analyzer->signalMutation(
@@ -869,6 +965,7 @@ final class ForeachAnalyzer
                     null,
                     $value_type,
                     $key_type,
+                    foreach_marker: $foreach_marker,
                 );
 
                 $has_valid_iterator = true;

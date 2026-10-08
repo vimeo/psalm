@@ -101,6 +101,28 @@ final class Context
     public array $by_ref_param_out_nodes = [];
 
     /**
+     * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
+     * own key (see ArrayAssignmentAnalyzer::getElementCopySource()): value variable id => [key variable id, ids of
+     * its parent nodes, ids of the parent nodes of the value variable, parent nodes of the iterated array]. The
+     * parent nodes are those the loop gave the variables: an assignment gives a variable other ones, a narrowing
+     * keeps them.
+     *
+     * @internal
+     * @var array<string, array{string, list<string>, list<string>, array<string, DataFlowNode>}>
+     */
+    public array $foreach_element_copies = [];
+
+    /**
+     * The foreach loops whose element values an assignment under the key of the element in their body may put
+     * back under that key (see ArrayAssignmentAnalyzer::getForeachMarker()): key variable id => [ids of the
+     * parent nodes the loop gave it, the marker of the loop (see ForeachAnalyzer::getForeachMarker())]
+     *
+     * @internal
+     * @var array<string, array{list<string>, string}>
+     */
+    public array $foreach_keys = [];
+
+    /**
      * A set of globals that are referenced somewhere.
      *
      * @var array<string, true>
