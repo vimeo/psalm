@@ -1384,6 +1384,7 @@ final class TypeParseTest extends TestCase
         $this->assertSame('callable[read-props]():int', (string) Type::parseString('callable[read-props](): int'));
         $this->assertSame('Closure[pure]():void', (string) Type::parseString('Closure[pure](): void'));
         $this->assertSame('Closure[io]', (string) Type::parseString('Closure[io]'));
+        $this->assertSame('Closure[io|time]():int', (string) Type::parseString('Closure[time|io](): int'));
     }
 
     public function testEmptyPurityBracketsAreAnArray(): void

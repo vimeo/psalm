@@ -21,7 +21,8 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
 | `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables |
 | `write-refs`       | writing through by-reference parameters and other references into another scope |
-| `io`               | `echo`, `print`, `exit` with a message, and builtins with side effects (`time`, `random_int`, `file_put_contents`, …) |
+| `io`               | `echo`, `print`, `exit` with a message, and builtins with side effects (`random_int`, `file_put_contents`, …) |
+| `time`             | reading the clock (`time`, `microtime`, `hrtime`, `date` and `getdate` without a timestamp, …) |
 
 Builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need
 `write-globals` instead of `io`.
@@ -958,8 +959,8 @@ What changes for your code:
   or suppress them (see [Inferring annotations](#inferring-annotations)).
 - **More is checked.** Implicit calls (`__toString`, `__clone`, `__invoke`, `ArrayAccess`,
   destructors), `throw new`, `new $className` and `call_user_func` are now checked for purity.
-  Builtins with side effects need specific capabilities: `io` for I/O, the clock and random
-  numbers, `write-globals` for process-wide state such as `mt_rand()` or `ini_set()`.
+  Builtins with side effects need specific capabilities: `io` for I/O and random numbers,
+  `time` for reading the clock, `write-globals` for process-wide state such as `mt_rand()` or `ini_set()`.
 - **Iteration has a purity.** `foreach` over an object costs the iterator's methods, or the
   `TPurity` of `Traversable`, `Iterator`, `Generator` and `iterable`, instead of always being
   impure (see [Iterators and generators](#iterators-and-generators)).

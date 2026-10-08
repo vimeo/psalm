@@ -293,10 +293,14 @@ return [
     'spl_autoload_call' => Capabilities::ALL, // runs the autoloaders
     'spl_autoload_extensions' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'spl_autoload_functions' => Capabilities::READ_GLOBALS,
-    'microtime' => Capabilities::IO,
-    'time' => Capabilities::IO,
-    'hrtime' => Capabilities::IO,
-    'gettimeofday' => Capabilities::IO,
+    // the clock
+    'microtime' => Capabilities::TIME,
+    'time' => Capabilities::TIME,
+    'hrtime' => Capabilities::TIME,
+    'gettimeofday' => Capabilities::TIME,
+    // "now" by default, and relative dates are relative to now
+    'date_create' => Capabilities::TIME,
+    'date_create_immutable' => Capabilities::TIME,
     'uniqid' => Capabilities::IO,
     'lcg_value' => Capabilities::IO,
     'shuffle' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS | Capabilities::WRITE_REFS,

@@ -491,14 +491,16 @@ final class Functions
         }
 
         // the date functions read the clock when no timestamp is given
-        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime', 'localtime', 'getdate'], true)
-            && !isset($args[1])
-        ) {
-            return Capabilities::IO;
+        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime'], true) && !isset($args[1])) {
+            return Capabilities::TIME;
+        }
+
+        if (($function_id === 'localtime' || $function_id === 'getdate') && !isset($args[0])) {
+            return Capabilities::TIME;
         }
 
         if (($function_id === 'mktime' || $function_id === 'gmmktime') && !isset($args[5])) {
-            return Capabilities::IO;
+            return Capabilities::TIME;
         }
 
         if ($function_id === 'assert') {
