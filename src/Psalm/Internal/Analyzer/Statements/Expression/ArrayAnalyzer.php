@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -364,9 +365,15 @@ final class ArrayAnalyzer
             }
 
             $item_is_list_item = true;
-            $item_key_value = ++$array_creation_info->int_offset;
 
-            $key_atomic_type = new TLiteralInt($item_key_value);
+            if ($array_creation_info->int_offset_known) {
+                $item_key_value = ++$array_creation_info->int_offset;
+                $key_atomic_type = new TLiteralInt($item_key_value);
+            } else {
+                // appended after an unpacked array of unknown length, so at an unknown index past the known ones
+                $key_atomic_type = new TIntRange($array_creation_info->int_offset + 1, null);
+            }
+
             $array_creation_info->item_key_atomic_types[] = $key_atomic_type;
             $key_type = new Union([$key_atomic_type]);
         }
@@ -647,6 +654,18 @@ final class ArrayAnalyzer
                             );
                             continue 2;
                         }
+                        if (!$array_creation_info->int_offset_known) {
+                            // renumbered after an unpacked array of unknown length, so at an unknown index
+                            $array_creation_info->item_key_atomic_types[] = new TIntRange(
+                                $array_creation_info->int_offset + 1,
+                                null,
+                            );
+                            $array_creation_info->item_value_atomic_types = array_merge(
+                                $array_creation_info->item_value_atomic_types,
+                                array_values($property_value->getAtomicTypes()),
+                            );
+                            continue;
+                        }
                         $new_offset = ++$array_creation_info->int_offset;
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
@@ -721,6 +740,11 @@ final class ArrayAnalyzer
                     continue;
                 }
                 $array_creation_info->all_list = false;
+            }
+
+            // the integer keys of the items unpacked are renumbered, and how many there are is unknown
+            if (!$iterable_type->type_params[0]->isString()) {
+                $array_creation_info->int_offset_known = false;
             }
 
             // Unpacked array might overwrite known properties, so values are merged when the keys intersect.
