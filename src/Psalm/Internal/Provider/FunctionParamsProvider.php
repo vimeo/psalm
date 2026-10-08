@@ -86,7 +86,7 @@ final class FunctionParamsProvider
             );
             $result = $class_handler($event);
 
-            if ($result) {
+            if ($result !== null) {
                 return $result;
             }
         }
