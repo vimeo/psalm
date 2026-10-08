@@ -553,7 +553,9 @@ final class Scanner
                         // function the analysed version predates doesn't replace the native signature
                         if ($function_storage->cased_name
                             && !$this->codebase->functions->hasStubbedFunction($function_storage->cased_name)
-                            && InternalCallMapHandler::getIntroducingPhpVersionId($function_storage->cased_name) === null
+                            && InternalCallMapHandler::getIntroducingPhpVersionId(
+                                $function_storage->cased_name,
+                            ) === null
                         ) {
                             $this->codebase->functions->addGlobalFunction(
                                 $function_storage->cased_name,
