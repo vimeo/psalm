@@ -2393,6 +2393,10 @@ final class Config
             $this->internal_stubs[] = $stubsDir . 'Php84.phpstub';
         }
 
+        if ($codebase->analysis_php_version_id >= 8_05_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php85.phpstub';
+        }
+
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {

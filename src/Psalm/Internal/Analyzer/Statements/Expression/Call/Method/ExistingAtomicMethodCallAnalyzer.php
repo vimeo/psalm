@@ -284,18 +284,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
 
+        // Not gated on the CallMap: internal methods are deprecated through their stubs too.
+        MethodCallProhibitionAnalyzer::analyze(
+            $codebase,
+            $context,
+            $method_id,
+            $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
+            new CodeLocation($statements_analyzer, $stmt_name),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
         if (!$in_call_map) {
-            $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
-
-            MethodCallProhibitionAnalyzer::analyze(
-                $codebase,
-                $context,
-                $method_id,
-                $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
-                $name_code_location,
-                $statements_analyzer->getSuppressedIssues(),
-            );
-
             $getter_return_type = self::getMagicGetterOrSetterProperty(
                 $statements_analyzer,
                 $stmt,
