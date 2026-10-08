@@ -634,6 +634,11 @@ final class TaintTest extends TestCase
                     vprintf("%d items", [(string) $_GET["x"]]);
                     printf("%2\$s %1\$05.2f", (string) $_GET["x"], "a");',
             ],
+            'dontTaintWhatVsprintfFormatsAsANumber' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf("%d items", [(string) $_GET["x"]]);
+                    echo vsprintf("%2\$x %1\$05.2f", [(string) $_GET["x"], (string) $_GET["y"]]);',
+            ],
             'dontTaintThePhpOutputStreamWritesOfWhatIsFormattedAsANumber' => [
                 'code' => '<?php // --taint-analysis
                     $out = fopen("php://output", "w");
@@ -2733,6 +2738,16 @@ final class TaintTest extends TestCase
             'taintHtmlInTheValuesOfVprintfWithAStringConversion' => [
                 'code' => '<?php // --taint-analysis
                     vprintf("%d %s", [(string) $_GET["x"], "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlFormattedByVsprintfAsAString' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf("%s", [(string) $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintHtmlInTheValuesOfVsprintfWithAStringConversion' => [
+                'code' => '<?php // --taint-analysis
+                    echo vsprintf("%d %s", [(string) $_GET["x"], "a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSsrfAfterRawurlencode' => [
