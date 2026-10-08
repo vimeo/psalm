@@ -698,92 +698,52 @@ final class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
-            'finalClassOverridingMethodReturningTemplatedStatic' => [
+            'finalOverrideOfMethodReturningTemplatedStatic' => [
                 'code' => '<?php
-                    /** @template T of object */
-                    final class Box {
-                        /** @var T */
-                        public object $value;
-                        /** @param T $value */
-                        public function __construct(object $value) { $this->value = $value; }
-                    }
+                    /** @template T */
+                    interface Box {}
 
                     class Base {
                         /** @return Box<static> */
-                        public function box(): Box {
-                            return new Box($this);
-                        }
+                        public function box(): Box { throw new RuntimeException(); }
                     }
 
-                    final class Leaf extends Base {
+                    final class FinalClass extends Base {
                         /** @return Box<static> */
-                        public function box(): Box {
-                            return parent::box();
-                        }
-                    }',
-            ],
-            'finalClassOverridingMethodReturningTemplatedThis' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    final class Box {
-                        /** @var T */
-                        public object $value;
-                        /** @param T $value */
-                        public function __construct(object $value) { $this->value = $value; }
+                        public function box(): Box { throw new RuntimeException(); }
                     }
 
-                    class Base {
-                        /** @return Box<static> */
-                        public function box(): Box {
-                            return new Box($this);
-                        }
-                    }
-
-                    final class Leaf extends Base {
+                    final class FinalClassReturningThis extends Base {
                         /** @return Box<$this> */
-                        public function box(): Box {
-                            return parent::box();
-                        }
+                        public function box(): Box { throw new RuntimeException(); }
+                    }
+
+                    class FinalMethod extends Base {
+                        /** @return Box<static> */
+                        final public function box(): Box { throw new RuntimeException(); }
                     }',
             ],
-            'finalMethodOnNonFinalClassOverridingMethodReturningTemplatedStatic' => [
+            'finalClassInheritingStaticReturnDocblock' => [
                 'code' => '<?php
-                    /** @template T of object */
-                    final class Box {
-                        /** @var T */
-                        public object $value;
-                        /** @param T $value */
-                        public function __construct(object $value) { $this->value = $value; }
+                    abstract class Base {
+                        /** @return static */
+                        abstract public function instance();
                     }
 
-                    class Base {
-                        /** @return Box<static> */
-                        public function box(): Box {
-                            return new Box($this);
-                        }
-                    }
-
-                    class NonFinal extends Base {
-                        /** @return Box<static> */
-                        final public function box(): Box {
-                            return parent::box();
-                        }
+                    final class Leaf extends Base {
+                        public function instance() { return new self(); }
                     }',
             ],
             'finalClassOverridingMethodReturningStatic' => [
                 'code' => '<?php
                     class Base {
                         /** @return static */
-                        public function instance(): object {
-                            return $this;
-                        }
+                        public function instance(): object { return $this; }
                     }
 
                     final class Leaf extends Base {
                         /** @return static */
-                        public function instance(): object {
-                            return parent::instance();
-                        }
+                        public function instance(): object { return parent::instance(); }
                     }',
             ],
             'selfInTraitAbstractIsFine' => [

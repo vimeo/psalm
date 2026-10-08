@@ -1163,7 +1163,6 @@ final class MethodCallTest extends TestCase
             'thisInFinalMethodOfNonFinalClassKeepsStatic' => [
                 'code' => '<?php
                     class P {
-                        /** @return static */
                         final public function returnThis(): static {
                             $self = $this;
                             /** @psalm-check-type-exact $self = P&static */
@@ -1172,7 +1171,6 @@ final class MethodCallTest extends TestCase
                     }
 
                     final class D {
-                        /** @return static */
                         final public function returnThis(): static {
                             $self = $this;
                             /** @psalm-check-type-exact $self = D */
