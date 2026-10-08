@@ -117,6 +117,7 @@ final class FunctionLikeDocblockScanner
 
         if ($docblock_info->deprecated) {
             $storage->deprecated = true;
+            $storage->deprecation_message = $docblock_info->deprecation_message;
         }
 
         if (count($docblock_info->psalm_internal) !== 0) {

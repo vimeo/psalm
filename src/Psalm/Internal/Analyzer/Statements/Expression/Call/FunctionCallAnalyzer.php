@@ -409,7 +409,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             if ($function_call_info->function_storage->deprecated && $function_call_info->function_id) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedFunction(
-                        'The function ' . $function_call_info->function_id . ' has been marked as deprecated',
+                        'The function ' . $function_call_info->function_id . ' has been marked as deprecated'
+                            . ($function_call_info->function_storage->deprecation_message !== null
+                                ? ' (' . $function_call_info->function_storage->deprecation_message . ')'
+                                : ''),
                         $code_location,
                         $function_call_info->function_id,
                     ),
