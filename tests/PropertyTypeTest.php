@@ -2411,6 +2411,63 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyFetchViaGetClass' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+            ],
+            'staticPropertyFetchViaGetClassOfUnion' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    final class B {
+                        public static string $p = "b";
+                    }
+
+                    function f(A|B $a): int|string {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyFetchViaClassStringOfUnknownClass' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function f(string $class): mixed {
+                        return $class::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignmentViaClassString' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $class::$p = 2;
+                    }',
+            ],
+            'staticPropertyAssignmentViaClassStringOfUnknownClass' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function f(string $class): void {
+                        $class::$p = 2;
+                    }',
+            ],
             'promotedPublicPropertyWithDefault' => [
                 'code' => '<?php
                     class A {
@@ -2793,6 +2850,116 @@ final class PropertyTypeTest extends TestCase
 
                     (new A)->foo = "cool";',
                 'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'staticPropertyFetchViaPlainString' => [
+                'code' => '<?php
+                    function f(string $class): mixed {
+                        return $class::$p;
+                    }',
+                'error_message' => 'InvalidStringClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'privateStaticPropertyFetchViaGetClass' => [
+                'code' => '<?php
+                    final class A {
+                        private static int $p = 1;
+                    }
+
+                    function f(A $a): int {
+                        $class = get_class($a);
+                        return $class::$p;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'staticPropertyAssignmentViaClassStringWithWrongType' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $class::$p = "x";
+                    }',
+                'error_message' => "A::\$p with declared type 'int' cannot be assigned type",
+            ],
+            'staticPropertyAssignmentViaGetClassWithWrongType' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    function f(A $a): void {
+                        $class = get_class($a);
+                        $class::$p = "x";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'staticPropertyAssignmentViaObjectWithWrongType' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    function f(A $a): void {
+                        $a::$p = "x";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'staticPropertyAssignmentViaLiteralClassStringWithWrongType' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $p = 1;
+                    }
+
+                    $class = A::class;
+                    $class::$p = "x";',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'privateStaticPropertyAssignmentViaClassString' => [
+                'code' => '<?php
+                    final class A {
+                        private static int $p = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $class::$p = 2;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
+            'instancePropertyAssignmentViaClassString' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $class::$p = 2;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'staticPropertyArrayAppendViaClassStringNamesProperty' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public static array $stack = [];
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $class::$stack[] = "x";
+                    }',
+                'error_message' => "A::\$stack with declared type 'list<int>' cannot be assigned type",
+            ],
+            'staticPropertyAssignmentViaPlainString' => [
+                'code' => '<?php
+                    function f(string $class): void {
+                        $class::$p = 2;
+                    }',
+                'error_message' => 'InvalidStringClass',
             ],
             'nullsafePropertyFetchLooselyEqualDoesNotAssertNotNull' => [
                 'code' => '<?php

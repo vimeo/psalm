@@ -459,7 +459,8 @@ final class CloneAnalyzer
         }
 
         try {
-            // Emits InaccessibleProperty when the property is not visible from here.
+            // Emits InaccessibleProperty when the property is not writable from here,
+            // honouring asymmetric set visibility such as `public private(set)`.
             // The readonly write guard is intentionally skipped (see analyzeWithProperties).
             ClassLikeAnalyzer::checkPropertyVisibility(
                 $property_id,
@@ -467,6 +468,8 @@ final class CloneAnalyzer
                 $statements_analyzer,
                 $location,
                 $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
             );
 
             $class_property_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(

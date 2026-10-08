@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Type;
@@ -76,6 +77,7 @@ final class InstanceofAnalyzer
                         $context->self,
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
+                        new ClassLikeNameOptions(context: $context),
                     ) === false) {
                         return false;
                     }

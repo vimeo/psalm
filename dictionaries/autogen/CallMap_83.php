@@ -51179,12 +51179,20 @@ return array (
   array (
     0 => 'bool',
   ),
+  'swoole\\remoteobject\\client::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\remoteobject\\client::__construct' => 
   array (
     0 => 'void',
     'host=' => 'string',
     'port=' => 'int',
     'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\remoteobject\\client::__destruct' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\remoteobject\\client::call' => 
   array (
@@ -54847,6 +54855,8 @@ return array (
   'uv_stdio_new' => 
   array (
     0 => 'mixed',
+    'handle=' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'uv_stop' => 
   array (
