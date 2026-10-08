@@ -9,19 +9,11 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function str_contains;
-use function strlen;
-use function strpos;
-
-use const DIRECTORY_SEPARATOR;
 
 final class Php85Test extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
-
-    // the expected message is matched with a trailing word boundary, hence no closing "()"
-    private const WAKEUP_REASON = 'this method is obsolete, as serialization hooks are provided by __unserialize()'
-        . ' and __serialize';
 
     #[Override]
     public function providerValidCodeParse(): iterable
@@ -158,96 +150,57 @@ final class Php85Test extends TestCase
     #[Override]
     public function providerInvalidCodeParse(): iterable
     {
-        $cases = [];
+        $wakeup = 'this method is obsolete, as serialization hooks are provided by __unserialize() and __serialize';
+        $no_effect_80 = 'as it has no effect since PHP 8.0';
+        $no_effect_81 = 'as it has no effect since PHP 8.1';
 
+        // symbol => [parameter type, call, reason, PHP version]
         $symbols = [
-            // symbol => [parameter type, call, call-site token, reason, PHP version (default 8.5)]
-            'curl_close' => ['CurlHandle', 'curl_close($value);', 'curl_close', 'as it has no effect since PHP 8.0'],
-            'curl_share_close' => [
-                'CurlShareHandle',
-                'curl_share_close($value);',
-                'curl_share_close',
-                'as it has no effect since PHP 8.0',
-            ],
-            'finfo_close' => ['mixed', 'finfo_close($value);', 'finfo_close', 'as finfo objects are freed automatically'],
-            'imagedestroy' => ['mixed', 'imagedestroy($value);', 'imagedestroy', 'as it has no effect since PHP 8.0'],
-            'xml_parser_free' => [
-                'mixed',
-                'xml_parser_free($value);',
-                'xml_parser_free',
-                'as it has no effect since PHP 8.0',
-            ],
-            'socket_set_timeout' => [
-                'mixed',
-                'socket_set_timeout(STDIN, 1);',
-                'socket_set_timeout',
-                'use stream_set_timeout() instead',
-            ],
-            'mysqli_execute' => [
-                'mixed',
-                'mysqli_execute($value);',
-                'mysqli_execute',
-                'use mysqli_stmt_execute() instead',
-            ],
-            'date_sunrise' => ['mixed', 'date_sunrise(0);', 'date_sunrise', 'use date_sun_info() instead', '8.1'],
-            'date_sunset' => ['mixed', 'date_sunset(0);', 'date_sunset', 'use date_sun_info() instead', '8.1'],
-            'ReflectionProperty::setAccessible' => [
-                'ReflectionProperty',
-                '$value->setAccessible(true);',
-                'setAccessible',
-                'as it has no effect since PHP 8.1',
-            ],
-            'ReflectionMethod::setAccessible' => [
-                'ReflectionMethod',
-                '$value->setAccessible(true);',
-                'setAccessible',
-                'as it has no effect since PHP 8.1',
-            ],
+            'curl_close' => ['CurlHandle', 'curl_close($value)', $no_effect_80],
+            'curl_share_close' => ['CurlShareHandle', 'curl_share_close($value)', $no_effect_80],
+            'finfo_close' => ['mixed', 'finfo_close($value)', 'as finfo objects are freed automatically'],
+            'imagedestroy' => ['mixed', 'imagedestroy($value)', $no_effect_80],
+            'xml_parser_free' => ['mixed', 'xml_parser_free($value)', $no_effect_80],
+            'socket_set_timeout' => ['mixed', 'socket_set_timeout(STDIN, 1)', 'use stream_set_timeout() instead'],
+            'mysqli_execute' => ['mixed', 'mysqli_execute($value)', 'use mysqli_stmt_execute() instead'],
+            'date_sunrise' => ['mixed', 'date_sunrise(0)', 'use date_sun_info() instead', '8.1'],
+            'date_sunset' => ['mixed', 'date_sunset(0)', 'use date_sun_info() instead', '8.1'],
+            'ReflectionProperty::setAccessible' => ['ReflectionProperty', '$value->setAccessible(true)', $no_effect_81],
+            'ReflectionMethod::setAccessible' => ['ReflectionMethod', '$value->setAccessible(true)', $no_effect_81],
             'SplObjectStorage::attach' => [
                 'SplObjectStorage',
-                '$value->attach(new stdClass());',
-                'attach',
+                '$value->attach(new stdClass())',
                 'use method SplObjectStorage::offsetSet() instead',
             ],
             'SplObjectStorage::detach' => [
                 'SplObjectStorage',
-                '$value->detach(new stdClass());',
-                'detach',
+                '$value->detach(new stdClass())',
                 'use method SplObjectStorage::offsetUnset() instead',
             ],
             'SplObjectStorage::contains' => [
                 'SplObjectStorage',
-                '$value->contains(new stdClass());',
-                'contains',
+                '$value->contains(new stdClass())',
                 'use method SplObjectStorage::offsetExists() instead',
             ],
         ];
 
         foreach (['DateTimeInterface', 'DateTime', 'DateTimeImmutable', 'DateTimeZone', 'DateInterval', 'DatePeriod'] as $class) {
-            $symbols[$class . '::__wakeup'] = [$class, '$value->__wakeup();', '__wakeup', self::WAKEUP_REASON];
+            $symbols[$class . '::__wakeup'] = [$class, '$value->__wakeup()', $wakeup];
         }
 
         foreach ($symbols as $symbol => $entry) {
-            [$type, $call, $token, $reason] = $entry;
-            $is_method = str_contains($symbol, '::');
-            $indent = '                        ';
-            $line = $indent . $call;
+            [$type, $call, $reason] = $entry;
+            $kind = str_contains($symbol, '::') ? 'method' : 'function';
 
-            $cases[$symbol] = [
+            yield $symbol => [
                 'code' => '<?php
                     function check(' . $type . ' $value): void {
-' . $line . '
+                        ' . $call . ';
                     }',
-                'error_message' => ($is_method ? 'DeprecatedMethod' : 'DeprecatedFunction')
-                    . ' - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:'
-                    . (($is_method ? (int) strpos($call, $token) : 0) + strlen($indent) + 1)
-                    . ' - The ' . ($is_method ? 'method ' : 'function ') . $symbol
-                    . ' has been marked as deprecated (' . $reason,
+                'error_message' => "The $kind $symbol has been marked as deprecated ($reason",
                 'error_levels' => ['MixedArgument', 'UnusedMethodCall', 'UnusedFunctionCall'],
-                'php_version' => $entry[4] ?? '8.5',
+                'php_version' => $entry[3] ?? '8.5',
             ];
         }
-
-        return $cases;
     }
 }
