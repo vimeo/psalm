@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -87,6 +88,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -99,8 +101,10 @@ use function implode;
 use function in_array;
 use function is_int;
 use function spl_object_id;
+use function str_starts_with;
 use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -112,6 +116,8 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -211,6 +217,8 @@ final class ArrayFetchAnalyzer
         }
 
         $can_store_result = false;
+        $chain_state = NullsafeChainState::None;
+        $own_nullable = false;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
@@ -233,6 +241,15 @@ final class ArrayFetchAnalyzer
                 return true;
             }
 
+            $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
+
+            if ($chain_state === NullsafeChainState::ShortCircuit) {
+                // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
+                $non_null_var_type = $stmt_var_type->getBuilder();
+                $non_null_var_type->removeType('null');
+                $stmt_var_type = $non_null_var_type->freeze();
+            }
+
             $stmt_type = self::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $stmt,
@@ -243,6 +260,8 @@ final class ArrayFetchAnalyzer
                 $context,
                 null,
             );
+
+            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -350,6 +369,11 @@ final class ArrayFetchAnalyzer
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
         }
 
+        if ($chain_state !== NullsafeChainState::None) {
+            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+        }
+
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
@@ -381,7 +405,94 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The entries of $_SERVER the client sends, besides the request headers (HTTP_*): the URI, and what is taken
+     * from it (the CGI SAPI keeps the values it rewrites with an ORIG_ prefix, Apache those of a redirected request
+     * with a REDIRECT_ one), and argv, which PHP builds from the query string with register_argc_argv.
+     */
+    private const USER_CONTROLLED_SERVER_KEYS = [
+        'REQUEST_URI',
+        'UNENCODED_URL',
+        'DOCUMENT_URI',
+        'QUERY_STRING',
+        'argv',
+        'PATH_INFO',
+        'ORIG_PATH_INFO',
+        'PATH_TRANSLATED',
+        'ORIG_PATH_TRANSLATED',
+        'ORIG_SCRIPT_NAME',
+        'ORIG_SCRIPT_FILENAME',
+        'PHP_SELF',
+        'SCRIPT_URI',
+        'SCRIPT_URL',
+        'REDIRECT_URL',
+        'REQUEST_METHOD',
+        'CONTENT_TYPE',
+        'PHP_AUTH_USER',
+        'PHP_AUTH_PW',
+        'PHP_AUTH_DIGEST',
+    ];
+
+    /**
+     * Most entries of $_SERVER come from the server, but the client sends the request headers and the URI. The
+     * client also chooses the type of the files it uploads, and their path in a directory it uploads, in $_FILES
+     * (their names are tainted from $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
+     */
+    private static function taintSuperGlobalFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $var,
+        Union $offset_type,
+        Union &$stmt_type,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $key = $offset_type->isSingleStringLiteral() ? $offset_type->getSingleStringLiteral()->value : null;
+        if ($var instanceof PhpParser\Node\Expr\Variable && $var->name === '_SERVER') {
+            $server_key = $key;
+            while ($server_key !== null
+                && $server_key !== 'REDIRECT_URL'
+                && str_starts_with($server_key, 'REDIRECT_')
+            ) {
+                $server_key = substr($server_key, 9);
+            }
+
+            if ($server_key !== null
+                && !str_starts_with($server_key, 'HTTP_')
+                && !in_array($server_key, self::USER_CONTROLLED_SERVER_KEYS, true)
+            ) {
+                return;
+            }
+
+            $label = $key === null ? '$_SERVER[]' : '$_SERVER[\'' . $key . '\']';
+        } elseif ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && $var->var instanceof PhpParser\Node\Expr\Variable
+            && $var->var->name === '_FILES'
+            && ($key === 'type' || $key === 'full_path')
+        ) {
+            $label = '$_FILES[][\'' . $key . '\']';
+        } elseif ($var instanceof PhpParser\Node\Expr\Variable && $var->name === 'GLOBALS' && $key === 'argv') {
+            // see VariableFetchAnalyzer::getArgvTaintSource()
+            $label = '$GLOBALS[\'argv\']';
+        } else {
+            return;
+        }
+
+        $taint_source = DataFlowNode::getForTaint(
+            $label,
+            new CodeLocation($statements_analyzer->getSource(), $var),
+            TaintKind::ALL_INPUT,
+        );
+        $graph->addSource($taint_source);
+
+        $stmt_type = $stmt_type->addParentNodes([$taint_source->id => $taint_source]);
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
+     *
+     * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
+     * foreach goes over, ...).
      */
     public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -390,13 +501,16 @@ final class ArrayFetchAnalyzer
         Union &$stmt_type,
         Union &$offset_type,
         ?Context $context = null,
+        ?Union $var_type = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
-            && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
+            && ($stmt_var_type = $var_type ?? $statements_analyzer->node_data->getType($var))
             && $stmt_var_type->parent_nodes
         ) {
             if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
+                if (!$var_type) {
+                    $statements_analyzer->node_data->setType($var, $stmt_var_type->setParentNodes([]));
+                }
                 return;
             }
 
@@ -479,6 +593,8 @@ final class ArrayFetchAnalyzer
                 $offset_type = $offset_type->setParentNodes([$array_key_node->id => $array_key_node]);
             }
         }
+
+        self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
     }
 
     /**
@@ -678,7 +794,7 @@ final class ArrayFetchAnalyzer
                         $array_access_type = new Union([new TNever]);
                     }
                 } else {
-                    if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
+                    if (!$context->inside_isset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $extended_var_id .
@@ -1748,10 +1864,25 @@ final class ArrayFetchAnalyzer
 
                     if (!$stmt->dim) {
                         if ($type->is_list) {
+                            // The item goes past the items the list surely has, which keep their values:
+                            // it may only be one of those it may not have yet, the first of which it now has.
+                            $properties = $type->properties;
+                            $is_first_possibly_undefined = true;
+                            foreach ($properties as $key => $property) {
+                                if ($property->possibly_undefined) {
+                                    $properties[$key] = Type::combineUnionTypes($property, $replacement_type)
+                                        ->setPossiblyUndefined(!$is_first_possibly_undefined);
+                                    $is_first_possibly_undefined = false;
+                                }
+                            }
+
                             $type = TKeyedArray::make(
-                                $type->properties,
+                                $properties,
                                 null,
-                                [$new_key_type, $generic_params],
+                                [
+                                    $new_key_type,
+                                    Type::combineUnionTypes($type->fallback_params[1] ?? null, $replacement_type),
+                                ],
                                 true,
                             );
                         } else {

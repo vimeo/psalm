@@ -790,7 +790,6 @@
       <code><![CDATA[!strpos($root_var_id ?? '', '->')]]></code>
       <code><![CDATA[!strpos($var_id, '->')]]></code>
       <code><![CDATA[!strpos($var_id, '::')]]></code>
-      <code><![CDATA[$assign_value_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
@@ -1058,14 +1057,6 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallPurityAnalyzer.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$method_storage->this_property_mutations]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodCallReturnTypeFetcher.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$method_id]]></code>
-    </ImplicitToStringCast>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MethodVisibilityAnalyzer.php">

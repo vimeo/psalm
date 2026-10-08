@@ -3,12 +3,18 @@
 /**
  * @param class-string<SimpleXMLElement> $class_name
  * @return SimpleXMLElement|false
+ *
+ * @psalm-taint-sink file $filename
+ * @psalm-taint-sink ssrf $filename
+ * @psalm-taint-sink url_component $filename
+ * @psalm-taint-sink url_path $filename
  */
 function simplexml_load_file(string $filename, ?string $class_name = SimpleXMLElement::class, int $options = 0, string $namespace_or_prefix = '', bool $is_prefix = false) {}
 
 /**
  * @param class-string<SimpleXMLElement> $class_name
  * @return SimpleXMLElement|false
+ * @psalm-flow ($data) -> return
  */
 function simplexml_load_string(string $data, ?string $class_name = 'SimpleXMLElement', int $options = 0, string $namespace_or_prefix = '', bool $is_prefix = false) {}
 

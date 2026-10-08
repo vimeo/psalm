@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAn
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
@@ -59,6 +60,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
         $was_inside_call = $context->inside_call;
 
         $context->inside_call = true;
+
+        NullsafeChainState::None->markOn($stmt);
 
         $existing_stmt_var_type = null;
 
@@ -112,6 +115,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $receiver_state = NullsafeChainState::of($stmt->var);
+
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -146,7 +151,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
-            && !self::hasNullsafe($stmt->var)
+            && $receiver_state !== NullsafeChainState::ShortCircuit
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
@@ -363,6 +368,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $stmt_type = $result->return_type;
 
+        // `$a?->b->c()` short-circuits the whole chain, so null from the nullsafe hop survives the call
+        if ($receiver_state !== NullsafeChainState::None && $class_type->isNullable()) {
+            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+
+            if ($stmt_type && !$stmt_type->isNullable()) {
+                $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+            }
+        }
+
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -443,20 +457,5 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         return true;
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    public static function hasNullsafe(PhpParser\Node\Expr $expr): bool
-    {
-        if ($expr instanceof PhpParser\Node\Expr\MethodCall
-            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
-        ) {
-            return self::hasNullsafe($expr->var);
-        }
-
-        return $expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch;
     }
 }

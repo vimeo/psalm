@@ -132,6 +132,17 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The values a property gets through its class (as opposed to the node of the property, which also gets those
+     * set through the subclasses), which the objects of its subclasses may have too.
+     *
+     * @psalm-pure
+     */
+    public static function getForInheritedProperty(string $property_id): self
+    {
+        return self::make($property_id . ' inherited', $property_id, null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
@@ -243,6 +254,87 @@ final class DataFlowNode implements Stringable
             $param?->signature_type_location ?: $param?->type_location ?: $param?->location,
             $specialization_key,
             $param?->sinks ?? 0,
+        );
+    }
+
+    /**
+     * The value a by-reference parameter is left with when the function-like returns: what the
+     * variable passed to it holds after the call.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForMethodArgumentOut(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' out',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like gets calling one of its callable parameters: what the callables passed to
+     * that parameter return.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamReturn(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' call',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' call',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like passes as argument $callable_argument_offset calling one of its callable
+     * parameters: what the parameters of the callables passed to that parameter are given.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamArgument(
+        string $cased_method_id,
+        int $argument_offset,
+        int $callable_argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        $suffix = '#' . ($argument_offset + 1) . ' call#' . ($callable_argument_offset + 1);
+
+        return self::make(
+            strtolower($cased_method_id) . $suffix,
+            $cased_method_id . $suffix,
+            $param?->location,
+            $specialization_key,
         );
     }
 
@@ -422,6 +514,21 @@ final class DataFlowNode implements Stringable
             self::getReturnLocation($storage),
             $specialization_key,
             $taints,
+        );
+    }
+
+    /**
+     * What is sent to the generators a function-like returns (see Generator::send()): the value of its yield
+     * expressions.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForGeneratorSend(string $cased_method_id, FunctionLikeStorage $storage): self
+    {
+        return self::make(
+            strtolower($cased_method_id) . ' sent',
+            'what is sent to ' . $cased_method_id,
+            $storage->location,
         );
     }
 

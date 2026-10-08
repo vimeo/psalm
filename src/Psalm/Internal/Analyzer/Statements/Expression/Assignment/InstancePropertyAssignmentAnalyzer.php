@@ -16,6 +16,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -67,6 +68,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -82,6 +84,7 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_pop;
 use function count;
+use function explode;
 use function in_array;
 use function reset;
 use function str_ends_with;
@@ -430,11 +433,20 @@ final class InstancePropertyAssignmentAnalyzer
             $real = $lhs_var_id === '$this'
                 ? Capabilities::WRITE_THIS_PROPS
                 : Capabilities::WRITE_PROPS;
-            $mut = $can_set_readonly_property ?
-                ($property_var_pure_compatible
+            // Only whether a readonly property may be set depends on the class scope: nothing else
+            // holds a fresh object, so writing it is free in a function as in a method. `$this` is
+            // the caller's own instance, never a fresh one, even where its type is reference-free.
+            // PHP lets a class set the readonly properties of any of its instances, but only `$this`
+            // belongs to the method: writing another, non-fresh instance mutates state held elsewhere.
+            $mut = match (true) {
+                $lhs_var_id !== '$this' => $property_var_pure_compatible
                     ? Capabilities::NONE
-                    : Capabilities::READ_PROPS
-                ) : $real;
+                    : $real,
+                $can_set_readonly_property => $property_var_pure_compatible
+                    ? Capabilities::NONE
+                    : Capabilities::READ_PROPS,
+                default => $real,
+            };
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;
@@ -585,8 +597,17 @@ final class InstancePropertyAssignmentAnalyzer
                 );
 
                 if ($assignment_value_type->parent_nodes) {
+                    // what the assigned value cannot hold, given its type, which the property's may not tell
+                    $value_removed_taints = $removed_taints | $assignment_value_type->getTaintsToRemove();
+
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
-                        $data_flow_graph->addPath($parent_node, $property_node, '=', $added_taints, $removed_taints);
+                        $data_flow_graph->addPath(
+                            $parent_node,
+                            $property_node,
+                            '=',
+                            $added_taints,
+                            $value_removed_taints,
+                        );
                     }
                 }
 
@@ -677,15 +698,38 @@ final class InstancePropertyAssignmentAnalyzer
         );
 
         if ($assignment_value_type->parent_nodes) {
+            // what the assigned value cannot hold, given its type, which the property's may not tell
+            $value_removed_taints = $removed_taints | $assignment_value_type->getTaintsToRemove();
+
             foreach ($assignment_value_type->parent_nodes as $parent_node) {
                 $graph->addPath(
                     $parent_node,
                     $localized_property_node,
                     '=',
                     $added_taints,
-                    $removed_taints,
+                    $value_removed_taints,
                 );
             }
+        }
+
+        if ($statements_analyzer->taint_flow_graph
+            && $stmt instanceof PropertyFetch
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
+            [$fq_class_name] = explode('::$', $property_id, 2);
+
+            self::taintInheritedProperty(
+                $codebase,
+                $graph,
+                $localized_property_node,
+                $property_node,
+                $fq_class_name,
+                $stmt->name->name,
+                $added_taints,
+                $removed_taints,
+            );
+
+            return;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
@@ -716,6 +760,117 @@ final class InstancePropertyAssignmentAnalyzer
                 $removed_taints,
             );
         }
+    }
+
+    /**
+     * Links what is set to instance property $prop_name through class $fq_class_name, from the node of the
+     * assignment to the node of the property of the class (see taintUnspecializedProperty()), to its parent classes
+     * and subclasses: the property of the class is that of its parents too, what they read gets what is set through
+     * it. And what is set through it may be set to an object of a subclass: what the subclasses read gets it too.
+     */
+    public static function taintInheritedProperty(
+        Codebase $codebase,
+        DataFlowGraph $graph,
+        DataFlowNode $localized_property_node,
+        DataFlowNode $property_node,
+        string $fq_class_name,
+        string $prop_name,
+        int $added_taints = 0,
+        int $removed_taints = 0,
+    ): void {
+        $class_property_node = $property_node;
+
+        // what is set through a class declaring the property again stays its own: a parent class reading it would
+        // read what every one of its subclasses sets
+        foreach (self::getPropertyAncestors($codebase, $fq_class_name, $prop_name, false) as $ancestor) {
+            $ancestor_property_node = DataFlowNode::getForPropertyFetch($ancestor . '::$' . $prop_name);
+
+            $graph->addNode($ancestor_property_node);
+            $graph->addPath(
+                $class_property_node,
+                $ancestor_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints,
+            );
+
+            $class_property_node = $ancestor_property_node;
+        }
+
+        if ($codebase->classlike_storage_provider->has($fq_class_name)
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
+        ) {
+            $inherited_property_node = DataFlowNode::getForInheritedProperty(
+                $codebase->classlike_storage_provider->get($fq_class_name)->name . '::$' . $prop_name,
+            );
+
+            $graph->addNode($inherited_property_node);
+            $graph->addPath(
+                $localized_property_node,
+                $inherited_property_node,
+                'property-assignment',
+                $added_taints,
+                $removed_taints,
+            );
+        }
+    }
+
+    /**
+     * The parent classes of $fq_class_name sharing its instance property $prop_name, the nearest first: those having
+     * it, unless it is private there or in a class below (a class declaring it again still shares it, unless
+     * $through_redeclarations is false)
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    public static function getPropertyAncestors(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $prop_name,
+        bool $through_redeclarations = true,
+    ): array {
+        $ancestors = [];
+
+        while ($codebase->classlike_storage_provider->has($fq_class_name)) {
+            $storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            if ($storage->parent_class === null
+                || (!$through_redeclarations
+                    && strtolower($storage->declaring_property_ids[$prop_name] ?? '') === strtolower($storage->name))
+                || !$codebase->classlike_storage_provider->has($storage->parent_class)
+                || self::isPrivateProperty($codebase, $storage->declaring_property_ids[$prop_name] ?? null, $prop_name)
+            ) {
+                break;
+            }
+
+            $parent_storage = $codebase->classlike_storage_provider->get($storage->parent_class);
+            $parent_declaring_class = $parent_storage->declaring_property_ids[$prop_name] ?? null;
+
+            if ($parent_declaring_class === null
+                || self::isPrivateProperty($codebase, $parent_declaring_class, $prop_name)
+            ) {
+                break;
+            }
+
+            $ancestors[] = $parent_storage->name;
+            $fq_class_name = $parent_storage->name;
+        }
+
+        return $ancestors;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isPrivateProperty(Codebase $codebase, ?string $declaring_class, string $prop_name): bool
+    {
+        if ($declaring_class === null || !$codebase->classlike_storage_provider->has($declaring_class)) {
+            return false;
+        }
+
+        $property = $codebase->classlike_storage_provider->get($declaring_class)->properties[$prop_name] ?? null;
+
+        return $property !== null && $property->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
     }
 
     /**
@@ -1426,11 +1581,20 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_property_class,
             );
 
-            if ($lhs_type_part instanceof TGenericObject) {
+            $localizing_type_part = self::getLocalizingTypePart(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $lhs_var_id,
+                $lhs_type_part,
+                $fq_class_name,
+            );
+
+            if ($localizing_type_part !== null) {
                 $class_property_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                     $codebase,
                     $class_property_type,
-                    $lhs_type_part,
+                    $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
                 );
@@ -1578,6 +1742,46 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The generic type whose template params the property type takes: the object's, or, for `$this` in a method with
+     * `@psalm-self-out`, the self-out type's, as the object becomes that type when the method returns, so what the
+     * method stores must fit the self-out type rather than the type `$this` had when the method was called
+     */
+    private static function getLocalizingTypePart(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        ?string $lhs_var_id,
+        Atomic $lhs_type_part,
+        string $fq_class_name,
+    ): ?TGenericObject {
+        $source = $statements_analyzer->getSource();
+
+        if ($lhs_var_id === '$this' && $source instanceof MethodAnalyzer) {
+            $method_storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($method_storage instanceof MethodStorage && $method_storage->self_out_type !== null) {
+                $self_out_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $method_storage->self_out_type,
+                    $context->self,
+                    $context->self,
+                    $context->parent,
+                );
+
+                foreach ($self_out_type->getAtomicTypes() as $self_out_type_part) {
+                    if ($self_out_type_part instanceof TGenericObject
+                        && strtolower($self_out_type_part->value) === strtolower($fq_class_name)
+                    ) {
+                        return $self_out_type_part;
+                    }
+                }
+            }
+        }
+
+        return $lhs_type_part instanceof TGenericObject ? $lhs_type_part : null;
     }
 
     private static function analyzeSetCall(

@@ -30,6 +30,8 @@ use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
+use Psalm\Issue\TaintedUrlComponent;
+use Psalm\Issue\TaintedUrlPath;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -44,16 +46,24 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use Webmozart\Assert\Assert;
 
+use function array_diff;
 use function array_pop;
 use function array_slice;
 use function array_splice;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
+use function implode;
+use function in_array;
 use function ksort;
+use function str_ends_with;
 use function str_starts_with;
+use function strlen;
 use function strpos;
 use function substr;
+
+use const SORT_STRING;
 
 /**
  * @internal
@@ -72,11 +82,43 @@ final class TaintFlowGraph extends DataFlowGraph
     private const STRUCTURAL_PATH_TYPE_FAMILIES = ['arraykey', 'arrayvalue', 'property'];
 
     /**
+     * The suffix of the type of an edge converting to a scalar a value that may be an array (see
+     * CastAnalyzer::getArrayConversionSuffix() and convertsTheArrayHoldingTheTaint()).
+     */
+    public const ARRAY_CONVERSION_SUFFIX = '-of-array';
+
+    /**
+     * The prefix of the type of an edge from an array to the array it becomes once its value under a key is replaced
+     * (see ArrayAssignmentAnalyzer::getOverwritePathType()).
+     */
+    private const OVERWRITE_PREFIX = 'arrayvalue-overwrite-';
+
+    /**
      * How many of the innermost open assignments (see appendPathType()) of a flow
      * entering a specialized call recursively its entry is keyed on (see
      * enterSpecializedCall()).
      */
     private const RECURSIVE_ENTRY_OPEN_ASSIGNMENT_DEPTH = 4;
+
+    /**
+     * How many flows with the same taints and context, but different open assignments
+     * (see appendPathType()), the resolution walks from a node before it forgets all but
+     * the innermost open assignment of the next ones (see getChildNodes()). Each one
+     * more costs a large codebase more than it gains in precision.
+     */
+    private const MAX_OPEN_ASSIGNMENT_STATES = 1;
+
+    /**
+     * How many taint masks and specialized call entries a node is visited with before the flows reaching it are
+     * widened (see getChildNodes()).
+     */
+    private const MAX_NODE_CONTEXTS = 16;
+
+    /**
+     * How many nested calls the search for the generators what is sent can be sent to matches (see
+     * linkGeneratorSends()): recursive calls nest without end.
+     */
+    private const GENERATOR_SEND_CALL_DEPTH = 8;
 
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
@@ -95,11 +137,42 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $specializations = [];
 
     /**
+     * Unspecialized node entered by a specialized call => exit node id => whether
+     * the exit is one of the same function-like (see isExitOfEntered())
+     *
+     * @var array<string, array<string, bool>>
+     */
+    private array $exits_of_entered = [];
+
+    /**
      * Specialization key => true
      *
      * @var array<string, true>
      */
     private array $specialized_calls = [];
+
+    /**
+     * The return node id of each generator function-like => the node of what is sent to it (see
+     * linkGeneratorSends())
+     *
+     * @var array<string, DataFlowNode>
+     */
+    private array $generator_sent_nodes = [];
+
+    /**
+     * The node of what is sent to a generator => the parent nodes of that generator (see linkGeneratorSends())
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $generator_sends = [];
+
+    /**
+     * The ids of the nodes holding a stream that writes to the response (see OutputStreamTaintAnalyzer). Only used
+     * while analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $output_streams = [];
 
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
@@ -150,6 +223,16 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $reported_flows = [];
 
     /**
+     * The ids of the nodes from which the resolution can reach a sink through an edge
+     * that may drop a flow by its open assignments (see mayDropByOpenAssignments()):
+     * only there do the open assignments of a flow decide where it goes (see
+     * getOpenAssignmentsKey())
+     *
+     * @var array<string, true>
+     */
+    private array $fetch_reachable = [];
+
+    /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
      * specialization key => (function-like node of the callee => true)
      *
@@ -185,6 +268,15 @@ final class TaintFlowGraph extends DataFlowGraph
     ): bool {
         if ($storage->specialize_call) {
             return true;
+        }
+
+        // a builtin has no body: the taints flow through each of its calls as its declaration says, whether it is
+        // pure or not (`reset()` moves the pointer of the array it returns an element of), unless its calls return
+        // what was given to the others
+        if ($storage->builtin) {
+            return $storage instanceof MethodStorage
+                || $storage->cased_name === null
+                || !InternalCallMapHandler::keepsStateBetweenCalls($storage->cased_name);
         }
 
         if ($graph === null
@@ -384,6 +476,32 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records that the generators of the function-like with the return node $return_node get what is sent to
+     * them through $sent_node.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addGenerator(DataFlowNode $return_node, DataFlowNode $sent_node): void
+    {
+        $this->generator_sent_nodes[$return_node->id] = $sent_node;
+    }
+
+    /**
+     * Records that what flows into $sent_node is sent to the generator with the parent nodes $generator_nodes.
+     *
+     * @param array<string, DataFlowNode> $generator_nodes
+     * @psalm-external-mutation-free
+     */
+    public function addGeneratorSend(DataFlowNode $sent_node, array $generator_nodes): void
+    {
+        $this->nodes[$sent_node->id] = $sent_node;
+
+        foreach ($generator_nodes as $generator_node) {
+            $this->generator_sends[$sent_node->id][$generator_node->id] = true;
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addSource(DataFlowNode $node): void
@@ -402,6 +520,32 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records that $node holds a stream writing to the response
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addOutputStream(DataFlowNode $node): void
+    {
+        $this->output_streams[$node->id] = true;
+    }
+
+    /**
+     * Whether a value of $type may be a stream writing to the response
+     *
+     * @psalm-mutation-free
+     */
+    public function isOutputStream(Union $type): bool
+    {
+        foreach ($type->parent_nodes as $parent_node_id => $_) {
+            if (isset($this->output_streams[$parent_node_id])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addGraph(self $other): void
@@ -410,6 +554,11 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->sinks += $other->sinks;
         $this->nodes += $other->nodes;
         $this->specialized_calls += $other->specialized_calls;
+        $this->generator_sent_nodes += $other->generator_sent_nodes;
+
+        foreach ($other->generator_sends as $key => $map) {
+            $this->generator_sends[$key] = ($this->generator_sends[$key] ?? []) + $map;
+        }
 
         foreach ($other->speculative_calls as $key => $map) {
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
@@ -546,6 +695,10 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->despecializeImpureCalls($codebase);
 
+        $reverse = $this->getReverseEdges($sources);
+
+        $this->linkGeneratorSends($reverse);
+
         // Remove all specializations without an outgoing edge
         foreach ($this->specializations as $k => &$map) {
             foreach ($map as $kk => $specialized_id) {
@@ -563,7 +716,7 @@ final class TaintFlowGraph extends DataFlowGraph
         // propagating taint into it is wasted work. On real codebases the full
         // taint graph is huge but this relevant sub-graph is tiny, which is what
         // makes resolution converge quickly.
-        $sink_reachable = $this->getSinkReachableNodes($sources, $sinks);
+        $sink_reachable = $this->getSinkReachableNodes($reverse, $sinks);
 
         foreach ($sources as $id => $_) {
             if (!isset($sink_reachable[$id])) {
@@ -572,14 +725,16 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         // Resolution runs to a fixed point (rather than for a fixed number of
-        // rounds): the (id, taints, context) visited guard in getChildNodes()
-        // makes the state space finite -- a context is a specialized call entry,
-        // of which there are finitely many (see enterSpecializedCall()) -- so the
-        // loop is guaranteed to terminate on its own. Combined with the
-        // sink-reachability pruning above, this converges quickly enough that no
-        // artificial nesting limit is needed.
+        // rounds): the (id, taints, context, open assignments) visited guard in
+        // getChildNodes() makes the state space finite -- a context is a specialized
+        // call entry, of which there are finitely many (see enterSpecializedCall()),
+        // and a node is walked from with finitely many open assignments (see
+        // getChildNodes()) -- so the loop is guaranteed to terminate on its own.
+        // Combined with the sink-reachability pruning above, this converges quickly
+        // enough that no artificial nesting limit is needed.
         //
-        // Node id => state key (see getStateKey()) => true
+        // Node id => state key (see getStateKey()) => open assignments key (see
+        // getOpenAssignmentsKey()) => true
         $visited_source_ids = [];
 
         // The number of rounds is not known ahead of time, so the progress bar
@@ -590,7 +745,8 @@ final class TaintFlowGraph extends DataFlowGraph
             ksort($sources);
 
             foreach ($sources as $source) {
-                $visited_source_ids[$source->id][self::getStateKey($source->taints, $source->context)] = true;
+                $visited_source_ids[$source->id][self::getStateKey($source->taints, $source->context)]
+                    [$this->getOpenAssignmentsKey($source->id, $source->path_types)] = true;
 
                 // If we have one or more edges starting at this node,
                 // process destinations of those edges.
@@ -736,6 +892,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $this->entry_exits = [];
         $this->entry_sinks = [];
         $this->reported_flows = [];
+        $this->fetch_reachable = [];
 
         $progress->taskDone(0);
     }
@@ -746,6 +903,24 @@ final class TaintFlowGraph extends DataFlowGraph
     private static function getStateKey(int $taints, ?int $context): string
     {
         return $context === null ? (string) $taints : $taints . '@' . $context;
+    }
+
+    /**
+     * Besides its taints and context, what the rest of the walk of a flow depends on:
+     * its open assignments (see appendPathType()), which decide the fetches it takes
+     * (see shouldIgnoreFetch()), and the overwrites and conversions that drop it (see
+     * isOverwritten() and convertsTheArrayHoldingTheTaint()). A flow that put a value in
+     * an array key must still reach the fetches of that key after another one, which put
+     * a value in another key, visited the same node. Unless no such edge is reachable
+     * from the node (see $fetch_reachable): there, telling them apart would only walk the
+     * same edges again.
+     *
+     * @param list<string> $path_types
+     * @psalm-mutation-free
+     */
+    private function getOpenAssignmentsKey(string $id, array $path_types): string
+    {
+        return isset($this->fetch_reachable[$id]) ? implode(' ', self::getOpenAssignments($path_types)) : '';
     }
 
     /**
@@ -895,10 +1070,13 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Continues $exit, reached by the body walk of $entry, in the context of one
      * call entering $entry: at that call's specialization of the exit node if it
-     * has one, else -- the flow leaves through an enclosing call, e.g. after
-     * passing through a static property -- as an exit of the entry the call is
-     * made from. Outside of any specialized call the flow cannot be matched to a
-     * call site and ends.
+     * has one. Else, if the exit is one of the function-like the call enters, the
+     * call site doesn't use it, and the flow ends. If it is one of another
+     * function-like, reached through something the calls share (a property, a
+     * static property, ...), any call to it may return what the flow holds: as an
+     * exit of the entry the call is made from, so that it leaves through an
+     * enclosing call of that function-like if any, and outside of any specialized
+     * call through all of its call sites, as a flow reaching it there would.
      *
      * The walk itself carries the trace of the first call entering $entry. For
      * any other call, the walk is summarized as a single step from the entered
@@ -928,11 +1106,52 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        if ($caller->context === null) {
+        // an exit of the function-like entered: the call site doesn't use it
+        if ($this->isExitOfEntered($exit->id, $caller->id)) {
             return [];
         }
 
-        return $this->addEntryExit($caller->context, $exit);
+        if ($caller->context !== null) {
+            return $this->addEntryExit($caller->context, $exit);
+        }
+
+        $nodes = [];
+
+        // the call sites of despecialized calls were all left from the exit already
+        foreach ($this->specializations[$exit->id] as $exit_specialization_key => $specialized_id) {
+            if (!isset($this->despecialized_calls[$exit_specialization_key])) {
+                $nodes[] = $exit->withSpecialization($specialized_id, $exit->id, $exit_specialization_key, null);
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * Whether exit $exit_id is one of the function-like of the unspecialized node
+     * $entered_id a specialized call entered: that one is specialized for some of
+     * the calls the exit is (whether or not a given call uses the exit, that is
+     * whether it has a specialization of it: see connectSinksAndSources()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isExitOfEntered(string $exit_id, string $entered_id): bool
+    {
+        if (!isset($this->exits_of_entered[$entered_id][$exit_id])) {
+            $is_exit = false;
+
+            foreach ($this->specializations[$exit_id] ?? [] as $specialization_key => $_) {
+                if (isset($this->nodes[$entered_id . self::SPECIALIZATION_SEPARATOR . $specialization_key])) {
+                    $is_exit = true;
+
+                    break;
+                }
+            }
+
+            $this->exits_of_entered[$entered_id][$exit_id] = $is_exit;
+        }
+
+        return $this->exits_of_entered[$entered_id][$exit_id];
     }
 
     /**
@@ -1034,19 +1253,150 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * Computes the set of node ids from which at least one sink is reachable.
+     * Links what is sent to a generator (see Generator::send()) to the yield expressions of the
+     * generator function-likes it can come from, and what is sent to a generator delegating to another
+     * (`yield from`) to the yield expressions of the latter.
      *
-     * The search runs backwards from the sinks over the forward edges, treating
-     * specialization links as bidirectional so that a node whose specialized or
-     * de-specialized form can reach a sink is itself kept (the resolution walk
-     * maps freely between the two).
+     * Which function-likes a generator can come from is only known once the whole graph is built: they
+     * are the generator function-likes whose return nodes reach the parent nodes of the generator. The
+     * search for them goes backwards from those parent nodes, matching the calls it leaves through
+     * their arguments with the ones it entered through their returns, as the resolution walk does. It
+     * stops at the first such return node of each path: a generator a generator yields is not linked,
+     * nor one from a function-like without a body (unknown origin).
+     *
+     * What is sent to the generator of a specialized call goes into its specialization, so that it only
+     * reaches that call's body walk.
+     *
+     * @param array<string, array<string, true>> $reverse see getReverseEdges()
+     * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function linkGeneratorSends(array &$reverse): void
+    {
+        // the graphs of the forked workers are merged in any order: keep the edges added the same
+        ksort($this->generator_sends);
+
+        foreach ($this->generator_sends as $send_id => $generator_ids) {
+            ksort($generator_ids);
+
+            $send_node = $this->nodes[$send_id];
+
+            // [node id, specialization keys of the calls entered through their returns, innermost last]
+            $queue = [];
+            $visited = [];
+
+            foreach ($generator_ids as $generator_id => $_) {
+                $queue[] = [$generator_id, []];
+                $visited[$generator_id . "\0"] = true;
+            }
+
+            while ($queue) {
+                [$id, $calls] = array_pop($queue);
+
+                [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
+
+                if (isset($this->generator_sent_nodes[$unspecialized_id])) {
+                    $this->linkGeneratorSend($reverse, $send_node, $unspecialized_id, $specialization_key);
+
+                    continue;
+                }
+
+                foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                    $from_calls = $calls;
+
+                    if ($specialization_key !== null && $from_id === $unspecialized_id) {
+                        // into the body of a call through its return
+                        $from_calls[] = $specialization_key;
+
+                        if (count($from_calls) > self::GENERATOR_SEND_CALL_DEPTH) {
+                            // too deep (recursion): any call matches
+                            $from_calls = [];
+                        }
+                    } else {
+                        [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
+
+                        if ($from_unspecialized_id === $id) {
+                            // out of a body through the arguments of a call: the one entered, if any
+                            if ($from_calls && end($from_calls) !== $from_specialization_key) {
+                                continue;
+                            }
+
+                            array_pop($from_calls);
+                        }
+                    }
+
+                    $state_key = $from_id . "\0" . implode("\0", $from_calls);
+
+                    if (!isset($visited[$state_key])) {
+                        $visited[$state_key] = true;
+                        $queue[] = [$from_id, $from_calls];
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Links $send_node to what is sent to the generators of the function-like with the return node
+     * $return_node_id, in the specialization $specialization_key if given.
+     *
+     * @param array<string, array<string, true>> $reverse see getReverseEdges()
+     * @param-out array<string, array<string, true>> $reverse
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function linkGeneratorSend(
+        array &$reverse,
+        DataFlowNode $send_node,
+        string $return_node_id,
+        ?string $specialization_key,
+    ): void {
+        $sent_node = $this->generator_sent_nodes[$return_node_id];
+
+        if ($specialization_key !== null) {
+            $sent_node = $sent_node->withSpecialization(
+                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $sent_node->id,
+                $specialization_key,
+                null,
+            );
+
+            $this->addNode($sent_node);
+            $this->linkSpecialization($reverse, $sent_node->id);
+        }
+
+        $this->addPath($send_node, $sent_node, 'generator-send');
+        $reverse[$sent_node->id][$send_node->id] = true;
+    }
+
+    /**
+     * The unspecialized id and the specialization key of the node $id, or $id and null if it is not specialized
+     *
+     * @return array{string, ?string}
+     * @psalm-pure
+     */
+    private static function splitSpecializedId(string $id): array
+    {
+        $separator_pos = strpos($id, self::SPECIALIZATION_SEPARATOR);
+
+        if ($separator_pos === false) {
+            return [$id, null];
+        }
+
+        return [
+            substr($id, 0, $separator_pos),
+            substr($id, $separator_pos + strlen(self::SPECIALIZATION_SEPARATOR)),
+        ];
+    }
+
+    /**
+     * The edges of the graph from their destinations to their origins, with the specialization links
+     * (see linkSpecialization()) in both directions.
      *
      * @param array<string, DataFlowNode> $sources
-     * @param array<string, DataFlowNode> $sinks
-     * @return array<string, true>
+     * @return array<string, array<string, true>>
      * @psalm-capabilities read-props
      */
-    private function getSinkReachableNodes(array $sources, array $sinks): array
+    private function getReverseEdges(array $sources): array
     {
         $reverse = [];
 
@@ -1075,6 +1425,26 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->linkSpecializationByField($reverse, $node);
         }
 
+        return $reverse;
+    }
+
+    /**
+     * Computes the set of node ids from which at least one sink is reachable, and
+     * the subset of them from which one is reachable through an edge that may drop a
+     * flow by its open assignments (see $fetch_reachable).
+     *
+     * The search runs backwards from the sinks over the forward edges, treating
+     * specialization links as bidirectional so that a node whose specialized or
+     * de-specialized form can reach a sink is itself kept (the resolution walk
+     * maps freely between the two).
+     *
+     * @param array<string, array<string, true>> $reverse see getReverseEdges()
+     * @param array<string, DataFlowNode> $sinks
+     * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private function getSinkReachableNodes(array $reverse, array $sinks): array
+    {
         $reachable = [];
         $queue = [];
 
@@ -1094,7 +1464,68 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         }
 
+        $this->fetch_reachable = [];
+
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            if (!isset($reachable[$from_id])) {
+                continue;
+            }
+
+            // Which flow reaches a node first decides the open assignments it is walked
+            // from with (see getChildNodes()): the edges of a node are walked in the same
+            // order, whichever order the analysis of the files added them in.
+            ksort($destinations, SORT_STRING);
+            $this->forward_edges[$from_id] = $destinations;
+
+            foreach ($destinations as $to_id => $path) {
+                if (isset($reachable[$to_id]) && self::mayDropByOpenAssignments($path->type)) {
+                    $this->fetch_reachable[$from_id] = true;
+                    $queue[] = $from_id;
+
+                    break;
+                }
+            }
+        }
+
+        while ($queue) {
+            $id = array_pop($queue);
+
+            foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                if (isset($reachable[$from_id]) && !isset($this->fetch_reachable[$from_id])) {
+                    $this->fetch_reachable[$from_id] = true;
+                    $queue[] = $from_id;
+                }
+            }
+        }
+
         return $reachable;
+    }
+
+    /**
+     * Whether an edge of type $path_type may drop a flow by its open assignments: a fetch
+     * of a given array key or property, or of an array key, which shouldIgnoreFetch() may
+     * ignore or that may fetch an overwritten key (see fetchesAnOverwrittenKey()), an
+     * overwrite of an array key (see isOverwritten()), or a conversion of an array (see
+     * convertsTheArrayHoldingTheTaint())
+     *
+     * @psalm-pure
+     */
+    private static function mayDropByOpenAssignments(string $path_type): bool
+    {
+        if ($path_type === 'arraykey-fetch'
+            || str_starts_with($path_type, 'arrayvalue-overwrite-')
+            || str_ends_with($path_type, self::ARRAY_CONVERSION_SUFFIX)
+        ) {
+            return true;
+        }
+
+        foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
+            if (str_starts_with($path_type, $family . '-fetch-')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1149,7 +1580,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, DataFlowNode> $new_sources
      * @param-out array<string, DataFlowNode> $new_sources
-     * @param array<string, array<string, true>> $visited_source_ids
+     * @param array<string, array<string, array<string, true>>> $visited_source_ids
      * @param array<string, DataFlowNode> $sinks
      * @param array<string, true> $sink_reachable
      */
@@ -1187,18 +1618,6 @@ final class TaintFlowGraph extends DataFlowGraph
 
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
-            // The visited guard keeps the fixed point finite, so a visited node is never
-            // propagated from again. A visited sink still gets to report, though: the flow
-            // arriving through this edge may be a different one from the flow that visited it
-            // first (it can arrive rounds later when its path is longer).
-            $state_key = self::getStateKey($new_taints, $context);
-            $already_visited = isset($visited_source_ids[$to_id][$state_key]);
-            $sink = $sinks[$to_id] ?? null;
-
-            if ($already_visited && $sink === null) {
-                continue;
-            }
-
             $path_type = $path->type;
 
             if (self::shouldIgnoreFetch($path_type, 'arraykey', $open_assignments)) {
@@ -1213,12 +1632,83 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            if ($sink !== null && $generated_source->code_location) {
+            if (self::isOverwritten($path_type, $open_assignments)) {
+                continue;
+            }
+
+            if (self::fetchesAnOverwrittenKey($path_type, $open_assignments)) {
+                continue;
+            }
+
+            if (self::convertsTheArrayHoldingTheTaint($path_type, $open_assignments)) {
+                continue;
+            }
+
+            // past the edges that can drop a flow by its open assignments, they don't matter anymore
+            $path_types = isset($this->fetch_reachable[$to_id])
+                ? self::appendPathType($open_assignments, $path_type)
+                : [$path_type];
+            $to_context = $context;
+
+            // A node reached in the context of many specialized call entries (a property they all write, and
+            // everything reading it) would be walked once per entry: past a few, the flow forgets the entry and goes
+            // on as if outside of any call, exiting through all of the call sites. It forgets its open assignments
+            // too, so that any fetch takes it, and the flows widened at a node are walked once per taints rather
+            // than once per open assignments. Both can only add flows
+            $is_widened = $context !== null
+                && count($visited_source_ids[$to_id] ?? []) >= self::MAX_NODE_CONTEXTS;
+
+            if ($is_widened) {
+                $to_context = null;
+                $path_types = [$path_type];
+            }
+
+            // The visited guard keeps the fixed point finite, so a visited node is never
+            // propagated from again. A visited sink still gets to report, though: the flow
+            // arriving through this edge may be a different one from the flow that visited it
+            // first (it can arrive rounds later when its path is longer).
+            $state_key = self::getStateKey($new_taints, $to_context);
+            $open_assignments_key = $this->getOpenAssignmentsKey($to_id, $path_types);
+            $visited_states = $visited_source_ids[$to_id][$state_key] ?? [];
+
+            // a flow without open assignments takes all the edges another one takes
+            $already_visited = isset($visited_states[''])
+                || isset($visited_states[$open_assignments_key]);
+
+            // A loop can wrap a value deeper on every iteration, and a node can be reached
+            // with more open assignments than can be walked from: past a few, a flow forgets
+            // all but the innermost one. Then an edge the others would have dropped it at
+            // doesn't (see mayDropByOpenAssignments()): the flow may take taints it doesn't
+            // have there, but takes all those it has. A widened flow has already forgotten them.
+            if (!$already_visited && !$is_widened && count($visited_states) >= self::MAX_OPEN_ASSIGNMENT_STATES) {
+                $path_types = self::isStructuralAssignment($path_type)
+                    ? [$path_type]
+                    : self::appendPathType(array_slice($open_assignments, -1), $path_type);
+                $open_assignments_key = $this->getOpenAssignmentsKey($to_id, $path_types);
+                $already_visited = isset($visited_states[$open_assignments_key]);
+            }
+
+            $sink = $sinks[$to_id] ?? null;
+
+            if ($already_visited && $sink === null) {
+                continue;
+            }
+
+            // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can
+            // connect a node without a location to a sink
+            if ($sink !== null && ($generated_source->code_location || $sink->code_location)) {
                 $matching_taints = $sink->taints & $new_taints;
 
                 if ($matching_taints) {
-                    if ($context !== null) {
-                        $this->addEntrySink($context, $sink, $generated_source, $matching_taints, $config, $codebase);
+                    if ($to_context !== null) {
+                        $this->addEntrySink(
+                            $to_context,
+                            $sink,
+                            $generated_source,
+                            $matching_taints,
+                            $config,
+                            $codebase,
+                        );
                     } else {
                         $this->reportTaintedFlowOnce($generated_source, $sink, $matching_taints, $config, $codebase);
                     }
@@ -1229,7 +1719,7 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
-            $key = $to_id . ' ' . $state_key;
+            $key = $to_id . ' ' . $state_key . ' ' . $open_assignments_key;
 
             if (isset($new_sources[$key])) {
                 continue;
@@ -1238,8 +1728,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_sources[$key] = $this->nodes[$to_id]->withFlow(
                 $new_taints,
                 $generated_source,
-                self::appendPathType($open_assignments, $path_type),
-                $context,
+                $path_types,
+                $to_context,
             );
         }
     }
@@ -1251,10 +1741,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * Of the path types a flow went through, only what shouldIgnoreFetch() can still
      * observe is kept: the assignments to array keys, array values and properties
      * that no later fetch has matched yet -- a fetch matches the latest such
-     * assignment of its expression type -- followed by the type of the edge the
-     * flow took last, which the trace displays, unless that is such an assignment
-     * itself. Keeping each node's full path would make the resolution use memory
-     * quadratic in the length of the flows.
+     * assignment of its expression type -- and the overwrites of array keys a flow
+     * anywhere in the array went through since its last fetch (see
+     * isOverwrittenAnywhere()), followed by the type of the edge the flow took
+     * last, which the trace displays, unless that is such an assignment or
+     * overwrite itself. Keeping each node's full path would make the resolution use
+     * memory quadratic in the length of the flows.
      *
      * @param list<string> $open_assignments
      * @return non-empty-list<string>
@@ -1265,6 +1757,14 @@ final class TaintFlowGraph extends DataFlowGraph
         foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
             if (!str_starts_with($path_type, $family . '-fetch')) {
                 continue;
+            }
+
+            // a fetch from an array the flow is anywhere in but under the keys overwritten: it is anywhere in what it
+            // fetches
+            if (self::isOverwrittenAnywhere($open_assignments)) {
+                $open_assignments = [];
+
+                break;
             }
 
             for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
@@ -1278,6 +1778,11 @@ final class TaintFlowGraph extends DataFlowGraph
             break;
         }
 
+        // a key overwritten again: once is enough, or a loop overwriting it would make new open assignments forever
+        if (str_starts_with($path_type, self::OVERWRITE_PREFIX) && self::isOverwrittenAnywhere($open_assignments)) {
+            $open_assignments = array_values(array_diff($open_assignments, [$path_type]));
+        }
+
         $open_assignments[] = $path_type;
 
         return $open_assignments;
@@ -1286,7 +1791,7 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Returns the open assignments of a flow from its path types (see
      * appendPathType()): the path types without the trailing one if that is not an
-     * assignment. This is the history shouldIgnoreFetch() matches the flow's next
+     * assignment, nor an overwrite the flow keeps (see isOverwrittenAnywhere()). This is the history shouldIgnoreFetch() matches the flow's next
      * edge against; it gives the same result as on the full history.
      *
      * @param list<string> $path_types
@@ -1295,11 +1800,76 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function getOpenAssignments(array $path_types): array
     {
-        if ($path_types && !self::isStructuralAssignment($path_types[count($path_types) - 1])) {
+        $last = count($path_types) - 1;
+
+        if ($last >= 0
+            && !self::isStructuralAssignment($path_types[$last])
+            && !(str_starts_with($path_types[$last], self::OVERWRITE_PREFIX)
+                && self::isOverwrittenAnywhere(array_slice($path_types, 0, $last)))
+        ) {
             array_pop($path_types);
         }
 
         return $path_types;
+    }
+
+    /**
+     * Whether a flow with the open assignments $open_assignments is anywhere in an array but under the keys it went
+     * through the overwrites of (see isOverwritten()): its open assignments are only those overwrites, if any.
+     *
+     * A flow that went through an overwrite of a key keeps it among its open assignments only if it could be anywhere
+     * in the array then: it is nowhere under that key anymore (see fetchesAnOverwrittenKey()). A flow put in the
+     * array under another key is under that key still, and one put in it under an unknown key under some other key:
+     * those don't need it. So the overwrites a flow keeps are its outermost open assignments: if the innermost one is
+     * an overwrite, all of them are.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function isOverwrittenAnywhere(array $open_assignments): bool
+    {
+        return $open_assignments === []
+            || str_starts_with($open_assignments[count($open_assignments) - 1], self::OVERWRITE_PREFIX);
+    }
+
+    /**
+     * Whether the edge of type $path_type fetches from an array the value under a key that the flow, with the open
+     * assignments $open_assignments, is not in: it went through the overwrite of that key, being anywhere in the
+     * array (see isOverwrittenAnywhere()).
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function fetchesAnOverwrittenKey(string $path_type, array $open_assignments): bool
+    {
+        return $open_assignments !== []
+            && str_starts_with($path_type, 'arrayvalue-fetch-')
+            && self::isOverwrittenAnywhere($open_assignments)
+            && in_array(self::OVERWRITE_PREFIX . substr($path_type, 17), $open_assignments, true);
+    }
+
+    /**
+     * Whether the edge of type $path_type converts to a scalar (a cast, a concatenation) a value that may be the
+     * array the innermost of the flow's open assignments $open_assignments put the taint in, under a key or as a
+     * key: an array converts to "Array", or to 0/1, never to what it holds.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function convertsTheArrayHoldingTheTaint(string $path_type, array $open_assignments): bool
+    {
+        if (!str_ends_with($path_type, self::ARRAY_CONVERSION_SUFFIX)) {
+            return false;
+        }
+
+        for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+            if (self::isStructuralAssignment($open_assignments[$i])) {
+                return str_starts_with($open_assignments[$i], 'arrayvalue-assignment')
+                    || str_starts_with($open_assignments[$i], 'arraykey-assignment');
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1332,7 +1902,13 @@ final class TaintFlowGraph extends DataFlowGraph
         Config $config,
         Codebase $codebase,
     ): void {
-        if ($predecessor->code_location === null) {
+        if ($sink->code_location
+            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
+        ) {
+            $issue_location = $sink->code_location;
+        } elseif ($predecessor->code_location !== null) {
+            $issue_location = $predecessor->code_location;
+        } else {
             return;
         }
 
@@ -1351,12 +1927,12 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->reported_flows[$sink->id][$predecessor->id][$origin] = $reported_taints | $unreported_taints;
 
-        if ($sink->code_location
-            && $config->reportIssueInFile('TaintedInput', $sink->code_location->file_path)
-        ) {
-            $issue_location = $sink->code_location;
-        } else {
-            $issue_location = $predecessor->code_location;
+        // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
+        // its path: each is reported as the most general issue alone
+        if ($unreported_taints & TaintKind::INPUT_SSRF) {
+            $unreported_taints &= ~(TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH);
+        } elseif ($unreported_taints & TaintKind::INPUT_URL_COMPONENT) {
+            $unreported_taints &= ~TaintKind::INPUT_URL_PATH;
         }
 
         $issue_trace = $this->getIssueTrace($predecessor);
@@ -1438,6 +2014,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_SSRF => new TaintedSSRF(
                     'Detected tainted network request',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_COMPONENT => new TaintedUrlComponent(
+                    'Detected tainted URL component',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_PATH => new TaintedUrlPath(
+                    'Detected tainted URL path segment',
                     $issue_location,
                     $issue_trace,
                     $path,

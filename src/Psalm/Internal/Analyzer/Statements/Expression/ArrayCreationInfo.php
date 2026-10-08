@@ -47,6 +47,12 @@ final class ArrayCreationInfo
      */
     public int $int_offset = -1;
 
+    /**
+     * Whether $int_offset is exact: once an array of unknown length with integer keys is unpacked,
+     * it is only a lower bound, and the items added after it get no known key
+     */
+    public bool $int_offset_known = true;
+
     public bool $all_list = true;
 
     /**

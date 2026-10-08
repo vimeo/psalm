@@ -317,8 +317,10 @@ class Reconciler
                 continue;
             }
 
-            $can_carry_taints = !$result_type->hasScalarType()
-                || ($result_type->hasString() && !$result_type->hasLiteralString());
+            // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            $can_carry_taints = (!$result_type->hasScalarType()
+                    || ($result_type->hasString() && !$result_type->hasLiteralString()))
+                && ($result_type->getTaintsToRemove() & TaintKind::ALL_INPUT) !== TaintKind::ALL_INPUT;
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
@@ -720,12 +722,22 @@ class Reconciler
 
         $base_key = array_shift($key_parts);
 
-        if ($base_key[0] !== '$' && count($key_parts) > 2 && $key_parts[0] === '::$') {
-            $base_key .= array_shift($key_parts);
-            $base_key .= array_shift($key_parts);
-        }
+        if ($base_key[0] !== '$' && count($key_parts) > 1 && $key_parts[0] === '::$') {
+            array_shift($key_parts);
+            $fq_class_name = $base_key;
+            $property_name = array_shift($key_parts);
+            $base_key .= '::$' . $property_name;
 
-        if (!isset($existing_keys[$base_key])) {
+            if (!isset($existing_keys[$base_key])) {
+                $static_property_type = self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
+
+                if (!$static_property_type) {
+                    return null;
+                }
+
+                $existing_keys[$base_key] = $static_property_type;
+            }
+        } elseif (!isset($existing_keys[$base_key])) {
             if (strpos($base_key, '::')) {
                 [$fq_class_name, $const_name] = explode('::', $base_key);
 
@@ -981,6 +993,18 @@ class Reconciler
         }
 
         return $existing_keys[$base_key];
+    }
+
+    private static function getStaticPropertyType(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+    ): ?Union {
+        if (!$codebase->classOrInterfaceExists($fq_class_name)) {
+            return null;
+        }
+
+        return self::getPropertyType($codebase, $fq_class_name, $property_name);
     }
 
     private static function getPropertyType(
