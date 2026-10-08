@@ -2793,6 +2793,117 @@ final class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_array($flipped);
                 ',
             ],
+            'arrayFirstLastReturnValueType' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array { return []; }
+                    /** @return non-empty-list<int> */
+                    function getNonEmptyList(): array { return [1]; }
+                    /** @return array<string, int> */
+                    function getMap(): array { return []; }
+                    /** @return non-empty-array<string, int> */
+                    function getNonEmptyMap(): array { return ["a" => 1]; }
+                    /** @return array{a: int, b?: string} */
+                    function getShape(): array { return ["a" => 1]; }
+                    /** @return array{a?: int, b?: string} */
+                    function getOptionalShape(): array { return []; }
+                    /** @return list<int>|non-empty-list<string> */
+                    function getUnion(): array { return []; }
+
+                    $empty = array_first([]);
+                    $list = array_first(getList());
+                    $nonEmptyList = array_last(getNonEmptyList());
+                    $map = array_last(getMap());
+                    $nonEmptyMap = array_first(getNonEmptyMap());
+                    $shape = array_first(getShape());
+                    $optionalShape = array_last(getOptionalShape());
+                    $union = array_first(getUnion());
+                    $literal = array_last([1, "a"]);',
+                'assertions' => [
+                    '$empty===' => 'null',
+                    '$list===' => 'int|null',
+                    '$nonEmptyList===' => 'int',
+                    '$map===' => 'int|null',
+                    '$nonEmptyMap===' => 'int',
+                    '$shape===' => 'int|string',
+                    '$optionalShape===' => 'int|null|string',
+                    '$union===' => 'int|null|string',
+                    '$literal===' => '\'a\'|1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstLastTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-array<string, int>
+                     * @param T $arr
+                     */
+                    function firstOfBound(array $arr): int {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T of list<int>
+                     * @param T $arr
+                     */
+                    function lastOfBound(array $arr): ?int {
+                        return array_last($arr);
+                    }
+
+                    /**
+                     * @template T
+                     * @param non-empty-list<T> $arr
+                     * @return T
+                     */
+                    function firstElement(array $arr) {
+                        return array_first($arr);
+                    }
+
+                    /**
+                     * @template T
+                     * @param array<string, T> $arr
+                     * @return T|null
+                     */
+                    function lastElement(array $arr) {
+                        return array_last($arr);
+                    }
+
+                    $a = firstElement([new DateTime()]);
+                    $b = lastElement(["a" => 1]);',
+                'assertions' => [
+                    '$a===' => 'DateTime',
+                    '$b===' => '1|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayAnyAllReturnBool' => [
+                'code' => '<?php
+                    $a = ["one" => 1, "two" => 3];
+                    $b = array_any($a, fn (int $value, string $key): bool => $value > 1);
+                    $c = array_all($a, fn (int $value): bool => $value > 1);',
+                'assertions' => [
+                    '$b===' => 'bool',
+                    '$c===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyAllPureCallbackInPureFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $list
+                     */
+                    function hasPositive(array $list): bool {
+                        return array_any($list, fn (int $i): bool => $i > 0)
+                            && !array_all($list, fn (int $i): bool => $i > 10);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -3247,6 +3358,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_message' => 'PossiblyInvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'arrayFirstUndefinedBeforePhp85' => [
+                'code' => '<?php
+                    $a = array_first([1, 2]);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayLastUndefinedBeforePhp85' => [
+                'code' => '<?php
+                    $a = array_last([1, 2]);',
+                'error_message' => 'UndefinedFunction',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFirstOfIterableUnionStaysMixed' => [
+                'code' => '<?php
+                    /** @param list<int>|iterable<string> $values */
+                    function f(iterable $values): int {
+                        return array_first($values) ?? 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayFirstTraversableArgument' => [
+                'code' => '<?php
+                    function f(Traversable $t): void {
+                        array_first($t);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'arrayAnyCallbackTypeMismatch' => [
+                'code' => '<?php
+                    /** @param list<int> $list */
+                    function f(array $list): bool {
+                        return array_any($list, fn (string $s): bool => $s === "");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAllCallbackKeyTypeMismatch' => [
+                'code' => '<?php
+                    /** @param array<string, int> $map */
+                    function f(array $map): bool {
+                        return array_all($map, fn (int $v, int $k): bool => $v > $k);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayAnyImpureCallbackInPureFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $list
+                     */
+                    function f(array $list): bool {
+                        return array_any($list, function (int $i): bool {
+                            echo $i;
+                            return true;
+                        });
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
             ],
         ];
     }
