@@ -52,8 +52,12 @@ use function count;
 use function end;
 use function implode;
 use function is_string;
+use function preg_match;
 use function str_contains;
+use function str_starts_with;
 use function strlen;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -843,6 +847,7 @@ final class ArrayAssignmentAnalyzer
         bool &$offset_already_existed,
     ): void {
         $var_id_additions = [];
+        $written_offsets = [];
 
         $root_var = end($child_stmts)->var;
 
@@ -880,8 +885,10 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
+                $written_offsets[] = [$var_id_addition, $offset_type !== null];
             } else {
                 $var_id_additions[] = '';
+                $written_offsets[] = null;
                 $full_var_id = false;
             }
 
@@ -971,6 +978,10 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+        }
+
+        if ($root_var_id !== null) {
+            self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
         }
 
         if ($statements_analyzer->data_flow_graph
@@ -1103,6 +1114,90 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
+     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
+     * they are equal, or either isn't a literal. An appended offset is a new one, so no known offset is under it.
+     *
+     * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
+     *     null for an appended one
+     */
+    private static function removeAliasedOffsets(Context $context, string $root_var_id, array $written_offsets): void
+    {
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if (!str_starts_with($var_id, $root_var_id . '[')) {
+                continue;
+            }
+
+            $position = strlen($root_var_id);
+            $is_written_path = true;
+
+            foreach ($written_offsets as $written_offset) {
+                if ($written_offset === null) {
+                    continue 2;
+                }
+
+                [$written_key, $written_key_is_literal] = $written_offset;
+                $key = self::getKeyAt($var_id, $position);
+
+                if ($key === null) {
+                    break;
+                }
+
+                if ($key !== $written_key) {
+                    if ($written_key_is_literal && preg_match('/^\[(-?\d+|\'.*\')\]$/', $key) === 1) {
+                        continue 2;
+                    }
+
+                    $is_written_path = false;
+                }
+
+                $position += strlen($key);
+            }
+
+            if (!$is_written_path) {
+                $context->remove($var_id, false);
+                $context->removeVarFromConflictingClauses($var_id);
+            }
+        }
+    }
+
+    /**
+     * Returns the bracketed key of a var id that starts at the given position, null if no key starts there.
+     *
+     * @psalm-pure
+     */
+    private static function getKeyAt(string $var_id, int $position): ?string
+    {
+        if (substr($var_id, $position, 1) !== '[') {
+            return null;
+        }
+
+        $depth = 0;
+        $length = strlen($var_id);
+
+        for ($i = $position; $i < $length; $i++) {
+            if ($var_id[$i] === "'") {
+                // string literals aren't escaped in var ids, so one ends where a quote closes a key
+                $i = strpos($var_id, "']", $i + 1);
+
+                if ($i === false) {
+                    return null;
+                }
+            } elseif ($var_id[$i] === '[') {
+                $depth++;
+            } elseif ($var_id[$i] === ']') {
+                $depth--;
+
+                if ($depth === 0) {
+                    return substr($var_id, $position, $i - $position + 1);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

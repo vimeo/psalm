@@ -62,6 +62,80 @@ final class ArrayAssignmentTest extends TestCase
                     '$resultOpt===' => 'array{a?: true, b?: true}',
                 ],
             ],
+            'unknownKeyAssignmentForgetsTheOffsetsItMayBe' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = [];
+                    $a["x"] = 1;
+                    $a[(string) rand()] = "b";
+                    $b = $a["x"];
+
+                    /** @var array<string, array<string, int|string>> $e */
+                    $e = [];
+                    $e["x"]["y"] = 1;
+                    $e["x"][(string) rand()] = "b";
+                    $f = $e["x"]["y"];
+
+                    $g = ["y" => 1];
+                    $g["x"] = 1;
+                    $g[] = "b";
+                    $h = $g["x"];
+
+                    /** @var array<string, int|string> $i */
+                    $i = [];
+                    $k = (string) rand();
+                    $i[$k] = 1;
+                    $i["x"] = "b";
+                    $j = $i[$k];',
+                'assertions' => [
+                    '$b===' => '1|string',
+                    '$f===' => "'b'|1",
+                    '$h===' => '1',
+                    '$j===' => 'int|string',
+                ],
+            ],
+            'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
+                'code' => '<?php
+                    /** @var array{x: array<string, int>, y: int} $a */
+                    $a = ["x" => [], "y" => 1];
+                    $a["z"] = "z";
+                    $a["x"][(string) rand()] = 1;
+                    $b = $a["y"];
+                    $c = $a["z"];
+
+                    /** @var array<string, array<string, int|string>> $d */
+                    $d = [];
+                    $d["any"]["x"] = 5;
+                    $d["any"]["y"] = 6;
+                    $d[(string) rand()]["x"] = "s";
+                    $e = $d["any"]["x"];
+                    $f = $d["any"]["y"];
+
+                    /** @var array<string, array<string, int|string>> $g */
+                    $g = [];
+                    $k = (string) rand();
+                    $g[$k]["other"] = 5;
+                    $g[$k]["lit"] = 6;
+                    $g["x"]["lit"] = "s";
+                    $h = $g[$k]["other"];
+                    $i = $g[$k]["lit"];
+
+                    /** @var array<int, array<string, int|string>> $j */
+                    $j = [];
+                    $n = rand();
+                    $j[$n]["x"] = 5;
+                    $j[]["x"] = "s";
+                    $l = $j[$n]["x"];',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => "'z'",
+                    '$e===' => 'int|string',
+                    '$f===' => '6',
+                    '$h===' => '5',
+                    '$i===' => 'int|string',
+                    '$l===' => '5',
+                ],
+            ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
                     class a {}
@@ -2252,6 +2326,26 @@ final class ArrayAssignmentTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a["any"]["x"] = 5;
+                        $a[$k]["x"] = "s";
+                        return $a["any"]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalKeyAssignmentForgetsTheOffsetsOfAnUnknownParentItMayBe' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a[$k]["x"] = 5;
+                        $a["y"]["x"] = "s";
+                        return $a[$k]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'objectAssignment' => [
                 'code' => '<?php
                     class A {}
