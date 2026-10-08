@@ -47,6 +47,23 @@ final class ListTest extends TestCase
                     '$text' => 'string',
                 ],
             ],
+            'destructureANonTraversableArrayAccess' => [
+                'code' => '<?php
+                    final class Results implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): mixed { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    [$first, $second] = new Results();',
+                'assertions' => [
+                    '$first' => 'mixed',
+                    '$second' => 'mixed',
+                ],
+                'ignored_issues' => ['MissingTemplateParam'],
+                'php_version' => '8.0',
+            ],
             'simpleVars' => [
                 'code' => '<?php
                     list($a, $b) = ["a", "b"];',
