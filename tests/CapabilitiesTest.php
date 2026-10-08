@@ -465,6 +465,25 @@ final class CapabilitiesTest extends TestCase
                         };
                     }',
             ],
+            'classMayWriteItsOwnAndFreshInstances' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        /**
+                         * @var list<int>
+                         * @psalm-allow-private-mutation
+                         */
+                        public array $items = [];
+                        public function add(): void {
+                            $this->items[] = 5;
+                        }
+                        public static function make(): self {
+                            $box = new self();
+                            $box->items[] = 5;
+                            return $box;
+                        }
+                    }',
+            ],
             'builtinFirstClassCallableCarriesItsCapabilities' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals|write-globals */
@@ -1441,6 +1460,69 @@ final class CapabilitiesTest extends TestCase
                         return $b;
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - The context is pure but property assignment to Box::$n requires write-props',
+            ],
+            'constructorCannotWriteAnotherInstance' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        /** @var list<int> */
+                        public array $items = [];
+                        public function __construct(?Box $other = null) {
+                            if ($other !== null) {
+                                $other->items[] = 5;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33 - The context is read-props|write-this-props|write-refs but property assignment to Box::$items requires write-props',
+            ],
+            'methodCannotWriteAnotherInstance' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        /**
+                         * @var list<int>
+                         * @psalm-allow-private-mutation
+                         */
+                        public array $items = [];
+                        public function add(Box $other): void {
+                            $other->items[] = 5;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - The context is read-props|write-this-props|write-refs but property assignment to Box::$items requires write-props',
+            ],
+            'staticMethodCannotWriteAnotherInstance' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        /**
+                         * @var list<int>
+                         * @psalm-allow-private-mutation
+                         */
+                        public array $items = [];
+                        public static function add(Box $other): void {
+                            $other->items[] = 5;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - The context is read-props|write-this-props|write-refs but property assignment to Box::$items requires write-props',
+            ],
+            'subclassCannotWriteAnotherInstance' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    class Base {
+                        /**
+                         * @var list<int>
+                         * @psalm-allow-private-mutation
+                         */
+                        public array $items = [];
+                    }
+
+                    /** @psalm-external-mutation-free */
+                    final class Child extends Base {
+                        public function add(Base $other): void {
+                            $other->items[] = 5;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:29 - The context is read-props|write-this-props|write-refs but property assignment to Base::$items requires write-props',
             ],
             'functionCannotWriteAnObjectReachedFromAStaticProperty' => [
                 'code' => '<?php
