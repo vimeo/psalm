@@ -772,7 +772,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             $receiver_capabilities = MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
                 $closure_capabilities & (Capabilities::WRITE_THIS_PROPS | Capabilities::WRITE_PROPS),
-                MethodCallPurityAnalyzer::isThis($new_this),
+                MethodCallPurityAnalyzer::isReceiverThis($new_this),
                 MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $new_this),
             ) & ~$closure_capabilities;
 

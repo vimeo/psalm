@@ -3,7 +3,83 @@
 namespace MongoDB\BSON
 {
     use IteratorAggregate;
+    use JsonSerializable;
     use Serializable;
+    use Stringable;
+
+    interface Type
+    {
+    }
+
+    interface ObjectIdInterface
+    {
+        /** @psalm-mutation-free */
+        public function getTimestamp(): int;
+
+        /** @psalm-mutation-free */
+        public function __toString(): string;
+    }
+
+    /**
+     * Without an id, the constructor generates a new one, which is not pure.
+     */
+    final class ObjectId implements Stringable, ObjectIdInterface, JsonSerializable, Type, Serializable
+    {
+        final public function __construct(?string $id = null)
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getTimestamp(): int
+        {
+        }
+
+        /**
+         * Its 24 hexadecimal digits: nothing the client sends can be in them
+         *
+         * The constructor validates its argument: it throws a
+         * MongoDB\Driver\Exception\InvalidArgumentException unless it gets 24 hexadecimal
+         * digits, so the string is safe whatever the id was built from. That's also why
+         * the constructor is intentionally not a taint sink: new ObjectId($_GET['id']) is
+         * the usual way to validate an id. The input reappears only in the message of the
+         * exception, which getMessage() already taints.
+         *
+         * @psalm-mutation-free
+         * @psalm-taint-escape input
+         */
+        final public function __toString(): string
+        {
+        }
+
+        /** @psalm-pure */
+        final public static function __set_state(array $properties): ObjectId
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function serialize(): string
+        {
+        }
+
+        /** @param string $serialized */
+        final public function unserialize($serialized): void
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function __serialize(): array
+        {
+        }
+
+        final public function __unserialize(array $data): void
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function jsonSerialize(): mixed
+        {
+        }
+    }
 
     /**
      * @template TValue
@@ -336,5 +412,18 @@ namespace MongoDB\Driver
         final public function count(): int
         {
         }
+    }
+}
+
+namespace MongoDB\Driver\Exception
+{
+    use Throwable;
+
+    interface Exception extends Throwable
+    {
+    }
+
+    class InvalidArgumentException extends \InvalidArgumentException implements Exception
+    {
     }
 }

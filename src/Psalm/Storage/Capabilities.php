@@ -7,6 +7,7 @@ namespace Psalm\Storage;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Union;
@@ -65,6 +66,15 @@ final class Capabilities
 
     /** What `@psalm-external-mutation-free` allows. */
     public const EXTERNAL_MUTATION_FREE = self::READ_PROPS | self::WRITE_THIS_PROPS | self::WRITE_REFS;
+
+    /**
+     * What the methods of a class with `@psalm-taint-specialize` may do. Each instance of such a class
+     * holds its own taints, which only follow the variables the instance is assigned to: the instance
+     * may not change once constructed, as the change would not reach the other variables holding it,
+     * and its methods may not write other objects or global state, from which another call could read
+     * back what this one wrote, as only this call's taints come out of it.
+     */
+    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO;
 
     /**
      * The capabilities a method call still requires from its caller when the receiver's own state
@@ -278,6 +288,14 @@ final class Capabilities
                 continue;
             }
 
+            // `[$param is array ? pure : P]`, resolved per call like a conditional return type
+            if ($atomic instanceof TConditional
+                && self::isPurityType($atomic->if_type)
+                && self::isPurityType($atomic->else_type)
+            ) {
+                continue;
+            }
+
             return false;
         }
 
@@ -299,6 +317,13 @@ final class Capabilities
             }
 
             if ($atomic instanceof TTemplateParam && self::isPurityArgument($atomic->as)) {
+                continue;
+            }
+
+            if ($atomic instanceof TConditional
+                && self::isPurityArgument($atomic->if_type)
+                && self::isPurityArgument($atomic->else_type)
+            ) {
                 continue;
             }
 

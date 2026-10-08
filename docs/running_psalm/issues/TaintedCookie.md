@@ -1,5 +1,7 @@
 # TaintedCookie
 
+This is a **security issue**, reported by [security analysis](https://psalm.dev/docs/security_analysis/): it flags a potential vulnerability.
+
 Potential cookie injection. This rule is emitted when user-controlled input can be passed into a cookie.
 
 ## Risk

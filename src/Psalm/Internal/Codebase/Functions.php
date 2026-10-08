@@ -112,6 +112,8 @@ final class Functions
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
             }
+        } elseif ($root_file_path !== null) {
+            $file_storage = $this->file_storage_provider->get($root_file_path);
         }
 
         if (!$root_file_path || !$checked_file_path) {
@@ -464,6 +466,16 @@ final class Functions
             }
         }
 
+        // like class_exists(), they trigger the autoloader for a class name, unless told not to
+        if ($function_id === 'class_implements' || $function_id === 'class_parents' || $function_id === 'class_uses') {
+            $class_type = isset($args[0]) ? $type_provider?->getType($args[0]->value) : null;
+            $autoload_type = isset($args[1]) ? $type_provider?->getType($args[1]->value) : null;
+
+            return $class_type?->isObjectType() === true || $autoload_type?->isFalse() === true
+                ? Capabilities::NONE
+                : Capabilities::ALL;
+        }
+
         if (str_starts_with($function_id, 'image')) {
             return Capabilities::IO;
         }
@@ -472,7 +484,9 @@ final class Functions
             return Capabilities::IO;
         }
 
-        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
+        if (($function_id === 'var_export' || $function_id === 'print_r' || $function_id === 'highlight_string')
+            && !isset($args[1])
+        ) {
             return Capabilities::IO;
         }
 
@@ -492,7 +506,8 @@ final class Functions
             return Capabilities::NONE;
         }
 
-        if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
+        // they read only the current scope, like compact() and static::class
+        if (in_array($function_id, ['func_num_args', 'func_get_args', 'get_defined_vars', 'get_called_class'], true)) {
             return Capabilities::NONE;
         }
 

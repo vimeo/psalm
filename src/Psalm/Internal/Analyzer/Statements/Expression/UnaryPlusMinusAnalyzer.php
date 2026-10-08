@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use RuntimeException;
 
@@ -117,13 +118,13 @@ final class UnaryPlusMinusAnalyzer
         string $type,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
-        if ($statements_analyzer->variable_use_graph && $result_type) {
+        if (($graph = $statements_analyzer->data_flow_graph) && $result_type) {
             $var_location = new CodeLocation($statements_analyzer, $stmt);
 
             $stmt_value_type = $statements_analyzer->node_data->getType($value);
 
             $new_parent_node = DataFlowNode::getForAssignment($type, $var_location);
-            $statements_analyzer->variable_use_graph->addNode($new_parent_node);
+            $graph->addNode($new_parent_node);
             $statements_analyzer->node_data->setType(
                 $stmt,
                 $result_type->setParentNodes([
@@ -133,7 +134,7 @@ final class UnaryPlusMinusAnalyzer
 
             if ($stmt_value_type && $stmt_value_type->parent_nodes) {
                 foreach ($stmt_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->variable_use_graph->addPath($parent_node, $new_parent_node, $type);
+                    $graph->addPath($parent_node, $new_parent_node, $type, 0, TaintKind::ALL);
                 }
             }
         }

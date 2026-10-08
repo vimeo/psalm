@@ -173,7 +173,14 @@ final class Scanner
             return;
         }
 
-        $this->reflection->registerClass(new ReflectionClass($fq_classlike_name));
+        $reflected_class = new ReflectionClass($fq_classlike_name);
+
+        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
+        if (!$reflected_class->isInternal()) {
+            return;
+        }
+
+        $this->reflection->registerClass($reflected_class);
         $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 

@@ -33,6 +33,9 @@ use Psalm\Type\Union;
  */
 final class MethodCallPurityAnalyzer
 {
+    /** Set on a method call that gives back the caller's own `$this` */
+    private const RETURNS_THIS = 'returns_this';
+
     /**
      * Whether mutations of the receiver's own state are fine for the caller: the receiver is
      * pure-compatible or external-mutation-free, so nobody else can see it change. `$this` never
@@ -42,7 +45,7 @@ final class MethodCallPurityAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
     ): bool {
-        if (self::isThis($var)) {
+        if (self::isReceiverThis($var)) {
             return false;
         }
 
@@ -75,7 +78,7 @@ final class MethodCallPurityAnalyzer
 
         return self::getCapabilitiesForReceiver(
             $capabilities,
-            self::isThis($var),
+            self::isReceiverThis($var),
             self::isFromGlobalState($statements_analyzer, $var),
         );
     }
@@ -124,6 +127,16 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
+     * Whether the receiver is the caller's own `$this`: `$this` itself, or a call on it of a method
+     * returning its receiver, as in the fluent chain `$this->a()->b()`.
+     */
+    public static function isReceiverThis(Expr $var): bool
+    {
+        return self::isThis($var)
+            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
      * @param array<string, array<string, Union>> $class_template_params
      */
     public static function analyze(
@@ -147,18 +160,28 @@ final class MethodCallPurityAnalyzer
             $method_storage,
         );
 
+        // with a receiver of several types, the call gives back `$this` only if every method called does
+        $stmt->setAttribute(
+            self::RETURNS_THIS,
+            $stmt->getAttribute(self::RETURNS_THIS, true) === true
+                && $method_storage->returns_this
+                && !$stmt->isFirstClassCallable()
+                && self::isReceiverThis($stmt->var),
+        );
+
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
-        $method_capabilities = CallPurityResolver::getCallCapabilities(
+        $template_capabilities = CallPurityResolver::getCallCapabilities(
             $statements_analyzer,
             $codebase,
             $method_storage,
-            $method_capabilities,
+            Capabilities::NONE,
             $template_result,
             $class_template_params,
-            self::isThis($stmt->var),
+            self::isReceiverThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
+        $method_capabilities |= $template_capabilities;
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -199,6 +222,11 @@ final class MethodCallPurityAnalyzer
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
 
+        // the callee's level does not include what its purity templates are bound to here
+        if ($template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        }
+
         if ($reads_globals) {
             $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
         }
@@ -219,7 +247,8 @@ final class MethodCallPurityAnalyzer
             if ((!$method_storage->mutation_free_assumed
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
-                && ($method_storage->containing_class_capabilities === Capabilities::MUTATION_FREE
+                // the class is immutable, or pure
+                && (Capabilities::allows(Capabilities::MUTATION_FREE, $method_storage->containing_class_capabilities)
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -229,7 +258,10 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if ($method_storage->containing_class_capabilities === Capabilities::MUTATION_FREE) {
+                    if (Capabilities::allows(
+                        Capabilities::MUTATION_FREE,
+                        $method_storage->containing_class_capabilities,
+                    )) {
                         $stmt->setAttribute('pure', true);
                     }
                 }
@@ -251,6 +283,7 @@ final class MethodCallPurityAnalyzer
                     && !$method_storage->throws
                     && !$method_storage->return_type?->isNever()
                     && !$method_storage->signature_return_type?->isNever()
+                    && !self::isCalledForItsTemplatesEffects($method_storage)
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
@@ -317,6 +350,23 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
+        } elseif (!$config->remember_property_assignments_after_call) {
+            // the method cannot write properties, but may still write static ones
+            $context->removeMutableObjectVars(false, $method_capabilities);
         }
+    }
+
+    /**
+     * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
+     * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
+     * its call is not unused even when they turn out to be none.
+     *
+     * @psalm-mutation-free
+     */
+    public static function isCalledForItsTemplatesEffects(MethodStorage $method_storage): bool
+    {
+        return $method_storage->purity_from_templates !== []
+            && ($method_storage->return_type?->isVoid() === true
+                || $method_storage->signature_return_type?->isVoid() === true);
     }
 }

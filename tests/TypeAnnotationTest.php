@@ -678,7 +678,7 @@ final class TypeAnnotationTest extends TestCase
                     $output = Foo::$callback;
                 ',
                 'assertions' => [
-                    '$output===' => 'impure-callable():int',
+                    '$output===' => 'callable[impure]():int',
                 ],
             ],
             'callableWithReturnTypeTypeAlias' => [
@@ -691,7 +691,7 @@ final class TypeAnnotationTest extends TestCase
                     $output = Foo::$callback;
                 ',
                 'assertions' => [
-                    '$output===' => 'impure-callable():int',
+                    '$output===' => 'callable[impure]():int',
                 ],
             ],
             'callableFormats' => [
@@ -742,18 +742,18 @@ final class TypeAnnotationTest extends TestCase
                     $output_ml = $foo->ml();
                 ',
                 'assertions' => [
-                    '$output_ma===' => 'impure-callable(int, int):string',
-                    '$output_mb===' => 'impure-callable(int, int=):string',
-                    '$output_mc===' => 'impure-callable(int, string):void',
-                    '$output_md===' => 'impure-callable(string):mixed',
-                    '$output_me===' => 'impure-callable(string):mixed',
-                    '$output_mf===' => 'impure-callable(float...):(int|null)',
-                    '$output_mg===' => 'impure-callable(float...):(int|null)',
-                    '$output_mh===' => 'impure-callable(array<array-key, int>):array<array-key, string>',
-                    '$output_mi===' => 'impure-callable(array<string, int>):array<int, string>',
-                    '$output_mj===' => 'impure-callable(array<array-key, int>...):string',
-                    '$output_mk===' => 'impure-callable(array<array-key, int>...):string',
-                    '$output_ml===' => 'impure-Closure(int, int):string',
+                    '$output_ma===' => 'callable[impure](int, int):string',
+                    '$output_mb===' => 'callable[impure](int, int=):string',
+                    '$output_mc===' => 'callable[impure](int, string):void',
+                    '$output_md===' => 'callable[impure](string):mixed',
+                    '$output_me===' => 'callable[impure](string):mixed',
+                    '$output_mf===' => 'callable[impure](float...):(int|null)',
+                    '$output_mg===' => 'callable[impure](float...):(int|null)',
+                    '$output_mh===' => 'callable[impure](array<array-key, int>):array<array-key, string>',
+                    '$output_mi===' => 'callable[impure](array<string, int>):array<int, string>',
+                    '$output_mj===' => 'callable[impure](array<array-key, int>...):string',
+                    '$output_mk===' => 'callable[impure](array<array-key, int>...):string',
+                    '$output_ml===' => 'Closure[impure](int, int):string',
                 ],
             ],
             'unionOfStringsContainingBraceChar' => [
@@ -893,6 +893,141 @@ final class TypeAnnotationTest extends TestCase
                             /** @psalm-check-type-exact $_doesNotWork = D<array{b?: bool, c?: string}> */;
                         }
                     }',
+            ],
+            'forwardReferencedTypeAliasInSameDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Src;
+                    /**
+                     * @phpstan-type ParentType = array{child: ChildType}
+                     * @phpstan-type ChildType = array{foo: string}
+                     */
+                    class Types {}
+                    /** @phpstan-import-type ParentType from Types */
+                    class Bar {
+                        public function __construct(
+                            /** @var ParentType */
+                            public array $foo = ['child' => ['foo' => 'bla']],
+                        ) {}
+                    }
+                    $_z = (new Bar)->foo;
+                    PHP,
+                'assertions' => [
+                    '$_z===' => 'array{child: array{foo: string}}',
+                ],
+            ],
+            'typeAliasResolvesForwardReferenceWithinSameDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Barrr;
+
+                    /**
+                     * @psalm-type _C=array{c:_CC}
+                     * @psalm-type _CC=float
+                     */
+                    class A {
+                        /**
+                         * @param _C $arr
+                         */
+                        public function foo(array $arr) : void {
+                            /** @psalm-check-type-exact $arr = array{c: float} */;
+                        }
+                    }
+                    PHP,
+            ],
+            'importShadowingNotTreatedAsLocalDependency' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe;
+                    /** @psalm-type T = int */
+                    class Source {}
+                    /**
+                     * @psalm-import-type T from Source
+                     * @psalm-type Wrap = array{v:T}
+                     * @psalm-type T = string
+                     */
+                    class Types {
+                        /** @return T */
+                        public function direct(int $x) {
+                            return $x;
+                        }
+                        /** @return Wrap */
+                        public function wrapped(int $x): array {
+                            return ['v' => $x];
+                        }
+                    }
+                    $_direct = (new Types)->direct(1);
+                    $_wrapped = (new Types)->wrapped(1);
+                    PHP,
+                'assertions' => [
+                    '$_direct===' => 'int',
+                    '$_wrapped===' => 'array{v: int}',
+                ],
+            ],
+            'callableParamDollarSuffixStrippedForDependencyDetection' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe2;
+                    /**
+                     * @psalm-type A = callable(B$x):void
+                     * @psalm-type B = int
+                     */
+                    class C {
+                        /** @param A $a */
+                        public function foo($a): void {}
+                    }
+                    PHP,
+            ],
+            'closureCallableSyntaxNotTreatedAsAliasReference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Probe3;
+                    /**
+                     * @psalm-type Closure = Handler
+                     * @psalm-type Handler = Closure():void
+                     */
+                    class C {
+                        /** @param Closure $c */
+                        public function foo($c): void {}
+                    }
+                    PHP,
+            ],
+            'duplicateTypeAliasKeepsLastDeclarationAfterReordering' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace DupOrder;
+                    /**
+                     * @phpstan-type A = B
+                     * @psalm-type A = int
+                     * @psalm-type B = string
+                     */
+                    class C {
+                        /**
+                         * @param A $a
+                         */
+                        public function foo($a): void {
+                            /** @psalm-check-type-exact $a = int */;
+                        }
+                    }
+                    PHP,
+            ],
+            'typeAliasKeyNameNotTreatedAsDependency' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace KeyDep;
+                    /**
+                     * @psalm-type A = array{b: B}
+                     * @psalm-type B = array{A?: string}
+                     */
+                    class C {
+                        /**
+                         * @param A $a
+                         */
+                        public function foo(array $a): void {
+                            /** @psalm-check-type-exact $a = array{b: array{A?: string}} */;
+                        }
+                    }
+                    PHP,
             ],
             'importFromEnum' => [
                 'code' => <<<'PHP'
@@ -1095,22 +1230,6 @@ final class TypeAnnotationTest extends TestCase
                 ',
                 'error_message' => 'InvalidTypeImport',
             ],
-            'noCrashWithPriorReference' => [
-                'code' => '<?php
-                    namespace Barrr;
-
-                    /**
-                     * @psalm-type _C=array{c:_CC}
-                     * @psalm-type _CC=float
-                     */
-                    class A {
-                        /**
-                         * @param _C $arr
-                         */
-                        public function foo(array $arr) : void {}
-                    }',
-                'error_message' => 'UndefinedDocblockClass',
-            ],
             'mergeImportedTypes' => [
                 'code' => '<?php
                     namespace A\B;
@@ -1158,6 +1277,24 @@ final class TypeAnnotationTest extends TestCase
                      */
                     function test(array $input):void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'noCrashWithMutuallyReferencingTypes' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type A = array{b?: B}
+                     * @psalm-type B = array{a?: A}
+                     * @psalm-param A $input
+                     */
+                    function test(array $input):void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidTypeAliasReportsOriginalParseError' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Bad = int.
+                     */
+                    class A {}',
+                'error_message' => 'int. is not a valid type: Unexpected token',
             ],
             'invalidTypeWhenNotImported' => [
                 'code' => '<?php

@@ -46,6 +46,8 @@ final class IssueData
         public ?array $other_references = null,
         public readonly ?string $dupe_key = null,
         ?string $documentation_url = null,
+        /** Whether the issue is a {@see \Psalm\Issue\SecurityIssue} */
+        public readonly bool $is_security = false,
     ) {
         $this->link = match (true) {
             $documentation_url !== null => $documentation_url,

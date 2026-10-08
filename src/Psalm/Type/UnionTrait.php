@@ -9,6 +9,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -18,8 +19,10 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -27,6 +30,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -42,6 +46,7 @@ use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -49,6 +54,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 
 use function array_filter;
+use function array_keys;
 use function array_unique;
 use function count;
 use function implode;
@@ -1463,6 +1469,34 @@ trait UnionTrait
     }
 
     /**
+     * The ids of $parent_nodes, with those of nodes narrowed to a scalar (see
+     * DataFlowNode::getForNarrowingToScalar()) replaced by the ids of the nodes they narrow, or null
+     * if there is none of those.
+     *
+     * @param array<string, DataFlowNode> $parent_nodes
+     * @return list<array-key>|null
+     * @psalm-pure
+     */
+    private static function getParentNodeIdsWithoutNarrowing(array $parent_nodes): ?array
+    {
+        $parent_node_ids = [];
+        $has_narrowing = false;
+
+        foreach ($parent_nodes as $parent_node_id => $parent_node) {
+            $narrowed_node_id = $parent_node->getNarrowedNodeId();
+
+            if ($narrowed_node_id !== null) {
+                $parent_node_id = $narrowed_node_id;
+                $has_narrowing = true;
+            }
+
+            $parent_node_ids[$parent_node_id] = true;
+        }
+
+        return $has_narrowing ? array_keys($parent_node_ids) : null;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function equals(
@@ -1512,7 +1546,17 @@ trait UnionTrait
         }
 
         if ($ensure_parent_node_equality && $this->parent_nodes !== $other_type->parent_nodes) {
-            return false;
+            // A value narrowed to a type that cannot carry taints only hides its parent nodes from
+            // the taint graph (see Reconciler): its data flow is the same.
+            $parent_node_ids = self::getParentNodeIdsWithoutNarrowing($this->parent_nodes);
+            $other_parent_node_ids = self::getParentNodeIdsWithoutNarrowing($other_type->parent_nodes);
+
+            if (($parent_node_ids === null && $other_parent_node_ids === null)
+                || ($parent_node_ids ?? array_keys($this->parent_nodes))
+                    !== ($other_parent_node_ids ?? array_keys($other_type->parent_nodes))
+            ) {
+                return false;
+            }
         }
 
         if ($this->different || $other_type->different) {
@@ -1638,22 +1682,95 @@ trait UnionTrait
 
     public function getTaintsToRemove(): int
     {
-        // numeric types can't be tainted (except sleep & custom taints), neither can bool.
-        // isInt()/isString() already require every atomic member to match, so unions of
-        // literals such as int(0)|int(1) or ''|'1' (e.g. produced by casting a bool) are
-        // handled too; isFloat()/isBool() carry their own single-type checks.
-        if ($this->isInt() || $this->isFloat()) {
+        // a value has a taint only if every type it can have holds it
+        $taints_to_remove = TaintKind::ALL_INPUT;
+        foreach ($this->types as $atomic) {
+            $taints_to_remove &= self::getAtomicTaintsToRemove($atomic);
+            if ($taints_to_remove === 0) {
+                break;
+            }
+        }
+
+        return $taints_to_remove;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getAtomicTaintsToRemove(Atomic $atomic): int
+    {
+        // a value the code wrote, or null, cannot hold what the client sends
+        if ($atomic instanceof TLiteralString
+            || $atomic instanceof TNonspecificLiteralString
+            || $atomic instanceof TNull
+        ) {
+            return TaintKind::ALL_INPUT;
+        }
+
+        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        if ($atomic instanceof TInt || $atomic instanceof TFloat) {
             return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
         }
-        if ($this->isBool()) {
+
+        if ($atomic instanceof TBool) {
             return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
         }
+
         // a plain string can't carry a NoSQL query (only arrays/objects can),
         // so casting user input to string escapes the nosql taint
-        if ($this->isString()) {
+        if ($atomic instanceof TString) {
             return TaintKind::ARRAY_ONLY;
         }
+
+        // neither can any other scalar, such as scalar, array-key or numeric
+        if ($atomic instanceof Scalar) {
+            return TaintKind::ARRAY_ONLY;
+        }
+
+        // an array holds what its keys and its values can hold: the keys of an array shape are written by the code
+        if ($atomic instanceof TKeyedArray) {
+            $taints_to_remove = TaintKind::ALL_INPUT;
+            foreach ($atomic->properties as $property) {
+                $taints_to_remove &= $property->getTaintsToRemove();
+            }
+
+            if ($atomic->fallback_params !== null) {
+                $taints_to_remove &= self::getArrayKeyTaintsToRemove($atomic->fallback_params[0])
+                    & $atomic->fallback_params[1]->getTaintsToRemove();
+            }
+
+            return $taints_to_remove;
+        }
+
+        if ($atomic instanceof TArray) {
+            return self::getArrayKeyTaintsToRemove($atomic->type_params[0])
+                & $atomic->type_params[1]->getTaintsToRemove();
+        }
+
         return 0;
+    }
+
+    /**
+     * Unlike a string value, a string key can carry a NoSQL query operator.
+     *
+     * @psalm-pure
+     */
+    private static function getArrayKeyTaintsToRemove(Union $key_type): int
+    {
+        $taints_to_remove = TaintKind::ALL_INPUT;
+        foreach ($key_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralString || $atomic instanceof TNever) {
+                continue;
+            }
+
+            if (!$atomic instanceof TInt) {
+                return 0;
+            }
+
+            $taints_to_remove &= TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+        }
+
+        return $taints_to_remove;
     }
     #[Override]
     public function visit(TypeVisitor $visitor): bool

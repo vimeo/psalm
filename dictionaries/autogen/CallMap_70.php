@@ -2468,7 +2468,7 @@ return array (
   'co::create' => 
   array (
     0 => 'mixed',
-    'func' => 'impure-callable',
+    'func' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'co::defer' => 
@@ -5267,8 +5267,8 @@ return array (
   'couchbase\\bucket::settranscoder' => 
   array (
     0 => 'mixed',
-    'encoder' => 'impure-callable',
-    'decoder' => 'impure-callable',
+    'encoder' => 'callable[impure]',
+    'decoder' => 'callable[impure]',
   ),
   'couchbase\\bucket::viewindexes' => 
   array (
@@ -6397,7 +6397,7 @@ return array (
   'couchbase\\getallreplicasoptions::decoder' => 
   array (
     0 => 'Couchbase\\GetAllReplicasOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\getallreplicasoptions::timeout' => 
   array (
@@ -6432,7 +6432,7 @@ return array (
   'couchbase\\getandlockoptions::decoder' => 
   array (
     0 => 'Couchbase\\GetAndLockOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\getandlockoptions::timeout' => 
   array (
@@ -6442,7 +6442,7 @@ return array (
   'couchbase\\getandtouchoptions::decoder' => 
   array (
     0 => 'Couchbase\\GetAndTouchOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\getandtouchoptions::timeout' => 
   array (
@@ -6452,7 +6452,7 @@ return array (
   'couchbase\\getanyreplicaoptions::decoder' => 
   array (
     0 => 'Couchbase\\GetAnyReplicaOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\getanyreplicaoptions::timeout' => 
   array (
@@ -6462,7 +6462,7 @@ return array (
   'couchbase\\getoptions::decoder' => 
   array (
     0 => 'Couchbase\\GetOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\getoptions::project' => 
   array (
@@ -6713,7 +6713,7 @@ return array (
   'couchbase\\insertoptions::encoder' => 
   array (
     0 => 'Couchbase\\InsertOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\insertoptions::expiry' => 
   array (
@@ -8411,7 +8411,7 @@ return array (
   'couchbase\\replaceoptions::encoder' => 
   array (
     0 => 'Couchbase\\ReplaceOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\replaceoptions::expiry' => 
   array (
@@ -9331,7 +9331,7 @@ return array (
   'couchbase\\upsertoptions::encoder' => 
   array (
     0 => 'Couchbase\\UpsertOptions',
-    'arg' => 'impure-callable',
+    'arg' => 'callable[impure]',
   ),
   'couchbase\\upsertoptions::expiry' => 
   array (
@@ -10627,7 +10627,7 @@ return array (
   'defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'define' => 
   array (
@@ -13350,7 +13350,7 @@ return array (
   'ds\\deque::apply' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\deque::capacity' => 
   array (
@@ -13376,7 +13376,7 @@ return array (
   'ds\\deque::filter' => 
   array (
     0 => 'Ds\\Sequence',
-    'callback=' => 'impure-callable|null',
+    'callback=' => 'callable[impure]|null',
   ),
   'ds\\deque::find' => 
   array (
@@ -13422,7 +13422,7 @@ return array (
   'ds\\deque::map' => 
   array (
     0 => 'Ds\\Sequence',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\deque::merge' => 
   array (
@@ -13462,7 +13462,7 @@ return array (
   'ds\\deque::reduce' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'initial=' => 'mixed',
   ),
   'ds\\deque::remove' => 
@@ -13502,12 +13502,12 @@ return array (
   'ds\\deque::sort' => 
   array (
     0 => 'mixed',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\deque::sorted' => 
   array (
     0 => 'Ds\\Sequence',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\deque::sum' => 
   array (
@@ -13535,7 +13535,7 @@ return array (
   'ds\\map::apply' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\map::capacity' => 
   array (
@@ -13561,7 +13561,7 @@ return array (
   'ds\\map::filter' => 
   array (
     0 => 'Ds\\Map',
-    'callback=' => 'impure-callable|null',
+    'callback=' => 'callable[impure]|null',
   ),
   'ds\\map::first' => 
   array (
@@ -13607,12 +13607,12 @@ return array (
   'ds\\map::ksort' => 
   array (
     0 => 'mixed',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\map::ksorted' => 
   array (
     0 => 'Ds\\Map',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\map::last' => 
   array (
@@ -13621,7 +13621,7 @@ return array (
   'ds\\map::map' => 
   array (
     0 => 'Ds\\Map',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\map::merge' => 
   array (
@@ -13667,7 +13667,7 @@ return array (
   'ds\\map::reduce' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'initial=' => 'mixed',
   ),
   'ds\\map::remove' => 
@@ -13698,12 +13698,12 @@ return array (
   'ds\\map::sort' => 
   array (
     0 => 'mixed',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\map::sorted' => 
   array (
     0 => 'Ds\\Map',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\map::sum' => 
   array (
@@ -13920,7 +13920,7 @@ return array (
   'ds\\set::filter' => 
   array (
     0 => 'Ds\\Set',
-    'predicate=' => 'impure-callable|null',
+    'predicate=' => 'callable[impure]|null',
   ),
   'ds\\set::first' => 
   array (
@@ -13960,7 +13960,7 @@ return array (
   'ds\\set::map' => 
   array (
     0 => 'Ds\\Set',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\set::merge' => 
   array (
@@ -13991,7 +13991,7 @@ return array (
   'ds\\set::reduce' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'initial=' => 'mixed',
   ),
   'ds\\set::remove' => 
@@ -14016,12 +14016,12 @@ return array (
   'ds\\set::sort' => 
   array (
     0 => 'mixed',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\set::sorted' => 
   array (
     0 => 'Ds\\Set',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\set::sum' => 
   array (
@@ -14130,7 +14130,7 @@ return array (
   'ds\\vector::apply' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\vector::capacity' => 
   array (
@@ -14156,7 +14156,7 @@ return array (
   'ds\\vector::filter' => 
   array (
     0 => 'Ds\\Sequence',
-    'callback=' => 'impure-callable|null',
+    'callback=' => 'callable[impure]|null',
   ),
   'ds\\vector::find' => 
   array (
@@ -14202,7 +14202,7 @@ return array (
   'ds\\vector::map' => 
   array (
     0 => 'Ds\\Sequence',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'ds\\vector::merge' => 
   array (
@@ -14242,7 +14242,7 @@ return array (
   'ds\\vector::reduce' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'initial=' => 'mixed',
   ),
   'ds\\vector::remove' => 
@@ -14282,12 +14282,12 @@ return array (
   'ds\\vector::sort' => 
   array (
     0 => 'mixed',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\vector::sorted' => 
   array (
     0 => 'Ds\\Sequence',
-    'comparator=' => 'impure-callable|null',
+    'comparator=' => 'callable[impure]|null',
   ),
   'ds\\vector::sum' => 
   array (
@@ -15794,7 +15794,7 @@ return array (
   'evloop::check' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'data=' => 'mixed',
     'priority=' => 'int',
   ),
@@ -15818,14 +15818,14 @@ return array (
   'evloop::embed' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::fork' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'data=' => 'mixed',
     'priority=' => 'int',
   ),
@@ -15873,7 +15873,7 @@ return array (
   'evloop::prepare' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'data=' => 'mixed',
     'priority=' => 'int',
   ),
@@ -17968,7 +17968,7 @@ return array (
   'go' => 
   array (
     0 => 'mixed',
-    'func' => 'impure-callable',
+    'func' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'grapheme_extract' => 
@@ -40510,7 +40510,7 @@ return array (
   'swoole\\client::enablessl' => 
   array (
     0 => 'mixed',
-    'callback=' => 'impure-callable',
+    'callback=' => 'callable[impure]',
   ),
   'swoole\\client::getpeercert' => 
   array (
@@ -40532,7 +40532,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\client::pause' => 
   array (
@@ -40651,7 +40651,7 @@ return array (
   'swoole\\coroutine::create' => 
   array (
     0 => 'mixed',
-    'func' => 'impure-callable',
+    'func' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole\\coroutine::defer' => 
@@ -42689,20 +42689,20 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole\\event::cycle' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable|null',
+    'callback' => 'callable[impure]|null',
     'before=' => 'mixed',
   ),
   'swoole\\event::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\event::del' => 
   array (
@@ -42727,8 +42727,8 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback=' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback=' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole\\event::wait' => 
@@ -42968,7 +42968,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole\\http\\server::bind' => 
@@ -43008,7 +43008,7 @@ return array (
   'swoole\\http\\server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\http\\server::exist' => 
   array (
@@ -43062,7 +43062,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\http\\server::pause' => 
   array (
@@ -43146,7 +43146,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole\\http\\server::taskco' => 
   array (
@@ -43171,7 +43171,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\lock::__construct' => 
   array (
@@ -43215,7 +43215,7 @@ return array (
   'swoole\\process::__construct' => 
   array (
     0 => 'void',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'redirect_stdin_and_stdout=' => 'mixed',
     'pipe_type=' => 'mixed',
     'enable_coroutine=' => 'mixed',
@@ -43352,7 +43352,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\process\\pool::shutdown' => 
   array (
@@ -43395,7 +43395,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole\\redis\\server::bind' => 
@@ -43435,7 +43435,7 @@ return array (
   'swoole\\redis\\server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\redis\\server::exist' => 
   array (
@@ -43500,7 +43500,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\redis\\server::pause' => 
   array (
@@ -43566,7 +43566,7 @@ return array (
   array (
     0 => 'mixed',
     'command' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\redis\\server::shutdown' => 
   array (
@@ -43590,7 +43590,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole\\redis\\server::taskco' => 
   array (
@@ -43615,7 +43615,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\runtime::enablecoroutine' => 
   array (
@@ -43667,7 +43667,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole\\server::bind' => 
@@ -43707,7 +43707,7 @@ return array (
   'swoole\\server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\server::exist' => 
   array (
@@ -43761,7 +43761,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\server::pause' => 
   array (
@@ -43845,7 +43845,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole\\server::taskco' => 
   array (
@@ -43870,7 +43870,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\server\\port::__construct' => 
   array (
@@ -43889,7 +43889,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\server\\port::set' => 
   array (
@@ -44041,7 +44041,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole\\timer::clear' => 
@@ -44058,7 +44058,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole\\websocket\\closeframe::__tostring' => 
@@ -44123,7 +44123,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole\\websocket\\server::bind' => 
@@ -44163,7 +44163,7 @@ return array (
   'swoole\\websocket\\server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\websocket\\server::disconnect' => 
   array (
@@ -44229,7 +44229,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\websocket\\server::pack' => 
   array (
@@ -44329,7 +44329,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole\\websocket\\server::taskco' => 
   array (
@@ -44354,7 +44354,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole\\websocket\\server::unpack' => 
   array (
@@ -44522,7 +44522,7 @@ return array (
   'swoole_client::enablessl' => 
   array (
     0 => 'mixed',
-    'callback=' => 'impure-callable',
+    'callback=' => 'callable[impure]',
   ),
   'swoole_client::getpeercert' => 
   array (
@@ -44544,7 +44544,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_client::pause' => 
   array (
@@ -44671,13 +44671,13 @@ return array (
   'swoole_coroutine_create' => 
   array (
     0 => 'mixed',
-    'func' => 'impure-callable',
+    'func' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole_coroutine_defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_coroutine_exec' => 
   array (
@@ -44696,20 +44696,20 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole_event::cycle' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable|null',
+    'callback' => 'callable[impure]|null',
     'before=' => 'mixed',
   ),
   'swoole_event::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_event::del' => 
   array (
@@ -44734,8 +44734,8 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback=' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback=' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole_event::wait' => 
@@ -44752,20 +44752,20 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole_event_cycle' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable|null',
+    'callback' => 'callable[impure]|null',
     'before=' => 'mixed',
   ),
   'swoole_event_defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_event_del' => 
   array (
@@ -44790,8 +44790,8 @@ return array (
   array (
     0 => 'mixed',
     'fd' => 'mixed',
-    'read_callback=' => 'impure-callable|null',
-    'write_callback=' => 'impure-callable|null',
+    'read_callback=' => 'callable[impure]|null',
+    'write_callback=' => 'callable[impure]|null',
     'events=' => 'mixed',
   ),
   'swoole_event_wait' => 
@@ -44995,7 +44995,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole_http_server::bind' => 
@@ -45035,7 +45035,7 @@ return array (
   'swoole_http_server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_http_server::exist' => 
   array (
@@ -45089,7 +45089,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_http_server::pause' => 
   array (
@@ -45173,7 +45173,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole_http_server::taskco' => 
   array (
@@ -45198,7 +45198,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_internal_call_user_shutdown_begin' => 
   array (
@@ -45250,7 +45250,7 @@ return array (
   'swoole_process::__construct' => 
   array (
     0 => 'void',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'redirect_stdin_and_stdout=' => 'mixed',
     'pipe_type=' => 'mixed',
     'enable_coroutine=' => 'mixed',
@@ -45387,7 +45387,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_process_pool::shutdown' => 
   array (
@@ -45430,7 +45430,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole_redis_server::bind' => 
@@ -45470,7 +45470,7 @@ return array (
   'swoole_redis_server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_redis_server::exist' => 
   array (
@@ -45535,7 +45535,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_redis_server::pause' => 
   array (
@@ -45601,7 +45601,7 @@ return array (
   array (
     0 => 'mixed',
     'command' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_redis_server::shutdown' => 
   array (
@@ -45625,7 +45625,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole_redis_server::taskco' => 
   array (
@@ -45650,7 +45650,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_runtime::enablecoroutine' => 
   array (
@@ -45710,7 +45710,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole_server::bind' => 
@@ -45750,7 +45750,7 @@ return array (
   'swoole_server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_server::exist' => 
   array (
@@ -45804,7 +45804,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_server::pause' => 
   array (
@@ -45888,7 +45888,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole_server::taskco' => 
   array (
@@ -45913,7 +45913,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_server_port::__construct' => 
   array (
@@ -45932,7 +45932,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_server_port::set' => 
   array (
@@ -46095,7 +46095,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole_timer::clear' => 
@@ -46112,14 +46112,14 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole_timer_after' => 
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole_timer_clear' => 
@@ -46136,7 +46136,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     '...params=' => 'mixed',
   ),
   'swoole_version' => 
@@ -46205,7 +46205,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
     'param=' => 'mixed',
   ),
   'swoole_websocket_server::bind' => 
@@ -46245,7 +46245,7 @@ return array (
   'swoole_websocket_server::defer' => 
   array (
     0 => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_websocket_server::disconnect' => 
   array (
@@ -46311,7 +46311,7 @@ return array (
   array (
     0 => 'mixed',
     'event_name' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_websocket_server::pack' => 
   array (
@@ -46411,7 +46411,7 @@ return array (
     0 => 'mixed',
     'data' => 'mixed',
     'worker_id=' => 'mixed',
-    'finish_callback=' => 'impure-callable|null',
+    'finish_callback=' => 'callable[impure]|null',
   ),
   'swoole_websocket_server::taskco' => 
   array (
@@ -46436,7 +46436,7 @@ return array (
   array (
     0 => 'mixed',
     'ms' => 'mixed',
-    'callback' => 'impure-callable',
+    'callback' => 'callable[impure]',
   ),
   'swoole_websocket_server::unpack' => 
   array (

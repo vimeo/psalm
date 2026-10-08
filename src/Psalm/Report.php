@@ -9,6 +9,7 @@ use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function htmlspecialchars;
+use function strtoupper;
 
 use const ENT_QUOTES;
 use const ENT_XML1;
@@ -79,6 +80,23 @@ abstract class Report
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
         $this->in_ci = $report_options->in_ci;
+    }
+
+    /**
+     * The severity shown at the start of an issue in human-readable reports:
+     * SECURITY for security issues, ERROR for other errors, and INFO otherwise.
+     *
+     * @psalm-mutation-free
+     */
+    protected function getSeverityLabel(IssueData $issue_data): string
+    {
+        if ($issue_data->severity !== IssueData::SEVERITY_ERROR) {
+            return strtoupper($issue_data->severity);
+        }
+
+        $label = $issue_data->is_security ? 'SECURITY' : 'ERROR';
+
+        return $this->use_color ? "\e[0;31m" . $label . "\e[0m" : $label;
     }
 
     /**

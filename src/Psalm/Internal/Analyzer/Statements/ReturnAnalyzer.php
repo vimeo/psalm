@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -222,8 +223,31 @@ final class ReturnAnalyzer
         $context->has_returned = true;
 
         if ($source instanceof FunctionLikeAnalyzer
-            && !($source->getSource() instanceof TraitAnalyzer)
+            && $source->getSource() instanceof TraitAnalyzer
         ) {
+            // the body of a method of a trait is analyzed as one of each class using it: what it returns is
+            // returned by the calls of the method on that class (see FunctionLikeAnalyzer::getBodyMethodId())
+            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
+
+            $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($stmt->expr && $storage->location) {
+                self::handleTaints(
+                    $statements_analyzer,
+                    $stmt,
+                    $source->getCorrectlyCasedMethodId($context->self),
+                    TypeExpander::expandUnion(
+                        $codebase,
+                        $stmt_type,
+                        $context->self,
+                        $context->self,
+                        $context->parent,
+                    ),
+                    $storage,
+                    $context,
+                );
+            }
+        } elseif ($source instanceof FunctionLikeAnalyzer) {
             $source->addReturnTypes($context);
 
             $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
@@ -249,6 +273,8 @@ final class ReturnAnalyzer
 
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
+            FunctionLikeAnalyzer::taintByRefParamsOut($codebase, $context);
+
             if ($stmt->expr && $storage->location) {
                 $inferred_type = TypeExpander::expandUnion(
                     $codebase,
@@ -266,6 +292,23 @@ final class ReturnAnalyzer
                     $storage,
                     $context,
                 );
+
+                if ($storage instanceof MethodStorage
+                    // the purity of the calls, telling which of them return `$this`, is only analyzed then
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                    && !MethodCallPurityAnalyzer::isReceiverThis($stmt->expr)
+                    && self::mustReturnThis($codebase, $storage, MethodIdentifier::wrap($cased_method_id))
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidReturnStatement(
+                            'The declared return type \'$this\' for ' . $cased_method_id
+                                . ' requires returning $this, but this may return another object',
+                            new CodeLocation($source, $stmt->expr),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
 
                 if ($storage instanceof MethodStorage && $context->self) {
                     $self_class = $context->self;
@@ -601,6 +644,32 @@ final class ReturnAnalyzer
         }
     }
 
+    /**
+     * Callers treat what a method returning `$this` gives back as their receiver, so the method,
+     * and every override of it, must return nothing else.
+     *
+     * @psalm-mutation-free
+     */
+    private static function mustReturnThis(
+        Codebase $codebase,
+        MethodStorage $storage,
+        MethodIdentifier $method_id,
+    ): bool {
+        if ($storage->returns_this) {
+            return true;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if ($codebase->methods->getStorage($overridden_method_id)->returns_this) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function handleTaints(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
@@ -632,13 +701,18 @@ final class ReturnAnalyzer
         $storage->removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
         if ($inferred_type->parent_nodes) {
+            // what the returned value cannot hold, given its type or the native return type PHP enforces
+            $removed_taints = $storage->removed_taints
+                | $inferred_type->getTaintsToRemove()
+                | ($storage->signature_return_type?->getTaintsToRemove() ?? 0);
+
             foreach ($inferred_type->parent_nodes as $parent_node) {
                 $statements_analyzer->taint_flow_graph->addPath(
                     $parent_node,
                     $method_node,
                     'return',
                     $storage->added_taints,
-                    $storage->removed_taints,
+                    $removed_taints,
                 );
             }
         }

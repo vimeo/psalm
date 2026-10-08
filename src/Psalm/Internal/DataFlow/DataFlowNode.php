@@ -15,6 +15,8 @@ use Stringable;
 
 use function count;
 use function ltrim;
+use function str_starts_with;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -47,6 +49,11 @@ use function substr;
 final class DataFlowNode implements Stringable
 {
     /**
+     * The prefix of the ids of the nodes of getForNarrowingToScalar()
+     */
+    private const NARROWED_TO_SCALAR = 'narrowed to a scalar: ';
+
+    /**
      * @psalm-mutation-free
      */
     private function __construct(
@@ -60,9 +67,10 @@ final class DataFlowNode implements Stringable
         /** @var list<string> */
         public readonly array $path_types = [],
         /**
-         * @var array<string, array<string, string>>
+         * Taint resolution only: the specialized call entry (see TaintFlowGraph) whose
+         * body the flow is currently in, or null outside of any specialized call.
          */
-        public readonly array $specialized_calls = [],
+        public readonly ?int $context = null,
     ) {
     }
 
@@ -100,6 +108,16 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The key identifying a call site among the specializations of a callee's taint nodes.
+     *
+     * @psalm-pure
+     */
+    public static function getSpecializationKey(CodeLocation $specialization_location): string
+    {
+        return strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function getForPropertyFetch(
@@ -107,10 +125,21 @@ final class DataFlowNode implements Stringable
         ?CodeLocation $specialization_location = null,
     ): self {
         $specialization_key = $specialization_location
-            ? strtolower($specialization_location->file_name) . ':' . $specialization_location->raw_file_start
+            ? self::getSpecializationKey($specialization_location)
             : null;
 
         return self::make($property_id, $property_id, null, $specialization_key);
+    }
+
+    /**
+     * The values a property gets through its class (as opposed to the node of the property, which also gets those
+     * set through the subclasses), which the objects of its subclasses may have too.
+     *
+     * @psalm-pure
+     */
+    public static function getForInheritedProperty(string $property_id): self
+    {
+        return self::make($property_id . ' inherited', $property_id, null);
     }
 
     /**
@@ -129,7 +158,7 @@ final class DataFlowNode implements Stringable
         // specialization key and is thereby folded into the id: id -> location is a pure function
         // (see the class invariant). There is deliberately no independent location parameter -- a
         // caller cannot give the same id two different locations.
-        $specialization_key = strtolower($code_location->file_name) . ':' . $code_location->raw_file_start;
+        $specialization_key = self::getSpecializationKey($code_location);
 
         return self::make($taint_id, $taint_id, $code_location, $specialization_key, $taints);
     }
@@ -160,12 +189,9 @@ final class DataFlowNode implements Stringable
 
         $label = $kind . ' ' . $cased_function_id . '#' . ($argument_offset + 1);
 
-        $specialization_key = null;
-
-        if ($specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
-        }
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
 
         return self::make($arg_id, $label, $specialization_location, $specialization_key, $taints);
     }
@@ -185,8 +211,7 @@ final class DataFlowNode implements Stringable
         ?string $specialization_key = null,
     ): self {
         if ($specialization_key === null && $specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
+            $specialization_key = self::getSpecializationKey($specialization_location);
         }
 
         return self::make(
@@ -217,12 +242,9 @@ final class DataFlowNode implements Stringable
 
         $label = $cased_method_id . '#' . ($argument_offset + 1);
 
-        $specialization_key = null;
-
-        if ($specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
-        }
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
 
         $param = self::getParameter($storage, $argument_offset);
 
@@ -232,6 +254,87 @@ final class DataFlowNode implements Stringable
             $param?->signature_type_location ?: $param?->type_location ?: $param?->location,
             $specialization_key,
             $param?->sinks ?? 0,
+        );
+    }
+
+    /**
+     * The value a by-reference parameter is left with when the function-like returns: what the
+     * variable passed to it holds after the call.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForMethodArgumentOut(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' out',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like gets calling one of its callable parameters: what the callables passed to
+     * that parameter return.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamReturn(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' call',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' call',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like passes as argument $callable_argument_offset calling one of its callable
+     * parameters: what the parameters of the callables passed to that parameter are given.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamArgument(
+        string $cased_method_id,
+        int $argument_offset,
+        int $callable_argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        $suffix = '#' . ($argument_offset + 1) . ' call#' . ($callable_argument_offset + 1);
+
+        return self::make(
+            strtolower($cased_method_id) . $suffix,
+            $cased_method_id . $suffix,
+            $param?->location,
+            $specialization_key,
         );
     }
 
@@ -319,6 +422,61 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The value of $node narrowed to a type that cannot carry taints, e.g. a literal string.
+     *
+     * Data flows from $node to it, but no taint does, so that the narrowed value takes none: see
+     * Reconciler. It stands for $node when types compare their parent nodes (see
+     * getNarrowedNodeId()).
+     *
+     * @psalm-pure
+     */
+    public static function getForNarrowingToScalar(self $node): self
+    {
+        // $node's location is a function of its id, so of this id too: see the class invariant
+        return self::make(self::NARROWED_TO_SCALAR . $node->id, $node->label, $node->code_location);
+    }
+
+    /**
+     * The id of the node this one narrows if it is one of getForNarrowingToScalar(), else null.
+     *
+     * @psalm-mutation-free
+     */
+    public function getNarrowedNodeId(): ?string
+    {
+        return str_starts_with($this->id, self::NARROWED_TO_SCALAR)
+            ? substr($this->id, strlen(self::NARROWED_TO_SCALAR))
+            : null;
+    }
+
+    /**
+     * The union of $parent_nodes and $other_parent_nodes, without the nodes narrowing others in
+     * it (see getForNarrowingToScalar()): those only stand for the nodes they narrow.
+     *
+     * @param array<string, self> $parent_nodes
+     * @param array<string, self> $other_parent_nodes
+     * @return array<string, self>
+     * @psalm-pure
+     */
+    public static function combineParentNodes(array $parent_nodes, array $other_parent_nodes): array
+    {
+        if (!$parent_nodes || !$other_parent_nodes) {
+            return $parent_nodes + $other_parent_nodes;
+        }
+
+        $parent_nodes += $other_parent_nodes;
+
+        foreach ($parent_nodes as $parent_node_id => $parent_node) {
+            $narrowed_node_id = $parent_node->getNarrowedNodeId();
+
+            if ($narrowed_node_id !== null && isset($parent_nodes[$narrowed_node_id])) {
+                unset($parent_nodes[$parent_node_id]);
+            }
+        }
+
+        return $parent_nodes;
+    }
+
+    /**
      * @psalm-pure
      */
     public static function getForAssignment(
@@ -347,8 +505,7 @@ final class DataFlowNode implements Stringable
         ?string $specialization_key = null,
     ): self {
         if ($specialization_key === null && $specialization_location) {
-            $specialization_key = strtolower($specialization_location->file_name)
-                . ':' . $specialization_location->raw_file_start;
+            $specialization_key = self::getSpecializationKey($specialization_location);
         }
 
         return self::make(
@@ -357,6 +514,21 @@ final class DataFlowNode implements Stringable
             self::getReturnLocation($storage),
             $specialization_key,
             $taints,
+        );
+    }
+
+    /**
+     * What is sent to the generators a function-like returns (see Generator::send()): the value of its yield
+     * expressions.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForGeneratorSend(string $cased_method_id, FunctionLikeStorage $storage): self
+    {
+        return self::make(
+            strtolower($cased_method_id) . ' sent',
+            'what is sent to ' . $cased_method_id,
+            $storage->location,
         );
     }
 
@@ -433,7 +605,7 @@ final class DataFlowNode implements Stringable
             $taints,
             $this->taintSource,
             $this->path_types,
-            $this->specialized_calls,
+            $this->context,
         );
     }
 
@@ -443,14 +615,13 @@ final class DataFlowNode implements Stringable
      * re-specializes a node it already holds. The location is copied from $this, so it can never
      * diverge from the id -- see the class invariant.
      *
-     * @param array<string, array<string, string>> $specialized_calls
      * @psalm-mutation-free
      */
     public function withSpecialization(
         string $id,
         ?string $unspecialized_id,
         ?string $specialization_key,
-        array $specialized_calls,
+        ?int $context,
     ): self {
         return new self(
             $id,
@@ -461,7 +632,7 @@ final class DataFlowNode implements Stringable
             $this->taints,
             $this->taintSource,
             $this->path_types,
-            $specialized_calls,
+            $context,
         );
     }
 
@@ -472,14 +643,13 @@ final class DataFlowNode implements Stringable
      * invariant.
      *
      * @param list<string> $path_types
-     * @param array<string, array<string, string>> $specialized_calls
      * @psalm-mutation-free
      */
     public function withFlow(
         int $taints,
         self $taintSource,
         array $path_types,
-        array $specialized_calls,
+        ?int $context,
     ): self {
         return new self(
             $this->id,
@@ -490,7 +660,7 @@ final class DataFlowNode implements Stringable
             $taints,
             $taintSource,
             $path_types,
-            $specialized_calls,
+            $context,
         );
     }
 

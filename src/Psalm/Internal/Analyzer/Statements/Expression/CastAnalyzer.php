@@ -6,12 +6,15 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -27,6 +30,7 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -35,6 +39,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -158,6 +163,7 @@ final class CastAnalyzer
                     $stmt,
                     $maybe_type->parent_nodes ?? [],
                     'bool',
+                    $maybe_type,
                 );
             }
 
@@ -228,8 +234,7 @@ final class CastAnalyzer
                 $type = Type::getObject();
             }
 
-            if ($statements_analyzer->variable_use_graph
-            ) {
+            if ($statements_analyzer->data_flow_graph) {
                 $type = $type->setParentNodes($stmt_expr_type->parent_nodes ?? []);
             }
 
@@ -527,6 +532,7 @@ final class CastAnalyzer
             $stmt,
             $parent_nodes,
             'int',
+            $stmt_type,
         );
     }
 
@@ -544,12 +550,6 @@ final class CastAnalyzer
         $castable_types = [];
 
         $atomic_types = $stmt_type->getAtomicTypes();
-
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -585,10 +585,9 @@ final class CastAnalyzer
             if ($atomic_type instanceof TString) {
                 if ($atomic_type instanceof TLiteralString) {
                     $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNumericString) {
-                    $castable_types[] = new TFloat();
                 } else {
-                    // any normal string is technically $valid_floats[] = new TLiteralFloat(0.0);
+                    // a numeric string can be any float, and any other string is technically
+                    // $valid_floats[] = new TLiteralFloat(0.0);
                     // however we cannot be certain that it's not inferred, therefore less strict
                     $castable_types[] = new TFloat();
                 }
@@ -624,13 +623,7 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNamedObject) {
-                $intersection_types = [$atomic_type];
-
-                if ($atomic_type->extra_types) {
-                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
-                }
-
-                foreach ($intersection_types as $intersection_type) {
+                foreach ([$atomic_type, ...$atomic_type->extra_types] as $intersection_type) {
                     if (!$intersection_type instanceof TNamedObject) {
                         continue;
                     }
@@ -724,8 +717,9 @@ final class CastAnalyzer
             $statements_analyzer,
             $float_type,
             $stmt,
-            $parent_nodes,
+            $stmt_type->parent_nodes,
             'float',
+            $stmt_type,
         );
     }
 
@@ -744,11 +738,9 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $statements_analyzer->data_flow_graph
+            ? self::getStringConversionParentNodes($statements_analyzer, $context, $stmt, $stmt_type)
+            : [];
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -866,22 +858,6 @@ final class CastAnalyzer
                                 );
                             }
 
-                            MethodCallReturnTypeFetcher::taintMethodCallResult(
-                                $statements_analyzer,
-                                $return_type,
-                                $stmt,
-                                $stmt,
-                                [],
-                                $intersection_method_id,
-                                $declaring_method_id,
-                                $intersection_type->value . '::__toString',
-                                $context,
-                            );
-
-                            if ($statements_analyzer->data_flow_graph) {
-                                $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
-                            }
-
                             $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
 
                             continue 2;
@@ -960,7 +936,199 @@ final class CastAnalyzer
             $stmt,
             $parent_nodes,
             'string',
+            $stmt_type,
         );
+    }
+
+    /**
+     * The parent nodes of the string $expr, a value of $type, converts to. An object of a class with __toString
+     * converts to what its __toString returns: when the value can only be such objects, and what their __toString
+     * returns carries all their taints (see returnsTheTaintsOfTheObject()), their own taints only reach the string
+     * through __toString, so what it does to them (e.g. escaping them) applies.
+     *
+     * @return array<string, DataFlowNode>
+     */
+    public static function getStringConversionParentNodes(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
+        Union $type,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $to_string_parent_nodes = [];
+        $has_to_string = false;
+        $converted_atomics = 0;
+        $to_string_atomics = 0;
+        $escaping_atomics = 0;
+        $escaped_taints = null;
+
+        $atomic_types = $type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+
+                continue;
+            }
+
+            $converted_atomics++;
+
+            $to_string_id = self::getToStringMethodId($codebase, $atomic_type);
+
+            if ($to_string_id === null) {
+                continue;
+            }
+
+            $has_to_string = true;
+
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($to_string_id);
+
+            $to_string_parent_nodes = array_merge(
+                $to_string_parent_nodes,
+                self::taintToStringResult($statements_analyzer, $context, $expr, $to_string_id, $declaring_method_id),
+            );
+
+            $var_id = ExpressionIdentifier::getExtendedVarId(
+                $expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if (self::returnsTheTaintsOfTheObject($codebase, $context, $declaring_method_id, $var_id)) {
+                $to_string_atomics++;
+
+                continue;
+            }
+
+            $removed_taints = self::getDeclaredEscapes($codebase, $declaring_method_id);
+
+            if ($removed_taints !== 0) {
+                $escaping_atomics++;
+                $escaped_taints = $escaped_taints === null ? $removed_taints : $escaped_taints & $removed_taints;
+            }
+        }
+
+        if (!$has_to_string) {
+            return $type->parent_nodes;
+        }
+
+        if ($to_string_atomics === $converted_atomics) {
+            return self::getToStringConversionParentNodes(
+                $statements_analyzer,
+                $expr,
+                $type->parent_nodes,
+                $to_string_parent_nodes,
+            );
+        }
+
+        if ($escaped_taints !== null && $to_string_atomics + $escaping_atomics === $converted_atomics) {
+            return array_merge(
+                $to_string_parent_nodes,
+                self::getEscapedObjectParentNodes($statements_analyzer, $expr, $type->parent_nodes, $escaped_taints),
+            );
+        }
+
+        return array_merge($to_string_parent_nodes, $type->parent_nodes);
+    }
+
+    /**
+     * The __toString of an object type (of one of the types of an intersection), if it has one
+     */
+    private static function getToStringMethodId(Codebase $codebase, Atomic $atomic_type): ?MethodIdentifier
+    {
+        if (!$atomic_type instanceof TNamedObject) {
+            return null;
+        }
+
+        foreach ([$atomic_type, ...array_values($atomic_type->extra_types)] as $intersection_type) {
+            if (!$intersection_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $method_id = new MethodIdentifier($intersection_type->value, '__tostring');
+
+            if ($codebase->methods->methodExists($codebase, $method_id)) {
+                return $method_id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether what the __toString of an object returns carries all the taints of the object: its body must be analyzed
+     * (what a method of a file that is only scanned, a dependency or a stub without flows, returns carries none), and
+     * the object of a class tracked per instance (@psalm-taint-specialize) must be held in a variable, the receivers
+     * whose taints a specialized call gets (see MethodCallReturnTypeFetcher::taintMethodCallResult())
+     *
+     * @psalm-mutation-free
+     */
+    private static function returnsTheTaintsOfTheObject(
+        Codebase $codebase,
+        Context $context,
+        ?MethodIdentifier $to_string_id,
+        ?string $var_id,
+    ): bool {
+        if ($to_string_id === null) {
+            return false;
+        }
+
+        $to_string_storage = $codebase->methods->getStorage($to_string_id);
+
+        if ($to_string_storage->location === null
+            || !$codebase->config->isInProjectDirs($to_string_storage->location->file_path)
+        ) {
+            return false;
+        }
+
+        return !$to_string_storage->specialize_call
+            || ($var_id !== null && isset($context->vars_in_scope[$var_id]));
+    }
+
+    /**
+     * The parent nodes of the string conversion of objects whose __toString returns all their taints: in the taint
+     * graph only what __toString returns, as the objects' own taints would bypass what __toString does to them; in
+     * the variable use graph the objects too, as the conversion uses them
+     *
+     * @param array<string, DataFlowNode> $object_parent_nodes
+     * @param array<string, DataFlowNode> $to_string_parent_nodes
+     * @return array<string, DataFlowNode>
+     */
+    private static function getToStringConversionParentNodes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        array $object_parent_nodes,
+        array $to_string_parent_nodes,
+    ): array {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($graph instanceof TaintFlowGraph) {
+            return $to_string_parent_nodes;
+        }
+
+        if (!$graph instanceof CombinedFlowGraph || $object_parent_nodes === []) {
+            return array_merge($to_string_parent_nodes, $object_parent_nodes);
+        }
+
+        $conversion_node = DataFlowNode::getForAssignment(
+            'string conversion',
+            new CodeLocation($statements_analyzer->getSource(), $expr),
+        );
+
+        $graph->addNode($conversion_node);
+
+        foreach ($to_string_parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $conversion_node, '=');
+        }
+
+        foreach ($object_parent_nodes as $parent_node) {
+            $graph->variable_use_graph->addPath($parent_node, $conversion_node, '=');
+        }
+
+        return [$conversion_node->id => $conversion_node];
     }
 
     /**
@@ -981,6 +1149,7 @@ final class CastAnalyzer
         PhpParser\Node\Expr $stmt,
         array $parent_nodes,
         string $cast_type,
+        ?Union $cast_value_type,
     ): Union {
         if (!$graph = $statements_analyzer->data_flow_graph) {
             return $result_type;
@@ -999,7 +1168,7 @@ final class CastAnalyzer
                 $graph->addPath(
                     $parent_node,
                     $cast_node,
-                    $cast_type . '-cast',
+                    $cast_type . '-cast' . self::getArrayConversionSuffix($cast_value_type),
                     0,
                     $removed_taints,
                 );
@@ -1009,6 +1178,34 @@ final class CastAnalyzer
         }
 
         return $result_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * The suffix of the type of an edge converting a value of type $type to a scalar when that value may be an
+     * array: converted, an array becomes "Array" (or 0/1), so the conversion takes no taint the flow put in an
+     * element of it, or in a key (see TaintFlowGraph::convertsTheArrayHoldingTheTaint()). Without its type, the value
+     * may be an array.
+     *
+     * @psalm-pure
+     */
+    public static function getArrayConversionSuffix(?Union $type): string
+    {
+        if ($type === null) {
+            return TaintFlowGraph::ARRAY_CONVERSION_SUFFIX;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TArray
+                || $atomic instanceof TKeyedArray
+                || $atomic instanceof TMixed
+                || $atomic instanceof TIterable
+                || ($atomic instanceof TTemplateParam && self::getArrayConversionSuffix($atomic->as) !== '')
+            ) {
+                return TaintFlowGraph::ARRAY_CONVERSION_SUFFIX;
+            }
+        }
+
+        return '';
     }
 
     private static function checkExprGeneralUse(
@@ -1070,5 +1267,81 @@ final class CastAnalyzer
 
 
         IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
+    }
+
+    /**
+     * The parent nodes of what the __toString $expr converts through returns
+     *
+     * @return array<string, DataFlowNode>
+     */
+    private static function taintToStringResult(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $expr,
+        MethodIdentifier $to_string_id,
+        ?MethodIdentifier $declaring_method_id,
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+        $self_class = null;
+
+        $return_type = $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+
+        MethodCallReturnTypeFetcher::taintMethodCallResult(
+            $statements_analyzer,
+            $return_type,
+            $expr,
+            $expr,
+            [],
+            $to_string_id,
+            $declaring_method_id,
+            $to_string_id->fq_class_name . '::__toString',
+            $context,
+        );
+
+        return $return_type->parent_nodes;
+    }
+
+    /**
+     * The taints a __toString that isn't analyzed declares it escapes (`@psalm-taint-escape`)
+     *
+     * @psalm-mutation-free
+     */
+    private static function getDeclaredEscapes(Codebase $codebase, ?MethodIdentifier $to_string_id): int
+    {
+        return $to_string_id === null ? 0 : $codebase->methods->getStorage($to_string_id)->removed_taints;
+    }
+
+    /**
+     * The parent nodes of the string objects convert to through a __toString that isn't analyzed (a dependency, a
+     * stub) but declares the taints it escapes: their own taints, less those (only when every such __toString escapes
+     * them)
+     *
+     * @param array<string, DataFlowNode> $object_parent_nodes
+     * @return array<string, DataFlowNode>
+     */
+    private static function getEscapedObjectParentNodes(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        array $object_parent_nodes,
+        int $escaped_taints,
+    ): array {
+        $graph = $statements_analyzer->data_flow_graph;
+
+        if ($graph === null || $object_parent_nodes === []) {
+            return $object_parent_nodes;
+        }
+
+        $conversion_node = DataFlowNode::getForAssignment(
+            'escaping string conversion',
+            new CodeLocation($statements_analyzer->getSource(), $expr),
+        );
+
+        $graph->addNode($conversion_node);
+
+        foreach ($object_parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $conversion_node, '=', 0, $escaped_taints);
+        }
+
+        return [$conversion_node->id => $conversion_node];
     }
 }

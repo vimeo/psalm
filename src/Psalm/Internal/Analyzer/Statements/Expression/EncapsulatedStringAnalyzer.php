@@ -9,6 +9,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\InterpolatedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -43,6 +44,11 @@ final class EncapsulatedStringAnalyzer
 
         $literal_string = "";
 
+        // the literal strings the parts so far can start with (see ConcatAnalyzer::getLiteralPrefixes()), and whether
+        // they are all literals, so what the next part starts with follows them
+        $literal_prefixes = [''];
+        $literal_prefixes_extendable = true;
+
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
@@ -53,6 +59,10 @@ final class EncapsulatedStringAnalyzer
             if ($part instanceof InterpolatedStringPart) {
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
+                }
+                if ($literal_prefixes_extendable) {
+                    $literal_prefixes = ConcatAnalyzer::concatLiterals($literal_prefixes, [$part->value])
+                        ?? $literal_prefixes;
                 }
                 $non_empty = $non_empty || $part->value !== "";
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
@@ -110,6 +120,9 @@ final class EncapsulatedStringAnalyzer
                     }
 
                     if ($casted_part_type->parent_nodes) {
+                        // after the start of a URL fixing its server, the part can't choose it
+                        $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
+
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
                             $graph->addPath(
                                 $parent_node,
@@ -121,10 +134,27 @@ final class EncapsulatedStringAnalyzer
                         }
                     }
                 }
+
+                if ($literal_prefixes_extendable) {
+                    $extended_prefixes = $casted_part_type->allStringLiterals()
+                        ? ConcatAnalyzer::concatLiterals(
+                            $literal_prefixes,
+                            ConcatAnalyzer::getLiteralValues($casted_part_type),
+                        )
+                        : null;
+
+                    $literal_prefixes_extendable = $extended_prefixes !== null;
+                    $literal_prefixes = $extended_prefixes ?? $literal_prefixes;
+                }
             } else {
                 $all_literals = false;
                 $literal_string = null;
+                $literal_prefixes_extendable = false;
             }
+        }
+
+        if ($statements_analyzer->getDataFlowGraphWithSuppressed()) {
+            $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
         }
 
         if ($non_empty) {

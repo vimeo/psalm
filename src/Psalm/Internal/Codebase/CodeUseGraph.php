@@ -8,6 +8,7 @@ use Closure;
 use LogicException;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
@@ -180,6 +181,13 @@ final class CodeUseGraph
      * @var array<string, MutationInfo>
      */
     private array $mutation_info = [];
+
+    /**
+     * The levels resolved from $mutation_info, see {@see self::getMutationLevels()}.
+     *
+     * @var array<string, int>|null
+     */
+    private ?array $mutation_levels = null;
 
     /**
      * @psalm-mutation-free
@@ -372,7 +380,8 @@ final class CodeUseGraph
     /**
      * Whether a node is a root of the usage search: a root is always alive.
      *
-     * @param Closure(string): bool $is_external whether a node belongs to code outside of the project
+     * @param Closure[_](string): bool $is_external whether a node belongs to code outside of the project
+     * @psalm-pure
      */
     private static function isRoot(string $node_id, Closure $is_external): bool
     {
@@ -517,6 +526,7 @@ final class CodeUseGraph
         }
 
         $this->mutation_info = $other->mutation_info + $this->mutation_info;
+        $this->mutation_levels = null;
     }
 
     /**
@@ -531,6 +541,7 @@ final class CodeUseGraph
         $this->source_locations = [];
         $this->location_sources = [];
         $this->mutation_info = [];
+        $this->mutation_levels = null;
         $this->used = null;
         $this->file_nodes = null;
         $this->class_referencing_nodes = null;
@@ -547,6 +558,7 @@ final class CodeUseGraph
     public function addMutationInfo(string $node_id, array $info): void
     {
         $this->mutation_info[$node_id] = $info;
+        $this->mutation_levels = null;
     }
 
     /**
@@ -556,6 +568,18 @@ final class CodeUseGraph
     public function getMutationInfo(): array
     {
         return $this->mutation_info;
+    }
+
+    /**
+     * The final mutation level of every function-like with mutation info, resolved once
+     * the whole codebase has been analysed and cached until the mutation info changes.
+     *
+     * @return array<string, int> node id => bitmask of {@see Capabilities} constants
+     * @psalm-external-mutation-free
+     */
+    public function getMutationLevels(): array
+    {
+        return $this->mutation_levels ??= MutationLevelResolver::resolveLevels($this->mutation_info);
     }
 
     /**
@@ -579,10 +603,11 @@ final class CodeUseGraph
      *
      * Must be called before isUsed(), and again after the graph changes.
      *
-     * @param Closure(string): bool $is_external whether a node (with outgoing
+     * @param Closure[_](string): bool $is_external whether a node (with outgoing
      *        edges) belongs to code outside of the project, e.g. a vendor class
      *        or a caller made up by a plugin: such code is never reported as
      *        unused, so what it references is used.
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function resolve(Closure $is_external): void
     {
@@ -870,6 +895,7 @@ final class CodeUseGraph
             $this->node_files[$node_id],
             $this->mutation_info[$node_id],
         );
+        $this->mutation_levels = null;
         $this->used = null;
         $this->file_nodes = null;
         $this->class_referencing_nodes = null;
@@ -994,6 +1020,7 @@ final class CodeUseGraph
         }
 
         $this->mutation_info += $data['mutation_info'] ?? [];
+        $this->mutation_levels = null;
 
         $this->file_nodes = null;
     }

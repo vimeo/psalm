@@ -29,10 +29,12 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\ThisReturnVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer;
 use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
@@ -339,6 +341,14 @@ final class FunctionLikeNodeScanner
                 ) {
                     $storage->probably_fluent = true;
                 }
+
+                // the body only proves what the method returns if no override can replace it
+                if (!$storage->is_static
+                    && ($storage->final || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                    && ThisReturnVisitor::returnsOnlyThis($stmt->stmts)
+                ) {
+                    $storage->returns_this = true;
+                }
             }
         }
 
@@ -634,6 +644,12 @@ final class FunctionLikeNodeScanner
                 $property_storage = $classlike_storage->properties[$param_storage->name] = new PropertyStorage();
                 $property_storage->is_static = false;
                 $property_storage->type = $param_storage->type;
+
+                if ($property_storage->type) {
+                    // `@param Closure[P](): int $f`: the property holds closures of any purity P allows
+                    (new FunctionPurityTemplateReplacer())->traverse($property_storage->type);
+                }
+
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
@@ -694,6 +710,10 @@ final class FunctionLikeNodeScanner
                     $storage->specialize_call = true;
                     $storage->capabilities = Capabilities::NONE;
                     $storage->has_mutations_annotation = true;
+
+                    if ($storage instanceof MethodStorage) {
+                        $storage->mutation_free_assumed = false;
+                    }
                 }
 
                 if ($attribute->fq_class_name === 'NoDiscard') {
@@ -714,6 +734,12 @@ final class FunctionLikeNodeScanner
                 if ($attribute->fq_class_name === 'Psalm\\ExternalMutationFree'
                     && $storage instanceof MethodStorage
                 ) {
+                    if ($storage->mutation_free_assumed) {
+                        // like an annotation in the docblock, it replaces what a getter is assumed to do
+                        $storage->capabilities = Capabilities::ALL;
+                        $storage->mutation_free_assumed = false;
+                    }
+
                     $storage->capabilities = $storage->capabilities & Capabilities::EXTERNAL_MUTATION_FREE;
                     $storage->has_mutations_annotation = true;
                 }
@@ -837,13 +863,18 @@ final class FunctionLikeNodeScanner
             return;
         }
 
-        $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
-
-        $storage->mutation_free_assumed = true;
-
         foreach ($assigned_properties as $property_name => $property_type) {
             $classlike_storage->properties[$property_name]->type = $property_type;
         }
+
+        if ($storage->has_mutations_annotation) {
+            // an explicit annotation replaces what the constructor is assumed to do
+            return;
+        }
+
+        $storage->capabilities = Capabilities::EXTERNAL_MUTATION_FREE & $storage->capabilities;
+
+        $storage->mutation_free_assumed = true;
     }
 
     private function getTranslatedFunctionParam(
@@ -1236,5 +1267,32 @@ final class FunctionLikeNodeScanner
             $method_id,
             false,
         ];
+    }
+
+    /**
+     * Marks the function-like scanned by start() as a builtin if it is declared by one of Psalm's stubs. A stub of a
+     * builtin replaces its call map entry, but not the taint sinks of its parameters (see
+     * dictionaries/InternalTaintSinkMap.php): adds them to it.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals
+     */
+    public function addInternalTaintSinks(): void
+    {
+        if ($this->storage === null
+            || $this->storage->cased_name === null
+            || !in_array($this->file_path, $this->codebase->config->internal_stubs, true)
+        ) {
+            return;
+        }
+
+        $this->storage->builtin = true;
+
+        $function_id = $this->classlike_storage !== null
+            ? $this->classlike_storage->name . '::' . $this->storage->cased_name
+            : $this->storage->cased_name;
+
+        foreach ($this->storage->params as $offset => $param) {
+            $param->sinks |= InternalCallMapHandler::getParamTaintSinks($function_id, $offset);
+        }
     }
 }

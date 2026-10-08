@@ -11,8 +11,10 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -44,6 +46,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
         Context $context,
         ?TemplateResult $template_result = null,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $method_id = null;
 
         $lhs_type = null;
@@ -223,18 +227,36 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $moved_call = false;
         $has_existing_method = false;
 
+        // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
+        $class_state = $stmt->class instanceof PhpParser\Node\Expr && $lhs_type->isNullable()
+            ? NullsafeChainState::of($stmt->class)
+            : NullsafeChainState::None;
+
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues,
+                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
                 $template_result,
             );
+        }
+
+        if ($class_state !== NullsafeChainState::None) {
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+
+            if ($stmt_type && !$stmt_type->isNullable()) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, Type::getNull()),
+                );
+            }
         }
 
         if (!$stmt->isFirstClassCallable() && !$has_existing_method) {
@@ -279,6 +301,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+        $specialization_location = $method_storage && TaintFlowGraph::isCallSpecialized(
+            $statements_analyzer->getTaintFlowGraphWithSuppressed(),
+            $statements_analyzer->getCodebase(),
+            $method_storage,
+            $node_location,
+        ) ? $node_location : null;
+
         $method_location = $method_storage
             ? ($graph instanceof VariableUseGraph
                 ? ($method_storage->return_type_location ?: $method_storage->location)
@@ -290,16 +319,11 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 'builtin',
                 $cased_method_id,
             );
-        } elseif ($method_storage->specialize_call) {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $method_storage,
-                $node_location,
-            );
         } else {
             $method_source = DataFlowNode::getForMethodReturn(
                 $cased_method_id,
                 $method_storage,
+                $specialization_location,
             );
         }
 
@@ -378,7 +402,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_storage,
                 null,
-                $method_storage->taint_source_types,
+                $method_storage->taint_source_types
+                    & ~($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
             );
 
             $taint_flow_graph->addSource($method_node);
@@ -390,7 +415,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $taint_flow_graph,
                 (string) $method_id,
                 $stmt->getArgs(),
-                $node_location,
+                $specialization_location,
                 $method_source,
                 $method_storage->removed_taints | $removed_taints,
                 $added_taints,

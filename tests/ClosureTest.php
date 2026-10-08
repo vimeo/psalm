@@ -393,7 +393,7 @@ final class ClosureTest extends TestCase
                     $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
-                    '$a' => 'pure-Closure():pure-Closure():string',
+                    '$a' => 'Closure[pure]():Closure[pure]():string',
                     '$b' => 'string',
                 ],
             ],
@@ -467,7 +467,7 @@ final class ClosureTest extends TestCase
                     $closure = Closure::fromCallable("strlen");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                 ],
             ],
             'allowClosureWithNarrowerReturn' => [
@@ -699,7 +699,7 @@ final class ClosureTest extends TestCase
                     $result = $closure(1);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(mixed):bool',
+                    '$closure' => 'Closure[pure](mixed):bool',
                     '$result' => 'bool',
                 ],
                 'ignored_issues' => [],
@@ -711,7 +711,7 @@ final class ClosureTest extends TestCase
                     $result = $closure("test");
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                     '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
@@ -826,7 +826,7 @@ final class ClosureTest extends TestCase
                     $closure = $closure(...);
                 ',
                 'assertions' => [
-                    '$closure' => 'pure-Closure(string):int<0, max>',
+                    '$closure' => 'Closure[pure](string):int<0, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -876,6 +876,23 @@ final class ClosureTest extends TestCase
                 'assertions' => [
                     '$length' => 'int',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethod' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {
+                        public function __call(string $name, array $args): string { return "x"; }
+                    }
+                    final class Child extends Base {
+                        public function test(): void {
+                            $fcc = parent::has(...);
+                            /** @psalm-check-type-exact $fcc = Closure(string):string */;
+                        }
+                    }
+                ',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -979,7 +996,7 @@ final class ClosureTest extends TestCase
                     $handlers = $test->handlers;
                 ',
                 'assertions' => [
-                    '$handlers' => 'list<impure-Closure():void>',
+                    '$handlers' => 'list<Closure[impure]():void>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -994,7 +1011,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'assertions' => [
-                    '$r===' => 'false|impure-Closure',
+                    '$r===' => 'Closure[impure]|false',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1534,6 +1551,36 @@ final class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'MixedAssignment',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethodInStaticContext' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {
+                        public function __call(string $name, array $args): string { return "x"; }
+                    }
+                    final class Child extends Base {
+                        public static function test(): void {
+                            $fcc = parent::has(...);
+                        }
+                    }
+                ',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethodWithoutCall' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {}
+                    final class Child extends Base {
+                        public function test(): void {
+                            $fcc = parent::has(...);
+                        }
+                    }
+                ',
+                'error_message' => 'UndefinedMethod',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

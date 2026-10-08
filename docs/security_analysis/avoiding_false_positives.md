@@ -26,6 +26,53 @@ function echoVar(string $str) : void {
 echoVar($_GET["text"]);
 ```
 
+## Types
+
+A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, a string can't be a NoSQL query document, and a literal string (a value the code wrote, or one Psalm knows is among such values) can't hold anything the client sent. An array holds what its keys and values can: `list<int>` holds no HTML, while the string keys of `array<string, int>` can hold anything. A union holds what any of its types can hold, and `null` holds nothing.
+
+Psalm removes the taints a value can't carry where it is cast, passed to a function, returned, or assigned to a variable or a property, using the type it infers for the value, and where PHP guarantees a type:
+
+- casts: `(int) $_GET['id']` is only left with the taints a number can carry;
+- the native type of a parameter, inside the function;
+- the native return type of a function or method, for what it returns, taint sources included: a method annotated `@psalm-taint-source input` with a `string` return type never returns a NoSQL query.
+
+```php
+<?php
+
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
+
+function getId(string $name): int {
+    return (int) getParam($name);
+}
+
+$collection->find(['name' => getParam('name')]); // a string can't inject query operators
+echo '<b>' . getId('id') . '</b>'; // an int can't carry HTML
+
+$direction = getParam('direction');
+if ($direction === 'asc' || $direction === 'desc') {
+    echo $direction; // 'asc'|'desc' is a literal
+}
+```
+
+A function that validates a value against data the code trusts can tell Psalm about it with `@psalm-assert-if-true literal-string`: once validated, the value can't hold anything the client chose.
+
+```php
+<?php
+
+/** @psalm-assert-if-true literal-string $city */
+function isKnownCity(string $city): bool {
+    return in_array($city, getCityKeysFromDatabase(), true);
+}
+
+$city = getParam('city');
+if (isKnownCity($city)) {
+    $organization->city = $city; // stored without any taint
+}
+```
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value
@@ -75,6 +122,7 @@ For functions, methods and classes you can use the `@psalm-taint-specialize` ann
 <?php
 
 function takesInput(string $s) : string {
+    error_log("Got input");
     return $s;
 }
 
@@ -91,6 +139,7 @@ Adding a `@psalm-taint-specialize` annotation solves the problem, by telling Psa
  * @psalm-taint-specialize
  */
 function takesInput(string $s) : string {
+    error_log("Got input");
     return $s;
 }
 
@@ -131,6 +180,24 @@ function takesInput(string $s) : string {
 echo htmlentities(takesInput($_GET["name"]));
 echo takesInput("hello"); // No error
 ```
+
+Since each invocation is treated separately, a sink the input reaches through a specialized function – in its body or in a function it calls – is reported for every call that passes tainted input to it:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-specialize
+ */
+function run(string $command) : void {
+    exec($command); // Reported twice: once for each call below
+}
+
+run($_GET["first"]);
+run($_GET["second"]);
+```
+
+Psalm also infers the purity of functions without a purity annotation, so an unannotated function is specialized too when it turns out to be pure, as would be the first `takesInput` above without the `error_log` call. Since a method could be overridden by an impure one, this only applies to methods that cannot be overridden: `private` or `final` methods, and methods of `final` classes.
 
 ## Specializing taints in classes
 
@@ -188,6 +255,27 @@ $user2 = new User($_GET["name"]);
 
 echoUserName($user1);
 ```
+
+Each instance then holds its own taints, which only follow the variables the instance is assigned to. So Psalm makes sure the instance doesn't change once constructed, as the change wouldn't reach the other variables holding the same instance: its properties are readonly, and its methods can't write them. Nor can its methods write other objects, static properties or global variables, from which another instance could read back what this one wrote. To get a changed instance, create a new one, for instance by cloning it:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-specialize
+ */
+class User {
+    public function __construct(public string $name) {}
+
+    public function withName(string $name): static {
+        $new = clone $this;
+        $new->name = $name;
+        return $new;
+    }
+}
+```
+
+The classes that extend a class with `@psalm-taint-specialize` are specialized too, and held to the same rules: Psalm reports an [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md) issue for those that don't have the annotation themselves.
 
 And, because it’s form of purity enforcement, `@psalm-immutable` can also be used:
 

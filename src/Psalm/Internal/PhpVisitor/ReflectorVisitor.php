@@ -249,6 +249,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             );
 
             $functionlike_node_scanner->start($node, false, $doc_comment);
+            $functionlike_node_scanner->addInternalTaintSinks();
 
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
 

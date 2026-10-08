@@ -598,7 +598,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
-            if (isset($combination->value_types['impure-callable'])) {
+            if (isset($combination->value_types['callable[impure]'])) {
                 return null;
             }
             if ($combination->all_arrays_callable !== false) {
@@ -710,7 +710,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TKeyedArray) {
-            if ($type->is_callable && isset($combination->value_types['impure-callable'])) {
+            if ($type->is_callable && isset($combination->value_types['callable[impure]'])) {
                 return null;
             }
 
@@ -848,7 +848,7 @@ final class TypeCombiner
         }
 
         if ($type instanceof TObject) {
-            if ($type instanceof TCallableObject && isset($combination->value_types['impure-callable'])) {
+            if ($type instanceof TCallableObject && isset($combination->value_types['callable[impure]'])) {
                 return null;
             }
 
@@ -1035,7 +1035,7 @@ final class TypeCombiner
             return null;
         }
 
-        if ($type instanceof TCallable && $type_key === 'impure-callable') {
+        if ($type instanceof TCallable && $type_key === 'callable[impure]') {
             if (($combination->value_types['string'] ?? null) instanceof TCallableString) {
                 unset($combination->value_types['string']);
             } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
@@ -1056,7 +1056,7 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
-        if ($type instanceof TCallableString && isset($combination->value_types['impure-callable'])) {
+        if ($type instanceof TCallableString && isset($combination->value_types['callable[impure]'])) {
             return;
         }
 

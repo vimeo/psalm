@@ -268,6 +268,7 @@ final class Reflection
 
         $storage->cased_name = $method->name;
         $storage->defining_fqcln = $method->class;
+        $storage->builtin = $method->isInternal();
 
         if ($method_name_lc === $fq_class_name_lc) {
             $this->codebase->methods->setDeclaringMethodId(
@@ -323,6 +324,7 @@ final class Reflection
             }
 
             $storage->setParams($callables[0]->params);
+            InternalCallMapHandler::addReturnTaintFlows($storage, $method_id);
 
             $storage->return_type = $callables[0]->return_type;
             /** @psalm-suppress UnusedMethodCall */
@@ -387,6 +389,7 @@ final class Reflection
             }
 
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
+            $storage->builtin = $reflection_function->isInternal();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
@@ -402,6 +405,7 @@ final class Reflection
                 && $callmap_callable->return_type !== null
             ) {
                 $storage->setParams($callmap_callable->params);
+                InternalCallMapHandler::addReturnTaintFlows($storage, $function_id);
                 $storage->return_type = $callmap_callable->return_type;
             } else {
                 $reflection_params = $reflection_function->getParameters();

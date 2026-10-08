@@ -215,14 +215,14 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'ack_callback' => 'impure-callable|null',
-        'nack_callback=' => 'impure-callable|null',
+        'ack_callback' => 'callable[impure]|null',
+        'nack_callback=' => 'callable[impure]|null',
       ),
       'new' => 
       array (
         0 => 'void',
-        'ackCallback' => 'impure-callable|null',
-        'nackCallback=' => 'impure-callable|null',
+        'ackCallback' => 'callable[impure]|null',
+        'nackCallback=' => 'callable[impure]|null',
       ),
     ),
     'amqpchannel::setprefetchcount' => 
@@ -256,12 +256,12 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'return_callback' => 'impure-callable|null',
+        'return_callback' => 'callable[impure]|null',
       ),
       'new' => 
       array (
         0 => 'void',
-        'returnCallback' => 'impure-callable|null',
+        'returnCallback' => 'callable[impure]|null',
       ),
     ),
     'amqpchannel::starttransaction' => 
@@ -1002,14 +1002,14 @@ return array (
       'old' => 
       array (
         0 => 'void',
-        'callback' => 'impure-callable|null',
+        'callback' => 'callable[impure]|null',
         'flags=' => 'int',
         'consumer_tag=' => 'string',
       ),
       'new' => 
       array (
         0 => 'void',
-        'callback=' => 'impure-callable|null',
+        'callback=' => 'callable[impure]|null',
         'flags=' => 'int|null',
         'consumerTag=' => 'null|string',
       ),
@@ -1509,7 +1509,7 @@ return array (
       array (
         0 => 'null|string',
         'regex' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1518,7 +1518,7 @@ return array (
       array (
         0 => 'null|string',
         'regex' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1531,7 +1531,7 @@ return array (
       array (
         0 => 'array<array-key, string>|null',
         'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1540,7 +1540,7 @@ return array (
       array (
         0 => 'array<array-key, string>|null',
         'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'impure-callable(array<array-key, string>):string',
+        'callback' => 'callable[impure](array<array-key, string>):string',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1552,7 +1552,7 @@ return array (
       'old' => 
       array (
         0 => 'null|string',
-        'pattern' => 'array<string, impure-callable(array<array-key, mixed>):string>',
+        'pattern' => 'array<string, callable[impure](array<array-key, mixed>):string>',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1560,7 +1560,7 @@ return array (
       'new' => 
       array (
         0 => 'null|string',
-        'pattern' => 'array<string, impure-callable(array<array-key, mixed>):string>',
+        'pattern' => 'array<string, callable[impure](array<array-key, mixed>):string>',
         'subject' => 'string',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1572,7 +1572,7 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, string>|null',
-        'pattern' => 'array<string, impure-callable(array<array-key, mixed>):string>',
+        'pattern' => 'array<string, callable[impure](array<array-key, mixed>):string>',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1580,7 +1580,7 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, string>|null',
-        'pattern' => 'array<string, impure-callable(array<array-key, mixed>):string>',
+        'pattern' => 'array<string, callable[impure](array<array-key, mixed>):string>',
         'subject' => 'array<array-key, string>',
         'limit=' => 'int',
         '&w count=' => 'int',
@@ -1645,12 +1645,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'impure-Closure|null',
+        0 => 'Closure[impure]|null',
         'object' => 'object',
       ),
       'new' => 
       array (
-        0 => 'impure-Closure|null',
+        0 => 'Closure[impure]|null',
         'object=' => 'object',
       ),
     ),

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -64,6 +64,68 @@ final class CallPurityResolver
     }
 
     /**
+     * The purity templates of the function-likes a closure is nested in, and of the class of the
+     * method it is nested in: a closure calling a closure whose purity is one of them, directly or
+     * through a function-like inheriting its purity from it, has that purity itself, which its type
+     * carries, whether or not the function-like inherits its purity from the template (a function
+     * returning a `Closure[P](): int` that calls a parameter typed `Closure[P](): int` does not call
+     * it itself).
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private static function getOuterPurityTemplates(StatementsAnalyzer $statements_analyzer): array
+    {
+        $templates = [];
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof ClosureAnalyzer) {
+            return [];
+        }
+
+        while ($source instanceof FunctionLikeAnalyzer) {
+            $storage = $source->getStorage();
+            $template_types = $storage->template_types ?? [];
+
+            if ($storage instanceof MethodStorage && $storage->defining_fqcln !== null) {
+                $template_types += $statements_analyzer->getCodebase()->classlike_storage_provider
+                    ->get($storage->defining_fqcln)->template_types ?? [];
+            }
+
+            foreach ($template_types as $template_name => $bounds) {
+                foreach ($bounds as $bound) {
+                    if (Capabilities::isPurityType($bound)) {
+                        $templates[] = $template_name;
+                    }
+                }
+            }
+
+            $source = $source->getSource();
+
+            if ($source instanceof StatementsAnalyzer) {
+                $source = $source->getSource();
+            }
+        }
+
+        return $templates;
+    }
+
+    /**
+     * The purity templates that require nothing from the function-like being analysed: those it
+     * inherits its purity from, and, in a closure, those of the scopes it is nested in.
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private static function getExemptPurityTemplates(StatementsAnalyzer $statements_analyzer): array
+    {
+        return [
+            ...self::getEnclosingPurityTemplates($statements_analyzer),
+            ...self::getOuterPurityTemplates($statements_analyzer),
+        ];
+    }
+
+    /**
      * The capabilities a purity type (e.g. the purity of a closure being called) requires from
      * the function-like being analysed. Purity templates that function-like inherits its purity
      * from require nothing here; other unresolved templates count as their upper bound.
@@ -73,7 +135,7 @@ final class CallPurityResolver
      */
     public static function resolvePurity(Union $purity, StatementsAnalyzer $statements_analyzer): int
     {
-        $exempt = self::getEnclosingPurityTemplates($statements_analyzer);
+        $exempt = self::getExemptPurityTemplates($statements_analyzer);
 
         if ($exempt !== []) {
             $source = $statements_analyzer->getSource();
@@ -115,8 +177,11 @@ final class CallPurityResolver
      * receiver. They are not waived for a fresh receiver: the `TPurity` of a generator is what its
      * body does to the `$this` of whoever created it, not to the generator.
      *
+     * The bound closures' purity is resolved like that of a closure being called
+     * ({@see self::resolvePurity()}), so a closure passing on one relying on a purity template
+     * carries the template too.
+     *
      * @param array<string, array<string, Union>> $class_template_params
-     * @psalm-external-mutation-free
      */
     public static function getCallCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -132,10 +197,8 @@ final class CallPurityResolver
             return $capabilities;
         }
 
-        $exempt = self::getEnclosingPurityTemplates($statements_analyzer);
-
         foreach ($storage->purity_from_templates as $template_name) {
-            $bound = self::resolveMethodTemplateType($template_name, $template_result, $codebase);
+            $bound = self::resolveMethodTemplateType($template_name, $template_result);
             $on_receiver = false;
 
             if ($bound === null) {
@@ -153,7 +216,7 @@ final class CallPurityResolver
                 continue;
             }
 
-            $required = self::resolveWithExemptions($bound, $exempt);
+            $required = self::resolvePurity($bound, $statements_analyzer);
 
             $capabilities |= $on_receiver
                 ? MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
@@ -196,28 +259,29 @@ final class CallPurityResolver
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      */
-    private static function resolveMethodTemplateType(
-        string $template_name,
-        ?TemplateResult $template_result,
-        Codebase $codebase,
-    ): ?Union {
+    private static function resolveMethodTemplateType(string $template_name, ?TemplateResult $template_result): ?Union
+    {
         if ($template_result !== null && isset($template_result->lower_bounds[$template_name])) {
-            $bounds = [];
+            $atomics = [];
 
             foreach ($template_result->lower_bounds[$template_name] as $bound_list) {
                 foreach ($bound_list as $bound) {
                     // a template no argument bound is defaulted to its upper bound, without an
                     // argument offset: nothing was passed, so nothing is required
                     if ($bound->arg_offset !== null) {
-                        $bounds[] = $bound;
+                        // the call requires what every position the template is inferred from
+                        // requires: unlike the template's type, no bound is dropped for a deeper one
+                        foreach ($bound->type->getAtomicTypes() as $atomic) {
+                            $atomics[] = $atomic;
+                        }
                     }
                 }
             }
 
-            if ($bounds !== []) {
-                return TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($bounds, $codebase);
+            if ($atomics !== []) {
+                return new Union($atomics);
             }
         }
 

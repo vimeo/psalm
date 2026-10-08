@@ -102,6 +102,10 @@ final class ClassTemplateParamCollector
                     if (isset($lhs_type_part->type_params[$i])) {
                         $class_template_params[$type_name][$class_storage->name]
                             = $lhs_type_part->type_params[$i];
+                    } elseif (isset($class_storage->template_defaults[$type_name])) {
+                        // a purity template left out (`Box<int>`) has its default
+                        $class_template_params[$type_name][$class_storage->name]
+                            = $class_storage->template_defaults[$type_name];
                     }
 
                     $i++;

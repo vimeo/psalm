@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Report;
 
 use Override;
-use Psalm\Config;
 use Psalm\Report;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -13,7 +12,6 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use function implode;
 use function str_split;
 use function strlen;
-use function strtoupper;
 
 /**
  * @api
@@ -51,12 +49,7 @@ final class TableReport extends Report
                 $table->setHeaders(['SEVERITY', 'LINE', 'ISSUE', 'DESCRIPTION']);
             }
 
-            $is_error = $issue_data->severity === Config::REPORT_ERROR;
-            if ($is_error) {
-                $severity = ($this->use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
-            } else {
-                $severity = strtoupper($issue_data->severity);
-            }
+            $severity = $this->getSeverityLabel($issue_data);
 
             // Since `Table::setColumnMaxWidth` is only available in symfony/console 4.2+ we need do something similar
             // so we have clean tables.

@@ -79,6 +79,23 @@ final class PurityArguments
     }
 
     /**
+     * The type parameters of a use of the class without the purity arguments it has no purity
+     * templates for: what `static[P]<K, V>` becomes for a late static class that binds `P` itself
+     * (`@extends Base[pure]<K, V>`) and so declares no purity template of its own.
+     *
+     * @param array<Union> $type_params
+     * @return list<Union>
+     * @psalm-mutation-free
+     */
+    public static function trim(array $type_params, ClassLikeStorage $storage): array
+    {
+        [$type_args, $purity_args] = self::split($type_params);
+        $purity_template_count = count($storage->template_types ?? []) - self::countTypeTemplates($storage);
+
+        return [...$type_args, ...array_slice($purity_args, 0, $purity_template_count)];
+    }
+
+    /**
      * The type parameters of a use of the class, with the purity arguments in the positions of the
      * purity templates: `Foo[pure]`, for a class with type templates, gives them their bounds.
      * Parameters that do not fit the templates are left alone, for the checks to report them.
@@ -116,9 +133,25 @@ final class PurityArguments
                 break;
             }
 
-            $type_args[] = $bound;
+            $type_args[] = self::getOmittedArgument($bound);
         }
 
         return [...$type_args, ...$purity_args];
+    }
+
+    /**
+     * What a template argument left out of a use of the class stands for: its bound. A use of a
+     * class whose templates have no bounds but purity bounds is no more specific than a use without
+     * arguments, which any instance fits: those bounds stand for whatever the instance binds the
+     * templates to, and are not compared invariantly. The bound of a bounded type template
+     * (`@template T as object`) is still the argument, as it is without purity templates.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getOmittedArgument(Union $bound): Union
+    {
+        return $bound->isMixed() || Capabilities::isPurityType($bound)
+            ? $bound->setProperties(['had_template' => true])
+            : $bound;
     }
 }

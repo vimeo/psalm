@@ -4,28 +4,37 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use function basename;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
+
 use function escapeshellarg;
 use function exec;
 use function file_get_contents;
-use function glob;
 use function implode;
 use function is_array;
 use function is_bool;
 use function is_string;
 use function json_decode;
+use function ksort;
 use function preg_match;
-use function trim;
+use function str_ends_with;
+use function strlen;
+use function substr;
+
+use const PHP_BINARY;
 
 /**
- * Runs the Hack conformance fixtures (bin/hack-conformance/fixtures/*.hack)
- * through the real Hack typechecker (HHVM, via docker) and asserts each
- * verdict matches the `//// expect:` header of the linked Psalm test.
+ * Runs the Hack conformance fixtures (bin/hack-conformance/fixtures/<topic>/*.hack)
+ * through the real Hack typechecker (HHVM, via docker) and asserts each verdict
+ * matches the fixture's `//// expect:` header, which HackConformanceTranspiledTest
+ * (the fixtures transpiled to PHP) asserts of Psalm. Together they check that
+ * Psalm and Hack agree on every fixture.
  *
- * This makes the type-variable feature's Hack-parity part of the unit suite.
- * It skips cleanly when the harness cannot run here — no docker, no daemon, not
- * Linux, or (to avoid a multi-hundred-MB pull in every CI shard) the pinned HHVM
- * image is not already present locally. Pull it once (or run
+ * The HHVM half skips cleanly when the harness cannot run here — no docker, no
+ * daemon, not Linux, or (to avoid a multi-hundred-MB pull in every CI shard)
+ * the pinned HHVM image is not already present locally. Pull it once (or run
  * `php bin/hack-conformance/run.php`) to enable the checks.
  *
  * @see bin/hack-conformance/README.md
@@ -42,30 +51,61 @@ final class HackConformanceTest extends TestCase
     private static ?array $harness = null;
 
     /**
-     * @return iterable<string, array{string, string, string}>
+     * @return iterable<string, array{string, string}>
      */
     public function provideFixtures(): iterable
     {
-        $paths = glob(self::HARNESS_DIR . '/fixtures/*.hack');
+        $fixtures = [];
+        $root = self::HARNESS_DIR . '/fixtures/';
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
 
-        foreach ($paths === false ? [] : $paths as $path) {
-            $src = (string) file_get_contents($path);
-            preg_match('#^////\s*expect:\s*(\S+)#m', $src, $expectMatch);
-            preg_match('#^////\s*psalm-test:\s*(.+)$#m', $src, $testMatch);
+        /** @var SplFileInfo $file */
+        foreach ($files as $file) {
+            $path = $file->getPathname();
+            if (!str_ends_with($path, '.hack')) {
+                continue;
+            }
 
-            $name = basename($path);
-            yield $name => [
-                $name,
-                $expectMatch[1] ?? '',
-                trim($testMatch[1] ?? '(unlinked)'),
-            ];
+            preg_match('#^////\s*expect:\s*(\S+)#m', (string) file_get_contents($path), $expectMatch);
+
+            $name = substr($path, strlen($root));
+            $fixtures[$name] = [$name, $expectMatch[1] ?? ''];
         }
+
+        ksort($fixtures);
+
+        return $fixtures;
+    }
+
+    /**
+     * The transpiled Psalm cases are generated from HHVM's parse trees of the
+     * fixtures: they must be regenerated whenever a fixture (or the transpiler)
+     * changes. HackConformanceTranspiledTest checks it too, before its cases,
+     * but cannot tell when HHVM is unavailable; this check skips instead, so the
+     * HHVM CI job (--fail-on-skipped) guarantees it ran.
+     */
+    public function testTranspiledSuiteIsUpToDate(): void
+    {
+        $output = [];
+        $exitCode = 0;
+        exec(
+            escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(self::HARNESS_DIR . '/transpile.php') . ' --check 2>&1',
+            $output,
+            $exitCode,
+        );
+
+        /** @var list<string> $output */
+        if ($exitCode === 3) {
+            $this->markTestSkipped(implode("\n", $output));
+        }
+
+        $this->assertSame(0, $exitCode, implode("\n", $output));
     }
 
     /**
      * @dataProvider provideFixtures
      */
-    public function testHhvmAgreesWithPsalmTest(string $fixture, string $expect, string $psalmTest): void
+    public function testHhvmAgreesWithFixture(string $fixture, string $expect): void
     {
         // A malformed fixture header must fail loudly rather than be compared as
         // an empty string; check it before the availability skip so it is caught
@@ -101,7 +141,8 @@ final class HackConformanceTest extends TestCase
         $this->assertSame(
             $expect,
             $actual,
-            "HHVM disagrees with $psalmTest for $fixture:\n" . $results[$fixture]['output'],
+            "HHVM disagrees with the `//// expect:` header of $fixture, which its transpiled case in "
+                . "HackConformanceTranspiledTest asserts of Psalm:\n" . $results[$fixture]['output'],
         );
     }
 
@@ -114,7 +155,7 @@ final class HackConformanceTest extends TestCase
             return self::$harness;
         }
 
-        $cmd = 'php ' . escapeshellarg(self::HARNESS_DIR . '/run.php') . ' --json 2>/dev/null';
+        $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(self::HARNESS_DIR . '/run.php') . ' --json 2>/dev/null';
         $lines = [];
         exec($cmd, $lines);
 

@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
@@ -509,6 +510,22 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->capabilities,
                     )]);
+                } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
+                    && !$statements_analyzer->isStatic()
+                    && isset($class_storage->pseudo_methods[$method_name_lc])
+                    && $codebase->methodExists(
+                        new MethodIdentifier($method_id->fq_class_name, '__call'),
+                        is_used: false,
+                    )
+                ) {
+                    // Same instance-context fallback as ordinary parent::xxx() calls below:
+                    // the closure is bound to $this and dispatches through __call
+                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                    $return_type_candidate = new Union([new TClosure(
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->capabilities,
+                    )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     null,
@@ -653,25 +670,10 @@ final class AtomicStaticCallAnalyzer
                         $defining_class_storage,
                         $pseudo_method_storage,
                         $context,
+                        $callstatic_mutations,
                     ) === false
                     ) {
                         return false;
-                    }
-
-                    {
-                        $stmt->setAttribute(
-                            NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
-                            (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE)
-                                | $callstatic_mutations,
-                        );
-
-                        $statements_analyzer->signalMutation(
-                            $callstatic_mutations,
-                            $context,
-                            'method',
-                            ImpureMethodCall::class,
-                            $stmt_name,
-                        );
                     }
 
                     if ($pseudo_method_storage->return_type) {
@@ -701,6 +703,7 @@ final class AtomicStaticCallAnalyzer
                     $defining_class_storage,
                     $pseudo_method_storage,
                     $context,
+                    null,
                 ) === false
                 ) {
                     return false;
@@ -877,6 +880,7 @@ final class AtomicStaticCallAnalyzer
         ClassLikeStorage $class_storage,
         MethodStorage $pseudo_method_storage,
         Context $context,
+        ?int $magic_method_capabilities,
     ): ?bool {
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
@@ -885,6 +889,9 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
+        // the pseudo-method's own templates are the purity templates of its `_` params
+        $template_result = new TemplateResult($pseudo_method_storage->template_types ?? [], []);
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
@@ -892,6 +899,7 @@ final class AtomicStaticCallAnalyzer
             (string) $method_id,
             true,
             $context,
+            $template_result->template_types !== [] ? $template_result : null,
         ) === false) {
             return false;
         }
@@ -905,12 +913,37 @@ final class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
-            new TemplateResult([], []),
+            $template_result,
             new CodeLocation($statements_analyzer, $stmt),
             $context,
         ) === false) {
             return false;
         }
+
+        // what `__callStatic` does (if it implements the pseudo-method), and what the purity
+        // templates of the pseudo-method (`@method static int run(Closure[_](): int $f)`) are bound to
+        $capabilities = CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $pseudo_method_storage,
+            $magic_method_capabilities ?? Capabilities::NONE,
+            $template_result,
+        );
+
+        if ($magic_method_capabilities !== null || $capabilities !== Capabilities::NONE) {
+            $stmt->setAttribute(
+                NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE,
+                (NewAnalyzer::getCalleeCapabilities($stmt) ?? Capabilities::NONE) | $capabilities,
+            );
+        }
+
+        $statements_analyzer->signalMutation(
+            $capabilities,
+            $context,
+            'method ' . $class_storage->name . '::' . ($pseudo_method_storage->cased_name ?? $method_id->method_name),
+            ImpureMethodCall::class,
+            $stmt->name,
+        );
 
         $method_storage = null;
 

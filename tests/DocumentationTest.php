@@ -332,6 +332,11 @@ final class DocumentationTest extends TestCase
                     $ignored_issues = ['MissingParamType'];
                     break;
 
+                case 'TaintedSSRF':
+                    // a URL can name a local file too
+                    $ignored_issues = ['TaintedFile'];
+                    break;
+
                 case 'UnusedClass':
                 case 'UnusedMethod':
                     $ignored_issues = ['UnusedVariable'];

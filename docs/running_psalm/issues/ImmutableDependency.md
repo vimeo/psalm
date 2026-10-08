@@ -40,4 +40,19 @@ final class Child extends Parent_ {
 }
 ```
 
+Will also be emitted for a class extending a class with `@psalm-taint-specialize` without having it: the class is specialized, and held to the rules of [specialized classes](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-classes), all the same.
+
+```php
+<?php
+
+/** @psalm-taint-specialize */
+class User {
+    public function __construct(public string $name) {}
+}
+
+final class Admin extends User {}
+```
+
 To fix, make the child need the same (or fewer) capabilities than the parent, or vice versa.  
+
+See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) and [overrides](../../annotating_code/purity_model.md#overrides) in the purity model.

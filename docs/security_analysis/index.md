@@ -33,6 +33,8 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `include` - used for strings that could contain a path being included
 - `eval` - used for strings that could contain code
 - `ssrf` - used for strings that could contain text passed to Curl or similar
+- `url_component` - used for strings that could contain URL syntax (`/`, `?`, `&`, `#`...) placed in the path, query or fragment of a URL
+- `url_path` - used for strings that could be a `.` or `..` segment of the path of a URL, even URL-encoded
 - `file` - used for strings that could contain a path
 - `cookie` - used for strings that could contain a http cookie
 - `header` - used for strings that could contain a http header
@@ -46,14 +48,22 @@ You're also free to define your own taint types when defining custom taint sourc
 Psalm defines the following default taint sources:
 
  - the `$_GET`, `$_POST`, `$_COOKIE` and `$_REQUEST` server variables;
+ - the entries of `$_SERVER` the client sends: the request headers (`HTTP_*`), the URI and what is taken from it (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE` and the HTTP authentication credentials, the same entries of a redirected request (`REDIRECT_*`), and any entry read with a key that is not a literal;
+ - the names, types and full paths of the uploaded files in `$_FILES`;
  - reading from the input stream: `fopen()`, `file_get_contents()` and `file()` called with a literal `php://input` or `php://stdin` path, and the stream reading functions (`fgets()`, `fread()`, `stream_get_contents()`, ...) applied to such a handle;
  - the predefined `STDIN` constant (the `php://stdin` stream).
+ - reading from the network: `socket_read()`, the data `socket_recv()`, `socket_recvfrom()` and `socket_recvmsg()` write to their by-reference parameter, `stream_socket_recvfrom()`, `curl_exec()` and `curl_multi_getcontent()`, and the streams opened with `fsockopen()`, `pfsockopen()`, `stream_socket_client()`, `stream_socket_accept()` and `socket_export_stream()` (so reading from them with `fgets()`, `fread()`, ... is a source too).
+ - DNS answers, which whoever runs the name servers of a domain chooses: `dns_get_record()`, the hosts `getmxrr()` writes to its by-reference parameter, and `gethostbyaddr()`.
+ - the command-line options `getopt()` returns, which whoever runs the script chooses.
+ - exceptions, since the analysis does not follow them from where they are thrown to where they are caught: their message (`getMessage()`), their trace (`getTraceAsString()`) and their string form, and the variable of a `catch` block, so dumping a caught exception (`print_r()`, `var_export()`) is a source too.
 
 You can also [define your own taint sources](custom_taint_sources.md).
 
 ## Taint Sinks
 
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
+
+What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
@@ -83,6 +93,18 @@ $html = "
 ```
 
 To avoid these issues, use Parameterised Queries for SQL and Commands (e.g. `exec`); and a context-aware templating engine for HTML. Then use the [literal-string](https://psalm.dev/docs/annotating_code/type_syntax/scalar_types/#literal-string) type to ensure sensitive strings are defined in your application (i.e. have been written by a developer).
+
+## Security Issues
+
+The issues of security analysis (`TaintedHtml`, `TaintedSql`, ...) flag potential vulnerabilities rather than type errors or code-quality problems. To tell them apart, Psalm's human-readable reports (`console`, `compact`, `table`, `by-issue-level` and `phpstorm`) show them under a `SECURITY` header instead of `ERROR`:
+
+```
+SECURITY: TaintedHtml - src/index.php:2:1 - Detected tainted HTML
+```
+
+A security issue configured with `errorLevel="info"` is still shown as `INFO`. Machine-readable reports (JSON, checkstyle, SARIF, ...) keep their usual severities; the JSON and XML reports also include an `is_security` field.
+
+Plugins can mark their own issues the same way by implementing the `Psalm\Issue\SecurityIssue` interface.
 
 ## Using Baseline With Taint Analysis
 

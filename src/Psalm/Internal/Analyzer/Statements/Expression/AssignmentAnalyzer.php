@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -24,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -58,6 +60,7 @@ use Psalm\Issue\PossiblyInvalidArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
+use Psalm\Issue\PossiblyUndefinedStringArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
@@ -88,11 +91,13 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function assert;
 use function count;
+use function is_int;
 use function is_string;
 use function reset;
 use function spl_object_id;
@@ -371,7 +376,12 @@ final class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            $assign_value_type = $comment_type->setParentNodes($parent_nodes);
+            // whether the value is a fresh object or was reached from global state is a property of
+            // the value, not of its declared type
+            $assign_value_type = $comment_type->setParentNodes($parent_nodes)->setProperties([
+                'reference_free' => $temp_assign_value_type->reference_free ?? false,
+                'from_global_state' => $temp_assign_value_type->from_global_state ?? false,
+            ]);
         } elseif (!$assign_value_type) {
             if ($assign_value) {
                 $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
@@ -388,7 +398,7 @@ final class AssignmentAnalyzer
             }
         }
 
-        if ($statements_analyzer->variable_use_graph
+        if ($statements_analyzer->data_flow_graph
             && !$assign_value_type->parent_nodes
         ) {
             $assign_value_type = self::analyzeVariableUse(
@@ -682,9 +692,7 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
             );
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
-        ) {
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             // the target is written, not read: StaticPropertyAssignmentAnalyzer charges the write
             $capabilities = $context->capabilities;
             $context->capabilities |= Capabilities::READ_GLOBALS;
@@ -927,6 +935,17 @@ final class AssignmentAnalyzer
             $flow_graph->addSource($new_parent_node->setTaints($taints));
         }
 
+        // what the assigned value cannot hold, given its type
+        if (!$flow_graph instanceof VariableUseGraph) {
+            $removed_taints |= $type->getTaintsToRemove();
+        }
+
+        // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
+        $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
+        if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
+            $taint_flow_graph->addOutputStream($new_parent_node);
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $flow_graph->addPath(
                 $parent_node,
@@ -1063,6 +1082,8 @@ final class AssignmentAnalyzer
                 ?? Type::getMixed();
         }
 
+        FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
         if (isset($context->references_in_scope[$lhs_var_id])) {
             // Decrement old referenced variable's reference count
             $context->decrementReferenceCount($lhs_var_id);
@@ -1142,6 +1163,7 @@ final class AssignmentAnalyzer
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false,
+        bool $out_type_holds_value = false,
     ): void {
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
@@ -1163,6 +1185,90 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $property_id = ExpressionIdentifier::getVarId(
+                $stmt,
+                $context->self ?? $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_id !== null
+                && $codebase->propertyExists($property_id, false)
+            ) {
+                ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    true,
+                    true,
+                );
+
+                // the property holds what the call leaves in it (see StaticPropertyAssignmentAnalyzer)
+                if (($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+                    && ($declaring_class = $codebase->properties->getDeclaringClassForProperty($property_id, false))
+                        !== null
+                ) {
+                    InstancePropertyAssignmentAnalyzer::taintUnspecializedProperty(
+                        $statements_analyzer,
+                        $graph,
+                        $stmt,
+                        $property_id,
+                        $codebase->classlike_storage_provider->get($declaring_class),
+                        $by_ref_out_type,
+                        $context,
+                        null,
+                    );
+                }
+            }
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            // the array holds what the call leaves in the item, as if it was assigned to it; the argument
+            // itself keeps the type it was passed with
+            $arg_type = $statements_analyzer->node_data->getType($stmt);
+
+            ArrayAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                null,
+                $by_ref_out_type,
+            );
+
+            if ($arg_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $arg_type);
+            }
+
+            // and the call may read the item: the array is used
+            $root_var = $stmt->var;
+            while ($root_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $root_var = $root_var->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getExtendedVarId(
+                $root_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_var_id !== null
+                && isset($context->vars_in_scope[$root_var_id])
+                && ($variable_use_graph = $statements_analyzer->variable_use_graph)
+            ) {
+                foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $parent_node) {
+                    $variable_use_graph->addPath(
+                        $parent_node,
+                        DataFlowNode::getForVariableUse(),
+                        'variable-use',
+                    );
+                }
+            }
+        }
 
         if ($var_id) {
             $var_not_in_scope = false;
@@ -1200,10 +1306,10 @@ final class AssignmentAnalyzer
                             $context->branch_point,
                         );
 
-                        if ($statements_analyzer->variable_use_graph) {
+                        if ($statements_analyzer->data_flow_graph) {
                             $byref_node = DataFlowNode::getForAssignment($var_id, $location);
 
-                            $statements_analyzer->variable_use_graph->addPath(
+                            $statements_analyzer->data_flow_graph->addPath(
                                 $byref_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1229,9 +1335,13 @@ final class AssignmentAnalyzer
                     $statements_analyzer,
                 );
 
-                $by_ref_out_type = $by_ref_out_type->addParentNodes(
-                    $existing_type->parent_nodes,
-                );
+                // unless the parent nodes of the out type are those of what the function-like left
+                // in the parameter, the value passed to it may still be there
+                if (!$out_type_holds_value) {
+                    $by_ref_out_type = $by_ref_out_type->addParentNodes(
+                        $existing_type->parent_nodes,
+                    );
+                }
 
                 if (!$context->inside_conditional) {
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
@@ -1260,6 +1370,127 @@ final class AssignmentAnalyzer
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $stmt);
             }
         }
+    }
+
+    /**
+     * The literal key, or the position, of a destructured item, null if it has another key
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getDestructuredOffsetValue(PhpParser\Node\ArrayItem $item, int $offset): string|int|null
+    {
+        if (!$item->key) {
+            return $offset;
+        }
+
+        if ($item->key instanceof PhpParser\Node\Scalar\Int_) {
+            return $item->key->value;
+        }
+
+        if (!$item->key instanceof PhpParser\Node\Scalar\String_) {
+            return null;
+        }
+
+        $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($item->key->value);
+
+        return $string_to_int !== false ? $string_to_int : $item->key->value;
+    }
+
+    /**
+     * What a destructured item takes from the array: what its literal key or position holds, through a node of its
+     * own, which keeps it apart from the other items of an array whose type has no shape. The array is what
+     * $array_type holds: the value assigned, the item of the array a foreach goes over, or the item of the array an
+     * outer destructuring takes it from.
+     */
+    private static function taintDestructuredItem(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $array,
+        ?string $array_id,
+        Union $array_type,
+        string|int|null $offset_value,
+        Union $item_type,
+    ): Union {
+        if (!$statements_analyzer->data_flow_graph) {
+            return $item_type;
+        }
+
+        if ($offset_value === null) {
+            $offset_type = Type::getArrayKey();
+            $keyed_array_var_id = null;
+        } else {
+            $offset_type = is_int($offset_value) ? Type::getInt(false, $offset_value) : Type::getString($offset_value);
+            $keyed_array_var_id = ($array_id ?? 'destructured') . '[\'' . $offset_value . '\']';
+        }
+
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_analyzer,
+            $array,
+            $keyed_array_var_id,
+            $item_type,
+            $offset_type,
+            null,
+            $array_type,
+        );
+
+        return $item_type;
+    }
+
+    /**
+     * The type of what a destructured item takes from an array, null if the array can't have it
+     */
+    private static function getDestructuredArrayItemType(
+        StatementsAnalyzer $statements_analyzer,
+        TArray|TKeyedArray $array,
+        PhpParser\Node\ArrayItem $item,
+        string|int|null $offset_value,
+        bool &$can_be_empty,
+    ): ?Union {
+        if ($array instanceof TArray) {
+            $can_be_empty = !$array instanceof TNonEmptyArray;
+
+            return $array->type_params[1];
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $item->value);
+
+        if ($item->key && $offset_value !== null && isset($array->properties[$offset_value])) {
+            $item_type = $array->properties[$offset_value];
+
+            if (!$item_type->possibly_undefined) {
+                $can_be_empty = false;
+
+                return $item_type;
+            }
+
+            IssueBuffer::maybeAdd(
+                new PossiblyUndefinedArrayOffset('Possibly undefined array key', $location),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
+            return $item_type->setPossiblyUndefined(false);
+        }
+
+        if (!$array->fallback_params || ($array->is_list && is_string($offset_value))) {
+            return null;
+        }
+
+        $config = $statements_analyzer->getCodebase()->config;
+
+        if (is_string($offset_value)) {
+            if ($config->ensure_array_string_offsets_exist) {
+                IssueBuffer::maybeAdd(
+                    new PossiblyUndefinedStringArrayOffset('Possibly undefined array key', $location),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        } elseif ($config->ensure_array_int_offsets_exist) {
+            IssueBuffer::maybeAdd(
+                new PossiblyUndefinedIntArrayOffset('Possibly undefined array key', $location),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        return $array->fallback_params[1];
     }
 
     /**
@@ -1293,6 +1524,18 @@ final class AssignmentAnalyzer
 
         $can_be_empty = true;
 
+        // the items are fetched from what $assign_value_type holds, located at $assign_value if it is what's assigned
+        $array = $assign_value ?? $assign_var;
+        $array_id = null;
+
+        if ($assign_value && $statements_analyzer->data_flow_graph) {
+            $array_id = ExpressionIdentifier::getExtendedVarId(
+                $assign_value,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+        }
+
         foreach ($assign_var->items as $offset => $assign_var_item) {
             // $assign_var_item can be null e.g. list($a, ) = ['a', 'b']
             if (!$assign_var_item) {
@@ -1316,20 +1559,7 @@ final class AssignmentAnalyzer
                 continue;
             }
 
-            $offset_value = null;
-
-            if (!$assign_var_item->key) {
-                $offset_value = $offset;
-            } elseif ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_) {
-                $offset_value = $assign_var_item->key->value;
-            }
-
-            if ($offset_value !== null) {
-                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_value);
-                if ($string_to_int !== false) {
-                    $offset_value = $string_to_int;
-                }
-            }
+            $offset_value = self::getDestructuredOffsetValue($assign_var_item, $offset);
 
             $list_var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
@@ -1365,30 +1595,14 @@ final class AssignmentAnalyzer
                             $can_be_empty = false;
                         }
 
-                        if ($statements_analyzer->data_flow_graph
-                            && $assign_value
-                        ) {
-                            $assign_value_id = ExpressionIdentifier::getExtendedVarId(
-                                $assign_value,
-                                $statements_analyzer->getFQCLN(),
-                                $statements_analyzer,
-                            );
-
-                            $keyed_array_var_id = null;
-
-                            if ($assign_value_id) {
-                                $keyed_array_var_id = $assign_value_id . '[\'' . $offset_value . '\']';
-                            }
-
-                            $temp = Type::getString((string) $offset_value);
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                $keyed_array_var_id,
-                                $value_type,
-                                $temp,
-                            );
-                        }
+                        $value_type = self::taintDestructuredItem(
+                            $statements_analyzer,
+                            $array,
+                            $array_id,
+                            $assign_value_type,
+                            $offset_value,
+                            $value_type,
+                        );
 
                         self::analyze(
                             $statements_analyzer,
@@ -1461,9 +1675,16 @@ final class AssignmentAnalyzer
                         $assign_value_atomic_type = $assign_value_atomic_type->getGenericArrayType();
                     }
 
-                    $array_value_type = $assign_value_atomic_type instanceof TArray
-                        ? $assign_value_atomic_type->type_params[1]
-                        : Type::getMixed();
+                    $array_value_type = self::taintDestructuredItem(
+                        $statements_analyzer,
+                        $array,
+                        $array_id,
+                        $assign_value_type,
+                        $offset_value,
+                        $assign_value_atomic_type instanceof TArray
+                            ? $assign_value_atomic_type->type_params[1]
+                            : Type::getMixed(),
+                    );
 
                     self::analyze(
                         $statements_analyzer,
@@ -1505,72 +1726,19 @@ final class AssignmentAnalyzer
                         }
                     }
 
-                    if ($assign_value_atomic_type instanceof TArray) {
-                        $new_assign_type = $assign_value_atomic_type->type_params[1];
+                    // the item may be in any of the arrays the value can be
+                    $item_type = null;
 
-                        if ($statements_analyzer->data_flow_graph
-                            && $assign_value
-                        ) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp,
-                            );
-                        }
-
-                        $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
-                    } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
-                        if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\Int_)
-                            && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
-                        ) {
-                            $new_assign_type =
-                                $assign_value_atomic_type->properties[$assign_var_item->key->value];
-
-                            if ($new_assign_type->possibly_undefined) {
-                                IssueBuffer::maybeAdd(
-                                    new PossiblyUndefinedArrayOffset(
-                                        'Possibly undefined array key',
-                                        new CodeLocation($statements_analyzer->getSource(), $var),
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues(),
-                                );
-
-                                $new_assign_type = $new_assign_type->setPossiblyUndefined(false);
-                            } else {
-                                $can_be_empty = false;
-                            }
-                        } elseif (!$assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                            && $assign_value_atomic_type->is_list
-                            && $assign_value_atomic_type->fallback_params
-                        ) {
-                            if ($codebase->config->ensure_array_int_offsets_exist) {
-                                IssueBuffer::maybeAdd(
-                                    new PossiblyUndefinedIntArrayOffset(
-                                        'Possibly undefined array key',
-                                        new CodeLocation($statements_analyzer->getSource(), $var),
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues(),
-                                );
-                            }
-
-                            $new_assign_type =
-                                $assign_value_atomic_type->fallback_params[1];
-                        }
-
-                        if ($statements_analyzer->data_flow_graph && $assign_value && $new_assign_type) {
-                            $temp = Type::getArrayKey();
-                            ArrayFetchAnalyzer::taintArrayFetch(
-                                $statements_analyzer,
-                                $assign_value,
-                                null,
-                                $new_assign_type,
-                                $temp,
-                            );
-                        }
+                    if ($assign_value_atomic_type instanceof TArray
+                        || $assign_value_atomic_type instanceof TKeyedArray
+                    ) {
+                        $item_type = self::getDestructuredArrayItemType(
+                            $statements_analyzer,
+                            $assign_value_atomic_type,
+                            $assign_var_item,
+                            $offset_value,
+                            $can_be_empty,
+                        );
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
@@ -1579,7 +1747,20 @@ final class AssignmentAnalyzer
                             $array_access_value_type,
                         );
 
-                        $new_assign_type = $array_access_value_type;
+                        $new_assign_type = Type::combineUnionTypes($array_access_value_type, $new_assign_type);
+                    }
+
+                    if ($item_type) {
+                        $item_type = self::taintDestructuredItem(
+                            $statements_analyzer,
+                            $array,
+                            $array_id,
+                            $assign_value_type,
+                            $offset_value,
+                            $item_type,
+                        );
+
+                        $new_assign_type = Type::combineUnionTypes($item_type, $new_assign_type);
                     }
 
                     if ($already_in_scope) {
@@ -1769,8 +1950,7 @@ final class AssignmentAnalyzer
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
-        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
-            && $assign_var->var->name === 'this';
+        $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
         
         $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
@@ -1833,7 +2013,7 @@ final class AssignmentAnalyzer
                     $assign_value_type = $assign_value_type->setByRef(true);
                 }
 
-                if ($statements_analyzer->variable_use_graph
+                if (($graph = $statements_analyzer->data_flow_graph)
                     && $assign_value_type->parent_nodes
                 ) {
                     if (isset($context->references_to_external_scope[$var_id])
@@ -1847,16 +2027,19 @@ final class AssignmentAnalyzer
                             $parent_nodes += $original_type->parent_nodes;
                         }
                         foreach ($parent_nodes as $parent_node) {
-                            $statements_analyzer->variable_use_graph->addPath(
+                            // the assigned value replaces the referenced one, as the taint graph has it
+                            $graph->addPath(
                                 $parent_node,
                                 $assignment_node,
                                 '&=', // Normal assignment to reference/referenced variable
+                                0,
+                                TaintKind::ALL,
                             );
                         }
 
                         if (isset($context->references_to_external_scope[$var_id])) {
                             // Mark reference to an external scope as used when a value is assigned to it
-                            $statements_analyzer->variable_use_graph->addPath(
+                            $graph->addPath(
                                 $assignment_node,
                                 DataFlowNode::getForVariableUse(),
                                 'variable-use',
@@ -1920,11 +2103,11 @@ final class AssignmentAnalyzer
 
             $context->inside_general_use = $was_inside_general_use;
 
-            if ($statements_analyzer->variable_use_graph
+            if ($statements_analyzer->data_flow_graph
                 && $assign_value_type->parent_nodes
             ) {
                 foreach ($assign_value_type->parent_nodes as $parent_node) {
-                    $statements_analyzer->variable_use_graph->addPath(
+                    $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
                         DataFlowNode::getForVariableUse(),
                         'variable-use',
@@ -1935,7 +2118,7 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function analyzeVariableUse(
         StatementsAnalyzer $statements_analyzer,
@@ -1945,10 +2128,22 @@ final class AssignmentAnalyzer
         Context $context,
     ): Union {
         if ($extended_var_id) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $extended_var_id,
-                new CodeLocation($statements_analyzer->getSource(), $assign_var),
-            );
+            $assignment_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+            $assignment_node = DataFlowNode::getForAssignment($extended_var_id, $assignment_location);
+
+            // Analysing taints, the new node hides from the taint graph the parent nodes nested in
+            // the assigned value, which carry its taint: lead them to it.
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+            if ($taint_flow_graph
+                && $taint_flow_graph->addPathsFromNestedParentNodes(
+                    $assignment_node,
+                    $assign_value_type,
+                    $assignment_location,
+                )
+            ) {
+                $taint_flow_graph->addNode($assignment_node);
+            }
         } else {
             $assignment_node = DataFlowNode::getForUnknownOrigin();
         }

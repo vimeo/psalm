@@ -65,8 +65,11 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_merge;
+use function array_search;
 use function count;
+use function is_numeric;
 use function is_string;
 
 /**
@@ -435,7 +438,19 @@ final class AssertionReconciler extends Reconciler
                     && ($codebase->classExists($existing_var_type_part->value)
                         || $codebase->interfaceExists($existing_var_type_part->value))
                 ) {
-                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($new_type_part);
+                    $intersected_type_part = $new_type_part;
+
+                    if ($existing_var_type_part instanceof TGenericObject
+                        && !$new_type_part instanceof TGenericObject
+                    ) {
+                        $intersected_type_part = self::inferTemplateParamsFromParent(
+                            $codebase,
+                            $new_type_part,
+                            $existing_var_type_part,
+                        );
+                    }
+
+                    $existing_var_type_part = $existing_var_type_part->addIntersectionType($intersected_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
                 }
 
@@ -598,6 +613,80 @@ final class AssertionReconciler extends Reconciler
         return null;
     }
 
+    /**
+     * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
+     * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
+     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function inferTemplateParamsFromParent(
+        Codebase $codebase,
+        TNamedObject $child,
+        TGenericObject $parent,
+    ): TNamedObject {
+        if (!$codebase->classlike_storage_provider->has($child->value)
+            || !$codebase->classlike_storage_provider->has($parent->value)
+        ) {
+            return $child;
+        }
+
+        $child_storage = $codebase->classlike_storage_provider->get($child->value);
+        $parent_storage = $codebase->classlike_storage_provider->get($parent->value);
+
+        $extended_params = $child_storage->template_extended_params[$parent_storage->name] ?? null;
+
+        if ($child_storage->template_types === null
+            || $child_storage->template_types === []
+            || $parent_storage->template_types === null
+            || $parent_storage->template_types === []
+            || $extended_params === null
+        ) {
+            return $child;
+        }
+
+        $parent_template_names = array_keys($parent_storage->template_types);
+        $type_params = [];
+
+        foreach (array_keys($child_storage->template_types) as $template_name) {
+            $inferred = null;
+
+            foreach ($extended_params as $parent_template_name => $extended_type) {
+                $offset = array_search($parent_template_name, $parent_template_names, true);
+
+                if ($offset === false || !isset($parent->type_params[$offset]) || !$extended_type->isSingle()) {
+                    continue;
+                }
+
+                $extended_atomic = $extended_type->getSingleAtomic();
+
+                if ($extended_atomic instanceof TTemplateParam
+                    && $extended_atomic->param_name === $template_name
+                    && $extended_atomic->defining_class === $child_storage->name
+                ) {
+                    $inferred = $parent->type_params[$offset];
+                    break;
+                }
+            }
+
+            if ($inferred === null) {
+                // a template not passed straight to the parent: nothing is known about it
+                return $child;
+            }
+
+            $type_params[] = $inferred;
+        }
+
+        return new TGenericObject(
+            $child->value,
+            $type_params,
+            false,
+            $child->is_static,
+            $child->extra_types,
+            $child->from_docblock,
+        );
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -662,6 +751,10 @@ final class AssertionReconciler extends Reconciler
             && ($codebase->interfaceExists($type_1_atomic->value)
                 || $codebase->interfaceExists($type_2_atomic->value))
         ) {
+            if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
+                $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
+            }
+
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
@@ -1219,6 +1312,7 @@ final class AssertionReconciler extends Reconciler
             $existing_var_atomic_types,
             $assertion_type,
             $assertion instanceof IsLooselyEqual,
+            $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00,
         );
 
         if ($compatible_string_type !== null) {
@@ -1258,6 +1352,7 @@ final class AssertionReconciler extends Reconciler
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
                     $assertion instanceof IsLooselyEqual,
+                    $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_00_00,
                 );
                 if ($compatible_string_type !== null) {
                     return $compatible_string_type;
@@ -1514,13 +1609,20 @@ final class AssertionReconciler extends Reconciler
         array $existing_var_atomic_types,
         TLiteralString $assertion_type,
         bool $is_loose_equality,
+        bool $is_php8,
     ): ?Union {
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TMixed
                 || $existing_var_atomic_type instanceof TScalar
                 || $existing_var_atomic_type instanceof TArrayKey
             ) {
-                if ($is_loose_equality) {
+                // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
+                // array key loosely equal to a string that isn't numeric is that string
+                if ($is_loose_equality
+                    && !($is_php8
+                        && $existing_var_atomic_type instanceof TArrayKey
+                        && !is_numeric($assertion_type->value))
+                ) {
                     return $existing_var_type;
                 }
 

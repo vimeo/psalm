@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\ImpureVariable;
@@ -388,6 +389,14 @@ final class VariableFetchAnalyzer
 
             self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
 
+            if ($var_name === '$argv'
+                && $context->is_global
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $argv_source = self::getArgvTaintSource($statements_analyzer, $graph, $stmt);
+                $stmt_type = $stmt_type->addParentNodes([$argv_source->id => $argv_source]);
+            }
+
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
@@ -453,10 +462,7 @@ final class VariableFetchAnalyzer
         Union &$stmt_type,
         Context $context,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($statements_analyzer->data_flow_graph
-            && $codebase->find_unused_variables
             && ($context->inside_return
                 || $context->inside_call
                 || $context->inside_general_use
@@ -465,10 +471,22 @@ final class VariableFetchAnalyzer
                 || $context->inside_isset)
         ) {
             if (!$stmt_type->parent_nodes) {
-                $assignment_node = DataFlowNode::getForAssignment(
-                    $var_name,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                );
+                $assignment_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                $assignment_node = DataFlowNode::getForAssignment($var_name, $assignment_location);
+
+                // Analysing taints, the new node hides from the taint graph the parent nodes nested in
+                // the value, which carry its taint: lead them to it.
+                $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+                if ($taint_flow_graph
+                    && $taint_flow_graph->addPathsFromNestedParentNodes(
+                        $assignment_node,
+                        $stmt_type,
+                        $assignment_location,
+                    )
+                ) {
+                    $taint_flow_graph->addNode($assignment_node);
+                }
 
                 $stmt_type = $stmt_type->setParentNodes([
                     $assignment_node->id => $assignment_node,
@@ -505,6 +523,25 @@ final class VariableFetchAnalyzer
         }
     }
 
+    /**
+     * The arguments of a CLI script are its user's input, and PHP builds $argv from the query string with
+     * register_argc_argv (see also ArrayFetchAnalyzer::USER_CONTROLLED_SERVER_KEYS).
+     */
+    public static function getArgvTaintSource(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        PhpParser\Node\Expr\Variable $stmt,
+    ): DataFlowNode {
+        $taint_source = DataFlowNode::getForTaint(
+            '$argv',
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            TaintKind::ALL_INPUT,
+        );
+        $graph->addSource($taint_source);
+
+        return $taint_source;
+    }
+
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -536,11 +573,16 @@ final class VariableFetchAnalyzer
         $taints |= $added_taints;
         $taints &= ~$removed_taints;
 
-        if ($taints === 0) {
+        $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        if ($var_name === '$_FILES' && $taints === 0) {
+            $type = self::taintFiles($graph, $taint_location, $type);
             return;
         }
 
-        $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+        if ($taints === 0) {
+            return;
+        }
 
         $taint_source = DataFlowNode::getForTaint(
             $var_name,
@@ -552,6 +594,25 @@ final class VariableFetchAnalyzer
         $type = $type->setParentNodes([
             $taint_source->id => $taint_source,
         ]);
+    }
+
+    /**
+     * The client chooses the names of the files it uploads, `$_FILES[...]['name']`, unlike the entries of an
+     * uploaded file the server writes (see also ArrayFetchAnalyzer::taintSuperGlobalFetch()).
+     */
+    private static function taintFiles(TaintFlowGraph $graph, CodeLocation $taint_location, Union $type): Union
+    {
+        $taint_source = DataFlowNode::getForTaint('$_FILES[][\'name\']', $taint_location, TaintKind::ALL_INPUT);
+        $name_node = DataFlowNode::getForAssignment('$_FILES[] name', $taint_location);
+        $files_node = DataFlowNode::getForAssignment('$_FILES', $taint_location);
+
+        $graph->addSource($taint_source);
+        $graph->addNode($name_node);
+        $graph->addNode($files_node);
+        $graph->addPath($taint_source, $name_node, 'arrayvalue-assignment-\'name\'');
+        $graph->addPath($name_node, $files_node, 'arrayvalue-assignment');
+
+        return $type->setParentNodes([$files_node->id => $files_node]);
     }
 
     /**

@@ -4490,7 +4490,7 @@ final class ClassTemplateTest extends TestCase
                             type($closure);
                         }
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, but impure-callable(State):(T:AlmostFooMap as mixed)&Foo provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, but callable[impure](State):(T:AlmostFooMap as mixed)&Foo provided',
             ],
             'templateWithNoReturn' => [
                 'code' => '<?php
