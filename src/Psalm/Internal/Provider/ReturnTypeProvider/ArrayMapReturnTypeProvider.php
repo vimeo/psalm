@@ -265,7 +265,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         FunctionReturnTypeProviderEvent $event,
         Union $mapping_return_type,
     ): array {
-        $graph = $statements_analyzer->data_flow_graph;
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
 
         if ($graph === null || $mapping_return_type->parent_nodes === []) {
             return [];

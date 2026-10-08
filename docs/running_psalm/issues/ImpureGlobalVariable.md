@@ -26,3 +26,5 @@ function addCumulativeGlobals(int $left) : int {
     return $left;
 }
 ```
+
+See [capabilities](../../annotating_code/purity_model.md#capabilities) in the purity model for what each capability allows.

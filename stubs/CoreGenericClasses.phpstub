@@ -182,6 +182,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
      *
      * @since 5.0.0
+     * @psalm-flow ($input) -> return
      */
     public function __construct($input = null, $flags = 0, $iterator_class = "ArrayIterator") { }
 

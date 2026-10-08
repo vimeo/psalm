@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -115,6 +116,8 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -214,6 +217,8 @@ final class ArrayFetchAnalyzer
         }
 
         $can_store_result = false;
+        $chain_state = NullsafeChainState::None;
+        $own_nullable = false;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
@@ -236,6 +241,15 @@ final class ArrayFetchAnalyzer
                 return true;
             }
 
+            $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
+
+            if ($chain_state === NullsafeChainState::ShortCircuit) {
+                // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
+                $non_null_var_type = $stmt_var_type->getBuilder();
+                $non_null_var_type->removeType('null');
+                $stmt_var_type = $non_null_var_type->freeze();
+            }
+
             $stmt_type = self::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $stmt,
@@ -246,6 +260,8 @@ final class ArrayFetchAnalyzer
                 $context,
                 null,
             );
+
+            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -353,6 +369,11 @@ final class ArrayFetchAnalyzer
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
         }
 
+        if ($chain_state !== NullsafeChainState::None) {
+            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+        }
+
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
@@ -450,6 +471,9 @@ final class ArrayFetchAnalyzer
             && ($key === 'type' || $key === 'full_path')
         ) {
             $label = '$_FILES[][\'' . $key . '\']';
+        } elseif ($var instanceof PhpParser\Node\Expr\Variable && $var->name === 'GLOBALS' && $key === 'argv') {
+            // see VariableFetchAnalyzer::getArgvTaintSource()
+            $label = '$GLOBALS[\'argv\']';
         } else {
             return;
         }
@@ -770,7 +794,7 @@ final class ArrayFetchAnalyzer
                         $array_access_type = new Union([new TNever]);
                     }
                 } else {
-                    if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
+                    if (!$context->inside_isset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $extended_var_id .
@@ -1840,10 +1864,25 @@ final class ArrayFetchAnalyzer
 
                     if (!$stmt->dim) {
                         if ($type->is_list) {
+                            // The item goes past the items the list surely has, which keep their values:
+                            // it may only be one of those it may not have yet, the first of which it now has.
+                            $properties = $type->properties;
+                            $is_first_possibly_undefined = true;
+                            foreach ($properties as $key => $property) {
+                                if ($property->possibly_undefined) {
+                                    $properties[$key] = Type::combineUnionTypes($property, $replacement_type)
+                                        ->setPossiblyUndefined(!$is_first_possibly_undefined);
+                                    $is_first_possibly_undefined = false;
+                                }
+                            }
+
                             $type = TKeyedArray::make(
-                                $type->properties,
+                                $properties,
                                 null,
-                                [$new_key_type, $generic_params],
+                                [
+                                    $new_key_type,
+                                    Type::combineUnionTypes($type->fallback_params[1] ?? null, $replacement_type),
+                                ],
                                 true,
                             );
                         } else {

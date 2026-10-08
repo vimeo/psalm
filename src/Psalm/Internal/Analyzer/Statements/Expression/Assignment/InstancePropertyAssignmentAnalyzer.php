@@ -16,6 +16,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -67,6 +68,7 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -431,11 +433,20 @@ final class InstancePropertyAssignmentAnalyzer
             $real = $lhs_var_id === '$this'
                 ? Capabilities::WRITE_THIS_PROPS
                 : Capabilities::WRITE_PROPS;
-            $mut = $can_set_readonly_property ?
-                ($property_var_pure_compatible
+            // Only whether a readonly property may be set depends on the class scope: nothing else
+            // holds a fresh object, so writing it is free in a function as in a method. `$this` is
+            // the caller's own instance, never a fresh one, even where its type is reference-free.
+            // PHP lets a class set the readonly properties of any of its instances, but only `$this`
+            // belongs to the method: writing another, non-fresh instance mutates state held elsewhere.
+            $mut = match (true) {
+                $lhs_var_id !== '$this' => $property_var_pure_compatible
                     ? Capabilities::NONE
-                    : Capabilities::READ_PROPS
-                ) : $real;
+                    : $real,
+                $can_set_readonly_property => $property_var_pure_compatible
+                    ? Capabilities::NONE
+                    : Capabilities::READ_PROPS,
+                default => $real,
+            };
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;
@@ -1570,11 +1581,20 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_property_class,
             );
 
-            if ($lhs_type_part instanceof TGenericObject) {
+            $localizing_type_part = self::getLocalizingTypePart(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $lhs_var_id,
+                $lhs_type_part,
+                $fq_class_name,
+            );
+
+            if ($localizing_type_part !== null) {
                 $class_property_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
                     $codebase,
                     $class_property_type,
-                    $lhs_type_part,
+                    $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
                 );
@@ -1722,6 +1742,46 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The generic type whose template params the property type takes: the object's, or, for `$this` in a method with
+     * `@psalm-self-out`, the self-out type's, as the object becomes that type when the method returns, so what the
+     * method stores must fit the self-out type rather than the type `$this` had when the method was called
+     */
+    private static function getLocalizingTypePart(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        ?string $lhs_var_id,
+        Atomic $lhs_type_part,
+        string $fq_class_name,
+    ): ?TGenericObject {
+        $source = $statements_analyzer->getSource();
+
+        if ($lhs_var_id === '$this' && $source instanceof MethodAnalyzer) {
+            $method_storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($method_storage instanceof MethodStorage && $method_storage->self_out_type !== null) {
+                $self_out_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $method_storage->self_out_type,
+                    $context->self,
+                    $context->self,
+                    $context->parent,
+                );
+
+                foreach ($self_out_type->getAtomicTypes() as $self_out_type_part) {
+                    if ($self_out_type_part instanceof TGenericObject
+                        && strtolower($self_out_type_part->value) === strtolower($fq_class_name)
+                    ) {
+                        return $self_out_type_part;
+                    }
+                }
+            }
+        }
+
+        return $lhs_type_part instanceof TGenericObject ? $lhs_type_part : null;
     }
 
     private static function analyzeSetCall(

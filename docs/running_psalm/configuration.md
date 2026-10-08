@@ -159,7 +159,7 @@ If false, disallows comparing a boolean to a literal boolean (mostly a codestyle
   rememberPropertyAssignmentsAfterCall="[bool]"
 >
 ```
-Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
+Setting this to `false` means that function calls will cause Psalm to forget what it knew about object properties within the scope of the function it's currently analysing, unless the callee can't write them (see [property refinements after calls](../annotating_code/purity_model.md#property-refinements-after-calls)). This duplicates functionality that Hack has. Defaults to `true`.
 
 #### allowStringToStandInForClass
 
@@ -266,6 +266,8 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
 Unused-code detection is based on a graph of references between code elements, resolved by reachability from the program's entry points (the public API, top-level code, free functions, and code outside of the project directories). As a result, a class, method, property or constant that is referenced only by other unused code — including cycles of otherwise unreferenced code — is reported as unused. Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass`) only silences the report for that symbol; it does not turn the symbol into an entry point, so code that only it references is still reported.
+
+This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
 
 #### forceJit
 ```xml
@@ -633,12 +635,12 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 #### findUnusedIssueHandlerSuppression
 
 Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 ## Project settings
 

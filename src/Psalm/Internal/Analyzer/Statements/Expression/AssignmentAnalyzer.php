@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -375,7 +376,12 @@ final class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            $assign_value_type = $comment_type->setParentNodes($parent_nodes);
+            // whether the value is a fresh object or was reached from global state is a property of
+            // the value, not of its declared type
+            $assign_value_type = $comment_type->setParentNodes($parent_nodes)->setProperties([
+                'reference_free' => $temp_assign_value_type->reference_free ?? false,
+                'from_global_state' => $temp_assign_value_type->from_global_state ?? false,
+            ]);
         } elseif (!$assign_value_type) {
             if ($assign_value) {
                 $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
@@ -932,6 +938,12 @@ final class AssignmentAnalyzer
         // what the assigned value cannot hold, given its type
         if (!$flow_graph instanceof VariableUseGraph) {
             $removed_taints |= $type->getTaintsToRemove();
+        }
+
+        // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
+        $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
+        if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
+            $taint_flow_graph->addOutputStream($new_parent_node);
         }
 
         foreach ($parent_nodes as $parent_node) {
@@ -1944,8 +1956,7 @@ final class AssignmentAnalyzer
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
-        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
-            && $assign_var->var->name === 'this';
+        $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
         
         $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 

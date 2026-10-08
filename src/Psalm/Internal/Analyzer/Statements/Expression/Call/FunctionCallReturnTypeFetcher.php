@@ -10,6 +10,10 @@ use PhpParser\BuilderFactory;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FunctionAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -26,6 +30,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -48,6 +53,7 @@ use UnexpectedValueException;
 use function array_values;
 use function count;
 use function explode;
+use function is_string;
 use function preg_match;
 use function preg_match_all;
 use function str_contains;
@@ -273,6 +279,14 @@ final class FunctionCallReturnTypeFetcher
                 $stmt_type,
                 $context,
             );
+            $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+                $statements_analyzer,
+                $function_id,
+                $stmt->getArgs(),
+                $stmt_type,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+            OutputStreamTaintAnalyzer::taintFunctionWrite($statements_analyzer, $function_id, $stmt->getArgs());
             self::taintInternalSource(
                 $statements_analyzer,
                 $stmt,
@@ -621,6 +635,15 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type,
             $context,
         );
+        // callmap-only conditional sinks (writes to fopen('php://output'))
+        $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+            $statements_analyzer,
+            $callable_id,
+            $stmt->getArgs(),
+            $stmt_type,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+        OutputStreamTaintAnalyzer::taintFunctionWrite($statements_analyzer, $callable_id, $stmt->getArgs());
         // callmap-only unconditional sources (socket_read(), curl_exec(), ...)
         self::taintInternalSource(
             $statements_analyzer,
@@ -638,10 +661,23 @@ final class FunctionCallReturnTypeFetcher
         $storage = self::getCallableStorage($statements_analyzer, $callable_id);
 
         if ($storage === null) {
-            // a closure: its return type already holds what it returns
+            // a closure: what its body returns (which a return type it declares doesn't hold), from what its
+            // parameters are given
             $closure_storage = self::getClosureStorage($statements_analyzer, $callable_id);
 
             if ($closure_storage !== null) {
+                $closure_return_node = DataFlowNode::getForMethodReturn($callable_id, $closure_storage);
+                $graph->addNode($closure_return_node);
+                $stmt_type = $stmt_type->addParentNodes([$closure_return_node->id => $closure_return_node]);
+
+                self::taintCallableParams(
+                    $statements_analyzer,
+                    $graph,
+                    $callable_id,
+                    $closure_storage,
+                    $stmt->getArgs(),
+                    null,
+                );
                 self::taintCallableByRefParams(
                     $statements_analyzer,
                     $graph,
@@ -686,7 +722,7 @@ final class FunctionCallReturnTypeFetcher
         // per-function argument nodes taintUsingFlows() relies on are not created for a
         // callable-valued invocation, so wire the arguments to the return here.
         foreach ($storage->return_source_params as $i => $path_type) {
-            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
                 $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
 
                 if ($arg_type === null) {
@@ -701,16 +737,211 @@ final class FunctionCallReturnTypeFetcher
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
 
-        // Argument entry / sinks: connect each argument to the function's per-parameter node
-        // (getForMethodArgument). This carries taint into an analyzed body (whose param->return
-        // path completes the implicit return flow above) and into any @psalm-taint-sink params,
-        // which are registered as sinks here.
+        self::taintCallableParams(
+            $statements_analyzer,
+            $graph,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+        );
+
+        self::taintCallableByRefParams(
+            $statements_analyzer,
+            $graph,
+            $context,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+        );
+
+        $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    /**
+     * A call of a callable parameter of the function-like analysed, which may be any callable: it gives what the
+     * callables passed to the parameter return, and passes its arguments to their parameters (see
+     * taintCallablePassedToParam()).
+     */
+    public static function taintCallableParamCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $real_stmt,
+        Context $context,
+    ): void {
+        if ($stmt->isFirstClassCallable()
+            || !$stmt->name instanceof PhpParser\Node\Expr\Variable
+            || !is_string($stmt->name->name)
+            || !($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            return;
+        }
+
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof MethodAnalyzer) {
+            // the body of a method of a trait is analyzed as one of the class using it
+            $method_id = FunctionLikeAnalyzer::getCasedBodyMethodId(
+                $statements_analyzer->getCodebase(),
+                $source->getMethodId($context->self),
+            );
+        } elseif ($source instanceof FunctionAnalyzer || $source instanceof ClosureAnalyzer) {
+            $method_id = $source->getCorrectlyCasedMethodId();
+        } else {
+            return;
+        }
+
+        $var_id = '$' . $stmt->name->name;
+        $var_type = $context->vars_in_scope[$var_id] ?? null;
+        $storage = $source->getStorage();
+
+        foreach ($storage->params as $offset => $param) {
+            if ($var_type === null || $param->name !== $stmt->name->name || $param->location === null) {
+                continue;
+            }
+
+            // the variable may hold what the parameter was given
+            if (!isset($var_type->parent_nodes[DataFlowNode::getForAssignment($var_id, $param->location)->id])) {
+                continue;
+            }
+
+            $return_node = DataFlowNode::getForCallableParamReturn($method_id, $offset, $storage);
+            $graph->addNode($return_node);
+
+            $stmt_type = $statements_analyzer->node_data->getType($real_stmt);
+
+            if ($stmt_type !== null) {
+                $statements_analyzer->node_data->setType(
+                    $real_stmt,
+                    $stmt_type->addParentNodes([$return_node->id => $return_node]),
+                );
+            }
+
+            foreach ($stmt->getArgs() as $argument_offset => $arg) {
+                $arg_type = $statements_analyzer->node_data->getType($arg->value);
+
+                if ($arg_type === null || !$arg_type->parent_nodes) {
+                    continue;
+                }
+
+                $argument_node = DataFlowNode::getForCallableParamArgument(
+                    $method_id,
+                    $offset,
+                    $argument_offset,
+                    $storage,
+                );
+                $graph->addNode($argument_node);
+
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $argument_node, 'arg');
+                }
+            }
+        }
+    }
+
+    /**
+     * A callable passed to a parameter of a function-like: the calls of the parameter in its body give what the
+     * callable returns, and what they pass flows into its parameters (see taintCallableParamCall()).
+     */
+    public static function taintCallablePassedToParam(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        string $cased_method_id,
+        int $param_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location,
+        Union $input_type,
+    ): void {
+        foreach ($input_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TClosure && !$atomic instanceof TCallable) {
+                continue;
+            }
+
+            $return_node = DataFlowNode::getForCallableParamReturn(
+                $cased_method_id,
+                $param_offset,
+                $storage,
+                $specialization_location,
+            );
+            $graph->addNode($return_node);
+
+            foreach ($atomic->return_type?->parent_nodes ?? [] as $parent_node) {
+                $graph->addPath($parent_node, $return_node, 'callable-return');
+            }
+
+            if ($atomic->callable_id === null) {
+                continue;
+            }
+
+            $callable_storage = self::getCallableStorage($statements_analyzer, $atomic->callable_id);
+
+            if ($callable_storage !== null) {
+                $callable_return_node = DataFlowNode::getForMethodReturn($atomic->callable_id, $callable_storage);
+                $graph->addNode($callable_return_node);
+                self::taintUsingStorage($callable_storage, $graph, $callable_return_node);
+                $graph->addPath($callable_return_node, $return_node, 'callable-return');
+            } else {
+                $callable_storage = self::getClosureStorage($statements_analyzer, $atomic->callable_id);
+
+                if ($callable_storage === null) {
+                    continue;
+                }
+
+                // what the body of the closure returns, which a return type it declares doesn't hold
+                $callable_return_node = DataFlowNode::getForMethodReturn($atomic->callable_id, $callable_storage);
+                $graph->addNode($callable_return_node);
+                $graph->addPath($callable_return_node, $return_node, 'callable-return');
+            }
+
+            foreach ($callable_storage->params as $i => $param) {
+                if ($param->location === null) {
+                    continue;
+                }
+
+                $argument_node = DataFlowNode::getForCallableParamArgument(
+                    $cased_method_id,
+                    $param_offset,
+                    $i,
+                    $storage,
+                    $specialization_location,
+                );
+                $graph->addNode($argument_node);
+
+                $param_node = DataFlowNode::getForMethodArgument($atomic->callable_id, $i, $callable_storage);
+                $graph->addNode($param_node);
+
+                if ($param->sinks) {
+                    $graph->addSink($param_node);
+                }
+
+                $graph->addPath($argument_node, $param_node, 'arg');
+            }
+        }
+    }
+
+    /**
+     * Argument entry / sinks: connect each argument to the function's per-parameter node
+     * (getForMethodArgument). This carries taint into an analyzed body (whose param->return
+     * path completes the implicit return flow) and into any @psalm-taint-sink params,
+     * which are registered as sinks here.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintCallableParams(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        string $callable_id,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?CodeLocation $specialization_location,
+    ): void {
         foreach ($storage->params as $i => $param) {
             if ($param->location === null) {
                 continue;
             }
 
-            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
                 $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
 
                 if ($arg_type === null || !$arg_type->parent_nodes) {
@@ -735,17 +966,24 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        self::taintCallableByRefParams(
-            $statements_analyzer,
-            $graph,
-            $context,
-            $callable_id,
-            $storage,
-            $args,
-            $specialization_location,
-        );
+        // the callables passed, which the body may call (see taintCallableParamCall())
+        foreach ($storage->params as $i => $_) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
+                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
 
-        $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+                if ($arg_type !== null) {
+                    self::taintCallablePassedToParam(
+                        $statements_analyzer,
+                        $graph,
+                        $callable_id,
+                        $i,
+                        $storage,
+                        $specialization_location,
+                        $arg_type,
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -769,7 +1007,7 @@ final class FunctionCallReturnTypeFetcher
                 continue;
             }
 
-            foreach (self::callableArgIndices($storage, $args, $i) as $arg_index) {
+            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
                 $var_id = ExpressionIdentifier::getExtendedVarId(
                     $args[$arg_index]->value,
                     null,
@@ -819,26 +1057,53 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * Argument indices that feed parameter offset $i of $storage, given the actual $args.
-     * A variadic parameter collects every trailing argument.
+     * The indices of the arguments among $args given to the parameter at offset $i of $params: the one at its
+     * position or named after it, and if it is variadic those after it and those named after no other parameter. An
+     * unpacked argument may hold the arguments of every parameter from its position on.
      *
-     * @param list<PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $params
+     * @param array<int, PhpParser\Node\Arg> $args
      * @return list<int>
      * @psalm-mutation-free
      */
-    private static function callableArgIndices(FunctionLikeStorage $storage, array $args, int $i): array
+    private static function callableArgIndices(array $params, array $args, int $i): array
     {
-        if (isset($storage->params[$i]) && $storage->params[$i]->is_variadic) {
-            $indices = [];
+        $param = $params[$i] ?? null;
+        $indices = [];
 
-            for ($j = $i, $max = count($args); $j < $max; $j++) {
-                $indices[] = $j;
+        foreach ($args as $arg_index => $arg) {
+            if ($arg->unpack) {
+                $given = $arg_index <= $i;
+            } elseif ($arg->name === null) {
+                $given = $arg_index === $i || ($param !== null && $param->is_variadic && $arg_index > $i);
+            } elseif ($param === null) {
+                $given = false;
+            } else {
+                $given = $arg->name->name === $param->name
+                    || ($param->is_variadic && !self::hasParamNamed($params, $arg->name->name));
             }
 
-            return $indices;
+            if ($given) {
+                $indices[] = $arg_index;
+            }
         }
 
-        return isset($args[$i]) ? [$i] : [];
+        return $indices;
+    }
+
+    /**
+     * @param array<int, FunctionLikeParameter> $params
+     * @psalm-mutation-free
+     */
+    private static function hasParamNamed(array $params, string $name): bool
+    {
+        foreach ($params as $param) {
+            if ($param->name === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -975,17 +1240,24 @@ final class FunctionCallReturnTypeFetcher
         TCallable $callmap_callable,
         Union &$stmt_type,
     ): void {
-        $params = $callmap_callable->params ?? [];
-        $flows = InternalCallMapHandler::getReturnTaintFlows($function_id, $params);
-
-        if ($flows === [] || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
         }
 
+        $params = $callmap_callable->params ?? [];
+        $flows = InternalCallMapHandler::getReturnTaintFlows($function_id, $params);
+
+        if ($flows === []) {
+            return;
+        }
+
+        // the return value of a builtin whose calls return what was given to the others is the same for every call
         $return_node = DataFlowNode::getForCallableReturn(
             'builtin',
             $function_id,
-            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            InternalCallMapHandler::keepsStateBetweenCalls($function_id)
+                ? null
+                : new CodeLocation($statements_analyzer->getSource(), $stmt),
         );
         $graph->addNode($return_node);
 
@@ -993,8 +1265,7 @@ final class FunctionCallReturnTypeFetcher
 
         $args = $stmt->getArgs();
         foreach ($flows as $offset => $path_type) {
-            $last_offset = $params[$offset]->is_variadic ? count($args) - 1 : $offset;
-            for ($arg_offset = $offset; $arg_offset <= $last_offset && isset($args[$arg_offset]); $arg_offset++) {
+            foreach (self::callableArgIndices($params, $args, $offset) as $arg_offset) {
                 $arg_type = $statements_analyzer->node_data->getType($args[$arg_offset]->value);
                 if ($arg_type === null) {
                     continue;
@@ -1154,12 +1425,16 @@ final class FunctionCallReturnTypeFetcher
                 $removed_taints |= ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($prefixes);
             }
 
-            $format_type = $function_id === 'sprintf' && isset($args[0])
+            $format_type = ($function_id === 'sprintf' || $function_id === 'vsprintf') && isset($args[0])
                 ? $statements_analyzer->node_data->getType($args[0]->value)
                 : null;
 
             $arg_removed_taints = $format_type && $format_type->allStringLiterals()
-                ? self::getTaintsRemovedBySprintfFormats(ConcatAnalyzer::getLiteralValues($format_type), $args)
+                ? self::getTaintsRemovedBySprintfFormats(
+                    ConcatAnalyzer::getLiteralValues($format_type),
+                    $args,
+                    $function_id === 'vsprintf',
+                )
                 : [];
 
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
@@ -1186,16 +1461,20 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * The taints the values of a sprintf() call can't have once formatted with any of $formats: those of a number, for
-     * the values they only format as numbers (or not at all)
+     * The taints the values of a sprintf() or printf() call can't have once formatted with any of $formats: those of
+     * a number, for the values they only format as numbers (or not at all). With $values_in_array, $args are the
+     * format and the array of the values (vsprintf(), vprintf()), which holds those of every conversion.
      *
      * @param list<string> $formats
      * @param array<PhpParser\Node\Arg> $args
      * @return array<int, int> by index in $args
      * @psalm-mutation-free
      */
-    private static function getTaintsRemovedBySprintfFormats(array $formats, array $args): array
-    {
+    public static function getTaintsRemovedBySprintfFormats(
+        array $formats,
+        array $args,
+        bool $values_in_array = false,
+    ): array {
         $string_args = [];
 
         foreach ($formats as $format) {
@@ -1236,7 +1515,13 @@ final class FunctionCallReturnTypeFetcher
                 return [];
             }
 
-            if ($i > 0 && !isset($string_args[$i])) {
+            if ($i === 0) {
+                continue;
+            }
+
+            $is_formatted_as_string = $values_in_array ? $string_args !== [] : isset($string_args[$i]);
+
+            if (!$is_formatted_as_string) {
                 $removed_taints[$i] = TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
             }
         }
@@ -1245,7 +1530,16 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>   $args
+     * The parameters of builtins whose taints the return value holds as they are given, though the builtin escapes
+     * those of its other parameters: http_build_query() encodes the keys and values of $data, but neither the prefix
+     * it adds to numeric keys nor the separator.
+     */
+    private const UNESCAPED_RETURN_FLOWS = [
+        'http_build_query' => ['numeric_prefix' => true, 'arg_separator' => true],
+    ];
+
+    /**
+     * @param array<int, PhpParser\Node\Arg> $args
      * @param array<int, int> $arg_removed_taints the taints removed from the flows of some of $args only, by index
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -1261,20 +1555,19 @@ final class FunctionCallReturnTypeFetcher
         array $arg_removed_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
-            if (!isset($args[$i])) {
-                continue;
+            $arg_indices = self::callableArgIndices($function_storage->params, $args, $i);
+
+            // the node of an argument is that of its parameter, unless it is one of those a variadic one is given
+            if (!$function_storage->params[$i]->is_variadic) {
+                $arg_indices = $arg_indices === [] ? [] : [$i];
             }
 
-            $taintable_arg_index = [$i];
+            $param_name = $function_storage->params[$i]->name;
+            $path_removed_taints = isset(self::UNESCAPED_RETURN_FLOWS[$function_id][$param_name])
+                ? $removed_taints & ~$function_storage->removed_taints
+                : $removed_taints;
 
-            if ($function_storage->params[$i]->is_variadic) {
-                $max_params = count($args) - 1;
-                for ($arg_index = $i + 1; $arg_index <= $max_params; $arg_index++) {
-                    $taintable_arg_index[] = $arg_index;
-                }
-            }
-
-            foreach ($taintable_arg_index as $arg_index) {
+            foreach ($arg_indices as $arg_index) {
                 $function_param_sink = DataFlowNode::getForMethodArgument(
                     $function_id,
                     $arg_index,
@@ -1290,7 +1583,7 @@ final class FunctionCallReturnTypeFetcher
                     $path_type,
                     $added_taints | $function_storage->added_taints,
                     // what the native return type cannot hold, since PHP enforces it
-                    $removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0)
+                    $path_removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0)
                         | ($arg_removed_taints[$arg_index] ?? 0),
                 );
             }

@@ -19,6 +19,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -1718,6 +1719,11 @@ trait UnionTrait
         // a plain string can't carry a NoSQL query (only arrays/objects can),
         // so casting user input to string escapes the nosql taint
         if ($atomic instanceof TString) {
+            return TaintKind::ARRAY_ONLY;
+        }
+
+        // neither can any other scalar, such as scalar, array-key or numeric
+        if ($atomic instanceof Scalar) {
             return TaintKind::ARRAY_ONLY;
         }
 

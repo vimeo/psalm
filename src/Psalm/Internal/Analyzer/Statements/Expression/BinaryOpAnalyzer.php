@@ -14,6 +14,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyz
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -149,65 +151,7 @@ final class BinaryOpAnalyzer
             }
 
             if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
-                $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
-
-                $var_location = new CodeLocation($statements_analyzer, $stmt);
-
-                $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
-                $graph->addNode($new_parent_node);
-
-                $stmt_type = $stmt_type->setParentNodes([
-                    $new_parent_node->id => $new_parent_node,
-                ]);
-
-                $codebase = $statements_analyzer->getCodebase();
-                $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-                $taints = $added_taints & ~$removed_taints;
-                if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
-                    $taint_source = $new_parent_node->setTaints($taints);
-                    $graph->addSource($taint_source);
-                }
-
-                if ($stmt_left_type && $stmt_left_type->parent_nodes) {
-                    foreach ($stmt_left_type->parent_nodes as $parent_node) {
-                        $graph->addPath(
-                            $parent_node,
-                            $new_parent_node,
-                            'concat',
-                            $added_taints,
-                            $removed_taints,
-                        );
-                    }
-                }
-
-                $literal_prefixes = ConcatAnalyzer::getConcatLiteralPrefixes(
-                    $statements_analyzer,
-                    $stmt->left,
-                    $stmt->right,
-                );
-                $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
-
-                if ($stmt_right_type && $stmt_right_type->parent_nodes) {
-                    // after the start of a URL fixing its server (the left operand's, and the right operand's own
-                    // literal start when the left operand is a literal), the right operand can't choose it
-                    $right_removed_taints = $removed_taints
-                        | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes);
-
-                    foreach ($stmt_right_type->parent_nodes as $parent_node) {
-                        $graph->addPath(
-                            $parent_node,
-                            $new_parent_node,
-                            'concat',
-                            $added_taints,
-                            $right_removed_taints,
-                        );
-                    }
-                }
+                $stmt_type = self::taintConcat($statements_analyzer, $graph, $stmt, $context, $stmt_type);
             }
 
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -545,5 +489,79 @@ final class BinaryOpAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The concatenation takes the taints of its operands, an object operand those of what its __toString returns
+     */
+    private static function taintConcat(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        PhpParser\Node\Expr\BinaryOp\Concat $stmt,
+        Context $context,
+        Union $stmt_type,
+    ): Union {
+        $var_location = new CodeLocation($statements_analyzer, $stmt);
+
+        $new_parent_node = DataFlowNode::getForAssignment('concat', $var_location);
+        $graph->addNode($new_parent_node);
+
+        $stmt_type = $stmt_type->setParentNodes([
+            $new_parent_node->id => $new_parent_node,
+        ]);
+
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        $taints = $added_taints & ~$removed_taints;
+        if ($taints !== 0 && !$graph instanceof VariableUseGraph) {
+            $taint_source = $new_parent_node->setTaints($taints);
+            $graph->addSource($taint_source);
+        }
+
+        $literal_prefixes = ConcatAnalyzer::getConcatLiteralPrefixes(
+            $statements_analyzer,
+            $stmt->left,
+            $stmt->right,
+        );
+        $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
+
+        // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
+        // when the left operand is a literal), the right operand can't choose it
+        $operand_removed_taints = [
+            $removed_taints,
+            $removed_taints | ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($literal_prefixes),
+        ];
+
+        // an object operand is concatenated as what its __toString returns
+        foreach ([$stmt->left, $stmt->right] as $offset => $operand) {
+            $operand_type = $statements_analyzer->node_data->getType($operand);
+
+            if (!$operand_type) {
+                continue;
+            }
+
+            $operand_parent_nodes = CastAnalyzer::getStringConversionParentNodes(
+                $statements_analyzer,
+                $context,
+                $operand,
+                $operand_type,
+            );
+
+            foreach ($operand_parent_nodes as $parent_node) {
+                $graph->addPath(
+                    $parent_node,
+                    $new_parent_node,
+                    'concat' . CastAnalyzer::getArrayConversionSuffix($operand_type),
+                    $added_taints,
+                    $operand_removed_taints[$offset],
+                );
+            }
+        }
+
+        return $stmt_type;
     }
 }

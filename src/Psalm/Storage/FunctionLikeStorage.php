@@ -190,6 +190,12 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public bool $specialize_call = false;
 
+    /**
+     * Whether the function-like is a builtin, declared by Psalm's stubs or built from the call map: it has no body,
+     * so the taints of each of its calls flow as its declaration says (see TaintFlowGraph::isCallSpecialized()).
+     */
+    public bool $builtin = false;
+
     public int $taint_source_types = 0;
 
     public int $added_taints = 0;
