@@ -430,19 +430,18 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_var_id !== null
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
-            $real = $lhs_var_id === '$this'
-                ? Capabilities::WRITE_THIS_PROPS
-                : Capabilities::WRITE_PROPS;
             // Only whether a readonly property may be set depends on the class scope: nothing else
-            // holds a fresh object, so writing it is free in a function as in a method. `$this` is
-            // the caller's own instance, never a fresh one, even where its type is reference-free.
-            $mut = match (true) {
-                $can_set_readonly_property => $property_var_pure_compatible
-                    ? Capabilities::NONE
-                    : Capabilities::READ_PROPS,
+            // holds a fresh object, so writing it is free in a function as in a method, and for
+            // the inferred level as for the reported one. `$this` is the caller's own instance,
+            // never a fresh one, even where its type is reference-free.
+            $real = match (true) {
                 $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
-                default => $real,
+                $lhs_var_id === '$this' => Capabilities::WRITE_THIS_PROPS,
+                default => Capabilities::WRITE_PROPS,
             };
+            $mut = $can_set_readonly_property
+                ? ($property_var_pure_compatible ? Capabilities::NONE : Capabilities::READ_PROPS)
+                : $real;
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;

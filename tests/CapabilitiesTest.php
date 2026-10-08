@@ -465,6 +465,43 @@ final class CapabilitiesTest extends TestCase
                         };
                     }',
             ],
+            'closureMayWriteTheObjectsItCreates' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Box {
+                        $f = static function (): Box {
+                            $b = new Box();
+                            $b->n = 5;
+                            $b->n += 1;
+                            $b->items[] = 5;
+                            $b->setN(6);
+                            return $b;
+                        };
+                        return $f();
+                    }
+
+                    /** @psalm-pure */
+                    function makeAnnotated(): Box {
+                        $f = /** @psalm-pure */ static function (): Box {
+                            $b = new Box();
+                            $b->n = 5;
+                            return $b;
+                        };
+                        return $f();
+                    }',
+            ],
             'builtinFirstClassCallableCarriesItsCapabilities' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals|write-globals */
@@ -1463,6 +1500,155 @@ final class CapabilitiesTest extends TestCase
                         return $b->n;
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-globals but property assignment to Box::$n on an object reached from global state requires write-props|write-globals',
+            ],
+            'closureCannotWriteAPropertyOfAnObjectCapturedByValue' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): int {
+                            $b->n = 5;
+                            return $b->n;
+                        };
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is pure but property assignment to Box::$n requires write-props',
+            ],
+            'closureCannotMutateAnObjectCapturedByValue' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): int {
+                            return $b->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-props',
+            ],
+            'closureCannotWriteAPropertyOfAnObjectCapturedByReference' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props */ static function () use (&$b): int {
+                            $b->n = 5;
+                            return $b->n;
+                        };
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but property assignment to Box::$n requires write-props',
+            ],
+            'closureCannotMutateAnObjectCapturedByReference' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props */ static function () use (&$b): int {
+                            return $b->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is read-props but method Box::setN requires write-props',
+            ],
+            'arrowFunctionCannotMutateACapturedObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static fn(): int => $b->setN(5);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:71 - The context is pure but method Box::setN requires write-props',
+            ],
+            'nestedClosureCannotMutateACapturedObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): Closure {
+                            return /** @psalm-pure */ static function () use ($b): int {
+                                return $b->setN(5);
+                            };
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - The context is pure but method Box::setN requires write-props',
+            ],
+            'closureCannotMutateAnObjectInACapturedArray' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $boxes = [new Box()];
+                        return /** @psalm-pure */ static function () use ($boxes): int {
+                            return $boxes[0]->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-props',
             ],
             'staticVariableNeedsWriteGlobals' => [
                 'code' => '<?php

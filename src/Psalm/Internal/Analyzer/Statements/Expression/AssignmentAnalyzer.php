@@ -1954,6 +1954,10 @@ final class AssignmentAnalyzer
         
         $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
+        // a fresh object, that nothing else holds, is not state of the function-like either
+        $var_type = $statements_analyzer->node_data->getType($assign_var->var);
+        $isFresh = !$isThis && $var_type !== null && $var_type->reference_free && $var_type->allow_mutations;
+
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
             $pureCompat ? Capabilities::NONE : $mutations,
@@ -1961,7 +1965,7 @@ final class AssignmentAnalyzer
             'property assignment',
             ImpurePropertyAssignment::class,
             $assign_var,
-            $mutations,
+            $isFresh ? Capabilities::NONE : $mutations,
         );
     }
 
