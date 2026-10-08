@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Amp\Serialization\SerializationException;
 use Amp\Serialization\Serializer;
 use AssertionError;
 use DirectoryIterator;
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
+use Throwable;
 use Webmozart\Assert\Assert;
 
 use function assert;
@@ -30,6 +32,8 @@ use function is_dir;
 use function is_int;
 use function mkdir;
 use function pack;
+use function str_contains;
+use function str_replace;
 use function stream_get_contents;
 use function strlen;
 use function substr;
@@ -108,8 +112,19 @@ final class Cache
         $this->lock = $lock;
 
         if (file_exists($this->dir.'consolidated') && $this->arrayCache) {
-            /** @var array<string, list{string, T}> */
-            $this->cache = $this->serializer->unserialize(Providers::safeFileGetContents($this->dir.'consolidated'));
+            try {
+                /** @var array<string, list{string, T}> */
+                $this->cache = $this->serializer->unserialize(
+                    Providers::safeFileGetContents($this->dir.'consolidated'),
+                );
+            } catch (Throwable $e) {
+                throw new RuntimeException(
+                    "Could not unserialize the consolidated cache {$this->dir}consolidated. "
+                    . self::describeUnserializeError($e),
+                    0,
+                    $e,
+                );
+            }
         }
     }
 
@@ -227,8 +242,22 @@ final class Cache
 
         fclose($fp);
 
-        /** @var T */
-        $content = $this->serializer->unserialize($content);
+        try {
+            /** @var T|false|null */
+            $content = $this->serializer->unserialize($content);
+            // igbinary reports invalid data by returning false or null instead of throwing
+            if ($content === false || $content === null) {
+                throw new SerializationException('Invalid data provided to unserialize');
+            }
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                'Could not unserialize the cache entry for ' . self::describeKey($key) . " from $path. "
+                . self::describeUnserializeError($e),
+                0,
+                $e,
+            );
+        }
+
         if ($this->arrayCache) {
             $this->cache[$key] = [$hash, $content];
         }
@@ -246,6 +275,20 @@ final class Cache
             return;
         }
         if ($this->persistent) {
+            // Serialize before touching the files, so a failure leaves the previous entry intact.
+            try {
+                $serialized = $this->serializer->serialize($item);
+            } catch (Throwable $e) {
+                $cause = self::describeError($e);
+                $message = 'Could not serialize the cache entry for ' . self::describeKey($key) . '.';
+                if (str_contains($cause, 'Maximum call stack size')) {
+                    $message .= ' The value is nested too deeply for the available call stack. Raise the'
+                        . ' fiber.stack_size ini setting, or outside of fibers the process stack limit'
+                        . ' (ulimit -s) and any explicit zend.max_allowed_stack_size, to allow it.';
+                }
+                throw new RuntimeException("$message Cause: $cause", 0, $e);
+            }
+
             $path = $this->dir . hash('xxh128', $key);
             $f = fopen("$path.hash", 'w');
             Assert::notFalse($f);
@@ -254,11 +297,43 @@ final class Cache
             Assert::eq(fwrite($f, pack('V', strlen($hash))), 4);
             Assert::eq(fwrite($f, $hash), strlen($hash));
             Assert::eq(fwrite($f, $key), strlen($key));
-            file_put_contents($path, $this->serializer->serialize($item));
+            file_put_contents($path, $serialized);
             fflush($f);
             flock($f, LOCK_UN);
             fclose($f);
         }
         $this->cache[$key] = [$hash, $item];
+    }
+
+    /**
+     * Keys may join several parts with NUL bytes, e.g. a file path and a class name.
+     */
+    private static function describeKey(string $key): string
+    {
+        return "'" . str_replace("\0", "', '", $key) . "'";
+    }
+
+    private static function describeUnserializeError(Throwable $e): string
+    {
+        $cause = self::describeError($e);
+        $hint = str_contains($cause, 'Maximum depth')
+            ? 'The value is nested too deeply, raise the unserialize_max_depth ini setting to allow it.'
+            : 'The cache may be corrupt, run Psalm with --clear-cache to rebuild it.';
+
+        return "$hint Cause: $cause";
+    }
+
+    /**
+     * Serializers wrap the actual failure, whose message may embed the whole payload.
+     */
+    private static function describeError(Throwable $e): string
+    {
+        while (($previous = $e->getPrevious()) !== null) {
+            $e = $previous;
+        }
+
+        $message = $e->getMessage();
+
+        return strlen($message) > 200 ? substr($message, 0, 200) . '...' : $message;
     }
 }
