@@ -1705,10 +1705,40 @@ final class ArrayAssignmentTest extends TestCase
                 ',
                 'assertions' => [
                     '$x===' => 'array{0: 3, bar: 2, foo: 1, ...<array-key, 4|5|6>}',
-                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
+                    '$y===' => 'array{0: 3, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'unpackListAfterLiteralItemsKeepsThem' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $objects = [];
+                    /** @var list<string> */
+                    $strings = [];
+
+                    $a = ["OR", ...$objects];
+                    $b = ["OR", ...$strings];
+                    $c = ["OR", "AND", ...$strings];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', ...<X>}",
+                    '$b===' => "list{'OR', ...<string>}",
+                    '$c===' => "list{'OR', 'AND', ...<string>}",
+                ],
+            ],
+            'unpackListAfterLiteralItemKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $conditions */
+                    function orWhere(array $conditions): void {
+                        takesWhere(["OR", ...$conditions]);
+                    }
+                ',
             ],
             'unpackNonObjectlike' => [
                 'code' => '<?php
