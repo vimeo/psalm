@@ -578,7 +578,13 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
-        $dispatch_node = self::getReturnDispatchNode($codebase, $taint_flow_graph, $method_id, $method_storage);
+        $dispatch_node = self::getReturnDispatchNode(
+            $codebase,
+            $taint_flow_graph,
+            $method_id,
+            $method_storage,
+            $node_location,
+        );
 
         if ($dispatch_node) {
             $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
@@ -602,17 +608,21 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
-     * The node of what a virtual call of a method gets from the methods that may run instead, those of the classes
-     * extending the class it is called on (see DataFlowNode::getForReturnDispatch()), null if there are none. That
-     * can't be the return node of the method: the calls on the classes inheriting it go there too, and they can't
-     * run the methods of the others. The node is shared by the virtual calls of the method on the class, so that
-     * their number doesn't multiply its paths: the first of them links it.
+     * The node of what a virtual call of a method at $call_location gets from the methods that may run instead, those
+     * of the classes extending the class it is called on, or null if there are none.
+     *
+     * That can't be the return node of the method: the calls on the classes inheriting it go there too, and they
+     * can't run the methods of the others. The methods are linked to a dispatch node (see
+     * DataFlowNode::getForReturnDispatch()) shared by the virtual calls of the method on the class, once, so that
+     * the number of calls doesn't multiply its paths. Each call takes it through a node of its own, so that what is
+     * added to the result of a call doesn't go to the others.
      */
     public static function getReturnDispatchNode(
         Codebase $codebase,
         TaintFlowGraph $taint_flow_graph,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        CodeLocation $call_location,
     ): ?DataFlowNode {
         // a constructor is called on the class it constructs, a private method is not overridden
         if ($method_id->method_name === '__construct'
@@ -628,13 +638,11 @@ final class MethodCallReturnTypeFetcher
             return null;
         }
 
-        $dispatch_node = DataFlowNode::getForReturnDispatch(
-            $class_storage->name . '::' . (string) $method_storage->cased_name,
-        );
+        $cased_method_id = $class_storage->name . '::' . (string) $method_storage->cased_name;
+        $dispatch_node = DataFlowNode::getForReturnDispatch($cased_method_id);
 
         if (!$taint_flow_graph->hasNode($dispatch_node)) {
-            $taint_flow_graph->addNode($dispatch_node);
-
+            $return_nodes = [];
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
@@ -671,12 +679,28 @@ final class MethodCallReturnTypeFetcher
                     $specialization_location,
                 );
 
+                $return_nodes[$return_node->id] = $return_node;
+            }
+
+            // no other method may run: the classes extending this one inherit the method
+            if ($return_nodes === []) {
+                return null;
+            }
+
+            $taint_flow_graph->addNode($dispatch_node);
+
+            foreach ($return_nodes as $return_node) {
                 $taint_flow_graph->addNode($return_node);
                 $taint_flow_graph->addPath($return_node, $dispatch_node, 'dispatch');
             }
         }
 
-        return $dispatch_node;
+        $call_node = DataFlowNode::getForAssignment($dispatch_node->label, $call_location);
+
+        $taint_flow_graph->addNode($call_node);
+        $taint_flow_graph->addPath($dispatch_node, $call_node, 'dispatch');
+
+        return $call_node;
     }
 
     public static function replaceTemplateTypes(
