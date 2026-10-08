@@ -339,6 +339,23 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The sink of the values of the array a parameter is given, for its value sinks (see
+     * FunctionLikeParameter::$value_sinks): the parameter's node flows into it through a fetch of any value.
+     *
+     * @psalm-pure
+     */
+    public static function getForArgumentValues(self $param_node, int $taints): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . '[*]',
+            $param_node->label . '[*]',
+            $param_node->code_location,
+            $param_node->specialization_key,
+            $taints,
+        );
+    }
+
+    /**
      * Like {@see self::getForMethodArgument()} but resolves the (declaring) method storage from the
      * cased method id itself, via $methods, instead of requiring the caller to hold it. Returns null
      * when the id does not resolve to a stored method (a callable object, or a magic method with no
@@ -661,6 +678,25 @@ final class DataFlowNode implements Stringable
             $taintSource,
             $path_types,
             $context,
+        );
+    }
+
+    /**
+     * The node a path of type $path_type from node $from_id (if known, $from) goes through, when the analysis
+     * added a path of another type between the same nodes (see TaintFlowGraph::mergePath()). It stands for
+     * the node the path comes from: its label and location, a pure function of its id, are those of that
+     * node.
+     *
+     * @psalm-pure
+     */
+    public static function getForPathVariant(string $from_id, ?self $from, string $path_type): self
+    {
+        return new self(
+            $from_id . ' via ' . $path_type,
+            null,
+            null,
+            $from?->label ?? $from_id,
+            $from?->code_location,
         );
     }
 

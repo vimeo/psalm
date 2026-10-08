@@ -379,9 +379,20 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
+            $values_only = str_ends_with($param_name, '[*]');
+
+            if ($values_only) {
+                $param_name = substr($param_name, 0, -3);
+            }
 
             foreach ($storage->params as $param_storage) {
-                if ($param_storage->name === $param_name) {
+                if ($param_storage->name !== $param_name) {
+                    continue;
+                }
+
+                if ($values_only) {
+                    $param_storage->value_sinks |= $taint_sink_param['taint'];
+                } else {
                     $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
