@@ -416,9 +416,9 @@ final class ConstantTypeResolver
         $expanded = TypeExpander::expandUnion(
             $codebase,
             new Union([$closure]),
+            $declaring_method_id->fq_class_name,
             $c->fqcln,
-            $c->fqcln,
-            $codebase->classlike_storage_provider->get($c->fqcln)->parent_class,
+            $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->parent_class,
             true,
             false,
             true,

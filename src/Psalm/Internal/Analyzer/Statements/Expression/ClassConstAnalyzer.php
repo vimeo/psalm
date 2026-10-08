@@ -38,6 +38,7 @@ use Psalm\Issue\OverriddenInterfaceConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedConstant;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
@@ -800,7 +801,26 @@ final class ClassConstAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, strtolower($name->name));
 
-        if ($codebase->methods->getDeclaringMethodId($method_id, true) === null) {
+        if ($codebase->methods->getDeclaringMethodId($method_id) === null) {
+            // A missing method is already reported by the call analysis, but a target that exists
+            // only as a pseudo-method or through __callStatic is accepted there, while PHP throws
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            if (isset($class_storage->pseudo_static_methods[$method_id->method_name])
+                || $codebase->methods->getDeclaringMethodId($method_id, true) !== null
+                || $codebase->methods->methodExists(new MethodIdentifier($fq_class_name, '__callstatic'))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UndefinedMethod(
+                        'Method ' . (string) $method_id . ' does not exist; '
+                        . 'magic methods cannot be used in constant expressions',
+                        new CodeLocation($statements_analyzer, $call),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             return;
         }
 

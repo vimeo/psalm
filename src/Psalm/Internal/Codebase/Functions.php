@@ -117,6 +117,13 @@ final class Functions
                 return $this->reflection->getFunctionStorage($function_id);
             }
 
+            // no file context (e.g. resolving a constant expression): ask every scanned file
+            foreach (FileStorageProvider::getAll() as $scanned_file_storage) {
+                if (isset($scanned_file_storage->functions[$function_id])) {
+                    return $scanned_file_storage->functions[$function_id];
+                }
+            }
+
             throw new UnexpectedValueException(
                 'Expecting non-empty $root_file_path and $checked_file_path',
             );
