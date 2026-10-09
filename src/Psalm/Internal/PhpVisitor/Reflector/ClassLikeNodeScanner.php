@@ -932,6 +932,7 @@ final class ClassLikeNodeScanner
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
             $storage->suppressed_issues = $docblock_info->suppressed_issues;
+            $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
             if ($docblock_info->description) {
                 $storage->description = $docblock_info->description;
