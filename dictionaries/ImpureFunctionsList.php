@@ -374,6 +374,7 @@ return [
     'hash_update_stream' => Capabilities::WRITE_PROPS | Capabilities::IO,
     // unserialize
     'unserialize' => Capabilities::ALL,
+    'igbinary_unserialize' => Capabilities::ALL,
     // openssl
     'openssl_csr_export_to_file' => Capabilities::IO,
     'openssl_pkcs12_export_to_file' => Capabilities::IO,
