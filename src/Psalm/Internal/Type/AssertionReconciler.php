@@ -715,7 +715,8 @@ final class AssertionReconciler extends Reconciler
             $atomic_comparison_results,
         );
 
-        if ($atomic_contained_by) {
+        // an object with __toString() is accepted where a string is expected, but no string is such an object
+        if ($atomic_contained_by && $atomic_comparison_results->to_string_cast !== true) {
             return self::refineContainedAtomicWithAnother(
                 $type_1_atomic,
                 $type_2_atomic,
