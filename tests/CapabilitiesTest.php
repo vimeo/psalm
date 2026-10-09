@@ -1279,6 +1279,28 @@ final class CapabilitiesTest extends TestCase
                         return $callable("k");
                     }',
             ],
+            'callsOfUnknownMethodsWriteOnlyTheReferencesPassed' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /**
+                     * @param list<mixed> $arguments
+                     * @psalm-capabilities read-props|write-props|io
+                     */
+                    function call(Conn $conn, string $name, array $arguments): mixed {
+                        $callable = [$conn, $name];
+                        $callable(...$arguments);
+                        $callable(strtolower($name), "k");
+                        return $conn->{$name}(...$arguments);
+                    }',
+            ],
         ];
     }
 
@@ -2901,6 +2923,45 @@ final class CapabilitiesTest extends TestCase
                     function call(Conn $conn, string $name): mixed {
                         $callable = [$conn, $name];
                         return $callable("k");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'methodCalledByAnUnknownNameMayWriteAReferenceParamPassed' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Conn $conn, string $name, string &$out): mixed {
+                        return $conn->{$name}($out);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'callableArrayWithAnUnknownMethodMayWriteAPropertyPassed' => [
+                'code' => '<?php
+                    final class Holder {
+                        public string $value = "";
+                    }
+
+                    /** @psalm-capabilities read-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Conn $conn, string $name, Holder $holder): mixed {
+                        $callable = [$conn, $name];
+                        return $callable($holder->value);
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],

@@ -985,7 +985,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         // a callable string or array whose target is unknown may do anything, but a method of an
                         // object whose class contract caps them all
                         $statements_analyzer->signalMutation(
-                            self::getCallableArrayContractCapabilities($codebase, $var_type_part),
+                            ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                                $statements_analyzer,
+                                $context,
+                                self::getCallableArrayContractCapabilities($codebase, $var_type_part),
+                                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                            ),
                             $context,
                             'function call on ' . $var_type_part->getId(),
                             ImpureFunctionCall::class,
