@@ -272,9 +272,6 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
-                    // the closure may write it whenever it runs, so what was concluded about it no longer holds
-                    $context->removeVarFromConflictingClauses($use_var_id);
-
                     // shared with the enclosing scope, plus what that scope needs to write it
                     $use_context->captured_by_ref[$use_var_id]
                         = AssignmentAnalyzer::getExternalWriteCapabilities($context, $use_var_id);
@@ -324,6 +321,25 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         $byref_vars = [];
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_vars);
+
+        // a closure that writes a variable it shares with this scope may do so whenever it runs, so what was
+        // concluded about the variable no longer holds
+        $closure_removed_var_ids = $use_context->removed_var_log->removedSince(0);
+
+        if ($closure_removed_var_ids) {
+            foreach ($was_by_ref as $use_var_id => $_) {
+                foreach ($closure_removed_var_ids as $removed_var_id => $_) {
+                    if ($removed_var_id === $use_var_id
+                        || str_starts_with($removed_var_id, $use_var_id . '[')
+                        || str_starts_with($removed_var_id, $use_var_id . '->')
+                    ) {
+                        $context->removeVarFromConflictingClauses($use_var_id);
+
+                        break;
+                    }
+                }
+            }
+        }
 
         foreach ($byref_vars as $key => $value) {
             // the variable is shared with the closure, but is still this scope's own unless it

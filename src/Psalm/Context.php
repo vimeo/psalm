@@ -747,11 +747,20 @@ final class Context
     /**
      * Applies to this context the removals that contexts forked from it made since $position, for the code
      * that reads its clauses before the enclosing statement ends, e.g. the operands following a `||`.
+     * They stay in the log under the contexts that made them, where enclosing statements find them.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function removeVarsRemovedSince(int $position): void
     {
-        foreach ($this->removed_var_log->removedSince($position, $this) as $var_id => $_) {
-            $this->removeVarFromConflictingClauses($var_id);
+        if (!$this->clauses) {
+            return;
+        }
+
+        $removed_var_ids = $this->removed_var_log->removedSince($position, $this);
+
+        if ($removed_var_ids) {
+            $this->clauses = self::withoutClausesMentioning($this->clauses, $removed_var_ids);
         }
     }
 
@@ -766,23 +775,37 @@ final class Context
      */
     public function removeStaleClauses(array $clauses_before_statement, array $removed_var_ids): void
     {
-        $stale_hashes = [];
+        // A clause the statement derived afresh can share its hash with an earlier one, but not the
+        // expression it was derived from.
+        $stale_clauses = [];
 
         foreach ($clauses_before_statement as $clause) {
-            $stale_hashes[$clause->hash] = true;
+            $stale_clauses[$clause->hash . ':' . $clause->creating_object_id] = true;
         }
 
+        $this->clauses = self::withoutClausesMentioning($this->clauses, $removed_var_ids, $stale_clauses);
+    }
+
+    /**
+     * @psalm-pure
+     * @param list<Clause> $clauses
+     * @param array<string, true> $var_ids
+     * @param array<string, true>|null $only_clauses hash:creating_object_id of the only clauses to drop
+     * @return list<Clause>
+     */
+    private static function withoutClausesMentioning(array $clauses, array $var_ids, ?array $only_clauses = null): array
+    {
         $dependent_pattern = '/(?:' . implode('|', array_map(
             static fn(string $var_id): string => preg_quote($var_id, '/'),
-            array_keys($removed_var_ids),
+            array_keys($var_ids),
         )) . ')[\]\[\-]/';
 
         $clauses_to_keep = [];
 
-        foreach ($this->clauses as $clause) {
-            if (isset($stale_hashes[$clause->hash])) {
+        foreach ($clauses as $clause) {
+            if ($only_clauses === null || isset($only_clauses[$clause->hash . ':' . $clause->creating_object_id])) {
                 foreach ($clause->possibilities as $var_id => $_) {
-                    if (isset($removed_var_ids[$var_id]) || preg_match($dependent_pattern, $var_id)) {
+                    if (isset($var_ids[$var_id]) || preg_match($dependent_pattern, $var_id)) {
                         continue 2;
                     }
                 }
@@ -791,7 +814,7 @@ final class Context
             $clauses_to_keep[] = $clause;
         }
 
-        $this->clauses = $clauses_to_keep;
+        return $clauses_to_keep;
     }
 
     /**

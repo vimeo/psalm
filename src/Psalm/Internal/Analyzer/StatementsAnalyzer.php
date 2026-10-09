@@ -264,10 +264,21 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 self::hoistConstants($this, $stmts, $context);
             }
 
+            $removed_var_log_position = $context->removed_var_log->position();
+
             foreach ($stmts as $stmt) {
                 if (self::analyzeStatementInvalidatingClauses($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
+            }
+
+            // Nothing that follows runs after what the block changed, whereas break and continue
+            // leave it to whatever the loop or switch goes on to do.
+            if ($context->has_returned
+                && $context->removed_var_log->position() > $removed_var_log_position
+                && ScopeAnalyzer::getControlActions($stmts, $this->node_data, []) === [ScopeAnalyzer::ACTION_END]
+            ) {
+                $context->removed_var_log->discardSince($removed_var_log_position);
             }
 
             if ($this->root_scope
