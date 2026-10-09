@@ -22,6 +22,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -246,6 +247,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 null,
                 true,
                 $context,
+            );
+
+            $statements_analyzer->signalMutation(
+                MethodCallPurityAnalyzer::getUnknownMethodCapabilities($statements_analyzer, $stmt->var, $class_storage),
+                $context,
+                'method ' . $class_storage->name . '::{unknown}',
+                ImpureMethodCall::class,
+                $stmt,
             );
 
             $result->return_type = Type::getMixed();

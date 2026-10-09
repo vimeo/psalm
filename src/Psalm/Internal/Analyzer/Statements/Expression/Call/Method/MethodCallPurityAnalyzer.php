@@ -68,7 +68,42 @@ final class MethodCallPurityAnalyzer
         MethodStorage $method_storage,
         bool $receiver_is_fresh = false,
     ): int {
-        $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
+        return self::getReceiverCallCapabilities(
+            $statements_analyzer,
+            $var,
+            $method_storage->capabilities,
+            $receiver_is_fresh,
+        );
+    }
+
+    /**
+     * The capabilities a call of a method of the class of $class_storage whose name isn't known
+     * (`$obj->{$name}()`) requires from its caller, given the receiver: any of its methods may run,
+     * `__call()` too, which only its class contract caps. Without one, the call may do anything.
+     */
+    public static function getUnknownMethodCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $var,
+        ClassLikeStorage $class_storage,
+    ): int {
+        if (!$class_storage->has_mutations_annotation) {
+            return Capabilities::ALL;
+        }
+
+        return self::getReceiverCallCapabilities($statements_analyzer, $var, $class_storage->capabilities);
+    }
+
+    /**
+     * The capabilities a call of a method that may use $method_capabilities requires from its
+     * caller, given the receiver (see getMethodCapabilities())
+     */
+    private static function getReceiverCallCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $var,
+        int $method_capabilities,
+        bool $receiver_is_fresh = false,
+    ): int {
+        $capabilities = $method_capabilities & ~Capabilities::READ_PROPS;
 
         if (!self::isFromGlobalState($statements_analyzer, $var)
             && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))

@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -490,6 +491,45 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         return true;
     }
 
+
+    /**
+     * The capabilities a callable array `[$object, $method]` whose method isn't known requires: any method of the
+     * object may run, `__call()` too, which only its class contract caps. A method writing the object's own
+     * properties writes those of an object the caller holds. Any other callable may do anything.
+     */
+    private static function getCallableArrayContractCapabilities(Codebase $codebase, Atomic $callable): int
+    {
+        if (!$callable instanceof TKeyedArray
+            || !isset($callable->properties[0])
+            || count($callable->properties) !== 2
+        ) {
+            return Capabilities::ALL;
+        }
+
+        $capabilities = Capabilities::NONE;
+
+        foreach ($callable->properties[0]->getAtomicTypes() as $object_type) {
+            if (!$object_type instanceof TNamedObject
+                || !$codebase->classlikes->classOrInterfaceExists($object_type->value)
+            ) {
+                return Capabilities::ALL;
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($object_type->value);
+
+            if (!$class_storage->has_mutations_annotation) {
+                return Capabilities::ALL;
+            }
+
+            $capabilities |= $class_storage->capabilities;
+        }
+
+        return MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
+            $capabilities & ~Capabilities::READ_PROPS,
+            false,
+            false,
+        );
+    }
     private static function handleNamedFunction(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -942,9 +982,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $potential_method_storage,
                         );
                     } elseif (!$function_call_info->new_function_name) {
-                        // a callable string or array whose target is unknown may do anything
+                        // a callable string or array whose target is unknown may do anything, but a method of an
+                        // object whose class contract caps them all
                         $statements_analyzer->signalMutation(
-                            Capabilities::ALL,
+                            self::getCallableArrayContractCapabilities($codebase, $var_type_part),
                             $context,
                             'function call on ' . $var_type_part->getId(),
                             ImpureFunctionCall::class,
