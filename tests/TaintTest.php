@@ -1520,6 +1520,55 @@ final class TaintTest extends TestCase
 
                     forward($_GET["name"] ?? null);',
             ],
+            'flowFromCallableResultOnlyIntoItsOwnCall' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        public function get(callable $compute): mixed;
+                    }
+
+                    function store(Cache $cache): void {
+                        $cache->get(fn(): string => (string) $_GET["x"]);
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get(fn(): string => "safe");
+                    }',
+            ],
+            'noFlowFromTheResultOfACallableNotInTheFlow' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        public function get(callable $compute, callable $onMiss): string;
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get(fn(): string => "safe", fn(): string => (string) $_GET["x"]);
+                    }',
+            ],
+            'noFlowFromCallableResultWithoutAnnotation' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         */
+                        public function get(callable $compute): mixed;
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get(fn(): string => (string) $_GET["x"]);
+                    }',
+            ],
             'htmlSinkNotTaintedBySourceReturningInt' => [
                 'code' => '<?php
                     final class Request {
@@ -3928,6 +3977,54 @@ final class TaintTest extends TestCase
                     }
 
                     echo (new Caller())->call(fn(string $x): string => $x, (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flowFromTheClosureResultOfAnInterfaceMethod' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        public function get(string $key, callable $compute): mixed;
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get("key", fn(): string => (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flowFromTheClosureResultOfAnAbstractStaticMethod' => [
+                'code' => '<?php
+                    abstract class Computer {
+                        /**
+                         * @param callable(): string $compute
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        abstract public static function compute(callable $compute): string;
+
+                        public static function show(): void {
+                            echo static::compute(function (): string {
+                                return (string) $_GET["x"];
+                            });
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flowFromTheResultOfANamedFunctionGivenAsCallable' => [
+                'code' => '<?php
+                    /** @psalm-flow ($key, $compute()) -> return */
+                    function remember(string $key, callable $compute): string {
+                        return $key;
+                    }
+
+                    function compute(): string {
+                        return (string) $_GET["x"];
+                    }
+
+                    echo remember("key", compute(...));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintYieldedByATraitGenerator' => [

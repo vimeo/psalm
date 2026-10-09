@@ -23,6 +23,7 @@ use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -734,6 +735,17 @@ final class FunctionCallReturnTypeFetcher
                 }
             }
         }
+
+        self::taintUsingCallableFlows(
+            $statements_analyzer->getCodebase(),
+            $storage,
+            $graph,
+            $callable_id,
+            null,
+            $specialization_location,
+            $return_node,
+            $storage->removed_taints,
+        );
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
 
@@ -1455,6 +1467,20 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
+        if (!$stmt->isFirstClassCallable()) {
+            self::taintUsingCallableFlows(
+                $codebase,
+                $function_storage,
+                $taint_flow_graph,
+                $cased_function_id,
+                null,
+                $specialization_location,
+                $function_call_node,
+                $function_storage->removed_taints | $removed_taints | $conditionally_removed_taints,
+                $added_taints,
+            );
+        }
+
         self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
 
         return $function_call_node;
@@ -1587,6 +1613,58 @@ final class FunctionCallReturnTypeFetcher
                         | ($arg_removed_taints[$arg_index] ?? 0),
                 );
             }
+        }
+    }
+
+    /**
+     * `@psalm-flow ($compute()) -> return`: what a call returns holds what the callables given to these parameters
+     * return, which taintCallablePassedToParam() connects to the node of the calls of the parameter
+     *
+     * @param string $cased_function_id the function called, or the callable invoked
+     * @param ?MethodIdentifier $method_id the method called, whose callable parameters are keyed by its body
+     */
+    public static function taintUsingCallableFlows(
+        Codebase $codebase,
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        string $cased_function_id,
+        ?MethodIdentifier $method_id,
+        ?CodeLocation $specialization_location,
+        DataFlowNode $function_call_node,
+        int $removed_taints,
+        int $added_taints = 0,
+    ): void {
+        if ($function_storage->return_source_callable_params === []) {
+            return;
+        }
+
+        $callable_param_method_id = $cased_function_id;
+        $callable_param_storage = $function_storage;
+
+        // keyed as the body of the method keys its callable parameters (see ArgumentAnalyzer)
+        $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
+        if ($method_id && $declaring_method_id) {
+            $callable_param_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
+            $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
+        }
+
+        foreach ($function_storage->return_source_callable_params as $i => $path_type) {
+            $callable_return_node = DataFlowNode::getForCallableParamReturn(
+                $callable_param_method_id,
+                DataFlowNode::getParameterOffset($callable_param_storage, $function_storage->params[$i], $i),
+                $callable_param_storage,
+                $specialization_location,
+            );
+            $graph->addNode($callable_return_node);
+
+            $graph->addPath(
+                $callable_return_node,
+                $function_call_node,
+                $path_type,
+                $added_taints | $function_storage->added_taints,
+                // what the native return type cannot hold, since PHP enforces it
+                $removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+            );
         }
     }
 

@@ -608,6 +608,17 @@ final class MethodCallReturnTypeFetcher
             $method_storage->removed_taints,
         );
 
+        FunctionCallReturnTypeFetcher::taintUsingCallableFlows(
+            $codebase,
+            $method_storage,
+            $taint_flow_graph,
+            $cased_method_id,
+            $method_id,
+            $specialize_call ? $node_location : null,
+            $method_call_node,
+            $method_storage->removed_taints,
+        );
+
         FunctionCallReturnTypeFetcher::taintUsingStorage(
             $method_storage,
             $taint_flow_graph,
