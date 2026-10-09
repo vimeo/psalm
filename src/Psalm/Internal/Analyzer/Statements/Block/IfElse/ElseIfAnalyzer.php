@@ -264,6 +264,8 @@ final class ElseIfAnalyzer
         $pre_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
         $elseif_context->possibly_assigned_var_ids = [];
 
+        $removed_var_log_position = $elseif_context->removed_var_log->position();
+
         if ($statements_analyzer->analyze(
             $elseif->stmts,
             $elseif_context,
@@ -272,9 +274,7 @@ final class ElseIfAnalyzer
             return false;
         }
 
-        foreach ($elseif_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeVarsRemovedSince($removed_var_log_position);
 
         /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;

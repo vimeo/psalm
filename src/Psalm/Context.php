@@ -13,6 +13,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\RemovedVarLog;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -23,16 +24,19 @@ use Psalm\Type\Union;
 use RuntimeException;
 
 use function array_keys;
+use function array_map;
 use function array_search;
 use function array_shift;
 use function assert;
 use function count;
+use function implode;
 use function in_array;
 use function is_int;
 use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function spl_object_id;
 use function str_contains;
 use function strcspn;
 use function strpos;
@@ -372,9 +376,9 @@ final class Context
     public bool $inside_attribute = false;
 
     /**
-     * @var array<string, true>
+     * @internal
      */
-    public array $parent_remove_vars = [];
+    public RemovedVarLog $removed_var_log;
 
     /**
      * @internal
@@ -387,6 +391,7 @@ final class Context
          */
         public ?string $self = null,
     ) {
+        $this->removed_var_log = new RemovedVarLog();
     }
 
     /**
@@ -736,7 +741,80 @@ final class Context
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
-        $this->parent_remove_vars[$remove_var_id] = true;
+        $this->removed_var_log->record($remove_var_id, spl_object_id($this));
+    }
+
+    /**
+     * Applies to this context the removals that contexts forked from it made since $position, for the code
+     * that reads its clauses before the enclosing statement ends, e.g. the operands following a `||`.
+     * They stay in the log under the contexts that made them, where enclosing statements find them.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function removeVarsRemovedSince(int $position): void
+    {
+        if (!$this->clauses) {
+            return;
+        }
+
+        $removed_var_ids = $this->removed_var_log->removedSince($position, $this);
+
+        if ($removed_var_ids) {
+            $this->clauses = self::withoutClausesMentioning($this->clauses, $removed_var_ids);
+        }
+    }
+
+    /**
+     * Drops the clauses that held before a statement and mention one of the variables the statement's nested
+     * contexts changed. Those contexts are discarded without handing their removals back, so without this
+     * the clauses would outlive the change. Clauses the statement created itself are kept.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param list<Clause> $clauses_before_statement
+     * @param array<string, true> $removed_var_ids
+     */
+    public function removeStaleClauses(array $clauses_before_statement, array $removed_var_ids): void
+    {
+        // A clause the statement derived afresh can share its hash with an earlier one, but not the
+        // expression it was derived from.
+        $stale_clauses = [];
+
+        foreach ($clauses_before_statement as $clause) {
+            $stale_clauses[$clause->hash . ':' . $clause->creating_object_id] = true;
+        }
+
+        $this->clauses = self::withoutClausesMentioning($this->clauses, $removed_var_ids, $stale_clauses);
+    }
+
+    /**
+     * @psalm-pure
+     * @param list<Clause> $clauses
+     * @param array<string, true> $var_ids
+     * @param array<string, true>|null $only_clauses hash:creating_object_id of the only clauses to drop
+     * @return list<Clause>
+     */
+    private static function withoutClausesMentioning(array $clauses, array $var_ids, ?array $only_clauses = null): array
+    {
+        $dependent_pattern = '/(?:' . implode('|', array_map(
+            static fn(string $var_id): string => preg_quote($var_id, '/'),
+            array_keys($var_ids),
+        )) . ')[\]\[\-]/';
+
+        $clauses_to_keep = [];
+
+        foreach ($clauses as $clause) {
+            if ($only_clauses === null || isset($only_clauses[$clause->hash . ':' . $clause->creating_object_id])) {
+                foreach ($clause->possibilities as $var_id => $_) {
+                    if (isset($var_ids[$var_id]) || preg_match($dependent_pattern, $var_id)) {
+                        continue 2;
+                    }
+                }
+            }
+
+            $clauses_to_keep[] = $clause;
+        }
+
+        return $clauses_to_keep;
     }
 
     /**

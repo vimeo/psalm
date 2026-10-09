@@ -1321,6 +1321,170 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'boolVarNarrowingKeptAfterUnrelatedIfFollowingReassignment' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $a, ?Bag $x, bool $c): void {
+                        $x = $a ?? $x;
+                        $has = $x !== null;
+                        if ($c) {
+                            echo 1;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterLongOrFollowingReassignment' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $a, ?Bag $x, bool $c, bool $d, bool $e, bool $f, bool $g): void {
+                        $x = $a;
+                        $has = $x !== null;
+                        $any = $c || $d || $e || $f || $g;
+                        echo $any;
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterStatementsNotAssigningIt' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $a, ?Bag $x, bool $c): void {
+                        $x = $a;
+                        $has = $x !== null;
+                        if ($c) {
+                            echo 1;
+                        }
+                        foreach ([1, 2] as $i) {
+                            echo $i;
+                        }
+                        switch ($c) {
+                            case true:
+                                echo 1;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReassignmentInReturningBranch' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $x = null;
+                            return;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReassignmentInReturningSwitchCase' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, int $c): void {
+                        $has = $x !== null;
+                        switch ($c) {
+                            case 1:
+                                $x = null;
+                                return;
+                            default:
+                                break;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReassignmentInThrowingCatch' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x): void {
+                        $has = $x !== null;
+                        try {
+                            echo 1;
+                        } catch (Exception $e) {
+                            $x = null;
+                            throw $e;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptWhenSameClauseIsDerivedAgain' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x): void {
+                        $has = $x !== null;
+                        try {
+                            $has = $x !== null;
+                        } finally {
+                            echo 1;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReadOnlyByRefClosureCapture' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x): void {
+                        $has = $x !== null;
+                        $reader = function () use (&$x): void {
+                            echo $x !== null ? 1 : 0;
+                        };
+                        $reader();
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1345,6 +1509,338 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInLoop' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            foreach ([1, 2] as $_) {
+                                $x = $b;
+                            }
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInSwitch' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, int $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            switch ($d) {
+                                case 1:
+                                    $x = $b;
+                                    break;
+                            }
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInMatch' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, int $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $_ = match ($d) {
+                                1 => ($x = $b),
+                                default => null,
+                            };
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInTernary' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $_ = $d ? ($x = $b) : null;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInCondition' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c && (($x = $b) !== null)) {
+                            echo 1;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInElseifCondition' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            echo 1;
+                        } elseif ($d && (($x = $b) !== null)) {
+                            echo 2;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterByRefArgumentInLoop' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param-out ?Bag $o */
+                    function setRef(?Bag &$o, ?Bag $v): void {
+                        $o = $v;
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        while ($c) {
+                            setRef($x, $b);
+                            break;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReferenceAssignment' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $x = &$b;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterByRefClosureUse' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        if ($c) {
+                            $f = function () use (&$x, $b): void {
+                                $x = $b;
+                            };
+                            $f();
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBareBlock' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x): bool {
+                        $has = $x !== null;
+                        {
+                            foreach ([1, 2] as $_) {
+                                $x = $b;
+                            }
+                        }
+                        return $has && $x->get() > 0;
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBareBlockIf' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): bool {
+                        $has = $x !== null;
+                        {
+                            if ($c) {
+                                $x = $b;
+                            }
+                            return $has && $x->get() > 0;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedByRefArgumentInLongOr' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param-out ?Bag $o */
+                    function setRef(?Bag &$o, ?Bag $v): bool {
+                        $o = $v;
+                        return true;
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c, bool $d, bool $e): bool {
+                        $has = $x !== null;
+                        return setRef($x, $b) || $c || $d || $e || ($has && $x->get() > 0);
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedByReassignmentInConjunctionBeforeOr' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): bool {
+                        $has = $x !== null;
+                        return ($c && (($x = $b) !== null)) || ($has && $x->get() > 0);
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentBeforeBreak' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        while ($d) {
+                            if ($c) {
+                                $x = null;
+                                break;
+                            }
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentBeforeContinue' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c, bool $d): void {
+                        $has = $x !== null;
+                        while ($d) {
+                            if ($c) {
+                                $x = null;
+                                continue;
+                            }
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBreakingSwitchCase' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, int $c): void {
+                        $has = $x !== null;
+                        switch ($c) {
+                            case 1:
+                                $x = null;
+                                break;
+                            default:
+                                break;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
             'threeVarLogicWithChange' => [
                 'code' => '<?php

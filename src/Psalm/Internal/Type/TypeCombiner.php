@@ -1522,17 +1522,6 @@ final class TypeCombiner
                 unset($objectlike_entry);
             }
 
-            if ($combination->objectlike_value_type
-                && $combination->objectlike_value_type->isMixed()
-                && $combination->array_type_params
-                && !$combination->array_type_params[1]->isNever()
-            ) {
-                $combination->objectlike_entries = array_filter(
-                    $combination->objectlike_entries,
-                    static fn(Union $type): bool => !$type->possibly_undefined,
-                );
-            }
-
             if ($combination->objectlike_entries) {
                 $fallback_key_type = null;
                 if ($combination->objectlike_key_type) {
@@ -1552,12 +1541,7 @@ final class TypeCombiner
                     $fallback_value_type = $combination->array_type_params[1];
                 }
 
-                $sealed = $combination->objectlike_sealed && (
-                    !$combination->array_type_params
-                    || (isset($combination->array_type_params[1])
-                        && $combination->array_type_params[1]->isNever()
-                    )
-                );
+                $sealed = $combination->objectlike_sealed;
 
                 if ($combination->all_arrays_callable) {
                     $objectlike = TKeyedArray::makeCallable(
