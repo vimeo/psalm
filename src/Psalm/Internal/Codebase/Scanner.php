@@ -110,11 +110,6 @@ final class Scanner
     private array $deep_scanned_classlike_files = [];
 
     /**
-     * @var array<string, true>
-     */
-    private array $stub_files = [];
-
-    /**
      * @var array<string, string>
      */
     private array $files_to_scan = [];
@@ -148,6 +143,13 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $reflected_classlikes_lc = [];
+
+    /**
+     * The files registered as stubs (see addStubFileToDeepScan())
+     *
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
 
     private bool $is_forked = false;
 
@@ -216,6 +218,9 @@ final class Scanner
         $this->files_to_deep_scan[$file_path] = $file_path;
     }
 
+    /**
+     * Queues a stub file: only such files are scanned as stubs while stubs are registered
+     */
     public function addStubFileToDeepScan(string $file_path): void
     {
         $this->stub_files[strtolower($file_path)] = true;
@@ -758,10 +763,20 @@ final class Scanner
 
     public function scanAPath(string $file_path): void
     {
-        $this->scanFile(
-            $file_path,
-            $this->config->getFiletypeScanners(),
-            isset($this->files_to_deep_scan[$file_path]),
-        );
+        // While stubs are registered, plugins may queue other classes for scanning (e.g. from an
+        // AfterClassLikeVisit handler). Their files are regular code: scanned as stubs, their storage
+        // would be cached as such, so that later runs would see them as stubs until they change.
+        $registering_stubs = $this->codebase->register_stub_files;
+        $this->codebase->register_stub_files = $registering_stubs && $this->isStubFile($file_path);
+
+        try {
+            $this->scanFile(
+                $file_path,
+                $this->config->getFiletypeScanners(),
+                isset($this->files_to_deep_scan[$file_path]),
+            );
+        } finally {
+            $this->codebase->register_stub_files = $registering_stubs;
+        }
     }
 }
