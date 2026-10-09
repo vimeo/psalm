@@ -1521,11 +1521,9 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * Whether the analysis connects what the function-like called is given to what it returns through its body
-     *
      * @psalm-capabilities read-props
      */
-    public static function hasAnalyzedBody(
+    private static function hasAnalyzedBody(
         Codebase $codebase,
         ?MethodIdentifier $method_id,
         FunctionLikeStorage $storage,

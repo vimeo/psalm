@@ -75,6 +75,32 @@ what they were given. This is useful for methods whose bodies Psalm doesn't anal
 stubs and vendor code. With `@psalm-taint-specialize`, each call returns what its own object holds; without it, what
 any object the method is called on holds flows into what every call returns.
 
+### Callable result to return value hint
+
+```php
+<?php // --taint-analysis
+interface Cache
+{
+    /**
+     * @template T
+     * @param callable(): T $compute
+     * @return T
+     * @psalm-taint-specialize
+     * @psalm-flow ($compute()) -> return
+     */
+    public function get(string $key, callable $compute): mixed;
+}
+
+function show(Cache $cache): void
+{
+    echo $cache->get('key', fn(): string => $_GET['malicious'] ?? '');
+}
+```
+
+`$compute()` in a return value hint states that what the function returns holds what the callables given to `$compute`
+return: the closure's body, or the function named. Here `TaintedHtml` is detected. As for `$this`, each call returns
+what its own callables return only with `@psalm-taint-specialize`.
+
 ### Combined proxy & return value hint
 
 ```php
@@ -93,30 +119,3 @@ echo handleInput($_GET['malicious'] ?? '');
 
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
-
-### Template parameters of functions without an analyzed body
-
-When the body of a function or method isn't analyzed (it is outside the project directories, declared in a stub or
-abstract, or a method of an interface), what a call returns holds what the arguments binding the template parameters
-of its return type hold, without any annotation. For a callable parameter, that is what the callables given return:
-
-```php
-<?php // --taint-analysis
-interface Cache
-{
-    /**
-     * @template T
-     * @param callable(): T $compute
-     * @return T
-     */
-    public function get(string $key, callable $compute): mixed;
-}
-
-function show(Cache $cache): void
-{
-    echo $cache->get('key', fn(): string => $_GET['malicious'] ?? '');
-}
-```
-
-Here `TaintedHtml` is detected: what the closure returns binds `T`, which `get()` returns. Each call returns only what
-its own arguments bind, and the calls of functions whose body is analyzed keep the flow of their body.

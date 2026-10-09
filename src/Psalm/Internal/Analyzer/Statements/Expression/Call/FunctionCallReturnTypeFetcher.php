@@ -33,14 +33,11 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\MethodStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
@@ -50,7 +47,6 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -739,6 +735,17 @@ final class FunctionCallReturnTypeFetcher
                 }
             }
         }
+
+        self::taintUsingCallableFlows(
+            $statements_analyzer->getCodebase(),
+            $storage,
+            $graph,
+            $callable_id,
+            null,
+            $specialization_location,
+            $return_node,
+            $storage->removed_taints,
+        );
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
 
@@ -1460,18 +1467,21 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
+        if (!$stmt->isFirstClassCallable()) {
+            self::taintUsingCallableFlows(
+                $codebase,
+                $function_storage,
+                $taint_flow_graph,
+                $cased_function_id,
+                null,
+                $specialization_location,
+                $function_call_node,
+                $function_storage->removed_taints | $removed_taints | $conditionally_removed_taints,
+                $added_taints,
+            );
+        }
 
-        self::taintUsingTemplateBindings(
-            $statements_analyzer,
-            $taint_flow_graph,
-            $function_storage,
-            null,
-            $cased_function_id,
-            $stmt->getArgs(),
-            $node_location,
-            $stmt_type,
-        );
+        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
 
         return $function_call_node;
     }
@@ -1607,6 +1617,58 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
+     * `@psalm-flow ($compute()) -> return`: what a call returns holds what the callables given to these parameters
+     * return, which taintCallablePassedToParam() connects to the node of the calls of the parameter
+     *
+     * @param string $cased_function_id the function called, or the callable invoked
+     * @param ?MethodIdentifier $method_id the method called, whose callable parameters are keyed by its body
+     */
+    public static function taintUsingCallableFlows(
+        Codebase $codebase,
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        string $cased_function_id,
+        ?MethodIdentifier $method_id,
+        ?CodeLocation $specialization_location,
+        DataFlowNode $function_call_node,
+        int $removed_taints,
+        int $added_taints = 0,
+    ): void {
+        if ($function_storage->return_source_callable_params === []) {
+            return;
+        }
+
+        $callable_param_method_id = $cased_function_id;
+        $callable_param_storage = $function_storage;
+
+        // keyed as the body of the method keys its callable parameters (see ArgumentAnalyzer)
+        $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
+        if ($method_id && $declaring_method_id) {
+            $callable_param_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
+            $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
+        }
+
+        foreach ($function_storage->return_source_callable_params as $i => $path_type) {
+            $callable_return_node = DataFlowNode::getForCallableParamReturn(
+                $callable_param_method_id,
+                DataFlowNode::getParameterOffset($callable_param_storage, $function_storage->params[$i], $i),
+                $callable_param_storage,
+                $specialization_location,
+            );
+            $graph->addNode($callable_return_node);
+
+            $graph->addPath(
+                $callable_return_node,
+                $function_call_node,
+                $path_type,
+                $added_taints | $function_storage->added_taints,
+                // what the native return type cannot hold, since PHP enforces it
+                $removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+            );
+        }
+    }
+
+    /**
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingStorage(
@@ -1630,223 +1692,6 @@ final class FunctionCallReturnTypeFetcher
             $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
         }
-    }
-
-    /**
-     * What a call of a function-like whose body isn't analyzed returns holds what the arguments binding the template
-     * parameters of its return type hold: the argument itself (`@param T $value`, `@param array<T> $values`), or for
-     * a callable parameter what the callables given return (`@param callable(): T $compute @return T`). Without a
-     * body, nothing else connects them. This call's own node of the return takes them, so that they don't flow into
-     * what the other calls return.
-     *
-     * @param array<int, PhpParser\Node\Arg> $args
-     */
-    public static function taintUsingTemplateBindings(
-        StatementsAnalyzer $statements_analyzer,
-        TaintFlowGraph $graph,
-        FunctionLikeStorage $storage,
-        ?MethodIdentifier $method_id,
-        string $cased_function_id,
-        array $args,
-        CodeLocation $call_location,
-        Union &$return_type,
-    ): void {
-        if ($storage->return_type === null || $storage->builtin) {
-            return;
-        }
-
-        $returned_templates = self::getReturnedTemplates($storage->return_type);
-
-        if ($returned_templates === []) {
-            return;
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        // the methods of an interface have none
-        if (ArgumentsAnalyzer::hasAnalyzedBody($codebase, $method_id, $storage)
-            && !($storage instanceof MethodStorage
-                && $storage->defining_fqcln !== null
-                && $codebase->classlike_storage_provider->get($storage->defining_fqcln)->is_interface)
-        ) {
-            return;
-        }
-
-        $binding_nodes = [];
-
-        foreach ($storage->params as $i => $param) {
-            if ($param->type === null) {
-                continue;
-            }
-
-            foreach (self::callableArgIndices($storage->params, $args, $i) as $arg_index) {
-                $arg_type = $statements_analyzer->node_data->getType($args[$arg_index]->value);
-
-                if ($arg_type === null) {
-                    continue;
-                }
-
-                foreach ($param->type->getAtomicTypes() as $param_atomic) {
-                    $binding_nodes = [
-                        ...$binding_nodes,
-                        ...self::getTemplateBindingNodes(
-                            $statements_analyzer,
-                            $graph,
-                            $param_atomic,
-                            $arg_type,
-                            $returned_templates,
-                        ),
-                    ];
-                }
-            }
-        }
-
-        if ($binding_nodes === []) {
-            return;
-        }
-
-        $call_node = DataFlowNode::getForMethodReturn($cased_function_id, $storage, $call_location);
-        $graph->addNode($call_node);
-
-        foreach ($binding_nodes as $binding_node) {
-            $graph->addPath($binding_node, $call_node, 'template-binding');
-        }
-
-        // an unspecialized call returns the function-like's own node, which every call shares
-        $return_type = $return_type->addParentNodes([$call_node->id => $call_node]);
-    }
-
-    /**
-     * The template parameters whose values $type holds, keyed by name and defining class: not those a conditional
-     * type only tests
-     *
-     * @return array<string, true>
-     * @psalm-mutation-free
-     */
-    private static function getReturnedTemplates(Union $type): array
-    {
-        $templates = [];
-
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TTemplateParam) {
-                $templates[$atomic->param_name . ':' . $atomic->defining_class] = true;
-            } elseif ($atomic instanceof TConditional) {
-                $templates = [
-                    ...$templates,
-                    ...self::getReturnedTemplates($atomic->if_type),
-                    ...self::getReturnedTemplates($atomic->else_type),
-                ];
-            } else {
-                foreach ((new Union([$atomic]))->getTemplateTypes() as $template) {
-                    $templates[$template->param_name . ':' . $template->defining_class] = true;
-                }
-            }
-        }
-
-        return $templates;
-    }
-
-    /**
-     * The nodes of the parts of $arg_type that bind the templates of $returned_templates in the type of the parameter
-     * it is given to: the argument, or what it returns if that is what the parameter types with them
-     *
-     * @param array<string, true> $returned_templates
-     * @return array<string, DataFlowNode>
-     */
-    private static function getTemplateBindingNodes(
-        StatementsAnalyzer $statements_analyzer,
-        TaintFlowGraph $graph,
-        Atomic $param_atomic,
-        Union $arg_type,
-        array $returned_templates,
-    ): array {
-        if ($param_atomic instanceof TTemplateParam) {
-            $nodes = isset($returned_templates[$param_atomic->param_name . ':' . $param_atomic->defining_class])
-                ? $arg_type->parent_nodes
-                : [];
-
-            // `@template TCallable as callable(): T`
-            foreach ($param_atomic->as->getAtomicTypes() as $bound_atomic) {
-                $nodes = [
-                    ...$nodes,
-                    ...self::getTemplateBindingNodes(
-                        $statements_analyzer,
-                        $graph,
-                        $bound_atomic,
-                        $arg_type,
-                        $returned_templates,
-                    ),
-                ];
-            }
-
-            return $nodes;
-        }
-
-        if (!self::referencesTemplates(new Union([$param_atomic]), $returned_templates)) {
-            return [];
-        }
-
-        if (!$param_atomic instanceof TCallable && !$param_atomic instanceof TClosure) {
-            return $arg_type->parent_nodes;
-        }
-
-        // the templates of the parameters of the callable are what it is given, not what it returns
-        if ($param_atomic->return_type === null
-            || !self::referencesTemplates($param_atomic->return_type, $returned_templates)
-        ) {
-            return [];
-        }
-
-        $nodes = [];
-
-        foreach ($arg_type->getAtomicTypes() as $arg_atomic) {
-            if (!$arg_atomic instanceof TClosure && !$arg_atomic instanceof TCallable) {
-                continue;
-            }
-
-            $nodes = [...$nodes, ...$arg_atomic->return_type?->parent_nodes ?? []];
-
-            if ($arg_atomic->callable_id === null) {
-                continue;
-            }
-
-            $callable_storage = self::getCallableStorage($statements_analyzer, $arg_atomic->callable_id);
-
-            if ($callable_storage !== null) {
-                $callable_return_node = DataFlowNode::getForMethodReturn($arg_atomic->callable_id, $callable_storage);
-                $graph->addNode($callable_return_node);
-                self::taintUsingStorage($callable_storage, $graph, $callable_return_node);
-                $nodes[$callable_return_node->id] = $callable_return_node;
-
-                continue;
-            }
-
-            $closure_storage = self::getClosureStorage($statements_analyzer, $arg_atomic->callable_id);
-
-            if ($closure_storage !== null) {
-                // what the body of the closure returns, which a return type it declares doesn't hold
-                $closure_return_node = DataFlowNode::getForMethodReturn($arg_atomic->callable_id, $closure_storage);
-                $graph->addNode($closure_return_node);
-                $nodes[$closure_return_node->id] = $closure_return_node;
-            }
-        }
-
-        return $nodes;
-    }
-
-    /**
-     * @param array<string, true> $templates
-     * @psalm-mutation-free
-     */
-    private static function referencesTemplates(Union $type, array $templates): bool
-    {
-        foreach ($type->getTemplateTypes() as $template) {
-            if (isset($templates[$template->param_name . ':' . $template->defining_class])) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
