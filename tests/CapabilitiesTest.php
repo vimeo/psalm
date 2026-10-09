@@ -1151,6 +1151,32 @@ final class CapabilitiesTest extends TestCase
                         return $flag ? $a : $c;
                     }',
             ],
+            'staticCallsOnThisReturningThisAreThis' => [
+                'code' => '<?php
+                    class A {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function g(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function h(): static {
+                            return static::f();
+                        }
+                    }',
+            ],
             'fluentChainOnThisOnlyMutatesThis' => [
                 'code' => '<?php
                     abstract class Query {
@@ -2641,6 +2667,104 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - The declared return type \'$this\' for Copying::inc requires returning $this, but this may return another object',
+            ],
+            'staticMethodReturningStaticIsNotThis' => [
+                'code' => '<?php
+                    final class A {
+                        public static function make(): static {
+                            return new static();
+                        }
+
+                        /** @return $this */
+                        public function f(): static {
+                            return self::make();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:36 - The declared return type \'$this\' for A::f requires returning $this, but this may return another object',
+            ],
+            'parentMethodWithoutThisContractIsNotThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - The declared return type \'$this\' for B::f requires returning $this, but this may return another object',
+            ],
+            'variableClassUnionIsNotThis' => [
+                'code' => '<?php
+                    class A {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @method static A f() */
+                    final class C {
+                        public static function __callStatic(string $n, array $a): mixed {
+                            return new A();
+                        }
+                    }
+
+                    class B extends A {
+                        /** @return $this */
+                        public function g(A|C $x): static {
+                            return $x::f();
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:36 - The declared return type \'$this\' for B::g requires returning $this, but this may return another object',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallReanalyzedInTraitDoesNotKeepStaleThisFlag' => [
+                'code' => '<?php
+                    class A {
+                        public int $x = 0;
+
+                        /**
+                         * @return $this
+                         * @psalm-mutation-free
+                         */
+                        public function f(A $other): static {
+                            return $this;
+                        }
+                    }
+
+                    trait T {
+                        /** @psalm-external-mutation-free */
+                        public function g(self $other): void {
+                            parent::f($other)->x = 1;
+                        }
+                    }
+
+                    class B extends A {
+                        use T;
+                    }
+
+                    /** @method static C f(C $other) */
+                    class D {
+                        public int $x = 0;
+
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return $args[0] ?? null;
+                        }
+                    }
+
+                    class C extends D {
+                        use T;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'purityArgumentsGoInBrackets' => [
                 'code' => '<?php
