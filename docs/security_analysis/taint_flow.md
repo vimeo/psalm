@@ -64,3 +64,30 @@ echo handleInput($_GET['malicious'] ?? '');
 
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
+
+### Template parameters of functions without an analyzed body
+
+When the body of a function or method isn't analyzed (it is outside the project directories, declared in a stub or
+abstract, or a method of an interface), what a call returns holds what the arguments binding the template parameters
+of its return type hold, without any annotation. For a callable parameter, that is what the callables given return:
+
+```php
+<?php // --taint-analysis
+interface Cache
+{
+    /**
+     * @template T
+     * @param callable(): T $compute
+     * @return T
+     */
+    public function get(string $key, callable $compute): mixed;
+}
+
+function show(Cache $cache): void
+{
+    echo $cache->get('key', fn(): string => $_GET['malicious'] ?? '');
+}
+```
+
+Here `TaintedHtml` is detected: what the closure returns binds `T`, which `get()` returns. Each call returns only what
+its own arguments bind, and the calls of functions whose body is analyzed keep the flow of their body.

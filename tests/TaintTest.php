@@ -1469,6 +1469,53 @@ final class TaintTest extends TestCase
 
                     forward($_GET["name"] ?? null);',
             ],
+            'dontTaintTheReturnOfABodylessMethodByAParamNotTypedWithItsTemplate' => [
+                'code' => '<?php
+                    interface Values {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function pick(mixed $value, string $other): mixed;
+                    }
+
+                    function show(Values $values): void {
+                        echo $values->pick("safe", (string) $_GET["x"]);
+                    }',
+            ],
+            'dontTaintTheReturnOfAnAnalyzedFunctionByItsTemplateBinding' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function ignore(mixed $value): mixed {
+                        return "safe";
+                    }
+
+                    echo ignore((string) $_GET["x"]);',
+            ],
+            'dontTaintTheOtherCallsOfABodylessMethodByATemplateBinding' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         */
+                        public function get(callable $compute): mixed;
+                    }
+
+                    function store(Cache $cache): void {
+                        $cache->get(fn(): string => (string) $_GET["x"]);
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get(fn(): string => "safe");
+                    }',
+            ],
             'htmlSinkNotTaintedBySourceReturningInt' => [
                 'code' => '<?php
                     final class Request {
@@ -3877,6 +3924,89 @@ final class TaintTest extends TestCase
                     }
 
                     echo (new Caller())->call(fn(string $x): string => $x, (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatABodylessMethodReturnsFromTheCallableBindingItsTemplate' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         */
+                        public function get(string $key, callable $compute): mixed;
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get("key", fn(): string => (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatABodylessStaticMethodReturnsFromTheClosureBindingItsTemplate' => [
+                'code' => '<?php
+                    abstract class Computer {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         */
+                        abstract public static function compute(callable $compute): mixed;
+
+                        public static function show(): void {
+                            echo static::compute(function (): string {
+                                return (string) $_GET["x"];
+                            });
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatABodylessMethodReturnsFromTheArgumentBindingItsTemplate' => [
+                'code' => '<?php
+                    interface Values {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function identity(mixed $value): mixed;
+                    }
+
+                    function show(Values $values): void {
+                        echo $values->identity((string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatABodylessMethodReturnsFromTheArrayBindingItsTemplate' => [
+                'code' => '<?php
+                    interface Values {
+                        /**
+                         * @template T
+                         * @param array<T> $values
+                         * @return T
+                         */
+                        public function first(array $values): mixed;
+                    }
+
+                    function show(Values $values): void {
+                        echo $values->first([(string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatABodylessMethodReturnsFromTheCallableBindingTheBoundOfItsTemplate' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template TValue
+                         * @template TCompute as null|(callable(): TValue)
+                         * @param TCompute $compute
+                         * @return (TCompute is null ? false : TValue)
+                         */
+                        public function get(?callable $compute = null): mixed;
+                    }
+
+                    function show(Cache $cache): void {
+                        echo $cache->get(fn(): string => (string) $_GET["x"]);
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintYieldedByATraitGenerator' => [

@@ -591,6 +591,17 @@ final class MethodCallReturnTypeFetcher
             $taint_flow_graph,
             $method_call_node,
         );
+
+        FunctionCallReturnTypeFetcher::taintUsingTemplateBindings(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $method_id,
+            $cased_method_id,
+            $args,
+            $node_location,
+            $return_type_candidate,
+        );
     }
 
     public static function replaceTemplateTypes(

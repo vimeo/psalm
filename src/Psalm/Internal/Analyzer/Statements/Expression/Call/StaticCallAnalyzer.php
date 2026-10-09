@@ -420,6 +420,17 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage->removed_taints | $removed_taints,
                 $added_taints,
             );
+
+            FunctionCallReturnTypeFetcher::taintUsingTemplateBindings(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $method_storage,
+                $method_id,
+                $cased_method_id,
+                $stmt->getArgs(),
+                $node_location,
+                $return_type_candidate,
+            );
         }
     }
 }
