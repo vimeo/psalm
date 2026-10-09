@@ -22,6 +22,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use UnexpectedValueException;
 
@@ -451,13 +452,42 @@ final class Functions
             return $stub_storage->getWorstCaseCapabilities();
         }
 
+        $type_provider = $statements_analyzer?->node_data;
+
+        // with no class allowed, objects come back as __PHP_Incomplete_Class: no autoloading,
+        // no __wakeup()/__unserialize(), so nothing runs but the parser
+        if ($function_id === 'unserialize' && $type_provider && $args !== null) {
+            $options_type = null;
+            foreach ($args as $offset => $arg) {
+                if ($arg->unpack) {
+                    $options_type = null;
+                    break;
+                }
+                if ($arg->name !== null ? $arg->name->name === 'options' : $offset === 1) {
+                    $options_type = $type_provider->getType($arg->value);
+                }
+            }
+
+            $options_shape = $options_type !== null && $options_type->isSingle()
+                ? $options_type->getSingleAtomic()
+                : null;
+            $allowed_classes_type = $options_shape instanceof TKeyedArray
+                ? $options_shape->properties['allowed_classes'] ?? null
+                : null;
+
+            if ($allowed_classes_type !== null
+                && !$allowed_classes_type->possibly_undefined
+                && ($allowed_classes_type->isFalse() || $allowed_classes_type->isEmptyArray())
+            ) {
+                return Capabilities::NONE;
+            }
+        }
+
         $listed_capabilities = ImpureFunctionsList::getCapabilities($function_id);
 
         if ($listed_capabilities !== Capabilities::NONE) {
             return $listed_capabilities;
         }
-
-        $type_provider = $statements_analyzer?->node_data;
         if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
