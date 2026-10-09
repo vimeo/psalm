@@ -30,6 +30,16 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'igbinarySerializeOfScalarsIsPure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array<string, int> $values
+                     */
+                    function encode(array $values): mixed {
+                        return igbinary_serialize($values);
+                    }',
+            ],
             'classImplementsOfAnObjectDoesNotAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1256,6 +1266,22 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'igbinaryUnserializeIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function decode(string $data): mixed {
+                        return igbinary_unserialize($data);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'igbinarySerializeOfAnObjectRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function encode(object $value): mixed {
+                        return igbinary_serialize($value);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'classUsesOfAClassNameMayAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
