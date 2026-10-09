@@ -113,6 +113,9 @@ final class MethodCallPurityAnalyzer
         return $capabilities;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public static function isFromGlobalState(StatementsAnalyzer $statements_analyzer, Expr $var): bool
     {
         $receiver_type = $statements_analyzer->node_data->getType($var);

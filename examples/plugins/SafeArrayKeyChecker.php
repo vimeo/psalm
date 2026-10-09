@@ -14,6 +14,7 @@ final class SafeArrayKeyChecker implements RemoveTaintsInterface
      * Called to see what taints should be removed
      *
      * @return int
+     * @psalm-capabilities read-props
      */
     #[\Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
