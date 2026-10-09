@@ -992,6 +992,7 @@ final class PreloaderList {
         \Psalm\Internal\Scope\IfConditionalScope::class,
         \Psalm\Internal\Scope\IfScope::class,
         \Psalm\Internal\Scope\LoopScope::class,
+        \Psalm\Internal\Scope\RemovedVarLog::class,
         \Psalm\Internal\Scope\SwitchScope::class,
         \Psalm\Internal\Stubs\Generator\ClassLikeStubGenerator::class,
         \Psalm\Internal\Stubs\Generator\StubsGenerator::class,

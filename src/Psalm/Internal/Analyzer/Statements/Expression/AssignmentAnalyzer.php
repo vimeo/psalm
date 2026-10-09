@@ -1100,6 +1100,8 @@ final class AssignmentAnalyzer
         // old reference, so it's no longer potentially from a confusing scope.
         unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
 
+        $context->removeVarFromConflictingClauses($lhs_var_id);
+
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;

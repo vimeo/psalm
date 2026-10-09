@@ -65,6 +65,7 @@ final class OrAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $post_leaving_if_context = null;
+        $removed_var_log_position = $context->removed_var_log->position();
 
         // we cap this at max depth of 4 to prevent quadratic behaviour
         // when analysing <expr> || <expr> || <expr> || <expr> || <expr>
@@ -111,10 +112,6 @@ final class OrAnalyzer
                 return false;
             }
 
-            foreach ($left_context->parent_remove_vars as $var_id => $_) {
-                $context->removeVarFromConflictingClauses($var_id);
-            }
-
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
             foreach ($left_context->vars_in_scope as $var_id => $type) {
@@ -145,6 +142,9 @@ final class OrAnalyzer
 
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
+
+        // the clauses the right operand starts from must not outlive what the left one changed
+        $context->removeVarsRemovedSince($removed_var_log_position);
 
         $left_cond_id = spl_object_id($stmt->left);
 
@@ -273,6 +273,8 @@ final class OrAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->removeVarsRemovedSince($removed_var_log_position);
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);

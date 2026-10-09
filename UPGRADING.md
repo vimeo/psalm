@@ -54,6 +54,7 @@
 - [BC] Property $pure of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage` was removed and replaced with an `isPure()` method, reading from the new `$allowed_mutations` property.
 - [BC] Property $mutation_free of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isMutationFree()` method, reading from the new `$allowed_mutations` property.
 - [BC] Property $external_mutation_free of of `Psalm\Context`, `Psalm\Storage\FunctionLikeStorage`, `Psalm\Storage\ClassLikeStorage` was removed and replaced with an `isExternalMutationFree()` method, reading from the new `$allowed_mutations` property.
+- [BC] Property $parent_remove_vars of `Psalm\Context` was removed. Clauses mentioning a variable that a nested scope (a branch, a loop body, an operand of `&&`/`||`, ...) writes are now dropped after each statement, via the internal `$removed_var_log` shared by a context and its clones.
 - [BC] Method signalMutationOnlyInferred() was added to interface Psalm\StatementsSource
 - [BC] Method signalMutation() was added to interface Psalm\StatementsSource
 

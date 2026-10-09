@@ -158,6 +158,8 @@ final class IfAnalyzer
         $if_context->assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
+        $removed_var_log_position = $if_context->removed_var_log->position();
+
         if ($statements_analyzer->analyze(
             $stmt->stmts,
             $if_context,
@@ -166,9 +168,7 @@ final class IfAnalyzer
             return false;
         }
 
-        foreach ($if_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeVarsRemovedSince($removed_var_log_position);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
