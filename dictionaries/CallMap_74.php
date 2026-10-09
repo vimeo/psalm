@@ -54942,36 +54942,69 @@ return array (
   array (
     0 => 'array<string, array<string, mixed>>|false',
   ),
+  'newrelic_accept_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    'headers' => 'array<array-key, mixed>',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
+  'newrelic_accept_distributed_trace_payload_httpsafe' => 
+  array (
+    0 => 'bool',
+    'payload' => 'string',
+    'transport_type=' => 'string',
+  ),
   'newrelic_add_custom_parameter' => 
   array (
     0 => 'bool',
+    'parameter' => 'string',
+    'value' => 'null|scalar',
+  ),
+  'newrelic_add_custom_span_parameter' => 
+  array (
+    0 => 'bool',
     'key' => 'string',
-    'value' => 'scalar',
+    'value' => 'null|scalar',
   ),
   'newrelic_add_custom_tracer' => 
   array (
     0 => 'bool',
-    'function_name' => 'string',
+    'functionname' => 'string',
   ),
   'newrelic_background_job' => 
   array (
     0 => 'void',
-    'flag=' => 'bool',
+    'background=' => 'bool',
   ),
   'newrelic_capture_params' => 
   array (
     0 => 'void',
     'enable=' => 'bool',
   ),
+  'newrelic_create_distributed_trace_payload' => 
+  array (
+    0 => 'object',
+  ),
   'newrelic_custom_metric' => 
   array (
     0 => 'bool',
-    'metric_name' => 'string',
+    'metric' => 'string',
     'value' => 'float',
   ),
   'newrelic_disable_autorum' => 
   array (
-    0 => 'true',
+    0 => 'null|true',
+  ),
+  'newrelic_enable_params' => 
+  array (
+    0 => 'void',
+    'enable=' => 'bool',
   ),
   'newrelic_end_of_transaction' => 
   array (
@@ -54985,12 +55018,20 @@ return array (
   'newrelic_get_browser_timing_footer' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
   ),
   'newrelic_get_browser_timing_header' => 
   array (
     0 => 'string',
-    'include_tags=' => 'bool',
+    'with_tags=' => 'bool',
+  ),
+  'newrelic_get_linking_metadata' => 
+  array (
+    0 => 'array<string, string>',
+  ),
+  'newrelic_get_trace_metadata' => 
+  array (
+    0 => 'array{span_id?: string, trace_id?: string}',
   ),
   'newrelic_ignore_apdex' => 
   array (
@@ -55000,6 +55041,15 @@ return array (
   array (
     0 => 'void',
   ),
+  'newrelic_insert_distributed_trace_headers' => 
+  array (
+    0 => 'bool',
+    '&rw headers' => 'array<array-key, mixed>',
+  ),
+  'newrelic_is_sampled' => 
+  array (
+    0 => 'bool',
+  ),
   'newrelic_name_transaction' => 
   array (
     0 => 'bool',
@@ -55008,36 +55058,41 @@ return array (
   'newrelic_notice_error' => 
   array (
     0 => 'void',
-    'message' => 'string',
-    'exception=' => 'Exception|Throwable',
+    'exception' => 'Throwable|string',
+    'errstr=' => 'Throwable|null',
   ),
   'newrelic_notice_error\'1' => 
   array (
     0 => 'void',
-    'unused_1' => 'string',
-    'message' => 'string',
-    'unused_2' => 'string',
-    'unused_3' => 'int',
-    'unused_4=' => 'mixed',
+    'exception' => 'int',
+    'errstr' => 'string',
+    'fname' => 'string',
+    'line_nr' => 'int',
+    'ctx=' => 'mixed',
   ),
   'newrelic_record_custom_event' => 
   array (
     0 => 'void',
-    'name' => 'string',
-    'attributes' => 'array<array-key, mixed>',
+    'event_type' => 'string',
+    'parameters' => 'array<string, null|scalar>',
   ),
   'newrelic_record_datastore_segment' => 
   array (
     0 => 'mixed',
-    'func' => 'callable',
-    'parameters' => 'array<array-key, mixed>',
+    'callback' => 'callable',
+    'parameters' => 'array{collection?: null|scalar, databaseName?: null|scalar, host?: null|scalar, inputQuery?: null|scalar, inputQueryLabel?: null|scalar, operation?: null|scalar, portPathOrId?: null|scalar, product: string, query?: null|scalar, ...<array-key, mixed>}',
   ),
   'newrelic_set_appname' => 
   array (
     0 => 'bool',
-    'name' => 'string',
-    'license=' => 'string',
+    'appname' => 'string',
+    'license_key=' => 'string',
     'xmit=' => 'bool',
+  ),
+  'newrelic_set_error_group_callback' => 
+  array (
+    0 => 'bool',
+    'callback' => 'callable(array<string, mixed>, array<string, mixed>):string',
   ),
   'newrelic_set_user_attributes' => 
   array (
@@ -55046,11 +55101,16 @@ return array (
     'account' => 'string',
     'product' => 'string',
   ),
+  'newrelic_set_user_id' => 
+  array (
+    0 => 'bool',
+    'uuid' => 'string',
+  ),
   'newrelic_start_transaction' => 
   array (
     0 => 'bool',
     'appname' => 'string',
-    'license=' => 'string',
+    'license_key=' => 'string',
   ),
   'next' => 
   array (
