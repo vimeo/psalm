@@ -293,6 +293,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $use_context->bound_globals[$use_var_id] = $context->bound_globals[$use_var_id];
                     }
 
+                    // the closure may write it whenever it runs, so what was concluded about it no longer holds
+                    $context->removeVarFromConflictingClauses($use_var_id);
+
                     // shared with the enclosing scope, plus what that scope needs to write it
                     $use_context->captured_by_ref[$use_var_id]
                         = AssignmentAnalyzer::getExternalWriteCapabilities($context, $use_var_id);
