@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="6.x-dev@bbd217fc98c0daa0a13aea2a7f119d03ba3fc9a0">
+<files psalm-version="6.x-dev@ee2ef9aa3a5b1cf70dd369a10ce8cf9a13dbb75e">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -2173,12 +2173,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
-    <LessSpecificReturnStatement>
-      <code><![CDATA[$callable]]></code>
-    </LessSpecificReturnStatement>
-    <MoreSpecificReturnType>
-      <code><![CDATA[TCallable|TClosure|null]]></code>
-    </MoreSpecificReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$class_name]]></code>
       <code><![CDATA[$calling_method_id]]></code>

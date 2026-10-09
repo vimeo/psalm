@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -38,6 +39,8 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function str_starts_with;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -47,12 +50,15 @@ final class TemplateInferredTypeReplacer
     /**
      * This replaces template types in unions with the inferred types they should be
      *
+     * @param array<string, true> $visiting_defaults
      * @psalm-external-mutation-free
      */
     public static function replace(
         Union $union,
         TemplateResult $template_result,
         ?Codebase $codebase,
+        bool $apply_defaults = true,
+        array $visiting_defaults = [],
     ): Union {
         $new_types = [];
 
@@ -72,6 +78,8 @@ final class TemplateInferredTypeReplacer
                     $atomic_type,
                     $inferred_lower_bounds,
                     $key,
+                    $apply_defaults ? $template_result : null,
+                    $visiting_defaults,
                 );
 
                 if ($template_type) {
@@ -92,6 +100,22 @@ final class TemplateInferredTypeReplacer
                         $codebase,
                     )
                     : null;
+
+                // No inferred lower bound: fall back to the template's declared default,
+                // the same as the plain TTemplateParam case above — class-string<T> was
+                // only ever checking lower bounds, so a defaulted T stayed unresolved.
+                if ($template_type === null && $apply_defaults) {
+                    $template_type = self::getTemplateDefault(
+                        new TTemplateParam(
+                            $atomic_type->param_name,
+                            $atomic_type->as_type ? new Union([$atomic_type->as_type]) : Type::getObject(),
+                            $atomic_type->defining_class,
+                        ),
+                        $template_result,
+                        $codebase,
+                        $visiting_defaults,
+                    );
+                }
 
                 $class_template_type = null;
 
@@ -245,12 +269,15 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @param array<string, true> $visiting_defaults
      */
     private static function replaceTemplateParam(
         ?Codebase $codebase,
         TTemplateParam $atomic_type,
         array $inferred_lower_bounds,
         string $key,
+        ?TemplateResult $template_result = null,
+        array $visiting_defaults = [],
     ): ?Union {
         $template_type = null;
 
@@ -261,6 +288,29 @@ final class TemplateInferredTypeReplacer
             [],
             $codebase,
         );
+
+        // a template that appears only in an unmatched part of a parameter's type
+        // (e.g. `(callable(T): TResult)|null` called with `null`) gets a placeholder
+        // lower bound with no real inferred content. When the template declares a
+        // default, prefer it over that placeholder; otherwise fall through to the
+        // pre-existing placeholder-resolution behavior (e.g. native stubs like
+        // array_pop() with an untyped TValue and no declared default).
+        $own_lower_bounds = $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] ?? null;
+        $has_only_unbound_fallback_bounds = $own_lower_bounds !== null;
+        foreach ($own_lower_bounds ?? [] as $own_lower_bound) {
+            if (!$own_lower_bound->from_unbound_template_fallback) {
+                $has_only_unbound_fallback_bounds = false;
+                break;
+            }
+        }
+
+        if ($traversed_type && $has_only_unbound_fallback_bounds) {
+            $default_type = self::getTemplateDefault($atomic_type, $template_result, $codebase, $visiting_defaults);
+
+            if ($default_type !== null) {
+                return $default_type;
+            }
+        }
 
         if ($traversed_type) {
             $template_type = $traversed_type;
@@ -357,6 +407,19 @@ final class TemplateInferredTypeReplacer
                     } catch (InvalidArgumentException) {
                     }
                 }
+            }
+        }
+
+        if ($template_type === null) {
+            $default_type = self::getTemplateDefault(
+                $atomic_type,
+                $template_result,
+                $codebase,
+                $visiting_defaults,
+            );
+
+            if ($default_type !== null) {
+                $template_type = $default_type;
             }
         }
 
@@ -588,5 +651,119 @@ final class TemplateInferredTypeReplacer
         );
 
         return $class_template_type;
+    }
+
+    /**
+     * @param array<string, true> $visiting_defaults
+     */
+    private static function getTemplateDefault(
+        TTemplateParam $atomic_type,
+        ?TemplateResult $template_result,
+        ?Codebase $codebase,
+        array $visiting_defaults = [],
+    ): ?Union {
+        if ($template_result === null) {
+            return null;
+        }
+
+        $defining_class = $atomic_type->defining_class;
+        $param_name = $atomic_type->param_name;
+
+        // Cycle guard: if we are already expanding this template's default,
+        // bail out instead of recursing (e.g. `@template T = U @template U = T`).
+        $visit_key = $param_name . '::' . $defining_class;
+        if (isset($visiting_defaults[$visit_key])) {
+            return null;
+        }
+
+        // Check TemplateResult first (populated from method/class storage at call sites)
+        $default = $template_result->template_type_defaults[$param_name][$defining_class] ?? null;
+
+        // Fall back to storage lookup for class-level defaults
+        if ($default === null && $codebase !== null) {
+            $default = self::lookupDefaultFromStorage($codebase, $param_name, $defining_class);
+        }
+
+        if ($default === null) {
+            return null;
+        }
+
+        // Resolve any template params in the default type using current inference,
+        // including their own defaults — `@template U = T` should expand U through T.
+        $visiting_defaults[$visit_key] = true;
+
+        // The cycle guard above only catches a *direct* self-reference (`@template T
+        // = T`). A self-reference nested inside a generic type param (`@template T =
+        // array<int, T>`) recurses into replace() through
+        // GenericTrait::replaceTypeParamsTemplateTypesWithArgTypes(), which doesn't
+        // thread $visiting_defaults, so the guard is lost on that hop and recursion
+        // never terminates. Pre-resolve any such nested self-reference to the
+        // template's own bound before expanding the rest of the default: by the time
+        // the real replace() below reaches it, it's an inferred lower bound rather
+        // than a template param, so there's nothing left to recurse into.
+        $self_bound_result = clone $template_result;
+        $self_bound_result->lower_bounds[$param_name][$defining_class] = [
+            new TemplateBound($atomic_type->as),
+        ];
+
+        $default = self::replace($default, $self_bound_result, $codebase, false);
+
+        return self::replace($default, $template_result, $codebase, true, $visiting_defaults);
+    }
+
+    private static function lookupDefaultFromStorage(
+        Codebase $codebase,
+        string $param_name,
+        string $defining_class,
+    ): ?Union {
+        if (str_starts_with($defining_class, 'fn-')) {
+            // Method/function template - extract the function ID
+            $function_id = substr($defining_class, 3);
+
+            if (strpos($function_id, '::') !== false) {
+                // It's a method — look up via classlike storage to avoid issues
+                // with Methods::getStorage() requiring full class resolution
+                $method_id = MethodIdentifier::wrap($function_id);
+
+                try {
+                    $classlike_storage = $codebase->classlike_storage_provider->get(
+                        $method_id->fq_class_name,
+                    );
+                } catch (InvalidArgumentException) {
+                    return null;
+                }
+
+                $method_storage = $classlike_storage->methods[$method_id->method_name] ?? null;
+
+                if ($method_storage === null) {
+                    return null;
+                }
+
+                return $method_storage->template_type_defaults[$param_name] ?? null;
+            }
+
+            // It's a function
+            if ($function_id === '') {
+                return null;
+            }
+
+            try {
+                /** @var non-empty-lowercase-string $function_id */
+                $function_storage = $codebase->functions->getStorage(null, $function_id);
+
+                return $function_storage->template_type_defaults[$param_name] ?? null;
+            } catch (UnexpectedValueException | InvalidArgumentException) {
+                return null;
+            }
+        }
+
+        // Class-level template
+        try {
+            $classlike_storage = $codebase->classlike_storage_provider->get($defining_class);
+
+            return $classlike_storage->template_type_defaults[$param_name] ?? null;
+        } catch (InvalidArgumentException) {
+            return null;
+        }
     }
 }

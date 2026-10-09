@@ -146,7 +146,7 @@ final class MethodCallReturnTypeFetcher
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,
-                    $method_id,
+                    $declaring_method_id ?? $method_id,
                     count($stmt->getArgs()),
                     $codebase,
                 );
@@ -207,7 +207,7 @@ final class MethodCallReturnTypeFetcher
                 $return_type_candidate = self::replaceTemplateTypes(
                     $return_type_candidate,
                     $template_result,
-                    $method_id,
+                    $declaring_method_id ?? $method_id,
                     count($stmt->getArgs()),
                     $codebase,
                 );
@@ -563,6 +563,10 @@ final class MethodCallReturnTypeFetcher
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
+            $method_template_type_defaults = $codebase->methods->hasStorage($method_id)
+                ? $codebase->methods->getStorage($method_id)->template_type_defaults
+                : null;
+
             foreach ($bindable_template_types as $template_type) {
                 if ($template_type->defining_class !== $method_id->fq_class_name
                     && !isset(
@@ -598,7 +602,10 @@ final class MethodCallReturnTypeFetcher
                                 ),
                             ],
                         ];
-                    } else {
+                    } elseif (!isset($method_template_type_defaults[$template_type->param_name])) {
+                        // Templates with a declared default are intentionally left
+                        // unbound here so TemplateInferredTypeReplacer can apply the
+                        // default.
                         $template_result->lower_bounds[$template_type->param_name] = [
                             ($template_type->defining_class) => [
                                 new TemplateBound(Type::getNever()),
@@ -609,7 +616,7 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if ($template_result->lower_bounds) {
+        if ($template_result->lower_bounds || $template_result->template_type_defaults) {
             $return_type_candidate = TypeExpander::expandUnion(
                 $codebase,
                 $return_type_candidate,

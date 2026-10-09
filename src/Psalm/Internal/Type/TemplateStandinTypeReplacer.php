@@ -1287,7 +1287,31 @@ final class TemplateStandinTypeReplacer
             } elseif (!empty($class_storage->template_extended_params[$container_class])) {
                 $input_type_params = array_values($class_storage->template_extended_params[$container_class]);
             } else {
-                $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
+                if ($class_storage->template_type_defaults !== null) {
+                    $input_type_params = [];
+                    // seeded incrementally so a default referencing an earlier
+                    // template on the same class (e.g. `@template U = T`) resolves
+                    // against what that earlier template was just mapped to,
+                    // instead of leaking the raw, unresolved template reference
+                    $resolved_lower_bounds = [];
+
+                    foreach ($class_storage->template_types ?? [] as $template_name => $_) {
+                        $default_type = $class_storage->template_type_defaults[$template_name] ?? null;
+
+                        $resolved_type = $default_type !== null
+                            ? TemplateInferredTypeReplacer::replace(
+                                $default_type,
+                                new TemplateResult([], $resolved_lower_bounds),
+                                $codebase,
+                            )
+                            : Type::getMixed();
+
+                        $input_type_params[] = $resolved_type;
+                        $resolved_lower_bounds[$template_name][$class_storage->name] = $resolved_type;
+                    }
+                } else {
+                    $input_type_params = array_fill(0, count($class_storage->template_types ?? []), Type::getMixed());
+                }
             }
         } else {
             $input_type_params = [];
