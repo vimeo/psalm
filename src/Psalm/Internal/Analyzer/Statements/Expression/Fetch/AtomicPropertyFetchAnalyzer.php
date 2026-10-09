@@ -267,12 +267,15 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
+            $has_named_mixins = (bool) $class_storage->namedMixins;
+            $matched_mixin = false;
             $templated_mixins = $class_storage->templatedMixins
                 ? self::resolveTemplatedMixins($codebase, $class_storage, $lhs_type_part)
                 : [];
 
-            if ($class_storage->namedMixins || $templated_mixins) {
-                $mixins = [...$class_storage->getNamedMixinsForLookup(), ...$templated_mixins];
+            if ($has_named_mixins || $templated_mixins) {
+                // named mixins come last so they keep precedence (last match wins)
+                $mixins = [...$templated_mixins, ...$class_storage->getNamedMixinsForLookup()];
 
                 foreach ($mixins as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
@@ -295,6 +298,7 @@ final class AtomicPropertyFetchAnalyzer
                         )
                             || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
                     ) {
+                        $matched_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
                         $class_storage = $new_class_storage;
@@ -306,7 +310,9 @@ final class AtomicPropertyFetchAnalyzer
                         $property_id = $new_property_id;
                     }
                 }
-            } elseif ($intersection_types !== [] && !$class_storage->final) {
+            }
+
+            if (!$has_named_mixins && !$matched_mixin && $intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,

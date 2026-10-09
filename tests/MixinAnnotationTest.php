@@ -840,6 +840,57 @@ final class MixinAnnotationTest extends TestCase
                         return $x->views;
                     }',
             ],
+            'templatedMixinResolvedWithoutMatchKeepsIntersectionFallback' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    class EmptyTarget {}
+
+                    class HasProp {
+                        public int $views = 0;
+                    }
+
+                    /** @param Host<EmptyTarget>&HasProp $x */
+                    function test(Host $x): int {
+                        return $x->views;
+                    }',
+            ],
+            'templatedMixinNamedMixinKeepsPrecedenceForProperties' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class ParentTarget {
+                        public int $views = 0;
+                    }
+
+                    class LocalTarget {
+                        public string $views = "";
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    /**
+                     * @extends Host<ParentTarget>
+                     * @mixin LocalTarget
+                     */
+                    class Child extends Host {}
+
+                    $child = new Child();
+                    $result = $child->views;',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
             'templatedMixinPropertyFetchRealProperty' => [
                 'code' => '<?php
                     namespace T;
