@@ -2005,6 +2005,26 @@ final class ArrayAssignmentTest extends TestCase
                     ',
                 'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}'],
             ],
+            'unpackShapeWithOptionalStringKeysKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{function: string, file?: string, line?: int} $frame */
+                    $frame = ["function" => "f"];
+                    /** @var array{x?: int} $optional */
+                    $optional = [];
+
+                    $defaulted = [...["file" => "", "line" => ""], ...$frame];
+                    $overridden = [...$frame, ...["file" => "x"]];
+                    $merged = [...["x" => "a"], ...$optional];
+                    $still_optional = [...$optional];',
+                'assertions' => [
+                    '$defaulted===' => 'array{file: string, function: string, line: \'\'|int}',
+                    '$overridden===' => 'array{file: \'x\', function: string, line?: int}',
+                    '$merged===' => 'array{x: \'a\'|int}',
+                    '$still_optional===' => 'array{x?: int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
 
