@@ -7,6 +7,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
@@ -143,11 +144,17 @@ final class Scanner
     private array $reflected_classlikes_lc = [];
 
     /**
-     * The files registered as stubs (see addStubFileToDeepScan())
+     * The files registered as stubs (see addStubFileToDeepScan()), and those they include, by normalized path
      *
      * @var array<string, true>
      */
     private array $stub_files = [];
+
+    /**
+     * Whether stubs were being registered when the outermost file being scanned was, null if none is
+     * (see scanAPath())
+     */
+    private ?bool $registering_stubs = null;
 
     private bool $is_forked = false;
 
@@ -208,21 +215,34 @@ final class Scanner
     public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
+        $this->registerIfIncludedByStub($file_path);
     }
 
     public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+        $this->registerIfIncludedByStub($file_path);
     }
 
     /**
-     * Queues a stub file: only such files are scanned as stubs while stubs are registered
+     * Queues a stub file: only such files, and those they include, are scanned as stubs while stubs are registered
      */
     public function addStubFileToDeepScan(string $file_path): void
     {
-        $this->stub_files[$file_path] = true;
+        $this->stub_files[IncludeAnalyzer::normalizeFilePath($file_path)] = true;
         $this->addFileToDeepScan($file_path);
+    }
+
+    /**
+     * While stubs are registered, register_stub_files is only on while a stub file is scanned (see scanAPath()):
+     * a file queued meanwhile is included by that stub, and is a stub as well.
+     */
+    private function registerIfIncludedByStub(string $file_path): void
+    {
+        if ($this->codebase->register_stub_files) {
+            $this->stub_files[IncludeAnalyzer::normalizeFilePath($file_path)] = true;
+        }
     }
 
     public function removeFile(string $file_path): void
@@ -759,8 +779,13 @@ final class Scanner
         // While stubs are registered, plugins may queue other classes for scanning (e.g. from an
         // AfterClassLikeVisit handler). Their files are regular code: scanned as stubs, their storage
         // would be cached as such, so that later runs would see them as stubs until they change.
-        $registering_stubs = $this->codebase->register_stub_files;
-        $this->codebase->register_stub_files = $registering_stubs && isset($this->stub_files[$file_path]);
+        $register_stub_files = $this->codebase->register_stub_files;
+        $outer_registering_stubs = $this->registering_stubs;
+        // a file scanned while another one is (e.g. from a hook) is scanned in the same phase
+        $this->registering_stubs ??= $register_stub_files;
+
+        $this->codebase->register_stub_files = $this->registering_stubs
+            && isset($this->stub_files[IncludeAnalyzer::normalizeFilePath($file_path)]);
 
         try {
             $this->scanFile(
@@ -769,7 +794,8 @@ final class Scanner
                 isset($this->files_to_deep_scan[$file_path]),
             );
         } finally {
-            $this->codebase->register_stub_files = $registering_stubs;
+            $this->codebase->register_stub_files = $register_stub_files;
+            $this->registering_stubs = $outer_registering_stubs;
         }
     }
 }

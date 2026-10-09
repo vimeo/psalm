@@ -1509,9 +1509,9 @@ final class StubTest extends TestCase
         };
         (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
 
-        // Not a project file: it's only scanned once the hook queues it, as in a run on a single file
+        // Only known to the file provider, as a class first scanned when the hook queues it
         $contract_path = (string) getcwd() . '/lib/contract.php';
-        $this->addFile($contract_path, '<?php namespace A\B\C; interface Contract {}');
+        $this->file_provider->registerFile($contract_path, '<?php namespace A\B\C; interface Contract {}');
         $codebase->scanner->setClassLikeFilePath('a\b\c\contract', $contract_path);
 
         $file_path = (string) getcwd() . '/src/somefile.php';
@@ -1519,9 +1519,89 @@ final class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
 
+        $this->assertTrue($codebase->classlike_storage_provider->has('A\B\C\Contract'));
         $contract_storage = $codebase->classlike_storage_provider->get('A\B\C\Contract');
         $this->assertTrue($contract_storage->user_defined);
         $this->assertFalse($contract_storage->stubbed);
         $this->assertTrue($codebase->classlike_storage_provider->get('SystemClass')->stubbed);
+    }
+
+    public function testProjectClassQueuedByPluginWhileRegisteringStubsReplacesTheStubbedOne(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->addStubFile((string) getcwd() . '/stubs/redefined.phpstub', '<?php class Redefined {}');
+
+        $hook = new class implements AfterClassLikeVisitInterface {
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+            {
+                if ($event->getStorage()->name === 'Redefined') {
+                    $event->getCodebase()->queueClassLikeForScanning('Queued', true);
+                }
+            }
+        };
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        $queued_path = (string) getcwd() . '/src/queued.php';
+        $this->file_provider->registerFile(
+            $queued_path,
+            '<?php class Redefined { public function m(): void {} } class Queued {}',
+        );
+        $codebase->scanner->setClassLikeFilePath('queued', $queued_path);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php echo 1;');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $redefined_storage = $codebase->classlike_storage_provider->get('Redefined');
+        $this->assertTrue($redefined_storage->user_defined);
+        $this->assertArrayHasKey('m', $redefined_storage->methods);
+    }
+
+    public function testFileIncludedByStubIsAStub(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $included_path = (string) getcwd() . '/stubs/included.phpstub';
+        $this->file_provider->registerFile(
+            $included_path,
+            '<?php class IncludedStub {} function included_stub_function(): int { return 1; }',
+        );
+        $this->addStubFile((string) getcwd() . '/stubs/including.phpstub', "<?php require '$included_path';");
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php echo included_stub_function();');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertTrue($codebase->classlike_storage_provider->get('IncludedStub')->stubbed);
     }
 }

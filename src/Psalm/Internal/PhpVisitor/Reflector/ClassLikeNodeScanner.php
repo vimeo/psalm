@@ -188,7 +188,12 @@ final class ClassLikeNodeScanner
                         && $duplicate_storage->since_php_version_id !== null
                         && $this->codebase->analysis_php_version_id < $duplicate_storage->since_php_version_id;
 
-                    if (!$is_polyfill && (!$duplicate_storage->stmt_location
+                    // A project definition replaces a stub too, as when the project is scanned before the stubs
+                    // (see above): it may only be scanned after them when a plugin queues it meanwhile.
+                    $replaces_stub = $is_polyfill
+                        || ($duplicate_storage->stubbed && $this->config->isInProjectDirs($this->file_path));
+
+                    if (!$replaces_stub && (!$duplicate_storage->stmt_location
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path
                         || $class_location->getHash() !== $duplicate_storage->stmt_location->getHash())
                     ) {
