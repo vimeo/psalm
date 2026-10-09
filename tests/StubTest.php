@@ -16,6 +16,9 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function assert;
@@ -1471,5 +1474,54 @@ final class StubTest extends TestCase
 
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testClassQueuedByPluginWhileRegisteringStubsIsNotAStub(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+
+        // As e.g. a Laravel container binding handler does when it visits a stubbed class
+        $hook = new class implements AfterClassLikeVisitInterface {
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+            {
+                if ($event->getStorage()->name === 'SystemClass') {
+                    $event->getCodebase()->queueClassLikeForScanning('A\B\C\Contract', true);
+                }
+            }
+        };
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        // Not a project file: it's only scanned once the hook queues it, as in a run on a single file
+        $contract_path = (string) getcwd() . '/lib/contract.php';
+        $this->addFile($contract_path, '<?php namespace A\B\C; interface Contract {}');
+        $codebase->scanner->setClassLikeFilePath('a\b\c\contract', $contract_path);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php echo 1;');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $contract_storage = $codebase->classlike_storage_provider->get('A\B\C\Contract');
+        $this->assertTrue($contract_storage->user_defined);
+        $this->assertFalse($contract_storage->stubbed);
+        $this->assertTrue($codebase->classlike_storage_provider->get('SystemClass')->stubbed);
     }
 }
