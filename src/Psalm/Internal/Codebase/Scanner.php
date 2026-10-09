@@ -215,14 +215,12 @@ final class Scanner
     public function addFileToShallowScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
-        $this->registerIfIncludedByStub($file_path);
     }
 
     public function addFileToDeepScan(string $file_path): void
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
-        $this->registerIfIncludedByStub($file_path);
     }
 
     /**
@@ -235,14 +233,28 @@ final class Scanner
     }
 
     /**
-     * While stubs are registered, register_stub_files is only on while a stub file is scanned (see scanAPath()):
-     * a file queued meanwhile is included by that stub, and is a stub as well.
+     * Queues a file included by the one being scanned: a file a stub includes is a stub too
      */
-    private function registerIfIncludedByStub(string $file_path): void
+    public function addIncludedFileToScan(string $file_path, bool $deep): void
     {
+        if ($deep) {
+            $this->addFileToDeepScan($file_path);
+        } else {
+            $this->addFileToShallowScan($file_path);
+        }
+
+        // only on while a stub file is scanned (see scanAPath())
         if ($this->codebase->register_stub_files) {
             $this->stub_files[IncludeAnalyzer::normalizeFilePath($file_path)] = true;
         }
+    }
+
+    /**
+     * Whether stubs are being registered, even if the file being scanned isn't one (see scanAPath())
+     */
+    public function isRegisteringStubs(): bool
+    {
+        return $this->registering_stubs === true;
     }
 
     public function removeFile(string $file_path): void
@@ -539,11 +551,7 @@ final class Scanner
             $this->codebase->statements_provider->setUnchangedFile($file_path);
 
             foreach ($file_storage->required_file_paths as $required_file_path) {
-                if ($will_analyze) {
-                    $this->addFileToDeepScan($required_file_path);
-                } else {
-                    $this->addFileToShallowScan($required_file_path);
-                }
+                $this->addIncludedFileToScan($required_file_path, $will_analyze);
             }
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
