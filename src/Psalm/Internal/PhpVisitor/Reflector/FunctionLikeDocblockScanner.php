@@ -1227,6 +1227,11 @@ final class FunctionLikeDocblockScanner
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
 
+                            if ($source_param === 'this') {
+                                $storage->return_source_this = $path_type;
+                                continue;
+                            }
+
                             foreach ($storage->params as $i => $param_storage) {
                                 if ($param_storage->name === $source_param) {
                                     $storage->return_source_params[$i] = $path_type;
