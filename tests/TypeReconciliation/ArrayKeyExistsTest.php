@@ -23,6 +23,32 @@ final class ArrayKeyExistsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayKeyExistsRemovesAnOptionalKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (array_key_exists("descr", $a)) {
+                            throw new \Exception();
+                        }
+                        return $a;
+                    }',
+            ],
+            'negatedIssetRemovesAnOptionalKeyThatCantBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (!isset($a["descr"])) {
+                            return $a;
+                        }
+                        throw new \Exception();
+                    }',
+            ],
             'arrayKeyExistsOnStringArrayShouldInformArrayness' => [
                 'code' => '<?php
                     /**
@@ -538,6 +564,20 @@ final class ArrayKeyExistsTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: ?string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (!isset($a["descr"])) {
+                            return $a;
+                        }
+                        throw new \Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnWrongKey' => [
                 'code' => '<?php
                     if (rand(0,1)) {
