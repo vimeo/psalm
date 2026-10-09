@@ -1038,12 +1038,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MissingMethodCallHandler.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
-      <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
       <code><![CDATA[$intersection_method_id]]></code>
     </RiskyTruthyFalsyComparison>
