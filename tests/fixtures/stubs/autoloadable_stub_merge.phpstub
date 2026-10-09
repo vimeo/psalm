@@ -1,0 +1,45 @@
+<?php
+
+namespace AutoloadableStubMerge;
+
+class Factory
+{
+    public static function make(): Foo
+    {
+    }
+
+    public static function makeConditional(): ConditionalFoo
+    {
+    }
+}
+
+class Foo
+{
+    /** @return positive-int */
+    public function stubbed(): int
+    {
+    }
+}
+
+class StubOnly
+{
+    public function bar(): string
+    {
+    }
+}
+
+if (true) {
+    class ConditionalFoo
+    {
+        /** @return positive-int */
+        public function stubbed(): int
+        {
+        }
+    }
+}
+
+class ConstHolder
+{
+    /** @var positive-int */
+    public const VALUE = 1;
+}
