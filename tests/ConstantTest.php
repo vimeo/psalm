@@ -86,6 +86,43 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testDefineWithInternalFunctionCallValueInOtherFile(): void
+    {
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                define("APP_START", microtime(true));
+                define("NOW", time());
+                define("START_TEXT", microtime());
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                function elapsed(): float {
+                    return microtime(true) - APP_START;
+                }
+
+                function now(): int {
+                    return NOW;
+                }
+
+                function startText(): string {
+                    return START_TEXT;
+                }
+            ',
+        );
+
+        $this->analyzeFile($file1, new Context());
+        $this->analyzeFile($file2, new Context());
+    }
+
     #[Override]
     public function providerValidCodeParse(): iterable
     {
