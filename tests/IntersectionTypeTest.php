@@ -136,6 +136,135 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'objectShapePropertyOnFinalClassWithMagicGetter' => [
+                'code' => '<?php
+                    final class Row {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'assertions' => [
+                    '$id' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'objectShapePropertyIsNotHiddenByUnrelatedMixin' => [
+                'code' => '<?php
+                    class Helper {
+                        public int $fromMixin = 1;
+                    }
+
+                    /** @mixin Helper */
+                    class WithMixin {}
+
+                    /** @var WithMixin&object{fromShape: string} $x */
+                    $fromShape = $x->fromShape;
+                    $fromMixin = $x->fromMixin;',
+                'assertions' => [
+                    '$fromShape' => 'string',
+                    '$fromMixin' => 'int',
+                ],
+            ],
+            'objectShapePropertyRefinesMixinProperty' => [
+                'code' => '<?php
+                    class Helper {
+                        public string $name = "";
+                    }
+
+                    /** @mixin Helper */
+                    class Row {}
+
+                    /** @var Row&object{name: non-empty-string} $row */
+                    $name = $row->name;',
+                'assertions' => [
+                    '$name===' => 'non-empty-string',
+                ],
+            ],
+            'objectShapePropertyBeforeUnrelatedNamedIntersection' => [
+                'code' => '<?php
+                    class Row {}
+                    class Other {}
+
+                    /** @var Row&Other&object{id: int} $row */
+                    $id = $row->id;',
+                'assertions' => [
+                    '$id' => 'int',
+                ],
+            ],
+            'objectShapePropertyOnFinalClassWithInheritedMagicGetter' => [
+                'code' => '<?php
+                    class BaseRow {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Row extends BaseRow {}
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'assertions' => [
+                    '$id' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'objectShapePropertyFromTemplatedIntersectionReturn' => [
+                'code' => '<?php
+                    class Builder {}
+
+                    /** @mixin Builder */
+                    class Model {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    final class Pivot {
+                        public int $id = 1;
+                    }
+
+                    /**
+                     * @template TRelated of object
+                     * @template TPivot of object
+                     */
+                    final class Relation {
+                        /** @return (TRelated&object{pivot: TPivot})|null */
+                        public function first(): ?object {
+                            return null;
+                        }
+                    }
+
+                    /** @var Relation<Model, Pivot> $relation */
+                    $related = $relation->first();
+                    $pivotId = $related?->pivot->id;',
+                'assertions' => [
+                    '$pivotId' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinPropertyIsNotLookedUpOnOtherIntersectedTypes' => [
+                'code' => '<?php
+                    class Helper {
+                        public int $fromMixin = 1;
+                    }
+
+                    /** @mixin Helper */
+                    class WithMixin {}
+
+                    interface Marker {}
+
+                    /** @var WithMixin&Marker $x */
+                    $fromMixin = $x->fromMixin;',
+                'assertions' => [
+                    '$fromMixin' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -234,6 +363,31 @@ final class IntersectionTypeTest extends TestCase
                     ',
                 'error_message' => 'class-string param can only target',
                 'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
+            ],
+            'objectShapePropertyOnFinalClassWithoutMagicGetter' => [
+                'code' => '<?php
+                    final class Row {}
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'error_message' => 'UndefinedPropertyFetch',
+            ],
+            'objectShapePropertyOnFinalClassWithOnlyMixinMagicGetter' => [
+                'code' => '<?php
+                    class Helper {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Helper */
+                    final class Row {}
+
+                    /** @var Row&object{id: int} $row */
+                    $id = $row->id;',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
