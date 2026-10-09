@@ -389,6 +389,13 @@ final class MethodCallReturnTypeFetcher
             $node_location,
         );
 
+        // what the object holds before the call, which a specialized call may replace in the context below
+        $receiver_parent_nodes = $method_storage->return_source_this === null
+            ? []
+            : (($var_id !== null && isset($context->vars_in_scope[$var_id])
+                ? $context->vars_in_scope[$var_id]
+                : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
+
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
             // a receiver without a variable, like `(new A())->m()`, enters the body through its own type
@@ -574,6 +581,21 @@ final class MethodCallReturnTypeFetcher
 
         if (!$taint_flow_graph) {
             return;
+        }
+
+        // `@psalm-flow ($this) -> return`: what the method returns holds what the object it is called on holds
+        if ($method_storage->return_source_this !== null) {
+            foreach ($receiver_parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath(
+                    $parent_node,
+                    $method_call_node,
+                    $method_storage->return_source_this,
+                    $added_taints | $method_storage->added_taints,
+                    // what the native return type cannot hold, since PHP enforces it
+                    $removed_taints | $method_storage->removed_taints
+                        | ($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+                );
+            }
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(
