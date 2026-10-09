@@ -787,10 +787,17 @@ abstract class CallAnalyzer
                     $assertion_type_atomic = $assertion_rule->getAtomicType();
 
                     if ($assertion_type_atomic) {
-                        $assertion_type = TemplateInferredTypeReplacer::replace(
-                            new Union([$assertion_type_atomic]),
-                            $template_result,
+                        // key-of<A::B>, value-of<A::B> and A::B* stand for the literals they name
+                        $assertion_type = TypeExpander::expandUnion(
                             $codebase,
+                            TemplateInferredTypeReplacer::replace(
+                                new Union([$assertion_type_atomic]),
+                                $template_result,
+                                $codebase,
+                            ),
+                            null,
+                            null,
+                            null,
                         );
 
                         if (count($assertion_type->getAtomicTypes()) === 1) {
@@ -841,6 +848,11 @@ abstract class CallAnalyzer
                                         ),
                                         $statements_analyzer->getSuppressedIssues(),
                                     );
+                                }
+
+                                // being of a union is being of one of its types
+                                foreach ($assertion_type->getAtomicTypes() as $atomic_type) {
+                                    $orred_rules[] = new IsType($atomic_type);
                                 }
                             } else {
                                 // Ignore negations and loose assertions with union types
