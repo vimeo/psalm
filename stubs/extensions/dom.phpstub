@@ -4,6 +4,8 @@
 // [php-src](https://github.com/php/php-src/blob/master/ext/dom/php_dom.stub.php), the reflection-generated stubs, and
 // further updates for Psalm.
 
+namespace {
+
 const XML_ELEMENT_NODE = 1;
 const XML_ATTRIBUTE_NODE = 2;
 const XML_TEXT_NODE = 3;
@@ -1001,4 +1003,325 @@ class DOMXPath
     public function registerNamespace(string $prefix, string $namespace): bool {}
 
     public function registerPhpFunctions(string|array|null $restrict = null): void {}
+}
+
+}
+
+namespace Dom {
+    /** @since 8.4 */
+    interface ParentNode
+    {
+        /** @param Node|string ...$nodes */
+        public function append(...$nodes): void;
+
+        /** @param Node|string ...$nodes */
+        public function prepend(...$nodes): void;
+
+        /** @param Node|string ...$nodes */
+        public function replaceChildren(...$nodes): void;
+
+        public function querySelector(string $selectors): ?Element;
+
+        /** @return NodeList<Element> */
+        public function querySelectorAll(string $selectors): NodeList;
+    }
+
+    /** @since 8.4 */
+    interface ChildNode
+    {
+        public function remove(): void;
+
+        /** @param Node|string ...$nodes */
+        public function before(...$nodes): void;
+
+        /** @param Node|string ...$nodes */
+        public function after(...$nodes): void;
+
+        /** @param Node|string ...$nodes */
+        public function replaceWith(...$nodes): void;
+    }
+
+    /** @since 8.4 */
+    class Node
+    {
+        public const DOCUMENT_POSITION_DISCONNECTED = 0x01;
+        public const DOCUMENT_POSITION_PRECEDING = 0x02;
+        public const DOCUMENT_POSITION_FOLLOWING = 0x04;
+        public const DOCUMENT_POSITION_CONTAINS = 0x08;
+        public const DOCUMENT_POSITION_CONTAINED_BY = 0x10;
+        public const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 0x20;
+
+        /** @readonly */
+        public int $nodeType;
+        /** @readonly */
+        public string $nodeName;
+        /** @readonly */
+        public string $baseURI;
+        /** @readonly */
+        public bool $isConnected;
+        /** @readonly */
+        public ?Document $ownerDocument;
+        /** @readonly */
+        public ?Node $parentNode;
+        /** @readonly */
+        public ?Element $parentElement;
+        /**
+         * @readonly
+         * @var NodeList<Node>
+         */
+        public NodeList $childNodes;
+        /** @readonly */
+        public ?Node $firstChild;
+        /** @readonly */
+        public ?Node $lastChild;
+        /** @readonly */
+        public ?Node $previousSibling;
+        /** @readonly */
+        public ?Node $nextSibling;
+        public ?string $nodeValue;
+        public ?string $textContent;
+
+        private final function __construct() {}
+    }
+
+    /**
+     * @template-covariant TNode of Node
+     * @template-implements \IteratorAggregate<int, TNode>
+     * @since 8.4
+     */
+    class NodeList implements \IteratorAggregate, \Countable
+    {
+        /** @readonly */
+        public int $length;
+
+        public function count(): int {}
+
+        /** @return \Iterator<int, TNode> */
+        public function getIterator(): \Iterator {}
+
+        /** @return TNode|null */
+        public function item(int $index): ?Node {}
+    }
+
+    /**
+     * @template-implements \IteratorAggregate<string, Attr>
+     * @since 8.4
+     */
+    class NamedNodeMap implements \IteratorAggregate, \Countable
+    {
+        /** @readonly */
+        public int $length;
+
+        public function item(int $index): ?Attr {}
+
+        public function getNamedItem(string $qualifiedName): ?Attr {}
+
+        public function getNamedItemNS(?string $namespace, string $localName): ?Attr {}
+
+        public function count(): int {}
+
+        /** @return \Iterator<string, Attr> */
+        public function getIterator(): \Iterator {}
+    }
+
+    /**
+     * @template-implements \IteratorAggregate<int, Element>
+     * @since 8.4
+     */
+    class HTMLCollection implements \IteratorAggregate, \Countable
+    {
+        /** @readonly */
+        public int $length;
+
+        public function item(int $index): ?Element {}
+
+        public function namedItem(string $key): ?Element {}
+
+        public function count(): int {}
+
+        /** @return \Iterator<int, Element> */
+        public function getIterator(): \Iterator {}
+    }
+
+    /** @since 8.4 */
+    class Element extends Node implements ParentNode, ChildNode
+    {
+        /** @readonly */
+        public ?string $namespaceURI;
+        /** @readonly */
+        public ?string $prefix;
+        /** @readonly */
+        public string $localName;
+        /** @readonly */
+        public string $tagName;
+        public string $id;
+        public string $className;
+        /** @readonly */
+        public TokenList $classList;
+        /** @readonly */
+        public NamedNodeMap $attributes;
+        /**
+         * @readonly
+         * @since 8.5
+         */
+        public HTMLCollection $children;
+        /** @readonly */
+        public ?Element $firstElementChild;
+        /** @readonly */
+        public ?Element $lastElementChild;
+        /** @readonly */
+        public int $childElementCount;
+        /** @readonly */
+        public ?Element $previousElementSibling;
+        /** @readonly */
+        public ?Element $nextElementSibling;
+        public string $innerHTML;
+        /** @since 8.5 */
+        public string $outerHTML;
+        public string $substitutedNodeValue;
+
+        /** @return NodeList<Element> */
+        public function querySelectorAll(string $selectors): NodeList {}
+    }
+
+    /** @since 8.4 */
+    class HTMLElement extends Element
+    {
+    }
+
+    /** @since 8.4 */
+    class Attr extends Node
+    {
+        /** @readonly */
+        public ?string $namespaceURI;
+        /** @readonly */
+        public ?string $prefix;
+        /** @readonly */
+        public string $localName;
+        /** @readonly */
+        public string $name;
+        public string $value;
+        /** @readonly */
+        public ?Element $ownerElement;
+        /** @readonly */
+        public bool $specified;
+    }
+
+    /** @since 8.4 */
+    class DocumentFragment extends Node implements ParentNode
+    {
+        /**
+         * @readonly
+         * @since 8.5
+         */
+        public HTMLCollection $children;
+        /** @readonly */
+        public ?Element $firstElementChild;
+        /** @readonly */
+        public ?Element $lastElementChild;
+        /** @readonly */
+        public int $childElementCount;
+
+        /** @return NodeList<Element> */
+        public function querySelectorAll(string $selectors): NodeList {}
+    }
+
+    /** @since 8.4 */
+    abstract class Document extends Node implements ParentNode
+    {
+        /** @readonly */
+        public Implementation $implementation;
+        public string $URL;
+        public string $documentURI;
+        public string $characterSet;
+        public string $charset;
+        public string $inputEncoding;
+        /** @readonly */
+        public ?DocumentType $doctype;
+        /** @readonly */
+        public ?Element $documentElement;
+        /**
+         * @readonly
+         * @since 8.5
+         */
+        public HTMLCollection $children;
+        /** @readonly */
+        public ?Element $firstElementChild;
+        /** @readonly */
+        public ?Element $lastElementChild;
+        /** @readonly */
+        public int $childElementCount;
+        public ?HTMLElement $body;
+        /** @readonly */
+        public ?HTMLElement $head;
+        public string $title;
+
+        /** @return NodeList<Element> */
+        public function querySelectorAll(string $selectors): NodeList {}
+    }
+
+    /** @since 8.4 */
+    final class HTMLDocument extends Document
+    {
+        public static function createEmpty(string $encoding = "UTF-8"): HTMLDocument {}
+
+        public static function createFromFile(string $path, int $options = 0, ?string $overrideEncoding = null): HTMLDocument {}
+
+        public static function createFromString(string $source, int $options = 0, ?string $overrideEncoding = null): HTMLDocument {}
+    }
+
+    /** @since 8.4 */
+    final class XMLDocument extends Document
+    {
+        /** @readonly */
+        public string $xmlEncoding;
+        public bool $xmlStandalone;
+        public string $xmlVersion;
+        public bool $formatOutput;
+
+        public static function createEmpty(string $version = "1.0", string $encoding = "UTF-8"): XMLDocument {}
+
+        public static function createFromFile(string $path, int $options = 0, ?string $overrideEncoding = null): XMLDocument {}
+
+        public static function createFromString(string $source, int $options = 0, ?string $overrideEncoding = null): XMLDocument {}
+    }
+
+    /**
+     * @template-implements \IteratorAggregate<int, string>
+     * @since 8.4
+     */
+    final class TokenList implements \IteratorAggregate, \Countable
+    {
+        /** @readonly */
+        public int $length;
+        public string $value;
+
+        private function __construct() {}
+
+        public function count(): int {}
+
+        /** @return \Iterator<int, string> */
+        public function getIterator(): \Iterator {}
+    }
+
+    /** @since 8.4 */
+    final class XPath
+    {
+        /** @readonly */
+        public Document $document;
+        public bool $registerNodeNamespaces;
+
+        public function __construct(Document $document, bool $registerNodeNS = true) {}
+
+        /** @psalm-taint-sink xpath $expression */
+        public function evaluate(string $expression, ?Node $contextNode = null, bool $registerNodeNS = true) {}
+
+        /**
+         * @psalm-taint-sink xpath $expression
+         * @return NodeList<Node>
+         */
+        public function query(string $expression, ?Node $contextNode = null, bool $registerNodeNS = true): NodeList {}
+
+        public static function quote(string $str): string {}
+    }
 }

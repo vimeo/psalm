@@ -228,6 +228,25 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingThrowsDocblock'],
                 'safe_types' => true,
             ],
+            'doesNotCrashOnBodylessMethodsWithReturnType' => [
+                'input' => '<?php
+                    interface Contract {
+                        public function name(): string;
+                    }
+                    abstract class Base {
+                        abstract protected function id(): int;
+                    }',
+                'output' => '<?php
+                    interface Contract {
+                        public function name(): string;
+                    }
+                    abstract class Base {
+                        abstract protected function id(): int;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

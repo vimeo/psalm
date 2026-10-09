@@ -47,6 +47,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Revolt\EventLoop;
 use Throwable;
 
@@ -379,6 +380,10 @@ final class LanguageServer extends Dispatcher
         $this->logInfo("Initializing: Registering stub files...");
         $progress->update('registering stub files');
         $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
+
+        $this->codebase->config->eventDispatcher->dispatchAfterCodebasePopulated(
+            new AfterCodebasePopulatedEvent($this->codebase),
+        );
 
         if ($this->textDocument === null) {
             $this->textDocument = new ServerTextDocument(
