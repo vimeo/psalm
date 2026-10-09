@@ -3879,6 +3879,14 @@ final class TaintTest extends TestCase
                     echo (new Caller())->call(fn(string $x): string => $x, (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'complementListingAComplementIsInvalid' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-source ~(sql|~html) */
+                    function externalInput(): string { return "x"; }
+
+                    echo externalInput();',
+                'error_message' => 'InvalidDocblock',
+            ],
             'taintYieldedByATraitGenerator' => [
                 'code' => '<?php // --taint-analysis
                     trait Generates {
@@ -8143,6 +8151,58 @@ final class TaintTest extends TestCase
                 'expectedIssueTypes' => [
                     'TaintedCustom{ function customSink(string $arg): void {} }',
                     'TaintedCustom{ function customSink(string $arg): void {} }',
+                ],
+            ],
+            'complementSourceHasEveryTaintButTheKindsItLeavesOut' => [
+                // alpha is only registered after the source: the complement has it all the same
+                'code' => '<?php
+                    /** @psalm-taint-source ~(header|cookie) */
+                    function externalInput(): string { return "x"; }
+                    /** @psalm-taint-sink alpha $arg */
+                    function customSink(string $arg): void {}
+                    /** @psalm-taint-sink header $arg */
+                    function headerSink(string $arg): void {}
+                    /** @psalm-taint-sink cookie $arg */
+                    function cookieSink(string $arg): void {}
+                    /** @psalm-taint-sink html $arg */
+                    function htmlSink(string $arg): void {}
+
+                    customSink(externalInput());
+                    headerSink(externalInput());
+                    cookieSink(externalInput());
+                    htmlSink(externalInput());
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedCustom{ function customSink(string $arg): void {} }',
+                    'TaintedHtml{ function htmlSink(string $arg): void {} }',
+                ],
+            ],
+            'complementSinkAndEscapeLeaveOutTheKindsTheyList' => [
+                'code' => '<?php
+                    /** @psalm-taint-source sql */
+                    function sqlInput(): string { return "x"; }
+                    /** @psalm-taint-source html */
+                    function htmlInput(): string { return "x"; }
+                    /** @psalm-taint-sink ~(sql) $arg */
+                    function anyButSql(string $arg): void {}
+                    /**
+                     * @psalm-flow ($s) -> return
+                     * @psalm-taint-escape ~html
+                     */
+                    function keepHtml(string $s): string { return $s; }
+                    /** @psalm-taint-sink html $arg */
+                    function htmlSink(string $arg): void {}
+                    /** @psalm-taint-sink shell $arg */
+                    function shellSink(string $arg): void {}
+
+                    anyButSql(sqlInput());
+                    anyButSql(htmlInput());
+                    shellSink(keepHtml((string) ($_GET["a"] ?? "")));
+                    htmlSink(keepHtml((string) ($_GET["b"] ?? "")));
+                ',
+                'expectedIssueTypes' => [
+                    'TaintedHtml{ function anyButSql(string $arg): void {} }',
+                    'TaintedHtml{ function htmlSink(string $arg): void {} }',
                 ],
             ],
             'sinkInSpecializedFunctionReachedByLaterCall' => [
