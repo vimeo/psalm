@@ -24,6 +24,28 @@ final class MixinAnnotationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'mixinMethodChargesWhatCallDoes' => [
+                'code' => '<?php
+                    final class Connection {
+                        public function send(string $data): int {
+                            echo $data;
+                            return 1;
+                        }
+                    }
+
+                    /** @mixin Connection */
+                    final class Wrapper {
+                        /** @psalm-pure */
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function send(Wrapper $wrapper): int {
+                        return $wrapper->send("x");
+                    }',
+            ],
             'validSimpleAnnotations' => [
                 'code' => '<?php
                     class ParentClass {
@@ -853,6 +875,29 @@ final class MixinAnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
+                'code' => '<?php
+                    final class Connection {
+                        /** @psalm-pure */
+                        public function send(string $data): int {
+                            return strlen($data);
+                        }
+                    }
+
+                    /** @mixin Connection */
+                    final class Wrapper {
+                        public function __call(string $name, array $args): int {
+                            echo $name;
+                            return 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function send(Wrapper $wrapper): int {
+                        return $wrapper->send("x");
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'undefinedMixinClass' => [
                 'code' => '<?php
                     /** @mixin B */
