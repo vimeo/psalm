@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -612,6 +613,15 @@ final class MethodCallReturnTypeFetcher
             $method_storage,
             $taint_flow_graph,
             $method_call_node,
+        );
+
+        $return_type_candidate = TaintStore::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $node_location,
+            $return_type_candidate,
         );
     }
 

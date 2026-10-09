@@ -35,6 +35,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -619,6 +620,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
                 $codebase,
                 $assign_var,
+                $assign_value,
                 $assign_expr,
                 $assign_value_type,
                 $var_id,
@@ -2167,6 +2169,7 @@ final class AssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
+        ?PhpParser\Node\Expr $assign_value,
         ?PhpParser\Node\Expr $assign_expr,
         Union &$assign_value_type,
         string $var_id,
@@ -2197,6 +2200,14 @@ final class AssignmentAnalyzer
                 $removed_taints,
                 $added_taints,
             );
+
+            // the start of a string assigned, for the keys of the keyed stores it is used as
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+            if ($assign_value && $taint_flow_graph) {
+                foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
+                    TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                }
+            }
         }
 
         if ($assign_expr) {

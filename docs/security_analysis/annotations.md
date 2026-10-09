@@ -23,3 +23,7 @@ See [Specializing taints in functions](avoiding_false_positives.md#specializing-
 ## `@psalm-flow [proxy <function-like>] ( <arg>, [ <arg>, ] ) [ -> return ]`
 
 See [Taint Flow](taint_flow.md#optimized-taint-flow)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
+
+See [Keyed stores](taint_flow.md#keyed-stores)

@@ -47,6 +47,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $stubbed = false;
 
     /**
+     * How the strings some members of the class hold start, as the scan found them, for the names of the keyed stores
+     * of the taint analysis (see StringStartScanner)
+     *
+     * @internal
+     * @var array<string, string>
+     */
+    public array $string_starts = [];
+
+    /**
      * The `analysis_php_version_id` at which this native symbol became available, from an `@since`
      * tag on a stub class (e.g. 8_05_00 for a class tagged `@since 8.5`). Used to report the symbol
      * as undefined when analysing an older PHP version without a polyfill, while still keeping its
