@@ -277,6 +277,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         $fake_method_exists = false;
+        // the class whose @mixin the method is found through, as the call goes through its __call()
+        $mixin_user_class = null;
+        $mixin_method_id = null;
 
         if (!$naive_method_exists) {
             // if the method doesn't exist we check for any method existence providers
@@ -294,6 +297,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $naive_method_exists = false;
+            $class_name_before_mixins = $fq_class_name;
 
             // @mixin attributes are an absolute pain! Lots of complexity here,
             // as they can redefine the called class, method id etc.
@@ -331,6 +335,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $fq_class_name,
                         $lhs_var_id,
                     );
+            }
+
+            if ($naive_method_exists && $fq_class_name !== $class_name_before_mixins) {
+                $mixin_user_class = $class_name_before_mixins;
+                $mixin_method_id = $method_id;
             }
         }
 
@@ -501,6 +510,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $result,
             $inferred_template_result,
+            $method_id === $mixin_method_id ? $mixin_user_class : null,
         );
 
         $statements_analyzer->node_data = $old_node_data;
