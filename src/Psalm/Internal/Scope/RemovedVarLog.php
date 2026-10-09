@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scope;
 
+use function array_slice;
 use function count;
 use function spl_object_id;
 
@@ -27,7 +28,21 @@ final class RemovedVarLog
      */
     public function record(string $var_id, int $context_id): void
     {
-        $this->entries[] = [$var_id, $context_id];
+        $entry = [$var_id, $context_id];
+
+        if ($this->entries === [] || $entry !== $this->entries[count($this->entries) - 1]) {
+            $this->entries[] = $entry;
+        }
+    }
+
+    /**
+     * Forgets what was recorded since $position, when that code can no longer affect what follows it.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function discardSince(int $position): void
+    {
+        $this->entries = array_slice($this->entries, 0, $position);
     }
 
     /**
@@ -42,9 +57,9 @@ final class RemovedVarLog
      * @psalm-capabilities read-props
      * @return array<string, true>
      */
-    public function removedSince(int $position, object $except_context): array
+    public function removedSince(int $position, ?object $except_context = null): array
     {
-        $except_context_id = spl_object_id($except_context);
+        $except_context_id = $except_context !== null ? spl_object_id($except_context) : null;
         $var_ids = [];
 
         for ($i = $position, $count = count($this->entries); $i < $count; $i++) {
