@@ -30,6 +30,17 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'unserializeAllowingNoClassIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function decode(string $data): array {
+                        return [
+                            unserialize($data, ["allowed_classes" => false]),
+                            unserialize($data, ["allowed_classes" => [], "max_depth" => 4]),
+                            unserialize(options: ["allowed_classes" => false], data: $data),
+                        ];
+                    }',
+            ],
             'classImplementsOfAnObjectDoesNotAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1256,6 +1267,33 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unserializeAllowingClassesIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function decode(string $data): mixed {
+                        return unserialize($data, ["allowed_classes" => [DateTime::class]]);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'unserializeWithOptionsNotKnownToAllowNoClassIsImpure' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @param array{allowed_classes?: false} $options
+                     */
+                    function decode(string $data, array $options): mixed {
+                        return unserialize($data, $options);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'unserializeWithoutOptionsIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function decode(string $data): mixed {
+                        return unserialize($data);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'classUsesOfAClassNameMayAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
