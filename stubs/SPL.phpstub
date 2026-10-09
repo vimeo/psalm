@@ -740,8 +740,13 @@ class SplPriorityQueue implements Iterator, Countable {
  * @template TArrayValue
  * @template-implements ArrayAccess<TObject, TArrayValue>
  * @template-implements Iterator<int, TObject>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess {
+    /**
+     * @psalm-pure
+     */
     public function __construct() {}
 
     /**
@@ -753,6 +758,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function attach($object, $info = null) {}
 
@@ -764,6 +771,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function detach($object) {}
 
@@ -775,6 +784,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the object is in the storage, false otherwise.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function contains($object) {}
 
@@ -786,6 +797,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function addAll($storage) {}
 
@@ -797,6 +810,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function removeAll($storage) {}
 
@@ -808,6 +823,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.6
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function removeAllExcept($storage) {}
 
@@ -818,6 +835,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TArrayValue The data associated with the current iterator position.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function getInfo() {}
 
@@ -829,6 +848,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setInfo($data) {}
 
@@ -839,6 +860,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return int The number of objects in the storage.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function count() {}
 
@@ -849,6 +872,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind() {}
 
@@ -859,6 +884,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the iterator entry is valid, false otherwise.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function valid() {}
 
@@ -869,6 +896,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return int The index corresponding to the position of the iterator.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 
@@ -879,6 +908,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TObject The object at the current iterator position.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
@@ -889,6 +920,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next() {}
 
@@ -900,6 +933,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.2.2
+     *
+     * @psalm-impure
      */
     public function unserialize($serialized) {}
 
@@ -910,6 +945,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return string A string representing the storage.
      *
      * @since 5.2.2
+     *
+     * @psalm-impure
      */
     public function serialize() {}
 
@@ -921,6 +958,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return bool true if the object exists in the storage, and false otherwise.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($object) {}
 
@@ -933,6 +972,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetSet($object, $data = null) {}
 
@@ -944,6 +985,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return void
      *
      * @since 5.3.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function offsetUnset($object) {}
 
@@ -955,6 +998,8 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return TArrayValue The data previously associated with the object in the storage.
      *
      * @since 5.3.0
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($object) {}
 
@@ -966,7 +1011,29 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @return string A string with the calculated identifier.
      *
      * @since 5.4.0
+     *
+     * @psalm-mutation-free
      */
     public function getHash($object) {}
 
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
