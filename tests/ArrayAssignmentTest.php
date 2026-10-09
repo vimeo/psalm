@@ -128,7 +128,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $out[] = $bits;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<non-empty-list<int>>',
+                    '$out' => 'non-empty-list<list<int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
