@@ -359,6 +359,19 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
+        // array_find(), array_find_key(), array_any() and array_all() also pass the key to the callback
+        $key_type = Type::getArrayKey();
+        if ($method_id !== 'array_map' && $method_id !== 'array_filter') {
+            $template_types['ArrayKey' . $argument_offset] = [$method_id => Type::getArrayKey()];
+            $key_type = new Union([
+                new TTemplateParam(
+                    'ArrayKey' . $argument_offset,
+                    Type::getArrayKey(),
+                    $method_id,
+                ),
+            ]);
+        }
+
         $replace_template_result = new TemplateResult(
             $template_types,
             [],
@@ -369,7 +382,7 @@ final class ArgumentsAnalyzer
         TemplateStandinTypeReplacer::fillTemplateResult(
             new Union([
                 new TArray([
-                    Type::getArrayKey(),
+                    $key_type,
                     new Union([
                         new TTemplateParam(
                             'ArrayValue' . $argument_offset,
@@ -397,6 +410,19 @@ final class ArgumentsAnalyzer
         }
     }
 
+    private static function getTemplatedCallableParam(string $template_name, string $method_id): FunctionLikeParameter
+    {
+        $type = new Union([
+            new TTemplateParam(
+                $template_name,
+                Type::getMixed(),
+                $method_id,
+            ),
+        ]);
+
+        return new FunctionLikeParameter('function', false, $type, $type);
+    }
+
     /**
      * @param   array<int, PhpParser\Node\Arg>  $args
      */
@@ -421,26 +447,27 @@ final class ArgumentsAnalyzer
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->lower_bounds as $template_name => $_) {
-                $t = new Union([
-                    new TTemplateParam(
-                        $template_name,
-                        Type::getMixed(),
-                        $method_id,
-                    ),
-                ]);
-                $function_like_params[] = new FunctionLikeParameter(
-                    'function',
-                    false,
-                    $t,
-                    $t,
-                );
+            if ($method_id === 'array_map') {
+                foreach ($template_result->lower_bounds as $template_name => $_) {
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
+
+                $function_like_params = array_reverse($function_like_params);
+            } else {
+                // the callback receives the value, then the key (except for array_filter without a mode)
+                foreach (['ArrayValue0', 'ArrayKey0'] as $template_name) {
+                    if (!isset($template_result->lower_bounds[$template_name])) {
+                        break;
+                    }
+
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
             }
 
             $replaced_type = new Union([
                 new TCallable(
                     'callable',
-                    array_reverse($function_like_params),
+                    $function_like_params,
                 ),
             ]);
         } else {
@@ -1292,6 +1319,13 @@ final class ArgumentsAnalyzer
             }
 
             $by_ref_type = $by_ref_type ?: Type::getMixed();
+            $is_user_defined = $method_id
+                && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id));
+
+            if ($is_user_defined || !$method_id) {
+                // the function may keep the reference (e.g. in a closure) and change the argument later
+                $statements_analyzer->addUntrackedReferenceTo($arg->value, $context);
+            }
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
@@ -1299,7 +1333,7 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
+                $is_user_defined,
                 $check_null_ref,
             );
         }

@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -60,6 +61,12 @@ use function substr;
  */
 final class ArrayFunctionArgumentsAnalyzer
 {
+    /**
+     * Node attribute set on the argument of array_pop()/array_shift() when it is a local variable whose
+     * type Psalm tracks reliably across the call, so the removed element can be inferred exactly.
+     */
+    public const IS_TRACKED_BY_REF_ARRAY = 'psalmIsTrackedByRefArray';
+
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
      */
@@ -627,13 +634,29 @@ final class ArrayFunctionArgumentsAnalyzer
             $statements_analyzer,
         );
 
+        if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            // the change is not propagated to the array holding the offset
+            $statements_analyzer->addUntrackedReferenceTo($arg->value, $context);
+        }
+
         if ($var_id) {
+            // Only a local variable that takes no part in a reference is tracked reliably: a property may be
+            // shared with an object alias, and a reference may have been changed through another name
+            $is_tracked = !$arg->unpack
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && !self::isReferenced($var_id, $context)
+                && !$statements_analyzer->mayHaveChangedThroughReference($arg->value, $context);
+            $arg->value->setAttribute(self::IS_TRACKED_BY_REF_ARRAY, $is_tracked);
+
             $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
             if (isset($context->vars_in_scope[$var_id])) {
                 $array_atomic_types = [];
+                $var_atomic_types = $is_tracked
+                    ? self::expandArrayTemplates($context->vars_in_scope[$var_id])
+                    : $context->vars_in_scope[$var_id]->getAtomicTypes();
 
-                foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
+                foreach ($var_atomic_types as $array_atomic_type) {
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop
@@ -661,6 +684,14 @@ final class ArrayFunctionArgumentsAnalyzer
                             if (!$array_properties) {
                                 $array_atomic_types []= Type::getEmptyArrayAtomic();
                             } else {
+                                // if the popped element was optional, the last required one may be gone instead
+                                $min_count = $array_atomic_type->getMinCount() - 1;
+                                foreach ($array_properties as $offset => $property) {
+                                    if ($offset >= $min_count && !$property->possibly_undefined) {
+                                        $array_properties[$offset] = $property->setPossiblyUndefined(true);
+                                    }
+                                }
+
                                 $array_atomic_types []= $array_atomic_type->setProperties($array_properties);
                             }
                             continue;
@@ -719,11 +750,45 @@ final class ArrayFunctionArgumentsAnalyzer
                 if (!$array_atomic_types) {
                     throw new AssertionError("We must have some types here!");
                 }
-                $array_type = new Union($array_atomic_types);
+                // combine rather than index by key: expanded template bounds may hold several arrays
+                $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
             }
         }
+    }
+
+    /**
+     * Whether the variable is part of a reference within this scope (other scopes are handled by
+     * StatementsAnalyzer::mayHaveChangedThroughReference()).
+     */
+    private static function isReferenced(string $var_id, Context $context): bool
+    {
+        return isset($context->references_in_scope[$var_id])
+            || in_array($var_id, $context->references_in_scope, true)
+            || ($context->referenced_counts[$var_id] ?? 0) > 0
+            || isset($context->references_possibly_from_confusing_scope[$var_id]);
+    }
+
+    /**
+     * Replaces template params with their (non-mixed) bounds: once an element is removed,
+     * the variable no longer holds a value of the template type.
+     *
+     * @return list<Atomic>
+     */
+    private static function expandArrayTemplates(Union $type): array
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && !$atomic_type->as->hasMixed()) {
+                $atomic_types = [...$atomic_types, ...self::expandArrayTemplates($atomic_type->as)];
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return $atomic_types;
     }
 
     /**

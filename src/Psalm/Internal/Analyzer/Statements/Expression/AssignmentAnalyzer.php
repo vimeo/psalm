@@ -530,6 +530,17 @@ final class AssignmentAnalyzer
         array $var_comments,
         array $removed_taints,
     ): ?bool {
+        // An array literal holding a reference, or a destructuring taking one, leaves elements of the
+        // array shared with another variable
+        if ($assign_value instanceof PhpParser\Node\Expr\Array_ && self::hasByRefItem($assign_value)) {
+            $statements_analyzer->addUntrackedReferenceTo($assign_var, $context);
+        } elseif ($assign_value
+            && ($assign_var instanceof PhpParser\Node\Expr\List_ || $assign_var instanceof PhpParser\Node\Expr\Array_)
+            && self::hasByRefItem($assign_var)
+        ) {
+            $statements_analyzer->addUntrackedReferenceTo($assign_value, $context);
+        }
+
         if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
             self::analyzeAssignmentToVariable(
                 $statements_analyzer,
@@ -593,6 +604,22 @@ final class AssignmentAnalyzer
             }
         }
         return null;
+    }
+
+    private static function hasByRefItem(PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $array): bool
+    {
+        foreach ($array->items as $item) {
+            if ($item
+                && ($item->byRef
+                    || (($item->value instanceof PhpParser\Node\Expr\List_
+                            || $item->value instanceof PhpParser\Node\Expr\Array_)
+                        && self::hasByRefItem($item->value)))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -940,6 +967,16 @@ final class AssignmentAnalyzer
             }
         }
 
+        // a change through the reference is not propagated to the array or object holding the offset or property
+        foreach ([$stmt->var, $stmt->expr] as $reference_expr) {
+            if ($reference_expr instanceof ArrayDimFetch
+                || $reference_expr instanceof PropertyFetch
+                || $reference_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ) {
+                $statements_analyzer->addUntrackedReferenceTo($reference_expr, $context);
+            }
+        }
+
         if ($lhs_var_id === null || $rhs_var_id === null) {
             return false;
         }
@@ -970,6 +1007,7 @@ final class AssignmentAnalyzer
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
         $context->referenced_counts[$rhs_var_id] = ($context->referenced_counts[$rhs_var_id] ?? 0) + 1;
+        $statements_analyzer->addReferenceAlias($lhs_var_id, $rhs_var_id);
         if (str_contains($rhs_var_id, '[')) {
             // Reference to array item, we always consider array items to be an external scope for references
             // TODO handle differently so it's detected as unused if the array is unused?
@@ -1050,6 +1088,11 @@ final class AssignmentAnalyzer
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
         );
+
+        if ($stmt instanceof ArrayDimFetch) {
+            // the new type of the offset is not propagated to the array holding it
+            $statements_analyzer->addUntrackedReferenceTo($stmt, $context);
+        }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
             $property_id = ExpressionIdentifier::getVarId(
