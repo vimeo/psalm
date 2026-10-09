@@ -221,6 +221,11 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /** @psalm-capabilities time */
+                    function resourceUsageCount(): int {
+                        return count(getrusage());
+                    }
+
+                    /** @psalm-capabilities time */
                     function today(): DateTimeImmutable|false {
                         return date_create_immutable("today");
                     }

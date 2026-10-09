@@ -298,6 +298,8 @@ return [
     'time' => Capabilities::TIME,
     'hrtime' => Capabilities::TIME,
     'gettimeofday' => Capabilities::TIME,
+    // the CPU time used so far, which grows like the clock does
+    'getrusage' => Capabilities::TIME,
     // "now" by default, and relative dates are relative to now
     'date_create' => Capabilities::TIME,
     'date_create_immutable' => Capabilities::TIME,
