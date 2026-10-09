@@ -745,6 +745,175 @@ final class MixinAnnotationTest extends TestCase
                     '$result' => 'int',
                 ],
             ],
+            'templatedMixinPropertyFetchViaThisInSubclass' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {
+                        public function title(): string {
+                            $result = $this->headline;
+                            /** @psalm-check-type-exact $result = string */
+                            return $result;
+                        }
+                    }',
+            ],
+            'templatedMixinPropertyFetchViaGenericReceiver' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @param Wrapper<Post> $w */
+                    function test(Wrapper $w): string {
+                        $result = $w->headline;
+                        /** @psalm-check-type-exact $result = string */
+                        return $result;
+                    }',
+            ],
+            'templatedMixinPropertyFetchViaSubclassReceiver' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    function test(PostWrapper $w): string {
+                        $result = $w->headline;
+                        /** @psalm-check-type-exact $result = string */
+                        return $result;
+                    }',
+            ],
+            'templatedMixinUnresolvedKeepsIntersectionFallback' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    class HasProp {
+                        public int $views = 0;
+                    }
+
+                    /** @param Host&HasProp $x */
+                    function test(Host $x): int {
+                        return $x->views;
+                    }',
+            ],
+            'templatedMixinResolvedWithoutMatchKeepsIntersectionFallback' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    class EmptyTarget {}
+
+                    class HasProp {
+                        public int $views = 0;
+                    }
+
+                    /** @param Host<EmptyTarget>&HasProp $x */
+                    function test(Host $x): int {
+                        return $x->views;
+                    }',
+            ],
+            'templatedMixinNamedMixinKeepsPrecedenceForProperties' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class ParentTarget {
+                        public int $views = 0;
+                    }
+
+                    class LocalTarget {
+                        public string $views = "";
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    class Host {}
+
+                    /**
+                     * @extends Host<ParentTarget>
+                     * @mixin LocalTarget
+                     */
+                    class Child extends Host {}
+
+                    $child = new Child();
+                    $result = $child->views;',
+                'assertions' => [
+                    '$result' => 'string',
+                ],
+            ],
+            'templatedMixinPropertyFetchRealProperty' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Post {
+                        public int $views = 0;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {}
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    $w = new PostWrapper();
+                    $result = $w->views;',
+                'assertions' => [
+                    '$result' => 'int',
+                ],
+            ],
             'nestedMixinDiamondResolvesSharedTarget' => [
                 'code' => '<?php
                     namespace T;
@@ -876,6 +1045,80 @@ final class MixinAnnotationTest extends TestCase
                     }
 
                     (new A)->foo;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchMissingOnResolvedMixin' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class Post {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {}
+
+                    function test(PostWrapper $w): void {
+                        echo $w->missing;
+                    }',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchMissingOnResolvedMixinViaThis' => [
+                'code' => '<?php
+                    namespace T;
+
+                    class Post {
+                        public int $views = 0;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {}
+
+                    /** @extends Wrapper<Post> */
+                    final class PostWrapper extends Wrapper {
+                        public function test(): void {
+                            echo $this->missing;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'templatedMixinPropertyFetchUnionIsNotPicked' => [
+                'code' => '<?php
+                    namespace T;
+
+                    /** @property string $headline */
+                    class A {
+                        public function __get(string $name): string { return ""; }
+                    }
+
+                    class B {}
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Wrapper {
+                        public function __get(string $name): int { return 0; }
+                    }
+
+                    /** @extends Wrapper<A|B> */
+                    final class AorBWrapper extends Wrapper {}
+
+                    function test(AorBWrapper $w): void {
+                        echo $w->headline;
+                    }',
                 'error_message' => 'UndefinedMagicPropertyFetch',
             ],
             'undefinedMixinClassWithPropertyAssignment' => [
