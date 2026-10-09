@@ -2015,12 +2015,14 @@ final class ArrayAssignmentTest extends TestCase
                     $defaulted = [...["file" => "", "line" => ""], ...$frame];
                     $overridden = [...$frame, ...["file" => "x"]];
                     $merged = [...["x" => "a"], ...$optional];
-                    $still_optional = [...$optional];',
+                    $still_optional = [...$optional];
+                    $set_after = [...$optional, "x" => 1];',
                 'assertions' => [
                     '$defaulted===' => 'array{file: string, function: string, line: \'\'|int}',
                     '$overridden===' => 'array{file: \'x\', function: string, line?: int}',
                     '$merged===' => 'array{x: \'a\'|int}',
                     '$still_optional===' => 'array{x?: int}',
+                    '$set_after===' => 'array{x: 1}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
