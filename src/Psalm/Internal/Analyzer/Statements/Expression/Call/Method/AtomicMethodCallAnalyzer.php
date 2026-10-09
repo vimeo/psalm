@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -22,6 +23,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -246,6 +248,25 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 null,
                 true,
                 $context,
+            );
+
+            $unknown_method_capabilities = MethodCallPurityAnalyzer::getUnknownMethodCapabilities(
+                $statements_analyzer,
+                $stmt->var,
+                $class_storage,
+            );
+
+            $statements_analyzer->signalMutation(
+                ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $unknown_method_capabilities,
+                    $stmt->getArgs(),
+                ),
+                $context,
+                'method ' . $class_storage->name . '::{unknown}',
+                ImpureMethodCall::class,
+                $stmt,
             );
 
             $result->return_type = Type::getMixed();
