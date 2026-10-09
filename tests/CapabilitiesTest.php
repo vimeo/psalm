@@ -897,6 +897,62 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
             ],
+            'droppingNothingOrValuesWithoutAKnownDestructorIsFree' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private Guard $guard;
+                        private ?Guard $lazy = null;
+                        /** @var list<Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function __construct() {
+                            $this->guard = new Guard();
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function __clone() {
+                            $this->guard = new Guard();
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function lazy(): Guard {
+                            if ($this->lazy === null) {
+                                $this->lazy = new Guard();
+                            }
+                            return $this->lazy;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function add(Guard $g): void {
+                            $this->guards[] = $g;
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @psalm-pure
+                     * @param T $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function pick(object $a, object $b): object {
+                        $a = $b;
+                        return $a;
+                    }
+
+                    /** @psalm-pure */
+                    function pickObject(object $a, object $b): object {
+                        $a = $b;
+                        return $a;
+                    }',
+            ],
             'generatorPurityTemplateIsBoundByTheGeneratorFunction' => [
                 'code' => '<?php
                     /**
@@ -2376,6 +2432,123 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying $g (Guard::__destruct) requires',
+            ],
+            'anOverwrittenVariableRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function swap(Guard $a, Guard $b): Guard {
+                        $a = $b;
+                        return $a;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $ids
+                     */
+                    function each(array $ids): int {
+                        $n = 0;
+                        foreach ($ids as $id) {
+                            $g = new Guard();
+                            $n += $id;
+                        }
+                        return $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:29 - The context is pure but destroying the old value of $g (Guard::__destruct) requires',
+            ],
+            'anOverwrittenPropertyRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private ?Guard $guard = null;
+
+                        /** @psalm-external-mutation-free */
+                        public function replace(Guard $g): void {
+                            $this->guard = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-props|write-this-props|write-refs but destroying the old value of $this->guard (Guard::__destruct) requires',
+            ],
+            'anUnsetPropertyRunsTheDestructorOfItsValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        public ?Guard $guard = null;
+
+                        /** @psalm-external-mutation-free */
+                        public function drop(): void {
+                            unset($this->guard);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-props|write-this-props|write-refs but destroying $this->guard (Guard::__destruct) requires',
+            ],
+            'anUnsetArrayElementRunsTheDestructorOfItsValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        /** @var array<string, Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function evict(string $key): void {
+                            unset($this->guards[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29 - The context is read-props|write-this-props|write-refs but destroying $this->guards[$key] (Guard::__destruct) requires',
+            ],
+            'anOverwrittenArrayElementRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        /** @var array<string, Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function put(string $key, Guard $g): void {
+                            $this->guards[$key] = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29 - The context is read-props|write-this-props|write-refs but destroying the old value of $this->guards[$key] (Guard::__destruct) requires',
+            ],
+            'anOverwrittenStaticPropertyRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private static ?Guard $shared = null;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public static function share(Guard $g): void {
+                            self::$shared = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-globals|write-globals but destroying the old value of Holder::$shared (Guard::__destruct) requires',
             ],
             'generatorWithoutAKnownPurityIsImpureToIterate' => [
                 'code' => '<?php

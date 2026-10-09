@@ -373,7 +373,14 @@ whose target is not known may do anything, so a pure function may not call one.
 Destroying an object calls its destructor, where the object dies. So a pure function may not
 hold, in a local variable, an object it created with `new` whose `__destruct` has effects, unless
 the object leaves the function (returned, stored, passed on, captured). Nor may it `unset()` a
-variable holding such an object, or discard one (`new Guard();`).
+variable, property or array element holding such an object, overwrite one by assigning it, or
+discard one (`new Guard();`).
+
+Only the declared destructors of the known classes of the dropped value count: a `mixed`,
+`object` or template value is not charged. A property is assumed to hold nothing yet in its
+class's constructor (and to be kept by the original in `__clone`), and a variable first assigned
+in a loop body to hold a value like the one assigned when it is assigned again, the previous
+iteration's.
 
 ### Parameter default values
 
