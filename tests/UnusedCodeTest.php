@@ -241,6 +241,60 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testOnlyAnInterfaceDeclaringAMethodThatDoesntSayWhatItDoesNeedsAClassAnnotation(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->getConfig()->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_ERROR,
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @api */
+                interface Marker {}
+
+                /**
+                 * @api
+                 * @psalm-purity-template P
+                 */
+                interface Cache {
+                    /**
+                     * @psalm-pure
+                     * @psalm-purity-from-template P
+                     */
+                    public function get(string $key): string;
+
+                    /** @psalm-capabilities read-props */
+                    public function count(): int;
+                }
+
+                /** @api */
+                interface Store {
+                    /** @psalm-pure */
+                    public function get(string $key): string;
+
+                    public function clear(): void;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $missing = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MissingInterfaceImmutableAnnotation') {
+                $missing[] = $issue->selected_text;
+            }
+        }
+
+        self::assertSame(['Store'], $missing);
+    }
+
     public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
