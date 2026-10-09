@@ -39,6 +39,7 @@ final class ElseAnalyzer
         IfScope $if_scope,
         Context $else_context,
         Context $outer_context,
+        ?PhpParser\Node\Expr $if_cond = null,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -73,9 +74,21 @@ final class ElseAnalyzer
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $else_context->inside_loop,
-                $else
-                    ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
-                    : null,
+                match (true) {
+                    $else !== null => new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $else,
+                        $outer_context->include_location,
+                    ),
+                    // no else: the code after the if where its condition is false, like the else IfElseAnalyzer
+                    // reconciles first
+                    $if_cond !== null && $outer_context->check_variables => new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $if_cond instanceof PhpParser\Node\Expr\BooleanNot ? $if_cond->expr : $if_cond,
+                        $outer_context->include_location,
+                    ),
+                    default => null,
+                },
             );
 
             $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];

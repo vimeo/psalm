@@ -960,6 +960,37 @@ final class TaintTest extends TestCase
                     echo $data["city"];
                     echo $data["zip"];',
             ],
+            'dontTaintTheValueOfAKeyAWholeArrayDoesNotHave' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    if (array_key_exists("city", $data)) {
+                        $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
+            'dontTaintTheValueOfAKeyAWholeArrayHasNotSet' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    if (isset($data["city"])) {
+                        $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
+            'dontTaintTheValueOfAKeyWholeArraysMappedDoNotHave' => [
+                'code' => '<?php // --taint-analysis
+                    $items = array_map(
+                        function (array $item): array {
+                            if (array_key_exists("city", $item)) {
+                                $item["city"] = htmlspecialchars((string) $item["city"], ENT_QUOTES);
+                            }
+                            return $item;
+                        },
+                        (array) $_GET["items"],
+                    );
+                    foreach ($items as $item) {
+                        echo (string) ($item["city"] ?? "");
+                    }',
+            ],
             'dontTaintTheValueAWholeArrayHeldUnderAKeyUnsetSinceThen' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
@@ -3272,6 +3303,24 @@ final class TaintTest extends TestCase
                     $data = ["city" => "msk", "zip" => (string) $_GET["zip"]];
                     $data["city"] = "spb";
                     echo $data["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAWholeArrayNotHavingAKey' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    if (!array_key_exists("city", $data)) {
+                        echo (string) $data["zip"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAWholeArrayIteratedOverNotHavingSetAKey' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    if (!isset($data["city"])) {
+                        foreach ($data as $value) {
+                            echo (string) $value;
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAnArrayAfterAKeyIsUnset' => [

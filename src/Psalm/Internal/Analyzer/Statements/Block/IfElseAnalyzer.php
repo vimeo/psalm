@@ -305,6 +305,7 @@ final class IfElseAnalyzer
             $if_scope,
             $else_context,
             $context,
+            $stmt->cond,
         ) === false) {
             return false;
         }
