@@ -174,6 +174,15 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $output_streams = [];
 
+    /**
+     * The ids of the nodes of variables assigned a string the analysis knows the start of => that start, for the names
+     * of the keyed stores (see TaintStore). Only used while analysing the function-like they are in, so never merged by
+     * addGraph().
+     *
+     * @var array<string, string>
+     */
+    private array $string_starts = [];
+
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
      * Empty outside of connectSinksAndSources().
@@ -527,6 +536,26 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addOutputStream(DataFlowNode $node): void
     {
         $this->output_streams[$node->id] = true;
+    }
+
+    /**
+     * Records that the variable whose node $node is was assigned a string starting with $start
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addStringStart(DataFlowNode $node, string $start): void
+    {
+        $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * The start of the string assigned to the variable whose node has the id, null if the analysis doesn't know it
+     *
+     * @psalm-mutation-free
+     */
+    public function getStringStart(string $node_id): ?string
+    {
+        return $this->string_starts[$node_id] ?? null;
     }
 
     /**

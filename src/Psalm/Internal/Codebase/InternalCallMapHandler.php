@@ -44,6 +44,7 @@ use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 
 use const PHP_VERSION;
 
@@ -82,6 +83,11 @@ final class InternalCallMapHandler
      * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
      */
     private static ?array $taint_flow_map = null;
+
+    /**
+     * @var array<lowercase-string, non-empty-list<non-empty-string>>|null
+     */
+    private static ?array $taint_store_map = null;
 
     /**
      * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
@@ -431,7 +437,31 @@ final class InternalCallMapHandler
             $storage->return_source_params[$offset] = $path_type;
         }
 
+        self::addTaintStoreFlows($storage, $function_id);
+
         $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
+    }
+
+    /**
+     * Makes the builtin function or method $function_id write into the keyed stores or read from them as
+     * dictionaries/InternalTaintStoreMap.php says (see TaintStore)
+     *
+     * @return bool whether it does
+     */
+    public static function addTaintStoreFlows(FunctionLikeStorage $storage, string $function_id): bool
+    {
+        if (self::$taint_store_map === null) {
+            /** @var array<lowercase-string, non-empty-list<non-empty-string>> */
+            self::$taint_store_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintStoreMap.php');
+        }
+
+        $flows = self::$taint_store_map[strtolower($function_id)] ?? [];
+        foreach ($flows as $flow) {
+            [$source, $target] = explode('->', $flow, 2);
+            TaintStore::addFlow($storage, trim($source), trim($target), 'arg');
+        }
+
+        return $flows !== [];
     }
 
     /**

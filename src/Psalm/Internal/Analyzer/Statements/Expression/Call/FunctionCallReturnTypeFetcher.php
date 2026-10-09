@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -32,6 +33,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
@@ -303,6 +305,21 @@ final class FunctionCallReturnTypeFetcher
                     $callmap_callable,
                     $stmt_type,
                 );
+
+                // the keyed stores of a builtin without storage, like those of an extension not loaded
+                $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+                $store_storage = new FunctionStorage();
+                $store_storage->setParams($callmap_callable->params ?? []);
+                if ($taint_flow_graph && InternalCallMapHandler::addTaintStoreFlows($store_storage, $function_id)) {
+                    $stmt_type = TaintStore::taintCall(
+                        $statements_analyzer,
+                        $taint_flow_graph,
+                        $store_storage,
+                        $stmt->getArgs(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $stmt_type,
+                    );
+                }
             }
         }
 
@@ -1456,6 +1473,17 @@ final class FunctionCallReturnTypeFetcher
         }
 
         self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
+
+        if (!$stmt->isFirstClassCallable()) {
+            $stmt_type = TaintStore::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $function_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $stmt_type,
+            );
+        }
 
         return $function_call_node;
     }

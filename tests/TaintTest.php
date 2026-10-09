@@ -440,6 +440,57 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'keyedStoreKeepsDifferentExactKeysApart' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("a", (string) $_GET["x"]);
+                    echo store_get("b");',
+            ],
+            'keyedStoreKnownStartDoesNotReachAnExactKeyItIsNotTheStartOf' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(string $id): void {
+                        store_set("lock_" . $id, (string) $_GET["x"]);
+                    }
+
+                    echo store_get("loc");
+                    echo store_get("other_lock_1");',
+            ],
+            'keyedStoreConstructorArgumentStartDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Prefixed {
+                        public function __construct(private string $prefix) {}
+
+                        public function write(string $id, string $value): void {
+                            store_set($this->prefix . $id, $value);
+                        }
+                    }
+
+                    final class Writer {
+                        public static function write(): void {
+                            (new Prefixed("pfx_"))->write((string) $_GET["id"], (string) $_GET["x"]);
+                        }
+                    }
+
+                    echo store_get("pf");
+                    echo store_get("other");',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -2568,6 +2619,183 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'keyedStoreExactKey' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("a", (string) $_GET["x"]);
+                    echo store_get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreWriteUnderAKnownStart' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(string $id): void {
+                        store_set("lock_" . $id, (string) $_GET["x"]);
+                    }
+
+                    echo store_get("lock_1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreReadUnderAKnownStart' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("lock_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get("lock_" . $id);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreUnknownKeyReadsEveryKey' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("a", (string) $_GET["x"]);
+
+                    function read(string $key): void {
+                        echo store_get($key);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartFromSprintfThroughAVariable' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(string $id): void {
+                        $key = sprintf("spr_%s", $id);
+                        store_set($key, (string) $_GET["x"]);
+                    }
+
+                    echo store_get("spr_1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartFromAConstructorArgument' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Prefixed {
+                        public function __construct(private string $prefix) {}
+
+                        public function write(string $id, string $value): void {
+                            store_set($this->prefix . $id, $value);
+                        }
+                    }
+
+                    final class Writer {
+                        public static function write(): void {
+                            (new Prefixed("pfx_"))->write((string) $_GET["id"], (string) $_GET["x"]);
+                        }
+                    }
+
+                    echo store_get("pfx_9");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreListOfKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("a", (string) $_GET["x"]);
+                    echo store_get_many(["b", "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreAnyKey' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    /** @psalm-flow ($values) -> Store::$data[*] */
+                    function store_set_many(array $values): void {}
+
+                    store_set_many(["a" => (string) $_GET["x"]]);
+                    echo store_get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreOfMethods' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    final class Cache {
+                        /** @psalm-flow ($value) -> self::$data[$key] */
+                        public static function set(string $key, string $value): void {}
+
+                        /** @psalm-flow self::$data[$key] -> return */
+                        public function get(string $key): string {}
+                    }
+
+                    Cache::set("a", (string) $_GET["x"]);
+                    echo (new Cache())->get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreOfPhpredis' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(Redis $redis, string $id): void {
+                        $redis->set("session_" . $id, (string) $_GET["x"]);
+                    }
+
+                    function read(Redis $redis): void {
+                        echo (string) $redis->get("session_1");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreOfApcu' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    apcu_store("a", (string) $_GET["x"]);
+                    echo (string) apcu_fetch("a");',
+                'error_message' => 'TaintedHtml',
+            ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
                     $outer = [];

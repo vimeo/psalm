@@ -24,6 +24,7 @@ use Psalm\Internal\PhpVisitor\Reflector\ClassLikeNodeScanner;
 use Psalm\Internal\PhpVisitor\Reflector\ExpressionResolver;
 use Psalm\Internal\PhpVisitor\Reflector\ExpressionScanner;
 use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeNodeScanner;
+use Psalm\Internal\PhpVisitor\Reflector\StringStartScanner;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\PhpStormMetaScanner;
@@ -566,6 +567,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $classlike_node_scanner = array_pop($this->classlike_node_scanners);
 
             $classlike_storage = $classlike_node_scanner->finish($node);
+
+            StringStartScanner::scan($node, $classlike_storage, $this->aliases);
 
             if ($classlike_storage->has_visitor_issues) {
                 $this->file_storage->has_visitor_issues = true;
