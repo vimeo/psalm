@@ -444,7 +444,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     trait Escapes {
                         public function escape(string $s): string {
-                            return htmlspecialchars($s);
+                            return htmlspecialchars($s, ENT_QUOTES);
                         }
                     }
 
@@ -948,15 +948,15 @@ final class TaintTest extends TestCase
             'dontTaintTheValueAWholeArrayHeldUnderAKeyAssignedSinceThen' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
-                    $data["city"] = htmlspecialchars((string) $data["city"]);
+                    $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
                     echo $data["city"];',
             ],
             'dontTaintTheValuesAWholeArrayHeldUnderKeysAssignedSinceThen' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
-                    $data["city"] = htmlspecialchars((string) $data["city"]);
-                    $data["zip"] = htmlspecialchars((string) $data["zip"]);
-                    $data["city"] = htmlspecialchars($data["city"]);
+                    $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    $data["zip"] = htmlspecialchars((string) $data["zip"], ENT_QUOTES);
+                    $data["city"] = htmlspecialchars($data["city"], ENT_QUOTES);
                     echo $data["city"];
                     echo $data["zip"];',
             ],
@@ -969,7 +969,7 @@ final class TaintTest extends TestCase
             'dontTaintTheValueAWholeArrayHeldUnderAKeyAssignedSinceThenOnceWrapped' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
-                    $data["city"] = htmlspecialchars((string) $data["city"]);
+                    $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
                     $wrapped = ["data" => $data];
                     echo $wrapped["data"]["city"];',
             ],
@@ -977,7 +977,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     $items = array_map(
                         function (array $item): array {
-                            $item["city"] = htmlspecialchars((string) $item["city"]);
+                            $item["city"] = htmlspecialchars((string) $item["city"], ENT_QUOTES);
                             return $item;
                         },
                         (array) $_GET["items"],
@@ -991,7 +991,7 @@ final class TaintTest extends TestCase
                     $items = [];
                     foreach ((array) $_GET["items"] as $item) {
                         $item = (array) $item;
-                        $item["city"] = htmlspecialchars((string) $item["city"]);
+                        $item["city"] = htmlspecialchars((string) $item["city"], ENT_QUOTES);
                         $items[] = $item;
                     }
                     foreach ($items as $item) {
@@ -3912,6 +3912,7 @@ final class TaintTest extends TestCase
                     $value = new Value((string) $_GET["x"]);
                     echo $value->value;',
                 'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
             ],
             'taintValuePassedByRefToAFunctionUnsettingIt' => [
                 'code' => '<?php // --taint-analysis

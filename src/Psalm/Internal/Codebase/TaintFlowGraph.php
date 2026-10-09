@@ -1791,8 +1791,8 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Returns the open assignments of a flow from its path types (see
      * appendPathType()): the path types without the trailing one if that is not an
-     * assignment, nor an overwrite the flow keeps (see isOverwrittenAnywhere()). This is the history shouldIgnoreFetch() matches the flow's next
-     * edge against; it gives the same result as on the full history.
+     * assignment, nor an overwrite the flow keeps (see isOverwrittenAnywhere()). This is the history
+     * shouldIgnoreFetch() matches the flow's next edge against; it gives the same result as on the full history.
      *
      * @param list<string> $path_types
      * @return list<string>

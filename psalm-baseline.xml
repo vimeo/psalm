@@ -3275,8 +3275,6 @@
       <code><![CDATA[$result->offset_start]]></code>
       <code><![CDATA[$result->text]]></code>
       <code><![CDATA[$result->text]]></code>
-      <code><![CDATA[$type->is_enum]]></code>
-      <code><![CDATA[$type->is_interface]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[array_keys($template_type_map[$value])[0]]]></code>
