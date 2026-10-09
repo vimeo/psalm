@@ -561,6 +561,15 @@ final class AssignmentAnalyzer
             );
         }
 
+        // the target's old value is dropped
+        DestructorAnalyzer::chargeOverwrite(
+            $statements_analyzer,
+            $context,
+            $assign_var,
+            $extended_var_id,
+            $assign_value_type,
+        );
+
         if (self::analyzeAssignment(
             $assign_var,
             $statements_analyzer,
