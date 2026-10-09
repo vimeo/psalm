@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -266,8 +267,14 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
-            if ($class_storage->namedMixins) {
-                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
+            $templated_mixins = $class_storage->templatedMixins
+                ? self::resolveTemplatedMixins($codebase, $class_storage, $lhs_type_part)
+                : [];
+
+            if ($class_storage->namedMixins || $templated_mixins) {
+                $mixins = [...$class_storage->getNamedMixinsForLookup(), ...$templated_mixins];
+
+                foreach ($mixins as $mixin) {
                     $new_property_id = $mixin->value . '::$' . $prop_name;
 
                     try {
@@ -1270,6 +1277,55 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Resolves `@mixin T` declarations to concrete classes for this receiver, using its
+     * generic arguments or the `@extends` arguments of the class it is an instance of.
+     * Mixins that resolve to a union (e.g. `Wrapper<A|B>`) are skipped: no single class owns the property.
+     *
+     * @return list<TNamedObject>
+     */
+    private static function resolveTemplatedMixins(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+    ): array {
+        $resolved_mixins = [];
+
+        foreach ($class_storage->templatedMixins as $mixin) {
+            try {
+                $defining_storage = $codebase->classlike_storage_provider->get($mixin->defining_class);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $defining_storage,
+                $class_storage,
+                null,
+                $lhs_type_part,
+            );
+
+            if ($template_params === null) {
+                continue;
+            }
+
+            $resolved = TemplateInferredTypeReplacer::replace(
+                new Union([$mixin]),
+                new TemplateResult([], $template_params),
+                $codebase,
+            );
+
+            $resolved_atomic = $resolved->isSingle() ? $resolved->getSingleAtomic() : null;
+
+            if ($resolved_atomic instanceof TNamedObject) {
+                $resolved_mixins[] = $resolved_atomic;
+            }
+        }
+
+        return $resolved_mixins;
     }
 
     private static function handleNonExistentProperty(
