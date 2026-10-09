@@ -36837,7 +36837,7 @@ return array (
   array (
     0 => 'mixed',
     'callback' => 'callable[impure]',
-    'parameters' => 'array{collection?: int|string, databaseName?: int|string, host?: string, inputQuery?: string, inputQueryLabel?: string, operation?: string, portPathOrId?: int|string, product: string, query?: string, ...<array-key, mixed>}',
+    'parameters' => 'array{collection?: null|scalar, databaseName?: null|scalar, host?: null|scalar, inputQuery?: null|scalar, inputQueryLabel?: null|scalar, operation?: null|scalar, portPathOrId?: null|scalar, product: string, query?: null|scalar, ...<array-key, mixed>}',
   ),
   'newrelic_set_appname' => 
   array (

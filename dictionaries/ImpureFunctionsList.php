@@ -266,7 +266,7 @@ return [
     'newrelic_insert_distributed_trace_headers' => Capabilities::IO | Capabilities::WRITE_REFS,
     'newrelic_is_sampled' => Capabilities::IO,
     'newrelic_name_transaction' => Capabilities::IO,
-    'newrelic_notice_error' => Capabilities::IO,
+    'newrelic_notice_error' => Capabilities::ALL,
     'newrelic_record_custom_event' => Capabilities::IO,
     'newrelic_record_datastore_segment' => Capabilities::ALL,
     'newrelic_set_appname' => Capabilities::IO,

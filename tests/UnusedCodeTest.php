@@ -1615,7 +1615,7 @@ final class UnusedCodeTest extends TestCase
                 'code' => '<?php
                     function report(): void {
                         newrelic_custom_metric("Custom/Foo", 1.0);
-                        newrelic_record_datastore_segment(static fn (): int => 1, ["product" => "x", "collection" => 12345]);
+                        newrelic_record_datastore_segment(static fn (): int => 1, ["product" => "x", "collection" => 12345, "databaseName" => null]);
                         newrelic_set_user_attributes("u", "a", "p");
                         newrelic_get_browser_timing_header(false);
                         newrelic_set_user_id("id");
