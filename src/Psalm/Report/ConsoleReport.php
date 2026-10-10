@@ -13,6 +13,7 @@ use Psalm\Report;
 use function basename;
 use function get_cfg_var;
 use function ini_get;
+use function rtrim;
 use function strlen;
 use function strtr;
 use function substr;
@@ -30,7 +31,8 @@ final class ConsoleReport extends Report
     {
         $output = '';
         foreach ($this->issues_data as $issue_data) {
-            $output .= $this->format($issue_data) . "\n" . "\n";
+            // one blank line between issues, whatever their snippets end with
+            $output .= rtrim($this->format($issue_data), "\n") . "\n" . "\n";
         }
 
         return $output;
