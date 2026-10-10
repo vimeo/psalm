@@ -291,7 +291,7 @@ final class IssueBuffer
             ob_start();
             debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
             $trace = ob_get_clean();
-            fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
+            $project_analyzer->progress->write("Emitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
         }
 
         // Make issue type for trace variable specific ("Trace" => "Trace~$var").
