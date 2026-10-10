@@ -16,6 +16,8 @@ use Psalm\Progress\Progress;
 
 use function array_filter;
 use function array_key_exists;
+use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_values;
 use function assert;
@@ -24,15 +26,19 @@ use function curl_exec;
 use function curl_getinfo;
 use function curl_init;
 use function curl_setopt;
+use function explode;
 use function function_exists;
 use function is_array;
 use function is_string;
 use function json_encode;
 use function parse_url;
 use function preg_replace;
+use function rawurldecode;
 use function sprintf;
+use function str_replace;
 use function strip_tags;
 use function strlen;
+use function usort;
 use function var_export;
 
 use const CURLINFO_HEADER_OUT;
@@ -161,7 +167,7 @@ final class Shepherd implements AfterAnalysisInterface
         // Submit the POST request
         $curl_result = curl_exec($ch);
 
-        /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
+        /** @var array{http_code: int, ssl_verify_result: int, ...<string, mixed>} $curl_info */
         $curl_info = curl_getinfo($ch);
 
         // The endpoint may hold a secret (e.g. a token in its query): only its host is shown
@@ -185,27 +191,71 @@ final class Shepherd implements AfterAnalysisInterface
 
         $progress->warning("Results not sent to Shepherd ($shepherd_host): $problem"
             . ($progress instanceof DebugProgress ? '' : '. Run with --debug for details'));
-        $progress->debug(self::redact(sprintf(
+        // each value is masked before it's formatted: var_export() would escape quotes inside a secret
+        $secrets = self::getEndpointSecrets($endpoint);
+        $progress->debug(sprintf(
             "Shepherd endpoint: %s\nShepherd response: %s\ncURL info:\n%s\n",
-            $endpoint,
-            is_string($curl_result) ? strip_tags($curl_result) : 'n/a',
-            var_export($curl_info, true),
-        )));
+            self::redact($endpoint, $secrets),
+            is_string($curl_result) ? self::redact(strip_tags($curl_result), $secrets) : 'n/a',
+            var_export(array_map(
+                static fn(mixed $value): mixed => is_string($value) ? self::redact($value, $secrets) : $value,
+                $curl_info,
+            ), true),
+        ));
     }
 
     /**
-     * Masks credentials and query values in URLs (the endpoint, the URL it redirected to, the request line),
+     * Masks credentials (in the user info of URLs and in the authentication and cookie headers curl sends, see
+     * CURLINFO_HEADER_OUT), query values, and the given secrets wherever they appear (e.g. echoed in a response),
      * as debug output often ends up in CI logs
      *
+     * @param list<non-empty-string> $secrets
      * @psalm-pure
      */
-    private static function redact(string $text): string
+    private static function redact(string $text, array $secrets): string
     {
+        $text = str_replace($secrets, '***', $text);
+
         return (string) preg_replace(
-            ['#(://)[^/@\s\']+@#', '#([?&][^=&\s\'\#]+)=[^&\s\'\#]*#'],
-            ['$1***@', '$1=***'],
+            [
+                '#(://)[^/\s]*@#',
+                '#([?&][^=&\s\#]+)=[^&\s\#]*#',
+                '#^((?:proxy-)?authorization|cookie)\s*:.*$#mi',
+            ],
+            ['$1***@', '$1=***', '$1: ***'],
             $text,
         );
+    }
+
+    /**
+     * The user, password and query values of the endpoint, as given and decoded, longest first (so that a value
+     * isn't masked only in part, through a shorter one it contains)
+     *
+     * @return list<non-empty-string>
+     * @psalm-pure
+     */
+    private static function getEndpointSecrets(string $endpoint): array
+    {
+        $parts = parse_url($endpoint);
+        $values = [$parts['user'] ?? '', $parts['pass'] ?? ''];
+
+        foreach (explode('&', $parts['query'] ?? '') as $pair) {
+            $values[] = explode('=', $pair, 2)[1] ?? '';
+        }
+
+        $secrets = [];
+        foreach ($values as $value) {
+            // too short to be a secret, and masking it would mangle the rest of the output
+            if (strlen($value) >= 4) {
+                $secrets[$value] = true;
+                $secrets[rawurldecode($value)] = true;
+            }
+        }
+
+        $secrets = array_keys($secrets);
+        usort($secrets, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        return array_values(array_filter($secrets, static fn(string $secret): bool => $secret !== ''));
     }
 
     /**
