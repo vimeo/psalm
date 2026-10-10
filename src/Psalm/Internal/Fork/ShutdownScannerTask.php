@@ -48,6 +48,7 @@ final class ShutdownScannerTask implements Task
             'taint_data' => $codebase->taint_flow_graph,
             'global_constants' => $codebase->getAllStubbedConstants(),
             'global_functions' => $codebase->functions->getAllStubbedFunctions(),
+            'progress_output' => $project_analyzer->progress->takeWorkerOutput(),
         ];
     }
 }

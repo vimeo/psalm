@@ -95,7 +95,6 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -720,9 +719,9 @@ final class Psalm
             // which emits one line per phase transition.
             $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
             if (isset($options['long-progress']) || $quiet_progress) {
-                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress, CliUtils::useColor($options));
             } else {
-                $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
+                $progress = new DefaultProgress($show_errors, $show_info, $in_ci, CliUtils::useColor($options));
             }
         }
         // output buffered warnings
@@ -928,9 +927,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1057,8 +1054,6 @@ final class Psalm
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
-
-        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL);
 
         $hasJit = false;
         if (function_exists('opcache_get_status')) {
@@ -1509,7 +1504,7 @@ final class Psalm
                 where method is in the format class::methodName
 
             --no-suggestions
-                Hide suggestions
+                Hide suggestions (the auto-fix command and the "fixable" tags in the summary)
 
             --taint-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
@@ -1552,13 +1547,14 @@ final class Psalm
                     $outputFormats
 
             --no-progress
-                Disable the progress indicator.
+                Disable the progress indicator. The summary is still printed.
                 Auto-enabled when an AI coding agent is driving the shell
                 (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs.
-                Auto-enabled in CI and when stderr is not attached to a terminal.
+                Print a marker per file instead of the live status line.
+                In CI and when stderr is not attached to a terminal, the progress
+                is one line per phase anyway.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase

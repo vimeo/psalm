@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\VersionUtils;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -69,15 +70,14 @@ use function dirname;
 use function end;
 use function explode;
 use function file_exists;
-use function fwrite;
 use function implode;
-use function in_array;
 use function is_dir;
 use function is_file;
 use function microtime;
 use function mkdir;
 use function number_format;
 use function preg_match;
+use function preg_replace;
 use function rename;
 use function str_ends_with;
 use function str_starts_with;
@@ -88,7 +88,7 @@ use function substr;
 use function usort;
 
 use const PHP_EOL;
-use const STDERR;
+use const PHP_VERSION;
 
 /**
  * @internal
@@ -122,6 +122,9 @@ final class ProjectAnalyzer
     public bool $debug_lines = false;
 
     public bool $debug_performance = false;
+
+    /** Whether unused code wasn't looked for, the run only covering some files */
+    public bool $unused_code_skipped = false;
 
     public bool $show_issues = true;
 
@@ -388,53 +391,50 @@ final class ProjectAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
+     * e.g. "Psalm dev-master@7f970b3 · PHP 8.5.11 · target PHP 8.5 (from composer.json)"
      */
-    private function generatePHPVersionMessage(): string
+    private function reportPhpVersion(): void
     {
         $codebase = $this->codebase;
 
-        switch ($codebase->php_version_source) {
-            case 'cli':
-                $source = '(set by CLI argument)';
-                break;
-            case 'config':
-                $source = '(set by config file)';
-                break;
-            case 'composer':
-                $source = '(inferred from composer.json)';
-                break;
-            case 'tests':
-                $source = '(set by tests)';
-                break;
-            case 'runtime':
-                $source = '(inferred from current PHP version)';
-                break;
-        }
+        $source = match ($codebase->php_version_source) {
+            'cli' => 'from --php-version',
+            'config' => 'from config',
+            'composer' => 'from composer.json',
+            'tests' => 'set by tests',
+            'runtime' => 'from PHP runtime',
+        };
 
         $unsupported_php_extensions = array_diff(
             array_keys($codebase->config->php_extensions_not_supported),
             $codebase->config->php_extensions_supported_by_psalm_callmaps,
         );
 
-        $message = "Target PHP version: "
-            .$codebase->getMajorAnalysisPhpVersion()."."
-            .$codebase->getMinorAnalysisPhpVersion()." "
-            .$source
-        ;
+        // A commit is recognizable by its first 7 characters. The PSALM_VERSION constant is only defined by the CLI,
+        // not when Psalm is used as a library.
+        $psalm_version = (string) preg_replace('/@([0-9a-f]{7})[0-9a-f]{33}$/', '@$1', VersionUtils::getPsalmVersion());
 
-        $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
-        if (count($enabled_extensions_names) > 0) {
-            $message .= ' Enabled extensions: ' . implode(', ', $enabled_extensions_names);
+        $separator = Progress::separator();
+        $message = 'Psalm ' . $psalm_version
+            . $separator . 'PHP ' . PHP_VERSION
+            . $separator . 'target PHP ' . $codebase->getMajorAnalysisPhpVersion() . '.'
+            . $codebase->getMinorAnalysisPhpVersion() . ' (' . $source . ')';
+
+        // a config that isn't from a file (e.g. the probe of --init) has no level of the user's
+        if ($codebase->config->source_filename !== null) {
+            $message .= $separator . 'errorLevel ' . $codebase->config->level;
         }
 
         if (count($unsupported_php_extensions) > 0) {
-            $message .= ' (unsupported extensions: ' . implode(', ', $unsupported_php_extensions) . ')';
+            $message .= $separator . 'unsupported extensions: ' . implode(', ', $unsupported_php_extensions);
         }
 
-        $message .= '.'.PHP_EOL.PHP_EOL;
+        $this->progress->write($message . PHP_EOL . PHP_EOL);
 
-        return $message;
+        $enabled_extensions_names = array_keys(array_filter($codebase->config->php_extensions));
+        if (count($enabled_extensions_names) > 0) {
+            $this->progress->debug('Enabled extensions: ' . implode(', ', $enabled_extensions_names) . PHP_EOL);
+        }
     }
 
     public function check(string $base_dir, bool $is_diff = false): void
@@ -442,7 +442,7 @@ final class ProjectAnalyzer
         if (!$base_dir) {
             throw new InvalidArgumentException('Cannot work with empty base_dir');
         }
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->reportPhpVersion();
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->initProjectFiles();
@@ -521,8 +521,6 @@ final class ProjectAnalyzer
 
             $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
         }
-
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
@@ -800,13 +798,18 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->recordAlteredFile($file_path);
+                }
             }
         }
 
@@ -828,6 +831,8 @@ final class ProjectAnalyzer
                     }
 
                     rename($source_class_storage->location->file_path, $potential_file_path);
+                    // the class now lives in a new file: that's the one to show
+                    $this->codebase->analyzer->recordAlteredFile($potential_file_path);
                 }
             }
         }
@@ -863,7 +868,7 @@ final class ProjectAnalyzer
 
     public function checkDir(string $dir_name): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->reportPhpVersion();
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
@@ -892,8 +897,6 @@ final class ProjectAnalyzer
         $event = new AfterCodebasePopulatedEvent($this->codebase);
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
-
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
@@ -973,7 +976,7 @@ final class ProjectAnalyzer
 
     public function checkFile(string $file_path): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->reportPhpVersion();
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         $this->progress->debug('Checking ' . $file_path . PHP_EOL);
@@ -1001,8 +1004,6 @@ final class ProjectAnalyzer
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
         $this->codebase->analyzer->analyzeFiles(
             $this,
             $this->threads,
@@ -1016,7 +1017,7 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
-        $this->progress->write($this->generatePHPVersionMessage());
+        $this->reportPhpVersion();
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
         if (!$this->project_files_initialized) {
@@ -1067,8 +1068,6 @@ final class ProjectAnalyzer
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
         $this->codebase->analyzer->analyzeFiles(
             $this,
             $this->threads,
@@ -1076,20 +1075,8 @@ final class ProjectAnalyzer
             $this->codebase->find_unused_code === 'always',
         );
 
-        if ($this->stdout_report_options
-            && in_array(
-                $this->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
-            )
-            && $this->codebase->collect_references
-        ) {
-            fwrite(
-                STDERR,
-                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
-                . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
-                . PHP_EOL . 'complete unused code detection.' . PHP_EOL,
-            );
-        }
+        $this->unused_code_skipped = $this->codebase->collect_references
+            && $this->codebase->find_unused_code !== 'always';
     }
 
     public function finish(float $start_time, string $psalm_version): void

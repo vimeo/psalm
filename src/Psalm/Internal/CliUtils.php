@@ -674,6 +674,14 @@ final class CliUtils
         return is_string($value) && $value !== '';
     }
 
+    /**
+     * Whether to print ANSI colors: not with -m/--monochrome, NO_COLOR, or under an AI agent
+     */
+    public static function useColor(array $options): bool
+    {
+        return !array_key_exists('m', $options) && !self::noColorRequested() && !self::runningUnderAiAgent();
+    }
+
     public static function checkRuntimeRequirements(): void
     {
         // the following list was taken from vendor/composer/platform_check.php

@@ -30,16 +30,31 @@ final class DebugProgress extends Progress
     #[Override]
     public function startPhase(Phase $phase, int $threads = 1): void
     {
-        $threads = $threads === 1 ? '' : " ($threads threads)";
+        // Preloading happens before the header, and only concerns Psalm itself: the header stays the first line
+        if ($phase === Phase::PRELOADING || $phase === Phase::JIT_COMPILATION) {
+            return;
+        }
+
         $this->write(match ($phase) {
-            Phase::SCAN => "\nScanning files$threads...\n\n",
-            Phase::ANALYSIS => "\nAnalyzing files$threads...\n",
-            Phase::ALTERING => "\nUpdating files$threads...\n",
-            Phase::TAINT_GRAPH_RESOLUTION => "\nResolving taint graph$threads...\n",
-            Phase::JIT_COMPILATION => "\nJIT compilation in progress$threads...\n",
-            Phase::PRELOADING => "\nPreloading in progress$threads...\n",
-            Phase::MERGING_THREAD_RESULTS => "\nMerging thread results$threads...\n",
+            Phase::SCAN => "Scanning files...\n",
+            Phase::ANALYSIS => "Analyzing files...\n",
+            Phase::ALTERING => "Altering files...\n",
+            Phase::TAINT_GRAPH_RESOLUTION => "Resolving taint graph...\n",
+            Phase::MERGING_THREAD_RESULTS => "Merging thread results...\n",
+            Phase::LOADING_CACHE => "Loading cached results...\n",
+            Phase::FINISHING => "Finishing...\n",
         });
+    }
+
+    /**
+     * Like the other progress classes, a thread count is only shown for a phase that forks
+     */
+    #[Override]
+    public function setThreads(int $threads): void
+    {
+        if ($threads > 1) {
+            $this->write("Forking $threads threads\n");
+        }
     }
     
     /**

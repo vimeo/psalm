@@ -24,6 +24,7 @@ final class InitScannerTask implements Task
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $analyzer = ProjectAnalyzer::getInstance();
+        $analyzer->progress->startBufferingWorkerOutput();
         $analyzer->progress->debug('Initialising forked process for scanning' . PHP_EOL);
 
         $codebase = $analyzer->getCodebase();

@@ -2862,7 +2862,6 @@
     </ImpureStaticProperty>
     <InvalidOperand>
       <code><![CDATA[1_000 * $time]]></code>
-      <code><![CDATA[round(1_000 * $time, 2)]]></code>
     </InvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$report_options->output_path]]></code>
@@ -3058,21 +3057,6 @@
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[RegistrationInterface]]></code>
     </MissingInterfaceImmutableAnnotation>
-  </file>
-  <file src="src/Psalm/Progress/DefaultProgress.php">
-    <InvalidOperand>
-      <code><![CDATA[$current_float - $current]]></code>
-      <code><![CDATA[$current_float - $current]]></code>
-      <code><![CDATA[$p * $length]]></code>
-      <code><![CDATA[1.0 / 4]]></code>
-      <code><![CDATA[2.0 / 4]]></code>
-      <code><![CDATA[3.0 / 4]]></code>
-    </InvalidOperand>
-  </file>
-  <file src="src/Psalm/Progress/LongProgress.php">
-    <InvalidOperand>
-      <code><![CDATA[$this->progress / $this->number_of_tasks * 100]]></code>
-    </InvalidOperand>
   </file>
   <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
     <PossiblyInvalidArgument>
