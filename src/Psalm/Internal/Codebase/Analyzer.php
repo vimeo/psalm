@@ -37,6 +37,7 @@ use UnexpectedValueException;
 use function Amp\Future\await;
 use function array_filter;
 use function array_intersect_key;
+use function array_keys;
 use function array_merge;
 use function array_values;
 use function count;
@@ -180,9 +181,10 @@ final class Analyzer
     public array $mutable_classes = [];
 
     /**
-     * Files --alter changed, or would change with --dry-run
+     * Files --alter changed, or would change with --dry-run: by updateFile(), and by the migrations of
+     * psalm-refactor (see recordAlteredFile())
      *
-     * @var list<string>
+     * @var array<string, true>
      */
     private array $altered_files = [];
 
@@ -206,12 +208,21 @@ final class Analyzer
     }
 
     /**
-     * @return list<string> The files --alter changed, or would change with --dry-run, in the order they were visited
+     * @return list<string> The files --alter changed, or would change with --dry-run, in the order they were changed
      * @psalm-mutation-free
      */
     public function getAlteredFiles(): array
     {
-        return $this->altered_files;
+        return array_keys($this->altered_files);
+    }
+
+    /**
+     * @internal for ProjectAnalyzer::migrateCode(), which writes and renames files on its own
+     * @psalm-external-mutation-free
+     */
+    public function recordAlteredFile(string $file_path): void
+    {
+        $this->altered_files[$file_path] = true;
     }
 
     /**
@@ -1286,7 +1297,7 @@ final class Analyzer
             return;
         }
 
-        $this->altered_files[] = $file_path;
+        $this->altered_files[$file_path] = true;
 
         if ($dry_run) {
             $differ = new Differ(
