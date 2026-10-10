@@ -1111,11 +1111,11 @@ final class ClassLikes
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
                 $msg ?? ($storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
-                    . ' to aid security analysis,'
-                    .' run with --alter --issues=MissingImmutableAnnotation to fix this'),
+                    . ' to aid security analysis'),
                 $storage->location,
             ),
             $storage->suppressed_issues,
+            true,
         );
     }
 

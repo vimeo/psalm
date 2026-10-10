@@ -236,11 +236,11 @@ final class MutationLevelResolver
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
                     $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
-                    . ' to aid security analysis'
-                    . ', run with --alter --issues=MissingPureAnnotation to fix this',
+                    . ' to aid security analysis',
                     $info['location'],
                 ),
                 $info['suppressed_issues'],
+                true,
             );
 
             if ($fix) {
