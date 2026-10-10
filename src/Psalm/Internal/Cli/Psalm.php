@@ -301,6 +301,11 @@ final class Psalm
         $force_jit = $config->force_jit || isset($options['force-jit']);
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
+        // after the restart: the process that restarts would print them too
+        foreach ($config->config_warnings as $warning) {
+            $progress->warning($warning);
+        }
+
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
         }
@@ -726,10 +731,6 @@ final class Psalm
                 $progress = new DefaultProgress($show_errors, $show_info, $in_ci, CliUtils::useColor($options));
             }
         }
-        // output buffered warnings
-        foreach ($config->config_warnings as $warning) {
-            $progress->warning($warning);
-        }
         return $progress;
     }
 
@@ -799,6 +800,9 @@ final class Psalm
             );
         }
 
+        // a block of its own before the report
+        fwrite(STDERR, PHP_EOL);
+
         return $issue_baseline;
     }
 
@@ -834,10 +838,11 @@ final class Psalm
 
             $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
 
-            fwrite(STDERR, $total_fixed_issues > 0
+            // a block of its own before the report
+            fwrite(STDERR, ($total_fixed_issues > 0
                 ? 'Baseline updated: ' . number_format($total_fixed_issues)
-                    . ($total_fixed_issues === 1 ? ' fixed issue' : ' fixed issues') . ' removed' . PHP_EOL
-                : 'Baseline unchanged: no fixed issues to remove' . PHP_EOL);
+                    . ($total_fixed_issues === 1 ? ' fixed issue' : ' fixed issues') . ' removed'
+                : 'Baseline unchanged: no fixed issues to remove') . PHP_EOL . PHP_EOL);
         } catch (ConfigException $exception) {
             fwrite(STDERR, 'Could not update the baseline: ' . $exception->getMessage()
                 . '. Create it with --set-baseline=' . $baselineFile . PHP_EOL);
