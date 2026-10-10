@@ -65,6 +65,7 @@ use function strtolower;
 use function substr;
 use function trim;
 
+use const JSON_PRETTY_PRINT;
 use const PREG_SET_ORDER;
 
 /**
@@ -1409,6 +1410,29 @@ final class FunctionCallReturnTypeFetcher
                             }
                         }
                     }
+                }
+            }
+
+            // json_encode() escapes CR, LF and NUL; only JSON_PRETTY_PRINT adds raw newlines
+            if ($function_id === 'json_encode') {
+                $safe_for_header = true;
+
+                foreach ($args as $offset => $arg) {
+                    if ($arg->unpack) {
+                        $safe_for_header = false;
+                        break;
+                    }
+
+                    if ($arg->name === null ? $offset === 1 : $arg->name->name === 'flags') {
+                        $flags_type = $statements_analyzer->node_data->getType($arg->value);
+                        $safe_for_header = $flags_type !== null
+                            && $flags_type->isSingleIntLiteral()
+                            && ($flags_type->getSingleIntLiteral()->value & JSON_PRETTY_PRINT) === 0;
+                    }
+                }
+
+                if ($safe_for_header) {
+                    $removed_taints |= TaintKind::INPUT_HEADER;
                 }
             }
 
