@@ -44,4 +44,20 @@ final class ClassLikesTest extends TestCase
 
         self::assertSame('Foo', $this->classlikes->getUnAliasedName('Qoo'));
     }
+
+    public function testThreadDataCarriesAliases(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $worker_classlikes = new ClassLikes(
+            $codebase->config,
+            $this->storage_provider,
+            $codebase->file_reference_provider,
+            $codebase->scanner,
+        );
+        $worker_classlikes->addClassAlias('Foo', 'Bar');
+
+        $this->classlikes->addThreadData($worker_classlikes->getThreadData());
+
+        self::assertSame('Foo', $this->classlikes->getUnAliasedName('Bar'));
+    }
 }

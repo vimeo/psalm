@@ -515,6 +515,19 @@ final class ClassTest extends TestCase
                     class_alias(A::class, B::class);
                     B::$prop = 123;',
             ],
+            'classAliasInterfaceMethodCall' => [
+                'code' => '<?php
+                    interface NewI {}
+                    class_alias(NewI::class, OldI::class);
+
+                    class A implements OldI {
+                        public function foo(): void {}
+                    }
+
+                    function action(A $a): void {
+                        $a->foo();
+                    }',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
