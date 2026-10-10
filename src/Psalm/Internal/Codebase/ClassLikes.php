@@ -1087,9 +1087,8 @@ final class ClassLikes
             }
             IssueBuffer::maybeAdd(
                 new MissingInterfaceImmutableAnnotation(
-                    $storage->name
-                    . ' must be marked with either @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable'
-                    . ' to aid security analysis',
+                    'Interface ' . $storage->name
+                    . ' has no @psalm-pure, @psalm-immutable, @psalm-capabilities or @psalm-mutable annotation',
                     $storage->location,
                 ),
                 $storage->suppressed_issues,
@@ -1108,10 +1107,19 @@ final class ClassLikes
             $manipulator->setCapabilities($capabilities);
         }
 
+        // e.g. "Class Cart is immutable but has no @psalm-immutable annotation"
+        $kind = $storage->is_trait ? 'Trait' : ($storage->is_enum ? 'Enum' : 'Class');
+        $inferred = match ($capabilities) {
+            Capabilities::NONE => 'is pure',
+            Capabilities::MUTATION_FREE => 'is immutable',
+            default => 'only needs ' . Capabilities::toString($capabilities),
+        };
+        $annotation = Capabilities::toClassAnnotation($capabilities);
+        $annotation = str_starts_with($annotation, 'psalm-capabilities ') ? 'psalm-capabilities' : $annotation;
+
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
-                $msg ?? ($storage->name . ' must be marked @' . Capabilities::toClassAnnotation($capabilities)
-                    . ' to aid security analysis'),
+                $msg ?? "$kind {$storage->name} $inferred but has no @$annotation annotation",
                 $storage->location,
             ),
             $storage->suppressed_issues,

@@ -932,14 +932,14 @@ Given this code:
 
 ```php
 <?php
-function slug(string $title): string { // MissingPureAnnotation: slug must be marked @psalm-pure to aid security analysis
+function slug(string $title): string { // MissingPureAnnotation: Function slug is pure but has no @psalm-pure annotation
     return strtolower(trim($title));
 }
 
-final class Cart { // MissingImmutableAnnotation: Cart must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis
+final class Cart { // MissingImmutableAnnotation: Class Cart only needs read-props|write-this-props|write-refs but has no @psalm-capabilities annotation
     private int $items = 0;
 
-    public function addItem(): void { // MissingPureAnnotation: addItem must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis
+    public function addItem(): void { // MissingPureAnnotation: Method Cart::addItem only needs read-props|write-this-props|write-refs but has no @psalm-capabilities annotation
         $this->items++;
     }
 
