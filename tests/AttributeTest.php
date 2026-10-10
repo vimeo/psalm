@@ -920,6 +920,37 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'deprecatedAttributeOnTraitBeforePhp85' => [
+                'code' => '<?php
+                    #[\Deprecated("t")]
+                    trait T {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23 - Attribute Deprecated cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedAttributeOnClass' => [
+                'code' => '<?php
+                    #[\Deprecated("c")]
+                    class C {}
+                ',
+                'error_message' => 'Attribute Deprecated cannot be used on a class',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'deprecatedAttributeOnTrait' => [
+                'code' => '<?php
+                    #[\Deprecated("t")]
+                    trait T {}
+
+                    final class U {
+                        use T;
+                    }
+                ',
+                'error_message' => 'DeprecatedTrait - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - Trait T is deprecated, t',
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 }
