@@ -226,22 +226,26 @@ final class Scanner
     }
 
     /**
-     * Queues a stub file: only such files, and those they include, are scanned as stubs while stubs are registered
+     * Marks a file as a stub without queueing it: only such files, and those they include, are scanned as stubs
+     * while stubs are registered
+     */
+    public function addStubFile(string $file_path): void
+    {
+        $this->stub_files[self::getStubFileKey($file_path)] = true;
+    }
+
+    /**
+     * Queues a stub file (see addStubFile())
      */
     public function addStubFileToDeepScan(string $file_path): void
     {
-        $this->markAsStub($file_path);
+        $this->addStubFile($file_path);
         $this->addFileToDeepScan($file_path);
     }
 
     public function isStubFile(string $file_path): bool
     {
         return isset($this->stub_files[self::getStubFileKey($file_path)]);
-    }
-
-    private function markAsStub(string $file_path): void
-    {
-        $this->stub_files[self::getStubFileKey($file_path)] = true;
     }
 
     private static function getStubFileKey(string $file_path): string
@@ -262,7 +266,7 @@ final class Scanner
 
         // only on while a stub file is scanned (see scanAPath())
         if ($this->codebase->register_stub_files) {
-            $this->markAsStub($file_path);
+            $this->addStubFile($file_path);
         }
     }
 
