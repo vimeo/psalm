@@ -2,7 +2,7 @@
 
 Emitted when a potentially immutable interface or class does not have a `@psalm-pure`, `@psalm-immutable` or `@psalm-capabilities` declaration.  
 
-To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation`. The summary at the end of a run suggests this command.  
+To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation`.  
 
 This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly immutable interfaces and classes are marked as immutable.  
 

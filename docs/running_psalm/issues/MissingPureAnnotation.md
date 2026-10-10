@@ -8,7 +8,7 @@ No annotation is suggested for an unannotated method that is overridden, nor for
 
 No annotation is suggested for a function-like whose parameter default values need capabilities the annotation would not give them (see [parameter default values](../../annotating_code/purity_model.md#parameter-default-values)).  
 
-To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`. The summary at the end of a run suggests this command.  
+To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`.  
 
 This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly pure functions and methods are marked as pure.  
 
