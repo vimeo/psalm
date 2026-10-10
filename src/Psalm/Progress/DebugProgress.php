@@ -35,16 +35,26 @@ final class DebugProgress extends Progress
             return;
         }
 
-        $threads = $threads === 1 ? '' : " · $threads threads";
         $this->write(match ($phase) {
-            Phase::SCAN => "Scanning files$threads...\n",
-            Phase::ANALYSIS => "Analyzing files$threads...\n",
-            Phase::ALTERING => "Altering files$threads...\n",
-            Phase::TAINT_GRAPH_RESOLUTION => "Resolving taint graph$threads...\n",
-            Phase::MERGING_THREAD_RESULTS => "Merging thread results$threads...\n",
-            Phase::LOADING_CACHE => "Loading cached results$threads...\n",
-            Phase::FINISHING => "Finishing$threads...\n",
+            Phase::SCAN => "Scanning files...\n",
+            Phase::ANALYSIS => "Analyzing files...\n",
+            Phase::ALTERING => "Altering files...\n",
+            Phase::TAINT_GRAPH_RESOLUTION => "Resolving taint graph...\n",
+            Phase::MERGING_THREAD_RESULTS => "Merging thread results...\n",
+            Phase::LOADING_CACHE => "Loading cached results...\n",
+            Phase::FINISHING => "Finishing...\n",
         });
+    }
+
+    /**
+     * Like the other progress classes, a thread count is only shown for a phase that forks
+     */
+    #[Override]
+    public function setThreads(int $threads): void
+    {
+        if ($threads > 1) {
+            $this->write("Forking $threads threads\n");
+        }
     }
     
     /**
