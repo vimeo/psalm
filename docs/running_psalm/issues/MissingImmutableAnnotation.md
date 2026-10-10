@@ -2,7 +2,9 @@
 
 Emitted when the config flag [`suggestPurityAnnotations`](../configuration.md#suggestpurityannotations) is set to `true` and a potentially immutable interface or class does not have a `@psalm-pure`, `@psalm-immutable` or `@psalm-capabilities` declaration.  
 
-To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation` (it does not need the config flag).  
+To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation` (it does not need the config flag). The summary at the end of a run suggests this command.  
+
+Taint analysis can [specialize](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-classes) the taints of an immutable class per instance, instead of mixing the taints of every instance. The annotation is also enforced, so a later change that mutates the class is reported (see the [purity model](../../annotating_code/purity_model.md#class-level-contracts)).  
 
 ```php
 <?php
