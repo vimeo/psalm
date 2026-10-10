@@ -683,6 +683,8 @@ final class Config
 
     /**
      * Creates a new config object from the file
+     *
+     * @throws ConfigException if the file can't be read, is empty or isn't a valid config
      */
     public static function loadFromXMLFile(string $file_path, string $current_dir): Config
     {
@@ -691,11 +693,13 @@ final class Config
         $base_dir = dirname($file_path);
 
         if ($file_contents === false) {
-            throw new InvalidArgumentException('Cannot open ' . $file_path);
+            throw new ConfigException('Cannot read the config file ' . $file_path);
         }
 
         if ($file_contents === '') {
-            throw new InvalidArgumentException('Invalid empty file ' . $file_path);
+            throw new ConfigException(
+                'The config file ' . $file_path . ' is empty: delete it and run psalm --init to create a new one',
+            );
         }
 
         try {
@@ -1120,8 +1124,8 @@ final class Config
                 )
             ) {
                 $config->use_igbinary = false;
-                $config->config_warnings[] = '"serializer" set to "igbinary" but ext-igbinary seems to be missing on ' .
-                    'the system. Using php\'s build-in serializer.';
+                $config->config_warnings[] = 'ext-igbinary is missing, using the PHP serializer'
+                    . ' (serializer="igbinary" in the config)';
             }
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
@@ -1133,15 +1137,15 @@ final class Config
                 if (function_exists('lz4_compress') && function_exists('lz4_uncompress')) {
                     $config->compressor = 'lz4';
                 } else {
-                    $config->config_warnings[] = '"compressor" set to "lz4" but ext-lz4 seems to be missing on the ' .
-                        'system. Disabling cache compressor.';
+                    $config->config_warnings[] = 'ext-lz4 is missing, cache compression disabled'
+                        . ' (compressor="lz4" in the config)';
                 }
             } elseif ($compressor === 'deflate') {
                 if (function_exists('gzinflate') && function_exists('gzdeflate')) {
                     $config->compressor = 'deflate';
                 } else {
-                    $config->config_warnings[] = '"compressor" set to "deflate" but zlib seems to be missing on the ' .
-                        'system. Disabling cache compressor.';
+                    $config->config_warnings[] = 'ext-zlib is missing, cache compression disabled'
+                        . ' (compressor="deflate" in the config)';
                 }
             }
         } elseif (function_exists('gzinflate') && function_exists('gzdeflate')) {

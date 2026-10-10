@@ -1039,11 +1039,11 @@ final class Psalm
         ) {
             $ini_handler->disableExtension('grpc');
 
-            $progress->warning(PHP_EOL
-                . 'grpc extension has been disabled. '
-                . 'Set grpc.enable_fork_support = 1 and grpc.poll_strategy = epoll1 in php.ini to enable it. '
-                . 'See https://github.com/grpc/grpc/issues/20250#issuecomment-531321945 for more information.'
-                . PHP_EOL . PHP_EOL);
+            $progress->warning(
+                'ext-grpc disabled, as it breaks forked workers. To keep it, set grpc.enable_fork_support=1'
+                . ' and grpc.poll_strategy=epoll1 in php.ini'
+                . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
+            );
         }
 
         $ini_handler->disableExtensions([
@@ -1058,32 +1058,12 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        $hasJit = false;
-        if (function_exists('opcache_get_status')) {
-            if (true === (opcache_get_status()['jit']['on'] ?? false)) {
-                $hasJit = true;
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: ON'
-                    . PHP_EOL . PHP_EOL);
-            } elseif ($force_jit) {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
-                    . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
-                    . PHP_EOL . PHP_EOL);
-            } else {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF' . PHP_EOL
-                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
-                    . PHP_EOL . PHP_EOL);
-            }
-        } else {
-            $progress->write(PHP_EOL
-                . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                . 'Install and enable the opcache extension to use JIT with --force-jit.'
-                . PHP_EOL . PHP_EOL);
-        }
+        $has_opcache = function_exists('opcache_get_status');
+        $hasJit = $has_opcache && true === (opcache_get_status()['jit']['on'] ?? false);
         if ($force_jit && !$hasJit) {
-            $progress->write('Exiting because --force-jit was set but JIT is not available.' . PHP_EOL . PHP_EOL);
+            fwrite(STDERR, 'JIT is not available, but --force-jit was set. ' . ($has_opcache
+                ? 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                : 'Install and enable the opcache extension to use JIT.') . PHP_EOL);
             exit(1);
         }
 

@@ -99,6 +99,8 @@
 
 - [BC] Property `Psalm\Progress\LongProgress::$prevPhase` was renamed to `$phase`, and method `LongProgress::reportPhaseDuration()` was removed: override `phaseStarted()`, `reportTask()` and `phaseEnded()` instead. `Psalm\Progress\Phase` has a new `FINISHING` case, started after the analysis while results are consolidated and caches are updated.
 
+- [BC] `Psalm\Config::loadFromXMLFile()` throws a `Psalm\Exception\ConfigException` instead of an `InvalidArgumentException` when the file can't be read or is empty, so the CLI reports it as a config error rather than a crash.
+
 - `Psalm\Progress\Progress` has a new `writeReport()` method, writing to STDOUT the output that is part of the result (e.g. the `--alter --dry-run` diff) without mixing it with the progress output, and a new static `separator()` (` · `, or ` - ` without UTF-8). `doesTerminalSupportUtf8()` now also checks the locale (`LC_ALL`, `LC_CTYPE`, `LANG`). `write()` and `writeReport()` drop the output silently when the reader went away (e.g. `psalm | head`). `LongProgress::finish()` writes a blank line after the progress lines, so the report or summary that follows is set apart.
 
 - [BC] The thread count shown for a phase is the one that really ran: Psalm calls the new `Progress::setThreads()` once it forks, and `LongProgress`/`DefaultProgress` no longer show the `$threads` passed to `startPhase()`. A phase that doesn't fork shows no thread count.
