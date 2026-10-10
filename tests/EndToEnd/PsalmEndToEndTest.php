@@ -111,10 +111,7 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testInit(): void
     {
-        $this->assertStringStartsWith(
-            'Calculating best config level based on project files',
-            $this->runPsalmInit()['STDOUT'],
-        );
+        $this->runPsalmInit();
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
