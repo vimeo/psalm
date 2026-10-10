@@ -6,14 +6,13 @@ namespace Psalm\Progress;
 
 use Override;
 use Psalm\Internal\ErrorHandler;
+use WeakReference;
 
 use function ctype_digit;
 use function exec;
 use function function_exists;
 use function getenv;
 use function hrtime;
-use function is_callable;
-use function is_int;
 use function is_string;
 use function max;
 use function mb_strlen;
@@ -71,8 +70,8 @@ class DefaultProgress extends LongProgress
 
     private bool $ticker_armed = false;
 
-    /** @var int|callable */
-    private mixed $previous_alarm_handler = SIG_DFL;
+    /** @var int|callable The SIGALRM handler before the ticker took it, 0 being SIG_DFL (pcntl may be missing) */
+    private mixed $previous_alarm_handler = 0;
 
     private bool $previous_async_signals = false;
 
@@ -140,6 +139,15 @@ class DefaultProgress extends LongProgress
     }
 
     /**
+     * An embedding host (e.g. one catching an exception thrown mid-phase) may drop the progress without finish():
+     * the alarm and the signal handler must not outlive it
+     */
+    public function __destruct()
+    {
+        $this->disarmTicker();
+    }
+
+    /**
      * The Alter row and the summary say how many files changed: a line per file would push the table off screen
      *
      * @psalm-mutation-free
@@ -155,7 +163,11 @@ class DefaultProgress extends LongProgress
         $this->last_refresh = hrtime(true);
         $this->drawStatus();
         $this->armTicker();
-        ErrorHandler::setBeforeFatalError($this->prepareForFatalError(...));
+        // held weakly, like the signal handler (see armTicker())
+        $progress = WeakReference::create($this);
+        ErrorHandler::setBeforeFatalError(static function () use ($progress): void {
+            $progress->get()?->prepareForFatalError();
+        });
     }
 
     #[Override]
@@ -306,25 +318,40 @@ class DefaultProgress extends LongProgress
      * after the scan). A once-a-second alarm keeps the elapsed time moving meanwhile.
      *
      * The alarm is armed only after Psalm has restarted itself (it would survive exec),
-     * and forked workers don't inherit it.
+     * and forked workers don't inherit it. SIGALRM and the alarm are process-wide: when something else
+     * uses them (a handler, or a pending alarm), the ticker stays off and the line is redrawn as tasks complete.
      */
     private function armTicker(): void
     {
         if ($this->ticker_armed
             || !function_exists('pcntl_alarm')
             || !function_exists('pcntl_async_signals')
+            || !function_exists('pcntl_signal')
             || !function_exists('pcntl_signal_get_handler')
         ) {
             return;
         }
 
-        $this->ticker_armed = true;
         $previous_handler = pcntl_signal_get_handler(SIGALRM);
-        $this->previous_alarm_handler = is_int($previous_handler) || is_callable($previous_handler)
-            ? $previous_handler
-            : SIG_DFL;
+        if ($previous_handler !== SIG_DFL) {
+            return;
+        }
+
+        // the only way to know whether an alarm is pending is to replace it: put it back if there was one
+        $pending_alarm = pcntl_alarm(0);
+        if ($pending_alarm > 0) {
+            pcntl_alarm($pending_alarm);
+            return;
+        }
+
+        $this->ticker_armed = true;
+        $this->previous_alarm_handler = $previous_handler;
         $this->previous_async_signals = pcntl_async_signals(true);
-        pcntl_signal(SIGALRM, $this->tick(...));
+        // held weakly, so that a progress dropped without finish() is destroyed, which disarms the ticker
+        $progress = WeakReference::create($this);
+        pcntl_signal(SIGALRM, static function () use ($progress): void {
+            $progress->get()?->tick();
+        });
         pcntl_alarm(1);
     }
 
