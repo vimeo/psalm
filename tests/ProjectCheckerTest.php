@@ -188,7 +188,7 @@ function checkDirRegression(): int
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = (string) ob_get_clean();
 
-        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('target PHP 8.1 (set by tests)', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -400,7 +400,7 @@ final class Bat
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = (string) ob_get_clean();
 
-        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('target PHP 8.1 (set by tests)', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -439,7 +439,7 @@ final class Bat
         ]);
         $output = (string) ob_get_clean();
 
-        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('target PHP 8.1 (set by tests)', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -478,7 +478,7 @@ final class Bat
         ]);
         $output = (string) ob_get_clean();
 
-        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('target PHP 8.1 (set by tests)', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 

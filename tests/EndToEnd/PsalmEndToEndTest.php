@@ -147,7 +147,7 @@ final class PsalmEndToEndTest extends TestCase
 
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
-            'Target PHP version: 7.1 (inferred from composer.json)',
+            'target PHP 7.1 (from composer.json)',
             $result['STDERR'],
         );
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
@@ -161,7 +161,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1);
         $result = $this->runPsalm(['--php-version=8.0'], self::$tmpDir, true);
         $this->assertStringContainsString(
-            'Target PHP version: 8.0 (set by CLI argument)',
+            'target PHP 8.0 (from --php-version)',
             $result['STDERR'],
         );
     }
@@ -171,7 +171,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1, '7.4');
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
-            'Target PHP version: 7.4 (set by config file)',
+            'target PHP 7.4 (from config)',
             $result['STDERR'],
         );
     }
