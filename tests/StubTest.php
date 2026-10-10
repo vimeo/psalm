@@ -1549,7 +1549,7 @@ final class StubTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
 
         $this->addStubFile(
-            (string) getcwd() . '/stubs/redefined.phpstub',
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'redefined.phpstub',
             '<?php class Redefined { public function fromStub(): void {} }',
         );
 
@@ -1600,12 +1600,12 @@ final class StubTest extends TestCase
         );
         $codebase = $this->project_analyzer->getCodebase();
 
-        $included_path = (string) getcwd() . '/stubs/included.phpstub';
+        $included_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'included.phpstub';
         $this->file_provider->registerFile(
             $included_path,
             '<?php class IncludedStub {} function included_stub_function(): int { return 1; }',
         );
-        $this->addStubFile((string) getcwd() . '/stubs/including.phpstub', "<?php require '$included_path';");
+        $this->addStubFile((string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'including.phpstub', "<?php require '$included_path';");
 
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile($file_path, '<?php echo included_stub_function();');
@@ -1632,12 +1632,12 @@ final class StubTest extends TestCase
         );
         $codebase = $this->project_analyzer->getCodebase();
 
-        $parent_path = (string) getcwd() . '/stubs/parent.phpstub';
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'parent.phpstub';
         $this->addStubFile($parent_path, '<?php class StubbedParent { public function fromStub(): void {} }');
         // As when the stub is also autoloadable, e.g. through a classmap
         $codebase->scanner->setClassLikeFilePath('stubbedparent', $parent_path);
 
-        $child_path = (string) getcwd() . '/stubs/child.phpstub';
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'child.phpstub';
         $this->file_provider->registerFile($child_path, '<?php class StubbedChild extends StubbedParent {}');
         $codebase->config->addPreloadedStubFile($child_path);
         $codebase->config->visitPreloadedStubFiles($codebase);
