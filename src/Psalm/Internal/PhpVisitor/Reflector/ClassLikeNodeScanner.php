@@ -180,7 +180,13 @@ final class ClassLikeNodeScanner
                     return false;
                 }
 
-                if (!$this->codebase->register_stub_files) {
+                // While stubs are registered, a plugin may queue a file defining a stubbed class: it's scanned as
+                // regular code (see Scanner::scanAPath()), and its definition is merged into the stub's, as it was
+                // when such files were scanned as stubs.
+                $merges_into_stub = $this->codebase->register_stub_files
+                    || ($duplicate_storage->stubbed && $this->codebase->scanner->isRegisteringStubs());
+
+                if (!$merges_into_stub) {
                     // A native class stubbed with an `@since` newer than the analysed PHP version
                     // is not available there, so a project definition is a polyfill: it replaces
                     // the stub rather than duplicating it.
