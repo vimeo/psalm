@@ -19,6 +19,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Progress\DebugProgress;
 use Psalm\Progress\DefaultProgress;
+use Psalm\Progress\LongProgress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -335,8 +336,12 @@ final class Refactor
             $progress = new DebugProgress();
         } elseif ($no_progress) {
             $progress = new VoidProgress();
+        } elseif ($in_ci || !CliUtils::streamIsInteractive(STDERR)) {
+            // Same rationale as in Psalm.php: a `\r`-based status line on a piped stderr
+            // just floods the log with every intermediate update.
+            $progress = new LongProgress(true, false, true, CliUtils::useColor($options));
         } else {
-            $progress = new DefaultProgress();
+            $progress = new DefaultProgress(use_color: CliUtils::useColor($options));
         }
 
         if (array_key_exists('debug-emitted-issues', $options)) {
@@ -344,9 +349,7 @@ final class Refactor
         }
 
         $report_options = new ReportOptions();
-        $report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $report_options->use_color = CliUtils::useColor($options);
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
