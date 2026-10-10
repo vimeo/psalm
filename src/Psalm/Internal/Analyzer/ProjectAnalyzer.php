@@ -69,9 +69,7 @@ use function dirname;
 use function end;
 use function explode;
 use function file_exists;
-use function fwrite;
 use function implode;
-use function in_array;
 use function is_dir;
 use function is_file;
 use function microtime;
@@ -91,7 +89,6 @@ use function usort;
 use const PHP_EOL;
 use const PHP_VERSION;
 use const PSALM_VERSION;
-use const STDERR;
 
 /**
  * @internal
@@ -125,6 +122,9 @@ final class ProjectAnalyzer
     public bool $debug_lines = false;
 
     public bool $debug_performance = false;
+
+    /** Whether unused code wasn't looked for, the run only covering some files */
+    public bool $unused_code_skipped = false;
 
     public bool $show_issues = true;
 
@@ -1067,20 +1067,8 @@ final class ProjectAnalyzer
             $this->codebase->find_unused_code === 'always',
         );
 
-        if ($this->stdout_report_options
-            && in_array(
-                $this->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
-            )
-            && $this->codebase->collect_references
-        ) {
-            fwrite(
-                STDERR,
-                PHP_EOL . 'To whom it may concern: Psalm cannot detect unused classes, methods and properties'
-                . PHP_EOL . 'when analyzing individual files and folders. Run on the full project to enable'
-                . PHP_EOL . 'complete unused code detection.' . PHP_EOL,
-            );
-        }
+        $this->unused_code_skipped = $this->codebase->collect_references
+            && $this->codebase->find_unused_code !== 'always';
     }
 
     public function finish(float $start_time, string $psalm_version): void

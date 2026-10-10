@@ -42,11 +42,13 @@ use function array_values;
 use function count;
 use function explode;
 use function implode;
+use function intdiv;
 use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
 use function str_ends_with;
+use function str_pad;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -56,6 +58,7 @@ use function usort;
 
 use const PATHINFO_EXTENSION;
 use const PHP_INT_MAX;
+use const STR_PAD_LEFT;
 
 /**
  * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: non-empty-string}>
@@ -177,6 +180,13 @@ final class Analyzer
     public array $mutable_classes = [];
 
     /**
+     * Files --alter changed, or would change with --dry-run
+     *
+     * @var list<string>
+     */
+    private array $altered_files = [];
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(
@@ -185,6 +195,23 @@ final class Analyzer
         private readonly FileStorageProvider $file_storage_provider,
         private readonly Progress $progress,
     ) {
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getAlteredFileCount(): int
+    {
+        return count($this->altered_files);
+    }
+
+    /**
+     * @return list<string> The files --alter changed, or would change with --dry-run, in the order they were visited
+     * @psalm-mutation-free
+     */
+    public function getAlteredFiles(): array
+    {
+        return $this->altered_files;
     }
 
     /**
@@ -1107,7 +1134,7 @@ final class Analyzer
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * e.g. "type coverage 99.87%", for the summary line
      */
     public function getTypeInferenceSummary(Codebase $codebase): string
     {
@@ -1127,21 +1154,17 @@ final class Analyzer
 
         $total_files = count($all_deep_scanned_files);
 
-        $lines = [];
+        $parts = [];
 
         if (!$total_files) {
-            $lines[] = 'No files analyzed';
+            $parts[] = 'no files analyzed';
         }
 
-        if (!$total) {
-            $lines[] = 'Psalm was unable to infer types in the codebase';
-        } else {
-            $percentage = $nonmixed_count === $total ? '100' : number_format(100 * $nonmixed_count / $total, 4);
-            $lines[] = 'Psalm was able to infer types for ' . $percentage . '%'
-                . ' of the codebase';
+        if ($total) {
+            $parts[] = 'type coverage ' . self::formatCoverage($nonmixed_count, $total);
         }
 
-        return implode("\n", $lines);
+        return implode(Progress::separator(), $parts);
     }
 
     public function getNonMixedStats(): string
@@ -1167,14 +1190,31 @@ final class Analyzer
                 [$path_mixed_count, $path_nonmixed_count] = $this->mixed_counts[$file_path];
 
                 if ($path_mixed_count + $path_nonmixed_count) {
-                    $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 3)
-                        . '% ' . $this->config->shortenFileName($file_path)
-                        . ' (' . $path_mixed_count . ' mixed)' . "\n";
+                    // e.g. "  99.87%  src/A.php · 3 mixed"
+                    $stats .= '  ' . str_pad(
+                        self::formatCoverage($path_nonmixed_count, $path_mixed_count + $path_nonmixed_count),
+                        7,
+                        ' ',
+                        STR_PAD_LEFT,
+                    ) . '  ' . $this->config->shortenFileName($file_path)
+                        . Progress::separator() . number_format($path_mixed_count) . ' mixed' . "\n";
                 }
             }
         }
 
         return $stats;
+    }
+
+    /**
+     * Rounds down, so 99.999% doesn't show as 100%
+     *
+     * @psalm-pure
+     */
+    private static function formatCoverage(int $nonmixed_count, int $total): string
+    {
+        return ($nonmixed_count === $total
+            ? '100'
+            : number_format((float) intdiv(10_000 * $nonmixed_count, $total) / 100.0, 2)) . '%';
     }
 
     /**
@@ -1232,7 +1272,8 @@ final class Analyzer
         );
 
         $last_start = PHP_INT_MAX;
-        $existing_contents = $this->file_provider->getContents($file_path);
+        $original_contents = $this->file_provider->getContents($file_path);
+        $existing_contents = $original_contents;
 
         foreach ($file_manipulations as $manipulation) {
             if ($manipulation->start <= $last_start) {
@@ -1240,6 +1281,12 @@ final class Analyzer
                 $last_start = $manipulation->start;
             }
         }
+
+        if ($existing_contents === $original_contents) {
+            return;
+        }
+
+        $this->altered_files[] = $file_path;
 
         if ($dry_run) {
             $differ = new Differ(
@@ -1250,8 +1297,7 @@ final class Analyzer
             );
 
             $this->progress->writeReport(
-                $file_path . ':' . "\n"
-                . $differ->diff($this->file_provider->getContents($file_path), $existing_contents),
+                $file_path . ':' . "\n" . $differ->diff($original_contents, $existing_contents),
             );
 
             return;

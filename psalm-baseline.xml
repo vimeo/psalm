@@ -2862,7 +2862,6 @@
     </ImpureStaticProperty>
     <InvalidOperand>
       <code><![CDATA[1_000 * $time]]></code>
-      <code><![CDATA[round(1_000 * $time, 2)]]></code>
     </InvalidOperand>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$report_options->output_path]]></code>

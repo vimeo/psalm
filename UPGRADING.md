@@ -105,6 +105,8 @@
 
 - [BC] In quiet mode (CI, or a stderr that isn't a terminal), `Psalm\Progress\LongProgress` prints the same row per phase as the interactive table (`LongProgress::formatRow()`), with a status line every 30 seconds, instead of a start line and a summary sentence per phase. It no longer prints a line per altered file. With an output format other than `console`, `phpstorm` and `github`, the summary is written to STDERR. A new optional `$use_color` constructor parameter shows the time and threads of each row dim.
 
+- [BC] The end-of-run summary of the console, `phpstorm` and `github` formats changed, for scripts that read it: `N errors found` (between `---` rulers) is now `N errors in M files`, followed by ` · N baselined` and ` · N info` / ` · N info hidden` instead of `N other issues found.` and `You can display them with --show-info=true`. `Checks took X seconds and used Y MB of memory` and the type inference sentence are now one line, e.g. `72.8s · 11.9 GB peak · type coverage 99.87%` (coverage rounded down). The `No errors found!` box is now a single `No errors found!` line. The auto-fix hint is now `Preview the fix for N issues: <command> --alter --issues=… --dry-run`, the command being the one Psalm was run with. With `--alter`, the summary goes to STDERR and ends with `Altered N files` (with the files), `Would alter N files (dry run)…` or `Nothing to alter`, instead of `No errors found!`.
+
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
 
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
