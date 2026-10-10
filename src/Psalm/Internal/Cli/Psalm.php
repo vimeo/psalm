@@ -76,6 +76,7 @@ use function json_encode;
 use function max;
 use function microtime;
 use function mkdir;
+use function number_format;
 use function opcache_get_status;
 use function parse_url;
 use function preg_match;
@@ -83,7 +84,6 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function sort;
-use function str_repeat;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -95,7 +95,6 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -301,6 +300,11 @@ final class Psalm
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
         self::restart($options, $force_jit, $threads, $scanThreads, $progress);
+
+        // after the restart: the process that restarts would print them too
+        foreach ($config->config_warnings as $warning) {
+            $progress->warning($warning);
+        }
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -628,7 +632,9 @@ final class Psalm
                 exit(1);
             }
 
-            exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
+            echo 'Created psalm.xml with errorLevel ' . $init_level . ' (1 is the strictest, 8 the most lenient)'
+                . PHP_EOL . 'Run Psalm again to analyze the project' . PHP_EOL;
+            exit(0);
         }
     }
 
@@ -640,7 +646,7 @@ final class Psalm
         $workflow_file = $workflow_dir . DIRECTORY_SEPARATOR . 'psalm.yml';
 
         if (file_exists($workflow_file)) {
-            fwrite(STDERR, 'A CI workflow already exists at ' . $workflow_file . PHP_EOL);
+            fwrite(STDERR, 'A CI workflow already exists at .github/workflows/psalm.yml' . PHP_EOL);
             exit(1);
         }
 
@@ -656,8 +662,8 @@ final class Psalm
             exit(1);
         }
 
-        echo 'GitHub Actions workflow created at .github/workflows/psalm.yml' . PHP_EOL
-            . 'Review the file for tips on enabling taint analysis, baselines, and more.' . PHP_EOL;
+        echo 'Created .github/workflows/psalm.yml (review it for tips on taint analysis, baselines and more)'
+            . PHP_EOL;
     }
 
     /** @param list<ClassLoader> $autoloaders */
@@ -720,14 +726,10 @@ final class Psalm
             // which emits one line per phase transition.
             $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
             if (isset($options['long-progress']) || $quiet_progress) {
-                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress, CliUtils::useColor($options));
             } else {
-                $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
+                $progress = new DefaultProgress($show_errors, $show_info, $in_ci, CliUtils::useColor($options));
             }
-        }
-        // output buffered warnings
-        foreach ($config->config_warnings as $warning) {
-            $progress->warning($warning);
         }
         return $progress;
     }
@@ -769,8 +771,6 @@ final class Psalm
         string $current_dir,
         ?string $path_to_config,
     ): array {
-        fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
-
         $error_baseline = is_string($options['set-baseline']) ? $options['set-baseline'] :
             ($config->error_baseline ?? Config::DEFAULT_BASELINE_NAME);
 
@@ -790,7 +790,7 @@ final class Psalm
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
-        fwrite(STDERR, "Baseline saved to $error_baseline.");
+        fwrite(STDERR, "Baseline saved to $error_baseline" . PHP_EOL);
 
         if ($error_baseline !== $config->error_baseline) {
             CliUtils::updateConfigFile(
@@ -800,6 +800,7 @@ final class Psalm
             );
         }
 
+        // a block of its own before the report
         fwrite(STDERR, PHP_EOL);
 
         return $issue_baseline;
@@ -813,7 +814,10 @@ final class Psalm
         $baselineFile = $config->error_baseline;
 
         if (empty($baselineFile)) {
-            fwrite(STDERR, 'Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            fwrite(
+                STDERR,
+                'No baseline file is configured: create one with --set-baseline=psalm-baseline.xml' . PHP_EOL,
+            );
             exit(1);
         }
 
@@ -834,12 +838,14 @@ final class Psalm
 
             $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
 
-            if ($total_fixed_issues > 0) {
-                echo str_repeat('-', 30) . "\n";
-                echo $total_fixed_issues . ' errors fixed' . "\n";
-            }
+            // a block of its own before the report
+            fwrite(STDERR, ($total_fixed_issues > 0
+                ? 'Baseline updated: ' . number_format($total_fixed_issues)
+                    . ($total_fixed_issues === 1 ? ' fixed issue' : ' fixed issues') . ' removed'
+                : 'Baseline unchanged: no fixed issues to remove') . PHP_EOL . PHP_EOL);
         } catch (ConfigException $exception) {
-            fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
+            fwrite(STDERR, 'Could not update the baseline: ' . $exception->getMessage()
+                . '. Create it with --set-baseline=' . $baselineFile . PHP_EOL);
             exit(1);
         }
 
@@ -899,8 +905,6 @@ final class Psalm
             );
         }
 
-        echo "\n" . 'Detected level ' . $init_level . ' as a suitable initial default' . "\n";
-
         try {
             $template_contents = Creator::getContents(
                 $current_dir,
@@ -918,7 +922,10 @@ final class Psalm
             exit(1);
         }
 
-        exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
+        echo 'Created psalm.xml with errorLevel ' . $init_level
+            . ' (picked from the issues found; 1 is the strictest, 8 the most lenient)' . "\n"
+            . 'Run Psalm again to analyze the project' . "\n";
+        exit(0);
     }
 
     private static function initStdoutReportOptions(
@@ -928,9 +935,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1039,11 +1044,11 @@ final class Psalm
         ) {
             $ini_handler->disableExtension('grpc');
 
-            $progress->warning(PHP_EOL
-                . 'grpc extension has been disabled. '
-                . 'Set grpc.enable_fork_support = 1 and grpc.poll_strategy = epoll1 in php.ini to enable it. '
-                . 'See https://github.com/grpc/grpc/issues/20250#issuecomment-531321945 for more information.'
-                . PHP_EOL . PHP_EOL);
+            $progress->warning(
+                'ext-grpc disabled, as it breaks forked workers. To keep it, set grpc.enable_fork_support=1'
+                . ' and grpc.poll_strategy=epoll1 in php.ini'
+                . ' (https://github.com/grpc/grpc/issues/20250#issuecomment-531321945)',
+            );
         }
 
         $ini_handler->disableExtensions([
@@ -1058,34 +1063,12 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        $progress->write(PHP_EOL."Running on PHP ".PHP_VERSION.', Psalm '.PSALM_VERSION.'.'.PHP_EOL);
-
-        $hasJit = false;
-        if (function_exists('opcache_get_status')) {
-            if (true === (opcache_get_status()['jit']['on'] ?? false)) {
-                $hasJit = true;
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: ON'
-                    . PHP_EOL . PHP_EOL);
-            } elseif ($force_jit) {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
-                    . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
-                    . PHP_EOL . PHP_EOL);
-            } else {
-                $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF' . PHP_EOL
-                    . 'You can enable JIT acceleration (experimental) with --force-jit.'
-                    . PHP_EOL . PHP_EOL);
-            }
-        } else {
-            $progress->write(PHP_EOL
-                . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
-                . 'Install and enable the opcache extension to use JIT with --force-jit.'
-                . PHP_EOL . PHP_EOL);
-        }
+        $has_opcache = function_exists('opcache_get_status');
+        $hasJit = $has_opcache && true === (opcache_get_status()['jit']['on'] ?? false);
         if ($force_jit && !$hasJit) {
-            $progress->write('Exiting because --force-jit was set but JIT is not available.' . PHP_EOL . PHP_EOL);
+            fwrite(STDERR, 'JIT is not available, but --force-jit was set. ' . ($has_opcache
+                ? 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                : 'Install and enable the opcache extension to use JIT.') . PHP_EOL);
             exit(1);
         }
 
@@ -1204,7 +1187,6 @@ final class Psalm
             // based on the errors we find
             $init_source_dir = $args[0] ?? null;
 
-            echo "Calculating best config level based on project files\n";
             Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
@@ -1236,7 +1218,7 @@ final class Psalm
 
         if (isset($options['set-baseline'])) {
             if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                fwrite(STDERR, 'Cannot generate a baseline when checking specific files' . PHP_EOL);
                 exit(1);
             }
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
@@ -1256,7 +1238,7 @@ final class Psalm
 
         if (isset($options['update-baseline'])) {
             if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot update baseline when checking specific files' . PHP_EOL);
+                fwrite(STDERR, 'Cannot update the baseline when checking specific files' . PHP_EOL);
                 exit(1);
             }
             $issue_baseline = self::updateBaseline($options, $config);
@@ -1269,7 +1251,8 @@ final class Psalm
                     $baseline_file_path,
                 );
             } catch (ConfigException $exception) {
-                fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
+                fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
+                    . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
                 exit(1);
             }
         }
@@ -1509,7 +1492,7 @@ final class Psalm
                 where method is in the format class::methodName
 
             --no-suggestions
-                Hide suggestions
+                Hide suggestions (the auto-fix command and the "fixable" tags in the summary)
 
             --taint-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
@@ -1552,13 +1535,14 @@ final class Psalm
                     $outputFormats
 
             --no-progress
-                Disable the progress indicator.
+                Disable the progress indicator. The summary is still printed.
                 Auto-enabled when an AI coding agent is driving the shell
                 (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs.
-                Auto-enabled in CI and when stderr is not attached to a terminal.
+                Print a marker per file instead of the live status line.
+                In CI and when stderr is not attached to a terminal, the progress
+                is one line per phase anyway.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase

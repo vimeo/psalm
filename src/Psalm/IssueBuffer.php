@@ -21,6 +21,8 @@ use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
+use Psalm\Progress\Progress;
+use Psalm\Progress\VoidProgress;
 use Psalm\Report\ByIssueLevelAndTypeReport;
 use Psalm\Report\CheckstyleReport;
 use Psalm\Report\CodeClimateReport;
@@ -41,12 +43,15 @@ use Psalm\Report\TableReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
+use Symfony\Component\Filesystem\Path;
 use UnexpectedValueException;
 
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_search;
+use function array_slice;
 use function array_splice;
 use function array_sum;
 use function array_values;
@@ -54,42 +59,62 @@ use function arsort;
 use function count;
 use function debug_print_backtrace;
 use function dirname;
+use function escapeshellarg;
 use function explode;
 use function file_put_contents;
+use function fstat;
 use function fwrite;
+use function getenv;
 use function implode;
 use function in_array;
+use function is_array;
 use function is_dir;
+use function is_executable;
 use function is_int;
+use function is_string;
 use function ksort;
+use function max;
 use function memory_get_peak_usage;
 use function microtime;
+use function min;
 use function mkdir;
 use function number_format;
 use function ob_get_clean;
 use function ob_start;
 use function preg_match;
-use function round;
+use function rtrim;
 use function sha1;
 use function sprintf;
+use function str_pad;
 use function str_repeat;
 use function str_replace;
 use function str_starts_with;
+use function stream_isatty;
 use function strlen;
 use function trim;
+use function uksort;
 use function usort;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
-use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 use const STDOUT;
+use const STR_PAD_LEFT;
 
 /**
  * @api
  */
 final class IssueBuffer
 {
+    /** The error types are broken down in the summary above this many errors */
+    private const ERROR_BREAKDOWN_THRESHOLD = 10;
+
+    /** How many error types the breakdown shows */
+    private const ERROR_BREAKDOWN_TYPES = 5;
+
+    /** How many altered files the summary lists */
+    private const ALTERED_FILES_SHOWN = 10;
+
     /**
      * @var array<string, list<IssueData>>
      */
@@ -291,7 +316,7 @@ final class IssueBuffer
             ob_start();
             debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
             $trace = ob_get_clean();
-            fwrite(STDERR, "\nEmitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
+            $project_analyzer->progress->write("Emitting {$e->getShortLocation()} $issue_type {$e->message}\n$trace\n");
         }
 
         // Make issue type for trace variable specific ("Trace" => "Trace~$var").
@@ -578,18 +603,11 @@ final class IssueBuffer
 
         $error_count = 0;
         $info_count = 0;
-
+        $baselined_count = 0;
 
         $issues_data = [];
 
         if (self::$issues_data) {
-            if (in_array(
-                $project_analyzer->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
-            )) {
-                echo "\n";
-            }
-
             ksort(self::$issues_data);
 
             foreach (self::$issues_data as $file_path => $file_issues) {
@@ -624,12 +642,14 @@ final class IssueBuffer
 
                             if ($position !== false) {
                                 $issue_data->severity = IssueData::SEVERITY_INFO;
+                                ++$baselined_count;
                                 array_splice($issue_baseline[$file][$type]['s'], $position, 1);
                                 $issue_baseline[$file][$type]['o']--;
                             }
                         } else {
                             $issue_baseline[$file][$type]['s'] = [];
                             $issue_data->severity = IssueData::SEVERITY_INFO;
+                            ++$baselined_count;
                             $issue_baseline[$file][$type]['o']--;
                         }
                     }
@@ -654,7 +674,7 @@ final class IssueBuffer
                                     $issue['o'] === 1 ? 'entry' : 'entries',
                                 ),
                                 $file_path,
-                                '',
+                                Path::join($codebase->config->base_dir, $file_path),
                                 '',
                                 '',
                                 0,
@@ -672,8 +692,12 @@ final class IssueBuffer
             }
         }
 
+        $issue_handler_suppressions_skipped = false;
         if ($codebase->config->find_unused_issue_handler_suppression) {
             if ($is_full && !$codebase->diff_run) {
+                $config_path = $codebase->config->source_filename ?? '';
+                $config_name = $config_path === '' ? '' : $codebase->config->shortenFileName($config_path);
+
                 foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
                     foreach ($handler->getFilters() as $filter) {
                         if ($filter->suppressions > 0 || $filter->getErrorLevel() != Config::REPORT_SUPPRESS) {
@@ -681,51 +705,70 @@ final class IssueBuffer
                         }
                         $issues_data['config'][] = new IssueData(
                             IssueData::SEVERITY_ERROR,
-                            0,
-                            0,
+                            $filter->line,
+                            $filter->line,
                             UnusedIssueHandlerSuppression::getIssueType(),
                             sprintf(
                                 'Suppressed issue type "%s" for %s was not thrown.',
                                 $type,
-                                str_replace(
-                                    $codebase->config->base_dir,
-                                    '',
-                                    implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
-                                ),
+                                implode(', ', array_map(
+                                    $codebase->config->shortenFileName(...),
+                                    [...$filter->getFiles(), ...$filter->getDirectories()],
+                                )),
                             ),
-                            $codebase->config->source_filename ?? '',
+                            $config_name,
+                            $config_path,
                             '',
                             '',
-                            '',
                             0,
                             0,
                             0,
                             0,
-                            0,
-                            0,
+                            $filter->line > 0 ? 1 : 0,
+                            $filter->line > 0 ? 1 : 0,
                             UnusedIssueHandlerSuppression::SHORTCODE,
                             UnusedIssueHandlerSuppression::ERROR_LEVEL,
                         );
                     }
                 }
             } else {
+                // a note about it is only worth printing when the config does suppress some issues by path
+                foreach ($codebase->config->getIssueHandlers() as $handler) {
+                    foreach ($handler->getFilters() as $filter) {
+                        if ($filter->getErrorLevel() === Config::REPORT_SUPPRESS) {
+                            $issue_handler_suppressions_skipped = true;
+                            break 2;
+                        }
+                    }
+                }
             }
         }
 
         // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
-        fwrite(
-            STDOUT,
-            self::getOutput(
-                $issues_data,
-                $project_analyzer->stdout_report_options,
-                $codebase->analyzer->getTotalTypeCoverage($codebase),
-            ),
+        $report = self::getOutput(
+            $issues_data,
+            $project_analyzer->stdout_report_options,
+            $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
+        // reports read by people end with their last issue: the blank line before the summary comes from below
+        if ($report !== '' && in_array(
+            $project_analyzer->stdout_report_options->format,
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_BY_ISSUE_LEVEL],
+            true,
+        )) {
+            $report = rtrim($report, "\n") . "\n";
+        }
+        fwrite(STDOUT, $report);
 
-        foreach ($issues_data as $file_issues) {
+        /** @var array<string, int> $error_counts_by_type */
+        $error_counts_by_type = [];
+        $files_with_errors = [];
+        foreach ($issues_data as $file_path => $file_issues) {
             foreach ($file_issues as $issue_data) {
                 if ($issue_data->severity === Config::REPORT_ERROR) {
                     ++$error_count;
+                    $error_counts_by_type[$issue_data->type] = ($error_counts_by_type[$issue_data->type] ?? 0) + 1;
+                    $files_with_errors[$file_path] = true;
                 } else {
                     ++$info_count;
                 }
@@ -773,99 +816,169 @@ final class IssueBuffer
             );
         }
 
-        if (in_array(
+        // The summary follows the console report on STDOUT, as it always did. A report in another format is read
+        // by tools, and the --alter --dry-run diff may be applied: the summary goes to STDERR then, so that STDOUT
+        // stays unchanged.
+        $summary_on_stdout = !$codebase->alter_code && in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
-        )) {
-            echo str_repeat('-', 30) . "\n";
+            true,
+        );
 
-            if ($error_count) {
-                echo($project_analyzer->stdout_report_options->use_color
-                    ? "\e[0;31m" . $error_count . " errors\e[0m"
-                    : $error_count . ' errors'
-                ) . ' found' . "\n";
-            } else {
-                self::printSuccessMessage($project_analyzer);
-            }
+        // one blank line after the report, which may not even end its last line (e.g. JSON), when both share a
+        // terminal or a log: with STDOUT redirected elsewhere, the summary already follows the blank line after
+        // the progress
+        // the same stream: same device and inode, which fstat() leaves at 0 where it can't tell (e.g. Windows)
+        [$stdout, $stderr] = [fstat(STDOUT), fstat(STDERR)];
+        $shares_stream = $summary_on_stdout || ($stdout && $stderr && $stdout['ino'] !== 0
+            && $stdout['dev'] === $stderr['dev'] && $stdout['ino'] === $stderr['ino']);
+        $output = $report !== '' && $shares_stream
+            ? str_repeat("\n", max(0, 2 - (strlen($report) - strlen(rtrim($report, "\n")))))
+            : '';
 
-            $show_info = $project_analyzer->stdout_report_options->show_info;
-            $show_suggestions = $project_analyzer->stdout_report_options->show_suggestions;
+        // on STDERR, colors only on a terminal (not in a log file, nor with TERM=dumb)
+        $use_color = $project_analyzer->stdout_report_options->use_color
+            && ($summary_on_stdout || (stream_isatty(STDERR) && getenv('TERM') !== 'dumb'));
 
-            if ($info_count && ($show_info || $show_suggestions)) {
-                echo str_repeat('-', 30) . "\n";
+        $highlight = static fn(string $text): string => $use_color ? "\e[30;48;5;195m{$text}\e[0m" : $text;
+        $separator = Progress::separator();
 
-                echo $info_count . ' other issues found.' . "\n";
+        $show_info = $project_analyzer->stdout_report_options->show_info;
+        $show_suggestions = $project_analyzer->stdout_report_options->show_suggestions;
 
-                if (!$show_info) {
-                    echo 'You can display them with ' .
-                        ($project_analyzer->stdout_report_options->use_color
-                            ? "\e[30;48;5;195m--show-info=true\e[0m"
-                            : '--show-info=true') . "\n";
-                }
-            }
+        if ($codebase->alter_code) {
+            // issues aren't reported while altering code: the verdict is what was altered
+            $altered_count = $codebase->analyzer->getAlteredFileCount();
+            $altered_files = number_format($altered_count) . ($altered_count === 1 ? ' file' : ' files');
+            $summary = match (true) {
+                $altered_count === 0 => 'Nothing to alter',
+                $project_analyzer->dry_run => "Would alter $altered_files (dry run)."
+                    . ' Run without --dry-run to apply',
+                default => "Altered $altered_files",
+            };
 
-            if (self::$fixable_issue_counts && $show_suggestions && !$codebase->taint_flow_graph) {
-                echo str_repeat('-', 30) . "\n";
-
-                $total_count = array_sum(self::$fixable_issue_counts);
-                $command = '--alter --issues=' . implode(',', array_keys(self::$fixable_issue_counts));
-                $command .= ' --dry-run';
-
-                echo 'Psalm can automatically fix ' . $total_count
-                    . ($show_info ? ' issues' : ' of these issues') . ".\n"
-                    . 'Run Psalm again with ' . "\n"
-                    . ($project_analyzer->stdout_report_options->use_color
-                        ? "\e[30;48;5;195m" . $command . "\e[0m"
-                        : $command) . "\n"
-                    . 'to see what it can fix.' . "\n";
-            }
-
-            echo str_repeat('-', 30) . "\n" . "\n";
-
-            if ($start_time) {
-                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
-
-                $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
-                echo $analysis_summary . "\n";
-
-                if ($add_stats) {
-                    echo '-----------------' . "\n";
-                    echo $codebase->analyzer->getNonMixedStats();
-                    echo "\n";
+            // which files: with --dry-run the diff above shows them
+            if ($altered_count > 0 && !$project_analyzer->dry_run) {
+                foreach (array_slice($codebase->analyzer->getAlteredFiles(), 0, self::ALTERED_FILES_SHOWN) as $path) {
+                    $summary .= "\n  " . $codebase->config->shortenFileName($path);
                 }
 
-                if ($project_analyzer->debug_performance) {
-                    echo '-----------------' . "\n";
-                    echo 'Slow-to-analyze functions' . "\n";
-                    echo '-----------------' . "\n\n";
-
-                    $function_timings = $codebase->analyzer->getFunctionTimings();
-
-                    arsort($function_timings);
-
-                    $i = 0;
-
-                    foreach ($function_timings as $function_id => $time) {
-                        if (++$i > 10) {
-                            break;
-                        }
-
-                        echo $function_id . ': ' . round(1_000 * $time, 2) . 'ms per node' . "\n";
-                    }
-
-                    echo "\n";
+                if ($altered_count > self::ALTERED_FILES_SHOWN) {
+                    $summary .= "\n  +" . number_format($altered_count - self::ALTERED_FILES_SHOWN) . ' more';
                 }
             }
+        } elseif ($error_count) {
+            // e.g. "396 errors in 112 files · 121 baselined · 27 info hidden"
+            $file_count = count($files_with_errors);
+            $summary = number_format($error_count) . ($error_count === 1 ? ' error' : ' errors')
+                . ' in ' . number_format($file_count) . ($file_count === 1 ? ' file' : ' files');
+            $summary = $use_color ? "\e[0;31m{$summary}\e[0m" : $summary;
+        } else {
+            $summary = self::formatSuccessMessage($use_color);
+        }
 
-            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
-                fwrite(
-                    STDERR,
-                    PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
-                    . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
-                    . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
-                );
+        if (!$codebase->alter_code) {
+            // the baseline only holds errors: they come right after the reported ones
+            if ($baselined_count) {
+                $summary .= $separator . number_format($baselined_count) . ' baselined';
             }
+
+            $other_count = $info_count - $baselined_count;
+            // a count like the baselined one, not a suggestion: shown with --no-suggestions too
+            if ($other_count > 0) {
+                $summary .= $separator . number_format($other_count) . ' info' . ($show_info ? '' : ' hidden');
+            }
+        }
+
+        $output .= $summary . "\n";
+
+        $show_breakdown = $error_count > self::ERROR_BREAKDOWN_THRESHOLD;
+        if ($show_breakdown) {
+            // "fixable" is a suggestion too
+            $output .= self::getErrorBreakdown(
+                $error_counts_by_type,
+                $show_suggestions ? self::$fixable_issue_counts : [],
+            );
+        }
+
+        // Fixability is only counted by type: only suggest fixing the types of the errors reported,
+        // not those of info issues or baselined ones
+        $fixable_error_counts = [];
+        foreach (self::$fixable_issue_counts as $type => $count) {
+            if (isset($error_counts_by_type[$type])) {
+                $fixable_error_counts[$type] = min($count, $error_counts_by_type[$type]);
+            }
+        }
+
+        if ($fixable_error_counts && $show_suggestions) {
+            $command = self::getInvokedCommand(
+                '--alter',
+                '--issues=' . implode(',', array_keys($fixable_error_counts)),
+                '--dry-run',
+            );
+            $fixable_count = array_sum($fixable_error_counts);
+
+            // a block of its own after the breakdown
+            $output .= ($show_breakdown ? "\n" : '') . 'Preview the fix for ' . number_format($fixable_count)
+                . ($fixable_count === 1 ? ' issue: ' : ' issues: ') . $highlight($command) . "\n";
+        }
+
+        if ($start_time) {
+            // e.g. "72.8s · 11.9 GB peak · type coverage 99.87%"
+            $stats = number_format(microtime(true) - $start_time, 1) . 's'
+                . $separator . self::formatMemory(memory_get_peak_usage()) . ' peak';
+
+            $type_inference_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
+            // type coverage was measured before --alter changed anything
+            if ($type_inference_summary !== '' && !$codebase->alter_code) {
+                $stats .= $separator . $type_inference_summary;
+            }
+
+            $output .= "\n" . $stats . "\n";
+
+            $non_mixed_stats = $add_stats ? $codebase->analyzer->getNonMixedStats() : '';
+            if ($non_mixed_stats !== '') {
+                $output .= "\nType coverage by file:\n" . $non_mixed_stats;
+            }
+
+            $function_timings = $project_analyzer->debug_performance
+                ? $codebase->analyzer->getFunctionTimings()
+                : [];
+
+            if ($function_timings) {
+                $output .= "\nSlowest functions to analyze:\n";
+
+                arsort($function_timings);
+
+                // e.g. "   1.23 ms/node  Foo::bar"
+                foreach (array_slice($function_timings, 0, 10, true) as $function_id => $time) {
+                    $output .= '  ' . str_pad(number_format(1_000 * $time, 2), 6, ' ', STR_PAD_LEFT) . ' ms/node  '
+                        . $function_id . "\n";
+                }
+            }
+        }
+
+        $skipped_checks = [];
+        if ($project_analyzer->unused_code_skipped) {
+            $skipped_checks[] = 'unused code';
+        }
+
+        if ($issue_handler_suppressions_skipped) {
+            $skipped_checks[] = 'unused <issueHandlers> suppressions';
+        }
+
+        // --alter reports no issues at all: a full run wouldn't report these either
+        if ($skipped_checks && !$codebase->alter_code) {
+            $output .= "\nNote: " . implode(' and ', $skipped_checks) . ' are only reported on a full run.' . "\n";
+        }
+
+        if ($summary_on_stdout) {
+            echo $output;
+        } elseif ($project_analyzer->progress instanceof VoidProgress) {
+            // the summary (and --stats) isn't progress: --no-progress and agents still get it
+            fwrite(STDERR, $output);
+        } else {
+            $project_analyzer->progress->write($output);
         }
 
         if ($is_full && $start_time) {
@@ -891,39 +1004,124 @@ final class IssueBuffer
             throw new UnexpectedValueException('Cannot print success message without stdout report options');
         }
 
-        // this message will be printed
-        $message = "No errors found!";
+        echo self::formatSuccessMessage($project_analyzer->stdout_report_options->use_color) . "\n";
+    }
 
-        // color block will contain this amount of characters
-        $blockSize = 30;
+    /**
+     * @psalm-pure
+     */
+    private static function formatSuccessMessage(bool $use_color): string
+    {
+        return $use_color ? "\e[0;32mNo errors found!\e[0m" : 'No errors found!';
+    }
 
-        // message with prepended and appended whitespace to be same as $blockSize
-        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+    /**
+     * A command running Psalm again with the given options, so that it can be copied as is: the binary Psalm was
+     * started with (e.g. vendor/bin/psalm, or a wrapper of it), and what decides which code is analysed and how: the
+     * config, root and PHP version, and the paths (e.g. "vendor/bin/psalm -c psalm.xml --alter … src/Foo.php")
+     *
+     * Psalm reads its options with getopt(), which stops at the first path: an option after it was ignored, and is
+     * left out here too. A "-" (paths read from stdin) is kept. It is only printed to the terminal, not into a web
+     * page.
+     *
+     * @psalm-taint-escape html
+     * @psalm-taint-escape has_quotes
+     */
+    private static function getInvokedCommand(string ...$options): string
+    {
+        $argv = isset(self::$server['argv']) && is_array(self::$server['argv']) ? self::$server['argv'] : [];
+        $binary = isset($argv[0]) && is_string($argv[0]) ? $argv[0] : 'psalm';
+        // e.g. "php psalm.phar": run through PHP when the binary can't be run as is
+        $words = $binary !== 'psalm' && !is_executable($binary) ? ['php', $binary] : [$binary];
 
-        // top side of the color block
-        $paddingTop = str_repeat(' ', $blockSize);
+        $kept_options = [];
+        $paths = [];
+        for ($i = 1, $count = count($argv); $i < $count; ++$i) {
+            $arg = $argv[$i] ?? null;
+            if (!is_string($arg) || $arg === '') {
+                continue;
+            }
 
-        // bottom side of the color block
-        $paddingBottom = str_repeat(' ', $blockSize);
-
-        // background color, 42 = green
-        $background = "42";
-
-        // foreground/text color, 30 = black
-        $foreground = "30";
-
-        // text style, 1 = bold
-        $style = "2";
-
-        if ($project_analyzer->stdout_report_options->use_color) {
-            echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
-            echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
-            echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
-        } else {
-            echo "\n";
-            echo "$messageWithPadding\n";
-            echo "\n";
+            if ($paths !== [] || $arg === '-' || $arg[0] !== '-') {
+                // past the first path, only paths count (see CliUtils::getPathsToCheck())
+                if ($arg === '-' || $arg[0] !== '-') {
+                    $paths[] = $arg;
+                } elseif (in_array($arg, ['-c', '-f', '-r', '--config', '--root', '--printer'], true)) {
+                    ++$i;
+                }
+            } elseif (in_array($arg, ['-c', '-f', '-r', '--config', '--root'], true)) {
+                // the value is the next argument
+                ++$i;
+                $kept_options[] = $arg;
+                $kept_options[] = isset($argv[$i]) && is_string($argv[$i]) ? $argv[$i] : '';
+            } elseif (preg_match('/^(-[cfr].|--(config|root|php-version)=)/', $arg) === 1) {
+                $kept_options[] = $arg;
+            } elseif ($arg === '--printer') {
+                ++$i;
+            }
         }
+
+        // quoted only when the shell needs it, to keep the command readable (not "%", which cmd.exe expands)
+        return implode(' ', array_map(
+            static fn(string $word): string => preg_match('#^[\w./:=@+,-]+$#', $word) === 1
+                ? $word
+                : escapeshellarg($word),
+            [...$words, ...$kept_options, ...$options, ...$paths],
+        ));
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function formatMemory(int $bytes): string
+    {
+        if ($bytes >= 1_024 ** 3) {
+            return number_format($bytes / 1_024 ** 3, 1) . ' GB';
+        }
+
+        return number_format($bytes / 1_024 ** 2) . ' MB';
+    }
+
+    /**
+     * The most frequent error types, e.g. "  312  MissingOverrideAttribute   fixable"
+     *
+     * @param array<string, int> $error_counts_by_type
+     * @param array<string, int> $fixable_issue_counts
+     * @psalm-pure
+     */
+    private static function getErrorBreakdown(array $error_counts_by_type, array $fixable_issue_counts): string
+    {
+        uksort(
+            $error_counts_by_type,
+            static fn(string $a, string $b): int
+                => [$error_counts_by_type[$b], $a] <=> [$error_counts_by_type[$a], $b],
+        );
+
+        $shown = array_slice($error_counts_by_type, 0, self::ERROR_BREAKDOWN_TYPES, true);
+        if ($shown === []) {
+            return '';
+        }
+
+        $count_width = strlen(number_format(max($shown)));
+        $type_width = max(array_map(strlen(...), array_keys($shown)));
+
+        $breakdown = '';
+        foreach ($shown as $type => $count) {
+            $line = '  ' . str_pad(number_format($count), $count_width, ' ', STR_PAD_LEFT) . '  ' . $type;
+            if (isset($fixable_issue_counts[$type])) {
+                $line = str_pad($line, 4 + $count_width + $type_width) . '   fixable';
+            }
+
+            $breakdown .= $line . "\n";
+        }
+
+        $hidden_types = count($error_counts_by_type) - count($shown);
+        if ($hidden_types > 0) {
+            $breakdown .= str_repeat(' ', 4 + $count_width) . '+' . $hidden_types
+                . ($hidden_types === 1 ? ' more type' : ' more types') . ' (all of them: --output-format=count)' . "\n";
+        }
+
+        return $breakdown;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Closure;
 use RuntimeException;
 use Throwable;
 
@@ -26,6 +27,9 @@ final class ErrorHandler
     private static bool $exceptions_enabled = true;
 
     private static string $args = '';
+
+    /** @var (Closure():void)|null */
+    private static ?Closure $before_fatal_error = null;
 
     /**
      * @param array<int,string> $argv
@@ -51,6 +55,17 @@ final class ErrorHandler
         } finally {
             self::$exceptions_enabled = true;
         }
+    }
+
+    /**
+     * Registers what to do before an uncaught exception is written to STDERR, e.g. clearing a status line
+     * that the message would otherwise land on. Pass null to unregister.
+     *
+     * @param (Closure():void)|null $callback
+     */
+    public static function setBeforeFatalError(?Closure $callback): void
+    {
+        self::$before_fatal_error = $callback;
     }
 
     /**
@@ -96,6 +111,10 @@ final class ErrorHandler
          * then exit with a non-zero exit code to indicate failure.
          */
         set_exception_handler(static function (Throwable $throwable): never {
+            if (ErrorHandler::$before_fatal_error !== null) {
+                (ErrorHandler::$before_fatal_error)();
+            }
+
             fwrite(STDERR, "Uncaught $throwable\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");

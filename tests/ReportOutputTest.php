@@ -471,15 +471,11 @@ final class ReportOutputTest extends TestCase
             <<<'EOF'
             ERROR: UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
 
-
             ERROR: MixedReturnStatement - somefile.php:4:10 - Could not infer a return type (see https://psalm.dev/138)
-
 
             ERROR: UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
 
-
             INFO: PossiblyUndefinedGlobalVariable - somefile.php:18:6 - Possibly undefined global variable $a, first seen on line 12 (see https://psalm.dev/126)
-
 
 
             EOF,
