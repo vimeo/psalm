@@ -1614,4 +1614,40 @@ final class StubTest extends TestCase
 
         $this->assertTrue($codebase->classlike_storage_provider->get('IncludedStub')->stubbed);
     }
+
+    public function testStubFileLocatedForPreloadedStubIsAStub(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $parent_path = (string) getcwd() . '/stubs/parent.phpstub';
+        $this->addStubFile($parent_path, '<?php class StubbedParent { public function fromStub(): void {} }');
+        // As when the stub is also autoloadable, e.g. through a classmap
+        $codebase->scanner->setClassLikeFilePath('stubbedparent', $parent_path);
+
+        $child_path = (string) getcwd() . '/stubs/child.phpstub';
+        $this->file_provider->registerFile($child_path, '<?php class StubbedChild extends StubbedParent {}');
+        $codebase->config->addPreloadedStubFile($child_path);
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, '<?php (new StubbedChild())->fromStub();');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertTrue($codebase->classlike_storage_provider->get('StubbedChild')->stubbed);
+        $this->assertTrue($codebase->classlike_storage_provider->get('StubbedParent')->stubbed);
+    }
 }
