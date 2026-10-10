@@ -43,6 +43,7 @@ use Psalm\Report\TableReport;
 use Psalm\Report\TextReport;
 use Psalm\Report\XmlReport;
 use RuntimeException;
+use Symfony\Component\Filesystem\Path;
 use UnexpectedValueException;
 
 use function array_keys;
@@ -672,7 +673,7 @@ final class IssueBuffer
                                     $issue['o'] === 1 ? 'entry' : 'entries',
                                 ),
                                 $file_path,
-                                '',
+                                Path::join($codebase->config->base_dir, $file_path),
                                 '',
                                 '',
                                 0,
@@ -693,6 +694,9 @@ final class IssueBuffer
         $issue_handler_suppressions_skipped = false;
         if ($codebase->config->find_unused_issue_handler_suppression) {
             if ($is_full && !$codebase->diff_run) {
+                $config_path = $codebase->config->source_filename ?? '';
+                $config_name = $config_path === '' ? '' : $codebase->config->shortenFileName($config_path);
+
                 foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
                     foreach ($handler->getFilters() as $filter) {
                         if ($filter->suppressions > 0 || $filter->getErrorLevel() != Config::REPORT_SUPPRESS) {
@@ -700,28 +704,27 @@ final class IssueBuffer
                         }
                         $issues_data['config'][] = new IssueData(
                             IssueData::SEVERITY_ERROR,
-                            0,
-                            0,
+                            $filter->line,
+                            $filter->line,
                             UnusedIssueHandlerSuppression::getIssueType(),
                             sprintf(
                                 'Suppressed issue type "%s" for %s was not thrown.',
                                 $type,
-                                str_replace(
-                                    $codebase->config->base_dir,
-                                    '',
-                                    implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
-                                ),
+                                implode(', ', array_map(
+                                    $codebase->config->shortenFileName(...),
+                                    [...$filter->getFiles(), ...$filter->getDirectories()],
+                                )),
                             ),
-                            $codebase->config->source_filename ?? '',
+                            $config_name,
+                            $config_path,
                             '',
                             '',
-                            '',
                             0,
                             0,
                             0,
                             0,
-                            0,
-                            0,
+                            $filter->line > 0 ? 1 : 0,
+                            $filter->line > 0 ? 1 : 0,
                             UnusedIssueHandlerSuppression::SHORTCODE,
                             UnusedIssueHandlerSuppression::ERROR_LEVEL,
                         );
