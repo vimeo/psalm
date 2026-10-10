@@ -1249,11 +1249,11 @@ final class ClassLikes
         IssueBuffer::maybeAdd(
             new MissingImmutableAnnotation(
                 $storage->name . ' could be marked @' . Capabilities::toClassAnnotation($capabilities)
-                    . ' ' . $benefit
-                    . ', run with --alter --issues=MissingImmutableAnnotation to fix this',
+                    . ' ' . $benefit,
                 $storage->location,
             ),
             $storage->suppressed_issues,
+            true,
         );
     }
 
