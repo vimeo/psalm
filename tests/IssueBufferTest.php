@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\EventDispatcher;
 use Psalm\IssueBuffer;
 use Psalm\Report\ReportOptions;
@@ -132,6 +133,37 @@ final class IssueBufferTest extends TestCase
         IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
         $output = (string) ob_get_clean();
         $this->assertStringContainsString('No errors found!', $output, 'all issues baselined');
+        IssueBuffer::clear();
+    }
+
+    public function testFixableIssuesHintIsShownWithTaintAnalysis(): void
+    {
+        IssueBuffer::clear();
+        IssueBuffer::addFixableIssue('ClassMustBeFinal');
+
+        $analyzer = $this->createMock(Analyzer::class);
+        $analyzer->method('getTotalTypeCoverage')->willReturn([0, 0]);
+
+        $config = $this->createMock(Config::class);
+        $config->eventDispatcher = $this->createMock(EventDispatcher::class);
+
+        $codebase = $this->createMock(Codebase::class);
+        $codebase->analyzer = $analyzer;
+        $codebase->config = $config;
+        $codebase->taint_flow_graph = new TaintFlowGraph();
+
+        $projectAnalyzer = $this->createMock(ProjectAnalyzer::class);
+        $projectAnalyzer->method('getCodebase')->willReturn($codebase);
+        $projectAnalyzer->stdout_report_options = new ReportOptions();
+        $projectAnalyzer->stdout_report_options->use_color = false;
+        $projectAnalyzer->generated_report_options = [];
+
+        ob_start();
+        IssueBuffer::finish($projectAnalyzer, false, microtime(true));
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('--alter --issues=', $output);
+        $this->assertStringContainsString('ClassMustBeFinal', $output);
         IssueBuffer::clear();
     }
 
