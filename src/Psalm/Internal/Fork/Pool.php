@@ -22,6 +22,7 @@ use Amp\Sync\ChannelException;
 use AssertionError;
 use Closure;
 use Override;
+use Psalm\Config;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 
@@ -130,11 +131,12 @@ final class Pool
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
-            $id = EventLoop::repeat($this->timeLimit, function () use ($file): void {
-                static $seconds = 0.0;
-                /** @psalm-suppress MixedAssignment, MixedOperand */
-                $seconds += $this->timeLimit;
-                $this->progress->warning("Processing $file is taking $seconds seconds...");
+            // once per task: repeating it every few seconds would bury the rest of the output
+            $id = EventLoop::delay($this->timeLimit, function () use ($file): void {
+                $this->progress->warning(
+                    Config::getInstance()->shortenFileName($file)
+                    . " is taking over {$this->timeLimit}s to process (--debug-by-line shows the line it is on)",
+                );
             });
             $f->finally(static function () use ($id): void {
                 EventLoop::cancel($id);
