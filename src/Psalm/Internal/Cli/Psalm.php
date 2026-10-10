@@ -77,6 +77,7 @@ use function json_encode;
 use function max;
 use function microtime;
 use function mkdir;
+use function number_format;
 use function opcache_get_status;
 use function parse_url;
 use function preg_match;
@@ -84,7 +85,6 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function sort;
-use function str_repeat;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -634,7 +634,9 @@ final class Psalm
                 exit(1);
             }
 
-            exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
+            echo 'Created psalm.xml with errorLevel ' . $init_level . ' (1 is the strictest, 8 the most lenient)'
+                . PHP_EOL . 'Run Psalm again to analyze the project' . PHP_EOL;
+            exit(0);
         }
     }
 
@@ -646,7 +648,7 @@ final class Psalm
         $workflow_file = $workflow_dir . DIRECTORY_SEPARATOR . 'psalm.yml';
 
         if (file_exists($workflow_file)) {
-            fwrite(STDERR, 'A CI workflow already exists at ' . $workflow_file . PHP_EOL);
+            fwrite(STDERR, 'A CI workflow already exists at .github/workflows/psalm.yml' . PHP_EOL);
             exit(1);
         }
 
@@ -662,8 +664,8 @@ final class Psalm
             exit(1);
         }
 
-        echo 'GitHub Actions workflow created at .github/workflows/psalm.yml' . PHP_EOL
-            . 'Review the file for tips on enabling taint analysis, baselines, and more.' . PHP_EOL;
+        echo 'Created .github/workflows/psalm.yml (review it for tips on taint analysis, baselines and more)'
+            . PHP_EOL;
     }
 
     /** @param list<ClassLoader> $autoloaders */
@@ -775,8 +777,6 @@ final class Psalm
         string $current_dir,
         ?string $path_to_config,
     ): array {
-        fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
-
         $error_baseline = is_string($options['set-baseline']) ? $options['set-baseline'] :
             ($config->error_baseline ?? Config::DEFAULT_BASELINE_NAME);
 
@@ -796,7 +796,7 @@ final class Psalm
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
-        fwrite(STDERR, "Baseline saved to $error_baseline.");
+        fwrite(STDERR, "Baseline saved to $error_baseline" . PHP_EOL);
 
         if ($error_baseline !== $config->error_baseline) {
             CliUtils::updateConfigFile(
@@ -805,8 +805,6 @@ final class Psalm
                 $error_baseline,
             );
         }
-
-        fwrite(STDERR, PHP_EOL);
 
         return $issue_baseline;
     }
@@ -839,7 +837,10 @@ final class Psalm
         $baselineFile = $config->error_baseline;
 
         if (empty($baselineFile)) {
-            fwrite(STDERR, 'Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            fwrite(
+                STDERR,
+                'No baseline file is configured: create one with --set-baseline=psalm-baseline.xml' . PHP_EOL,
+            );
             exit(1);
         }
 
@@ -860,12 +861,13 @@ final class Psalm
 
             $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
 
-            if ($total_fixed_issues > 0) {
-                echo str_repeat('-', 30) . "\n";
-                echo $total_fixed_issues . ' errors fixed' . "\n";
-            }
+            fwrite(STDERR, $total_fixed_issues > 0
+                ? 'Baseline updated: ' . number_format($total_fixed_issues)
+                    . ($total_fixed_issues === 1 ? ' fixed issue' : ' fixed issues') . ' removed' . PHP_EOL
+                : 'Baseline unchanged: no fixed issues to remove' . PHP_EOL);
         } catch (ConfigException $exception) {
-            fwrite(STDERR, 'Could not update baseline file: ' . $exception->getMessage() . PHP_EOL);
+            fwrite(STDERR, 'Could not update the baseline: ' . $exception->getMessage()
+                . '. Create it with --set-baseline=' . $baselineFile . PHP_EOL);
             exit(1);
         }
 
@@ -925,8 +927,6 @@ final class Psalm
             );
         }
 
-        echo "\n" . 'Detected level ' . $init_level . ' as a suitable initial default' . "\n";
-
         try {
             $template_contents = Creator::getContents(
                 $current_dir,
@@ -944,7 +944,10 @@ final class Psalm
             exit(1);
         }
 
-        exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
+        echo 'Created psalm.xml with errorLevel ' . $init_level
+            . ' (picked from the issues found; 1 is the strictest, 8 the most lenient)' . "\n"
+            . 'Run Psalm again to analyze the project' . "\n";
+        exit(0);
     }
 
     private static function initStdoutReportOptions(
@@ -1226,7 +1229,6 @@ final class Psalm
             // based on the errors we find
             $init_source_dir = $args[0] ?? null;
 
-            echo "Calculating best config level based on project files\n";
             Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
@@ -1258,7 +1260,7 @@ final class Psalm
 
         if (isset($options['set-baseline'])) {
             if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                fwrite(STDERR, 'Cannot generate a baseline when checking specific files' . PHP_EOL);
                 exit(1);
             }
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
@@ -1278,7 +1280,7 @@ final class Psalm
 
         if (isset($options['update-baseline'])) {
             if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot update baseline when checking specific files' . PHP_EOL);
+                fwrite(STDERR, 'Cannot update the baseline when checking specific files' . PHP_EOL);
                 exit(1);
             }
             $issue_baseline = self::updateBaseline($options, $config);
@@ -1291,7 +1293,8 @@ final class Psalm
                     $baseline_file_path,
                 );
             } catch (ConfigException $exception) {
-                fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
+                fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
+                    . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
                 exit(1);
             }
         }
