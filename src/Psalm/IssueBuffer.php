@@ -69,6 +69,7 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_executable;
 use function is_int;
 use function is_string;
 use function ksort;
@@ -827,8 +828,10 @@ final class IssueBuffer
         // one blank line after the report, which may not even end its last line (e.g. JSON), when both share a
         // terminal or a log: with STDOUT redirected elsewhere, the summary already follows the blank line after
         // the progress
+        // the same stream: same device and inode, which fstat() leaves at 0 where it can't tell (e.g. Windows)
         [$stdout, $stderr] = [fstat(STDOUT), fstat(STDERR)];
-        $shares_stream = $summary_on_stdout || ($stdout && $stderr && $stdout['ino'] === $stderr['ino']);
+        $shares_stream = $summary_on_stdout || ($stdout && $stderr && $stdout['ino'] !== 0
+            && $stdout['dev'] === $stderr['dev'] && $stdout['ino'] === $stderr['ino']);
         $output = $report !== '' && $shares_stream
             ? str_repeat("\n", max(0, 2 - (strlen($report) - strlen(rtrim($report, "\n")))))
             : '';
@@ -1017,8 +1020,9 @@ final class IssueBuffer
      * started with (e.g. vendor/bin/psalm, or a wrapper of it), and what decides which code is analysed and how: the
      * config, root and PHP version, and the paths (e.g. "vendor/bin/psalm -c psalm.xml --alter … src/Foo.php")
      *
-     * Options and paths are told apart as CliUtils::getPathsToCheck() does. It is only printed to the terminal, not
-     * into a web page.
+     * Psalm reads its options with getopt(), which stops at the first path: an option after it was ignored, and is
+     * left out here too. A "-" (paths read from stdin) is kept. It is only printed to the terminal, not into a web
+     * page.
      *
      * @psalm-taint-escape html
      * @psalm-taint-escape has_quotes
@@ -1027,18 +1031,24 @@ final class IssueBuffer
     {
         $argv = isset(self::$server['argv']) && is_array(self::$server['argv']) ? self::$server['argv'] : [];
         $binary = isset($argv[0]) && is_string($argv[0]) ? $argv[0] : 'psalm';
+        // e.g. "php psalm.phar": run through PHP when the binary can't be run as is
+        $words = $binary !== 'psalm' && !is_executable($binary) ? ['php', $binary] : [$binary];
 
         $kept_options = [];
-        // after the options: PHP's getopt() stops at the first path
         $paths = [];
         for ($i = 1, $count = count($argv); $i < $count; ++$i) {
             $arg = $argv[$i] ?? null;
-            if (!is_string($arg) || $arg === '' || $arg === '-') {
+            if (!is_string($arg) || $arg === '') {
                 continue;
             }
 
-            if ($arg[0] !== '-') {
-                $paths[] = $arg;
+            if ($paths !== [] || $arg === '-' || $arg[0] !== '-') {
+                // past the first path, only paths count (see CliUtils::getPathsToCheck())
+                if ($arg === '-' || $arg[0] !== '-') {
+                    $paths[] = $arg;
+                } elseif (in_array($arg, ['-c', '-f', '-r', '--config', '--root', '--printer'], true)) {
+                    ++$i;
+                }
             } elseif (in_array($arg, ['-c', '-f', '-r', '--config', '--root'], true)) {
                 // the value is the next argument
                 ++$i;
@@ -1051,12 +1061,12 @@ final class IssueBuffer
             }
         }
 
-        // quoted only when the shell needs it, to keep the command readable
+        // quoted only when the shell needs it, to keep the command readable (not "%", which cmd.exe expands)
         return implode(' ', array_map(
-            static fn(string $word): string => preg_match('#^[\w./:=@%+,-]+$#', $word) === 1
+            static fn(string $word): string => preg_match('#^[\w./:=@+,-]+$#', $word) === 1
                 ? $word
                 : escapeshellarg($word),
-            [$binary, ...$kept_options, ...$options, ...$paths],
+            [...$words, ...$kept_options, ...$options, ...$paths],
         ));
     }
 

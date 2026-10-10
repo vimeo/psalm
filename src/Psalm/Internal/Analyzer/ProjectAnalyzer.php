@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\VersionUtils;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -88,7 +89,6 @@ use function usort;
 
 use const PHP_EOL;
 use const PHP_VERSION;
-use const PSALM_VERSION;
 
 /**
  * @internal
@@ -410,8 +410,9 @@ final class ProjectAnalyzer
             $codebase->config->php_extensions_supported_by_psalm_callmaps,
         );
 
-        // A commit is recognizable by its first 7 characters
-        $psalm_version = (string) preg_replace('/@([0-9a-f]{7})[0-9a-f]{33}$/', '@$1', PSALM_VERSION);
+        // A commit is recognizable by its first 7 characters. The PSALM_VERSION constant is only defined by the CLI,
+        // not when Psalm is used as a library.
+        $psalm_version = (string) preg_replace('/@([0-9a-f]{7})[0-9a-f]{33}$/', '@$1', VersionUtils::getPsalmVersion());
 
         $separator = Progress::separator();
         $message = 'Psalm ' . $psalm_version
@@ -797,13 +798,18 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->recordAlteredFile($file_path);
+                }
             }
         }
 
@@ -825,6 +831,8 @@ final class ProjectAnalyzer
                     }
 
                     rename($source_class_storage->location->file_path, $potential_file_path);
+                    // the class now lives in a new file: that's the one to show
+                    $this->codebase->analyzer->recordAlteredFile($potential_file_path);
                 }
             }
         }

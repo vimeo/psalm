@@ -107,6 +107,8 @@
 
 - [BC] The end-of-run summary of the console, `phpstorm` and `github` formats changed, for scripts that read it: `N errors found` (between `---` rulers) is now `N errors in M files`, followed by ` · N baselined` and ` · N info` / ` · N info hidden` instead of `N other issues found.` and `You can display them with --show-info=true`. `Checks took X seconds and used Y MB of memory` and the type inference sentence are now one line, e.g. `72.8s · 11.9 GB peak · type coverage 99.87%` (coverage rounded down). The `No errors found!` box is now a single `No errors found!` line. The auto-fix hint is now `Preview the fix for N issues: <command> --alter --issues=… --dry-run`, the command being the one Psalm was run with. With `--alter`, the summary goes to STDERR and ends with `Altered N files` (with the files), `Would alter N files (dry run)…` or `Nothing to alter`, instead of `No errors found!`.
 
+- `UnusedIssueHandlerSuppression` is reported at the `<errorLevel>` element of the config, with the config file's name and a line and column, instead of line 0 and an empty file name; its message lists the suppressed paths relative to the project. `UnusedBaselineEntry` has the baseline's full path as `file_path`. Machine-readable reports (json, checkstyle, sarif, …) show these new values.
+
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
 
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
