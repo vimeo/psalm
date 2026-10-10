@@ -85,6 +85,7 @@ use const PHP_INT_MAX;
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  *      mutable_classes: array<string, int>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
+ *      progress_output: string,
  * }
  */
 
@@ -228,6 +229,11 @@ final class Analyzer
         bool $alter_code,
         bool $consolidate_analyzed_data = false,
     ): void {
+        // Without a persistent cache there is nothing to load, so the phase would only flash on the status line
+        if ($project_analyzer->getCodebase()->file_reference_provider->cache?->persistent) {
+            $this->progress->startPhase(Phase::LOADING_CACHE);
+        }
+
         $this->loadCachedResults($project_analyzer);
 
         $codebase = $project_analyzer->getCodebase();
@@ -241,6 +247,7 @@ final class Analyzer
             $this->file_provider->fileExists(...),
         );
 
+        $this->progress->startPhase(Phase::ANALYSIS);
         $this->doAnalysis($project_analyzer, $pool_size);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
@@ -249,9 +256,10 @@ final class Analyzer
             $codebase->taint_flow_graph->connectSinksAndSources($codebase->progress);
         }
 
-        MutationLevelResolver::resolve($project_analyzer);
+        // the time and issues of the whole-codebase resolution are not those of analyzing files or of the taint graph
+        $this->progress->startPhase(Phase::FINISHING);
 
-        $this->progress->finish();
+        MutationLevelResolver::resolve($project_analyzer);
 
         if ($consolidate_analyzed_data) {
             $project_analyzer->consolidateAnalyzedData();
@@ -286,13 +294,17 @@ final class Analyzer
             $project_analyzer->prepareMigration();
 
             $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
+            $this->progress->expand(count($files_to_update));
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run);
+                $this->progress->taskDone(0);
             }
 
             $project_analyzer->migrateCode();
         }
+
+        $this->progress->finish();
     }
 
     private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
@@ -314,6 +326,7 @@ final class Analyzer
                 $project_analyzer->progress,
             );
 
+            $this->progress->setThreads($pool_size);
             $this->progress->debug('Forking analysis' . "\n");
 
             // Wait for all tasks to complete and collect the results.
@@ -325,8 +338,13 @@ final class Analyzer
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
             $this->progress->expand(count($forked_pool_data));
 
+            // relayed in one block, set apart from the rows around it
+            $worker_output = '';
+
             foreach (Future::iterate($forked_pool_data) as $pool_data) {
                 $pool_data = $pool_data->await();
+
+                $worker_output .= $pool_data['progress_output'];
 
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
@@ -402,6 +420,8 @@ final class Analyzer
 
                 $this->progress->taskDone(0);
             }
+
+            $this->progress->relayWorkerOutput($worker_output);
         } else {
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $task_done_closure(self::analysisWorker($this->config, $this->progress, $file_path));
@@ -1222,8 +1242,6 @@ final class Analyzer
         }
 
         if ($dry_run) {
-            echo $file_path . ':' . "\n";
-
             $differ = new Differ(
                 new StrictUnifiedDiffOutputBuilder([
                     'fromFile' => $file_path,
@@ -1231,7 +1249,10 @@ final class Analyzer
                 ]),
             );
 
-            echo $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
+            $this->progress->writeReport(
+                $file_path . ':' . "\n"
+                . $differ->diff($this->file_provider->getContents($file_path), $existing_contents),
+            );
 
             return;
         }

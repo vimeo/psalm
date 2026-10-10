@@ -21,6 +21,7 @@ final class InitAnalyzerTask implements Task
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
+        $project_analyzer->progress->startBufferingWorkerOutput();
         $codebase = $project_analyzer->getCodebase();
 
         $file_reference_provider = $codebase->file_reference_provider;

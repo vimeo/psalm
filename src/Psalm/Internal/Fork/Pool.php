@@ -134,7 +134,7 @@ final class Pool
                 static $seconds = 0.0;
                 /** @psalm-suppress MixedAssignment, MixedOperand */
                 $seconds += $this->timeLimit;
-                $this->progress->write(PHP_EOL."Processing $file is taking $seconds seconds...".PHP_EOL);
+                $this->progress->warning("Processing $file is taking $seconds seconds...");
             });
             $f->finally(static function () use ($id): void {
                 EventLoop::cancel($id);

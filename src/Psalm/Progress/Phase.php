@@ -20,4 +20,8 @@ enum Phase
     case JIT_COMPILATION;
     case PRELOADING;
     case MERGING_THREAD_RESULTS;
+    /** Restoring cached analysis results before the analysis */
+    case LOADING_CACHE;
+    /** Consolidating results and updating caches after the analysis */
+    case FINISHING;
 }

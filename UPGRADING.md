@@ -97,6 +97,14 @@
 
 - [BC] Method finish() of class Psalm\Progress\Progress changed from concrete to abstract
 
+- [BC] Property `Psalm\Progress\LongProgress::$prevPhase` was renamed to `$phase`, and method `LongProgress::reportPhaseDuration()` was removed: override `phaseStarted()`, `reportTask()` and `phaseEnded()` instead. `Psalm\Progress\Phase` has a new `FINISHING` case, started after the analysis while results are consolidated and caches are updated.
+
+- `Psalm\Progress\Progress` has a new `writeReport()` method, writing to STDOUT the output that is part of the result (e.g. the `--alter --dry-run` diff) without mixing it with the progress output, and a new static `separator()` (` · `, or ` - ` without UTF-8). `doesTerminalSupportUtf8()` now also checks the locale (`LC_ALL`, `LC_CTYPE`, `LANG`). `write()` and `writeReport()` drop the output silently when the reader went away (e.g. `psalm | head`). `LongProgress::finish()` writes a blank line after the progress lines, so the report or summary that follows is set apart.
+
+- [BC] The thread count shown for a phase is the one that really ran: Psalm calls the new `Progress::setThreads()` once it forks, and `LongProgress`/`DefaultProgress` no longer show the `$threads` passed to `startPhase()`. A phase that doesn't fork shows no thread count.
+
+- [BC] In quiet mode (CI, or a stderr that isn't a terminal), `Psalm\Progress\LongProgress` prints the same row per phase as the interactive table (`LongProgress::formatRow()`), with a status line every 30 seconds, instead of a start line and a summary sentence per phase. It no longer prints a line per altered file. With an output format other than `console`, `phpstorm` and `github`, the summary is written to STDERR. A new optional `$use_color` constructor parameter shows the time and threads of each row dim.
+
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to the non-covariant Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray
 
 - [BC] The return type of Psalm\Type::getListAtomic() changed from Psalm\Type\Atomic\TKeyedArray to Psalm\Type\Atomic\TKeyedArray|Psalm\Type\Atomic\TArray

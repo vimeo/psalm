@@ -720,9 +720,9 @@ final class Psalm
             // which emits one line per phase transition.
             $quiet_progress = $in_ci || !CliUtils::streamIsInteractive(STDERR);
             if (isset($options['long-progress']) || $quiet_progress) {
-                $progress = new LongProgress($show_errors, $show_info, $quiet_progress);
+                $progress = new LongProgress($show_errors, $show_info, $quiet_progress, CliUtils::useColor($options));
             } else {
-                $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
+                $progress = new DefaultProgress($show_errors, $show_info, $in_ci, CliUtils::useColor($options));
             }
         }
         // output buffered warnings
@@ -928,9 +928,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1557,8 +1555,9 @@ final class Psalm
                 (CI always keeps its phase breadcrumbs).
 
             --long-progress
-                Use a progress indicator suitable for Continuous Integration logs.
-                Auto-enabled in CI and when stderr is not attached to a terminal.
+                Print a marker per file instead of the live status line.
+                In CI and when stderr is not attached to a terminal, the progress
+                is one line per phase anyway.
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase

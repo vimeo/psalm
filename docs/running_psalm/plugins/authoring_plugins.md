@@ -159,6 +159,20 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 </PluginIssue>
 ```
 
+## Printing warnings
+
+Problems found in the analyzed code should be reported as [issues](#handling-custom-plugin-issues): they can be suppressed, baselined, and they are part of every output format.
+
+To tell the user about anything else (e.g. a missing extension, or a misconfigured plugin), use the `Progress` object of the codebase:
+
+```php
+$event->getCodebase()->progress->warning('MyPlugin: cannot read config/my-plugin.php, using the defaults');
+```
+
+It writes the warning above Psalm's progress output instead of over it. When Psalm runs on several threads, it writes the warnings of the threads once it collects their results.
+
+Don't write to `STDERR` directly, and don't `echo`: `STDOUT` is where Psalm writes its report, e.g. in JSON with `--output-format=json`.
+
 ## Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()`
