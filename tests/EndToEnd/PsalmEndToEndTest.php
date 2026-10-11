@@ -111,7 +111,10 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testInit(): void
     {
-        $this->runPsalmInit();
+        $this->assertStringContainsString(
+            'Created psalm.xml with errorLevel ',
+            $this->runPsalmInit()['STDOUT'],
+        );
         $this->assertFileExists(self::$tmpDir . '/psalm.xml');
     }
 
