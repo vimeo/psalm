@@ -117,7 +117,7 @@ final class ClassConstAnalyzer
                             $context->self,
                             $context->calling_method_id,
                             $statements_analyzer->getSuppressedIssues(),
-                            new ClassLikeNameOptions(false, true),
+                            new ClassLikeNameOptions(false, true, context: $context),
                         ) === false) {
                             return true;
                         }

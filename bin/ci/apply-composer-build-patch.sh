@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Downloads the composer-build patch produced by the "Build docker image for
-# stubs" workflow for the current commit on the current branch, and applies it.
+# stubs" workflow for the current commit, and applies it.
 #
 # The build-stubs workflow runs `composer build` against the freshly-built stub
 # images and, when that changes any committed file, uploads the diff as the
@@ -23,16 +23,15 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 commit="$(git rev-parse HEAD)"
-branch="$(git rev-parse --abbrev-ref HEAD)"
 
-echo "Looking for the latest '$ARTIFACT' for commit $commit on branch $branch ($REPO)..."
+echo "Looking for the latest '$ARTIFACT' for commit $commit ($REPO)..."
 
-run_id="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --branch "$branch" \
-    --limit 20 --json databaseId,headSha \
-    --jq "map(select(.headSha == \"$commit\")) | .[0].databaseId")"
+# Look the run up by commit: filtering by branch sometimes misses recent runs.
+run_id="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --commit "$commit" \
+    --limit 1 --json databaseId --jq '.[0].databaseId')"
 
 if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-    echo "No $WORKFLOW run found for commit $commit on branch $branch." >&2
+    echo "No $WORKFLOW run found for commit $commit." >&2
     echo "Has the commit been pushed and the workflow run yet?" >&2
     exit 1
 fi

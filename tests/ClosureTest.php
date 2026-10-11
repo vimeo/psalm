@@ -866,6 +866,23 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:ParentMagicInstanceMethod' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {
+                        public function __call(string $name, array $args): string { return "x"; }
+                    }
+                    final class Child extends Base {
+                        public function test(): void {
+                            $fcc = parent::has(...);
+                            /** @psalm-check-type-exact $fcc = Closure(string):string */;
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InheritedStaticMethod' => [
                 'code' => '<?php
 
@@ -1518,6 +1535,36 @@ final class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'MixedAssignment',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethodInStaticContext' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {
+                        public function __call(string $name, array $args): string { return "x"; }
+                    }
+                    final class Child extends Base {
+                        public static function test(): void {
+                            $fcc = parent::has(...);
+                        }
+                    }
+                ',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:ParentMagicInstanceMethodWithoutCall' => [
+                'code' => '<?php
+                    /** @method string has(string $s) */
+                    class Base {}
+                    final class Child extends Base {
+                        public function test(): void {
+                            $fcc = parent::has(...);
+                        }
+                    }
+                ',
+                'error_message' => 'UndefinedMethod',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

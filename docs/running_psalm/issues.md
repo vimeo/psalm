@@ -170,6 +170,7 @@
  - [NullPropertyFetch](issues/NullPropertyFetch.md)
  - [NullReference](issues/NullReference.md)
  - [OverriddenFinalConstant](issues/OverriddenFinalConstant.md)
+ - [OverriddenFinalProperty](issues/OverriddenFinalProperty.md)
  - [OverriddenInterfaceConstant](issues/OverriddenInterfaceConstant.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)

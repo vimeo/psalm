@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -29,6 +30,10 @@ final class ExpressionIdentifier
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name->getParts() === ['PHP_VERSION_ID']) {
+            return Context::PHP_VERSION_ID_VAR_ID;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch

@@ -1,0 +1,28 @@
+<?php
+
+// The #[Attribute] meta-class. Unlike the other new PHP 8.0 classes it is kept version gated
+// (loaded only when analysing >= 8.0) rather than always loaded: attributes are inert below 8.0
+// (an `#[...]` is a comment), so there is nothing to report there, and loading its strict
+// int-mask constructor on an older analysis version would flag attribute usages that PHP ignores.
+
+/** @psalm-immutable */
+class Attribute
+{
+    public int $flags;
+
+    public const TARGET_CLASS = 1;
+    public const TARGET_FUNCTION = 2;
+    public const TARGET_METHOD = 4;
+    public const TARGET_PROPERTY = 8;
+    public const TARGET_CLASS_CONSTANT = 16;
+    public const TARGET_PARAMETER = 32;
+    public const TARGET_ALL = 63;
+    public const IS_REPEATABLE = 64;
+
+    /**
+     * @param int-mask-of<self::*> $flags
+     */
+    public function __construct(int $flags = self::TARGET_ALL)
+    {
+    }
+}

@@ -99,6 +99,7 @@ final class AtomicStaticCallAnalyzer
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->getParts()) === 1
                         && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
+                    context: $context,
                 ),
             )) {
                 return;
@@ -117,6 +118,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -150,6 +152,7 @@ final class AtomicStaticCallAnalyzer
                 $context->self,
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
+                new ClassLikeNameOptions(context: $context),
             )) {
                 return;
             }
@@ -515,6 +518,26 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
+                } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
+                    && !$statements_analyzer->isStatic()
+                    && isset($class_storage->pseudo_methods[$method_name_lc])
+                    && $codebase->methodExists(
+                        new MethodIdentifier($method_id->fq_class_name, '__call'),
+                        null,
+                        null,
+                        null,
+                        false,
+                    )
+                ) {
+                    // Same instance-context fallback as ordinary parent::xxx() calls below:
+                    // the closure is bound to $this and dispatches through __call
+                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->pure,
+                    )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     new CodeLocation($statements_analyzer, $stmt),
@@ -754,6 +777,9 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
+                // Keep exceptions thrown by the forwarded pseudo-method call
+                $context->possibly_thrown_exceptions = $tmp_context->possibly_thrown_exceptions;
+
                 unset($tmp_context);
 
                 // Resolve actual static return type according to caller (i.e. $this) static type
@@ -800,6 +826,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
                 $context->calling_method_id,
                 $with_pseudo,
+                $context,
             );
         } else {
             $does_method_exist = null;
@@ -898,6 +925,13 @@ final class AtomicStaticCallAnalyzer
         MethodStorage $pseudo_method_storage,
         Context $context,
     ): ?bool {
+        if (!$context->isSuppressingExceptions($statements_analyzer)) {
+            $context->mergeFunctionExceptions(
+                $pseudo_method_storage,
+                new CodeLocation($statements_analyzer, $stmt),
+            );
+        }
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,

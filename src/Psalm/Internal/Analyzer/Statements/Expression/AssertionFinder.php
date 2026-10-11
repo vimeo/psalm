@@ -19,13 +19,17 @@ use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Scalar\Int_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -109,6 +113,7 @@ use function in_array;
 use function is_int;
 use function is_numeric;
 use function is_string;
+use function ltrim;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
@@ -865,7 +870,120 @@ final class AssertionFinder
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
 
+        $native_symbol_guard = self::getNativeSymbolGuardAssertion($expr, $source, $codebase, $first_var_type);
+        if ($native_symbol_guard !== null) {
+            $if_types[Context::PHP_VERSION_ID_VAR_ID] = [[$native_symbol_guard]];
+        }
+
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
+     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
+     * can be used there (see Codebase::getGuardedPhpVersionId()).
+     */
+    private static function getNativeSymbolGuardAssertion(
+        PhpParser\Node\Expr\FuncCall $expr,
+        FileSource $source,
+        ?Codebase $codebase,
+        ?Union $first_var_type,
+    ): ?Assertion {
+        if (!$codebase
+            || !$source instanceof StatementsAnalyzer
+            || !$expr->name instanceof PhpParser\Node\Name
+            || $expr->isFirstClassCallable()
+        ) {
+            return null;
+        }
+
+        $args = $expr->getArgs();
+        $function_name = strtolower($expr->name->getFirst());
+        $since_php_version_id = null;
+
+        if ($function_name === 'function_exists') {
+            $guarded_function_name = isset($args[0]) && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+                ? ltrim($args[0]->value->value, '\\')
+                : '';
+
+            if ($guarded_function_name !== '') {
+                $guarded_function_id = strtolower($guarded_function_name);
+
+                if ($codebase->functions->functionExists($source, $guarded_function_id)) {
+                    try {
+                        $since_php_version_id = $codebase->functions
+                            ->getStorage($source, $guarded_function_id)
+                            ->since_php_version_id
+                            ?? InternalCallMapHandler::getIntroducingPhpVersionId($guarded_function_id);
+                    } catch (UnexpectedValueException) {
+                    }
+                }
+            }
+        } elseif (in_array($function_name, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
+            $guarded_class = isset($args[0]) ? self::getLiteralClassName($args[0]->value) : null;
+
+            if ($guarded_class !== null && $codebase->classlike_storage_provider->has($guarded_class)) {
+                $class_storage = $codebase->classlike_storage_provider->get($guarded_class);
+
+                if (!$class_storage->user_defined && !$codebase->isClassLikePolyfilled($class_storage->name)) {
+                    $since_php_version_id = $class_storage->since_php_version_id;
+                }
+            }
+        } elseif ($function_name === 'method_exists'
+            && isset($args[0], $args[1])
+            && $args[1]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $guarded_classes = [];
+            if (($guarded_class = self::getLiteralClassName($args[0]->value)) !== null) {
+                $guarded_classes[] = $guarded_class;
+            } elseif ($first_var_type !== null) {
+                foreach ($first_var_type->getAtomicTypes() as $atomic) {
+                    if ($atomic instanceof TNamedObject) {
+                        $guarded_classes[] = $atomic->value;
+                    }
+                }
+            }
+
+            foreach ($guarded_classes as $guarded_class) {
+                $method_id = new MethodIdentifier($guarded_class, strtolower($args[1]->value->value));
+
+                if ($codebase->classlike_storage_provider->has($guarded_class)
+                    && $codebase->methods->methodExists($method_id)
+                ) {
+                    $since_php_version_id = MethodAnalyzer::getMethodSincePhpVersionId($codebase, $method_id);
+                    break;
+                }
+            }
+        }
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id
+            ? new IsGreaterThanOrEqualTo($since_php_version_id)
+            : null;
+    }
+
+    /**
+     * The class named by a string literal or a `Foo::class` constant.
+     */
+    private static function getLiteralClassName(PhpParser\Node\Expr $expr): ?string
+    {
+        if ($expr instanceof PhpParser\Node\Scalar\String_) {
+            $class = ltrim($expr->value, '\\');
+
+            return $class !== '' ? $class : null;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $expr->class instanceof PhpParser\Node\Name
+            && $expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($expr->name->name) === 'class'
+        ) {
+            $class = (string) $expr->class->getAttribute('resolvedName');
+
+            return $class !== '' ? $class : null;
+        }
+
+        return null;
     }
 
     private static function processIrreconcilableFunctionCall(

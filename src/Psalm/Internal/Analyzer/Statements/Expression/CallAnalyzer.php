@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -65,6 +66,7 @@ use function in_array;
 use function is_int;
 use function is_numeric;
 use function mt_rand;
+use function pathinfo;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
@@ -72,6 +74,8 @@ use function str_contains;
 use function str_replace;
 use function str_starts_with;
 use function strtolower;
+
+use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -594,6 +598,7 @@ abstract class CallAnalyzer
         string &$function_id,
         CodeLocation $code_location,
         bool $can_be_in_root_scope,
+        ?Context $context = null,
     ): bool {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
@@ -622,6 +627,44 @@ abstract class CallAnalyzer
 
                 return false;
             }
+        }
+
+        // The function is known to Psalm (its stubbed signature is always loaded so analysis is
+        // unaffected), but a native function introduced in a later PHP version is undefined when
+        // analysing an older version without a polyfill. The issue is reported without treating
+        // the call as unknown, so its stubbed signature is still used for the rest of analysis.
+        try {
+            $function_storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
+        } catch (UnexpectedValueException) {
+            return true;
+        }
+
+        $since_php_version_id = $function_storage->since_php_version_id;
+
+        // A native function (from a stub or the runtime's reflection) with no `@since` is dated by
+        // the versioned callmaps. A polyfill declared in PHP code makes it available.
+        $is_native = $function_storage->location === null
+            || pathinfo($function_storage->location->file_path, PATHINFO_EXTENSION) === 'phpstub';
+
+        if ($since_php_version_id === null && $is_native) {
+            $since_php_version_id = InternalCallMapHandler::getIntroducingPhpVersionId($function_id);
+        }
+
+        if ($since_php_version_id !== null
+            && $is_native
+            && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                < $since_php_version_id
+            && !$codebase->functions->isDeclaredInCode($function_id)
+        ) {
+            IssueBuffer::maybeAdd(
+                new UndefinedFunction(
+                    'Function ' . $cased_function_id . ' '
+                        . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
+                    $code_location,
+                    $function_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         return true;

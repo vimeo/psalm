@@ -45,5 +45,29 @@ final class ReflectionTest extends TestCase
                 PHP,
             'assertions' => ['$a===' => 'Iterator&stdClass'],
         ];
+        yield 'ReflectionClassStaysCovariantOnPhp84' => [
+            'code' => <<<'PHP'
+                <?php
+                function inspect(ReflectionClass $reflectionClass): void
+                {
+                    echo $reflectionClass->getName();
+                }
+
+                /**
+                 * @template T of object
+                 * @param class-string<T> $class
+                 * @return T
+                 */
+                function create(string $class): object
+                {
+                    $reflectionClass = new ReflectionClass($class);
+                    inspect($reflectionClass);
+                    return $reflectionClass->newInstance();
+                }
+                PHP,
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.4',
+        ];
     }
 }

@@ -189,7 +189,11 @@ final class FunctionLikeDocblockScanner
                 $line,
             );
 
-            foreach (explode('|', $throw) as $throw_class) {
+            // Template parameters are not tracked for thrown exceptions,
+            // so `@throws Foo<Bar>` is treated like `@throws Foo`
+            $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw) ?? $throw;
+
+            foreach (explode('|', $throw_classes) as $throw_class) {
                 $throw_class = trim($throw_class);
 
                 if ($throw_class === '') {

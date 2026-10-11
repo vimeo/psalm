@@ -332,6 +332,10 @@ final class DocumentationTest extends TestCase
                 case 'MissingClassConstType':
                     $php_version = '8.3';
                     break;
+
+                case 'OverriddenFinalProperty':
+                    $php_version = '8.4';
+                    break;
             }
 
             $invalid_code_data[$issue_name] = [
