@@ -23,14 +23,6 @@ final class StatementsProviderTest extends TestCase
 
     private const CONTENTS = '<?php class Acme { public function f(): void {} }';
 
-    #[Override]
-    public function tearDown(): void
-    {
-        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, null);
-
-        parent::tearDown();
-    }
-
     public function testVendorFileIsMemoisedOnItsSecondRequest(): void
     {
         $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
@@ -75,6 +67,32 @@ final class StatementsProviderTest extends TestCase
         $this->assertStringContainsString('function g(', (new Standard())->prettyPrint($stmts));
     }
 
+    public function testVendorFileIsParsedAgainForAnotherPhpVersion(): void
+    {
+        $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
+        $progress = new RecordingProgress();
+
+        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID + 100, false, $progress);
+
+        $this->assertSame(3, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+    }
+
+    public function testVendorFileWithParseErrorsIsParsedOnEveryRequest(): void
+    {
+        $files = new FakeFileProvider();
+        $files->registerFile(self::vendorFilePath(), '<?php class Acme { public function f(): void {} ');
+        $provider = new StatementsProvider($files, new FakeParserCacheProvider());
+        $progress = new RecordingProgress();
+
+        for ($i = 0; $i < 4; $i++) {
+            $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+        }
+
+        $this->assertSame(4, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+    }
+
     public function testVendorFileThatCannotBeUnserializedIsParsedWithoutMemoisingItAgain(): void
     {
         $serializer = new class implements Serializer {
@@ -94,9 +112,9 @@ final class StatementsProviderTest extends TestCase
                 throw new SerializationException('Maximum depth exceeded');
             }
         };
-        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, $serializer);
 
         $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
+        (new ReflectionProperty(StatementsProvider::class, 'vendor_serializer'))->setValue($provider, $serializer);
         $progress = new RecordingProgress();
 
         for ($i = 0; $i < 5; $i++) {
@@ -126,9 +144,9 @@ final class StatementsProviderTest extends TestCase
                 return null;
             }
         };
-        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, $serializer);
 
         $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
+        (new ReflectionProperty(StatementsProvider::class, 'vendor_serializer'))->setValue($provider, $serializer);
         $progress = new RecordingProgress();
 
         for ($i = 0; $i < 5; $i++) {

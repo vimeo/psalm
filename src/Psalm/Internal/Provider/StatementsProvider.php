@@ -34,7 +34,6 @@ use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function count;
-use function extension_loaded;
 use function hash;
 use function is_string;
 use function md5;
@@ -86,9 +85,9 @@ final class StatementsProvider
      */
     private array $vendor_statements = [];
 
-    private static ?Parser $parser = null;
+    private ?Serializer $vendor_serializer = null;
 
-    private static ?Serializer $serializer = null;
+    private static ?Parser $parser = null;
 
     public function __construct(
         private readonly FileProvider $file_provider,
@@ -118,15 +117,13 @@ final class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            // Vendor files reach this branch on every request, and ProjectAnalyzer::getMethodMutations() asks
-            // for the same vendor base classes and traits over and over, so they get re-parsed dozens of times.
-            // Keeping their statements serialized turns those repeats into an unserialize, which yields the same
-            // fresh node graph a re-parse would, for a fraction of the cost.
+            // ProjectAnalyzer::getMethodMutations() asks for the same vendor base classes and traits over and over,
+            // and each request used to re-parse the file. Keeping the statements serialized turns a repeat into an
+            // unserialize, which yields the same fresh node graph a re-parse would, for a fraction of the cost.
             //
-            // Files that land here only because there is no parser cache provider at all are deliberately left
-            // alone: that path also carries every project file, and holding all of them is what made the former
-            // StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b). The CLI always has a provider, even
-            // with --no-cache, so there only vendor files are memoised.
+            // Without a parser cache provider this branch also carries every project file, and holding all of them
+            // is what made the former StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b), so nothing is
+            // memoised then. The CLI always has a provider, even with --no-cache.
             $vendor_hash = $this->parser_cache_provider === null
                 ? null
                 : hash('xxh128', $analysis_php_version_id . "\0" . $file_contents);
@@ -138,7 +135,7 @@ final class StatementsProvider
                 if (is_string($memoised[1])) {
                     try {
                         /** @var list<Stmt> */
-                        return self::getSerializer()->unserialize($memoised[1]);
+                        return $this->getVendorSerializer()->unserialize($memoised[1]);
                     } catch (SerializationException) {
                         // The native serializer cannot rebuild statements nested deeper than unserialize_max_depth.
                         // Parse such a file from source, as before, rather than failing on every repeat request.
@@ -164,7 +161,7 @@ final class StatementsProvider
                 $serialized = null;
                 if ($seen_before) {
                     try {
-                        $serialized = self::getSerializer()->serialize($stmts);
+                        $serialized = $this->getVendorSerializer()->serialize($stmts);
                     } catch (SerializationException) {
                         // Serializing deeply nested statements inside a worker's fiber can hit the call stack limit
                         // (#11967). Keep parsing such a file from source instead of failing the analysis.
@@ -507,12 +504,12 @@ final class StatementsProvider
     }
 
     /**
-     * The parser cache serializer is not reused here: it wraps the payload in the configured compressor, and
-     * compressing a value that never leaves the process only buys memory at the price of the CPU this is saving.
+     * Follows the configured serializer choice but skips the compressor of the parser cache serializer: compressing
+     * a value that never leaves the process only buys memory at the price of the CPU this is saving.
      */
-    private static function getSerializer(): Serializer
+    private function getVendorSerializer(): Serializer
     {
-        return self::$serializer ??= extension_loaded('igbinary')
+        return $this->vendor_serializer ??= Config::getInstance()->use_igbinary
             ? new IgbinarySerializer
             : new NativeSerializer;
     }
