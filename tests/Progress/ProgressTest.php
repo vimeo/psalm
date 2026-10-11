@@ -220,8 +220,13 @@ final class ProgressTest extends TestCase
      */
     private function frames(string $output): array
     {
-        // rows end with PHP_EOL, "\r\n" on Windows: its "\r" doesn't start a status line
-        preg_match_all('/\r([^\r\n\e]+?)(?:\e\[K| *(?=\r|$))/u', str_replace("\r\n", "\n", $output), $matches);
+        // rows end with PHP_EOL, "\r\n" on Windows: its "\r" doesn't start a status line. Without ANSI support (e.g.
+        // Windows CI), the line is cleared with spaces: a status line starts with a visible character.
+        preg_match_all(
+            '/\r([^\s\e][^\r\n\e]*?)(?:\e\[K| *(?=\r|$))/u',
+            str_replace("\r\n", "\n", $output),
+            $matches,
+        );
 
         return $matches[1];
     }
