@@ -161,10 +161,17 @@ final class StatementsProvider
             // Most vendor files are only ever requested once, by the scanner, so a file is serialized on its second
             // request rather than its first.
             if ($vendor_hash !== null && !$has_errors) {
-                $this->vendor_statements[$file_path] = [
-                    $vendor_hash,
-                    $seen_before ? self::getSerializer()->serialize($stmts) : null,
-                ];
+                $serialized = null;
+                if ($seen_before) {
+                    try {
+                        $serialized = self::getSerializer()->serialize($stmts);
+                    } catch (SerializationException) {
+                        // Serializing deeply nested statements inside a worker's fiber can hit the call stack limit
+                        // (#11967). Keep parsing such a file from source instead of failing the analysis.
+                        $serialized = false;
+                    }
+                }
+                $this->vendor_statements[$file_path] = [$vendor_hash, $serialized];
             }
 
             return $stmts;

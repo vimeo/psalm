@@ -107,6 +107,39 @@ final class StatementsProviderTest extends TestCase
         $this->assertSame(1, $serializer->serialized);
     }
 
+    public function testVendorFileThatCannotBeSerializedIsParsedWithoutTryingToSerializeItAgain(): void
+    {
+        $serializer = new class implements Serializer {
+            public int $serialized = 0;
+
+            #[Override]
+            public function serialize(mixed $data): never
+            {
+                $this->serialized++;
+
+                throw new SerializationException('Maximum call stack size reached. Infinite recursion?');
+            }
+
+            #[Override]
+            public function unserialize(string $data): mixed
+            {
+                return null;
+            }
+        };
+        (new ReflectionProperty(StatementsProvider::class, 'serializer'))->setValue(null, $serializer);
+
+        $provider = new StatementsProvider(self::vendorFileProvider(), new FakeParserCacheProvider());
+        $progress = new RecordingProgress();
+
+        for ($i = 0; $i < 5; $i++) {
+            $stmts = $provider->getStatementsForFile(self::vendorFilePath(), self::PHP_VERSION_ID, false, $progress);
+            $this->assertStringContainsString('function f(', (new Standard())->prettyPrint($stmts));
+        }
+
+        $this->assertSame(5, $progress->countDebugMessagesContaining(self::PARSING_MESSAGE));
+        $this->assertSame(1, $serializer->serialized);
+    }
+
     public function testStatementsAreNotMemoisedWithoutAParserCacheProvider(): void
     {
         $provider = new StatementsProvider(self::vendorFileProvider());
