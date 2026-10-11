@@ -210,7 +210,7 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('tests/fixtures/symlinktest/a/ignoreme.php')));
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
 
-        $regex = '/^unlink\([^\)]+\): (?:Permission denied|No such file or directory)$/';
+        $regex = '/^unlink\([^\)]*\): (?:Permission denied|No such file or directory)$/';
         $last_error = error_get_last();
 
         $check_unlink_error =
