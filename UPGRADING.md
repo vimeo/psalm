@@ -98,7 +98,7 @@
 
 - [BC] Method finish() of class Psalm\Progress\Progress changed from concrete to abstract
 
-- [BC] Property `Psalm\Progress\LongProgress::$prevPhase` was renamed to `$phase`, and method `LongProgress::reportPhaseDuration()` was removed: override `phaseStarted()`, `reportTask()` and `phaseEnded()` instead. `Psalm\Progress\Phase` has a new `FINISHING` case, started after the analysis while results are consolidated and caches are updated.
+- [BC] Property `Psalm\Progress\LongProgress::$prevPhase` was renamed to `$phase`, and method `LongProgress::reportPhaseDuration()` was removed: override `phaseStarted()`, `reportTask()` and `phaseEnded()` instead. `Psalm\Progress\Phase` has two new cases, so a `match` over it needs them: `LOADING_CACHE`, started while the results of the previous run are loaded from the cache, and `FINISHING`, started after the analysis while results are consolidated and caches are updated.
 
 - `Psalm\Progress\Progress` has a new `writeReport()` method, writing to STDOUT the output that is part of the result (e.g. the `--alter --dry-run` diff) without mixing it with the progress output, and a new static `separator()` (` · `, or ` - ` without UTF-8). `doesTerminalSupportUtf8()` now also checks the locale (`LC_ALL`, `LC_CTYPE`, `LANG`). `write()` and `writeReport()` drop the output silently when the reader went away (e.g. `psalm | head`). `LongProgress::finish()` writes a blank line after the progress lines, so the report or summary that follows is set apart.
 

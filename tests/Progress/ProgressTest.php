@@ -19,6 +19,7 @@ use function str_replace;
 use function usleep;
 
 use const PHP_EOL;
+use const PHP_OS_FAMILY;
 
 final class ProgressTest extends TestCase
 {
@@ -105,7 +106,7 @@ final class ProgressTest extends TestCase
 
         $this->assertStringNotContainsString('Taint graph', $progress->output);
         $this->assertStringNotContainsString('Finishing', $progress->output);
-        $this->assertMatchesRegularExpression('/^. Alter +\d+\.\ds$/mu', $progress->output);
+        $this->assertMatchesRegularExpression('/^. Alter +\d+\.\ds$/mu', str_replace("\r", '', $progress->output));
     }
 
     public function testRelayedWorkerOutputIsSetApartFromTheRows(): void
@@ -196,6 +197,10 @@ final class ProgressTest extends TestCase
 
     public function testAsciiBarDoesNotLookLikeTheSeparator(): void
     {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('On Windows, the console code page decides, not the locale');
+        }
+
         putenv('LC_ALL=C');
 
         $progress = $this->defaultProgress();
@@ -215,7 +220,8 @@ final class ProgressTest extends TestCase
      */
     private function frames(string $output): array
     {
-        preg_match_all('/\r([^\r\n\e]+?)(?:\e\[K| *(?=\r|$))/u', $output, $matches);
+        // rows end with PHP_EOL, "\r\n" on Windows: its "\r" doesn't start a status line
+        preg_match_all('/\r([^\r\n\e]+?)(?:\e\[K| *(?=\r|$))/u', str_replace("\r\n", "\n", $output), $matches);
 
         return $matches[1];
     }

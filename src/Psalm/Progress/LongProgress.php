@@ -195,6 +195,21 @@ class LongProgress extends Progress
     }
 
     /**
+     * On a terminal, STDOUT and STDERR share the screen: the line the grid left open is ended first
+     * (e.g. --long-progress --alter --dry-run, whose diffs are written between the markers).
+     */
+    #[Override]
+    public function writeReport(string $message): void
+    {
+        if ($this->mid_line && $this->worker_output === null) {
+            $this->mid_line = false;
+            $this->write(PHP_EOL);
+        }
+
+        parent::writeReport($message);
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     #[Override]
