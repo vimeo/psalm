@@ -701,6 +701,7 @@ final class CliUtils
             8_03_16 => '8.3.16',
             8_04_03 => '8.4.3',
             8_05_00 => '8.5.0',
+            8_06_00 => '8.6.0',
         ] as $version => $txt) {
             $version_m = $version - ($version % 100);
             if ($version_m === $major_minor) {
