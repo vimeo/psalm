@@ -126,6 +126,8 @@ final class ProjectAnalyzer
     /** Whether unused code wasn't looked for, the run only covering some files */
     public bool $unused_code_skipped = false;
 
+    private bool $php_version_reported = false;
+
     public bool $show_issues = true;
 
     /**
@@ -393,10 +395,16 @@ final class ProjectAnalyzer
     }
 
     /**
-     * e.g. "Psalm dev-master@7f970b3 · PHP 8.5.11 · target PHP 8.5 (from composer.json)"
+     * e.g. "Psalm dev-master@7f970b3 · PHP 8.5.11 · target PHP 8.5 (from composer.json)", once: the CLI prints it
+     * before preloading, so that the Preload row follows it like those of the other phases
      */
-    private function reportPhpVersion(): void
+    public function reportPhpVersion(): void
     {
+        if ($this->php_version_reported) {
+            return;
+        }
+
+        $this->php_version_reported = true;
         $codebase = $this->codebase;
 
         $source = match ($codebase->php_version_source) {

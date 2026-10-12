@@ -15,6 +15,11 @@ use function count;
 final class Preloader
 {
     private static bool $preloaded = false;
+
+    /**
+     * The phase isn't finished here: the scan that follows starts the next one, so that the Preload row is followed
+     * by the other rows rather than by the blank line that ends the progress output
+     */
     public static function preload(?Progress $progress = null, bool $hasJit = false): void
     {
         if (self::$preloaded) {
@@ -29,7 +34,6 @@ final class Preloader
             class_exists($class);
         }
 
-        $progress?->finish();
         self::$preloaded = true;
     }
 }

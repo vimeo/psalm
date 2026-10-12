@@ -300,7 +300,7 @@ final class Psalm
         $progress = self::initProgress($options, $config, $in_ci);
 
         $force_jit = $config->force_jit || isset($options['force-jit']);
-        self::restart($options, $force_jit, $threads, $scanThreads, $progress);
+        $has_jit = self::restart($options, $force_jit, $threads, $scanThreads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -411,6 +411,12 @@ final class Psalm
 
         // Prime cache
         InternalCallMapHandler::getCallMap();
+
+        if ($paths_to_check === null || $paths_to_check) {
+            // Psalm's own classes, right before the scan: their row follows the header, like those of the other phases
+            $project_analyzer->reportPhpVersion();
+            Preloader::preload($progress, $has_jit);
+        }
 
         if ($paths_to_check === null) {
             $project_analyzer->check($current_dir, $is_diff);
@@ -1034,7 +1040,7 @@ final class Psalm
         int $threads,
         int $scanThreads,
         Progress $progress,
-    ): void {
+    ): bool {
         $ini_handler = new PsalmRestarter('PSALM');
         $ini_handler->enableJit = $force_jit;
 
@@ -1134,7 +1140,7 @@ final class Psalm
             }
         }
 
-        Preloader::preload($progress, $hasJit);
+        return $hasJit;
     }
 
     /** @param array<int, string> $argv */
