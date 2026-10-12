@@ -457,8 +457,8 @@ final class InternalCallMapHandler
 
         $flows = self::$taint_store_map[strtolower($function_id)] ?? [];
         foreach ($flows as $flow) {
-            [$source, $target] = explode('->', $flow, 2);
-            TaintStore::addFlow($storage, trim($source), trim($target), 'arg');
+            $sides = explode('->', $flow, 2);
+            TaintStore::addFlow($storage, trim($sides[0]), trim($sides[1] ?? ''), 'arg');
         }
 
         return $flows !== [];

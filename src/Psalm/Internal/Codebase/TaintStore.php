@@ -90,25 +90,30 @@ final class TaintStore
         ?Aliases $aliases = null,
         ?string $self_class = null,
     ): bool {
-        $is_write = (bool) preg_match(self::STORE_REGEX, $target, $store_matches);
-        if (!$is_write && ($target !== 'return' || !preg_match(self::STORE_REGEX, $source, $store_matches))) {
+        if (preg_match(self::STORE_REGEX, $target, $store_matches) === 1) {
+            $is_write = true;
+        } elseif ($target === 'return' && preg_match(self::STORE_REGEX, $source, $store_matches) === 1) {
+            $is_write = false;
+        } else {
             return false;
         }
 
-        $class_name = $store_matches[1];
+        // the pattern matched, so its three groups are there
+        $class_name = $store_matches[1] ?? '';
+        $key_spec = $store_matches[3] ?? '';
         if ($self_class !== null && in_array(strtolower($class_name), ['self', 'static'], true)) {
             $class_name = $self_class;
         } elseif ($aliases !== null) {
             $class_name = Type::getFQCLNFromString($class_name, $aliases);
         }
 
-        $store = $class_name . '::$' . $store_matches[2];
+        $store = $class_name . '::$' . ($store_matches[2] ?? '');
 
         $key = null;
         $is_list = false;
-        if ($store_matches[3] !== '*') {
-            $is_list = str_ends_with($store_matches[3], '[*]');
-            $key = self::getParamOffset($storage, substr($store_matches[3], 1, $is_list ? -3 : null));
+        if ($key_spec !== '*') {
+            $is_list = str_ends_with($key_spec, '[*]');
+            $key = self::getParamOffset($storage, substr($key_spec, 1, $is_list ? -3 : null));
             if ($key === null) {
                 return true;
             }
@@ -226,6 +231,7 @@ final class TaintStore
 
     /**
      * @param list<Name> $names
+     * @psalm-capabilities read-props|write-props
      */
     public static function addWrite(
         TaintFlowGraph $graph,
@@ -245,6 +251,7 @@ final class TaintStore
 
     /**
      * @param list<Name> $names
+     * @psalm-capabilities read-props|write-props
      */
     public static function addRead(
         TaintFlowGraph $graph,
@@ -365,7 +372,9 @@ final class TaintStore
         if ($expr instanceof Array_ && $expr->items !== []) {
             $start = null;
             foreach ($expr->items as $item) {
-                $item_start = $item->unpack ? null : self::getKnownStart($statements_analyzer, $item->value);
+                $item_start = $item === null || $item->unpack
+                    ? null
+                    : self::getKnownStart($statements_analyzer, $item->value);
                 if ($item_start === null) {
                     return null;
                 }
@@ -384,6 +393,7 @@ final class TaintStore
      *
      * @param array<array-key, Arg> $args
      * @return array<int, list<Arg>>|null
+     * @psalm-capabilities read-props
      */
     private static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
     {
@@ -454,7 +464,7 @@ final class TaintStore
         if ($key_expr instanceof Array_) {
             $names = [];
             foreach ($key_expr->items as $item) {
-                if ($item->unpack) {
+                if ($item === null || $item->unpack) {
                     return [[false, '']];
                 }
 
@@ -702,6 +712,7 @@ final class TaintStore
 
     /**
      * @param 'E'|'U'|'P' $kind
+     * @psalm-capabilities read-props|write-props
      */
     private static function getNode(TaintFlowGraph $graph, string $store, string $kind, string $known): DataFlowNode
     {

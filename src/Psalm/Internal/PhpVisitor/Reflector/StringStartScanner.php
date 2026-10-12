@@ -33,6 +33,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionProperty;
 
+use function array_key_first;
 use function array_values;
 use function count;
 use function explode;
@@ -91,10 +92,11 @@ final class StringStartScanner
 
         foreach ($class->getMethods() as $method) {
             $stmts = $method->stmts ?? [];
-            if (count($stmts) === 1 && $stmts[0] instanceof Return_ && $stmts[0]->expr !== null) {
+            $return = count($stmts) === 1 ? $stmts[array_key_first($stmts)] : null;
+            if ($return instanceof Return_ && $return->expr !== null) {
                 $encoded['m:' . $method->name->toLowerString()] = implode(
                     self::PART_SEPARATOR,
-                    self::getStart($aliases, $self, $stmts[0]->expr),
+                    self::getStart($aliases, $self, $return->expr),
                 );
             }
 
@@ -383,7 +385,7 @@ final class StringStartScanner
 
         $encoded = [];
         foreach ($arguments as $key => $starts) {
-            [, $method] = explode(':', $key);
+            $method = explode(':', $key)[1] ?? '';
             if (isset($private[$method])) {
                 $encoded[$key] = implode(self::START_SEPARATOR, $starts);
             }
@@ -408,15 +410,15 @@ final class StringStartScanner
             && $call->var->name === 'this'
             && $call->name instanceof Identifier
         ) {
-            return $call->name->toLowerString();
+            return strtolower($call->name->name);
         }
 
         if ($call instanceof StaticCall
             && $call->class instanceof Name
-            && in_array($call->class->toLowerString(), ['self', 'static'], true)
+            && in_array(strtolower($call->class->name), ['self', 'static'], true)
             && $call->name instanceof Identifier
         ) {
-            return $call->name->toLowerString();
+            return strtolower($call->name->name);
         }
 
         return null;
@@ -651,6 +653,7 @@ final class StringStartScanner
         return $start;
     }
 
+    /** @psalm-capabilities read-props */
     private static function getStorage(Codebase $codebase, string $class): ?ClassLikeStorage
     {
         return $codebase->classlike_storage_provider->has($class)
