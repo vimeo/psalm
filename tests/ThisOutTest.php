@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ThisOutTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -315,6 +317,15 @@ final class ThisOutTest extends TestCase
                         public function m(?int $key = null): void {}
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'selfOutTypeWithAnUndefinedClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @psalm-self-out self<UndefinedValue> */
+                        public function fill(): void {}
+                    }',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined class, interface or enum named UndefinedValue does not exist',
             ],
         ];
     }
