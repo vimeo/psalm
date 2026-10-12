@@ -687,6 +687,25 @@ Optional. A list of `<plugin filename="path_to_plugin.php" />` entries. See the 
 #### &lt;issueHandlers&gt;
 Optional. If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
 
+#### &lt;unsuppressibleIssues&gt;
+Optional. A list of issues that can't be suppressed: Psalm reports them as errors whatever `@psalm-suppress`, `<issueHandlers>`, the [error level](error_levels.md), `reportMixedIssues` and the baseline say.
+
+```xml
+<unsuppressibleIssues>
+  <!-- every taint issue -->
+  <issue name="TaintedInput" />
+  <issue name="PossiblyNullReference" />
+  <!-- an issue of a plugin -->
+  <issue name="Vendor\Plugin\Issue\SomeIssue" />
+</unsuppressibleIssues>
+```
+
+An entry names an issue, or a class or interface several issues extend, which makes all of them unsuppressible: `TaintedInput` for every taint issue, `MixedIssue` for every `Mixed*` issue, `ClassIssue`, `MethodIssue`, `PropertyIssue`, `ArgumentIssue`, `FunctionIssue`, `ClassConstantIssue`, `VariableIssue`, `PluginIssue` for every issue of a plugin, or `CodeIssue` for every issue. An issue of a plugin is named by the fully qualified name of its class.
+
+Taint issues can only be suppressed in docblocks all at once, with `@psalm-suppress TaintedInput`, which stops tracking taints in the function or the statement it annotates: if any taint issue is unsuppressible, it doesn't, and every taint issue found there is reported.
+
+The issues are still only reported in the files of `<projectFiles>` that aren't ignored. A `@psalm-suppress` of an unsuppressible issue is never used, so [findUnusedPsalmSuppress](#findunusedpsalmsuppress) reports it, and a baseline entry for one is never used either: `--set-baseline` and `--update-baseline` leave them out, and [findUnusedBaselineEntry](#findunusedbaselineentry) reports those of an existing baseline.
+
 #### &lt;mockClasses&gt;
 Optional. Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 
@@ -709,6 +728,9 @@ or interfaces defined in a stub file, this stub should be configured with attrib
   <file name="path/to/abstract-class.php" preloadClasses="true" />
 </stubs>
 ```
+
+Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
+plugins add, so that an annotation a stub gets wrong isn't silently dropped.
 
 Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
 
@@ -764,6 +786,26 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 <forbiddenConstants>
   <constant name="FILTER_VALIDATE_URL" />
 </forbiddenConstants>
+```
+
+#### &lt;taintAnalysis&gt;
+Optional. Settings of the [security analysis](../security_analysis/index.md):
+- `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
+  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+- `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
+  to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
+  user input, which the built-in sources give (see
+  [Custom taints declared in the configuration](../security_analysis/custom_taint_sources.md#custom-taints-declared-in-the-configuration)).
+
+```xml
+<taintAnalysis>
+  <taints>
+    <taint name="nosql_json">
+      <alias name="input" />
+    </taint>
+    <taint name="session_id" />
+  </taints>
+</taintAnalysis>
 ```
 
 ## Accessing Psalm configuration in plugins
