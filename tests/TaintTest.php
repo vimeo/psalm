@@ -11,6 +11,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Type;
 use Psalm\Type\TaintKind;
 
 use function array_fill;
@@ -52,6 +53,14 @@ final class TaintTest extends TestCase
                 $this->fail('TaintKind is missing value for bit ' . $i);
             }
         }
+    }
+
+    public function testTaintsToRemoveDefaultToTheBuiltInInputTaints(): void
+    {
+        // plugins written before Codebase::getInputTaints() call it without the input taints
+        $this->assertSame(TaintKind::ARRAY_ONLY, Type::getString()->getTaintsToRemove());
+        $this->assertSame(TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY, Type::getInt()->getTaintsToRemove());
+        $this->assertSame(0, Type::getMixed()->getTaintsToRemove());
     }
     /**
      * @dataProvider providerValidCodeParse
