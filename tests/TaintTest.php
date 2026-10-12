@@ -3738,6 +3738,21 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
+                'code' => '<?php
+                    function show(): void {
+                        echo (string) ($GLOBALS["name"] ?? "");
+                    }
+
+                    /** @param array<string, string> $data */
+                    function copyOne(array $data, string $k): void {
+                        $GLOBALS[$k] = $data[$k];
+                    }
+
+                    copyOne(["name" => (string) $_GET["n"]], "name");
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfTheKeyOfAForeachCopyOfTheElements' => [
                 'code' => '<?php // --taint-analysis
                     /** @param array<string, string> $data */
