@@ -93,7 +93,8 @@ final class Context
     /**
      * The by-reference parameters of the function-like analyzed that still reference the variables passed
      * to them, with the taint node of what the call leaves in those variables. unset(), =&, global and
-     * static make a parameter stop referencing it.
+     * static make a parameter stop referencing it. The variables `global` binds are here too, with the node
+     * of their global (see GlobalAnalyzer).
      *
      * @internal
      * @var array<string, DataFlowNode>
