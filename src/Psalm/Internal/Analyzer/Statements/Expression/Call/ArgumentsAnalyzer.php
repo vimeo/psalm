@@ -1405,8 +1405,17 @@ final class ArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = $by_ref_type ?: Type::getMixed();
-            $by_ref_out_type = $by_ref_out_type ?: $by_ref_type;
+            // the declared types as the caller sees them, with e.g. the class constants, int-masks and
+            // type aliases resolved, as for the other parameters
+            $self_class = $function_storage instanceof MethodStorage ? $function_storage->defining_fqcln : null;
+            $static_class = $method_identifier?->fq_class_name ?? $self_class;
+
+            $by_ref_type = $by_ref_type
+                ? TypeExpander::expandUnion($codebase, $by_ref_type, $self_class, $static_class, null)
+                : Type::getMixed();
+            $by_ref_out_type = $by_ref_out_type
+                ? TypeExpander::expandUnion($codebase, $by_ref_out_type, $self_class, $static_class, null)
+                : $by_ref_type;
 
             // what the function-like leaves in the parameter (see FunctionLikeAnalyzer::taintByRefParamsOut())
             $out_type_holds_value = false;
@@ -1453,7 +1462,11 @@ final class ArgumentsAnalyzer
             // a builtin reading from outside the program into this parameter (socket_recv(), ...)
             if ($source_param !== null
                 && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-                && ($source_taints = InternalTaintSourceMap::getTaints($method_id, $source_param)) !== 0
+                && ($source_taints = InternalTaintSourceMap::getTaints(
+                    $method_id,
+                    $source_param,
+                    $statements_analyzer->getCodebase()->getInputTaints(),
+                )) !== 0
             ) {
                 $by_ref_out_type = InternalTaintSourceMap::addSource(
                     $graph,
@@ -1872,13 +1885,13 @@ final class ArgumentsAnalyzer
         if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('EmptyArrayAccess', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
                 $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
             }
 
             $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
 
-            if (!in_array('EmptyArrayAccess', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
                 $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
             }
 
@@ -2401,6 +2414,7 @@ final class ArgumentsAnalyzer
             ? FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
                 ConcatAnalyzer::getLiteralValues($format_type),
                 $args,
+                $statements_analyzer->getCodebase()->getInputTaints(),
                 $function_id === 'vprintf',
             )
             : [];

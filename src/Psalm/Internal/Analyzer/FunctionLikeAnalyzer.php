@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -244,7 +245,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
             if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
+                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
             ) {
                 foreach ($storage->suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
@@ -317,6 +318,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
 
                     $statements_analyzer->data_flow_graph->addNode($use_assignment);
+
+                    if ($statements_analyzer->taint_flow_graph) {
+                        TaintStore::recordClosureUse(
+                            $statements_analyzer,
+                            $statements_analyzer->taint_flow_graph,
+                            $context->vars_in_scope[$use_var_id],
+                            $use_assignment,
+                        );
+                    }
 
                     $context->vars_in_scope[$use_var_id] =
                         $context->vars_in_scope[$use_var_id]->addParentNodes(
@@ -628,7 +638,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
-                && !Capabilities::allows($storage->containing_class_capabilities, $storage->capabilities)
+                && !Capabilities::allowsAnyOf($storage->containing_class_capabilities, $storage->capabilities)
             ) {
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
@@ -679,7 +689,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
                 $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
 
-                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)) {
+                if (Capabilities::allowsAnyOf(Capabilities::READ_GLOBALS, $context->capabilities)) {
                     IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'pure functions cannot have void return type'
@@ -1057,6 +1067,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $storage,
                 $codebase->taint_flow_graph,
                 $method_source,
+                $codebase->getInputTaints(),
             );
         }
 
@@ -1315,6 +1326,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * A call of a method a method overrides may run it: what it leaves in its by-reference parameters is
      * left to that call too.
      *
+     * When the calls of the method are specialized, its by-reference parameter out nodes are the exits of
+     * its body, which only lead to its call sites through their specializations (see
+     * TaintFlowGraph::connectSinksAndSources()): an edge of their own would cut its calls off from them.
+     * The calls of the overridden method are then linked to as a call of its own, specialized at the
+     * location of the method, which the flows a specialized call of it brings into its body don't exit
+     * through.
+     *
      * @param array<string, MethodIdentifier> $overridden_method_ids
      */
     private static function taintOverriddenByRefParamsOut(
@@ -1330,6 +1348,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $overridden_method_ids = array_map(strval(...), $overridden_method_ids);
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        // specialized like the by-reference parameter out nodes of its calls (see
+        // ArgumentsAnalyzer::getByRefParamOutNode())
+        $specialization_location = $storage->specialize_call ? $storage->location : null;
 
         // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
@@ -1353,7 +1375,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     continue;
                 }
 
-                $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+                $out_node = DataFlowNode::getForMethodArgumentOut(
+                    $cased_method_id,
+                    $offset,
+                    $storage,
+                    $specialization_location,
+                );
                 $overridden_out_node = DataFlowNode::getForMethodArgumentOut(
                     $overridden_cased_method_id,
                     $offset,
@@ -1535,7 +1562,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove() ?? 0,
+                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
                     );
                 }
 
@@ -2062,6 +2089,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    // as the parameter's own type, e.g. with the class constants of an int-mask resolved
+                    $param_out_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $param_out_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $actual_type,

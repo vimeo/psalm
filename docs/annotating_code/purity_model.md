@@ -21,7 +21,8 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
 | `write-globals`    | writing them, including through a bound `global` variable, and using `static` variables |
 | `write-refs`       | writing through by-reference parameters and other references into another scope |
-| `io`               | `echo`, `print`, `exit` with a message, and builtins with side effects (`time`, `random_int`, `file_put_contents`, …) |
+| `io`               | `echo`, `print`, `exit` with a message, and builtins with side effects (`random_int`, `file_put_contents`, …) |
+| `time`             | reading the clock (`time`, `microtime`, `hrtime`, `date` and `getdate` without a timestamp, …) |
 
 Builtins touching process-wide state (`mt_rand`, `ini_set`, `spl_autoload_register`, …) need
 `write-globals` instead of `io`.
@@ -191,6 +192,13 @@ function leak(): int {
     return callWithOne(function (int $value) use (&$total): void { $total += $value; }); // ArgumentTypeCoercion: Argument 1 of callWithOne expects Closure[pure](int):void, but parent type Closure[read-props|write-this-props](int):void provided
 }
 ```
+
+Likewise, an object the enclosing scope created and the closure captures, by value or by
+reference, is state of the closure, as an object a class instance creates is its own. So are the
+objects in a captured array the enclosing scope created, and the state of a closure that a closure
+created in it captures. Writing that state, or calling a method that writes it, needs
+`write-this-props`, and the enclosing scope may call the closure freely. An object the enclosing
+scope did not create, like a parameter, belongs to someone else: writing it needs `write-props`.
 
 ## Class-level contracts
 
@@ -373,7 +381,14 @@ whose target is not known may do anything, so a pure function may not call one.
 Destroying an object calls its destructor, where the object dies. So a pure function may not
 hold, in a local variable, an object it created with `new` whose `__destruct` has effects, unless
 the object leaves the function (returned, stored, passed on, captured). Nor may it `unset()` a
-variable holding such an object, or discard one (`new Guard();`).
+variable, property or array element holding such an object, overwrite one by assigning it, or
+discard one (`new Guard();`).
+
+Only the declared destructors of the known classes of the dropped value count: a `mixed`,
+`object` or template value is not charged. A property is assumed to hold nothing yet in its
+class's constructor (and to be kept by the original in `__clone`), and a variable first assigned
+in a loop body to hold a value like the one assigned when it is assigned again, the previous
+iteration's.
 
 ### Parameter default values
 
@@ -954,6 +969,51 @@ to `Cart` and `addItem()`. Suggestions use the four named levels only: `pure`, `
 `read-props|write-this-props|write-refs` and `impure` (`@psalm-immutable` for a class at
 `read-props`). Write a narrower set by hand if you want one.
 
+A [class-level contract](#class-level-contracts) binds every subclass too, so the one suggested
+for a class is the smallest of these levels that allows:
+
+- what the class's own methods need;
+- the contract of its parent class;
+- what each known subclass needs, or what its contract allows if it has one;
+- for a class but not an interface, the upper bounds of its [purity templates](#defaults-and-bounds), up to which
+  subclasses may bind them.
+
+So an abstract base class whose subclasses do more, or a class with a purity template whose upper
+bound is left as `impure`, gets no class-level suggestion. A subclass without an annotation is
+suggested a contract on the next run, once its parent has one.
+
+```php
+<?php
+abstract class Shape { // fine: no suggestion, as only impure covers Circle
+    /** @psalm-pure */
+    public function name(): string {
+        return 'shape';
+    }
+}
+
+final class Circle extends Shape {
+    public function draw(): void {
+        echo 'o';
+    }
+}
+
+class Base { // MissingImmutableAnnotation: Base must be marked @psalm-capabilities read-props|write-this-props|write-refs to aid security analysis, run with --alter --issues=MissingImmutableAnnotation to fix this
+    /** @psalm-pure */
+    public function name(): string {
+        return 'base';
+    }
+}
+
+final class Child extends Base {
+    private int $count = 0;
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function increment(): void {
+        $this->count++;
+    }
+}
+```
+
 Psalm doesn't suggest an annotation for an unannotated method that is overridden somewhere, nor
 for the code calling it, since the annotation would restrict its overrides. Annotate it yourself
 when you want a contract. It doesn't suggest one either when the function-like's
@@ -1003,8 +1063,8 @@ What changes for your code:
   or suppress them (see [Inferring annotations](#inferring-annotations)).
 - **More is checked.** Implicit calls (`__toString`, `__clone`, `__invoke`, `ArrayAccess`,
   destructors), `throw new`, `new $className` and `call_user_func` are now checked for purity.
-  Builtins with side effects need specific capabilities: `io` for I/O, the clock and random
-  numbers, `write-globals` for process-wide state such as `mt_rand()` or `ini_set()`.
+  Builtins with side effects need specific capabilities: `io` for I/O and random numbers,
+  `time` for reading the clock, `write-globals` for process-wide state such as `mt_rand()` or `ini_set()`.
 - **Iteration has a purity.** `foreach` over an object costs the iterator's methods, or the
   `TPurity` of `Traversable`, `Iterator`, `Generator` and `iterable`, instead of always being
   impure (see [Iterators and generators](#iterators-and-generators)).

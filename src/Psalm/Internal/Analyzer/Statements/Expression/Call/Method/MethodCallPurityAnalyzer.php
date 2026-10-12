@@ -59,8 +59,9 @@ final class MethodCallPurityAnalyzer
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
-     * `$this` and write-props otherwise, as writing its properties directly would. Callers that
-     * know the receiver to be fresh by other means say so with $receiver_is_fresh.
+     * `$this` or state of the closure being analysed and write-props otherwise, as writing its
+     * properties directly would. Callers that know the receiver to be fresh by other means say so
+     * with $receiver_is_fresh.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -78,7 +79,8 @@ final class MethodCallPurityAnalyzer
 
         return self::getCapabilitiesForReceiver(
             $capabilities,
-            self::isReceiverThis($var),
+            self::isReceiverThis($var)
+                || $statements_analyzer->node_data->getType($var)?->closure_state === true,
             self::isFromGlobalState($statements_analyzer, $var),
         );
     }
@@ -191,7 +193,7 @@ final class MethodCallPurityAnalyzer
         $reads_globals = ($method_capabilities & Capabilities::READ_GLOBALS) !== 0;
 
         // a mutation-free method called with closures that are not is not mutation-free here
-        $call_is_mutation_free = Capabilities::allows(Capabilities::MUTATION_FREE, $method_capabilities);
+        $call_is_mutation_free = Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $method_capabilities);
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
@@ -251,7 +253,10 @@ final class MethodCallPurityAnalyzer
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 // the class is immutable, or pure
-                && (Capabilities::allows(Capabilities::MUTATION_FREE, $method_storage->containing_class_capabilities)
+                && (Capabilities::allowsAnyOf(
+                    Capabilities::MUTATION_FREE,
+                    $method_storage->containing_class_capabilities,
+                )
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -261,7 +266,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if (Capabilities::allows(
+                    if (Capabilities::allowsAnyOf(
                         Capabilities::MUTATION_FREE,
                         $method_storage->containing_class_capabilities,
                     )) {
@@ -272,7 +277,7 @@ final class MethodCallPurityAnalyzer
                 $result->can_memoize = true;
 
                 // the class is neither immutable nor pure
-                if (!Capabilities::allows(
+                if (!Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
                     $method_storage->containing_class_capabilities,
                 )) {
@@ -367,17 +372,13 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            $writes_properties = ($method_storage->capabilities
-                & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
-
-            if (($writes_properties && $method_storage->capabilities !== Capabilities::ALL)
+            if (($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
-                // the method is known to write properties, but not which ones (a stub, or a body
-                // writing `$this` by reference), or moves engine state (the position of an iterator):
-                // what its receiver's methods returned before may have changed, even when the receiver
-                // is fresh and the caller is not charged. A method that may do anything is trusted not
-                // to, as with rememberPropertyAssignmentsAfterCall
+                // the method may write properties, but not which ones (a stub, a body writing `$this`
+                // by reference, or a method that may do anything), or moves engine state (the position
+                // of an iterator): what its receiver's methods returned before may have changed, even
+                // when the receiver is fresh and the caller is not charged
                 $context->removeMutableObjectVars(true);
             }
         }
