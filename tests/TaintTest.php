@@ -459,6 +459,22 @@ final class TaintTest extends TestCase
                     $array[$key] = (string) $_GET["value"];
                     echo (string) ($array["b"] ?? "");',
             ],
+            'keyOfAnArrayGivenToAValueSink' => [
+                // Only the values of the array are a sink: its keys (the names of the templates here) aren't.
+                'code' => '<?php
+                    final class Loader {
+                        /** @psalm-taint-sink eval $templates[*] */
+                        public function __construct(private array $templates) {}
+                    }
+
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    $name = (string) ($_GET["name"] ?? "");
+                    new Loader([$name => "template"]);
+                    showValues([$name => "value"]);
+                    showValues(["a" => "value"]);',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -3591,6 +3607,34 @@ final class TaintTest extends TestCase
 
                         echo (string) ($array["b"] ?? "");
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValueOfAnArrayGivenToAValueSink' => [
+                'code' => '<?php // --taint-analysis
+                    final class Loader {
+                        /** @psalm-taint-sink eval $templates[*] */
+                        public function __construct(private array $templates) {}
+                    }
+
+                    new Loader(["main" => (string) ($_GET["template"] ?? "")]);',
+                'error_message' => 'TaintedEval',
+            ],
+            'taintArrayGivenToAValueSink' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    showValues($_GET);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValueOfAnArrayGivenToAValueSinkAfterAKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    $input = (string) ($_GET["input"] ?? "");
+                    showValues([$input => "value"]);
+                    showValues(["value" => $input]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
