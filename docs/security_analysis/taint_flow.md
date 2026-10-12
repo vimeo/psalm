@@ -114,13 +114,16 @@ echo Cache::get('title_1');   // no issue
   for `mGet(array $keys)`. In nested stores, like `Store::$data[$namespace][$key]`, only the first key tells the values
   apart.
 + Keys are told apart by what the analysis knows of them: the exact keys of literal strings and class names, else how
-  the key starts: the start of a concatenation, of an interpolated string, or of a `sprintf()` format up to its first
-  conversion other than `%s`, `__CLASS__`, or what the variable, the property of `$this` or the method of the class
-  giving the key starts with. A property set only by its default and its constructor starts like what the constructor
-  is given by the `new` of the classes analyzed. A key the analysis knows nothing of can be any key.
+  the key starts: the start of a concatenation, of an interpolated string, of a `sprintf()` format up to its first
+  conversion other than `%s`, of an `implode()` of a list with a literal separator, `__CLASS__`, or what the variable
+  (also one a closure uses), the property of `$this` or the method of the class giving the key starts with. A
+  property set only by its default and its constructor starts like what the constructor is given by the `new` of the
+  classes analyzed. A key the analysis knows nothing of can be any key.
 + Psalm's stubs declare the keyed store of phpredis, `Redis::$data`, and that of APCu, `APCu::$data`. Plugins can
-  write into a store and read from it with `Codebase::addTaintStoreWrite()`, `Codebase::addTaintStoreRead()` and
-  `Codebase::getTaintStoreNames()`, for stores whose keys an annotation can't express (a table named in an SQL query).
+  connect their own nodes to a store with `Codebase::addTaintStoreWrite()` (paths from a node into the store under
+  the names) and `Codebase::addTaintStoreRead()` (paths from the store to a node), with the names
+  `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
+  table named in an SQL query).
 
 ### Combined proxy & return value hint
 

@@ -188,7 +188,7 @@ final class TaintStore
             foreach ($write['params'] as $offset) {
                 foreach ($args[$offset] ?? [] as $arg) {
                     $arg_type = $statements_analyzer->node_data->getType($arg->value);
-                    foreach ($arg_type->parent_nodes ?? [] as $parent_node) {
+                    foreach ($arg_type?->parent_nodes ?? [] as $parent_node) {
                         $graph->addPath($parent_node, $write_node, $write['path_type']);
                         $has_value = true;
                     }
@@ -308,6 +308,26 @@ final class TaintStore
     }
 
     /**
+     * Records the start of the string a variable a closure uses holds, as the code around the closure gives it, for
+     * the variable's node in the closure
+     */
+    public static function recordClosureUse(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        Union $outer_type,
+        DataFlowNode $use_node,
+    ): void {
+        if (!$outer_type->hasString() || $outer_type->isSingleStringLiteral() || $outer_type->parent_nodes === []) {
+            return;
+        }
+
+        $start = self::getStartOfNodes($statements_analyzer, $outer_type->parent_nodes);
+        if ($start !== null && $start !== '') {
+            $graph->addStringStart($use_node, $start);
+        }
+    }
+
+    /**
      * The start of the string the expression is, as far as the analysis knows it
      */
     public static function getKnownStart(StatementsAnalyzer $statements_analyzer, Expr $expr): ?string
@@ -360,12 +380,15 @@ final class TaintStore
             return $start;
         }
 
-        if ($expr instanceof FuncCall
-            && $expr->name instanceof Name
-            && !$expr->isFirstClassCallable()
-            && $expr->name->toLowerString() === 'sprintf'
-        ) {
-            return self::getKnownStartOfSprintf($statements_analyzer, $expr->getArgs());
+        if ($expr instanceof FuncCall && $expr->name instanceof Name && !$expr->isFirstClassCallable()) {
+            $function = $expr->name->toLowerString();
+            if ($function === 'sprintf') {
+                return self::getKnownStartOfSprintf($statements_analyzer, $expr->getArgs());
+            }
+
+            if ($function === 'implode' || $function === 'join') {
+                return self::getKnownStartOfImplode($statements_analyzer, $expr->getArgs());
+            }
         }
 
         // a list of names: what they all start with
@@ -651,6 +674,41 @@ final class TaintStore
             $start .= $argument_start;
             $format = substr($format, $conversion + 2);
         }
+    }
+
+    /**
+     * The pieces of a list given as it is, joined by a literal separator, up to the first the analysis doesn't know all
+     * of, then what it knows of that one
+     *
+     * @param array<array-key, Arg> $args
+     */
+    private static function getKnownStartOfImplode(StatementsAnalyzer $statements_analyzer, array $args): ?string
+    {
+        $args = array_values($args);
+        if (!isset($args[0], $args[1])
+            || !$args[1]->value instanceof Array_
+            || !self::isSingleLiteral($statements_analyzer, $args[0]->value)
+        ) {
+            return null;
+        }
+
+        $separator = (string) self::getKnownStart($statements_analyzer, $args[0]->value);
+        $start = '';
+        foreach ($args[1]->value->items as $index => $item) {
+            if ($item === null || $item->unpack || $item->key !== null) {
+                return $index === 0 ? null : $start;
+            }
+
+            $item_start = self::getKnownStart($statements_analyzer, $item->value);
+            if ($item_start === null || !self::isSingleLiteral($statements_analyzer, $item->value)) {
+                return $index === 0 && $item_start === null ? null : $start . ($item_start ?? '');
+            }
+
+            $start .= $item_start . $separator;
+        }
+
+        // no separator after the last piece
+        return $start === '' ? '' : substr($start, 0, -strlen($separator) ?: null);
     }
 
     /**
