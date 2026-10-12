@@ -45,6 +45,10 @@ final class CapabilitiesTest extends TestCase
                             $this->items = [];
                         }
 
+                        public function reset(): void {
+                            $this->clear();
+                        }
+
                         /** @psalm-capabilities read-props|write-this-props */
                         public function pop(): void {
                             array_pop($this->items);
@@ -68,6 +72,16 @@ final class CapabilitiesTest extends TestCase
                         $box->pop();
                         if ($box->isEmpty()) {
                             echo "popped";
+                        }
+                    }
+
+                    function resetBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->reset();
+                        if ($box->isEmpty()) {
+                            echo "reset";
                         }
                     }
 

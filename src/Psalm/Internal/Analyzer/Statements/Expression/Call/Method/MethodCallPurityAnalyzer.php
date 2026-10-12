@@ -364,17 +364,13 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            $writes_properties = ($method_storage->capabilities
-                & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
-
-            if (($writes_properties && $method_storage->capabilities !== Capabilities::ALL)
+            if (($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
-                // the method is known to write properties, but not which ones (a stub, or a body
-                // writing `$this` by reference), or moves engine state (the position of an iterator):
-                // what its receiver's methods returned before may have changed, even when the receiver
-                // is fresh and the caller is not charged. A method that may do anything is trusted not
-                // to, as with rememberPropertyAssignmentsAfterCall
+                // the method may write properties, but not which ones (a stub, a body writing `$this`
+                // by reference, or a method that may do anything), or moves engine state (the position
+                // of an iterator): what its receiver's methods returned before may have changed, even
+                // when the receiver is fresh and the caller is not charged
                 $context->removeMutableObjectVars(true);
             }
         }
