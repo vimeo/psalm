@@ -17,6 +17,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -421,7 +422,7 @@ final class FunctionLikeDocblockScanner
             );
         }
 
-        self::handleTaintFlow($docblock_info, $storage);
+        self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
 
         foreach ($docblock_info->assert_untainted_params as $untainted_assert_param) {
             $param_name = substr($untainted_assert_param['name'], 1);
@@ -1013,6 +1014,22 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
+     * Records a flow into a keyed store or out of it (see TaintStore::addFlow())
+     *
+     * @return bool whether the flow is one of a keyed store
+     */
+    private static function handleTaintStoreFlow(
+        string $source,
+        string $target,
+        string $path_type,
+        FunctionLikeStorage $storage,
+        Aliases $aliases,
+        ?ClassLikeStorage $classlike_storage,
+    ): bool {
+        return TaintStore::addFlow($storage, $source, $target, $path_type, $aliases, $classlike_storage?->name);
+    }
+
+    /**
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
@@ -1198,6 +1215,8 @@ final class FunctionLikeDocblockScanner
     private static function handleTaintFlow(
         FunctionDocblockComment $docblock_info,
         FunctionLikeStorage $storage,
+        Aliases $aliases,
+        ?ClassLikeStorage $classlike_storage,
     ): void {
         if ($docblock_info->flows) {
             foreach ($docblock_info->flows as $flow) {
@@ -1214,6 +1233,20 @@ final class FunctionLikeDocblockScanner
                 }
 
                 $flow_parts = explode('->', $flow);
+
+                // a keyed store: `($value) -> Store::$data[$key]` and `Store::$data[$key] -> return`
+                if (isset($flow_parts[1])
+                    && self::handleTaintStoreFlow(
+                        trim($flow_parts[0]),
+                        trim($flow_parts[1]),
+                        $path_type,
+                        $storage,
+                        $aliases,
+                        $classlike_storage,
+                    )
+                ) {
+                    continue;
+                }
 
                 if (isset($flow_parts[1]) && trim($flow_parts[1]) === 'return') {
                     $source_param_string = trim($flow_parts[0]);

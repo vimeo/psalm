@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -317,6 +318,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
 
                     $statements_analyzer->data_flow_graph->addNode($use_assignment);
+
+                    if ($statements_analyzer->taint_flow_graph) {
+                        TaintStore::recordClosureUse(
+                            $statements_analyzer,
+                            $statements_analyzer->taint_flow_graph,
+                            $context->vars_in_scope[$use_var_id],
+                            $use_assignment,
+                        );
+                    }
 
                     $context->vars_in_scope[$use_var_id] =
                         $context->vars_in_scope[$use_var_id]->addParentNodes(

@@ -41,6 +41,7 @@ use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -56,6 +57,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -191,6 +193,15 @@ final class Codebase
     public CodeUseGraph $code_use_graph;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
+
+    /**
+     * The `new` of each class (lowercase) in the classes scanned: the class making it and the starts of its arguments,
+     * built once they all are (see StringStartScanner)
+     *
+     * @internal
+     * @var array<string, list<array{string, string}>>|null
+     */
+    public ?array $constructor_argument_starts = null;
 
     public bool $server_mode = false;
 
@@ -843,6 +854,8 @@ final class Codebase
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
+        // the classes scanned again may make other `new`
+        $this->constructor_argument_starts = null;
         $this->populator->populateCodebase();
     }
 
@@ -899,6 +912,8 @@ final class Codebase
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         if ($has_changes) {
+            // the classes scanned again may make other `new`
+            $this->constructor_argument_starts = null;
             $this->populator->populateCodebase();
         }
     }
@@ -2809,6 +2824,84 @@ final class Codebase
         );
 
         $this->taint_flow_graph->addSink($sink);
+    }
+
+    /**
+     * Adds paths of type $path_type from $write_node into the keyed store $store (a class and a property,
+     * `Store::$data`, which need not exist) under each of the names, as `@psalm-flow ($value) -> Store::$data[$key]`
+     * does from what a call stores: each name is exact (true), or only known to start with what is given (false). See
+     * getTaintStoreNames(). With $value_type, what it holds flows into $write_node first.
+     *
+     * The paths go into the taint graph the statements of $source add theirs to (none while they suppress TaintedInput,
+     * or while Psalm analyzes them again only to collect what they mutate), or into the codebase's for another source.
+     *
+     * @param list<array{bool, string}> $names
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintStoreWrite(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $write_node,
+        string $path_type = 'arg',
+        ?Union $value_type = null,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($write_node);
+        foreach ($value_type?->parent_nodes ?? [] as $parent_node) {
+            $graph->addPath($parent_node, $write_node, $path_type);
+        }
+
+        TaintStore::addWrite($graph, $store, $names, $write_node, $path_type);
+    }
+
+    /**
+     * Adds paths of type $path_type to $read_node from the keyed store $store under each of the names, as
+     * `@psalm-flow Store::$data[$key] -> return` does to what a call returns (see addTaintStoreWrite())
+     *
+     * @param list<array{bool, string}> $names
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintStoreRead(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $read_node,
+        string $path_type = 'arg',
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($read_node);
+        TaintStore::addRead($graph, $store, $names, $read_node, $path_type);
+    }
+
+    /**
+     * The names of a keyed store the analysed expression can be, for addTaintStoreWrite() and addTaintStoreRead():
+     * exact for a type of literals or class names, else the start the analysis knows of it; any name without an
+     * expression
+     *
+     * @return list<array{bool, string}>
+     */
+    public function getTaintStoreNames(StatementsSource $source, ?PhpParser\Node\Expr $expr): array
+    {
+        return $source instanceof StatementsAnalyzer ? TaintStore::getNames($source, $expr) : [[false, '']];
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function getTaintFlowGraphOf(StatementsSource $source): ?TaintFlowGraph
+    {
+        return $source instanceof StatementsAnalyzer
+            ? $source->getTaintFlowGraphWithSuppressed()
+            : $this->taint_flow_graph;
     }
 
     /**

@@ -33,7 +33,10 @@ class Redis {
      */
     public function acl(string $subcmd, ...$args) {}
 
-	/** @return false|int|Redis */
+    /**
+     * @return false|int|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function append(string $key, string $value) {}
 
     /** @param array{string,string}|array{string}|string $credentials */
@@ -54,10 +57,19 @@ class Redis {
     /** @return false|int|Redis */
     public function bitpos(string $key, int $bit, int $start = 0, int $end = -1) {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function blPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array|null|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function brPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array|null|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$src] -> return
+     */
     public function brpoplpush(string $src, string $dst, int $timeout): Redis|string|false {}
 
     public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array|false {}
@@ -144,7 +156,10 @@ class Redis {
 
     public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): array|false {}
 
-	/** @return false|string|Redis */
+    /**
+     * @return false|string|Redis
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function get(string $key) {}
 
     public function getAuth(): mixed {}
@@ -171,7 +186,11 @@ class Redis {
 
     public function getReadTimeout(): int {}
 
-	/** @return false|string|Redis */
+    /**
+     * @return false|string|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function getset(string $key, string $value) {}
 
     public function getTimeout(): int {}
@@ -180,8 +199,14 @@ class Redis {
 
     public function hExists(string $key, string $member): Redis|bool {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function hGet(string $key, string $member): Redis|mixed|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function hGetAll(string $key): Redis|array|false {}
 
     public function hIncrBy(string $key, string $member, int $value): Redis|int|false {}
@@ -192,18 +217,36 @@ class Redis {
 
     public function hLen(string $key): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function hMget(string $key, array $keys): Redis|array|false {}
 
+    /**
+     * @psalm-flow ($keyvals) -> Redis::$data[$key]
+     */
     public function hMset(string $key, array $keyvals): Redis|bool|false {}
 
+    /**
+     * @psalm-flow ($member, $value) -> Redis::$data[$key]
+     */
     public function hSet(string $key, string $member, string $value): Redis|int|false {}
 
+    /**
+     * @psalm-flow ($member, $value) -> Redis::$data[$key]
+     */
     public function hSetNx(string $key, string $member, string $value): Redis|bool {}
 
     public function hStrLen(string $key, string $member): int {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function hVals(string $key): Redis|array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array {}
 
 	/** @return false|int|Redis */
@@ -225,6 +268,7 @@ class Redis {
     /**
      * @param mixed $elements
      * @return false|int|Redis
+     * @psalm-flow ($pivot, $value) -> Redis::$data[$key]
      */
     public function lInsert(string $key, string $pos, mixed $pivot, mixed $value) {}
 
@@ -233,33 +277,53 @@ class Redis {
 
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string {}
 
-	/** @return false|string|Redis */
+    /**
+     * @return false|string|Redis
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function lPop(string $key) {}
 
     /**
      * @param mixed $elements
      * @return false|int|Redis
+     * @psalm-flow ($elements) -> Redis::$data[$key]
      */
     public function lPush(string $key, ...$elements) {}
 
     /**
      * @param mixed $elements
      * @return false|int|Redis
+     * @psalm-flow ($elements) -> Redis::$data[$key]
      */
     public function rPush(string $key, ...$elements) {}
 
-	/** @return false|int|Redis */
+    /**
+     * @return false|int|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function lPushx(string $key, string $value) {}
 
-	/** @return false|int|Redis */
+    /**
+     * @return false|int|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function rPushx(string $key, string $value) {}
 
+    /**
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function lSet(string $key, int $index, string $value): Redis|bool {}
 
     public function lastSave(): int {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function lindex(string $key, int $index): Redis|mixed|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function lrange(string $key, int $start , int $end): Redis|array|false {}
 
     /**
@@ -269,7 +333,10 @@ class Redis {
 
     public function ltrim(string $key, int $start , int $end): Redis|bool {}
 
-	/** @return false|list<false|string>|Redis */
+    /**
+     * @return false|list<false|string>|Redis
+     * @psalm-flow Redis::$data[$keys[*]] -> return
+     */
     public function mget(array $keys) {}
 
     public function migrate(string $host, int $port, string $key, string $dst, int $timeout, bool $copy = false, bool $replace = false): bool {}
@@ -321,7 +388,10 @@ class Redis {
      */
     public function popen(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool {}
 
-    /** @return bool|Redis */
+    /**
+     * @return bool|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function psetex(string $key, int $expire, string $value) {}
 
     public function psubscribe(array $patterns): void {}
@@ -334,7 +404,10 @@ class Redis {
 
     public function punsubscribe(array $patterns): array|false {}
 
-	/** @return false|string|Redis */
+    /**
+     * @return false|string|Redis
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function rPop(string $key) {}
 
 	/** @return false|string|Redis */
@@ -352,30 +425,54 @@ class Redis {
 
     public function role(): mixed {}
 
+    /**
+     * @psalm-flow Redis::$data[$src] -> return
+     */
     public function rpoplpush(string $src, string $dst): Redis|string|false {}
 
+    /**
+     * @psalm-flow ($value, $other_values) -> Redis::$data[$key]
+     */
     public function sAdd(string $key, string $value, mixed ...$other_values): Redis|int|false {}
 
     public function sAddArray(string $key, array $values): int {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sDiff(string $key, string ...$other_keys): Redis|array|false {}
 
     public function sDiffStore(string $dst, string $key, string ...$other_keys): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sInter(array|string $key, string ...$other_keys): Redis|array|false {}
 
     public function sInterStore(array|string $key, string ...$other_keys): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sMembers(string $key): Redis|array|false {}
 
     public function sMisMember(string $key, string $member, string ...$other_members): array|false {}
 
     public function sMove(string $src, string $dst, string $value): Redis|bool {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sPop(string $key, int $count = 0): Redis|string|array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sRandMember(string $key, int $count = 0): Redis|string|array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sUnion(string $key, string ...$other_keys): Redis|array|false {}
 
     public function sUnionStore(string $dst, string $key, string ...$other_keys): Redis|int|false {}
@@ -390,7 +487,10 @@ class Redis {
 
     public function select(int $db): bool {}
 
-    /** @return bool|Redis */
+    /**
+     * @return bool|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function set(string $key, string $value, mixed $opt = NULL) {}
 
 	/** @return false|int|Redis */
@@ -402,10 +502,16 @@ class Redis {
 
     public function setOption(int $option, mixed $value): bool {}
 
-    /** @return bool|Redis */
+    /**
+     * @return bool|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function setex(string $key, int $expire, string $value) {}
 
-	/** @return bool|array|Redis */
+    /**
+     * @return bool|array|Redis
+     * @psalm-flow ($value) -> Redis::$data[$key]
+     */
     public function setnx(string $key, string $value) {}
 
     public function sismember(string $key, string $value): Redis|bool {}
@@ -438,6 +544,9 @@ class Redis {
 
     public function srem(string $key, string $value, mixed ...$other_values): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array|false {}
 
 	/** @return false|int|Redis */
@@ -473,6 +582,9 @@ class Redis {
 
     public function xack(string $key, string $group, array $ids): int|false {}
 
+    /**
+     * @psalm-flow ($values) -> Redis::$data[$key]
+     */
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): string|false {}
 
     public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): string|array|false {}
@@ -487,8 +599,14 @@ class Redis {
 
     public function xpending(string $key, string $group, string $start = null, string $end = null, int $count = -1, string $consumer = null): Redis|array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function xrange(string $key, string $start, string $end, int $count = -1): bool|array {}
 
+    /**
+     * @psalm-flow Redis::$data[*] -> return
+     */
     public function xread(array $streams, int $count = -1, int $block = -1): bool|array {}
 
     public function xreadgroup(string $group, string $consumer, array $streams, int $count = 1, int $block = 1): bool|array {}
@@ -497,6 +615,9 @@ class Redis {
 
     public function xtrim(string $key, int $maxlen, bool $approx = false): int {}
 
+    /**
+     * @psalm-flow ($score_or_options, $more_scores_and_mems) -> Redis::$data[$key]
+     */
     public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false {}
 
     public function zCard(string $key): Redis|int|false {}
@@ -509,14 +630,26 @@ class Redis {
 
     public function zMscore(string $key, string $member, string ...$other_members): array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zPopMax(string $key, int $value = null): array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zPopMin(string $key, int $value = null): array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false {}
 
     public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false {}
 
     public function zRandMember(string $key, array $options = null): string|array|false {}
@@ -531,10 +664,16 @@ class Redis {
 
     public function zRemRangeByScore(string $key, string $start, string $end): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zRevRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false {}
 
     public function zRevRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zRevRangeByScore(string $key, string $start, string $end, array $options = []): array|false {}
 
     public function zRevRank(string $key, mixed $member): Redis|int|false {}
@@ -549,6 +688,9 @@ class Redis {
 
     public function zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false {}
 
+    /**
+     * @psalm-flow Redis::$data[$key] -> return
+     */
     public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array {}
 
     public function zunion(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false {}
