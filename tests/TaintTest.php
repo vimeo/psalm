@@ -4757,6 +4757,15 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheValueOfAKeyAnArrayMayHaveAfterSettingItWhereItIsMissing' => [
+                'code' => '<?php
+                    $a = rand() ? ["k" => $_GET["v"]] : [];
+                    if (!array_key_exists("k", $a)) {
+                        $a["k"] = "untainted";
+                    }
+                    echo $a["k"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheValueOfAKeyOfAWholeArrayMergedBackAfterACheckOfIt' => [
                 'code' => '<?php
                     $data = $_GET;
