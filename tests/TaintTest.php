@@ -2999,6 +2999,14 @@ final class TaintTest extends TestCase
                     show($data);',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchOfTheKeyOfAnAssignmentOfAnElementWhoseFetchTakesMoreThanTheArrayHolds' => [
+                'code' => '<?php
+                    $key = "type";
+                    $file = [];
+                    $file[$key] = $_FILES["upload"][$key];
+                    echo $file["type"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfAKeyStartingLikeTheAssignedKey' => [
                 'code' => '<?php // --taint-analysis
                     /** @param array<string, string> $data */

@@ -417,6 +417,9 @@ final class ArrayAssignmentAnalyzer
      *   the loop, not reassigned since (see Context::$foreach_element_copies).
      * A variable is the same as long as its parent nodes are: an assignment gives it other ones, a narrowing
      * keeps them.
+     * A key known statically is assigned and fetched under its own key already. The fetch of an element may take
+     * more than the array holds (a taint source: an entry of $_SERVER or $_FILES, what a plugin adds), which a copy
+     * of the array would lose: the assignment of such an element is no copy.
      *
      * @return array<string, DataFlowNode>|null
      */
@@ -433,11 +436,25 @@ final class ArrayAssignmentAnalyzer
             return null;
         }
 
-        $key_node_ids = array_keys($statements_analyzer->node_data->getType($stmt->dim)?->parent_nodes ?? []);
+        $key_type = $statements_analyzer->node_data->getType($stmt->dim);
+        $key_node_ids = array_keys($key_type?->parent_nodes ?? []);
         $value_type = $statements_analyzer->node_data->getType($assign_value);
 
-        if ($key_node_ids === [] || $value_type === null) {
+        if ($key_type === null
+            || $key_node_ids === []
+            || $value_type === null
+            || $key_type->isSingleStringLiteral()
+            || $key_type->isSingleIntLiteral()
+        ) {
             return null;
+        }
+
+        if ($taint_flow_graph = $statements_analyzer->taint_flow_graph) {
+            foreach ($value_type->parent_nodes as $value_node) {
+                if ($taint_flow_graph->isSource($value_node)) {
+                    return null;
+                }
+            }
         }
 
         if ($assign_value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
