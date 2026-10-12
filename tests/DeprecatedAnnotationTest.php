@@ -415,6 +415,27 @@ final class DeprecatedAnnotationTest extends TestCase
                 ',
                 'error_message' => 'DeprecatedFunction',
             ],
+            'deprecatedFunctionWithMessage' => [
+                'code' => '<?php
+                    /** @deprecated use b() instead */
+                    function a(): void {}
+                    a();
+                ',
+                'error_message' => 'The function a has been marked as deprecated (use b() instead',
+            ],
+            'deprecatedMethodWithMultilineMessage' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @deprecated use Foo::baz()
+                         *   instead
+                         */
+                        public function bar(): void {}
+                    }
+
+                    (new Foo)->bar();',
+                'error_message' => 'The method Foo::bar has been marked as deprecated (use Foo::baz() instead',
+            ],
         ];
     }
 }
