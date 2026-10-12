@@ -30,6 +30,38 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'mongodbDriverCapabilities' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectId;
+                    use MongoDB\Driver\Cursor;
+                    use MongoDB\Driver\Monitoring\CommandSubscriber;
+                    use MongoDB\Driver\Server;
+
+                    /** @psalm-pure */
+                    function id(string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals|io */
+                    function newId(?string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-mutation-free */
+                    function tags(Server $server): array {
+                        return $server->getTags();
+                    }
+
+                    /** @psalm-capabilities write-props|io */
+                    function documents(Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function subscribe(CommandSubscriber $subscriber): void {
+                        MongoDB\Driver\Monitoring\addSubscriber($subscriber);
+                    }',
+            ],
             'classImplementsOfAnObjectDoesNotAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1280,6 +1312,22 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'mongodbObjectIdWithoutAnIdIsGenerated' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newId(): MongoDB\BSON\ObjectId {
+                        return new MongoDB\BSON\ObjectId();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'mongodbCursorIterationFetches' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function documents(MongoDB\Driver\Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'classUsesOfAClassNameMayAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */

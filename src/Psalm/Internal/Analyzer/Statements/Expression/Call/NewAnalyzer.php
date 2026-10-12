@@ -904,6 +904,26 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * Whether the constructor call only validates what it is given: `new MongoDB\BSON\ObjectId($id)` with an id
+     * (not null) checks it, while without one it generates a new id from the clock and a counter of the process
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function onlyValidatesItsArgument(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name,
+        array $args,
+    ): bool {
+        if (strtolower($fq_class_name) !== 'mongodb\\bson\\objectid' || !isset($args[0]) || $args[0]->unpack) {
+            return false;
+        }
+
+        $id_type = $statements_analyzer->node_data->getType($args[0]->value);
+
+        return $id_type !== null && !$id_type->isNullable() && !$id_type->hasMixed();
+    }
+
+    /**
      * What calling a constructor costs: its capabilities (with those of the closures its purity
      * templates are bound to), less what it does to the new object, with its by-reference
      * parameters costing what the arguments passed to them are.
@@ -929,10 +949,12 @@ final class NewAnalyzer extends CallAnalyzer
             $template_result,
             self::getConstructorClassTemplateParams($codebase, $context, $method_storage, $fq_class_name),
         );
-        $resolved_capabilities = $template_capabilities
-            | ($method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
-
         $args = $stmt->getArgs();
+
+        $resolved_capabilities = self::onlyValidatesItsArgument($statements_analyzer, $fq_class_name, $args)
+            ? Capabilities::NONE
+            : $template_capabilities
+                | ($method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
 
         $constructor_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
             $statements_analyzer,
