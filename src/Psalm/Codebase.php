@@ -808,6 +808,8 @@ final class Codebase
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
+        // the classes scanned again may make other `new`
+        $this->constructor_argument_starts = null;
         $this->populator->populateCodebase();
     }
 
