@@ -71,7 +71,7 @@ final class MethodCapabilitiesProviderEvent
      */
     public function getCallArgs(): array
     {
-        return $this->stmt->isFirstClassCallable() ? [] : $this->stmt->getArgs();
+        return $this->stmt->getArgs();
     }
 
     public function getContext(): Context

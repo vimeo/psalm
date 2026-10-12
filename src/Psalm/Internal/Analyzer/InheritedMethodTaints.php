@@ -192,6 +192,8 @@ final class InheritedMethodTaints
 
     /**
      * Whether $class declares property $prop_name private
+     *
+     * @psalm-capabilities read-props
      */
     public static function isPrivateIn(Codebase $codebase, string $class, string $prop_name): bool
     {

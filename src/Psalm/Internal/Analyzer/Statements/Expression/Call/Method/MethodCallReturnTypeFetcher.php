@@ -429,7 +429,9 @@ final class MethodCallReturnTypeFetcher
                         $declaring_method_id,
                     );
 
-                if ($method_storage->location) {
+                $method_location = $method_storage->location;
+
+                if ($method_location) {
                     // the body of the method, declared by this class or the one it inherits it from, takes `$this`
                     // from this node: this call enters it with its own specialization, like the arguments do, so
                     // that what it returns is this object's and not every object's
@@ -438,7 +440,7 @@ final class MethodCallReturnTypeFetcher
                         $body_suffix,
                         static fn(): DataFlowNode => DataFlowNode::getForAssignment(
                             '$this in ' . (string) $body_method_id,
-                            $method_storage->location,
+                            $method_location,
                             $call_specialization_key,
                         ),
                     );
@@ -473,7 +475,7 @@ final class MethodCallReturnTypeFetcher
                 $taint_flow_graph->addNode($method_call_node);
 
                 // what the method leaves in the object, which isn't what it returns
-                if ($var_node !== null && $method_storage->location) {
+                if ($var_node !== null && $method_location) {
                     $taint_flow_graph->addNode($var_node);
 
                     $this_out_node = InheritedMethodTaints::withMethodSuffix(
@@ -481,7 +483,7 @@ final class MethodCallReturnTypeFetcher
                         $body_suffix,
                         static fn(): DataFlowNode => DataFlowNode::getForAssignment(
                             '$this out of ' . $cased_body_method_id,
-                            $method_storage->location,
+                            $method_location,
                             $method_call_node->specialization_key,
                         ),
                     );
@@ -503,7 +505,7 @@ final class MethodCallReturnTypeFetcher
                                 $body_suffix,
                                 static fn(): DataFlowNode => DataFlowNode::getForAssignment(
                                     '$this in ' . (string) $body_method_id,
-                                    $method_storage->location,
+                                    $method_location,
                                     $call_specialization_key,
                                 ),
                             ),

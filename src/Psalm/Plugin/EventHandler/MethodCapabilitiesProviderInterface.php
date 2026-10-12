@@ -8,6 +8,7 @@ use Psalm\Plugin\EventHandler\Event\MethodCapabilitiesProviderEvent;
 
 /**
  * @api
+ * @psalm-mutable
  */
 interface MethodCapabilitiesProviderInterface
 {
