@@ -30,6 +30,9 @@ final class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterf
         ];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {
