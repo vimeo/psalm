@@ -6,7 +6,7 @@ A function-like explicitly marked `@psalm-impure` is left alone: for example a h
 
 No annotation is suggested for an unannotated method that is overridden, nor for the code calling it: the overrides may do more than its own body does, and the annotation would restrict them.  
 
-No annotation is suggested for a function-like whose parameter default values need capabilities the annotation would not give them (see [`@psalm-capabilities`](../../annotating_code/supported_annotations.md#psalm-capabilities)).  
+No annotation is suggested for a function-like whose parameter default values need capabilities the annotation would not give them (see [parameter default values](../../annotating_code/purity_model.md#parameter-default-values)).  
 
 To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation`.  
 
@@ -20,4 +20,4 @@ function couldBePure(int $a): int {
 }
 ```
 
-Purity is inferred as a fixpoint over the call graph after the whole codebase has been analysed: a function-like that only calls other pure (or as-yet-unannotated but inferred-pure) function-likes is itself reported, regardless of the order in which they are declared, and mutual recursion, recursive closures and closures assigned to a variable are handled.
+See [inferring annotations](../../annotating_code/purity_model.md#inferring-annotations) in the purity model for how purity is inferred.

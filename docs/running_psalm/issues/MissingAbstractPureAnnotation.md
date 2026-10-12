@@ -17,3 +17,5 @@ interface a {
     public function someMethod(): void;
 }
 ```
+
+See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) in the purity model.

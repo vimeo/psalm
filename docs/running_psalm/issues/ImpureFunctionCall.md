@@ -21,3 +21,5 @@ function filterOdd(array $a) : void {
     impure($a);
 }
 ```
+
+To make a function's purity depend on the closures it is given, see [purity templates](../../annotating_code/purity_model.md#purity-templates) in the purity model.

@@ -15,13 +15,16 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\InvalidArrayAssignment;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -30,7 +33,9 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
@@ -241,6 +246,8 @@ final class ArrayAssignmentAnalyzer
                     $context,
                     false,
                 );
+
+                self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
@@ -263,7 +270,11 @@ final class ArrayAssignmentAnalyzer
                 return false;
             }
         } elseif ($root_var_id) {
-            $context->vars_in_scope[$root_var_id] = $root_type;
+            // PHP creates the array an item is assigned to: it's defined from now on
+            $context->vars_in_scope[$root_var_id] = $root_type->possibly_undefined
+                && !$root_type->possibly_undefined_from_try
+                    ? $root_type->setPossiblyUndefined(false)
+                    : $root_type;
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -282,6 +293,42 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Writing an element of a property writes the object holding the property.
+     * InstancePropertyAssignmentAnalyzer::trackPropertyImpurity() charges this when the object is in
+     * a variable, or was reached from global state, but not when it is anything else, like what a
+     * call returns: `$box->get()->items[] = 1`. That object is not known to be fresh or `$this`.
+     */
+    private static function trackPropertyElementImpurity(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $property_fetch,
+        Context $context,
+    ): void {
+        $object_var_id = ExpressionIdentifier::getVarId(
+            $property_fetch->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        $object_type = $statements_analyzer->node_data->getType($property_fetch->var);
+
+        if (($object_var_id !== null && isset($context->vars_in_scope[$object_var_id]))
+            || ($object_type !== null && $object_type->from_global_state)
+        ) {
+            return;
+        }
+
+        $statements_analyzer->signalMutation(
+            $statements_analyzer->node_data->isPureCompatible($property_fetch->var)
+                ? Capabilities::NONE
+                : Capabilities::WRITE_PROPS,
+            $context,
+            'property assignment',
+            ImpurePropertyAssignment::class,
+            $property_fetch,
+            Capabilities::WRITE_PROPS,
+        );
     }
 
     /**
@@ -403,13 +450,18 @@ final class ArrayAssignmentAnalyzer
 
             $old_parent_nodes = $stmt_type->parent_nodes;
 
+            // what the array held under the key assigned, if only one, is replaced
+            $copy_path_type = count($key_values) === 1 && !$stmt_type->by_ref
+                ? self::getOverwritePathType($stmt_type, $key_values[0])
+                : '=';
+
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
             foreach ($old_parent_nodes as $old_parent_node) {
                 $graph->addPath(
                     $old_parent_node,
                     $parent_node,
-                    '=',
+                    $copy_path_type,
                 );
 
                 if ($stmt_type->by_ref) {
@@ -422,7 +474,9 @@ final class ArrayAssignmentAnalyzer
             }
 
             // what the assigned value cannot hold, given its type
-            $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
+            $removed_taints = $graph instanceof VariableUseGraph
+                ? 0
+                : $child_stmt_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints());
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
@@ -447,7 +501,47 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
             }
+
+            // a global variable, by its name if known
+            if ($expr->var instanceof Variable
+                && $expr->var->name === 'GLOBALS'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                foreach ($key_values === [] ? [null] : $key_values as $key_value) {
+                    $global_node = GlobalAnalyzer::getGlobalNode(
+                        $taint_flow_graph,
+                        $key_value === null ? null : (string) $key_value->value,
+                    );
+
+                    foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
+                        $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
+                    }
+                }
+            }
         }
+    }
+
+    /**
+     * The type of the path from an array to the array it becomes once its value under $key is replaced: one
+     * keeping what it held under its other keys only (see DataFlowGraph::isOverwritten()). Assigning an offset of
+     * anything that may not be an array (an ArrayAccess object, a string...) may do anything else with what it held,
+     * so the path keeps it all then.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getOverwritePathType(Union $array_type, TLiteralInt|TLiteralString $key): string
+    {
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TNever
+            ) {
+                return '=';
+            }
+        }
+
+        return 'arrayvalue-overwrite-\'' . $key->value . '\'';
     }
 
     private static function updateArrayAssignmentChildType(
@@ -661,6 +755,35 @@ final class ArrayAssignmentAnalyzer
                         $array_atomic_type_array,
                     );
                 }
+            }
+        }
+
+        if ($array_atomic_type === null && !$current_dim && $array_atomic_type_list !== null) {
+            $atomic_root_type_array = $root_type->getAtomicTypes()['array'] ?? null;
+
+            // Items are appended to a list (any number of them in a loop) past the items it surely has, which
+            // keep their values: only the items it may not have yet and the rest of it can be appended ones.
+            if ($atomic_root_type_array instanceof TKeyedArray && $atomic_root_type_array->is_list) {
+                $properties = [];
+                foreach ($atomic_root_type_array->properties as $key => $property) {
+                    $properties[$key] = $property->possibly_undefined
+                        ? Type::combineUnionTypes($property, $array_atomic_type_list, $codebase)
+                        : $property;
+                }
+
+                $array_atomic_type = TKeyedArray::make(
+                    $properties,
+                    null,
+                    [
+                        Type::getListKey(),
+                        Type::combineUnionTypes(
+                            $atomic_root_type_array->fallback_params[1] ?? null,
+                            $array_atomic_type_list,
+                            $codebase,
+                        ),
+                    ],
+                    true,
+                );
             }
         }
 

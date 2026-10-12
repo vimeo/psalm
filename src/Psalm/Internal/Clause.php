@@ -101,7 +101,6 @@ final class Clause implements Stringable
                 $possibility_strings[$i] = array_keys($v);
             }
 
-            /** @psalm-suppress ImpureFunctionCall */
             $data = serialize($possibility_strings);
             $this->hash = hash('xxh128', $data);
         }

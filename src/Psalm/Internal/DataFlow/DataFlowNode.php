@@ -143,6 +143,43 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
+     * overrides of the classes extending it: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForDispatch(string $cased_method_id, int $argument_offset): self
+    {
+        $label = 'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1);
+
+        return self::make(strtolower($label), $label, null);
+    }
+
+    /**
+     * What the global variable $name holds, for the whole program as a static property's: what any function-like
+     * writes to it through `global` or $GLOBALS, any other may read. A null $name stands for the globals written by
+     * a name not known statically, which may be any of them.
+     *
+     * @psalm-pure
+     */
+    public static function getForGlobalVariable(?string $name): self
+    {
+        $id = $name === null ? '$GLOBALS[]' : '$GLOBALS[\'' . $name . '\']';
+
+        return self::make($id, $id, null);
+    }
+
+    /**
+     * $GLOBALS as a whole, with all the global variables (see getForGlobalVariable()) under their names.
+     *
+     * @psalm-pure
+     */
+    public static function getForGlobals(): self
+    {
+        return self::make('$GLOBALS', '$GLOBALS', null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
@@ -278,6 +315,61 @@ final class DataFlowNode implements Stringable
         return self::make(
             strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' out',
             $cased_method_id . '#' . ($argument_offset + 1) . ' out',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like gets calling one of its callable parameters: what the callables passed to
+     * that parameter return.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamReturn(
+        string $cased_method_id,
+        int $argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        return self::make(
+            strtolower($cased_method_id) . '#' . ($argument_offset + 1) . ' call',
+            $cased_method_id . '#' . ($argument_offset + 1) . ' call',
+            $param?->location,
+            $specialization_key,
+        );
+    }
+
+    /**
+     * What the body of a function-like passes as argument $callable_argument_offset calling one of its callable
+     * parameters: what the parameters of the callables passed to that parameter are given.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForCallableParamArgument(
+        string $cased_method_id,
+        int $argument_offset,
+        int $callable_argument_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location = null,
+    ): self {
+        $specialization_key = $specialization_location
+            ? self::getSpecializationKey($specialization_location)
+            : null;
+
+        $param = self::getParameter($storage, $argument_offset);
+
+        $suffix = '#' . ($argument_offset + 1) . ' call#' . ($callable_argument_offset + 1);
+
+        return self::make(
+            strtolower($cased_method_id) . $suffix,
+            $cased_method_id . $suffix,
             $param?->location,
             $specialization_key,
         );
@@ -459,6 +551,34 @@ final class DataFlowNode implements Stringable
             self::getReturnLocation($storage),
             $specialization_key,
             $taints,
+        );
+    }
+
+    /**
+     * What the virtual calls of a method on a class get from the methods of the classes extending it that may run
+     * instead: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForReturnDispatch(string $cased_method_id): self
+    {
+        $label = 'dispatch of ' . $cased_method_id;
+
+        return self::make(strtolower($label), $label, null);
+    }
+
+    /**
+     * What is sent to the generators a function-like returns (see Generator::send()): the value of its yield
+     * expressions.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForGeneratorSend(string $cased_method_id, FunctionLikeStorage $storage): self
+    {
+        return self::make(
+            strtolower($cased_method_id) . ' sent',
+            'what is sent to ' . $cased_method_id,
+            $storage->location,
         );
     }
 

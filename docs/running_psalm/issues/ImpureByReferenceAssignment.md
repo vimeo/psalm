@@ -28,3 +28,5 @@ function foo(string &$a): string {
     return $a;
 }
 ```
+
+See [by-reference arguments](../../annotating_code/purity_model.md#by-reference-arguments) in the purity model.

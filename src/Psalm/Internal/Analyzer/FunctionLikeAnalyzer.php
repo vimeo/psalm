@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFet
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
@@ -244,7 +245,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->track_unused_suppressions && !isset($storage->suppressed_issues[0])) {
             if (count($storage->suppressed_issues) === 1 // UnusedPsalmSuppress by itself should be marked as unused
-                || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
+                || !$codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
             ) {
                 foreach ($storage->suppressed_issues as $offset => $issue_name) {
                     IssueBuffer::addUnusedSuppression(
@@ -317,6 +318,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
 
                     $statements_analyzer->data_flow_graph->addNode($use_assignment);
+
+                    if ($statements_analyzer->taint_flow_graph) {
+                        TaintStore::recordClosureUse(
+                            $statements_analyzer,
+                            $statements_analyzer->taint_flow_graph,
+                            $context->vars_in_scope[$use_var_id],
+                            $use_assignment,
+                        );
+                    }
 
                     $context->vars_in_scope[$use_var_id] =
                         $context->vars_in_scope[$use_var_id]->addParentNodes(
@@ -524,6 +534,32 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $check_stmts = false;
         }
 
+        // the type @psalm-self-out gives is checked like a @return type: its classes must exist, and its
+        // template and purity arguments must fit their bounds
+        if ($storage instanceof MethodStorage && $storage->self_out_type && $storage->self_out_type_location) {
+            $classlike_storage = $context->self ? $codebase->classlike_storage_provider->get($context->self) : null;
+
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+            TypeExpander::expandUnion(
+                $codebase,
+                $storage->self_out_type,
+                $classlike_storage->name ?? null,
+                $classlike_storage->name ?? null,
+                $classlike_storage->parent_class ?? null,
+                true,
+                true,
+            )->setFromDocblock()->check(
+                $this,
+                $storage->self_out_type_location,
+                $storage->suppressed_issues,
+                [],
+                false,
+                false,
+                false,
+                $context,
+            );
+        }
+
         if (!$check_stmts) {
             return false;
         }
@@ -602,7 +638,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
-                && !Capabilities::allows($storage->containing_class_capabilities, $storage->capabilities)
+                && !Capabilities::allowsAnyOf($storage->containing_class_capabilities, $storage->capabilities)
             ) {
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
@@ -653,7 +689,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
                 $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
 
-                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)) {
+                if (Capabilities::allowsAnyOf(Capabilities::READ_GLOBALS, $context->capabilities)) {
                     IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'pure functions cannot have void return type'
@@ -1031,6 +1067,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $storage,
                 $codebase->taint_flow_graph,
                 $method_source,
+                $codebase->getInputTaints(),
             );
         }
 
@@ -1248,24 +1285,53 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * The method id of the out nodes of the by-reference parameters of a method called as $method_id
-     * (see DataFlowNode::getForMethodArgumentOut()): the body of a method of a trait is analyzed as one
-     * of each class using it.
+     * The id of the method whose body a call of $method_id runs, as the nodes of that body are keyed: the
+     * body of a method of a trait is analyzed as one of each class using it, by its name in the trait.
      *
      * @psalm-capabilities read-props
      */
-    public static function getByRefParamsOutMethodId(Codebase $codebase, MethodIdentifier $method_id): string
+    public static function getBodyMethodId(Codebase $codebase, MethodIdentifier $method_id): MethodIdentifier
     {
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id;
 
-        return $appearing_method_id->fq_class_name
+        $body_method_id = new MethodIdentifier(
+            $appearing_method_id->fq_class_name,
+            $declaring_method_id->method_name,
+        );
+
+        // a class using a trait method under an alias only, as it declares a method of the same name, doesn't
+        // analyze the body of the trait method (see ClassAnalyzer::analyzeClassMethod())
+        return (string) $codebase->methods->getDeclaringMethodId($body_method_id) === (string) $declaring_method_id
+            ? $body_method_id
+            : $declaring_method_id;
+    }
+
+    /**
+     * The cased id of the method whose body a call of $method_id runs (see getBodyMethodId()), which keys the
+     * nodes of its parameters, its by-reference parameters (see DataFlowNode::getForMethodArgumentOut()), its
+     * return and the `$this` it takes and leaves.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getCasedBodyMethodId(Codebase $codebase, MethodIdentifier $method_id): string
+    {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+
+        return self::getBodyMethodId($codebase, $method_id)->fq_class_name
             . '::' . $codebase->methods->getStorage($declaring_method_id)->cased_name;
     }
 
     /**
      * A call of a method a method overrides may run it: what it leaves in its by-reference parameters is
      * left to that call too.
+     *
+     * When the calls of the method are specialized, its by-reference parameter out nodes are the exits of
+     * its body, which only lead to its call sites through their specializations (see
+     * TaintFlowGraph::connectSinksAndSources()): an edge of their own would cut its calls off from them.
+     * The calls of the overridden method are then linked to as a call of its own, specialized at the
+     * location of the method, which the flows a specialized call of it brings into its body don't exit
+     * through.
      *
      * @param array<string, MethodIdentifier> $overridden_method_ids
      */
@@ -1283,7 +1349,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         $overridden_method_ids = array_map(strval(...), $overridden_method_ids);
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-        // the classes a method overridden is called through (see getByRefParamsOutMethodId())
+        // specialized like the by-reference parameter out nodes of its calls (see
+        // ArgumentsAnalyzer::getByRefParamOutNode())
+        $specialization_location = $storage->specialize_call ? $storage->location : null;
+
+        // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
             $ancestor_method_id = new MethodIdentifier($ancestor, strtolower((string) $storage->cased_name));
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($ancestor_method_id);
@@ -1295,7 +1365,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $overridden_storage = $codebase->methods->getStorage($declaring_method_id);
-            $overridden_cased_method_id = self::getByRefParamsOutMethodId($codebase, $ancestor_method_id);
+            $overridden_cased_method_id = self::getCasedBodyMethodId($codebase, $ancestor_method_id);
 
             foreach ($storage->params as $offset => $param) {
                 if (!$param->by_ref
@@ -1305,7 +1375,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     continue;
                 }
 
-                $out_node = DataFlowNode::getForMethodArgumentOut($cased_method_id, $offset, $storage);
+                $out_node = DataFlowNode::getForMethodArgumentOut(
+                    $cased_method_id,
+                    $offset,
+                    $storage,
+                    $specialization_location,
+                );
                 $overridden_out_node = DataFlowNode::getForMethodArgumentOut(
                     $overridden_cased_method_id,
                     $offset,
@@ -1469,9 +1544,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                 $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
-                if ($cased_method_id !== null) {
+                // the arguments a closure is called with through a variable flow into its parameters, see
+                // FunctionCallReturnTypeFetcher::taintCallableReturnType()
+                $param_method_id = $cased_method_id
+                    ?? ($this instanceof ClosureAnalyzer ? $this->getClosureId() : null);
+
+                if ($param_method_id !== null) {
                     $type_source = DataFlowNode::getForMethodArgument(
-                        $cased_method_id,
+                        $param_method_id,
                         $offset,
                         $storage,
                         null,
@@ -1482,7 +1562,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove() ?? 0,
+                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
                     );
                 }
 
@@ -2009,6 +2089,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $param_out_type = $param->out_type ?: $param->type;
 
                 if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
+                    // as the parameter's own type, e.g. with the class constants of an int-mask resolved
+                    $param_out_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $param_out_type,
+                        $context->self,
+                        $context->self,
+                        $this->getParentFQCLN(),
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $actual_type,
@@ -2331,7 +2420,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         return null;
                     }
                 }
-            } elseif ($context->self) {
+            } elseif ($context->self !== null) {
                 if ($appearing_class_storage->template_types) {
                     $template_params = [];
 

@@ -44,6 +44,7 @@ use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 
 use const PHP_VERSION;
 
@@ -56,6 +57,9 @@ final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
     private const MAX_CALLMAP_VERSION = 85;
+
+    /** see keepsStateBetweenCalls() */
+    private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -79,6 +83,11 @@ final class InternalCallMapHandler
      * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>|null
      */
     private static ?array $taint_flow_map = null;
+
+    /**
+     * @var array<lowercase-string, non-empty-list<non-empty-string>>|null
+     */
+    private static ?array $taint_store_map = null;
 
     /**
      * @var array<lowercase-string, non-empty-list<key-of<TaintKind::TAINT_NAMES>>>|null
@@ -428,7 +437,42 @@ final class InternalCallMapHandler
             $storage->return_source_params[$offset] = $path_type;
         }
 
+        self::addTaintStoreFlows($storage, $function_id);
+
         $storage->removed_taints |= self::getReturnRemovedTaints($function_id);
+    }
+
+    /**
+     * Makes the builtin function or method $function_id write into the keyed stores or read from them as
+     * dictionaries/InternalTaintStoreMap.php says (see TaintStore)
+     *
+     * @return bool whether it does
+     */
+    public static function addTaintStoreFlows(FunctionLikeStorage $storage, string $function_id): bool
+    {
+        if (self::$taint_store_map === null) {
+            /** @var array<lowercase-string, non-empty-list<non-empty-string>> */
+            self::$taint_store_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintStoreMap.php');
+        }
+
+        $flows = self::$taint_store_map[strtolower($function_id)] ?? [];
+        foreach ($flows as $flow) {
+            $sides = explode('->', $flow, 2);
+            TaintStore::addFlow($storage, trim($sides[0]), trim($sides[1] ?? ''), 'arg');
+        }
+
+        return $flows !== [];
+    }
+
+    /**
+     * Whether the calls of the builtin function $function_id can return data given to its other calls: strtok() goes
+     * on through the string it was given last, inflate_add() through the data given with the same context.
+     *
+     * @psalm-pure
+     */
+    public static function keepsStateBetweenCalls(string $function_id): bool
+    {
+        return isset(self::STATEFUL_FUNCTIONS[strtolower($function_id)]);
     }
 
     /**

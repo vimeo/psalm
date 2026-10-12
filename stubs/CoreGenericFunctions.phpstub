@@ -484,8 +484,11 @@ function sodium_memzero(string &$string): void
  * @return ($return is true ? string : void)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  */
 function var_export($value, bool $return = false) {}
 
@@ -497,9 +500,31 @@ function var_export($value, bool $return = false) {}
  * @psalm-taint-specialize
  * @psalm-flow ($value, $values) -> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function var_dump($value, ...$values) {}
+
+/**
+ * @param mixed $value
+ * @param mixed $values
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
+ * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
+ */
+function debug_zval_dump($value, ...$values): void {}
 
 /**
  * @param mixed $value
@@ -507,14 +532,15 @@ function var_dump($value, ...$values) {}
  * @return ($return is true ? string : true)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
+ * @psalm-taint-sink has_quotes $value
+ * @psalm-taint-sink user_secret $value
+ * @psalm-taint-sink system_secret $value
  */
 function print_r($value, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -570,8 +596,6 @@ function stream_get_contents($stream, ?int $length = null, int $offset = -1) {}
 function stream_get_line($stream, int $length, string $ending = "") {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  * @param mixed $filename
  * @return ($return is true ? string : bool)
@@ -579,15 +603,11 @@ function stream_get_line($stream, int $length, string $ending = "") {}
 function show_source($filename, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  */
 function php_strip_whitespace(string $filename) : string {}
 
 /**
- * @psalm-pure
- *
  * @param mixed $string
  * @return ($return is true ? string : bool)
  *
@@ -796,7 +816,7 @@ function rtrim(string $string, string $characters = " \t\n\r\0\x0B") : string {}
  * )
  *
  * @psalm-flow ($separator) -> return
- * @psalm-flow ($array) -(array-fetch)-> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function implode($separator, array $array = []) : string {}
 
@@ -829,7 +849,7 @@ function implode($separator, array $array = []) : string {}
  * )
  *
  * @psalm-flow ($separator) -> return
- * @psalm-flow ($array) -(array-fetch)-> return
+ * @psalm-flow ($array) -(arrayvalue-fetch)-> return
  */
 function join($separator, array $array = []): string
 {
@@ -1042,7 +1062,8 @@ function rawurlencode(string $string) : string {}
  * @psalm-taint-escape url_component
  * @psalm-taint-escape url_path
  * @psalm-taint-escape header
- * @psalm-flow ($data) -> return
+ * @psalm-flow ($data) -(serialization)-> return
+ * @psalm-flow ($numeric_prefix, $arg_separator) -> return
  */
 function http_build_query(array|object $data, string $numeric_prefix = "", ?string $arg_separator = null, int $encoding_type = PHP_QUERY_RFC1738) : string {}
 
@@ -1057,7 +1078,9 @@ function escapeshellarg(string $arg) : string {}
 /**
  * @psalm-pure
  *
- * @psalm-taint-escape shell
+ * It escapes what would run other commands, but not the spaces and dashes that add options to the command: what it
+ * returns can still inject arguments into it, unlike escapeshellarg().
+ *
  * @psalm-flow ($command) -> return
  */
 function escapeshellcmd(string $command) : string {}
@@ -1445,7 +1468,8 @@ function sprintf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($format, $values) -> return
+ * @psalm-flow ($format) -> return
+ * @psalm-flow ($values) -(arrayvalue-fetch)-> return
  */
 function vsprintf(string $format, array $values) {}
 
@@ -1458,8 +1482,6 @@ function vsprintf(string $format, array $values) {}
 function wordwrap(string $string, int $width = 75, string $break = "\n", bool $cut_long_words = false) : string {}
 
 /**
- * @psalm-pure
- *
  * @param string|int|float $values
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
@@ -1467,7 +1489,13 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
  * @psalm-taint-sink html $format
+ * @psalm-taint-sink has_quotes $format
+ * @psalm-taint-sink user_secret $format
+ * @psalm-taint-sink system_secret $format
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function printf(string $format, ...$values) {}
 
@@ -1476,10 +1504,15 @@ function printf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
+ * @psalm-taint-sink has_quotes $format
+ * @psalm-taint-sink user_secret $format
+ * @psalm-taint-sink system_secret $format
  * @psalm-taint-sink html $values
+ * @psalm-taint-sink has_quotes $values
+ * @psalm-taint-sink user_secret $values
+ * @psalm-taint-sink system_secret $values
  */
 function vprintf(string $format, array $values) {}
 
@@ -1665,7 +1698,7 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
- * @psalm-flow ($json) -> return
+ * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
@@ -1677,7 +1710,7 @@ function json_decode(string $json, ?bool $associative = null, int $depth = 512, 
  * @param int<1, 2147483647> $depth
  * @return ($flags is int<4194304, 8388607> ? non-empty-string : non-empty-string|false)
  *
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-ignore-falsable-return
  */
 function json_encode(mixed $value, int $flags = 0, int $depth = 512) {}
@@ -1753,8 +1786,6 @@ function base64_encode(string $string) : string {}
 function bin2hex(string $string): string {}
 
 /**
- * @psalm-pure
- *
  * @param resource|null $context
  *
  * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
@@ -1766,8 +1797,6 @@ function bin2hex(string $string): string {}
 function get_headers(string $url, int $associative = 0, $context = null) : array|false {}
 
 /**
- * @psalm-pure
- *
  * @return array<lowercase-string, string>|false
  *
  * @psalm-taint-sink ssrf $filename

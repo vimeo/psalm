@@ -138,6 +138,7 @@ class IteratorIterator implements OuterIterator {
      * @param TIterator $iterator
      * @psalm-pure
      * @psalm-purity-from-template TPurity
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Traversable $iterator, ?string $class = null) {}
 
@@ -238,6 +239,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @param array<TKey, TValue> $array The array or object to be iterated on.
      * @param int-mask-of<static::*> $flags Flags to control the behaviour of the ArrayObject object.
+     * @psalm-flow ($array) -> return
      */
     public function __construct($array = array(), $flags = 0) { }
 
@@ -397,6 +399,7 @@ abstract class FilterIterator extends IteratorIterator {
     /**
      * @param TIterator $iterator
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator) {}
 
@@ -457,6 +460,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
     /**
      * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
@@ -498,6 +502,7 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
      * @param TIterator $iterator
      * @param callable[TPurity](TValue, TKey, TIterator): bool $callback
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator, callable $callback) {}
 
@@ -657,6 +662,7 @@ class InfiniteIterator extends IteratorIterator {
     /**
      * @param TIterator $iterator
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator) {}
 
@@ -698,6 +704,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
     /**
      * @param TIterator $iterator
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator, int $offset = 0, int $limit = -1) {}
 
@@ -762,6 +769,7 @@ class NoRewindIterator extends IteratorIterator {
     /**
      * @param TIterator $iterator
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator) {}
 
@@ -877,6 +885,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 
     /**
      * @param TIterator $iterator
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
@@ -917,6 +926,7 @@ class ParentIterator extends RecursiveFilterIterator implements RecursiveIterato
     public function accept() {}
     /**
      * @param TIterator $iterator
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(RecursiveIterator $iterator) {}
     /**
@@ -1019,6 +1029,7 @@ class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements 
      * @param TIterator $iterator
      * @param callable[TPurity](TValue, TKey, TIterator): bool $callback
      * @psalm-pure
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(RecursiveIterator $iterator, callable $callback) {}
 
@@ -1111,6 +1122,7 @@ class RecursiveIteratorIterator implements OuterIterator {
      * @param int $flags
      *
      * @return void
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct($iterator, $mode = 0, $flags = 0) {}
 }
@@ -1138,6 +1150,7 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
      * @param self::MATH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param self::USE_KEY|0 $flags
      * @param int $preg_flags
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
 
@@ -1193,6 +1206,7 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
      * @param int-mask<self::BYPASS_CURRENT, self::BYPASS_KEY> $flags
      * @param int-mask<self::CATCH_GET_CHILD> $cit_flags
      * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
+     * @psalm-flow ($it) -> return
      */
     public function __construct($it, int $flags = self::BYPASS_KEY, int $cit_flags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
 
@@ -1274,6 +1288,7 @@ class RegexIterator extends FilterIterator {
      * @param self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
      * @param int-mask<self::USE_KEY> $flags
      * @param int $preg_flags
+     * @psalm-flow ($iterator) -> return
      */
     public function __construct(Iterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
     /**

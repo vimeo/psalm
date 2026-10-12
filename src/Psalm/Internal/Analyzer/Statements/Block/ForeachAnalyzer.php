@@ -73,10 +73,10 @@ use UnexpectedValueException;
 
 use function array_keys;
 use function array_map;
+use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
-use function in_array;
 use function is_string;
 use function reset;
 use function stripos;
@@ -274,6 +274,14 @@ final class ForeachAnalyzer
             ) {
                 return false;
             }
+
+            [$key_type, $value_type] = self::taintObjectIteration(
+                $statements_analyzer,
+                $stmt->expr,
+                $iterator_type,
+                $key_type,
+                $value_type,
+            );
         }
 
         $foreach_context = clone $context;
@@ -405,6 +413,7 @@ final class ForeachAnalyzer
                 '$' . $stmt->valueVar->name,
                 $context,
                 $inner_loop_context,
+                $loop_scope,
             );
 
             self::taintItemsWrittenByRef(
@@ -432,7 +441,8 @@ final class ForeachAnalyzer
 
     /**
      * The items of the array a foreach by reference iterates over may hold, after the loop, what the value variable
-     * holds where an iteration ends or where the loop is left, under each of their keys.
+     * holds where an iteration ends or where the loop is left, under each of their keys. Not what it held before the
+     * loop: the context after the loop has it where the loop was not entered, but then nothing was written.
      */
     private static function addItemsWrittenByRef(
         StatementsAnalyzer $statements_analyzer,
@@ -440,6 +450,7 @@ final class ForeachAnalyzer
         string $value_var_id,
         Context $context,
         Context $inner_loop_context,
+        LoopScope $loop_scope,
     ): void {
         $array_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->expr,
@@ -455,13 +466,15 @@ final class ForeachAnalyzer
 
         $written_type = null;
 
-        foreach ([$inner_loop_context, $context] as $item_context) {
-            if (isset($item_context->vars_in_scope[$value_var_id])) {
-                $written_type = Type::combineUnionTypes(
-                    $item_context->vars_in_scope[$value_var_id],
-                    $written_type,
-                    $codebase,
-                );
+        // where an iteration ends, and where the loop is broken out of (see BreakAnalyzer), whether the variable
+        // was defined before the loop or not
+        foreach ([
+            $inner_loop_context->vars_in_scope[$value_var_id] ?? null,
+            $loop_scope->possibly_redefined_loop_parent_vars[$value_var_id] ?? null,
+            $loop_scope->possibly_defined_loop_parent_vars[$value_var_id] ?? null,
+        ] as $item_type) {
+            if ($item_type !== null) {
+                $written_type = Type::combineUnionTypes($item_type, $written_type, $codebase);
             }
         }
 
@@ -592,6 +605,72 @@ final class ForeachAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * The keys and values an object iterated over gives come from what it holds: a generator, what it yields (see
+     * YieldAnalyzer::taintGenerator()), another Traversable, what it was given. An array gives its keys and values
+     * through their own types.
+     *
+     * @return array{?Union, ?Union}
+     */
+    private static function taintObjectIteration(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Union $iterator_type,
+        ?Union $key_type,
+        ?Union $value_type,
+    ): array {
+        // only taints: the variable use graph keeps the origins of mixed keys and values to report them
+        $graph = $statements_analyzer->taint_flow_graph;
+
+        if (!$graph || !$iterator_type->parent_nodes) {
+            return [$key_type, $value_type];
+        }
+
+        $iterates_object = false;
+
+        $atomic_types = $iterator_type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            // a template parameter iterates over what its bound does
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...$atomic_type->as->getAtomicTypes()];
+                continue;
+            }
+
+            if ($atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TObject
+                || $atomic_type instanceof TIterable
+                || $atomic_type instanceof TMixed
+            ) {
+                $iterates_object = true;
+            }
+        }
+
+        if (!$iterates_object) {
+            return [$key_type, $value_type];
+        }
+
+        $location = new CodeLocation($statements_analyzer->getSource(), $expr);
+
+        $key_node = DataFlowNode::getForAssignment('foreach key', $location);
+        $value_node = DataFlowNode::getForAssignment('foreach value', $location);
+
+        $graph->addNode($key_node);
+        $graph->addNode($value_node);
+
+        foreach ($iterator_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $key_node, 'arraykey-fetch');
+            $graph->addPath($parent_node, $value_node, 'arrayvalue-fetch');
+        }
+
+        return [
+            ($key_type ?? Type::getMixed())->addParentNodes([$key_node->id => $key_node]),
+            ($value_type ?? Type::getMixed())->addParentNodes([$value_node->id => $value_node]),
+        ];
     }
 
     /**
@@ -973,11 +1052,11 @@ final class ForeachAnalyzer
 
                     $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                         $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
                         $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
                     }
 
@@ -997,11 +1076,11 @@ final class ForeachAnalyzer
                     $context->inside_call = $was_inside_call;
                     $context->inside_type_only_call = $was_inside_type_only_call;
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
                     }
 
@@ -1433,7 +1512,7 @@ final class ForeachAnalyzer
             $capabilities,
             null,
             self::collectClassTemplateParams($codebase, $iterator_atomic_type, $expr, $declaring_method_id),
-            MethodCallPurityAnalyzer::isThis($expr),
+            MethodCallPurityAnalyzer::isReceiverThis($expr),
             MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $expr),
         );
     }
@@ -1491,11 +1570,11 @@ final class ForeachAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
         }
 
@@ -1515,11 +1594,11 @@ final class ForeachAnalyzer
         $context->inside_call = $was_inside_call;
         $context->inside_type_only_call = $was_inside_type_only_call;
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
         }
 

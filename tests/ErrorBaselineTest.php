@@ -523,6 +523,59 @@ bar&#13;
         ], $remainingBaseline);
     }
 
+    public function testUpdateShouldKeepTheRemainingCodeSamplesAList(): void
+    {
+        $baselineFile = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFile)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFile)->andReturns(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <files>
+              <file src="sample/sample-file.php">
+                <MixedAssignment>
+                    <code>bar</code>
+                    <code>bat</code>
+                </MixedAssignment>
+              </file>
+            </files>',
+        );
+
+        $this->fileProvider->allows()->setContents(Mockery::andAnyOtherArgs());
+
+        $remainingBaseline = ErrorBaseline::update(
+            $this->fileProvider,
+            $baselineFile,
+            [
+                'sample/sample-file.php' => [
+                    new IssueData(
+                        IssueData::SEVERITY_ERROR,
+                        0,
+                        0,
+                        'MixedAssignment',
+                        'Message',
+                        'sample/sample-file.php',
+                        'sample/sample-file.php',
+                        'bat',
+                        'bat',
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ),
+                ],
+            ],
+            false,
+        );
+
+        $this->assertSame([
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 1, 's' => ['bat']],
+            ],
+        ], $remainingBaseline);
+    }
+
     public function testAddingACommentInBaselineDoesntTriggerNotice(): void
     {
         $baselineFilePath = 'baseline.xml';

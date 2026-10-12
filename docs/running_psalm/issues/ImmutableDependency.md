@@ -54,3 +54,5 @@ final class Admin extends User {}
 ```
 
 To fix, make the child need the same (or fewer) capabilities than the parent, or vice versa.  
+
+See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) and [overrides](../../annotating_code/purity_model.md#overrides) in the purity model.

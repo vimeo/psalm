@@ -157,6 +157,41 @@ final class PureAnnotationTest extends TestCase
                         return $c;
                     }',
             ],
+            'varDocblockOnAssignmentKeepsTheFreshnessOfANewObject' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-mutation-free
+                         * @param T $v
+                         */
+                        public function __construct(private mixed $v) {}
+
+                        /** @param T $v */
+                        public function set(mixed $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function f(int $i): int {
+                        /** @var Box<int> */
+                        $b = new Box($i);
+                        $b->set($i + 1);
+                        return $b->get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'canCreateImmutableObject' => [
                 'code' => '<?php
                     /** @psalm-immutable */
@@ -772,6 +807,84 @@ final class PureAnnotationTest extends TestCase
                         return $c;
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'varDocblockOnAssignmentFromParameterDoesNotMakeItFresh' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-mutation-free
+                         * @param T $v
+                         */
+                        public function __construct(private mixed $v) {}
+
+                        /** @param T $v */
+                        public function set(mixed $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Box<int> $b
+                     */
+                    function f(Box $b, int $i): int {
+                        /** @var Box<int> */
+                        $c = $b;
+                        $c->set($i);
+                        return $c->get();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'varDocblockOnAssignmentFromPropertyDoesNotMakeItFresh' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-external-mutation-free
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @psalm-mutation-free
+                         * @param T $v
+                         */
+                        public function __construct(private mixed $v) {}
+
+                        /** @param T $v */
+                        public function set(mixed $v): void {
+                            $this->v = $v;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->v;
+                        }
+                    }
+
+                    final class Holder {
+                        /** @param Box<int> $box */
+                        public function __construct(public Box $box) {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function f(Holder $h, int $i): int {
+                        /** @var Box<int> */
+                        $c = $h->box;
+                        $c->set($i);
+                        return $c->get();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'useOfStaticMakesFunctionImpure' => [
                 'code' => '<?php

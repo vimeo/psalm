@@ -69,30 +69,28 @@ final class ArrayAssignmentTest extends TestCase
                     $a["x"] = 1;
                     $a[(string) rand()] = "b";
                     $b = $a["x"];
+                    /** @psalm-check-type-exact $b = 1|string */;
 
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
+                    /** @psalm-check-type-exact $f = \'b\'|1 */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
                     $g[] = "b";
                     $h = $g["x"];
+                    /** @psalm-check-type-exact $h = 1 */;
 
                     /** @var array<string, int|string> $i */
                     $i = [];
                     $k = (string) rand();
                     $i[$k] = 1;
                     $i["x"] = "b";
-                    $j = $i[$k];',
-                'assertions' => [
-                    '$b===' => '1|string',
-                    '$f===' => "'b'|1",
-                    '$h===' => '1',
-                    '$j===' => 'int|string',
-                ],
+                    $j = $i[$k];
+                    /** @psalm-check-type-exact $j = int|string */;',
             ],
             'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
                 'code' => '<?php
@@ -101,7 +99,9 @@ final class ArrayAssignmentTest extends TestCase
                     $a["z"] = "z";
                     $a["x"][(string) rand()] = 1;
                     $b = $a["y"];
+                    /** @psalm-check-type-exact $b = int */;
                     $c = $a["z"];
+                    /** @psalm-check-type-exact $c = \'z\' */;
 
                     /** @var array<string, array<string, int|string>> $d */
                     $d = [];
@@ -109,7 +109,9 @@ final class ArrayAssignmentTest extends TestCase
                     $d["any"]["y"] = 6;
                     $d[(string) rand()]["x"] = "s";
                     $e = $d["any"]["x"];
+                    /** @psalm-check-type-exact $e = int|string */;
                     $f = $d["any"]["y"];
+                    /** @psalm-check-type-exact $f = 6 */;
 
                     /** @var array<string, array<string, int|string>> $g */
                     $g = [];
@@ -118,23 +120,17 @@ final class ArrayAssignmentTest extends TestCase
                     $g[$k]["lit"] = 6;
                     $g["x"]["lit"] = "s";
                     $h = $g[$k]["other"];
+                    /** @psalm-check-type-exact $h = 5 */;
                     $i = $g[$k]["lit"];
+                    /** @psalm-check-type-exact $i = int|string */;
 
                     /** @var array<int, array<string, int|string>> $j */
                     $j = [];
                     $n = rand();
                     $j[$n]["x"] = 5;
                     $j[]["x"] = "s";
-                    $l = $j[$n]["x"];',
-                'assertions' => [
-                    '$b===' => 'int',
-                    '$c===' => "'z'",
-                    '$e===' => 'int|string',
-                    '$f===' => '6',
-                    '$h===' => '5',
-                    '$i===' => 'int|string',
-                    '$l===' => '5',
-                ],
+                    $l = $j[$n]["x"];
+                    /** @psalm-check-type-exact $l = 5 */;',
             ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
@@ -202,7 +198,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $out[] = $bits;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<non-empty-list<int>>',
+                    '$out' => 'non-empty-list<list<int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
@@ -1688,7 +1684,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'list{int, int, ...<int>}'],
+                'assertions' => ['$x===' => 'non-empty-list<int>'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -1778,11 +1774,68 @@ final class ArrayAssignmentTest extends TestCase
                     $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
                 ',
                 'assertions' => [
-                    '$x===' => 'array{0: 3, bar: 2, foo: 1, ...<array-key, 4|5|6>}',
-                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
+                    '$x===' => 'array{bar: 2, foo: 1, ...<array-key, 3|4|5|6>}',
+                    '$y===' => 'array{0: 3, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'unpackListAfterLiteralItemsKeepsThem' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $objects = [];
+                    /** @var list<string> */
+                    $strings = [];
+
+                    $a = ["OR", ...$objects];
+                    $b = ["OR", ...$strings];
+                    $c = ["OR", "AND", ...$strings];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', ...<X>}",
+                    '$b===' => "list{'OR', ...<string>}",
+                    '$c===' => "list{'OR', 'AND', ...<string>}",
+                ],
+            ],
+            'unpackListAfterLiteralItemKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $conditions */
+                    function orWhere(array $conditions): void {
+                        takesWhere(["OR", ...$conditions]);
+                    }
+                ',
+            ],
+            'itemsAfterUnpackedListOfUnknownLengthGoToTheRest' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $strings = [];
+                    /** @var non-empty-list<int> */
+                    $ints = [];
+
+                    $a = ["OR", "AND", ...$strings, "x"];
+                    $b = ["OR", ...$ints, "x"];
+                    $c = ["OR", ...$ints, ...["a", "b"]];
+                    $d = [...$strings, "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'AND', ...<string>}",
+                    '$b===' => "list{'OR', int, ...<'x'|int>}",
+                    '$c===' => "list{'OR', int, ...<'a'|'b'|int>}",
+                    '$d===' => 'non-empty-list<string>',
+                ],
+            ],
+            'itemsAfterUnpackedListOfKnownLengthKeepTheirSlots' => [
+                'code' => '<?php
+                    $a = ["OR", ...["a", "b"], "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'a', 'b', 'x'}",
+                ],
             ],
             'unpackNonObjectlike' => [
                 'code' => '<?php
@@ -2022,6 +2075,28 @@ final class ArrayAssignmentTest extends TestCase
                     ',
                 'assertions' => ['$_a===' => 'array{16: 16, 17: 17, 18: 18}'],
             ],
+            'unpackShapeWithOptionalStringKeysKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{function: string, file?: string, line?: int} $frame */
+                    $frame = ["function" => "f"];
+                    /** @var array{x?: int} $optional */
+                    $optional = [];
+
+                    $defaulted = [...["file" => "", "line" => ""], ...$frame];
+                    $overridden = [...$frame, ...["file" => "x"]];
+                    $merged = [...["x" => "a"], ...$optional];
+                    $still_optional = [...$optional];
+                    $set_after = [...$optional, "x" => 1];',
+                'assertions' => [
+                    '$defaulted===' => 'array{file: string, function: string, line: \'\'|int}',
+                    '$overridden===' => 'array{file: \'x\', function: string, line?: int}',
+                    '$merged===' => 'array{x: \'a\'|int}',
+                    '$still_optional===' => 'array{x?: int}',
+                    '$set_after===' => 'array{x: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
 
@@ -2174,6 +2249,62 @@ final class ArrayAssignmentTest extends TestCase
                     '$a===' => 'list{0, 1, 2}',
                     '$b===' => 'list{0, 1, 2}',
                 ],
+            ],
+            'listAppendKeepsKnownItems' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $items = [];
+
+                    $a = ["OR"];
+                    foreach ($items as $item) {
+                        $a[] = $item;
+                    }
+
+                    $b = ["OR", "AND"];
+                    foreach ($items as $_) {
+                        $b[] = "x";
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $c = ["OR"];
+                    foreach ($items as $item) {
+                        $c[] = $item;
+                    }
+
+                    /** @var list{0: "OR", 1?: "AND"} */
+                    $d = ["OR"];
+                    foreach ($items as $item) {
+                        $d[] = $item;
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $e = ["OR"];
+                    $e[] = new X;
+                ',
+                'assertions' => [
+                    '$a===' => "list{0: 'OR', 1?: X, ...<X>}",
+                    '$b===' => "list{0: 'OR', 1: 'AND', 2?: 'x', ...<'x'>}",
+                    '$c===' => "list{'OR', ...<X>}",
+                    '$d===' => "list{0: 'OR', 1?: 'AND'|X, 2?: X, ...<X>}",
+                    '$e===' => "list{'OR', ...<X>}",
+                ],
+            ],
+            'listAppendInLoopKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $periods */
+                    function orWhere(array $periods): void {
+                        $conditions = ["OR"];
+                        foreach ($periods as $period) {
+                            $conditions[] = $period;
+                        }
+                        takesWhere($conditions);
+                    }
+                ',
             ],
             'appendValuesToMap' => [
                 'code' => '<?php

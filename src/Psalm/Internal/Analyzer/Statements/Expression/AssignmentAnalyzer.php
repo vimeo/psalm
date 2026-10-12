@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -34,6 +35,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -375,7 +377,13 @@ final class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            $assign_value_type = $comment_type->setParentNodes($parent_nodes);
+            // whether the value is a fresh object, state of the closure or was reached from global
+            // state is a property of the value, not of its declared type
+            $assign_value_type = $comment_type->setParentNodes($parent_nodes)->setProperties([
+                'reference_free' => $temp_assign_value_type->reference_free ?? false,
+                'closure_state' => $temp_assign_value_type->closure_state ?? false,
+                'from_global_state' => $temp_assign_value_type->from_global_state ?? false,
+            ]);
         } elseif (!$assign_value_type) {
             if ($assign_value) {
                 $assign_value_type = $statements_analyzer->node_data->getType($assign_value);
@@ -402,6 +410,12 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $context,
             );
+        }
+
+        // copying a reference into a variable gives a value, not a reference: only a variable that is a
+        // reference itself stays one (below)
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable && $assign_value_type->by_ref) {
+            $assign_value_type = $assign_value_type->setByRef(false);
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
@@ -555,6 +569,15 @@ final class AssignmentAnalyzer
             );
         }
 
+        // the target's old value is dropped
+        DestructorAnalyzer::chargeOverwrite(
+            $statements_analyzer,
+            $context,
+            $assign_var,
+            $extended_var_id,
+            $assign_value_type,
+        );
+
         if (self::analyzeAssignment(
             $assign_var,
             $statements_analyzer,
@@ -613,6 +636,7 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
                 $codebase,
                 $assign_var,
+                $assign_value,
                 $assign_expr,
                 $assign_value_type,
                 $var_id,
@@ -914,6 +938,7 @@ final class AssignmentAnalyzer
         CodeLocation $var_location,
         int $removed_taints,
         int $added_taints,
+        int $input_taints,
     ): void {
         $parent_nodes = $type->parent_nodes;
 
@@ -931,7 +956,13 @@ final class AssignmentAnalyzer
 
         // what the assigned value cannot hold, given its type
         if (!$flow_graph instanceof VariableUseGraph) {
-            $removed_taints |= $type->getTaintsToRemove();
+            $removed_taints |= $type->getTaintsToRemove($input_taints);
+        }
+
+        // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
+        $taint_flow_graph = $flow_graph instanceof CombinedFlowGraph ? $flow_graph->taint_flow_graph : $flow_graph;
+        if ($taint_flow_graph instanceof TaintFlowGraph && $taint_flow_graph->isOutputStream($type)) {
+            $taint_flow_graph->addOutputStream($new_parent_node);
         }
 
         foreach ($parent_nodes as $parent_node) {
@@ -1840,6 +1871,7 @@ final class AssignmentAnalyzer
                                     $var_location,
                                     $removed_taints,
                                     $added_taints,
+                                    $codebase->getInputTaints(),
                                 );
                             }
                         }
@@ -1938,10 +1970,17 @@ final class AssignmentAnalyzer
 
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
-        $isThis = $assign_var->var instanceof PhpParser\Node\Expr\Variable
-            && $assign_var->var->name === 'this';
-        
-        $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
+        $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
+
+        $var_type = $statements_analyzer->node_data->getType($assign_var->var);
+
+        // an object a closure captured from the scope that created it is the closure's own state
+        $mutations = $isThis || ($var_type !== null && $var_type->closure_state)
+            ? Capabilities::WRITE_THIS_PROPS
+            : Capabilities::WRITE_PROPS;
+
+        // a fresh object, that nothing else holds, is not state of the function-like either
+        $isFresh = !$isThis && $var_type !== null && $var_type->reference_free && $var_type->allow_mutations;
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
@@ -1950,7 +1989,7 @@ final class AssignmentAnalyzer
             'property assignment',
             ImpurePropertyAssignment::class,
             $assign_var,
-            $mutations,
+            $isFresh ? Capabilities::NONE : $mutations,
         );
     }
 
@@ -2156,6 +2195,7 @@ final class AssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
+        ?PhpParser\Node\Expr $assign_value,
         ?PhpParser\Node\Expr $assign_expr,
         Union &$assign_value_type,
         string $var_id,
@@ -2185,7 +2225,16 @@ final class AssignmentAnalyzer
                 $var_location,
                 $removed_taints,
                 $added_taints,
+                $codebase->getInputTaints(),
             );
+
+            // the start of a string assigned, for the keys of the keyed stores it is used as
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+            if ($assign_value && $taint_flow_graph) {
+                foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
+                    TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                }
+            }
         }
 
         if ($assign_expr) {

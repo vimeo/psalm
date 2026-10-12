@@ -11,11 +11,14 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -24,6 +27,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
@@ -36,6 +40,7 @@ use Throwable;
 use UnexpectedValueException;
 
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -272,11 +277,69 @@ final class MethodCallReturnTypeFetcher
             $context,
         );
 
-        return $return_type_candidate;
+        // what a generator gives comes from what it yields (see YieldAnalyzer::taintGenerator())
+        $generator_path_type = match (strtolower((string) $declaring_method_id)) {
+            'generator::current', 'generator::send' => 'arrayvalue-fetch',
+            'generator::key' => 'arraykey-fetch',
+            'generator::getreturn' => 'return',
+            default => null,
+        };
+
+        if ($generator_path_type !== null
+            && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
+            && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
+            && $var_type->parent_nodes
+        ) {
+            $generator_node = DataFlowNode::getForAssignment(
+                'generator ' . $cased_method_id,
+                new CodeLocation($statements_analyzer, $stmt->name),
+            );
+
+            $graph->addNode($generator_node);
+
+            foreach ($var_type->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $generator_node, $generator_path_type);
+            }
+
+            $return_type_candidate = $return_type_candidate->addParentNodes(
+                [$generator_node->id => $generator_node],
+            );
+
+            // what is sent becomes the value of the yield expressions of the generator
+            if ($generator_path_type === 'arrayvalue-fetch'
+                && isset($args[0])
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+                && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
+                && $sent_type->parent_nodes
+                && strtolower((string) $declaring_method_id) === 'generator::send'
+            ) {
+                $sent_node = DataFlowNode::getForAssignment(
+                    'sent to the generator',
+                    new CodeLocation($statements_analyzer, $args[0]->value),
+                );
+
+                $taint_flow_graph->addNode($sent_node);
+
+                foreach ($sent_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $sent_node, 'arg');
+                }
+
+                $taint_flow_graph->addGeneratorSend($sent_node, $var_type->parent_nodes);
+            }
+        }
+
+        return NativeClassTaintAnalyzer::taint(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $method_id,
+            $args,
+            $return_type_candidate,
+        );
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>   $args
+     * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
         StatementsAnalyzer $statements_analyzer,
@@ -309,7 +372,12 @@ final class MethodCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
-        $is_declaring = (string) $declaring_method_id === (string) $method_id;
+        // the nodes of the body of the method are keyed by the class it is analyzed as one of, which for a method
+        // of a trait is the class using it
+        $body_method_id = FunctionLikeAnalyzer::getBodyMethodId($codebase, $method_id);
+        $cased_body_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
+
+        $is_declaring = (string) $body_method_id === (string) $method_id;
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $var_expr,
@@ -324,36 +392,46 @@ final class MethodCallReturnTypeFetcher
             $node_location,
         );
 
+        // what the object holds before the call, which a specialized call may replace in the context below
+        $receiver_parent_nodes = $method_storage->return_source_this === null
+            ? []
+            : (($var_id !== null && isset($context->vars_in_scope[$var_id])
+                ? $context->vars_in_scope[$var_id]
+                : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
+
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
-            if ($method_storage->specialize_call && $var_id && isset($context->vars_in_scope[$var_id])) {
-                $parent_nodes = $context->vars_in_scope[$var_id]->parent_nodes;
+            // a receiver without a variable, like `(new A())->m()`, enters the body through its own type
+            $receiver_type = $var_id !== null && isset($context->vars_in_scope[$var_id])
+                ? $context->vars_in_scope[$var_id]
+                : ($var_id === null ? $statements_analyzer->node_data->getType($var_expr) : null);
 
-                $unspecialized_parent_nodes = false;
-                foreach ($parent_nodes as $parent_node) {
-                    if ($parent_node->specialization_key === null) {
-                        $unspecialized_parent_nodes = true;
-                        break;
-                    }
-                }
+            if ($method_storage->specialize_call && $receiver_type !== null) {
+                $parent_nodes = $receiver_type->parent_nodes;
 
-                $var_node = DataFlowNode::getForAssignment(
-                    $var_id,
-                    new CodeLocation($statements_analyzer, $var_expr),
-                );
+                $var_node = $var_id !== null
+                    ? DataFlowNode::getForAssignment($var_id, new CodeLocation($statements_analyzer, $var_expr))
+                    : null;
+
+                // This call is specialized by its own location, whatever specializations the receiver's nodes
+                // carry: the parent of a receiver without a variable, like `(new A())->m()`, is the specialized
+                // `$this out of A::__construct` of the `new`. Keyed by that, the return node would be a
+                // specialization the call's body never exits into.
+                $call_specialization_key = DataFlowNode::getSpecializationKey($node_location);
 
                 if ($method_storage->location) {
                     // the body of the method, declared by this class or the one it inherits it from, takes `$this`
                     // from this node: this call enters it with its own specialization, like the arguments do, so
                     // that what it returns is this object's and not every object's
-                    foreach ($parent_nodes as $parent_node) {
-                        $this_parent_node = DataFlowNode::getForAssignment(
-                            '$this in ' . (string) $declaring_method_id,
-                            $method_storage->location,
-                            $parent_node->specialization_key ?? DataFlowNode::getSpecializationKey($node_location),
-                        );
+                    $this_parent_node = DataFlowNode::getForAssignment(
+                        '$this in ' . (string) $body_method_id,
+                        $method_storage->location,
+                        $call_specialization_key,
+                    );
 
-                        $taint_flow_graph->addNode($this_parent_node);
+                    $taint_flow_graph->addNode($this_parent_node);
+
+                    foreach ($parent_nodes as $parent_node) {
                         $taint_flow_graph->addPath(
                             $parent_node,
                             $this_parent_node,
@@ -364,115 +442,83 @@ final class MethodCallReturnTypeFetcher
                     }
                 }
 
-                $method_call_nodes = [];
+                // Build the return node the same way whether or not this class declares the
+                // method (it used to get a dedicated location-less 'inherited-method' node when
+                // inherited): a single getForMethodReturn() that derives the node's location from
+                // the declaring-method storage. This gives the inherited-call node a meaningful
+                // definition location -- the method's return-type location -- instead of null, so
+                // a taint trace points at where the method is actually defined; and, since that
+                // location is a pure function of the (declaring) storage, it keeps id -> location
+                // deterministic across forked workers.
+                $method_call_node = DataFlowNode::getForMethodReturn(
+                    $cased_method_id,
+                    $method_storage,
+                    $node_location,
+                );
 
-                if ($unspecialized_parent_nodes) {
-                    // Build the return node the same way whether or not this class declares the
-                    // method (it used to get a dedicated location-less 'inherited-method' node when
-                    // inherited): a single getForMethodReturn() that derives the node's location from
-                    // the declaring-method storage. This gives the inherited-call node a meaningful
-                    // definition location -- the method's return-type location -- instead of null, so
-                    // a taint trace points at where the method is actually defined; and, since that
-                    // location is a pure function of the (declaring) storage, it keeps id -> location
-                    // deterministic across forked workers. (The classification itself never differs
-                    // between workers -- getDeclaringMethodId() is a pure function of the fixed class
-                    // hierarchy -- so this is about node quality and unifying the two code paths, not
-                    // about resolving a per-process disagreement.)
-                    $method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_method_id,
-                        $method_storage,
-                        $node_location,
+                $taint_flow_graph->addNode($method_call_node);
+
+                // what the method leaves in the object, which isn't what it returns
+                if ($var_node !== null && $method_storage->location) {
+                    $taint_flow_graph->addNode($var_node);
+
+                    $this_out_node = DataFlowNode::getForAssignment(
+                        '$this out of ' . $cased_body_method_id,
+                        $method_storage->location,
+                        $method_call_node->specialization_key,
                     );
 
-                    $method_call_nodes[$method_call_node->id] = $method_call_node;
-                }
-
-                foreach ($parent_nodes as $parent_node) {
-                    if ($parent_node->specialization_key === null) {
-                        continue;
-                    }
-
-                    $universal_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_method_id,
-                        $method_storage,
-                    );
-
-                    $method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_method_id,
-                        $method_storage,
-                        null,
-                        0,
-                        $parent_node->specialization_key,
-                    );
-
+                    $taint_flow_graph->addNode($this_out_node);
                     $taint_flow_graph->addPath(
-                        $universal_method_call_node,
-                        $method_call_node,
-                        '=',
+                        $this_out_node,
+                        $var_node,
+                        'method-call-' . $method_id->method_name,
                         $added_taints,
                         $removed_taints,
                     );
 
-                    $method_call_nodes[$method_call_node->id] = $method_call_node;
-                }
-
-                if (!$method_call_nodes) {
-                    return;
-                }
-
-                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
-                foreach ($method_call_nodes as $method_call_node) {
-                    $taint_flow_graph->addNode($method_call_node);
-                    $taint_flow_graph->addNode($var_node);
-
-                    // what the method leaves in the object, which isn't what it returns
-                    if ($method_storage->location) {
-                        $this_out_node = DataFlowNode::getForAssignment(
-                            '$this out of ' . $cased_declaring_method_id,
-                            $method_storage->location,
-                            $method_call_node->specialization_key,
-                        );
-
-                        $taint_flow_graph->addNode($this_out_node);
+                    // a stubbed method has no body to take `$this` through: the object keeps what it has
+                    if ($method_storage->stubbed) {
                         $taint_flow_graph->addPath(
+                            DataFlowNode::getForAssignment(
+                                '$this in ' . (string) $body_method_id,
+                                $method_storage->location,
+                                $call_specialization_key,
+                            ),
                             $this_out_node,
-                            $var_node,
-                            'method-call-' . $method_id->method_name,
-                            $added_taints,
-                            $removed_taints,
-                        );
-                    }
-
-                    if (!$is_declaring) {
-                        $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
-                        $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                            $cased_declaring_method_id,
-                            $method_storage,
-                            null,
-                            0,
-                            $method_call_node->specialization_key,
-                        );
-
-                        $taint_flow_graph->addNode($declaring_method_call_node);
-                        $taint_flow_graph->addPath(
-                            $declaring_method_call_node,
-                            $method_call_node,
-                            'parent',
-                            $added_taints,
-                            $removed_taints,
+                            '$this',
                         );
                     }
                 }
 
-                $return_type_candidate = $return_type_candidate->setParentNodes($method_call_nodes);
+                if (!$is_declaring) {
+                    $declaring_method_call_node = DataFlowNode::getForMethodReturn(
+                        $cased_body_method_id,
+                        $method_storage,
+                        null,
+                        0,
+                        $method_call_node->specialization_key,
+                    );
 
-                $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
-                    [$var_node->id => $var_node],
-                );
+                    $taint_flow_graph->addNode($declaring_method_call_node);
+                    $taint_flow_graph->addPath(
+                        $declaring_method_call_node,
+                        $method_call_node,
+                        'parent',
+                        $added_taints,
+                        $removed_taints,
+                    );
+                }
 
-                $context->vars_in_scope[$var_id] = $stmt_var_type;
+                $return_type_candidate = $return_type_candidate->setParentNodes([
+                    $method_call_node->id => $method_call_node,
+                ]);
+
+                if ($var_id !== null && $var_node !== null) {
+                    $context->vars_in_scope[$var_id] = $receiver_type->setParentNodes(
+                        [$var_node->id => $var_node],
+                    );
+                }
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(
                     $cased_method_id,
@@ -481,10 +527,8 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if (!$is_declaring) {
-                    $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
                     $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_declaring_method_id,
+                        $cased_body_method_id,
                         $method_storage,
                         $node_location,
                     );
@@ -515,10 +559,8 @@ final class MethodCallReturnTypeFetcher
             );
 
             if (!$is_declaring) {
-                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
                 $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                    $cased_declaring_method_id,
+                    $cased_body_method_id,
                     $method_storage,
                     null,
                 );
@@ -544,11 +586,53 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
+        // `@psalm-flow ($this) -> return`: what the method returns holds what the object it is called on holds
+        if ($method_storage->return_source_this !== null) {
+            // what the native return type cannot hold, since PHP enforces it
+            $type_removed_taints = $method_storage->signature_return_type?->getTaintsToRemove(
+                $codebase->getInputTaints(),
+            ) ?? 0;
+
+            foreach ($receiver_parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath(
+                    $parent_node,
+                    $method_call_node,
+                    $method_storage->return_source_this,
+                    $added_taints | $method_storage->added_taints,
+                    $removed_taints | $method_storage->removed_taints | $type_removed_taints,
+                );
+            }
+        }
+
+        $dispatch_node = self::getReturnDispatchNode(
+            $codebase,
+            $taint_flow_graph,
+            $method_id,
+            $method_storage,
+            $node_location,
+        );
+
+        if ($dispatch_node) {
+            $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+        }
+
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $method_storage,
             $taint_flow_graph,
             (string) $method_id,
             $args,
+            $specialize_call ? $node_location : null,
+            $method_call_node,
+            $codebase->getInputTaints(),
+            $method_storage->removed_taints,
+        );
+
+        FunctionCallReturnTypeFetcher::taintUsingCallableFlows(
+            $codebase,
+            $method_storage,
+            $taint_flow_graph,
+            $cased_method_id,
+            $method_id,
             $specialize_call ? $node_location : null,
             $method_call_node,
             $method_storage->removed_taints,
@@ -558,7 +642,116 @@ final class MethodCallReturnTypeFetcher
             $method_storage,
             $taint_flow_graph,
             $method_call_node,
+            $codebase->getInputTaints(),
         );
+
+        $return_type_candidate = TaintStore::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $node_location,
+            $return_type_candidate,
+            $cased_method_id,
+            $method_id,
+            $specialize_call ? $node_location : null,
+        );
+    }
+
+    /**
+     * The node of what a virtual call of a method at $call_location gets from the methods that may run instead, those
+     * of the classes extending the class it is called on, or null if there are none.
+     *
+     * That can't be the return node of the method: the calls on the classes inheriting it go there too, and they
+     * can't run the methods of the others. The methods are linked to a dispatch node (see
+     * DataFlowNode::getForReturnDispatch()) shared by the virtual calls of the method on the class, once, so that
+     * the number of calls doesn't multiply its paths. Each call takes it through a node of its own, so that what is
+     * added to the result of a call doesn't go to the others.
+     */
+    public static function getReturnDispatchNode(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+        CodeLocation $call_location,
+    ): ?DataFlowNode {
+        // a constructor is called on the class it constructs, a private method is not overridden
+        if ($method_id->method_name === '__construct'
+            || $method_storage->final
+            || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        if ($class_storage->dependent_classlikes === []) {
+            return null;
+        }
+
+        $cased_method_id = $class_storage->name . '::' . (string) $method_storage->cased_name;
+        $dispatch_node = DataFlowNode::getForReturnDispatch($cased_method_id);
+
+        if (!$taint_flow_graph->hasNode($dispatch_node)) {
+            $return_nodes = [];
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
+
+                // the method the objects of the class run, which it may inherit from a class not extending this one
+                $dependent_appearing_method_id = $codebase->methods->getAppearingMethodId($dependent_method_id);
+                $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+
+                if ($dependent_appearing_method_id === null
+                    || $dependent_declaring_method_id === null
+                    || (string) $dependent_appearing_method_id === (string) $appearing_method_id
+                ) {
+                    continue;
+                }
+
+                $dependent_storage = $codebase->methods->getStorage($dependent_declaring_method_id);
+
+                // What the body of a method specialized by call site returns leaves its return node through the
+                // specializations of the node, and only when the node has no path of its own: the dispatch is
+                // then one more call site of it, keyed by the location of the method
+                $specialization_location = $dependent_storage->location !== null
+                    && TaintFlowGraph::isCallSpecialized(
+                        $taint_flow_graph,
+                        $codebase,
+                        $dependent_storage,
+                        $dependent_storage->location,
+                    ) ? $dependent_storage->location : null;
+
+                // the body of a method of a trait is analyzed as one of each class using it
+                $return_node = DataFlowNode::getForMethodReturn(
+                    FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id),
+                    $dependent_storage,
+                    $specialization_location,
+                );
+
+                $return_nodes[$return_node->id] = $return_node;
+            }
+
+            // no other method may run: the classes extending this one inherit the method
+            if ($return_nodes === []) {
+                return null;
+            }
+
+            $taint_flow_graph->addNode($dispatch_node);
+
+            foreach ($return_nodes as $return_node) {
+                $taint_flow_graph->addNode($return_node);
+                $taint_flow_graph->addPath($return_node, $dispatch_node, 'dispatch');
+            }
+        }
+
+        $call_node = DataFlowNode::getForAssignment($dispatch_node->label, $call_location);
+
+        $taint_flow_graph->addNode($call_node);
+        $taint_flow_graph->addPath($dispatch_node, $call_node, 'dispatch');
+
+        return $call_node;
     }
 
     public static function replaceTemplateTypes(

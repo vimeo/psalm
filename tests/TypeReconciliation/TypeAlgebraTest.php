@@ -1277,6 +1277,50 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyNarrowedAfterEarlyReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?int $x = null;
+                    }
+
+                    function f(): int {
+                        if (A::$x === null) {
+                            return 0;
+                        }
+
+                        return A::$x;
+                    }',
+            ],
+            'staticPropertyArrayOffsetNarrowedAfterEarlyReturn' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array{a?: int}|null */
+                        public static ?array $x = null;
+                    }
+
+                    function f(): int {
+                        if (A::$x === null || !isset(A::$x["a"])) {
+                            return 0;
+                        }
+
+                        return A::$x["a"];
+                    }',
+            ],
+            'staticPropertyPropertyNarrowedAfterEarlyReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?A $x = null;
+                        public ?int $y = null;
+                    }
+
+                    function f(): int {
+                        if (A::$x === null || A::$x->y === null) {
+                            return 0;
+                        }
+
+                        return A::$x->y;
+                    }',
+            ],
         ];
     }
 
@@ -1287,6 +1331,21 @@ final class TypeAlgebraTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?int $x = null;
+                    }
+
+                    function f(): string {
+                        if (A::$x === null) {
+                            return "";
+                        }
+
+                        return A::$x;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'threeVarLogicWithChange' => [
                 'code' => '<?php
                     function takesString(string $s): void {}

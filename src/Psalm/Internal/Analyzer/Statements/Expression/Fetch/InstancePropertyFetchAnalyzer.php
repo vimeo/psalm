@@ -9,8 +9,8 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -47,6 +47,8 @@ final class InstancePropertyFetchAnalyzer
         bool $in_assignment = false,
         bool $is_static_access = false,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
 
@@ -65,6 +67,8 @@ final class InstancePropertyFetchAnalyzer
         }
 
         $context->inside_general_use = $was_inside_general_use;
+
+        $receiver_state = NullsafeChainState::of($stmt->var);
 
         if ($stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
@@ -192,19 +196,19 @@ final class InstancePropertyFetchAnalyzer
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues) {
             // we can only be sure that the variable is possibly null if we know the var_id
-            if (!$context->inside_isset
-                && $stmt->name instanceof PhpParser\Node\Identifier
-                && !MethodCallAnalyzer::hasNullsafe($stmt->var)
-            ) {
-                IssueBuffer::maybeAdd(
-                    new PossiblyNullPropertyFetch(
-                        rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
-                        . ' of type ' . $stmt_var_type,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            } else {
+            if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
+                // the null of a `?->` short-circuit is added to the result below, it is not a fetch on null
+                if ($receiver_state !== NullsafeChainState::ShortCircuit) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyNullPropertyFetch(
+                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
+                            . ' of type ' . $stmt_var_type,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } elseif ($receiver_state === NullsafeChainState::None) {
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
             }
         }
@@ -266,8 +270,18 @@ final class InstancePropertyFetchAnalyzer
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-        if ($stmt_var_type->isNullable() && !$context->inside_isset && $stmt_type) {
-            $stmt_type = $stmt_type->getBuilder()->addType(new TNull);
+        $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
+
+        if ($short_circuit_null) {
+            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+        }
+
+        // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result
+        if ($stmt_var_type->isNullable()
+            && ($short_circuit_null || !$context->inside_isset)
+            && ($stmt_type || $short_circuit_null)
+        ) {
+            $stmt_type = $stmt_type ? $stmt_type->getBuilder()->addType(new TNull) : Type::getNull()->getBuilder();
 
             if ($stmt_var_type->ignore_nullable_issues) {
                 $stmt_type->ignore_nullable_issues = true;

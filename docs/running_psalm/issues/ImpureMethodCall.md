@@ -24,3 +24,5 @@ function filterOdd(int $i, A $a) : ?int {
     return null;
 }
 ```
+
+What a method call costs depends on its receiver: see [how calls are charged](../../annotating_code/purity_model.md#how-calls-are-charged) in the purity model.
