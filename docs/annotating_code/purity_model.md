@@ -102,6 +102,11 @@ function tamper(): void {
 }
 ```
 
+A new object the caller created (see [Method calls](#method-calls)) is not global state itself,
+even when its constructor read global state, or when it is a clone of an object reached from
+global state: writing its own properties is free. What it holds may be global state, so writing
+another object through it, or calling a method that does, costs `write-globals` too.
+
 ## Annotations
 
 Every purity annotation is a name for a capability set:
@@ -243,7 +248,8 @@ caller's. The call is charged according to the receiver:
 - the caller's own `$this`, also when a call on it of a method returning its receiver gives it
   back (see [Fluent calls](#fluent-calls)): `write-this-props`;
 - an object the caller created with `new`, from a class whose contract needs at most
-  `read-props|write-this-props|write-refs`: nothing, as nobody else can see it change;
+  `read-props|write-this-props|write-refs`, or whose constructor can't keep a reference to it:
+  nothing, as nobody else can see it change;
 - any other object, including a parameter, a property of `$this`, or an object returned by
   another call: `write-props`.
 
@@ -282,9 +288,14 @@ function bump(Counter $counter): int {
 }
 ```
 
-The waiver for new objects needs the class-level contract. If `Counter` had no
-`@psalm-capabilities` on the class, `new Counter()` followed by `->inc()` would cost
-`write-props`, because a subclass could do more.
+Without the class-level contract, the waiver for new objects needs a constructor that can't keep
+a reference to the new object: one that needs none of `write-props`, `write-globals` and
+`write-refs`, as only writing another object, global state or a by-reference parameter can hand
+`$this` to someone else (a class without a constructor is fine too). If `Counter` had no
+`@psalm-capabilities` on the class and its constructor stored `$this` in a static property,
+`new Counter()` followed by `->inc()` would cost `write-props`. `new static()` and
+`new $className()` get no waiver without the contract when the class may be extended, as the
+constructor of a subclass may run instead.
 
 The `write-this-props` that a class purity template of the receiver is bound to
 (`Doer[write-this-props]`, see [Purity templates](#purity-templates)) is charged the same way,

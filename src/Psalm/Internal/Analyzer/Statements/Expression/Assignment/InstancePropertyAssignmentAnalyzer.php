@@ -435,8 +435,9 @@ final class InstancePropertyAssignmentAnalyzer
             // the inferred level as for the reported one. `$this` is the caller's own instance,
             // never a fresh one, even where its type is reference-free, and an object a closure
             // captured from the scope that created it is the closure's own state.
+            $writes_fresh_object = $property_var_pure_compatible && $lhs_var_id !== '$this';
             $real = match (true) {
-                $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
+                $writes_fresh_object => Capabilities::NONE,
                 $lhs_var_id === '$this',
                 $var_type !== null && $var_type->closure_state => Capabilities::WRITE_THIS_PROPS,
                 default => Capabilities::WRITE_PROPS,
@@ -446,6 +447,10 @@ final class InstancePropertyAssignmentAnalyzer
             $mut = $lhs_var_id === '$this' && $can_set_readonly_property
                 ? ($property_var_pure_compatible ? Capabilities::NONE : Capabilities::READ_PROPS)
                 : $real;
+
+            // a fresh object holding global state (see MethodCallPurityAnalyzer::getMethodCapabilities()) is
+            // still fresh: nobody else sees its own properties change
+            $on_global_state = $on_global_state && !$writes_fresh_object;
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;

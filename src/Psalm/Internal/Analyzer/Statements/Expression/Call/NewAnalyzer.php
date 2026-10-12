@@ -444,6 +444,9 @@ final class NewAnalyzer extends CallAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
+        // whether the constructor, if any, can't keep a reference to the new object (see analyzeConstructorPurity())
+        $keeps_no_reference = true;
+
         if ($codebase->methodExists(
             $method_id,
             $context->calling_method_id,
@@ -489,6 +492,7 @@ final class NewAnalyzer extends CallAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             $method_storage = null;
+            $keeps_no_reference = false;
 
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
@@ -507,7 +511,7 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                self::analyzeConstructorPurity(
+                $keeps_no_reference = self::analyzeConstructorPurity(
                     $statements_analyzer,
                     $codebase,
                     $context,
@@ -759,8 +763,16 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->isExternalMutationFree()) {
+        $is_external_mutation_free = $storage->isExternalMutationFree();
+
+        if ($is_external_mutation_free) {
             $stmt->setAttribute('external_mutation_free', true);
+        }
+
+        // Nothing else holds the new object when its class contract says so, or when the constructor run can't
+        // keep a reference to it. That of a child class may run instead when the class may be extended
+        // (`new static`, `new $class_string`).
+        if ($is_external_mutation_free || ($keeps_no_reference && !$can_extend)) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if ($stmt_type) {
@@ -942,6 +954,9 @@ final class NewAnalyzer extends CallAnalyzer
      * What calling a constructor costs: its capabilities (with those of the closures its purity
      * templates are bound to), less what it does to the new object, with its by-reference
      * parameters costing what the arguments passed to them are.
+     *
+     * Returns whether the constructor can't keep a reference to the new object: it can only store `$this`
+     * by writing another object, global state or a by-reference parameter.
      */
     private static function analyzeConstructorPurity(
         StatementsAnalyzer $statements_analyzer,
@@ -952,7 +967,7 @@ final class NewAnalyzer extends CallAnalyzer
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
         string $fq_class_name,
-    ): void {
+    ): bool {
         $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
 
         // the constructor only mutates the new object: what it does to it is fine
@@ -1010,6 +1025,9 @@ final class NewAnalyzer extends CallAnalyzer
             ImpureMethodCall::class,
             $cased_method_id,
         );
+
+        return ($resolved_capabilities
+            & (Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS | Capabilities::WRITE_REFS)) === 0;
     }
 
     private static function checkDynamicConstructorPurity(

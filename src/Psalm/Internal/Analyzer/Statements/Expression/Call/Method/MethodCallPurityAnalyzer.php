@@ -58,7 +58,7 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
-     * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
+     * receiver is pure-compatible or external-mutation-free (fresh), needs write-this-props when it is
      * `$this` or state of the closure being analysed and write-props otherwise, as writing its
      * properties directly would. Callers that know the receiver to be fresh by other means say so
      * with $receiver_is_fresh.
@@ -71,10 +71,14 @@ final class MethodCallPurityAnalyzer
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
 
-        if (!self::isFromGlobalState($statements_analyzer, $var)
-            && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
-        ) {
-            return $capabilities & ~Capabilities::RECEIVER_LOCAL;
+        if ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var)) {
+            // Nobody else sees the receiver's own state change, even when it holds global state (a clone of a
+            // global object, an object whose constructor read global state): what else it writes may be that.
+            return self::getCapabilitiesForReceiver(
+                $capabilities & ~Capabilities::RECEIVER_LOCAL,
+                false,
+                self::isFromGlobalState($statements_analyzer, $var),
+            );
         }
 
         return self::getCapabilitiesForReceiver(
