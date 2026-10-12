@@ -127,7 +127,7 @@ final class Capabilities
     public static function toNamedLevel(int $capabilities): int
     {
         foreach ([self::NONE, self::MUTATION_FREE, self::EXTERNAL_MUTATION_FREE] as $level) {
-            if (self::allows($level, $capabilities)) {
+            if (self::allowsAnyOf($level, $capabilities)) {
                 return $level;
             }
         }
@@ -141,7 +141,7 @@ final class Capabilities
      *
      * @psalm-pure
      */
-    public static function allows(int $available, int $required): bool
+    public static function allowsAnyOf(int $available, int $required): bool
     {
         return ($required & ~$available) === 0;
     }

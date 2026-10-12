@@ -168,7 +168,7 @@ final class AtomicTypeComparator
                 && $container_type_part instanceof TTemplateParam
                 && Capabilities::isPurityType($container_type_part->as)
             ) {
-                return Capabilities::allows(
+                return Capabilities::allowsAnyOf(
                     self::getPurityTemplateLowerBound($codebase, $container_type_part),
                     $input_type_part->capabilities,
                 );
@@ -177,7 +177,7 @@ final class AtomicTypeComparator
             // a capability set is a subtype of every superset: pure fits anywhere, impure only in impure
             return $input_type_part instanceof TCapabilities
                 && $container_type_part instanceof TCapabilities
-                && Capabilities::allows($container_type_part->capabilities, $input_type_part->capabilities);
+                && Capabilities::allowsAnyOf($container_type_part->capabilities, $input_type_part->capabilities);
         }
 
         if ($input_type_part instanceof TMixed

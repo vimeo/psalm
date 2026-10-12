@@ -1552,7 +1552,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if (!Capabilities::allows($storage->capabilities, $trait_storage->capabilities)) {
+            if (!Capabilities::allowsAnyOf($storage->capabilities, $trait_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
@@ -2272,7 +2272,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!Capabilities::allows($interface_storage->capabilities, $storage->capabilities)) {
+            if (!Capabilities::allowsAnyOf($interface_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
                         $fq_interface_name . ' is marked with @'
@@ -2516,7 +2516,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!Capabilities::allows($parent_class_storage->capabilities, $storage->capabilities)) {
+            if (!Capabilities::allowsAnyOf($parent_class_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
                         $parent_fq_class_name . ' is marked with @'
@@ -2526,7 +2526,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            } elseif (!Capabilities::allows($storage->capabilities, $parent_class_storage->capabilities)) {
+            } elseif (!Capabilities::allowsAnyOf($storage->capabilities, $parent_class_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $fq_class_name . ' is marked with @'

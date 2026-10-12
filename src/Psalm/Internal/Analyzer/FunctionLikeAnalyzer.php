@@ -628,7 +628,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
-                && !Capabilities::allows($storage->containing_class_capabilities, $storage->capabilities)
+                && !Capabilities::allowsAnyOf($storage->containing_class_capabilities, $storage->capabilities)
             ) {
                 IssueBuffer::maybeAdd(
                     new ImpureFunctionCall(
@@ -679,7 +679,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // by-reference write, no IO) and returns nothing is useless: not pure by intent
                 $this->signalMutationOnlyInferred(Capabilities::MUTATION_FREE);
 
-                if (Capabilities::allows(Capabilities::READ_GLOBALS, $context->capabilities)) {
+                if (Capabilities::allowsAnyOf(Capabilities::READ_GLOBALS, $context->capabilities)) {
                     IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'pure functions cannot have void return type'

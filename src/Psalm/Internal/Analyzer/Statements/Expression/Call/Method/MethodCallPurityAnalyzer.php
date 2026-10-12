@@ -188,7 +188,7 @@ final class MethodCallPurityAnalyzer
         $reads_globals = ($method_capabilities & Capabilities::READ_GLOBALS) !== 0;
 
         // a mutation-free method called with closures that are not is not mutation-free here
-        $call_is_mutation_free = Capabilities::allows(Capabilities::MUTATION_FREE, $method_capabilities);
+        $call_is_mutation_free = Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $method_capabilities);
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
@@ -248,7 +248,10 @@ final class MethodCallPurityAnalyzer
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 // the class is immutable, or pure
-                && (Capabilities::allows(Capabilities::MUTATION_FREE, $method_storage->containing_class_capabilities)
+                && (Capabilities::allowsAnyOf(
+                    Capabilities::MUTATION_FREE,
+                    $method_storage->containing_class_capabilities,
+                )
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -258,7 +261,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if (Capabilities::allows(
+                    if (Capabilities::allowsAnyOf(
                         Capabilities::MUTATION_FREE,
                         $method_storage->containing_class_capabilities,
                     )) {
