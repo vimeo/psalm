@@ -122,7 +122,7 @@ final class MutationLevelResolver
                         : $callee_level;
                 }
 
-                if (!Capabilities::allows(
+                if (!Capabilities::allowsAnyOf(
                     FunctionLikeAnalyzer::getParamDefaultCapabilities(Capabilities::toNamedLevel($levels[$node_id])),
                     $default_level,
                 )) {
@@ -227,7 +227,7 @@ final class MutationLevelResolver
             $level = Capabilities::toNamedLevel($level);
 
             if (!$info['report']
-                || !Capabilities::allows($info['allowed'], $level)
+                || !Capabilities::allowsAnyOf($info['allowed'], $level)
                 || $level === Capabilities::toNamedLevel($info['allowed'])
             ) {
                 continue;

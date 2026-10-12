@@ -243,6 +243,14 @@ final class TaintFlowResolution
     private array $path_type_effects = [];
 
     /**
+     * The path types converting to a scalar a value that may be an array (see
+     * TaintFlowGraph::ARRAY_CONVERSION_SUFFIX)
+     *
+     * @var array<int, true>
+     */
+    private array $array_conversion_path_types = [];
+
+    /**
      * Open assignments => key (see internOpenAssignments())
      *
      * @var array<string, int>
@@ -413,6 +421,15 @@ final class TaintFlowResolution
      * @var array<int, array{int, int, string}>
      */
     private array $filter_fetches = [];
+
+    /**
+     * Filter => how many of their open assignments of each expression type the flows converting an array
+     * closed, for the calls entering it whose innermost open assignment left isn't one of an array (see
+     * getConversionFilter())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $filter_conversions = [];
 
     /**
      * Entry => position (see getPosition()) => class => the filter of the entry for the calls whose open
@@ -852,6 +869,17 @@ final class TaintFlowResolution
     {
         [$observed_family, , $closed_family, $added_family] = $this->path_type_effects[$path_type];
 
+        if (isset($this->array_conversion_path_types[$path_type])) {
+            // it observes the innermost open assignment of every expression type (see getNextOpenAssignments())
+            $result = $depths;
+
+            foreach (self::FAMILIES as $family => $_) {
+                $result = self::maxDepths($result, 1 << ($family * self::DEPTH_BITS));
+            }
+
+            return $result;
+        }
+
         if ($this->path_types[$path_type] === 'arrayvalue-fetch') {
             // it ignores an innermost array key (see getNextOpenAssignments())
             $observed_family = self::ARRAY_FAMILY;
@@ -992,6 +1020,10 @@ final class TaintFlowResolution
         $this->path_type_ids[$path_type] = $id;
         $this->path_types[] = $path_type;
         $this->path_type_effects[] = self::getPathTypeEffects($path_type);
+
+        if (str_ends_with($path_type, TaintFlowGraph::ARRAY_CONVERSION_SUFFIX)) {
+            $this->array_conversion_path_types[$id] = true;
+        }
 
         return $id;
     }
@@ -1147,7 +1179,27 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
 
-        if ($observed_family === -1 && $observed_key !== null) {
+        if (isset($this->array_conversion_path_types[$path_type])) {
+            // An array converts to "Array", or to 0/1, never to what it holds: the conversion takes nothing the
+            // flow put in an array as its innermost open assignment, under a key or as a key. That's the one it
+            // made last, past any open assignment of a property it made: those of the call entering its context
+            // are all outer ones. How the two expression types interleave where it made both isn't known, so the
+            // flow goes on, and where it made none, the innermost one is the call's (see passesConversion()).
+            $property_assignments = $made[self::PROPERTY_FAMILY] ?? [];
+
+            if ($array_assignments || $property_assignments) {
+                $next = $array_assignments && !$property_assignments ? self::IGNORED : $open_assignments;
+            } elseif ($closed[self::ARRAY_FAMILY] === self::NO_CALL
+                || $closed[self::ARRAY_FAMILY] === self::FORGOTTEN
+                || $closed[self::PROPERTY_FAMILY] === self::NO_CALL
+                || $closed[self::PROPERTY_FAMILY] === self::FORGOTTEN
+            ) {
+                // there is none, or the flow doesn't know it
+                $next = $open_assignments;
+            } else {
+                $next = self::OBSERVES_CALL;
+            }
+        } elseif ($observed_family === -1 && $observed_key !== null) {
             // The replacement of the value under a key (see getPathTypeEffects()) stops a flow of what was
             // assigned under that key, where the flow knows that's its innermost open array assignment. Any other
             // goes on, also one that doesn't know it: deciding that for each call entering its context, in
@@ -1444,7 +1496,9 @@ final class TaintFlowResolution
 
         $node = $this->getNode($id);
 
-        if ($node === null) {
+        // as through its edges (see walkEdges()), a flow doesn't enter a body or leave one from a node it isn't
+        // walked from
+        if ($node === null || !$this->isWalkedFrom($node)) {
             return;
         }
 
@@ -1577,7 +1631,13 @@ final class TaintFlowResolution
             return;
         }
 
-        if ($next_open_assignments === self::OBSERVES_CALL) {
+        if ($next_open_assignments === self::OBSERVES_CALL
+            && isset($this->array_conversion_path_types[$path_type])
+        ) {
+            // it goes on for the calls whose innermost open assignment isn't one of an array
+            $context = $this->getConversionFilter($context, $this->open_assignments[$open_assignments][1]);
+            $next_open_assignments = $open_assignments;
+        } elseif ($next_open_assignments === self::OBSERVES_CALL) {
             // it goes on for the calls whose open assignment it doesn't ignore
             [$observed_family, $observed_key] = $this->path_type_effects[$path_type];
             $observed_key ??= '';
@@ -1876,6 +1936,14 @@ final class TaintFlowResolution
         }
 
         foreach ($this->entry_filters[$entry] as $filter) {
+            if (isset($this->filter_conversions[$filter])) {
+                if ($this->passesConversion($caller, $this->filter_conversions[$filter])) {
+                    $this->addEntryCaller($filter, $caller, $specialization_key);
+                }
+
+                continue;
+            }
+
             [$family, $depth, $fetched_key] = $this->filter_fetches[$filter];
 
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
@@ -1967,6 +2035,57 @@ final class TaintFlowResolution
         }
 
         return $filter;
+    }
+
+    /**
+     * The filter of $entry for the calls a conversion of an array (see getNextOpenAssignments()) doesn't
+     * drop, in a walk of $entry whose flow made no open assignment and closed $closed of those of the call
+     * of each expression type, made if needed (see getFilter()).
+     *
+     * @param array<int, int> $closed
+     */
+    private function getConversionFilter(int $entry, array $closed): int
+    {
+        $filter_key = 'conversion ' . implode(' ', $closed);
+
+        if (isset($this->entry_filters[$entry][$filter_key])) {
+            return $this->entry_filters[$entry][$filter_key];
+        }
+
+        $filter = $this->addEntry(
+            $this->entry_nodes[$entry],
+            $this->entry_kinds[$entry],
+            $this->entry_facts[$entry],
+            $this->entry_bases[$entry],
+        );
+        $this->entry_filters[$entry][$filter_key] = $filter;
+        $this->filter_conversions[$filter] = $closed;
+
+        foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
+            if ($this->passesConversion($caller, $closed)) {
+                $this->addEntryCaller($filter, $caller, $specialization_key);
+            }
+        }
+
+        return $filter;
+    }
+
+    /**
+     * Whether a conversion of an array doesn't drop the flows of state $state entering a walk whose flow made
+     * no open assignment and closed $closed of theirs of each expression type: unless the innermost open
+     * assignment left is one of an array they made past any of a property they made. Those of the call
+     * entering their own context are all outer ones, and how the two expression types interleave there isn't
+     * known, so a conversion of an array of theirs doesn't drop them either.
+     *
+     * @param array<int, int> $closed
+     * @psalm-mutation-free
+     */
+    private function passesConversion(int $state, array $closed): bool
+    {
+        [$made] = $this->open_assignments[$this->state_open_assignments[$state]];
+
+        return count($made[self::ARRAY_FAMILY] ?? []) <= $closed[self::ARRAY_FAMILY]
+            || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY];
     }
 
     /**
