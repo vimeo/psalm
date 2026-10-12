@@ -46,7 +46,7 @@ final class MethodCapabilitiesProvider
 
     /**
      * @param Closure(MethodCapabilitiesProviderEvent): ?int $c
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-globals|write-globals
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
     {
@@ -54,7 +54,7 @@ final class MethodCapabilitiesProvider
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-globals
      */
     public function has(string $fq_classlike_name): bool
     {
