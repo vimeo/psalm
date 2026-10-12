@@ -458,7 +458,11 @@ final class Functions
         }
 
         $type_provider = $statements_analyzer?->node_data;
-        if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
+        // they call the __serialize()/__sleep() of the objects they are given
+        if (($function_id === 'serialize' || $function_id === 'igbinary_serialize')
+            && isset($args[0])
+            && $type_provider
+        ) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
