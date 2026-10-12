@@ -74,6 +74,14 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
+     * Whether each type param of the generic object checkGenericParams() last checked is in a position where a
+     * covariant template is not allowed
+     *
+     * @var array<int, bool>|null
+     */
+    private ?array $type_param_prevents_covariance = null;
+
+    /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     #[Override]
@@ -88,7 +96,31 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
+            $this->type_param_prevents_covariance = null;
             $this->checkNamedObject($type);
+
+            if ($type instanceof TGenericObject && $this->type_param_prevents_covariance !== null) {
+                // each type param is checked with its own variance, and the siblings with the outer one
+                $prevents_covariance = $this->type_param_prevents_covariance;
+                $this->type_param_prevents_covariance = null;
+                $outer_prevents_covariance = $this->prevent_template_covariance;
+
+                foreach ($type->extra_types as $extra_type) {
+                    $this->traverse($extra_type);
+                }
+
+                foreach ($type->type_params as $i => $type_param) {
+                    $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
+                    $this->traverse($type_param);
+                }
+
+                $this->prevent_template_covariance = $outer_prevents_covariance;
+
+                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+                $type->checked = true;
+
+                return self::DONT_TRAVERSE_CHILDREN;
+            }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
         } elseif ($type instanceof TTemplateParam) {
@@ -249,8 +281,10 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
+        $prevents_covariance = [];
+
         foreach ($atomic->type_params as $i => $type_param) {
-            $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
+            $prevents_covariance[$i] = $this->source instanceof MethodAnalyzer
                 && $this->source->getMethodName() !== '__construct'
                 && empty($expected_param_covariants[$i]);
 
@@ -315,6 +349,8 @@ final class TypeChecker extends TypeVisitor
                 }
             }
         }
+
+        $this->type_param_prevents_covariance = $prevents_covariance;
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void

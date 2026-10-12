@@ -566,6 +566,26 @@ final class ClassTemplateCovarianceTest extends TestCase
                      */
                     function consume(Box $box): void {}',
             ],
+            'covariantTemplateInACovariantParamOfAGenericWithAnInvariantParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    final class Pair {}
+
+                    /**
+                     * @template-covariant TKey
+                     * @template TValue
+                     */
+                    abstract class Collection {
+                        /** @return Collection<TKey, TValue> */
+                        abstract public function copy(): Collection;
+
+                        /** @return Pair<TValue, int> */
+                        abstract public function pair(): Pair;
+                    }',
+            ],
         ];
     }
 
@@ -576,6 +596,23 @@ final class ClassTemplateCovarianceTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'covariantTemplateInAnInvariantParamOfAGenericWithACovariantParam' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template-covariant TValue
+                     */
+                    final class Pair {}
+
+                    /**
+                     * @template-covariant TKey
+                     */
+                    abstract class Collection {
+                        /** @return Pair<TKey, int> */
+                        abstract public function pair(): Pair;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
             'preventCovariantParamUsage' => [
                 'code' => '<?php
                     /**
