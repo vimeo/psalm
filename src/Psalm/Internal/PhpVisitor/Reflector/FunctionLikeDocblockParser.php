@@ -344,6 +344,32 @@ final class FunctionLikeDocblockParser
             }
         }
 
+        // opting out of the taint sources, sinks or flows of the overridden method is declaring that there are none
+        foreach ([
+            'psalm-no-taint-source' => ['psalm-taint-source'],
+            'psalm-no-taint-sink' => ['psalm-taint-sink', 'psalm-assert-untainted'],
+            'psalm-no-flow' => ['psalm-flow', 'psalm-taint-escape', 'psalm-taint-unescape'],
+        ] as $opt_out => $declarations) {
+            if (!isset($parsed_docblock->tags[$opt_out])) {
+                continue;
+            }
+
+            foreach ($declarations as $declaration) {
+                if (isset($parsed_docblock->tags[$declaration])) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@' . $opt_out . ' contradicts @' . $declaration,
+                            $code_location,
+                        ),
+                    );
+                }
+            }
+        }
+
+        $info->no_taint_source = isset($parsed_docblock->tags['psalm-no-taint-source']);
+        $info->no_taint_sinks = isset($parsed_docblock->tags['psalm-no-taint-sink']);
+        $info->no_flows = isset($parsed_docblock->tags['psalm-no-flow']);
+
         if (isset($parsed_docblock->tags['psalm-taint-specialize'])) {
             $info->specialize_call = true;
         }

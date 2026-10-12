@@ -234,6 +234,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $taint_store_reads = [];
 
+    /**
+     * `@psalm-no-taint-source`: not a taint source, even if the method it overrides is
+     */
+    public bool $no_taint_source = false;
+
+    /**
+     * `@psalm-no-taint-sink`: the parameters are no taint sinks, even if those of the method it overrides are
+     */
+    public bool $no_taint_sinks = false;
+
+    /**
+     * `@psalm-no-flow`: taints flow through it as through its body, whatever the method it overrides declares
+     */
+    public bool $no_flows = false;
+
     public bool $allow_named_arg_calls = true;
 
     /**
@@ -292,22 +307,58 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     }
 
     /**
-     * Whether the function-like declares how taints flow through it: taint sources, sinks and escapes, and flows
+     * Takes the taint annotations of the method this one overrides, as its docblock types: its taint sources, the
+     * taint sinks of its parameters (matched by their position), and its flows (escapes and unescapes included), each
+     * unless this method declares that part itself or opts out of it (`@psalm-no-taint-source`,
+     * `@psalm-no-taint-sink`, `@psalm-no-flow`)
      *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
+    public function inheritTaintAnnotations(FunctionLikeStorage $overridden): void
+    {
+        if (!$this->hasTaintSource() && $overridden->hasTaintSource()) {
+            $this->taint_source_types = $overridden->taint_source_types;
+            $this->no_taint_source = $overridden->no_taint_source;
+        }
+
+        if (!$this->hasTaintSinks() && $overridden->hasTaintSinks()) {
+            $this->no_taint_sinks = $overridden->no_taint_sinks;
+
+            foreach ($overridden->params as $offset => $overridden_param) {
+                if (isset($this->params[$offset])) {
+                    $this->params[$offset]->sinks = $overridden_param->sinks;
+                    $this->params[$offset]->assert_untainted = $overridden_param->assert_untainted;
+                }
+            }
+        }
+
+        if (!$this->hasTaintFlows() && $overridden->hasTaintFlows()) {
+            $this->added_taints = $overridden->added_taints;
+            $this->removed_taints = $overridden->removed_taints;
+            $this->conditionally_removed_taints = $overridden->conditionally_removed_taints;
+            $this->return_source_params = $overridden->return_source_params;
+            $this->return_source_this = $overridden->return_source_this;
+            $this->taint_store_writes = $overridden->taint_store_writes;
+            $this->taint_store_reads = $overridden->taint_store_reads;
+            $this->proxy_calls = $overridden->proxy_calls;
+            $this->no_flows = $overridden->no_flows;
+        }
+    }
+
+    /**
      * @psalm-mutation-free
      */
-    public function hasTaintAnnotations(): bool
+    private function hasTaintSource(): bool
     {
-        if ($this->taint_source_types !== 0
-            || $this->added_taints !== 0
-            || $this->removed_taints !== 0
-            || $this->conditionally_removed_taints !== []
-            || $this->return_source_params !== []
-            || $this->return_source_this !== null
-            || $this->taint_store_writes !== []
-            || $this->taint_store_reads !== []
-            || ($this->proxy_calls ?? []) !== []
-        ) {
+        return $this->taint_source_types !== 0 || $this->no_taint_source;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function hasTaintSinks(): bool
+    {
+        if ($this->no_taint_sinks) {
             return true;
         }
 
@@ -321,29 +372,19 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     }
 
     /**
-     * Takes the taint annotations of the method this one overrides (see hasTaintAnnotations()), as its docblock
-     * types: the parameters are matched by their position
-     *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-mutation-free
      */
-    public function inheritTaintAnnotations(FunctionLikeStorage $overridden): void
+    private function hasTaintFlows(): bool
     {
-        $this->taint_source_types = $overridden->taint_source_types;
-        $this->added_taints = $overridden->added_taints;
-        $this->removed_taints = $overridden->removed_taints;
-        $this->conditionally_removed_taints = $overridden->conditionally_removed_taints;
-        $this->return_source_params = $overridden->return_source_params;
-        $this->return_source_this = $overridden->return_source_this;
-        $this->taint_store_writes = $overridden->taint_store_writes;
-        $this->taint_store_reads = $overridden->taint_store_reads;
-        $this->proxy_calls = $overridden->proxy_calls;
-
-        foreach ($overridden->params as $offset => $overridden_param) {
-            if (isset($this->params[$offset])) {
-                $this->params[$offset]->sinks = $overridden_param->sinks;
-                $this->params[$offset]->assert_untainted = $overridden_param->assert_untainted;
-            }
-        }
+        return $this->added_taints !== 0
+            || $this->removed_taints !== 0
+            || $this->conditionally_removed_taints !== []
+            || $this->return_source_params !== []
+            || $this->return_source_this !== null
+            || $this->taint_store_writes !== []
+            || $this->taint_store_reads !== []
+            || ($this->proxy_calls ?? []) !== []
+            || $this->no_flows;
     }
 
     /**

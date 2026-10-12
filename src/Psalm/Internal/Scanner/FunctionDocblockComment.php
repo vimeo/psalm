@@ -118,6 +118,16 @@ final class FunctionDocblockComment
     public int $taint_source_types = 0;
 
     /**
+     * `@psalm-no-taint-source`, `@psalm-no-taint-sink` and `@psalm-no-flow`: the function-like opts out of the
+     * taint sources, sinks or flows of the method it overrides
+     */
+    public bool $no_taint_source = false;
+
+    public bool $no_taint_sinks = false;
+
+    public bool $no_flows = false;
+
+    /**
      * @var array<int, array{name:string}>
      */
     public array $assert_untainted_params = [];

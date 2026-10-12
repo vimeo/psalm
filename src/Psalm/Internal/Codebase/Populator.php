@@ -730,13 +730,9 @@ final class Populator
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
 
-                    // an override declaring no taint flows of its own has those of the first method it overrides
-                    // that declares them, as it has its docblock types
-                    if (!$method_storage->hasTaintAnnotations()
-                        && $declaring_method_storage->hasTaintAnnotations()
-                    ) {
-                        $method_storage->inheritTaintAnnotations($declaring_method_storage);
-                    }
+                    // an override has the taint sources, sinks and flows it doesn't declare of the nearest method it
+                    // overrides that declares them, as it has its docblock types
+                    $method_storage->inheritTaintAnnotations($declaring_method_storage);
                 }
             }
         }

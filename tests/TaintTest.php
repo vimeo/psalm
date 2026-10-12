@@ -466,7 +466,7 @@ final class TaintTest extends TestCase
                     echo store_get("loc");
                     echo store_get("other_lock_1");',
             ],
-            'overrideWithTaintAnnotationsOfItsOwnInheritsNone' => [
+            'overrideWithATaintSourceOfItsOwnInheritsNotThatOfTheParent' => [
                 'code' => '<?php
                     class Input {
                         /** @psalm-taint-source input */
@@ -475,46 +475,71 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    final class FixedInput extends Input {
-                        /** @psalm-taint-escape html */
+                    final class SqlInput extends Input {
+                        /** @psalm-taint-source sql */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    echo (new SqlInput())->get();',
+            ],
+            'overrideOptingOutOfTheTaintSourceIsNoSource' => [
+                'code' => '<?php
+                    class Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    class FixedInput extends Input {
+                        /** @psalm-no-taint-source */
                         public function get(): string {
                             return "fixed";
                         }
                     }
 
-                    echo (new FixedInput())->get();',
-            ],
-            'keyedStoreKeyStartFromImplodeDoesNotReachOtherKeys' => [
-                'code' => '<?php
-                    /** @psalm-flow ($value) -> Store::$data[$key] */
-                    function store_set(string $key, string $value): void {}
-
-                    /** @psalm-flow Store::$data[$key] -> return */
-                    function store_get(string $key): string {}
-
-                    function write(string $id): void {
-                        store_set(implode("_", ["call", "back", $id]), (string) $_GET["x"]);
+                    final class OtherFixedInput extends FixedInput {
+                        public function get(): string {
+                            return "other";
+                        }
                     }
 
-                    echo store_get("call_lock");',
+                    echo (new FixedInput())->get();
+                    echo (new OtherFixedInput())->get();',
             ],
-            'keyedStoreKeyStartOfAClosureUseDoesNotReachOtherKeys' => [
+            'overrideOptingOutOfTheTaintSinksIsNoSink' => [
                 'code' => '<?php
-                    /** @psalm-flow ($value) -> Store::$data[$key] */
-                    function store_set(string $key, string $value): void {}
+                    interface Renderer {
+                        /** @psalm-taint-sink html $html */
+                        public function render(string $html): void;
+                    }
 
-                    /** @psalm-flow Store::$data[$key] -> return */
-                    function store_get(string $key): string {}
+                    final class NullRenderer implements Renderer {
+                        /** @psalm-no-taint-sink */
+                        public function render(string $html): void {}
+                    }
 
-                    store_set("other_1", (string) $_GET["x"]);
+                    (new NullRenderer())->render((string) $_GET["x"]);',
+            ],
+            'overrideOptingOutOfTheFlowsHasThoseOfItsBody' => [
+                'code' => '<?php
+                    class Formatter {
+                        /** @psalm-flow ($text) -> return */
+                        public function format(string $text): string {
+                            return $text;
+                        }
+                    }
 
-                    function read(string $id): void {
-                        $key = "lock_" . $id;
-                        $read = function () use ($key): void {
-                            echo store_get($key);
-                        };
-                        $read();
-                    }',
+                    final class FixedFormatter extends Formatter {
+                        /** @psalm-no-flow */
+                        public function format(string $text): string {
+                            return "fixed";
+                        }
+                    }
+
+                    echo (new FixedFormatter())->format((string) $_GET["x"]);',
             ],
             'keyedStoreConstructorArgumentStartDoesNotReachOtherKeys' => [
                 'code' => '<?php
@@ -2938,6 +2963,63 @@ final class TaintTest extends TestCase
                         echo $cache->get("a");
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'overrideOptingOutOfTheTaintSourceInheritsTheTaintSinks' => [
+                'code' => '<?php
+                    class Request {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+
+                        /** @psalm-taint-sink html $html */
+                        public function send(string $html): void {}
+                    }
+
+                    final class QueuedRequest extends Request {
+                        /** @psalm-no-taint-source */
+                        public function get(): string {
+                            return "";
+                        }
+
+                        public function send(string $html): void {}
+                    }
+
+                    (new QueuedRequest())->send((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overrideOptingOutOfTheTaintSourceInheritsTheFlows' => [
+                'code' => '<?php
+                    class Formatter {
+                        /**
+                         * @psalm-taint-source input
+                         * @psalm-flow ($text) -> return
+                         */
+                        public function format(string $text): string {
+                            return "";
+                        }
+                    }
+
+                    final class FixedFormatter extends Formatter {
+                        /** @psalm-no-taint-source */
+                        public function format(string $text): string {
+                            return "";
+                        }
+                    }
+
+                    echo (new FixedFormatter())->format((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'optingOutOfTheTaintSourceContradictsDeclaringOne' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-no-taint-source
+                     * @psalm-taint-source input
+                     */
+                    function get(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [
                 'code' => '<?php
