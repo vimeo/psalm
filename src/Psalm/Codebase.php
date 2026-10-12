@@ -98,6 +98,7 @@ use function min;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
@@ -545,6 +546,9 @@ final class Codebase
     /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
      *
+     * A complement, `~(kind|kind)` or `~kind`, is every taint but the kinds listed, including the custom taints and
+     * those not registered yet.
+     *
      * Returns null and emits an issue if a code location is passed and there are no more taint slots.
      *
      * @throws RuntimeException if no code location is passed and there are no more taint slots.
@@ -554,6 +558,10 @@ final class Codebase
     {
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
+        }
+
+        if (str_starts_with($taint_type, '~')) {
+            return $this->getTaintComplement($taint_type, $location);
         }
 
         // When scanning runs in forked worker processes, register new taints in the parent's single
@@ -647,6 +655,37 @@ final class Codebase
         }
 
         return $this->reportTaintRegistrationError($err, $location);
+    }
+
+    /**
+     * Every taint but the kinds listed by the complement $taint_type (see getOrRegisterTaint())
+     */
+    private function getTaintComplement(string $taint_type, ?CodeLocation $location): ?int
+    {
+        $kinds = substr($taint_type, 1);
+
+        if (str_starts_with($kinds, '(') && str_ends_with($kinds, ')')) {
+            $kinds = substr($kinds, 1, -1);
+        }
+
+        $excluded_taints = 0;
+
+        foreach (explode('|', $kinds) as $kind) {
+            // a complement lists taints, not other complements or conditional taints
+            if ($kind === '' || $kind[0] === '~' || $kind[0] === '(' || str_contains($kind, ')')) {
+                return $this->reportTaintRegistrationError('Invalid taint complement ' . $taint_type, $location);
+            }
+
+            $taint = $this->getOrRegisterTaint($kind, $location);
+
+            if ($taint === null) {
+                return null;
+            }
+
+            $excluded_taints |= $taint;
+        }
+
+        return TaintKind::ALL & ~$excluded_taints;
     }
 
     private function reportTaintRegistrationError(string $err, ?CodeLocation $location): ?int
