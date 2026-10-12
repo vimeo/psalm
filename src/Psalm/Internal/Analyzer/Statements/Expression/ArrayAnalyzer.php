@@ -625,6 +625,25 @@ final class ArrayAnalyzer
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if ($property_value->possibly_undefined) {
+                        // a string key keeps its place: it is either what the unpacked array holds under it, or
+                        // what the array had before (a list renumbers its keys, so their places are unknown);
+                        // not in array_keys, as a later item setting the key is no duplicate of a maybe missing one
+                        if (is_string($key) && $codebase->analysis_php_version_id > 8_00_00) {
+                            $previous_value = $array_creation_info->property_types[$key] ?? null;
+
+                            $array_creation_info->item_key_atomic_types[] = Type::getAtomicStringFromLiteral($key);
+                            $array_creation_info->all_list = false;
+                            $array_creation_info->property_types[$key] = $previous_value === null
+                                ? $property_value
+                                : Type::combineUnionTypes(
+                                    $previous_value,
+                                    $property_value->setPossiblyUndefined(false),
+                                    $codebase,
+                                )->setPossiblyUndefined($previous_value->possibly_undefined);
+
+                            continue;
+                        }
+
                         $has_possibly_undefined = true;
                         continue;
                     }
