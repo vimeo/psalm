@@ -1330,6 +1330,16 @@ final class TaintTest extends TestCase
                     }
                     echo (string) ($data["city"] ?? "");',
             ],
+            'dontTaintTheValueOfAKeyAWholeArrayDoesNotHaveAfterChecksOfOtherKeys' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    $hasZip = array_key_exists("zip", $data) ? 1 : 0;
+                    $hasStreet = array_key_exists("street", $data) ? 1 : 0;
+                    if (array_key_exists("city", $data)) {
+                        $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
             'dontTaintTheValueOfAKeyAWholeArrayHasNotSet' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
@@ -4745,6 +4755,13 @@ final class TaintTest extends TestCase
                     if (!array_key_exists("city", $data)) {
                         echo (string) $data["zip"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAKeyOfAWholeArrayMergedBackAfterACheckOfIt' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $hasCity = array_key_exists("city", $data) ? 1 : 0;
+                    echo (string) ($data["city"] ?? "");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAWholeArrayIteratedOverNotHavingSetAKey' => [
