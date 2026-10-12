@@ -22,7 +22,8 @@ See [Specializing taints in functions](avoiding_false_positives.md#specializing-
 
 ## `@psalm-flow [proxy <function-like>] ( <arg>, [ <arg>, ] ) [ -> return ]`
 
-See [Taint Flow](taint_flow.md#optimized-taint-flow)
+See [Taint Flow](taint_flow.md#optimized-taint-flow). In a return value hint, an `<arg>` is a parameter (`$value`), the
+object a method is called on (`$this`), or what the callables given to a parameter return (`$compute()`).
 
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
 
