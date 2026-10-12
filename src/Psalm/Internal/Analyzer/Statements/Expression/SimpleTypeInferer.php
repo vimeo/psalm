@@ -301,6 +301,11 @@ final class SimpleTypeInferer
                 return Type::getString($aliases->namespace);
             }
 
+            // a constant depending on classes, e.g. an enum case, is known once they are, see ReflectorVisitor
+            if ($codebase->getUnresolvedGlobalConstant($name) !== null) {
+                return null;
+            }
+
             if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
                 return $type;
             }

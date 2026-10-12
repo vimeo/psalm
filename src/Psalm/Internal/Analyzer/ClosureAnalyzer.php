@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
+use Psalm\Internal\TypeVisitor\CapturedValueVisitor;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -163,6 +164,22 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The type of a variable captured by a closure, as seen in its body. The value is shared with
+     * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
+     * the closure may be called more than once, and writing that object writes state that outlives
+     * the call. Only the enclosing scope and the closure hold it, though, so it is state of the
+     * closure, as the objects a class instance creates are its own. The same holds for the objects
+     * in a captured array, for a capture by reference, and for a closure capturing state of the
+     * closure it is created in.
+     */
+    private static function getCapturedType(Union $type): Union
+    {
+        (new CapturedValueVisitor())->traverse($type);
+
+        return $type;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $stmt
      */
     public static function analyzeExpression(
@@ -261,7 +278,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id)
-                    ? $context->vars_in_scope[$use_var_id]
+                    ? self::getCapturedType($context->vars_in_scope[$use_var_id])
                     : Type::getMixed();
 
                 if ($use->byRef) {
@@ -281,7 +298,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = $type;
+                        $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
@@ -296,7 +313,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
             foreach ($short_closure_visitor->getUsedVariables() as $use_var_id => $_) {
                 if ($context->hasVariable($use_var_id)) {
-                    $use_context->vars_in_scope[$use_var_id] = $context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = self::getCapturedType(
+                        $context->vars_in_scope[$use_var_id],
+                    );
 
                     if ($statements_analyzer->data_flow_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
