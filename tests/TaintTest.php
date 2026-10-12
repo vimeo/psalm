@@ -3191,7 +3191,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo count(args());
-                    echo strlen((string) file_get_contents(path("dir")));',
+                    unlink(path("dir"));',
                 'error_message' => 'TaintedFile',
             ],
             'taintSinkWithoutParameter' => [
