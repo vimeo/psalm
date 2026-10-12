@@ -41,6 +41,7 @@ use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -51,10 +52,12 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -97,6 +100,7 @@ use function min;
 use function preg_match;
 use function preg_replace;
 use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
@@ -152,6 +156,11 @@ final class Codebase
     private static array $stubbed_constants = [];
 
     /**
+     * @var array<string, UnresolvedConstantComponent>
+     */
+    private static array $unresolved_stubbed_constants = [];
+
+    /**
      * Whether to register autoloaded information
      */
     public bool $register_autoload_files = false;
@@ -184,6 +193,15 @@ final class Codebase
     public CodeUseGraph $code_use_graph;
 
     public ?TaintFlowGraph $taint_flow_graph = null;
+
+    /**
+     * The `new` of each class (lowercase) in the classes scanned: the class making it and the starts of its arguments,
+     * built once they all are (see StringStartScanner)
+     *
+     * @internal
+     * @var array<string, list<array{string, string}>>|null
+     */
+    public ?array $constructor_argument_starts = null;
 
     public bool $server_mode = false;
 
@@ -310,6 +328,7 @@ final class Codebase
         $this->code_use_graph = $providers->file_reference_provider->code_use_graph;
 
         self::$stubbed_constants = [];
+        self::$unresolved_stubbed_constants = [];
 
         $reflection = new Reflection($providers->classlike_storage_provider, $this);
 
@@ -538,6 +557,9 @@ final class Codebase
     /**
      * Used to register a taint, or to fetch the ID of an already registered taint by its alias.
      *
+     * A complement, `~(kind|kind)` or `~kind`, is every taint but the kinds listed, including the custom taints and
+     * those not registered yet.
+     *
      * Returns null and emits an issue if a code location is passed and there are no more taint slots.
      *
      * @throws RuntimeException if no code location is passed and there are no more taint slots.
@@ -547,6 +569,10 @@ final class Codebase
     {
         if (isset($this->taint_map[$taint_type])) {
             return $this->taint_map[$taint_type];
+        }
+
+        if (str_starts_with($taint_type, '~')) {
+            return $this->getTaintComplement($taint_type, $location);
         }
 
         // When scanning runs in forked worker processes, register new taints in the parent's single
@@ -642,6 +668,37 @@ final class Codebase
         return $this->reportTaintRegistrationError($err, $location);
     }
 
+    /**
+     * Every taint but the kinds listed by the complement $taint_type (see getOrRegisterTaint())
+     */
+    private function getTaintComplement(string $taint_type, ?CodeLocation $location): ?int
+    {
+        $kinds = substr($taint_type, 1);
+
+        if (str_starts_with($kinds, '(') && str_ends_with($kinds, ')')) {
+            $kinds = substr($kinds, 1, -1);
+        }
+
+        $excluded_taints = 0;
+
+        foreach (explode('|', $kinds) as $kind) {
+            // a complement lists taints, not other complements or conditional taints
+            if ($kind === '' || $kind[0] === '~' || $kind[0] === '(' || str_contains($kind, ')')) {
+                return $this->reportTaintRegistrationError('Invalid taint complement ' . $taint_type, $location);
+            }
+
+            $taint = $this->getOrRegisterTaint($kind, $location);
+
+            if ($taint === null) {
+                return null;
+            }
+
+            $excluded_taints |= $taint;
+        }
+
+        return TaintKind::ALL & ~$excluded_taints;
+    }
+
     private function reportTaintRegistrationError(string $err, ?CodeLocation $location): ?int
     {
         if ($location !== null) {
@@ -650,6 +707,37 @@ final class Codebase
         }
 
         throw new RuntimeException($err);
+    }
+
+    /**
+     * Registers the custom taints psalm.xml declares (`<taintAnalysis><taints>`), and adds each to the aliases of
+     * built-in taints it names. Called before scanning, once the taints of a previous run are restored (see
+     * importCustomTaints()).
+     *
+     * @internal
+     */
+    public function registerConfigTaints(): void
+    {
+        foreach ($this->config->custom_taints as $taint_type => $aliases) {
+            $taint = $this->getOrRegisterTaint($taint_type);
+
+            foreach ($aliases as $alias) {
+                $this->taint_map[$alias] = ($this->taint_map[$alias] ?? 0) | $taint;
+            }
+        }
+    }
+
+    /**
+     * The taints of user input, those of `input`: the built-in kinds (TaintKind::ALL_INPUT), and the custom taints
+     * psalm.xml adds to it. The built-in sources of user input give them, and the types that can't hold user input
+     * remove them (see Union::getTaintsToRemove()).
+     *
+     * @psalm-mutation-free
+     */
+    public function getInputTaints(): int
+    {
+        // the built-in aliases are always registered, this is for Psalm
+        return $this->taint_map['input'] ?? TaintKind::ALL_INPUT;
     }
 
     /**
@@ -797,6 +885,8 @@ final class Codebase
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
+        // the classes scanned again may make other `new`
+        $this->constructor_argument_starts = null;
         $this->populator->populateCodebase();
     }
 
@@ -853,6 +943,8 @@ final class Codebase
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         if ($has_changes) {
+            // the classes scanned again may make other `new`
+            $this->constructor_argument_starts = null;
             $this->populator->populateCodebase();
         }
     }
@@ -1061,6 +1153,42 @@ final class Codebase
     public function getAllStubbedConstants(): array
     {
         return self::$stubbed_constants;
+    }
+
+    /**
+     * The value of a global constant whose type depends on classes, e.g. an enum case, resolved when it is fetched
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addUnresolvedGlobalConstant(string $const_id, UnresolvedConstantComponent $value): void
+    {
+        self::$unresolved_stubbed_constants[$const_id] = $value;
+    }
+
+    /**
+     * @psalm-capabilities read-globals
+     */
+    public function getUnresolvedGlobalConstant(string $const_id): ?UnresolvedConstantComponent
+    {
+        return self::$unresolved_stubbed_constants[$const_id] ?? null;
+    }
+
+    /**
+     * @param array<string, UnresolvedConstantComponent> $values
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public function addUnresolvedGlobalConstants(array $values): void
+    {
+        self::$unresolved_stubbed_constants += $values;
+    }
+
+    /**
+     * @return array<string, UnresolvedConstantComponent>
+     * @psalm-capabilities read-globals
+     */
+    public function getAllUnresolvedGlobalConstants(): array
+    {
+        return self::$unresolved_stubbed_constants;
     }
 
     public function fileExists(string $file_path): bool
@@ -2685,13 +2813,14 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints of the source, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
@@ -2700,7 +2829,7 @@ final class Codebase
         $source = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSource($source);
@@ -2709,12 +2838,13 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints the sink must not be given, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSink(
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
@@ -2723,10 +2853,88 @@ final class Codebase
         $sink = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSink($sink);
+    }
+
+    /**
+     * Adds paths of type $path_type from $write_node into the keyed store $store (a class and a property,
+     * `Store::$data`, which need not exist) under each of the names, as `@psalm-flow ($value) -> Store::$data[$key]`
+     * does from what a call stores: each name is exact (true), or only known to start with what is given (false). See
+     * getTaintStoreNames(). With $value_type, what it holds flows into $write_node first.
+     *
+     * The paths go into the taint graph the statements of $source add theirs to (none while they suppress TaintedInput,
+     * or while Psalm analyzes them again only to collect what they mutate), or into the codebase's for another source.
+     *
+     * @param list<array{bool, string}> $names
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintStoreWrite(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $write_node,
+        string $path_type = 'arg',
+        ?Union $value_type = null,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($write_node);
+        foreach ($value_type?->parent_nodes ?? [] as $parent_node) {
+            $graph->addPath($parent_node, $write_node, $path_type);
+        }
+
+        TaintStore::addWrite($graph, $store, $names, $write_node, $path_type);
+    }
+
+    /**
+     * Adds paths of type $path_type to $read_node from the keyed store $store under each of the names, as
+     * `@psalm-flow Store::$data[$key] -> return` does to what a call returns (see addTaintStoreWrite())
+     *
+     * @param list<array{bool, string}> $names
+     * @psalm-capabilities read-props|write-props
+     */
+    public function addTaintStoreRead(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $read_node,
+        string $path_type = 'arg',
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
+        }
+
+        $graph->addNode($read_node);
+        TaintStore::addRead($graph, $store, $names, $read_node, $path_type);
+    }
+
+    /**
+     * The names of a keyed store the analysed expression can be, for addTaintStoreWrite() and addTaintStoreRead():
+     * exact for a type of literals or class names, else the start the analysis knows of it; any name without an
+     * expression
+     *
+     * @return list<array{bool, string}>
+     */
+    public function getTaintStoreNames(StatementsSource $source, ?PhpParser\Node\Expr $expr): array
+    {
+        return $source instanceof StatementsAnalyzer ? TaintStore::getNames($source, $expr) : [[false, '']];
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function getTaintFlowGraphOf(StatementsSource $source): ?TaintFlowGraph
+    {
+        return $source instanceof StatementsAnalyzer
+            ? $source->getTaintFlowGraphWithSuppressed()
+            : $this->taint_flow_graph;
     }
 
     /**
