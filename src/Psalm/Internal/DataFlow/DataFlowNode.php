@@ -143,6 +143,19 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
+     * overrides of the classes extending it: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForDispatch(string $cased_method_id, int $argument_offset): self
+    {
+        $label = 'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1);
+
+        return self::make(strtolower($label), $label, null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
