@@ -33,6 +33,9 @@ use Psalm\Type\Union;
  */
 final class MethodCallPurityAnalyzer
 {
+    /** Set on a method call that gives back the caller's own `$this` */
+    private const RETURNS_THIS = 'returns_this';
+
     /**
      * Whether mutations of the receiver's own state are fine for the caller: the receiver is
      * pure-compatible or external-mutation-free, so nobody else can see it change. `$this` never
@@ -42,7 +45,7 @@ final class MethodCallPurityAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
     ): bool {
-        if (self::isThis($var)) {
+        if (self::isReceiverThis($var)) {
             return false;
         }
 
@@ -56,8 +59,9 @@ final class MethodCallPurityAnalyzer
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
-     * `$this` and write-props otherwise, as writing its properties directly would. Callers that
-     * know the receiver to be fresh by other means say so with $receiver_is_fresh.
+     * `$this` or state of the closure being analysed and write-props otherwise, as writing its
+     * properties directly would. Callers that know the receiver to be fresh by other means say so
+     * with $receiver_is_fresh.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -75,7 +79,8 @@ final class MethodCallPurityAnalyzer
 
         return self::getCapabilitiesForReceiver(
             $capabilities,
-            self::isThis($var),
+            self::isReceiverThis($var)
+                || $statements_analyzer->node_data->getType($var)?->closure_state === true,
             self::isFromGlobalState($statements_analyzer, $var),
         );
     }
@@ -124,6 +129,16 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
+     * Whether the receiver is the caller's own `$this`: `$this` itself, or a call on it of a method
+     * returning its receiver, as in the fluent chain `$this->a()->b()`.
+     */
+    public static function isReceiverThis(Expr $var): bool
+    {
+        return self::isThis($var)
+            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
      * @param array<string, array<string, Union>> $class_template_params
      */
     public static function analyze(
@@ -147,6 +162,15 @@ final class MethodCallPurityAnalyzer
             $method_storage,
         );
 
+        // with a receiver of several types, the call gives back `$this` only if every method called does
+        $stmt->setAttribute(
+            self::RETURNS_THIS,
+            $stmt->getAttribute(self::RETURNS_THIS, true) === true
+                && $method_storage->returns_this
+                && !$stmt->isFirstClassCallable()
+                && self::isReceiverThis($stmt->var),
+        );
+
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
         $template_capabilities = CallPurityResolver::getCallCapabilities(
@@ -156,7 +180,7 @@ final class MethodCallPurityAnalyzer
             Capabilities::NONE,
             $template_result,
             $class_template_params,
-            self::isThis($stmt->var),
+            self::isReceiverThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
         $method_capabilities |= $template_capabilities;
@@ -166,7 +190,7 @@ final class MethodCallPurityAnalyzer
         $reads_globals = ($method_capabilities & Capabilities::READ_GLOBALS) !== 0;
 
         // a mutation-free method called with closures that are not is not mutation-free here
-        $call_is_mutation_free = Capabilities::allows(Capabilities::MUTATION_FREE, $method_capabilities);
+        $call_is_mutation_free = Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $method_capabilities);
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
@@ -226,7 +250,10 @@ final class MethodCallPurityAnalyzer
                     || $method_storage->final
                     || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 // the class is immutable, or pure
-                && (Capabilities::allows(Capabilities::MUTATION_FREE, $method_storage->containing_class_capabilities)
+                && (Capabilities::allowsAnyOf(
+                    Capabilities::MUTATION_FREE,
+                    $method_storage->containing_class_capabilities,
+                )
                     || $config->remember_property_assignments_after_call
                 )
             ) {
@@ -236,7 +263,7 @@ final class MethodCallPurityAnalyzer
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
-                    if (Capabilities::allows(
+                    if (Capabilities::allowsAnyOf(
                         Capabilities::MUTATION_FREE,
                         $method_storage->containing_class_capabilities,
                     )) {
@@ -245,6 +272,14 @@ final class MethodCallPurityAnalyzer
                 }
 
                 $result->can_memoize = true;
+
+                // the class is neither immutable nor pure
+                if (!Capabilities::allowsAnyOf(
+                    Capabilities::MUTATION_FREE,
+                    $method_storage->containing_class_capabilities,
+                )) {
+                    $result->memoized_result_has_mutations = true;
+                }
             }
 
             if ($codebase->find_unused_variables
@@ -328,9 +363,21 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
-        } elseif (!$config->remember_property_assignments_after_call) {
-            // the method cannot write properties, but may still write static ones
-            $context->removeMutableObjectVars(false, $method_capabilities);
+        } else {
+            if (!$config->remember_property_assignments_after_call) {
+                // the method cannot write properties, but may still write static ones
+                $context->removeMutableObjectVars(false, $method_capabilities);
+            }
+
+            if (($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+                || self::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                // the method may write properties, but not which ones (a stub, a body writing `$this`
+                // by reference, or a method that may do anything), or moves engine state (the position
+                // of an iterator): what its receiver's methods returned before may have changed, even
+                // when the receiver is fresh and the caller is not charged
+                $context->removeMutableObjectVars(true);
+            }
         }
     }
 

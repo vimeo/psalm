@@ -994,6 +994,59 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testTaintStoreOfPlugin(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintSqlTables.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $db = '<?php // --taint-analysis
+            namespace app;
+
+            final class Db {
+                public function insert(string $table, string $row): void {}
+
+                public function query(string $sql): string {
+                    return $sql;
+                }
+            }
+
+            function store(Db $db, string $id): void {
+                $db->insert("comments_" . $id, (string) ($_GET["text"] ?? ""));
+            }
+            ';
+
+        $this->addFile($file_path, $db . 'echo (new Db())->query("SELECT text FROM users");');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->addFile($file_path, $db . 'echo (new Db())->query("SELECT text FROM comments_1");');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testRemoveTaints(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
