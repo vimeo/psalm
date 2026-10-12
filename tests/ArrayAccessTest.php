@@ -1291,6 +1291,7 @@ final class ArrayAccessTest extends TestCase
 
                 /** @extends ArrayObject<int, int> */
                 class C extends ArrayObject {
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
                     public function offsetSet(mixed $key, mixed $value): void {
                         parent::offsetSet($key, $value);
                     }

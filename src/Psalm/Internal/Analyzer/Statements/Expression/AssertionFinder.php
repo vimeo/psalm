@@ -1798,6 +1798,7 @@ final class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
      * @return false|int
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function hasSuperiorNumberCheck(
         FileSource $source,
@@ -1858,6 +1859,7 @@ final class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
      * @return false|int
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function hasInferiorNumberCheck(
         FileSource $source,
@@ -1940,6 +1942,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      * @return false|int
+     * @psalm-capabilities read-props
      */
     private static function hasTypedValueComparison(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -3792,6 +3795,7 @@ final class AssertionFinder
 
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -4376,6 +4380,9 @@ final class AssertionFinder
         }
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public static function isPropertyImmutableOnArgument(
         string                       $property,
         NodeDataProvider             $node_provider,

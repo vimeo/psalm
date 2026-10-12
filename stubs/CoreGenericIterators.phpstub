@@ -74,6 +74,8 @@ interface Iterator extends Traversable {
  */
 interface OuterIterator extends Iterator {
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return Iterator<TKey, TValue>
      */
     public function getInnerIterator();
@@ -89,11 +91,15 @@ interface OuterIterator extends Iterator {
 interface RecursiveIterator extends Iterator {
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return bool true if the current entry can be iterated over, otherwise returns false.
      */
     public function hasChildren();
 
     /**
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      * @return RecursiveIterator<TKey, TValue> An iterator for the current entry.
      */
     public function getChildren();
@@ -114,6 +120,9 @@ interface SeekableIterator extends Iterator {
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props
+     * @psalm-purity-from-template TPurity
      */
     public function seek($position);
 }
@@ -188,38 +197,79 @@ class IteratorIterator implements OuterIterator {
 }
 
 /**
+ * TPurity is what iterating over the appended iterators may do: `new AppendIterator()` cannot bind
+ * it, so it is impure unless declared (`AppendIterator[pure]<int, string, Iterator[pure]<int, string>>`).
+ *
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 class AppendIterator extends IteratorIterator {
+    /**
+     * @psalm-pure
+     */
     public function __construct(){}
 
     /**
+     * Rewinds the iterator if it is the first one appended.
+     *
      * @param TIterator $iterator
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TPurity
      */
     public function append(Iterator $iterator) {}
 
     /**
-     * @return ArrayIterator<TKey, TValue>
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @return ArrayIterator<int, TIterator>
+     *
+     * @psalm-mutation-free
      */
     public function getArrayIterator() {}
 
     /**
-     * @return int
+     * @return int|null
+     *
+     * @psalm-pure
      */
     public function getIteratorIndex() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -240,12 +290,16 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param array<TKey, TValue> $array The array or object to be iterated on.
      * @param int-mask-of<static::*> $flags Flags to control the behaviour of the ArrayObject object.
      * @psalm-flow ($array) -> return
+     *
+     * @psalm-pure
      */
     public function __construct($array = array(), $flags = 0) { }
 
     /**
      * @param TKey $offset The offset being checked.
      * @return bool true if the offset exists, otherwise false
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) { }
 
@@ -253,6 +307,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $offset The offset to get the value from.
      * @return TValue|null The value at offset index, null when accessing invalid indexes
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) { }
 
@@ -260,51 +316,69 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $offset The index to set for.
      * @param TValue $value The new value to store at the index.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function offsetSet($offset, $value) { }
 
     /**
      * @param TKey $offset The offset to unset.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function offsetUnset($offset) { }
 
     /**
      * @param TValue $value The value to append.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function append($value) { }
 
     /**
      * @return array<TKey, TValue> A copy of the array, or array of public properties
      *                             if ArrayIterator refers to an object.
+     *
+     * @psalm-mutation-free
      */
     public function getArrayCopy() { }
 
     /**
      * @return int The number of elements or public properties in the associated
      *             array or object, respectively.
+     *
+     * @psalm-mutation-free
      */
     public function count() { }
 
     /**
      * @return int-mask-of<self::*> The current flags.
+     *
+     * @psalm-mutation-free
      */
     public function getFlags() { }
 
     /**
      * @param int-mask-of<self::*> $flags bitmask
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setFlags($flags) { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function asort() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function ksort() { }
 
@@ -330,57 +404,98 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function natsort() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function natcasesort() { }
 
     /**
      * @param string $serialized The serialized ArrayIterator object to be unserialized.
      * @return void
+     *
+     * @psalm-impure
      */
     public function unserialize($serialized) { }
 
     /**
      * @return string The serialized ArrayIterator
+     *
+     * @psalm-impure
      */
     public function serialize() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function rewind() { }
 
     /**
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function current() { }
 
     /**
      * @return TKey|null The current array key or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() { }
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function next() { }
 
     /**
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function valid() { }
 
     /**
      * @param int $position The position to seek to.
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function seek($position) { }
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 /**
@@ -440,14 +555,19 @@ abstract class FilterIterator extends IteratorIterator {
 }
 
 /**
+ * TPurity is what iterating over the inner iterator may do. With CALL_TOSTRING (the default),
+ * moving also converts the current value to a string: its __toString() is assumed not to have
+ * side effects.
+ *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements OuterIterator<TKey, TValue>
+ * @template-implements OuterIterator[TPurity]<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
  *
- * @template-extends IteratorIterator<TKey, TValue, TIterator>
+ * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
  */
 class CachingIterator extends IteratorIterator implements OuterIterator , ArrayAccess , Countable  {
     const CALL_TOSTRING = 1 ;
@@ -461,28 +581,123 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
      * @param TIterator $iterator
      * @param int-mask-of<self::*> $flags
      * @psalm-flow ($iterator) -> return
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
 
-    /** @return bool */
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
     public function hasNext () {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function key() {}
 
     /**
+     * With TOSTRING_USE_INNER, converts the inner iterator to a string.
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     */
+    public function __toString(): string {}
+
+    /**
+     * @return int-mask-of<self::*>
+     *
+     * @psalm-mutation-free
+     */
+    public function getFlags() {}
+
+    /**
+     * @param int-mask-of<self::*> $flags
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setFlags(int $flags) {}
+
+    /**
+     * @param TKey $key
+     * @return TValue
+     *
+     * @psalm-mutation-free
+     */
+    public function offsetGet($key) {}
+
+    /**
+     * @param TKey $key
+     * @param TValue $value
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function offsetSet($key, mixed $value) {}
+
+    /**
+     * @param TKey $key
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function offsetUnset($key) {}
+
+    /**
+     * @param TKey $key
+     * @return bool
+     *
+     * @psalm-mutation-free
+     */
+    public function offsetExists($key) {}
+
+    /**
      * @return array<array-key, TValue>
+     *
+     * @psalm-mutation-free
      */
     public function getCache() {}
+
+    /**
+     * @return int
+     *
+     * @psalm-mutation-free
+     */
+    public function count() {}
 }
 
 /**
@@ -535,61 +750,106 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator  {
  */
 class DirectoryIterator extends SplFileInfo implements SeekableIterator {
 
+    /**
+     * @psalm-capabilities io
+     */
     public function __construct(string $path){}
 
     /**
      * @return self
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
     /**
      * @return int|false
      * @psalm-ignore-falsable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|io
      */
     public function next(){}
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|io
      */
     public function rewind(){}
 
     /**
      * @param int $position
+     *
+     * @psalm-capabilities read-props|write-this-props|io
      */
     public function seek($position) {}
 
     /**
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function valid(){}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getFilename() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getExtension() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function getBasename(string $suffix = "") {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isDot() {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function __toString() {}
 }
 
 /**
- * @template-implements Iterator<never, never>
+ * @template-implements Iterator[pure]<never, never>
  */
 class EmptyIterator implements Iterator {
     /**
      * @return never
+     * @psalm-pure
      */
     public function current() {}
     /**
      * @return never
+     * @psalm-pure
      */
     public function key() {}
     /**
      * @return void
+     * @psalm-pure
      */
     public function next() {}
     /**
      * @return void
+     * @psalm-pure
      */
     public function rewind() {}
 
     /**
      * @return false
+     * @psalm-pure
      */
     public function valid() {}
 }
@@ -613,29 +873,46 @@ class FilesystemIterator extends DirectoryIterator
 
     /**
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
+     *
+     * @psalm-capabilities io
      */
     public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO|self::SKIP_DOTS) {}
 
     /**
      * @return FilesystemIterator|SplFileInfo|string|null
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
     /**
      * @return int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH>
+     *
+     * @psalm-mutation-free
      */
     public function getFlags() {}
 
     /**
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATH> $flags
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setFlags($flags) {}
     /**
      * @return string|null
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
+    public function rewind() {}
 }
 
 
@@ -646,8 +923,15 @@ class FilesystemIterator extends DirectoryIterator
 class GlobIterator extends FilesystemIterator implements Countable {
     /**
      * @return int
+     *
+     * @psalm-mutation-free
      */
     public function count() {}
+
+    /**
+     * @psalm-capabilities io
+     */
+    public function __construct(string $pattern, int $flags = 0) {}
 }
 
 /**
@@ -812,11 +1096,14 @@ class NoRewindIterator extends IteratorIterator {
 }
 
 /**
+ * TPurity is what iterating over the attached iterators may do: `new MultipleIterator()` cannot
+ * bind it, so it is impure unless declared (`MultipleIterator[pure]<int, string>`).
  *
  * @template-covariant TKey
  * @template-covariant TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements Iterator<TKey, TValue>
+ * @template-implements Iterator[TPurity]<TKey, TValue>
  */
 class MultipleIterator implements Iterator {
     const MIT_NEED_ANY = 0 ;
@@ -826,85 +1113,149 @@ class MultipleIterator implements Iterator {
 
     /**
      * @param int-mask-of<self::MIT_*> $flags
+     * @psalm-pure
      */
     public function __construct (int $flags = 0) {}
+
     /**
-     * @param Iterator<TKey,TValue> $iterator
+     * @param Iterator[TPurity]<TKey,TValue> $iterator
      * @param string|int $infos
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function attachIterator(Iterator $iterator, $infos = '') {}
+
     /**
      * @param Iterator<TKey, TValue> $iterator
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function containsIterator(Iterator $iterator) {}
 
     /**
      * @return int
+     *
+     * @psalm-mutation-free
      */
     public function countIterators() {}
+
     /**
      * nullable values are returned when MIT_NEED_ANY is set
      * and one of the iterators is already drained.
      * When MIT_NEED_ALL is set and one of the iterators
      * is already drained, `current()` throws
      *
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return array<array-key, TValue|null>
      */
     public function current() {}
+
     /**
      * @param Iterator<TKey,TValue> $iterator
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function detachIterator(Iterator $iterator) {}
+
     /**
      * @return int-mask-of<self::MIT_*>
+     *
+     * @psalm-mutation-free
      */
     public function getFlags() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return array<array-key, TValue|null>
      */
     public function key() {}
+
     /**
      * @param int-mask-of<self::MIT_*> $flags
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setFlags( int $flags ) {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends FilterIterator<TKey, TValue, TIterator>
- * @template-implements RecursiveIterator<TKey, TValue>
+ * @template-extends FilterIterator[TPurity]<TKey, TValue, TIterator>
+ * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
  */
 abstract class RecursiveFilterIterator extends FilterIterator implements RecursiveIterator {
-
     /**
      * @param TIterator $iterator
      * @psalm-flow ($iterator) -> return
+     * @psalm-pure
      */
     public function __construct(RecursiveIterator $iterator) {}
+
     /**
+     * Constructs the filter for the children, with the same arguments.
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TIterator
      */
     public function getChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function hasChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -914,46 +1265,65 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends RecursiveFilterIterator<TKey, TValue, TIterator>
+ * @template-extends RecursiveFilterIterator[TPurity]<TKey, TValue, TIterator>
  */
 class ParentIterator extends RecursiveFilterIterator implements RecursiveIterator, OuterIterator {
-
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function accept() {}
+
     /**
      * @param TIterator $iterator
      * @psalm-flow ($iterator) -> return
+     * @psalm-pure
      */
     public function __construct(RecursiveIterator $iterator) {}
+
     /**
-     * @return ParentIterator<TKey,TValue>
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return ParentIterator[TPurity]<TKey,TValue>
      */
     public function getChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function hasChildren() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void
      */
     public function next() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void
      */
     public function rewind() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
      */
@@ -974,22 +1344,31 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
 
     /**
      * @return ?RecursiveArrayIterator<TKey, TValue>
+     *
+     * @psalm-mutation-free
      */
     public function getChildren() {}
 
     /**
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function hasChildren() {}
+
     /**
      * @return TValue|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
     /**
      * @return TKey|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
 }
@@ -997,18 +1376,30 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends CachingIterator<TKey, TValue, TIterator>
+ * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
+ * @template-extends CachingIterator[TPurity]<TKey, TValue, TIterator>
  */
 class RecursiveCachingIterator extends CachingIterator implements RecursiveIterator {
     /**
-     * @return RecursiveCachingIterator<TKey,TValue, TIterator>
+     * @param TIterator $iterator
+     * @param int-mask-of<self::*> $flags
+     * @psalm-pure
+     */
+    public function __construct(Iterator $iterator, int $flags = self::CALL_TOSTRING) {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveCachingIterator[TPurity]<TKey,TValue, TIterator>
      */
     public function getChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function hasChildren() {}
@@ -1085,58 +1476,217 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
     /**
      * @param string $path
      * @param int-mask<self::CURRENT_AS_PATHNAME,self::CURRENT_AS_FILEINFO,self::CURRENT_AS_SELF,self::KEY_AS_PATHNAME,self::KEY_AS_FILENAME,self::FOLLOW_SYMLINKS,self::NEW_CURRENT_AND_KEY,self::SKIP_DOTS,self::UNIX_PATHS> $flags
+     *
+     * @psalm-capabilities io
      */
     public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME|self::CURRENT_AS_FILEINFO) {}
 
     /**
      * @return string
+     *
+     * @psalm-mutation-free
      */
     public function getSubPath() {}
     /**
      * @return string
+     *
+     * @psalm-mutation-free
      */
     public function getSubPathname() {}
 
     /**
      * @return RecursiveDirectoryIterator|string|SplFileInfo|null current value or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function current() {}
 
     /**
      * @return string|null current key or null when iterator is drained
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function key() {}
+
+    /**
+     * @return bool
+     *
+     * @psalm-capabilities read-props|io
+     */
+    public function hasChildren(bool $allowLinks = false) {}
+
+    /**
+     * @return RecursiveDirectoryIterator
+     *
+     * @psalm-capabilities read-props|io
+     */
+    public function getChildren() {}
 }
 
 
 /**
- * @template TIterator as RecursiveIterator|IteratorAggregate
+ * TPurity is what iterating over the wrapped iterator and its children may do. The hooks the
+ * iteration calls (beginIteration(), callHasChildren(), nextElement(), ...) do nothing else, and
+ * overrides have to keep it that way.
+ *
+ * @template TIterator as RecursiveIterator[TPurity]|IteratorAggregate[TPurity]
+ * @psalm-purity-template TPurity(impure)
+ *
+ * @template-implements OuterIterator[TPurity]<mixed, mixed>
+ *
  * @mixin TIterator
  */
 class RecursiveIteratorIterator implements OuterIterator {
+    const LEAVES_ONLY = 0 ;
+    const SELF_FIRST = 1 ;
+    const CHILD_FIRST = 2 ;
+    const CATCH_GET_CHILD = 16 ;
+
     /**
+     * Wrapping an IteratorAggregate calls its getIterator().
+     *
      * @param TIterator $iterator
      * @param int $mode
      * @param int $flags
      *
      * @return void
      * @psalm-flow ($iterator) -> return
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      */
     public function __construct($iterator, $mode = 0, $flags = 0) {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function rewind() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function valid() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     */
+    public function key() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     */
+    public function current() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return void
+     */
+    public function next() {}
+
+    /**
+     * @return int
+     *
+     * @psalm-pure
+     */
+    public function getDepth() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveIterator[TPurity]|null
+     */
+    public function getSubIterator(?int $level = null) {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveIterator[TPurity]
+     */
+    public function getInnerIterator() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-pure
+     */
+    public function beginIteration() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-pure
+     */
+    public function endIteration() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function callHasChildren() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveIterator[TPurity]|null
+     */
+    public function callGetChildren() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-pure
+     */
+    public function beginChildren() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-pure
+     */
+    public function endChildren() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-pure
+     */
+    public function nextElement() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setMaxDepth(int $maxDepth = -1) {}
+
+    /**
+     * @return int|false
+     *
+     * @psalm-mutation-free
+     */
+    public function getMaxDepth() {}
 }
 
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-implements RecursiveIterator<TKey, TValue>
- * @template-extends RegexIterator<TKey, TValue, TIterator>
+ * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
+ * @template-extends RegexIterator[TPurity]<TKey, TValue, TIterator>
  */
 class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator {
-
     const MATCH = 0 ;
     const GET_MATCH = 1 ;
     const ALL_MATCHES = 2 ;
@@ -1151,29 +1701,48 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator 
      * @param self::USE_KEY|0 $flags
      * @param int $preg_flags
      * @psalm-flow ($iterator) -> return
+     * @psalm-pure
      */
     public function __construct(RecursiveIterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
 
     /**
-     * @return RecursiveRegexIterator<TKey, TValue>
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function accept() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function hasChildren() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return RecursiveRegexIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 }
 
 /**
+ * TPurity is what iterating over the wrapped iterator and its children may do. The entries are
+ * converted to strings: their __toString() is assumed not to have side effects.
+ *
  * @template TKey
  * @template TValue
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends RecursiveIteratorIterator<TKey, TValue>
- * @template-implements OuterIterator<TKey, TValue>
+ * @template-extends RecursiveIteratorIterator[TPurity]<RecursiveIterator[TPurity]<TKey, TValue>|IteratorAggregate[TPurity]<TKey, TValue>>
+ * @template-implements OuterIterator[TPurity]<TKey, TValue>
  */
 class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIterator {
-
     const LEAVES_ONLY = 0 ;
     const SELF_FIRST = 1 ;
     const CHILD_FIRST = 2 ;
     const CATCH_GET_CHILD = 16 ;
-
     const BYPASS_CURRENT = 4 ;
     const BYPASS_KEY = 8 ;
     const PREFIX_LEFT = 0 ;
@@ -1185,94 +1754,148 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
 
     /**
      * @return void
+     *
+     * @psalm-pure
      */
     public function beginChildren() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return RecursiveIterator
      */
     public function beginIteration() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return RecursiveIterator
      */
     public function callGetChildren() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function callHasChildren() {}
 
     /**
-     * @param RecursiveIterator<TKey, TValue>|IteratorAggregate<TKey, TValue> $it
+     * @param RecursiveIterator[TPurity]<TKey, TValue>|IteratorAggregate[TPurity]<TKey, TValue> $it
      * @param int-mask<self::BYPASS_CURRENT, self::BYPASS_KEY> $flags
      * @param int-mask<self::CATCH_GET_CHILD> $cit_flags
      * @param self::LEAVES_ONLY|self::SELF_FIRST|self::CHILD_FIRST $mode
      * @psalm-flow ($it) -> return
+     *
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      */
     public function __construct($it, int $flags = self::BYPASS_KEY, int $cit_flags = self::CATCH_GET_CHILD, int $mode = self::SELF_FIRST) {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return string
      */
     public function current() {}
+
     /**
      * @return void
+     *
+     * @psalm-pure
      */
     public function endChildren() {}
+
     /**
      * @return void
+     *
+     * @psalm-pure
      */
     public function endIteration() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return string
      */
     public function getEntry() {}
+
     /**
      * @return string
+     *
+     * @psalm-mutation-free
      */
     public function getPostfix() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return string
      */
     public function getPrefix() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return string
      */
     public function key() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void
      */
     public function next() {}
+
     /**
      * @return void
+     *
+     * @psalm-pure
      */
     public function nextElement() {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return void
      */
     public function rewind() {}
+
     /**
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setPostfix(string $postfix ) {}
+
     /**
      * @param self::PREFIX_* $part
      * @param string $value
      * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setPrefixPart(int $part , string $value ) {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return bool
      */
     public function valid() {}
 }
 
 /**
+ * TPurity is what iterating over the inner iterator may do. Matching converts the values (or keys)
+ * to strings: their __toString() is assumed not to have side effects.
+ *
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
  *
- * @template-extends FilterIterator<TKey, TValue, TIterator>
+ * @template-extends FilterIterator[TPurity]<TKey, TValue, TIterator>
  */
 class RegexIterator extends FilterIterator {
     const MATCH = 0 ;
@@ -1289,15 +1912,79 @@ class RegexIterator extends FilterIterator {
      * @param int-mask<self::USE_KEY> $flags
      * @param int $preg_flags
      * @psalm-flow ($iterator) -> return
+     * @psalm-pure
      */
     public function __construct(Iterator $iterator, string $regex, int $mode = self::MATCH, int $flags = 0, int $preg_flags = 0) {}
+
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
+     * @return bool
+     */
+    public function accept() {}
+
+    /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TValue Can return any type.
      */
     public function current() {}
 
     /**
+     * @psalm-pure
+     * @psalm-purity-from-template TPurity
      * @return TKey scalar on success, or null on failure.
      */
     public function key() {}
+
+    /**
+     * @return self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE
+     *
+     * @psalm-mutation-free
+     */
+    public function getMode() {}
+
+    /**
+     * @param self::MATCH|self::GET_MATCH|self::ALL_MATCHES|self::SPLIT|self::REPLACE $mode
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setMode(int $mode) {}
+
+    /**
+     * @return int-mask<self::USE_KEY>
+     *
+     * @psalm-mutation-free
+     */
+    public function getFlags() {}
+
+    /**
+     * @param int-mask<self::USE_KEY> $flags
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setFlags(int $flags) {}
+
+    /**
+     * @return string
+     *
+     * @psalm-mutation-free
+     */
+    public function getRegex() {}
+
+    /**
+     * @return int
+     *
+     * @psalm-mutation-free
+     */
+    public function getPregFlags() {}
+
+    /**
+     * @return void
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function setPregFlags(int $pregFlags) {}
 }

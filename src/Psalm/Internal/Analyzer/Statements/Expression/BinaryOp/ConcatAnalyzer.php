@@ -119,6 +119,7 @@ final class ConcatAnalyzer
      * anything
      *
      * @return list<string>
+     * @psalm-capabilities read-props
      */
     public static function getLiteralPrefixes(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): array
     {
@@ -136,6 +137,7 @@ final class ConcatAnalyzer
      * The literal strings $left . $right, both already analyzed, can start with (see getLiteralPrefixes())
      *
      * @return list<string>
+     * @psalm-capabilities read-props
      */
     public static function getConcatLiteralPrefixes(
         StatementsAnalyzer $statements_analyzer,

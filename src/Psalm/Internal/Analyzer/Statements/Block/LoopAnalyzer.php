@@ -675,6 +675,7 @@ final class LoopAnalyzer
 
     /**
      * @param array<string, Union> $init_var_types
+     * @psalm-capabilities read-props
      */
     private static function doesEnterLoop(
         StatementsAnalyzer $statements_analyzer,
