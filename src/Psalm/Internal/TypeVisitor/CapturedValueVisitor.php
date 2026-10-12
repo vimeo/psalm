@@ -33,13 +33,11 @@ final class CapturedValueVisitor extends MutableTypeVisitor
             return self::DONT_TRAVERSE_CHILDREN;
         }
 
-        if ($type instanceof Union) {
-            if ($type->reference_free) {
-                $type = $type->setProperties([
-                    'reference_free' => false,
-                    'closure_state' => $type->allow_mutations,
-                ]);
-            }
+        if ($type instanceof Union && $type->reference_free) {
+            $type = $type->setProperties([
+                'reference_free' => false,
+                'closure_state' => $type->allow_mutations,
+            ]);
         }
 
         return null;
