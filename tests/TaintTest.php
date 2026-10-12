@@ -3202,7 +3202,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo count(args());
-                    echo strlen((string) file_get_contents(path("dir")));',
+                    unlink(path("file"));',
                 'error_message' => 'TaintedFile',
             ],
             'taintSinkWithoutParameter' => [
@@ -3236,6 +3236,14 @@ final class TaintTest extends TestCase
                     /** @psalm-flow proxy exec($cmd) */
                     function run(string $command): void {}',
                 'error_message' => 'names $cmd, which is not a parameter',
+            ],
+            'keyedStoreFlowWhoseKeyIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[$k] -> return */
+                    function store_get(string $key): string {
+                        return "";
+                    }',
+                'error_message' => 'names $k, which is not a parameter',
             ],
             'flowOfNoKnownForm' => [
                 'code' => '<?php
