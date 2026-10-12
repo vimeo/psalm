@@ -19,6 +19,7 @@
             <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="forbiddenConstants" type="ConstantType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="unsuppressibleIssues" type="UnsuppressibleIssuesType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="universalObjectCrates" type="UniversalObjectCratesType" minOccurs="0" maxOccurs="1" />
@@ -107,8 +108,22 @@
     <xs:complexType name="TaintAnalysisType">
         <xs:choice maxOccurs="unbounded">
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1" type="IgnoreFilesType" />
+            <xs:element name="taints" minOccurs="0" maxOccurs="1" type="CustomTaintsType" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
+    </xs:complexType>
+
+    <xs:complexType name="CustomTaintsType">
+        <xs:sequence>
+            <xs:element name="taint" minOccurs="0" maxOccurs="unbounded" type="CustomTaintType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="CustomTaintType">
+        <xs:sequence>
+            <xs:element name="alias" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
 
     <xs:complexType name="NameAttributeType">
@@ -178,6 +193,13 @@
     <xs:complexType name="StubsType">
         <xs:sequence>
             <xs:element name="file" maxOccurs="unbounded" type="StubsAttributeType" />
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip" />
+    </xs:complexType>
+
+    <xs:complexType name="UnsuppressibleIssuesType">
+        <xs:sequence>
+            <xs:element name="issue" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
@@ -280,6 +302,7 @@
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="IntMaskComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
