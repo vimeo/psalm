@@ -448,6 +448,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function isSource(DataFlowNode $node): bool
+    {
+        return isset($this->sources[$node->id]);
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addSink(DataFlowNode $node): void
