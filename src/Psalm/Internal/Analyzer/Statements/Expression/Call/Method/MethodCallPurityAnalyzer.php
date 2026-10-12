@@ -59,14 +59,16 @@ final class MethodCallPurityAnalyzer
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
-     * `$this` and write-props otherwise, as writing its properties directly would. Callers that
-     * know the receiver to be fresh by other means say so with $receiver_is_fresh.
+     * `$this` or state of the closure being analysed and write-props otherwise, as writing its
+     * properties directly would. Callers that know the receiver to be fresh by other means say so
+     * with $receiver_is_fresh.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
         MethodStorage $method_storage,
         bool $receiver_is_fresh = false,
+        bool $receiver_is_closure_state = false,
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
 
@@ -78,7 +80,7 @@ final class MethodCallPurityAnalyzer
 
         return self::getCapabilitiesForReceiver(
             $capabilities,
-            self::isReceiverThis($var),
+            $receiver_is_closure_state || self::isReceiverThis($var),
             self::isFromGlobalState($statements_analyzer, $var),
         );
     }
@@ -158,6 +160,8 @@ final class MethodCallPurityAnalyzer
             $statements_analyzer,
             $stmt->var,
             $method_storage,
+            false,
+            $lhs_var_id !== null && isset($context->captured_state[$lhs_var_id]),
         );
 
         // with a receiver of several types, the call gives back `$this` only if every method called does

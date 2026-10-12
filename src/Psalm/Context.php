@@ -119,6 +119,15 @@ final class Context
     public array $captured_by_ref = [];
 
     /**
+     * The variables the closure being analysed captured by value whose values the enclosing scope
+     * created (they were fresh there): state the closure holds, like a class instance holds the
+     * objects it creates, so writing them is writing its own state (write-this-props).
+     *
+     * @var array<string, true>
+     */
+    public array $captured_state = [];
+
+    /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
      * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
      * rules, and assigning to a reference will change the referenced variable rather than shadowing it.

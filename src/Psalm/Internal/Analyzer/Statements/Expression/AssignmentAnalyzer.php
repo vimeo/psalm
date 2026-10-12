@@ -1951,8 +1951,16 @@ final class AssignmentAnalyzer
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
         $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
-        
-        $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
+
+        // an object a closure captured from the scope that created it is the closure's own state
+        $object_var_id = ExpressionIdentifier::getExtendedVarId(
+            $assign_var->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        $isState = $isThis || ($object_var_id !== null && isset($context->captured_state[$object_var_id]));
+
+        $mutations = $isState ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
 
         // a fresh object, that nothing else holds, is not state of the function-like either
         $var_type = $statements_analyzer->node_data->getType($assign_var->var);
