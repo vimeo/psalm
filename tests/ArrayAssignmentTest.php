@@ -69,30 +69,28 @@ final class ArrayAssignmentTest extends TestCase
                     $a["x"] = 1;
                     $a[(string) rand()] = "b";
                     $b = $a["x"];
+                    /** @psalm-check-type-exact $b = 1|string */;
 
                     /** @var array<string, array<string, int|string>> $e */
                     $e = [];
                     $e["x"]["y"] = 1;
                     $e["x"][(string) rand()] = "b";
                     $f = $e["x"]["y"];
+                    /** @psalm-check-type-exact $f = \'b\'|1 */;
 
                     $g = ["y" => 1];
                     $g["x"] = 1;
                     $g[] = "b";
                     $h = $g["x"];
+                    /** @psalm-check-type-exact $h = 1 */;
 
                     /** @var array<string, int|string> $i */
                     $i = [];
                     $k = (string) rand();
                     $i[$k] = 1;
                     $i["x"] = "b";
-                    $j = $i[$k];',
-                'assertions' => [
-                    '$b===' => '1|string',
-                    '$f===' => "'b'|1",
-                    '$h===' => '1',
-                    '$j===' => 'int|string',
-                ],
+                    $j = $i[$k];
+                    /** @psalm-check-type-exact $j = int|string */;',
             ],
             'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
                 'code' => '<?php
@@ -101,7 +99,9 @@ final class ArrayAssignmentTest extends TestCase
                     $a["z"] = "z";
                     $a["x"][(string) rand()] = 1;
                     $b = $a["y"];
+                    /** @psalm-check-type-exact $b = int */;
                     $c = $a["z"];
+                    /** @psalm-check-type-exact $c = \'z\' */;
 
                     /** @var array<string, array<string, int|string>> $d */
                     $d = [];
@@ -109,7 +109,9 @@ final class ArrayAssignmentTest extends TestCase
                     $d["any"]["y"] = 6;
                     $d[(string) rand()]["x"] = "s";
                     $e = $d["any"]["x"];
+                    /** @psalm-check-type-exact $e = int|string */;
                     $f = $d["any"]["y"];
+                    /** @psalm-check-type-exact $f = 6 */;
 
                     /** @var array<string, array<string, int|string>> $g */
                     $g = [];
@@ -118,23 +120,17 @@ final class ArrayAssignmentTest extends TestCase
                     $g[$k]["lit"] = 6;
                     $g["x"]["lit"] = "s";
                     $h = $g[$k]["other"];
+                    /** @psalm-check-type-exact $h = 5 */;
                     $i = $g[$k]["lit"];
+                    /** @psalm-check-type-exact $i = int|string */;
 
                     /** @var array<int, array<string, int|string>> $j */
                     $j = [];
                     $n = rand();
                     $j[$n]["x"] = 5;
                     $j[]["x"] = "s";
-                    $l = $j[$n]["x"];',
-                'assertions' => [
-                    '$b===' => 'int',
-                    '$c===' => "'z'",
-                    '$e===' => 'int|string',
-                    '$f===' => '6',
-                    '$h===' => '5',
-                    '$i===' => 'int|string',
-                    '$l===' => '5',
-                ],
+                    $l = $j[$n]["x"];
+                    /** @psalm-check-type-exact $l = 5 */;',
             ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
