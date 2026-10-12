@@ -75,6 +75,32 @@ what they were given. This is useful for methods whose bodies Psalm doesn't anal
 stubs and vendor code. With `@psalm-taint-specialize`, each call returns what its own object holds; without it, what
 any object the method is called on holds flows into what every call returns.
 
+### Callable result to return value hint
+
+```php
+<?php // --taint-analysis
+interface Cache
+{
+    /**
+     * @template T
+     * @param callable(): T $compute
+     * @return T
+     * @psalm-taint-specialize
+     * @psalm-flow ($compute()) -> return
+     */
+    public function get(string $key, callable $compute): mixed;
+}
+
+function show(Cache $cache): void
+{
+    echo $cache->get('key', fn(): string => $_GET['malicious'] ?? '');
+}
+```
+
+`$compute()` in a return value hint states that what the function returns holds what the callables given to `$compute`
+return: the closure's body, or the function named. Here `TaintedHtml` is detected. As for `$this`, each call returns
+what its own callables return only with `@psalm-taint-specialize`.
+
 ### Combined proxy & return value hint
 
 ```php
