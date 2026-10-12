@@ -490,6 +490,21 @@ final class TaintTest extends TestCase
                         return "";
                     }',
             ],
+            'dontTaintSpecializedCallWithWhatAnotherPassesThroughAKeyedStore' => [
+                // what the calls leave in the store doesn't leak into what they return directly
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        store_set("k", $v);
+                        return $v;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+            ],
             'keyedStoreKeepsDifferentExactKeysApart' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -9186,6 +9201,25 @@ final class TaintTest extends TestCase
 
                     A::getPrevious($_GET["a"]);
                     echo A::getPrevious("foo");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedCallReturningWhatAnotherLeftInAKeyedStore' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        $prev = store_get("k");
+                        store_set("k", $v);
+                        return $prev;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSpecializedCallReturningWhatAnotherLeftInAStaticProperty' => [
