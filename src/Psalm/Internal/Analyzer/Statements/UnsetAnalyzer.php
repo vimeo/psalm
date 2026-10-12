@@ -75,12 +75,16 @@ final class UnsetAnalyzer
                     );
                 }
 
-                if ($var instanceof PhpParser\Node\Expr\Variable && isset($context->vars_in_scope[$var_id])) {
-                    // the object the variable holds may die here
+                $unset_type = $var instanceof PhpParser\Node\Expr\Variable
+                    ? $context->vars_in_scope[$var_id] ?? null
+                    : $statements_analyzer->node_data->getType($var);
+
+                if ($unset_type !== null) {
+                    // the object the variable, property or array element holds may die here
                     DestructorAnalyzer::chargeDestruction(
                         $statements_analyzer,
                         $context,
-                        $context->vars_in_scope[$var_id],
+                        $unset_type,
                         $var_id,
                         $stmt,
                     );
