@@ -64,6 +64,7 @@ use function explode;
 use function in_array;
 use function preg_last_error_msg;
 use function preg_match;
+use function preg_match_all;
 use function preg_replace;
 use function preg_split;
 use function str_contains;
@@ -100,6 +101,8 @@ final class FunctionLikeDocblockScanner
         bool $fake_method,
         string $cased_function_id,
     ): void {
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
         $config = Config::getInstance();
@@ -378,8 +381,20 @@ final class FunctionLikeDocblockScanner
             $classlike_storage,
         );
 
+        $param_names = [];
+        foreach ($storage->params as $param_storage) {
+            $param_names[$param_storage->name] = true;
+        }
+
+        $invalid_annotations = [];
+
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
+
+            if (!isset($param_names[$param_name])) {
+                $invalid_annotations[] = '@psalm-taint-sink names ' . $taint_sink_param['name']
+                    . ', which is not a parameter';
+            }
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
@@ -427,11 +442,30 @@ final class FunctionLikeDocblockScanner
         foreach ($docblock_info->assert_untainted_params as $untainted_assert_param) {
             $param_name = substr($untainted_assert_param['name'], 1);
 
+            if (!isset($param_names[$param_name])) {
+                $invalid_annotations[] = '@psalm-assert-untainted names ' . $untainted_assert_param['name']
+                    . ', which is not a parameter';
+            }
+
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
                     $param_storage->assert_untainted = true;
                 }
             }
+        }
+
+        foreach ($docblock_info->flows as $flow) {
+            $invalid_flow = self::getInvalidFlow($flow, $param_names);
+            if ($invalid_flow !== null) {
+                $invalid_annotations[] = $invalid_flow;
+            }
+        }
+
+        foreach ($invalid_annotations as $invalid_annotation) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $invalid_annotation . ' in docblock for ' . $cased_function_id,
+                $location,
+            );
         }
 
         if ($classlike_storage !== null) {
@@ -1373,6 +1407,35 @@ final class FunctionLikeDocblockScanner
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
         }
+    }
+
+    /**
+     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`) nor a proxy call
+     * (`proxy ...`), or it names a parameter (`$name`) that isn't one of $param_names
+     *
+     * @param array<string, true> $param_names
+     * @return non-empty-string|null
+     * @psalm-pure
+     */
+    private static function getInvalidFlow(string $flow, array $param_names): ?string
+    {
+        if (str_starts_with($flow, 'proxy')) {
+            $sources = explode('->', $flow, 2)[0];
+        } elseif (preg_match('/^(\(.*?\))\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1) {
+            $sources = $matches[1];
+        } else {
+            return '@psalm-flow "' . $flow . '" is neither "(...) -> ..." nor "proxy ..."';
+        }
+
+        // the parameters it names, not what calling one returns (`$name()`)
+        preg_match_all('/\$(\w+)\b(?!\s*\()/', $sources, $matches);
+        foreach ($matches[1] as $name) {
+            if ($name !== 'this' && !isset($param_names[$name])) {
+                return '@psalm-flow names $' . $name . ', which is not a parameter';
+            }
+        }
+
+        return null;
     }
 
     /**

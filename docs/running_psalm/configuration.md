@@ -729,6 +729,9 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 </stubs>
 ```
 
+Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
+plugins add, so that an annotation a stub gets wrong isn't silently dropped.
+
 Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
 
 #### &lt;ignoreExceptions&gt;

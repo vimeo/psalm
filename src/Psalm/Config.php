@@ -2572,13 +2572,18 @@ final class Config
             return;
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->preloaded_stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2588,6 +2593,8 @@ final class Config
         $codebase->scanFiles();
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
 
         $progress->debug('Finished registering preloaded stub files' . "\n");
     }
@@ -2675,13 +2682,18 @@ final class Config
             }
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering stub files' . "\n");
@@ -2691,6 +2703,51 @@ final class Config
         $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * Reports the docblock issues of the stubs the config and the plugins add, which aren't analyzed (the analysis
+     * reports those of the code it analyzes): they are kept in the storages of the stubs, so that they are reported
+     * again when those come from the cache
+     *
+     * @param list<string> $file_paths
+     */
+    private static function reportStubDocblockIssues(Codebase $codebase, array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            if (!$codebase->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            $file_storage = $codebase->file_storage_provider->get($file_path);
+            $issues = $file_storage->docblock_issues;
+
+            foreach ($file_storage->functions as $function_storage) {
+                $issues = [...$issues, ...$function_storage->docblock_issues];
+            }
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                if (!$codebase->classlike_storage_provider->has($fq_classlike_name)) {
+                    continue;
+                }
+
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+                $issues = [...$issues, ...$classlike_storage->docblock_issues];
+
+                foreach ($classlike_storage->methods as $method_storage) {
+                    $issues = [...$issues, ...$method_storage->docblock_issues];
+                }
+            }
+
+            foreach ($issues as $issue) {
+                // a class of the stub may be declared by another file too
+                if ($issue->code_location->file_path === $file_path) {
+                    IssueBuffer::maybeAddStubIssue($issue);
+                }
+            }
+        }
     }
 
     public function getCacheDirectory(): ?string
