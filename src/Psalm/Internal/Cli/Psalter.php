@@ -99,6 +99,7 @@ final class Psalter
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         gc_collect_cycles();
         gc_disable();
 
@@ -107,7 +108,7 @@ final class Psalter
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
         if ($options === false) {
             fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
             exit(1);
