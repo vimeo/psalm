@@ -54,6 +54,11 @@ final class DataFlowNode implements Stringable
     private const NARROWED_TO_SCALAR = 'narrowed to a scalar: ';
 
     /**
+     * The prefix of the ids of the nodes of getForKeyRemoval()
+     */
+    private const KEY_REMOVED = 'key removed: ';
+
+    /**
      * @psalm-mutation-free
      */
     private function __construct(
@@ -503,8 +508,52 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * The union of $parent_nodes and $other_parent_nodes, without the nodes narrowing others in
-     * it (see getForNarrowingToScalar()): those only stand for the nodes they narrow.
+     * The node of an array of $node once a check tells it holds nothing under a key (see Reconciler), the
+     * removal being made by $removal (its label and location): data flows from $node to it through an
+     * overwrite of that key. It holds part of what $node holds, so it is merged away where $node is merged
+     * in (see combineParentNodes()). The same removal from a node it made is that node: the key is already
+     * gone (e.g. in the next iteration of a loop).
+     *
+     * @psalm-pure
+     */
+    public static function getForKeyRemoval(self $node, self $removal): self
+    {
+        if (self::getKeyRemovalParts($node->id)[0] === $removal->id) {
+            return $node;
+        }
+
+        // $removal's location is a function of its id, so of this id too: see the class invariant
+        return self::make(
+            self::KEY_REMOVED . strlen($removal->id) . ':' . $removal->id . $node->id,
+            $removal->label,
+            $removal->code_location,
+        );
+    }
+
+    /**
+     * The id of the removal and the id of the node the key is removed from, of the node of id $id if it is one
+     * of getForKeyRemoval(), else nulls
+     *
+     * @return array{?string, ?string}
+     * @psalm-pure
+     */
+    private static function getKeyRemovalParts(string $id): array
+    {
+        if (!str_starts_with($id, self::KEY_REMOVED)) {
+            return [null, null];
+        }
+
+        $colon = (int) strpos($id, ':', strlen(self::KEY_REMOVED));
+        $length = (int) substr($id, strlen(self::KEY_REMOVED), $colon - strlen(self::KEY_REMOVED));
+
+        return [substr($id, $colon + 1, $length), substr($id, $colon + 1 + $length)];
+    }
+
+    /**
+     * The union of $parent_nodes and $other_parent_nodes, without the nodes narrowing others in it (see
+     * getForNarrowingToScalar()), which only stand for the nodes they narrow, and without the nodes removing
+     * a key from others in it (see getForKeyRemoval()), which only hold part of what those hold. Also where
+     * they do so through other such nodes.
      *
      * @param array<string, self> $parent_nodes
      * @param array<string, self> $other_parent_nodes
@@ -519,11 +568,23 @@ final class DataFlowNode implements Stringable
 
         $parent_nodes += $other_parent_nodes;
 
-        foreach ($parent_nodes as $parent_node_id => $parent_node) {
-            $narrowed_node_id = $parent_node->getNarrowedNodeId();
+        foreach ($parent_nodes as $parent_node_id => $_) {
+            $base_id = (string) $parent_node_id;
 
-            if ($narrowed_node_id !== null && isset($parent_nodes[$narrowed_node_id])) {
-                unset($parent_nodes[$parent_node_id]);
+            while (true) {
+                $base_id = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
+                    ? substr($base_id, strlen(self::NARROWED_TO_SCALAR))
+                    : self::getKeyRemovalParts($base_id)[1];
+
+                if ($base_id === null) {
+                    break;
+                }
+
+                if (isset($parent_nodes[$base_id])) {
+                    unset($parent_nodes[$parent_node_id]);
+
+                    break;
+                }
             }
         }
 
