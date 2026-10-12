@@ -12,6 +12,7 @@ use Psalm\Config\Creator;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -193,6 +194,7 @@ final class Psalm
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         gc_collect_cycles();
         gc_disable();
 
@@ -201,7 +203,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
         if (false === $options) {
             throw new RuntimeException('Failed to parse CLI options');
         }
@@ -785,7 +787,7 @@ final class Psalm
         ErrorBaseline::create(
             new FileProvider,
             $error_baseline,
-            IssueBuffer::getIssuesData(),
+            self::getBaselineIssues($config),
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
@@ -802,6 +804,26 @@ final class Psalm
         fwrite(STDERR, PHP_EOL);
 
         return $issue_baseline;
+    }
+
+    /**
+     * The issues a baseline can hold: not those the configuration makes unsuppressible
+     *
+     * @return array<string, list<IssueData>>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getBaselineIssues(Config $config): array
+    {
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+            $issues[$file_path] = array_values(array_filter(
+                $file_issues,
+                static fn(IssueData $issue): bool => $config->isSuppressible($issue->type),
+            ));
+        }
+
+        return $issues;
     }
 
     /**
@@ -826,7 +848,7 @@ final class Psalm
             $issue_baseline = ErrorBaseline::update(
                 new FileProvider,
                 $baselineFile,
-                IssueBuffer::getIssuesData(),
+                self::getBaselineIssues($config),
                 $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
@@ -1495,7 +1517,8 @@ final class Psalm
 
             --find-dead-code[=auto]
             --find-unused-code[=auto]
-                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
+                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'.
+                Unused code detection is already on by default (see the findUnusedCode config option)
 
             --find-unused-psalm-suppress
                 Finds all @psalm-suppress annotations that aren’t used, including those on

@@ -127,6 +127,46 @@ function checkFileRegression(): int
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
     }
 
+    public function testCheckDirReportsIssueWithoutInitialisedProjectFiles(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $dir_path = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject';
+
+        $this->file_provider->registerFile(
+            $dir_path . DIRECTORY_SEPARATOR . 'CheckDirRegression.php',
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+function checkDirRegression(): int
+{
+    return "not an int";
+}
+',
+        );
+
+        // Must not throw; the issue in the file must still be reported.
+        $this->project_analyzer->checkDir($dir_path);
+
+        $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
+    }
+
     public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -166,7 +206,10 @@ function checkFileRegression(): int
         );
     }
 
-    public function testAfterCodebasePopulatedIsInvoked(): void
+    /**
+     * @dataProvider entryPointProvider
+     */
+    public function testAfterCodebasePopulatedIsInvoked(string $entry_point): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
             public static bool $called = false;
@@ -198,12 +241,32 @@ function checkFileRegression(): int
         $hook_class = get_class($hook);
 
         $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
+        $hook::$called = false;
+
+        $file_path = (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php');
 
         ob_start();
-        $this->project_analyzer->check('tests/fixtures/DummyProject');
+        match ($entry_point) {
+            'check' => $this->project_analyzer->check('tests/fixtures/DummyProject'),
+            'checkDir' => $this->project_analyzer->checkDir('tests/fixtures/DummyProject'),
+            'checkFile' => $this->project_analyzer->checkFile($file_path),
+            'checkPaths' => $this->project_analyzer->checkPaths([$file_path]),
+        };
         ob_end_clean();
 
         $this->assertTrue($hook::$called);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-capabilities read-props
+     */
+    public static function entryPointProvider(): iterable
+    {
+        yield 'check' => ['check'];
+        yield 'checkDir' => ['checkDir'];
+        yield 'checkFile' => ['checkFile'];
+        yield 'checkPaths' => ['checkPaths'];
     }
 
     public function testCheckAfterNoChange(): void

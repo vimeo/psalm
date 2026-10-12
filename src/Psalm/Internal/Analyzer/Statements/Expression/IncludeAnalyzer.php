@@ -111,7 +111,7 @@ final class IncludeAnalyzer
         if ($stmt_expr_type
             && $statements_analyzer->taint_flow_graph
             && $stmt_expr_type->parent_nodes
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            && !$config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
         ) {
             $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
@@ -292,7 +292,21 @@ final class IncludeAnalyzer
     }
 
     /**
+     * The path an include expression resolves to, as far as it can be known statically.
+     *
+     * `$GLOBALS['name']` is resolved with the value the global has in Psalm itself: like the arguments
+     * Psalm was run with (see CliUtils::chosenByOperator()), it comes from the person running Psalm, who
+     * means Psalm to read the files it names, so it isn't third-party input.
+     *
      * @psalm-suppress MixedAssignment
+     * @psalm-taint-escape file
+     * @psalm-taint-escape ssrf
+     * @psalm-taint-escape include
+     * @psalm-taint-escape callable
+     * @psalm-taint-escape html
+     * @psalm-taint-escape has_quotes
+     * @psalm-taint-escape url_component
+     * @psalm-taint-escape url_path
      */
     public static function getPathTo(
         PhpParser\Node\Expr $stmt,

@@ -411,6 +411,14 @@ final class NamedFunctionCallHandler
             return;
         }
 
+        if ($function_id === 'session_unset') {
+            $context->remove('$_SESSION');
+            $context->vars_in_scope['$_SESSION'] = Type::getEmptyArray();
+            $context->vars_possibly_in_scope['$_SESSION'] = true;
+
+            return;
+        }
+
         if ($function_id === 'func_get_args') {
             $source = $statements_analyzer->getSource();
 

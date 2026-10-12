@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 
 /**
@@ -122,6 +123,14 @@ final class FunctionDocblockComment
      * @var array<int, array{name:string}>
      */
     public array $assert_untainted_params = [];
+
+    /**
+     * What is wrong with the docblock: FunctionLikeDocblockScanner keeps it in the storage of the function-like, whose
+     * analysis reports it (Config reports those of the stubs, which aren't analyzed)
+     *
+     * @var list<InvalidDocblock>
+     */
+    public array $docblock_issues = [];
 
     /**
      * Whether or not to ignore the nullability of this function's return type

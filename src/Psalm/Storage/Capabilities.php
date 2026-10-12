@@ -27,7 +27,7 @@ use function trim;
  * "pure": the return value depends only on the arguments.
  *
  * Being sets, capabilities may only be compared with {@see self::NONE} and {@see self::ALL}:
- * test them with {@see self::allows()}, or with {@see self::equals()} for an exact set.
+ * test them with {@see self::allowsAnyOf()}, or with {@see self::equals()} for an exact set.
  *
  * @psalm-type CapabilitySet = int-mask<
  *     Capabilities::READ_PROPS,
@@ -70,8 +70,11 @@ final class Capabilities
     /** Input/output and other side effects: `echo`, `print`, `exit` with a message, impure builtins. */
     public const IO = 1 << 6;
 
+    /** Reading the clock: `time()`, `microtime()`, `date()` without a timestamp, … */
+    public const TIME = 1 << 7;
+
     /** Every capability: the default for unannotated code. */
-    public const ALL = (1 << 7) - 1;
+    public const ALL = (1 << 8) - 1;
 
     /** What `@psalm-mutation-free` allows. */
     public const MUTATION_FREE = self::READ_PROPS;
@@ -86,7 +89,7 @@ final class Capabilities
      * and its methods may not write other objects or global state, from which another call could read
      * back what this one wrote, as only this call's taints come out of it.
      */
-    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO;
+    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO | self::TIME;
 
     /**
      * The capabilities a method call still requires from its caller when the receiver's own state
@@ -112,6 +115,7 @@ final class Capabilities
         'write-globals' => self::WRITE_GLOBALS,
         'write-refs' => self::WRITE_REFS,
         'io' => self::IO,
+        'time' => self::TIME,
         'impure' => self::ALL,
     ];
 
@@ -128,6 +132,7 @@ final class Capabilities
         self::WRITE_GLOBALS => 'write-globals',
         self::WRITE_REFS => 'write-refs',
         self::IO => 'io',
+        self::TIME => 'time',
     ];
 
     /**
@@ -141,7 +146,7 @@ final class Capabilities
     public static function toNamedLevel(int $capabilities): int
     {
         foreach ([self::NONE, self::MUTATION_FREE, self::EXTERNAL_MUTATION_FREE] as $level) {
-            if (self::allows($level, $capabilities)) {
+            if (self::allowsAnyOf($level, $capabilities)) {
                 return $level;
             }
         }
@@ -157,14 +162,14 @@ final class Capabilities
      * @param CapabilitySet $required
      * @psalm-pure
      */
-    public static function allows(int $available, int $required): bool
+    public static function allowsAnyOf(int $available, int $required): bool
     {
         return ($required & ~$available) === 0;
     }
 
     /**
      * Whether two capability sets are exactly the same set, e.g. to tell whether a fixpoint was
-     * reached; use {@see self::allows()} to test whether a set is enough for another.
+     * reached; use {@see self::allowsAnyOf()} to test whether a set is enough for another.
      *
      * The parameters are plain ints: comparing sets by value is what this function is for.
      *
