@@ -1,0 +1,7 @@
+<?php
+
+class StubbedWithInvalidDocblock
+{
+    /** @return array< */
+    public function get(): array {}
+}
