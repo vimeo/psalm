@@ -58,4 +58,10 @@ final class MethodStorage extends FunctionLikeStorage
     public bool $stubbed = false;
 
     public bool $probably_fluent = false;
+
+    /**
+     * Whether the method always returns its receiver: it declares `@return $this`, or it can't be
+     * overridden and every one of its returns is `return $this;`
+     */
+    public bool $returns_this = false;
 }

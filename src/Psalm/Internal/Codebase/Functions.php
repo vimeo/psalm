@@ -112,6 +112,8 @@ final class Functions
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
             }
+        } elseif ($root_file_path !== null) {
+            $file_storage = $this->file_storage_provider->get($root_file_path);
         }
 
         if (!$root_file_path || !$checked_file_path) {
@@ -456,7 +458,11 @@ final class Functions
         }
 
         $type_provider = $statements_analyzer?->node_data;
-        if ($function_id === 'serialize' && isset($args[0]) && $type_provider) {
+        // they call the __serialize()/__sleep() of the objects they are given
+        if (($function_id === 'serialize' || $function_id === 'igbinary_serialize')
+            && isset($args[0])
+            && $type_provider
+        ) {
             $serialize_type = $type_provider->getType($args[0]->value);
 
             if ($serialize_type && $serialize_type->canContainObjectType($codebase)) {
@@ -482,19 +488,37 @@ final class Functions
             return Capabilities::IO;
         }
 
-        if (($function_id === 'var_export' || $function_id === 'print_r') && !isset($args[1])) {
-            return Capabilities::IO;
-        }
-
-        // the date functions read the clock when no timestamp is given
-        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime', 'localtime', 'getdate'], true)
+        if (($function_id === 'var_export' || $function_id === 'print_r' || $function_id === 'highlight_string')
             && !isset($args[1])
         ) {
             return Capabilities::IO;
         }
 
-        if (($function_id === 'mktime' || $function_id === 'gmmktime') && !isset($args[5])) {
-            return Capabilities::IO;
+        // the date functions read the clock when no timestamp is given, or a null one
+        $reads_clock = static function (int $offset) use ($args, $type_provider): bool {
+            if (!isset($args[$offset])) {
+                return true;
+            }
+
+            $arg_type = $type_provider?->getType($args[$offset]->value);
+
+            return $arg_type === null || $arg_type->isNullable() || $arg_type->hasMixed();
+        };
+
+        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime'], true) && $reads_clock(1)) {
+            return Capabilities::TIME;
+        }
+
+        if (($function_id === 'localtime' || $function_id === 'getdate') && $reads_clock(0)) {
+            return Capabilities::TIME;
+        }
+
+        // each of their arguments left out or null is taken from the clock
+        if (($function_id === 'mktime' || $function_id === 'gmmktime')
+            && ($reads_clock(0) || $reads_clock(1) || $reads_clock(2)
+                || $reads_clock(3) || $reads_clock(4) || $reads_clock(5))
+        ) {
+            return Capabilities::TIME;
         }
 
         if ($function_id === 'assert') {
@@ -502,7 +526,8 @@ final class Functions
             return Capabilities::NONE;
         }
 
-        if ($function_id === 'func_num_args' || $function_id === 'func_get_args') {
+        // they read only the current scope, like compact() and static::class
+        if (in_array($function_id, ['func_num_args', 'func_get_args', 'get_defined_vars', 'get_called_class'], true)) {
             return Capabilities::NONE;
         }
 

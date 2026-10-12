@@ -294,7 +294,7 @@ final class TypeChecker extends TypeVisitor
                         );
                     } elseif ($lower_bound !== null
                         && Capabilities::isPurityType($type_param)
-                        && !Capabilities::allows(Capabilities::fromType($type_param), $lower_bound)
+                        && !Capabilities::allowsAnyOf(Capabilities::fromType($type_param), $lower_bound)
                     ) {
                         // a purity template with a lower bound: the value must require at least that
                         IssueBuffer::maybeAdd(
