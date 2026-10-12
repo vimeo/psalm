@@ -411,6 +411,12 @@ final class AssignmentAnalyzer
             );
         }
 
+        // copying a reference into a variable gives a value, not a reference: only a variable that is a
+        // reference itself stays one (below)
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable && $assign_value_type->by_ref) {
+            $assign_value_type = $assign_value_type->setByRef(false);
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref
                 && !isset($context->captured_by_ref[$extended_var_id])
