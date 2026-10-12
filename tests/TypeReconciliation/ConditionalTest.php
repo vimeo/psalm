@@ -21,6 +21,28 @@ final class ConditionalTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'elseIfConditionAssignmentReachesTheCodeAfterIt' => [
+                'code' => '<?php
+                    function configured(): ?string {
+                        return null;
+                    }
+
+                    function version(array $options, bool $cli, bool $env): ?string {
+                        if (isset($options["version"])) {
+                            $version = (string) $options["version"];
+                        } elseif (($version = configured()) !== null && $env) {
+                        }
+                        /** @psalm-check-type-exact $version = null|string */;
+
+                        if ($cli) {
+                            $source = "cli";
+                        } elseif (($source = configured()) !== null && $env) {
+                        }
+                        /** @psalm-check-type-exact $source = null|string */;
+
+                        return $version ?? $source;
+                    }',
+            ],
             'instanceofDoesNotTakeObjectsWithToStringFromStrings' => [
                 'code' => '<?php
                     /** @template T */
