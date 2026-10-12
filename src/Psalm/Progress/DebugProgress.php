@@ -30,11 +30,6 @@ final class DebugProgress extends Progress
     #[Override]
     public function startPhase(Phase $phase, int $threads = 1): void
     {
-        // Preloading happens before the header, and only concerns Psalm itself: the header stays the first line
-        if ($phase === Phase::PRELOADING || $phase === Phase::JIT_COMPILATION) {
-            return;
-        }
-
         $this->write(match ($phase) {
             Phase::SCAN => "Scanning files...\n",
             Phase::ANALYSIS => "Analyzing files...\n",
@@ -43,6 +38,8 @@ final class DebugProgress extends Progress
             Phase::MERGING_THREAD_RESULTS => "Merging thread results...\n",
             Phase::LOADING_CACHE => "Loading cached results...\n",
             Phase::FINISHING => "Finishing...\n",
+            Phase::PRELOADING => "Preloading classes...\n",
+            Phase::JIT_COMPILATION => "JIT-compiling classes...\n",
         });
     }
 

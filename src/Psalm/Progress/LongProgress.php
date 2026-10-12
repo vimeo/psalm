@@ -109,9 +109,7 @@ class LongProgress extends Progress
         $this->fixed_size = $phase !== Phase::SCAN && $phase !== Phase::TAINT_GRAPH_RESOLUTION;
         $this->indeterminate = $phase === Phase::TAINT_GRAPH_RESOLUTION;
 
-        if (!self::isSilent($phase)) {
-            $this->phaseStarted();
-        }
+        $this->phaseStarted();
     }
 
     #[Override]
@@ -150,7 +148,7 @@ class LongProgress extends Progress
 
         ++$this->progress;
 
-        if ($this->phase !== null && !self::isSilent($this->phase)) {
+        if ($this->phase !== null) {
             $this->reportTask($level);
         }
     }
@@ -325,9 +323,12 @@ class LongProgress extends Progress
         }
 
         // the number of files altered is in the summary: the phase visits every file, and most are left as they were
-        $tasks = $phase === Phase::SCAN || $phase === Phase::ANALYSIS
-            ? number_format($this->progress) . ($this->progress === 1 ? ' file' : ' files')
-            : '';
+        $tasks = match ($phase) {
+            Phase::SCAN, Phase::ANALYSIS => number_format($this->progress)
+                . ($this->progress === 1 ? ' file' : ' files'),
+            Phase::PRELOADING, Phase::JIT_COMPILATION => number_format($this->progress) . ' classes',
+            default => '',
+        };
 
         // the time and threads are shown dim, so that the eye goes to what was done
         $timing = sprintf('%8s', number_format($duration, 1) . 's')
@@ -355,7 +356,8 @@ class LongProgress extends Progress
             Phase::MERGING_THREAD_RESULTS => 'Merge',
             Phase::LOADING_CACHE => 'Cache',
             Phase::FINISHING => 'Finishing',
-            Phase::JIT_COMPILATION, Phase::PRELOADING => 'Preload',
+            Phase::PRELOADING => 'Preload',
+            Phase::JIT_COMPILATION => 'JIT compile',
         };
     }
 
@@ -369,7 +371,8 @@ class LongProgress extends Progress
             Phase::ANALYSIS => 'Analyzing files',
             Phase::ALTERING => 'Altering files',
             Phase::TAINT_GRAPH_RESOLUTION => 'Resolving taint graph',
-            Phase::JIT_COMPILATION, Phase::PRELOADING => 'Preloading',
+            Phase::PRELOADING => 'Preloading classes',
+            Phase::JIT_COMPILATION => 'JIT-compiling classes',
             Phase::MERGING_THREAD_RESULTS => 'Merging thread results',
             Phase::LOADING_CACHE => 'Loading cached results',
             Phase::FINISHING => 'Finishing',
@@ -396,7 +399,11 @@ class LongProgress extends Progress
         }
 
         $status = number_format($this->progress) . ' / ' . number_format($this->number_of_tasks)
-            . ($this->phase === Phase::MERGING_THREAD_RESULTS ? ' threads' : ' files');
+            . match ($this->phase) {
+                Phase::MERGING_THREAD_RESULTS => ' threads',
+                Phase::PRELOADING, Phase::JIT_COMPILATION => ' classes',
+                default => ' files',
+            };
 
         if ($this->fixed_size) {
             $status .= $separator . intdiv($this->progress * 100, $this->number_of_tasks) . '%';
@@ -454,16 +461,6 @@ class LongProgress extends Progress
     }
 
     /**
-     * Preloading takes a fraction of a second and only concerns Psalm itself, so it isn't reported.
-     *
-     * @psalm-pure
-     */
-    protected static function isSilent(Phase $phase): bool
-    {
-        return $phase === Phase::PRELOADING || $phase === Phase::JIT_COMPILATION;
-    }
-
-    /**
      * Some phases are usually quick; they're only worth reporting when they aren't.
      *
      * @psalm-pure
@@ -483,9 +480,7 @@ class LongProgress extends Progress
             return;
         }
 
-        if (!self::isSilent($this->phase)) {
-            $this->phaseEnded($this->phase);
-        }
+        $this->phaseEnded($this->phase);
 
         $this->phase = null;
     }

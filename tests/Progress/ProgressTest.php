@@ -91,6 +91,24 @@ final class ProgressTest extends TestCase
         $this->assertMatchesRegularExpression('/^. Analysis +1 file +\d+\.\ds  4 threads$/mu', $rows);
     }
 
+    public function testPreloadingGetsARowThatTellsWhetherJitCompiledIt(): void
+    {
+        foreach ([[Phase::PRELOADING, 'Preload'], [Phase::JIT_COMPILATION, 'JIT compile']] as [$phase, $name]) {
+            $progress = $this->longProgress(in_ci: true);
+            $progress->startPhase($phase);
+            $progress->expand(2);
+            $progress->taskDone(0);
+            $progress->taskDone(0);
+            $progress->startPhase(Phase::SCAN);
+            $progress->finish();
+
+            $this->assertMatchesRegularExpression(
+                '/^. ' . $name . ' +2 classes +\d+\.\ds$/mu',
+                str_replace("\r", '', $progress->output),
+            );
+        }
+    }
+
     public function testQuickPhasesAndFilesVisitedByTheAlterPhaseAreNotShown(): void
     {
         $progress = $this->longProgress(in_ci: true);

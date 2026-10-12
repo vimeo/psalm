@@ -376,7 +376,7 @@ class DefaultProgress extends LongProgress
 
         pcntl_alarm(1);
 
-        if ($this->busy > 0 || $this->phase === null || self::isSilent($this->phase)) {
+        if ($this->busy > 0 || $this->phase === null) {
             return;
         }
 
