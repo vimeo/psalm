@@ -814,6 +814,17 @@ final class ClassLikeNodeScanner
                     $storage->deprecated = true;
                 }
 
+                if ($attribute->fq_class_name === 'Deprecated') {
+                    foreach ($attribute->args as $i => $arg) {
+                        if (($arg->name ?? ($i === 0 ? 'message' : null)) === 'message'
+                            && $arg->type instanceof Union
+                            && $arg->type->isSingleStringLiteral()
+                        ) {
+                            $storage->deprecated_message = $arg->type->getSingleStringLiteral()->value;
+                        }
+                    }
+                }
+
                 if ($attribute->fq_class_name === 'Psalm\\Internal' && !$storage->internal) {
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }

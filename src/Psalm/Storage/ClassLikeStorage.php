@@ -52,6 +52,11 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $deprecated = false;
 
     /**
+     * The literal message of a native #[\Deprecated] attribute, if any.
+     */
+    public ?string $deprecated_message = null;
+
+    /**
      * @var list<non-empty-string>
      */
     public array $internal = [];
