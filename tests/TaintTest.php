@@ -440,6 +440,56 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintAPathResolvedFromGlobalsTheOperatorChose' => [
+                // like IncludeAnalyzer::getPathTo(), which resolves $GLOBALS["name"] with the value it has in Psalm
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape file
+                     * @psalm-taint-escape ssrf
+                     * @psalm-taint-escape include
+                     * @psalm-taint-escape callable
+                     * @psalm-taint-escape html
+                     * @psalm-taint-escape has_quotes
+                     * @psalm-taint-escape url_component
+                     * @psalm-taint-escape url_path
+                     */
+                    function configuredPath(string $name): string {
+                        return isset($GLOBALS[$name]) && is_string($GLOBALS[$name]) ? $GLOBALS[$name] : "";
+                    }
+
+                    function args(): array {
+                        global $argv;
+                        return (array) $argv;
+                    }
+
+                    echo count(args());
+                    echo strlen((string) file_get_contents(configuredPath("dir")));
+                    include configuredPath("file");',
+            ],
+            'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
+                'code' => '<?php
+                    function f(array $options): string {
+                        if (!isset($options["b"]) || !is_string($options["b"])) {
+                            return "";
+                        }
+                        if (isset($options["a"])) {
+                            return "a";
+                        } else {
+                            /** @psalm-check-type-exact $options[\'b\'] = string */;
+                            return $options["b"];
+                        }
+                    }
+
+                    /** @param array<string, int|string> $options */
+                    function g(array $options): string {
+                        $options["b"] = "x";
+                        if (!array_key_exists("a", $options)) {
+                            /** @psalm-check-type-exact $options[\'b\'] = \'x\' */;
+                            return $options["b"];
+                        }
+                        return "";
+                    }',
+            ],
             'keyedStoreKeepsDifferentExactKeysApart' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -3097,6 +3147,21 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
+                'code' => '<?php
+                    function path(string $name): string {
+                        return isset($GLOBALS[$name]) && is_string($GLOBALS[$name]) ? $GLOBALS[$name] : "";
+                    }
+
+                    function args(): array {
+                        global $argv;
+                        return (array) $argv;
+                    }
+
+                    echo count(args());
+                    echo strlen((string) file_get_contents(path("dir")));',
+                'error_message' => 'TaintedFile',
+            ],
             'taintGlobalsItemSetInOneFunctionAndReadInAnother' => [
                 'code' => '<?php
                     function stash(): void {

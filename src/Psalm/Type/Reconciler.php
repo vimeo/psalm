@@ -1305,7 +1305,11 @@ class Reconciler
 
         if ($new_base_type !== $base_type) {
             $existing_types[$base_key] = $new_base_type;
-            $changed_var_ids[$base_key] = true;
+
+            // what the array holds under its other offsets stays known where only its data flow changed
+            if ($shape_changed) {
+                $changed_var_ids[$base_key] = true;
+            }
         }
     }
 
