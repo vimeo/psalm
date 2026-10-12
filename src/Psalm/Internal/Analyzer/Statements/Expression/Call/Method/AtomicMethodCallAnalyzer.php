@@ -298,6 +298,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             $naive_method_exists = false;
             $class_name_before_mixins = $fq_class_name;
+            $method_id_before_mixins = $method_id;
 
             // @mixin attributes are an absolute pain! Lots of complexity here,
             // as they can redefine the called class, method id etc.
@@ -337,7 +338,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     );
             }
 
-            if ($naive_method_exists && $fq_class_name !== $class_name_before_mixins) {
+            // a templated mixin keeps $fq_class_name, only the method id moves to the mixin
+            if ($naive_method_exists && $method_id !== $method_id_before_mixins) {
                 $mixin_user_class = $class_name_before_mixins;
                 $mixin_method_id = $method_id;
             }
