@@ -489,6 +489,38 @@ final class TaintTest extends TestCase
                         echo $cache->get("b", fn(): string => $fallback);
                     }',
             ],
+            'keyedStoreKeyStartFromImplodeDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(string $id): void {
+                        store_set(implode("_", ["call", "back", $id]), (string) $_GET["x"]);
+                    }
+
+                    echo store_get("call_lock");',
+            ],
+            'keyedStoreKeyStartOfAClosureUseDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("other_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        $key = "lock_" . $id;
+                        $read = function () use ($key): void {
+                            echo store_get($key);
+                        };
+                        $read();
+                    }',
+            ],
             'keyedStoreConstructorArgumentStartDoesNotReachOtherKeys' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -2762,6 +2794,40 @@ final class TaintTest extends TestCase
                     }
 
                     echo store_get("spr_1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartFromImplode' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function write(string $id): void {
+                        store_set(implode("_", ["call", "back", $id]), (string) $_GET["x"]);
+                    }
+
+                    echo store_get("call_back_1");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAClosureUse' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    store_set("lock_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        $key = "lock_" . $id;
+                        $read = function () use ($key): void {
+                            echo store_get($key);
+                        };
+                        $read();
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreKeyStartFromAConstructorArgument' => [
