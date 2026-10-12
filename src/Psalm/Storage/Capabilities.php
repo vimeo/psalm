@@ -58,8 +58,11 @@ final class Capabilities
     /** Input/output and other side effects: `echo`, `print`, `exit` with a message, impure builtins. */
     public const IO = 1 << 6;
 
+    /** Reading the clock: `time()`, `microtime()`, `date()` without a timestamp, … */
+    public const TIME = 1 << 7;
+
     /** Every capability: the default for unannotated code. */
-    public const ALL = (1 << 7) - 1;
+    public const ALL = (1 << 8) - 1;
 
     /** What `@psalm-mutation-free` allows. */
     public const MUTATION_FREE = self::READ_PROPS;
@@ -74,7 +77,7 @@ final class Capabilities
      * and its methods may not write other objects or global state, from which another call could read
      * back what this one wrote, as only this call's taints come out of it.
      */
-    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO;
+    public const TAINT_SPECIALIZED = self::READ_PROPS | self::READ_GLOBALS | self::WRITE_REFS | self::IO | self::TIME;
 
     /**
      * The capabilities a method call still requires from its caller when the receiver's own state
@@ -100,6 +103,7 @@ final class Capabilities
         'write-globals' => self::WRITE_GLOBALS,
         'write-refs' => self::WRITE_REFS,
         'io' => self::IO,
+        'time' => self::TIME,
         'impure' => self::ALL,
     ];
 
@@ -116,6 +120,7 @@ final class Capabilities
         self::WRITE_GLOBALS => 'write-globals',
         self::WRITE_REFS => 'write-refs',
         self::IO => 'io',
+        self::TIME => 'time',
     ];
 
     /**

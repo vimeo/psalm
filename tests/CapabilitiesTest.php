@@ -237,7 +237,52 @@ final class CapabilitiesTest extends TestCase
                     function io(): int {
                         echo "x";
                         print "y";
-                        return time();
+                        return random_int(1, 6);
+                    }',
+            ],
+            'timeAllowsReadingTheClock' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function now(): string {
+                        return date("Y") . time() . (string) microtime(true) . (string) hrtime(true)
+                            . (string) strtotime("+1 day") . (string) mktime(0, 0, 0) . getdate()["year"];
+                    }
+
+                    /** @psalm-capabilities time */
+                    function resourceUsageCount(): int {
+                        return count(getrusage());
+                    }
+
+                    /** @psalm-capabilities time */
+                    function today(): DateTimeImmutable|false {
+                        return date_create_immutable("today");
+                    }
+
+                    /** @psalm-capabilities io|time */
+                    function printNow(): void {
+                        echo now();
+                    }
+
+                    /**
+                     * @param Closure[time](): int $clock
+                     * @psalm-capabilities time
+                     */
+                    function read(Closure $clock): int {
+                        return $clock();
+                    }
+
+                    /** @psalm-capabilities time */
+                    function readTime(): int {
+                        return read(fn(): int => time());
+                    }',
+            ],
+            'datesOfAGivenTimestampArePure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function year(int $ts): string {
+                        return date("Y", $ts) . gmdate("Y", $ts) . idate("Y", $ts) . getdate($ts)["year"]
+                            . count(localtime($ts)) . (string) strtotime("+1 day", $ts)
+                            . (string) mktime(0, 0, 0, 1, 1, 2000) . (string) checkdate(1, 1, 2000);
                     }',
             ],
             'writePropsOnAnyObject' => [
@@ -1319,6 +1364,55 @@ final class CapabilitiesTest extends TestCase
                         debug_print_backtrace();
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - The context is io but function call on debug_print_backtrace requires read-globals|io',
+            ],
+            'timeDoesNotAllowIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities time */
+                    function now(): int {
+                        echo "x";
+                        return time();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - The context is time but echo requires io',
+            ],
+            'ioDoesNotAllowReadingTheClock' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function now(): int {
+                        return time();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on time requires time',
+            ],
+            'dateWithoutTimestampReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function year(): string {
+                        return date("Y");
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on date requires time',
+            ],
+            'getdateWithoutTimestampReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function year(): int {
+                        return getdate()["year"];
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on getdate requires time',
+            ],
+            'getdateWithNullTimestampReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function year(?int $ts): int {
+                        return getdate($ts)["year"];
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on getdate requires time',
+            ],
+            'mktimeWithNullArgumentReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function midnight(?int $day): string {
+                        return (string) mktime(0, 0, 0, 1, $day, 2000);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The context is pure but function call on mktime requires time',
             ],
             'vprintfRequiresIo' => [
                 'code' => '<?php
@@ -2548,7 +2642,7 @@ final class CapabilitiesTest extends TestCase
                         /** @psalm-mutation-free */
                         public function valid(): bool { return false; }
                     }',
-                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-this-props|write-props|read-globals|write-globals|write-refs|io',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-this-props|write-props|read-globals|write-globals|write-refs|io|time',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php
@@ -3175,11 +3269,22 @@ final class CapabilitiesTest extends TestCase
             Capabilities::READ_PROPS | Capabilities::WRITE_PROPS | Capabilities::IO,
             Capabilities::fromList('read-props, write-props|io'),
         );
+        $this->assertSame(Capabilities::TIME, Capabilities::fromList('time'));
+        $this->assertSame(Capabilities::IO | Capabilities::TIME, Capabilities::fromList('time|io'));
 
         $this->assertSame('pure', Capabilities::toString(Capabilities::NONE));
         $this->assertSame('impure', Capabilities::toString(Capabilities::ALL));
         $this->assertSame('write-props', Capabilities::toString(Capabilities::WRITE_PROPS));
         $this->assertSame('write-globals', Capabilities::toString(Capabilities::WRITE_GLOBALS));
+        $this->assertSame('time', Capabilities::toString(Capabilities::TIME));
+        $this->assertSame('io|time', Capabilities::toString(Capabilities::IO | Capabilities::TIME));
+        $this->assertSame('impure', Capabilities::toString(Capabilities::NAMES['impure']));
+        $this->assertSame('psalm-capabilities time', Capabilities::toFunctionAnnotation(Capabilities::TIME));
+        $this->assertSame(
+            'psalm-capabilities read-props|time',
+            Capabilities::toClassAnnotation(Capabilities::READ_PROPS | Capabilities::TIME),
+        );
+        $this->assertSame(Capabilities::ALL, Capabilities::toNamedLevel(Capabilities::TIME));
         $this->assertSame(
             'read-props|write-this-props|write-refs',
             Capabilities::toString(Capabilities::EXTERNAL_MUTATION_FREE),
