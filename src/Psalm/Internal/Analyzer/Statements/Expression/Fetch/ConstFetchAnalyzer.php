@@ -14,8 +14,10 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
@@ -295,20 +297,42 @@ final class ConstFetchAnalyzer
 
         $file_storage = $file_storage_provider->get($file_path);
 
-        if (isset($file_storage->declaring_constants[$const_name])) {
-            $constant_file_path = $file_storage->declaring_constants[$const_name];
+        foreach ([$const_name, $fq_const_name] as $name) {
+            if (isset($file_storage->declaring_constants[$name])) {
+                $constant_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
 
-            return $file_storage_provider->get($constant_file_path)->constants[$const_name];
+                if (isset($constant_storage->unresolved_constants[$name])) {
+                    return self::resolveConstType($statements_analyzer, $constant_storage->unresolved_constants[$name]);
+                }
+
+                return $constant_storage->constants[$name];
+            }
         }
 
-        if (isset($file_storage->declaring_constants[$fq_const_name])) {
-            $constant_file_path = $file_storage->declaring_constants[$fq_const_name];
+        foreach ([$fq_const_name, $const_name] as $name) {
+            $unresolved = $codebase->getUnresolvedGlobalConstant($name);
 
-            return $file_storage_provider->get($constant_file_path)->constants[$fq_const_name];
+            if ($unresolved !== null) {
+                return self::resolveConstType($statements_analyzer, $unresolved);
+            }
         }
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The type of the value of a constant depending on classes, e.g. an enum case, known once they are
+     */
+    private static function resolveConstType(
+        StatementsAnalyzer $statements_analyzer,
+        UnresolvedConstantComponent $value,
+    ): Union {
+        return new Union([ConstantTypeResolver::resolve(
+            $statements_analyzer->getCodebase()->classlikes,
+            $value,
+            $statements_analyzer,
+        )]);
     }
 
     public static function setConstType(
