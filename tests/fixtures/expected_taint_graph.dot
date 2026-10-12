@@ -1,4 +1,7 @@
 digraph Taints {
+	"$GLOBALS['abc']" -> "$GLOBALS" -> "$GLOBALS['abc'] from src/filewitherrors.php:441-448"
+	"$GLOBALS['abc'] from src/filewitherrors.php:441-448" -> "coalesce from src/filewitherrors.php:441-462"
+	"$GLOBALS[]" -> "$GLOBALS" -> "$GLOBALS['abc'] from src/filewitherrors.php:441-448"
 	"$_GET specialized in src/filewitherrors.php:509" -> "$_GET['abc'] from src/filewitherrors.php:509-513"
 	"$_GET specialized in src/filewitherrors.php:536" -> "$_GET['abc'] from src/filewitherrors.php:536-540"
 	"$_GET specialized in src/filewitherrors.php:552" -> "$_GET['abc'] from src/filewitherrors.php:552-556"

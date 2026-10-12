@@ -13,6 +13,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\Union;
 
 use function dirname;
+use function in_array;
 use function strtolower;
 
 /**
@@ -23,23 +24,24 @@ use function strtolower;
  */
 final class InternalTaintSourceMap
 {
-    /** @var null|array<lowercase-string, non-empty-array<string, int>> */
+    /** @var null|array<lowercase-string, non-empty-list<non-empty-string>> */
     private static ?array $sources = null;
 
     /**
      * The taints of what $function_id returns (`return`) or writes to its by-reference parameter
-     * named $target: none if it is not a source.
+     * named $target: $input_taints, the taints of user input (see Codebase::getInputTaints()), or none
+     * if it is not a source.
      *
      * @psalm-capabilities read-globals|write-globals
      */
-    public static function getTaints(string $function_id, string $target): int
+    public static function getTaints(string $function_id, string $target, int $input_taints): int
     {
         if (self::$sources === null) {
-            /** @var array<lowercase-string, non-empty-array<string, int>> */
+            /** @var array<lowercase-string, non-empty-list<non-empty-string>> */
             self::$sources = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSourceMap.php');
         }
 
-        return self::$sources[strtolower($function_id)][$target] ?? 0;
+        return in_array($target, self::$sources[strtolower($function_id)] ?? [], true) ? $input_taints : 0;
     }
 
     /**
