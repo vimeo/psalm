@@ -1199,6 +1199,22 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on getdate requires time',
             ],
+            'getdateWithNullTimestampReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function year(?int $ts): int {
+                        return getdate($ts)["year"];
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on getdate requires time',
+            ],
+            'mktimeWithNullArgumentReadsTheClock' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function midnight(?int $day): string {
+                        return (string) mktime(0, 0, 0, 1, $day, 2000);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The context is pure but function call on mktime requires time',
+            ],
             'vprintfRequiresIo' => [
                 'code' => '<?php
                     /** @psalm-pure */

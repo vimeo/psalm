@@ -490,16 +490,30 @@ final class Functions
             return Capabilities::IO;
         }
 
-        // the date functions read the clock when no timestamp is given
-        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime'], true) && !isset($args[1])) {
+        // the date functions read the clock when no timestamp is given, or a null one
+        $reads_clock = static function (int $offset) use ($args, $type_provider): bool {
+            if (!isset($args[$offset])) {
+                return true;
+            }
+
+            $arg_type = $type_provider?->getType($args[$offset]->value);
+
+            return $arg_type === null || $arg_type->isNullable() || $arg_type->hasMixed();
+        };
+
+        if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime'], true) && $reads_clock(1)) {
             return Capabilities::TIME;
         }
 
-        if (($function_id === 'localtime' || $function_id === 'getdate') && !isset($args[0])) {
+        if (($function_id === 'localtime' || $function_id === 'getdate') && $reads_clock(0)) {
             return Capabilities::TIME;
         }
 
-        if (($function_id === 'mktime' || $function_id === 'gmmktime') && !isset($args[5])) {
+        // each of their arguments left out or null is taken from the clock
+        if (($function_id === 'mktime' || $function_id === 'gmmktime')
+            && ($reads_clock(0) || $reads_clock(1) || $reads_clock(2)
+                || $reads_clock(3) || $reads_clock(4) || $reads_clock(5))
+        ) {
             return Capabilities::TIME;
         }
 
