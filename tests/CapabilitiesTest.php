@@ -1363,6 +1363,39 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'serializeOfAnArrayOfObjectsRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string, value: object}> $values
+                     * @psalm-pure
+                     */
+                    function encode(array $values): string {
+                        return serialize($values);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'serializeOfAnIterableRequiresIo' => [
+                'code' => '<?php
+                    /**
+                     * @param iterable<int> $values
+                     * @psalm-pure
+                     */
+                    function encode(iterable $values): string {
+                        return serialize($values);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'writingAReferenceParameterAfterCopyingItStillWritesTheReference' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function overwrite(int &$ref): int {
+                        $copy = $ref;
+                        $copy = 1;
+                        $ref = 2;
+                        return $copy;
+                    }',
+                'error_message' => 'ImpureByReferenceAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - The context is pure but variable $ref passed by reference requires write-refs',
+            ],
             'igbinaryUnserializeIsImpure' => [
                 'code' => '<?php
                     /** @psalm-pure */
