@@ -30,6 +30,13 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'theLastErrorFunctionsOnlyReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function lastErrors(): string {
+                        return preg_last_error() . preg_last_error_msg() . json_last_error() . json_last_error_msg();
+                    }',
+            ],
             'splContainersOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1941,6 +1948,14 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'theLastPcreErrorIsNotPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lastError(): string {
+                        return preg_last_error_msg();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on preg_last_error_msg requires read-globals',
+            ],
             'writingACallersSplQueueRequiresWriteProps' => [
                 'code' => '<?php
                     /**
