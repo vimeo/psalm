@@ -1693,7 +1693,7 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     public function getCsvControl() {}
 
     /**
-     * @psalm-capabilities read-props|write-this-props|io
+     * @psalm-capabilities read-props|write-this-props|write-refs|io
      */
     public function flock(int $operation, &$wouldBlock = null) {}
 
@@ -1725,7 +1725,7 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     /**
      * @param float|int|string $vars
      *
-     * @psalm-capabilities read-props|write-this-props|io
+     * @psalm-capabilities read-props|write-this-props|write-refs|io
      */
     public function fscanf(string $format, mixed &...$vars) {}
 
