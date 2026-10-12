@@ -9,12 +9,14 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -53,6 +55,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $lhs_type = null;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
+        if ($stmt->class instanceof PhpParser\Node\Name
+            && $stmt->class->toLowerString() !== 'static'
+            && !$stmt->isFirstClassCallable()
+        ) {
+            foreach ($stmt->getArgs() as $arg) {
+                $arg->value->setAttribute(ArgumentAnalyzer::NON_VIRTUAL_CALL_ATTRIBUTE, true);
+            }
+        }
 
         // collected by the atomic analyzers; a call nothing describes may do anything
         $stmt->setAttribute(NewAnalyzer::CALLEE_CAPABILITIES_ATTRIBUTE, null);
@@ -395,6 +407,23 @@ final class StaticCallAnalyzer extends CallAnalyzer
             return;
         }
 
+        // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
+        if ($method_storage
+            && (!$stmt->class instanceof PhpParser\Node\Name || $stmt->class->toLowerString() === 'static')
+        ) {
+            $dispatch_node = MethodCallReturnTypeFetcher::getReturnDispatchNode(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $method_storage,
+                $node_location,
+            );
+
+            if ($dispatch_node) {
+                $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+            }
+        }
+
         if ($method_storage
             && $method_storage->taint_source_types
         ) {
@@ -403,7 +432,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage,
                 null,
                 $method_storage->taint_source_types
-                    & ~($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+                    & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0),
             );
 
             $taint_flow_graph->addSource($method_node);
@@ -417,8 +446,33 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $specialization_location,
                 $method_source,
+                $codebase->getInputTaints(),
                 $method_storage->removed_taints | $removed_taints,
                 $added_taints,
+            );
+
+            FunctionCallReturnTypeFetcher::taintUsingCallableFlows(
+                $codebase,
+                $method_storage,
+                $taint_flow_graph,
+                $cased_method_id,
+                $method_id,
+                $specialization_location,
+                $method_source,
+                $method_storage->removed_taints | $removed_taints,
+                $added_taints,
+            );
+
+            $return_type_candidate = TaintStore::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $return_type_candidate,
+                $cased_method_id,
+                $method_id,
+                $specialization_location,
             );
         }
     }

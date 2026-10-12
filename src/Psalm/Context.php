@@ -93,7 +93,8 @@ final class Context
     /**
      * The by-reference parameters of the function-like analyzed that still reference the variables passed
      * to them, with the taint node of what the call leaves in those variables. unset(), =&, global and
-     * static make a parameter stop referencing it.
+     * static make a parameter stop referencing it. The variables `global` binds are here too, with the node
+     * of their global (see GlobalAnalyzer).
      *
      * @internal
      * @var array<string, DataFlowNode>
@@ -402,7 +403,7 @@ final class Context
      */
     public function isMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -410,7 +411,7 @@ final class Context
      */
     public function isExternalMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -419,7 +420,7 @@ final class Context
      */
     public function isPure(): bool
     {
-        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::NONE, $this->capabilities);
     }
 
     /**

@@ -115,6 +115,7 @@ final class IssueBufferTest extends TestCase
 
         $config = $this->createMock(Config::class);
         $config->eventDispatcher = $eventDispatcher;
+        $config->method('isSuppressible')->willReturn(true);
 
         $codebase = $this->createMock(Codebase::class);
         $codebase->analyzer = $analyzer;

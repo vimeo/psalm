@@ -15,7 +15,6 @@ use function sprintf;
 
 /**
  * @internal
- * @psalm-immutable
  */
 final class IgbinarySerializer implements Serializer
 {
@@ -40,9 +39,6 @@ final class IgbinarySerializer implements Serializer
         }
     }
 
-    /**
-     * @psalm-pure
-     */
     #[Override]
     public function unserialize(string $data): mixed
     {
