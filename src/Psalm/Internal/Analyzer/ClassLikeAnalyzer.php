@@ -134,7 +134,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         // a lone UnusedPsalmSuppress should still be reported as unused
         if (count($storage->suppressed_issues) > 1
-            && in_array('UnusedPsalmSuppress', $storage->suppressed_issues, true)
+            && $codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
         ) {
             return;
         }

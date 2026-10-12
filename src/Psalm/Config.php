@@ -66,6 +66,8 @@ use function assert;
 use function basename;
 use function chdir;
 use function class_exists;
+use function class_implements;
+use function class_parents;
 use function clearstatcache;
 use function count;
 use function dirname;
@@ -82,6 +84,7 @@ use function getcwd;
 use function glob;
 use function implode;
 use function in_array;
+use function interface_exists;
 use function is_a;
 use function is_array;
 use function is_dir;
@@ -92,6 +95,7 @@ use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
+use function ltrim;
 use function max;
 use function mkdir;
 use function phpversion;
@@ -332,6 +336,21 @@ final class Config
     public bool $allow_string_standin_for_class = false;
 
     public bool $disable_suppress_all = true;
+
+    /**
+     * The classes of the issues that can't be suppressed (see isSuppressible())
+     *
+     * @var list<string>
+     */
+    public array $unsuppressible_issues = [];
+
+    /**
+     * The names of the issues that can't be suppressed, and of the classes of issues that can't all be
+     *
+     * @var array<string, true>
+     */
+    private array $unsuppressible_issue_types = [];
+
 
     public bool $use_phpdoc_method_without_magic_or_parent = false;
 
@@ -1364,6 +1383,13 @@ final class Config
             }
         }
 
+        if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
+            /** @var SimpleXMLElement $unsuppressible_issue */
+            foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
+                $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
+            }
+        }
+
         if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
             /** @var SimpleXMLElement $forbidden_function */
             foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
@@ -1832,7 +1858,10 @@ final class Config
 
     public function reportIssueInFile(string $issue_type, string $file_path): bool
     {
-        if ((($this->level < 3 && $this->show_mixed_issues === false)
+        $suppressible = $this->isSuppressible($issue_type);
+
+        if ($suppressible
+            && (($this->level < 3 && $this->show_mixed_issues === false)
             || ($this->level > 2 && $this->show_mixed_issues !== true))
             && in_array($issue_type, self::MIXED_ISSUES, true)
         ) {
@@ -1881,11 +1910,109 @@ final class Config
             return false;
         }
 
-        if ($this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
+        if ($suppressible && $this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Makes the issues of $name, and those of its subclasses, unsuppressible (see isSuppressible()). $name is the
+     * name of an issue (TaintedHtml), of a class or interface issues extend (TaintedInput, MixedIssue, ...), or the
+     * fully qualified name of the class of a plugin issue.
+     *
+     * @throws ConfigException if $name names no issue
+     */
+    public function addUnsuppressibleIssue(string $name): void
+    {
+        $issue_class = str_contains($name, '\\') ? ltrim($name, '\\') : 'Psalm\\Issue\\' . $name;
+
+        if (class_exists($issue_class) || interface_exists($issue_class)) {
+            // the issues of Psalm it is a class of, and the classes they and it extend, which can't all be suppressed
+            foreach (IssueHandler::getAllIssueTypes() as $issue_type) {
+                if (is_a('Psalm\\Issue\\' . $issue_type, $issue_class, true)) {
+                    $this->unsuppressible_issue_types[$issue_type] = true;
+                }
+            }
+
+            $parents = class_parents($issue_class);
+            $interfaces = class_implements($issue_class);
+            $classes = [
+                $issue_class,
+                ...$parents === false ? [] : $parents,
+                ...$interfaces === false ? [] : $interfaces,
+            ];
+
+            foreach ($classes as $class) {
+                $this->unsuppressible_issue_types[self::getShortName($class)] = true;
+            }
+        } elseif (str_contains($name, '\\')) {
+            // the class of a plugin issue may only be loaded with the plugin
+            $this->unsuppressible_issue_types[self::getShortName($issue_class)] = true;
+        } else {
+            throw new ConfigException('Unknown issue type ' . $name . ' in <unsuppressibleIssues>');
+        }
+
+        $this->unsuppressible_issues[] = $issue_class;
+    }
+
+    /**
+     * Whether $issue, or the issues of the type $issue names, can be suppressed, by `@psalm-suppress`,
+     * <issueHandlers>, the error level or the baseline: they can't if <unsuppressibleIssues> names their class or
+     * one it extends. $issue can also name a class issues extend (TaintedInput, ...): its issues can't all be
+     * suppressed if <unsuppressibleIssues> names one of them.
+     *
+     * Only the suppressions of the user are concerned: those Psalm adds around the code it analyses itself, which
+     * the user didn't write (see StatementsSource::addSuppressedIssues()), still apply.
+     *
+     * @psalm-mutation-free
+     */
+    public function isSuppressible(CodeIssue|string $issue): bool
+    {
+        if ($this->unsuppressible_issues === []) {
+            return true;
+        }
+
+        if ($issue instanceof CodeIssue) {
+            // the issue of a plugin can extend a class of issues <unsuppressibleIssues> names
+            foreach ($this->unsuppressible_issues as $unsuppressible_class) {
+                if ($issue instanceof $unsuppressible_class) {
+                    return false;
+                }
+            }
+
+            $issue = $issue::class;
+        }
+
+        return !isset($this->unsuppressible_issue_types[self::getShortName($issue)]);
+    }
+
+    /**
+     * Whether $suppressed_issues suppress all the issues of $issue_type: those Psalm adds around the code it analyses
+     * itself do, and those of `@psalm-suppress` unless the issues can't all be suppressed (see isSuppressible()).
+     *
+     * @param array<array-key, string> $suppressed_issues
+     * @psalm-mutation-free
+     */
+    public function suppressesIssueType(array $suppressed_issues, string $issue_type): bool
+    {
+        // see StatementsSource::addSuppressedIssues()
+        if (isset($suppressed_issues[$issue_type])) {
+            return true;
+        }
+
+        return in_array($issue_type, $suppressed_issues, true) && $this->isSuppressible($issue_type);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getShortName(string $class): string
+    {
+        $offset = strrpos($class, '\\');
+
+        return $offset === false ? $class : substr($class, $offset + 1);
     }
 
     /**
@@ -1923,6 +2050,10 @@ final class Config
 
     public function getReportingLevelForIssue(CodeIssue $e): string
     {
+        if (!$this->isSuppressible($e)) {
+            return self::REPORT_ERROR;
+        }
+
         $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
 

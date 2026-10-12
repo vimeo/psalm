@@ -20,6 +20,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
@@ -2016,6 +2017,123 @@ final class ConfigTest extends TestCase
                     'foo\bar\baz',
                 ),
             ),
+        );
+    }
+
+    public function testUnsuppressibleIssuesIgnoreTheErrorLevelAndIssueHandlers(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm errorLevel="8">
+                <issueHandlers>
+                    <PossiblyNullReference errorLevel="suppress" />
+                </issueHandlers>
+                <unsuppressibleIssues>
+                    <issue name="PossiblyNullReference" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForIssue(
+                new PossiblyNullReference(
+                    'Cannot call method on possibly null value',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                ),
+            ),
+        );
+        $this->assertFalse($config->isSuppressible('PossiblyNullReference'));
+        $this->assertTrue($config->isSuppressible('NullReference'));
+    }
+
+    public function testUnsuppressibleClassOfIssues(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <unsuppressibleIssues>
+                    <issue name="TaintedInput" />
+                    <issue name="MixedIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertFalse($config->isSuppressible('TaintedHtml'));
+        $this->assertFalse($config->isSuppressible('TaintedSql'));
+        $this->assertFalse($config->isSuppressible('MixedArgument'));
+        $this->assertTrue($config->isSuppressible('InvalidArgument'));
+    }
+
+    public function testIssuesOfAClassCantAllBeSuppressedIfOneIsUnsuppressible(): void
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <unsuppressibleIssues>
+                    <issue name="TaintedHtml" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
+        );
+
+        $this->assertFalse($config->isSuppressible('TaintedHtml'));
+        $this->assertFalse($config->isSuppressible('TaintedInput'));
+        $this->assertTrue($config->isSuppressible('TaintedSql'));
+    }
+
+    public function testUnsuppressiblePluginIssue(): void
+    {
+        foreach ([TestPluginIssue::class, 'PluginIssue'] as $name) {
+            $config = Config::loadFromXML(
+                (string) getcwd(),
+                <<<XML
+                <?xml version="1.0"?>
+                <psalm errorLevel="3">
+                    <unsuppressibleIssues>
+                        <issue name="$name" />
+                    </unsuppressibleIssues>
+                </psalm>
+                XML,
+            );
+
+            $this->assertSame(
+                Config::REPORT_ERROR,
+                $config->getReportingLevelForIssue(
+                    new TestPluginIssue(
+                        'test message',
+                        new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    ),
+                ),
+                $name,
+            );
+        }
+    }
+
+    public function testUnknownUnsuppressibleIssue(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Unknown issue type NotAnIssue');
+
+        Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <unsuppressibleIssues>
+                    <issue name="NotAnIssue" />
+                </unsuppressibleIssues>
+            </psalm>
+            XML,
         );
     }
 

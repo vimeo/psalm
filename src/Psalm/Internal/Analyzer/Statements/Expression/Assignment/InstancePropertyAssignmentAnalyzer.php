@@ -1824,7 +1824,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
         }
 
@@ -1835,7 +1835,7 @@ final class InstancePropertyAssignmentAnalyzer
             false,
         );
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
         }
 

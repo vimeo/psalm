@@ -788,7 +788,10 @@ final class NewAnalyzer extends CallAnalyzer
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         if (!$statements_analyzer->taint_flow_graph
-            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            || $statements_analyzer->getCodebase()->config->suppressesIssueType(
+                $statements_analyzer->getSuppressedIssues(),
+                'TaintedInput',
+            )
             || !$stmt_type
         ) {
             return;
@@ -1088,7 +1091,10 @@ final class NewAnalyzer extends CallAnalyzer
         } else {
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_class_type->parent_nodes
-                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !$statements_analyzer->getCodebase()->config->suppressesIssueType(
+                    $statements_analyzer->getSuppressedIssues(),
+                    'TaintedInput',
+                )
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
