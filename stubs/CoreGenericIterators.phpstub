@@ -277,19 +277,28 @@ class AppendIterator extends IteratorIterator {
 }
 
 /**
+ * TStorage is what writing the storage costs besides writing the ArrayIterator itself: nothing
+ * when the storage is an array, write-props when it is an object, whose properties the mutators
+ * then write. The constructor binds it from what it is given.
+ *
  * @template TKey as array-key
  * @template TValue
+ * @psalm-purity-template TStorage(write-props) <= write-props
  * @template-implements SeekableIterator<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Countable {
     const STD_PROP_LIST = 1;
     const ARRAY_AS_PROPS = 2;
 
     /**
-     * @param array<TKey, TValue> $array The array or object to be iterated on.
+     * @param array<TKey, TValue>|object $array The array or object to be iterated on.
      * @param int-mask-of<static::*> $flags Flags to control the behaviour of the ArrayObject object.
      * @psalm-flow ($array) -> return
+     *
+     * @return self[$array is array ? pure : write-props]<TKey, TValue>
      *
      * @psalm-pure
      */
@@ -317,7 +326,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TValue $value The new value to store at the index.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function offsetSet($offset, $value) { }
 
@@ -325,7 +335,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TKey $offset The offset to unset.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function offsetUnset($offset) { }
 
@@ -333,7 +344,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param TValue $value The value to append.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function append($value) { }
 
@@ -371,14 +383,16 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function asort() { }
 
     /**
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function ksort() { }
 
@@ -387,8 +401,8 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param callable[P](TValue,TValue):int $cmp_function The compare function used for the sort.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
-     * @psalm-purity-from-template P
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P, TStorage
      */
     public function uasort($cmp_function) { }
 
@@ -397,22 +411,24 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param callable[P](TKey,TKey):int $cmp_function The compare function used for the sort.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
-     * @psalm-purity-from-template P
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P, TStorage
      */
     public function uksort($cmp_function) { }
 
     /**
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function natsort() { }
 
     /**
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function natcasesort() { }
 
@@ -1331,11 +1347,16 @@ class ParentIterator extends RecursiveFilterIterator implements RecursiveIterato
 }
 
 /**
+ * Its storage is not known: the constructor of ArrayIterator only says what it constructs for an
+ * ArrayIterator, and getChildren() may return an iterator over an object.
+ *
  * @template TKey
  * @template TValue
  *
  * @template-implements RecursiveIterator<TKey, TValue>
  * @template-extends ArrayIterator<TKey, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator {
     const STD_PROP_LIST = 1 ;

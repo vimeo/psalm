@@ -1289,9 +1289,16 @@ final class ArrayAccessTest extends TestCase
                 // ArrayAccess::offsetSet(mixed $offset, mixed $value) : void;
                 // and yet ArrayObject implements ArrayAccess
 
-                /** @extends ArrayObject<int, int> */
+                /**
+                 * @psalm-purity-template TStorage(write-props) <= write-props
+                 * @extends ArrayObject[TStorage]<int, int>
+                 * @psalm-capabilities read-props|write-this-props
+                 */
                 class C extends ArrayObject {
-                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    /**
+                     * @psalm-capabilities read-props|write-this-props
+                     * @psalm-purity-from-template TStorage
+                     */
                     public function offsetSet(mixed $key, mixed $value): void {
                         parent::offsetSet($key, $value);
                     }
