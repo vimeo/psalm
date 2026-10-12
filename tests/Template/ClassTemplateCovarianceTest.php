@@ -586,6 +586,44 @@ final class ClassTemplateCovarianceTest extends TestCase
                         abstract public function pair(): Pair;
                     }',
             ],
+            'allowCovariantTemplateInCallableParamOfParam' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant TKey as array-key
+                     * @template-covariant TValue
+                     */
+                    final class Coll {
+                        /** @param array<TKey, TValue> $items */
+                        public function __construct(private readonly array $items) {}
+
+                        /**
+                         * @template TRet
+                         * @param Closure(TValue, TKey): TRet $func
+                         * @return list<TRet>
+                         */
+                        public function map(Closure $func): array {
+                            $r = [];
+                            foreach ($this->items as $k => $v) {
+                                $r[] = $func($v, $k);
+                            }
+                            return $r;
+                        }
+
+                        /**
+                         * @template TMappedKey as array-key
+                         * @template TKeyCallback as (Closure(TValue, TKey): TMappedKey)|null
+                         * @param TKeyCallback $keyCallback
+                         */
+                        public function keys(?Closure $keyCallback = null): void {}
+
+                        /** @param callable(TKey): void $cb */
+                        public function eachKey(callable $cb): void {
+                            foreach ($this->items as $k => $_) {
+                                $cb($k);
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -782,6 +820,36 @@ final class ClassTemplateCovarianceTest extends TestCase
                      * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends \ArrayObject {}',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInCallableParamOfCallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class C {
+                        /** @param Closure(Closure(T): void): void $f */
+                        public function nested(Closure $f): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInCallableParamOfInvariantTypeParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Inv {}
+
+                    /** @template-covariant T */
+                    final class C {
+                        /** @param Inv<Closure(T): void> $f */
+                        public function f(Inv $f): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInCallableReturnOfParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class C {
+                        /** @param Closure(): T $f */
+                        public function produce(Closure $f): void {}
+                    }',
                 'error_message' => 'InvalidTemplateParam',
             ],
         ];
