@@ -815,6 +815,34 @@ final class FunctionTemplateTest extends TestCase
                         if (!is_callable($foo)) {}
                     }',
             ],
+            'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
+                'code' => '<?php
+                    /**
+                     * @template I
+                     * @param I $foo
+                     */
+                    function bar($foo): void {
+                        if (!is_string($foo)) {}
+                        if (is_int($foo)) {}
+                        if (!is_int($foo)) {}
+                        if (is_bool($foo)) {
+                            return;
+                        }
+                        if (is_int($foo)) {}
+                    }',
+            ],
+            'templateBoundedByAUnionIsBoundedByItAgainAfterABranchNarrowingIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @param T $value
+                     */
+                    function baz($value): void {
+                        if (is_int($value)) {}
+                        if (is_string($value)) {}
+                        if (!is_int($value)) {}
+                    }',
+            ],
             'assertOnUnionTemplatedValue' => [
                 'code' => '<?php
                     /**
