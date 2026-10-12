@@ -363,6 +363,9 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         return $return_type;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getMappedArrayType(
         ?Atomic $array_arg_atomic_type,
         int $call_arg_count,

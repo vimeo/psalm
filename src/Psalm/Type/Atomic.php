@@ -177,6 +177,7 @@ abstract class Atomic implements TypeNode, Stringable
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
+     * @psalm-pure
      */
     private static function createInner(
         string $value,
