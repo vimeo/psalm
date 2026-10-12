@@ -2670,6 +2670,30 @@ final class TaintTest extends TestCase
                     $options = getopt("n:");
                     echo (int) ($options["n"] ?? 0);',
             ],
+            'specializedCallDoesNotReturnIntoSpecializedFunctionPassedAsCallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): string {
+                        return "<b>" . $s . "</b>";
+                    }
+                    function run(callable $callback): string {
+                        return (string) $callback("a");
+                    }
+                    wrap((string) $_GET["x"]);
+                    echo run(wrap(...));',
+            ],
+            'specializedFunctionPassedAsCallableDoesNotReturnIntoSpecializedCall' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): string {
+                        return "<b>" . $s . "</b>";
+                    }
+                    function run(callable $callback): string {
+                        return (string) $callback((string) $_GET["x"]);
+                    }
+                    run(wrap(...));
+                    echo wrap("a");',
+            ],
         ];
     }
 
@@ -7852,6 +7876,32 @@ final class TaintTest extends TestCase
                         return (string) $callback();
                     }
                     echo run(source(...));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintedReturnOfSpecializedCallOfFunctionAlsoPassedAsCallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function wrap(string $s): string {
+                        return "<b>" . $s . "</b>";
+                    }
+                    function run(callable $callback): string {
+                        return (string) $callback("a");
+                    }
+                    run(wrap(...));
+                    echo wrap((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSourceInSpecializedFunctionAlsoPassedAsCallable' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function withQuery(string $s): string {
+                        return $s . (string) $_GET["y"];
+                    }
+                    function run(callable $callback): string {
+                        return (string) $callback("a");
+                    }
+                    run(withQuery(...));
+                    echo withQuery("a");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedArgPassedByFunctionToClosureItIsGiven' => [
