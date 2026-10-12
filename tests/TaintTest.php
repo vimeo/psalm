@@ -582,6 +582,41 @@ final class TaintTest extends TestCase
                     show([], 1);
                 ',
             ],
+            'taintFreeAssignmentUnderOneOfLiteralKeys' => [
+                'code' => '<?php
+                    function show(string $key): void {
+                        $array = [];
+
+                        if ($key === "a" || $key === "b") {
+                            $array[$key] = (string) $_GET["value"];
+                        }
+
+                        echo (string) ($array["c"] ?? "");
+                    }',
+            ],
+            'taintFreeAssignmentUnderLiteralKeyVariable' => [
+                'code' => '<?php
+                    $key = "a";
+                    $array = [];
+                    $array[$key] = (string) $_GET["value"];
+                    echo (string) ($array["b"] ?? "");',
+            ],
+            'keyOfAnArrayGivenToAValueSink' => [
+                // Only the values of the array are a sink: its keys (the names of the templates here) aren't.
+                'code' => '<?php
+                    final class Loader {
+                        /** @psalm-taint-sink eval $templates[*] */
+                        public function __construct(private array $templates) {}
+                    }
+
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    $name = (string) ($_GET["name"] ?? "");
+                    new Loader([$name => "template"]);
+                    showValues([$name => "value"]);
+                    showValues(["a" => "value"]);',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -1126,6 +1161,94 @@ final class TaintTest extends TestCase
                     file_get_contents(sprintf("https://api.example.com/items/%2\$s/%1\$05.2f", $value, "a"));
                     echo sprintf("%x %\'*10d %%s", $value, $value);',
             ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnInheritedMethodSetsOnAnotherSubclass' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Provider {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        /** @param array<string, string> $options */
+                        public function __construct(array $options) {
+                            $this->setOptions($options);
+                        }
+
+                        /** @param array<string, string> $options */
+                        public function setOptions(array $options): void {
+                            foreach ($options as $key => $value) {
+                                $this->setOption($key, $value);
+                            }
+                        }
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+                    }
+
+                    final class Comments extends Provider {}
+
+                    final class Activity extends Provider {
+                        public function printIds(): void {
+                            echo $this->options["ids"] ?? "";
+                        }
+                    }
+
+                    new Comments(["comment" => (string) $_GET["comment"]]);
+                    (new Activity([]))->printIds();',
+            ],
+            'dontPassWhatAnInheritedBodyGivesSelfCallsToTheOverridesOfSubclasses' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function show(string $text): void {}
+
+                        public function run(string $text): void {
+                            self::show($text);
+                        }
+                    }
+
+                    class Child extends Base {}
+
+                    final class GrandChild extends Child {
+                        public function show(string $text): void {
+                            echo $text;
+                        }
+                    }
+
+                    // self:: runs Base::show, whatever the class of the object
+                    (new Child())->run((string) $_GET["text"]);',
+            ],
+            'dontTaintThePropertiesOfASubclassWithWhatAParentConstructorSetsOnAnotherSubclass' => [
+                'code' => '<?php // --taint-analysis
+                    class Field {
+                        /** @var array<string, string> */
+                        protected array $opts;
+
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            $this->opts = $opts;
+                        }
+                    }
+
+                    final class Checkbox extends Field {
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            parent::__construct($opts);
+                        }
+                    }
+
+                    final class Button extends Field {
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            parent::__construct($opts);
+                        }
+
+                        public function render(): void {
+                            echo $this->opts["label"] ?? "";
+                        }
+                    }
+
+                    new Checkbox(["label" => (string) $_GET["label"]]);
+                    (new Button([]))->render();',
+            ],
             'dontTaintThePrintfOutputOfWhatIsFormattedAsANumber' => [
                 'code' => '<?php // --taint-analysis
                     printf("%d", (string) $_GET["x"]);
@@ -1266,6 +1389,74 @@ final class TaintTest extends TestCase
 
                     identity((string) $_GET["value"]);
                     echo identity("safe");',
+            ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnInheritedConstructorSetsOnOtherObjects' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Provider {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        /** @param array<string, string> $options */
+                        public function __construct(array $options) {
+                            foreach ($options as $key => $value) {
+                                $this->options[$key] = $value;
+                            }
+                        }
+                    }
+
+                    final class Comments extends Provider {}
+
+                    final class Activity extends Provider {
+                        protected string $title;
+
+                        public function __construct() {
+                            parent::__construct([]);
+                            $this->title = "";
+                        }
+
+                        public function printIds(): void {
+                            echo $this->options["ids"] ?? $this->title;
+                        }
+                    }
+
+                    new Comments(["comment" => (string) $_GET["comment"]]);
+                    (new Activity())->printIds();',
+            ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnInheritedMethodSetsOnOtherObjects' => [
+                'code' => '<?php // --taint-analysis
+                    class Block {
+                        /** @var array<string, string> */
+                        protected array $children = [];
+
+                        public function add(string $key, string $child): void {
+                            $this->children[$key] = $child;
+                        }
+                    }
+
+                    final class ErrorBlock extends Block {
+                        public function __construct() {
+                            $this->add("trace", (string) $_GET["trace"]);
+                        }
+                    }
+
+                    class Layout extends Block {
+                        public function __construct() {
+                            $this->add("title", "Title");
+                        }
+                    }
+
+                    final class Page extends Layout {
+                        protected string $footer;
+
+                        public function __construct() {
+                            parent::__construct();
+                            $this->footer = "";
+                        }
+
+                        public function render(): void {
+                            echo $this->children["top"] ?? $this->footer;
+                        }
+                    }',
             ],
             'dontTaintTheOtherKeysOfAnElementABuiltinReturns' => [
                 'code' => '<?php // --taint-analysis
@@ -1463,6 +1654,16 @@ final class TaintTest extends TestCase
             'dontTaintTheValueOfAKeyAWholeArrayDoesNotHave' => [
                 'code' => '<?php // --taint-analysis
                     $data = $_GET;
+                    if (array_key_exists("city", $data)) {
+                        $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
+                    }
+                    echo (string) ($data["city"] ?? "");',
+            ],
+            'dontTaintTheValueOfAKeyAWholeArrayDoesNotHaveAfterChecksOfOtherKeys' => [
+                'code' => '<?php // --taint-analysis
+                    $data = $_GET;
+                    $hasZip = array_key_exists("zip", $data) ? 1 : 0;
+                    $hasStreet = array_key_exists("street", $data) ? 1 : 0;
                     if (array_key_exists("city", $data)) {
                         $data["city"] = htmlspecialchars((string) $data["city"], ENT_QUOTES);
                     }
@@ -2569,6 +2770,17 @@ final class TaintTest extends TestCase
                     $b = new StringHolder($_GET["x"]);
 
                     echo $a->x;',
+            ],
+            'dontReportCallingAClosureBuiltFromInput' => [
+                'code' => '<?php
+                    /** @var mixed $value */
+                    $value = $_GET["value"];
+                    if ($value instanceof Closure) {
+                        $value();
+                    }
+
+                    $closure = fn(): string => (string) $_GET["value"];
+                    $closure();',
             ],
             'dontTaintMethodCallOnNewSpecializedInstanceWithOtherInstances' => [
                 'code' => '<?php
@@ -3717,6 +3929,47 @@ final class TaintTest extends TestCase
                     show([], 1);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintAssignmentUnderOneOfLiteralKeys' => [
+                'code' => '<?php
+                    function show(string $key): void {
+                        $array = [];
+
+                        if ($key === "a" || $key === "b") {
+                            $array[$key] = (string) $_GET["value"];
+                        }
+
+                        echo (string) ($array["b"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValueOfAnArrayGivenToAValueSink' => [
+                'code' => '<?php // --taint-analysis
+                    final class Loader {
+                        /** @psalm-taint-sink eval $templates[*] */
+                        public function __construct(private array $templates) {}
+                    }
+
+                    new Loader(["main" => (string) ($_GET["template"] ?? "")]);',
+                'error_message' => 'TaintedEval',
+            ],
+            'taintArrayGivenToAValueSink' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    showValues($_GET);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintValueOfAnArrayGivenToAValueSinkAfterAKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $values[*] */
+                    function showValues(array $values): void {}
+
+                    $input = (string) ($_GET["input"] ?? "");
+                    showValues([$input => "value"]);
+                    showValues(["value" => $input]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
                 'code' => '<?php
                     function path(string $name): string {
@@ -3729,7 +3982,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo count(args());
-                    echo strlen((string) file_get_contents(path("dir")));',
+                    unlink(path("file"));',
                 'error_message' => 'TaintedFile',
             ],
             'taintSinkWithoutParameter' => [
@@ -3763,6 +4016,14 @@ final class TaintTest extends TestCase
                     /** @psalm-flow proxy exec($cmd) */
                     function run(string $command): void {}',
                 'error_message' => 'names $cmd, which is not a parameter',
+            ],
+            'keyedStoreFlowWhoseKeyIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[$k] -> return */
+                    function store_get(string $key): string {
+                        return "";
+                    }',
+                'error_message' => 'names $k, which is not a parameter',
             ],
             'flowOfNoKnownForm' => [
                 'code' => '<?php
@@ -4570,6 +4831,85 @@ final class TaintTest extends TestCase
                     echo "https://example.com/" . (string) $_GET["value"];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintThePropertiesOfAnObjectWithWhatAnInheritedMethodSetsOnIt' => [
+                'code' => '<?php // --taint-analysis
+                    abstract class Provider {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        /** @param array<string, string> $options */
+                        public function __construct(array $options) {
+                            $this->setOptions($options);
+                        }
+
+                        /** @param array<string, string> $options */
+                        public function setOptions(array $options): void {
+                            foreach ($options as $key => $value) {
+                                $this->setOption($key, $value);
+                            }
+                        }
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+                    }
+
+                    final class Activity extends Provider {
+                        public function printIds(): void {
+                            echo $this->options["ids"] ?? "";
+                        }
+                    }
+
+                    (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Field {
+                        /** @var array<string, string> */
+                        protected array $opts;
+
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            $this->opts = $opts;
+                        }
+                    }
+
+                    final class Button extends Field {
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            parent::__construct($opts);
+                        }
+
+                        public function render(): void {
+                            echo $this->opts["label"] ?? "";
+                        }
+                    }
+
+                    (new Button(["label" => (string) $_GET["label"]]))->render();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnInheritedMethodReturnsOfItsObject' => [
+                'code' => '<?php // --taint-analysis
+                    class Model {
+                        protected string $name = "";
+
+                        public function setName(string $name): void {
+                            $this->name = $name;
+                        }
+
+                        public function getName(): string {
+                            return $this->name;
+                        }
+                    }
+
+                    final class Admin extends Model {}
+
+                    $admin = new Admin();
+                    $admin->setName((string) $_GET["name"]);
+                    echo $admin->getName();',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThePropertyOfASubclassWithWhatAParentMethodSets' => [
                 'code' => '<?php // --taint-analysis
                     class Model {
@@ -5005,6 +5345,22 @@ final class TaintTest extends TestCase
                     if (!array_key_exists("city", $data)) {
                         echo (string) $data["zip"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAKeyAnArrayMayHaveAfterSettingItWhereItIsMissing' => [
+                'code' => '<?php
+                    $a = rand() ? ["k" => $_GET["v"]] : [];
+                    if (!array_key_exists("k", $a)) {
+                        $a["k"] = "untainted";
+                    }
+                    echo $a["k"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueOfAKeyOfAWholeArrayMergedBackAfterACheckOfIt' => [
+                'code' => '<?php
+                    $data = $_GET;
+                    $hasCity = array_key_exists("city", $data) ? 1 : 0;
+                    echo (string) ($data["city"] ?? "");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfAWholeArrayIteratedOverNotHavingSetAKey' => [
@@ -8146,6 +8502,49 @@ final class TaintTest extends TestCase
                     $holder = new Holder((string) $_GET["x"]);
                     echo $holder->value;',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintCallingAFunctionNamedByInput' => [
+                'code' => '<?php
+                    $name = (string) $_GET["function"];
+                    $name();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAnOffsetOverwrittenThroughAnUnknownKey' => [
+                'code' => '<?php
+                    /** @param array<string, string> $a */
+                    function f(array $a, string $k): void {
+                        $a["x"] = function (): void {};
+                        $a[$k] = (string) $_GET["v"];
+                        $a["x"]();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingAnUnknownOffsetOverwrittenThroughALiteralKey' => [
+                'code' => '<?php
+                    /** @param array<string, string> $a */
+                    function f(array $a, string $k): void {
+                        $a[$k] = function (): void {};
+                        $a["x"] = (string) $_GET["v"];
+                        $a[$k]();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingANestedOffsetOverwrittenThroughAnUnknownKey' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, string>> $a */
+                    function f(array $a, string $k): void {
+                        $a["x"]["y"] = function (): void {};
+                        $a["x"][$k] = (string) $_GET["v"];
+                        $a["x"]["y"]();
+                    }',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintCallingASuperGlobalOffsetOverwrittenThroughAnUnknownKey' => [
+                'code' => '<?php
+                    $_GET["x"] = function (): void {};
+                    $_GET[(string) $_POST["k"]] = $_POST["v"];
+                    $_GET["x"]();',
+                'error_message' => 'TaintedCallable',
             ],
             'taintPrintRReturningItsOutput' => [
                 'code' => '<?php

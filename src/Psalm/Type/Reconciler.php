@@ -1292,14 +1292,23 @@ class Reconciler
 
             // only an array surely holds nothing under the offset then
             if ($path_type !== '=') {
-                $node = DataFlowNode::getForAssignment($base_key . ' without ' . $array_key, $code_location);
-                $graph->addNode($node);
+                $removal = DataFlowNode::getForAssignment($base_key . ' without ' . $array_key, $code_location);
+                $parent_nodes = [];
 
+                // one node per parent node, so that merging the array back with what it was before the check
+                // keeps that only (see DataFlowNode::combineParentNodes())
                 foreach ($base_type->parent_nodes as $parent_node) {
-                    $graph->addPath($parent_node, $node, $path_type);
+                    $node = DataFlowNode::getForKeyRemoval($parent_node, $removal);
+
+                    if ($node !== $parent_node) {
+                        $graph->addNode($node);
+                        $graph->addPath($parent_node, $node, $path_type);
+                    }
+
+                    $parent_nodes[$node->id] = $node;
                 }
 
-                $new_base_type = $new_base_type->setParentNodes([$node->id => $node]);
+                $new_base_type = $new_base_type->setParentNodes($parent_nodes);
             }
         }
 
