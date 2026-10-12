@@ -13,6 +13,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -419,14 +420,27 @@ final class MethodCallReturnTypeFetcher
                 // specialization the call's body never exits into.
                 $call_specialization_key = DataFlowNode::getSpecializationKey($node_location);
 
+                // the body of an inherited method analyzed for the class of the object (see InheritedMethodTaints)
+                $body_suffix = $is_declaring
+                    ? null
+                    : InheritedMethodTaints::getBodySuffix(
+                        $statements_analyzer,
+                        $method_id->fq_class_name,
+                        $declaring_method_id,
+                    );
+
                 if ($method_storage->location) {
                     // the body of the method, declared by this class or the one it inherits it from, takes `$this`
                     // from this node: this call enters it with its own specialization, like the arguments do, so
                     // that what it returns is this object's and not every object's
-                    $this_parent_node = DataFlowNode::getForAssignment(
-                        '$this in ' . (string) $body_method_id,
-                        $method_storage->location,
-                        $call_specialization_key,
+                    $this_parent_node = InheritedMethodTaints::withMethodSuffix(
+                        $declaring_method_id,
+                        $body_suffix,
+                        static fn(): DataFlowNode => DataFlowNode::getForAssignment(
+                            '$this in ' . (string) $body_method_id,
+                            $method_storage->location,
+                            $call_specialization_key,
+                        ),
                     );
 
                     $taint_flow_graph->addNode($this_parent_node);
@@ -462,10 +476,14 @@ final class MethodCallReturnTypeFetcher
                 if ($var_node !== null && $method_storage->location) {
                     $taint_flow_graph->addNode($var_node);
 
-                    $this_out_node = DataFlowNode::getForAssignment(
-                        '$this out of ' . $cased_body_method_id,
-                        $method_storage->location,
-                        $method_call_node->specialization_key,
+                    $this_out_node = InheritedMethodTaints::withMethodSuffix(
+                        $declaring_method_id,
+                        $body_suffix,
+                        static fn(): DataFlowNode => DataFlowNode::getForAssignment(
+                            '$this out of ' . $cased_body_method_id,
+                            $method_storage->location,
+                            $method_call_node->specialization_key,
+                        ),
                     );
 
                     $taint_flow_graph->addNode($this_out_node);
@@ -480,10 +498,14 @@ final class MethodCallReturnTypeFetcher
                     // a stubbed method has no body to take `$this` through: the object keeps what it has
                     if ($method_storage->stubbed) {
                         $taint_flow_graph->addPath(
-                            DataFlowNode::getForAssignment(
-                                '$this in ' . (string) $body_method_id,
-                                $method_storage->location,
-                                $call_specialization_key,
+                            InheritedMethodTaints::withMethodSuffix(
+                                $declaring_method_id,
+                                $body_suffix,
+                                static fn(): DataFlowNode => DataFlowNode::getForAssignment(
+                                    '$this in ' . (string) $body_method_id,
+                                    $method_storage->location,
+                                    $call_specialization_key,
+                                ),
                             ),
                             $this_out_node,
                             '$this',
@@ -492,12 +514,16 @@ final class MethodCallReturnTypeFetcher
                 }
 
                 if (!$is_declaring) {
-                    $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_body_method_id,
-                        $method_storage,
-                        null,
-                        0,
-                        $method_call_node->specialization_key,
+                    $declaring_method_call_node = InheritedMethodTaints::withMethodSuffix(
+                        $declaring_method_id,
+                        $body_suffix,
+                        static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
+                            $cased_body_method_id,
+                            $method_storage,
+                            null,
+                            0,
+                            $method_call_node->specialization_key,
+                        ),
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
@@ -527,10 +553,18 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if (!$is_declaring) {
-                    $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_body_method_id,
-                        $method_storage,
-                        $node_location,
+                    $declaring_method_call_node = InheritedMethodTaints::withMethodSuffix(
+                        $declaring_method_id,
+                        InheritedMethodTaints::getBodySuffix(
+                            $statements_analyzer,
+                            $method_id->fq_class_name,
+                            $declaring_method_id,
+                        ),
+                        static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
+                            $cased_body_method_id,
+                            $method_storage,
+                            $node_location,
+                        ),
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
@@ -559,10 +593,18 @@ final class MethodCallReturnTypeFetcher
             );
 
             if (!$is_declaring) {
-                $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                    $cased_body_method_id,
-                    $method_storage,
-                    null,
+                $declaring_method_call_node = InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id,
+                    InheritedMethodTaints::getBodySuffix(
+                        $statements_analyzer,
+                        $method_id->fq_class_name,
+                        $declaring_method_id,
+                    ),
+                    static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
+                        $cased_body_method_id,
+                        $method_storage,
+                        null,
+                    ),
                 );
 
                 $graph->addNode($declaring_method_call_node);

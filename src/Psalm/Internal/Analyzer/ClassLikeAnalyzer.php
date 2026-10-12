@@ -157,6 +157,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         unset($this->file_analyzer);
     }
 
+    /**
+     * Analyzes method $method_name of this class run on an object of a class inheriting it, `$this` in $context (see
+     * InheritedMethodTaints)
+     */
+    public function analyzeMethodForInheritingClass(string $method_name, Context $context): void
+    {
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && strtolower($stmt->name->name) === strtolower($method_name)
+            ) {
+                (new MethodAnalyzer($stmt, $this))->analyze($context, new NodeDataProvider(), null, true);
+
+                return;
+            }
+        }
+    }
+
     public function getMethodMutations(
         string $method_name,
         Context $context,
