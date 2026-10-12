@@ -61,6 +61,9 @@ final class TemplateResult
         }
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     public function merge(TemplateResult $result): TemplateResult
     {
         if ($result === $this) {

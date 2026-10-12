@@ -17,7 +17,6 @@ use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -324,7 +323,9 @@ final class TryAnalyzer
                     // the catch would make the calls on the exception specialized to it, which every call of the
                     // same method elsewhere reaches through their shared node.
                     $taint_flow_graph->addSource(
-                        DataFlowNode::getForAssignment($catch_var_id, $location)->setTaints(TaintKind::ALL_INPUT),
+                        DataFlowNode::getForAssignment($catch_var_id, $location)->setTaints(
+                            $statements_analyzer->getCodebase()->getInputTaints(),
+                        ),
                     );
                 }
             }
