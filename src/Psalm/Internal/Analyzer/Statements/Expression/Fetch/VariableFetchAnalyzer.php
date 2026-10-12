@@ -65,6 +65,7 @@ final class VariableFetchAnalyzer
      * @param bool $from_global - when used in a global keyword
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed
      *                                    here is being assigned to another variable by reference.
+     * @psalm-suppress ComplexMethod
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
