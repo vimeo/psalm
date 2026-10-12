@@ -274,7 +274,7 @@ final class MethodCallPurityAnalyzer
                 $result->can_memoize = true;
 
                 // the class is neither immutable nor pure
-                if (!Capabilities::allows(
+                if (!Capabilities::allowsAnyOf(
                     Capabilities::MUTATION_FREE,
                     $method_storage->containing_class_capabilities,
                 )) {
