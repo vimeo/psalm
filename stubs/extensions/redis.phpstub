@@ -967,6 +967,10 @@ class RedisCluster {
 
     public function psetex(string $key, int $timeout, string $value): RedisCluster|bool {}
 
+    /**
+     * @param list<string> $patterns
+     * @param callable[_](RedisCluster, string, string, string): mixed $callback receives the pattern, the channel and the message
+     */
     public function psubscribe(array $patterns, callable $callback): void {}
 
     public function pttl(string $key): RedisCluster|int|false {}
