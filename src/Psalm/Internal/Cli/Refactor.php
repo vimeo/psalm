@@ -68,6 +68,7 @@ final class Refactor
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
 
         gc_collect_cycles();
         gc_disable();
@@ -83,7 +84,7 @@ final class Refactor
         ];
 
         // get options from command line
-        $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        $options = CliUtils::chosenByOperator(getopt(implode('', $valid_short_options), $valid_long_options));
         if ($options === false) {
             fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
             exit(1);

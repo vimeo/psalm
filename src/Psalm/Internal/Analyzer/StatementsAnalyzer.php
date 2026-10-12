@@ -84,7 +84,6 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
-use function in_array;
 use function is_string;
 use function preg_split;
 use function reset;
@@ -224,7 +223,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public function getDataFlowGraphWithSuppressed(): TaintFlowGraph|CombinedFlowGraph|VariableUseGraph|null
     {
-        if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
+        if ($this->taint_flow_graph
+            && $this->getCodebase()->config->suppressesIssueType($this->getSuppressedIssues(), 'TaintedInput')
+        ) {
             return $this->variable_use_graph ?? $this->discarded_flow_graph;
         }
         return $this->data_flow_graph;
@@ -234,7 +235,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public function getTaintFlowGraphWithSuppressed(): ?TaintFlowGraph
     {
-        if ($this->taint_flow_graph && in_array('TaintedInput', $this->getSuppressedIssues())) {
+        if ($this->taint_flow_graph
+            && $this->getCodebase()->config->suppressesIssueType($this->getSuppressedIssues(), 'TaintedInput')
+        ) {
             return null;
         }
         return $this->taint_flow_graph;
@@ -483,7 +486,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     if ($codebase->track_unused_suppressions
                         && (
                             (count($new_issues) === 1) // UnusedPsalmSuppress by itself should be marked as unused
-                            || !in_array("UnusedPsalmSuppress", $new_issues)
+                            || !$codebase->config->suppressesIssueType($new_issues, 'UnusedPsalmSuppress')
                         )
                     ) {
                         foreach ($new_issues as $offset => $issue_type) {
