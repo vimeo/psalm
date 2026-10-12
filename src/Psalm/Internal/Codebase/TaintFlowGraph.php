@@ -647,7 +647,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * Records that $node holds what all the calls share: a flow reaching it in a specialized call leaves the call
-     * there (see connectSinksAndSources()), as any other call may read it, then return it.
+     * there (see TaintFlowResolution::walk()), as any other call may read it, then return it.
      *
      * @psalm-external-mutation-free
      */
@@ -840,6 +840,10 @@ final class TaintFlowGraph extends DataFlowGraph
     {
         $progress->startPhase(Phase::TAINT_GRAPH_RESOLUTION);
 
+        // the graph is dumped in the same order whichever order the analysis of the files added it in
+        ksort($this->forward_edges);
+        ksort($this->specializations);
+
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
@@ -896,6 +900,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->recursive_calls,
             $call_results,
             $call_result_sources,
+            $this->shared_state,
             Config::getInstance(),
             $project_analyzer,
             $codebase,
