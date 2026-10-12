@@ -38,6 +38,7 @@ use function get_object_vars;
  *      from_template_default?: bool,
  *      by_ref?: bool,
  *      reference_free?: bool,
+ *      closure_state?: bool,
  *      allow_mutations?: bool,
  *      has_mutations?: bool,
  *      different?: bool,
@@ -182,6 +183,13 @@ final class Union implements TypeNode
 
     public bool $reference_free = false;
 
+    /**
+     * Whether the value is state of the closure being analysed: a closure captured it from the
+     * scope that created it (it was reference-free there), so only that scope and the closure hold
+     * it, as a class instance holds the objects it creates. Writing it needs write-this-props.
+     */
+    public bool $closure_state = false;
+
     public bool $allow_mutations = true;
 
     public bool $has_mutations = true;
@@ -232,6 +240,7 @@ final class Union implements TypeNode
         "\0" . self::class . "\0" . 'literal_float_types' => 'literal_float_types',
         'by_ref' => 'by_ref',
         'reference_free' => 'reference_free',
+        'closure_state' => 'closure_state',
         'allow_mutations' => 'allow_mutations',
         'has_mutations' => 'has_mutations',
         "\0" . self::class . "\0" . 'id' => 'id',

@@ -49,6 +49,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Type\TaintKind;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
@@ -58,6 +59,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_key_exists;
+use function array_keys;
 use function array_merge;
 use function array_pad;
 use function array_pop;
@@ -495,6 +497,13 @@ final class Config
     private ?IncludeCollector $include_collector = null;
 
     private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
+
+    /**
+     * The custom taints declared in `<taintAnalysis><taints>` => the aliases of built-in taints each is added to
+     *
+     * @var array<string, list<string>>
+     */
+    public array $custom_taints = [];
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
@@ -1339,6 +1348,10 @@ final class Config
             );
         }
 
+        if (isset($config_xml->taintAnalysis->taints->taint)) {
+            $config->loadCustomTaints($config_xml->taintAnalysis->taints->taint);
+        }
+
         if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
@@ -1568,6 +1581,55 @@ final class Config
     {
         if (!isset($this->issue_handlers[$issue_key])) {
             $this->setCustomErrorLevel($issue_key, $error_level);
+        }
+    }
+
+    /**
+     * @throws ConfigException if a taint's name isn't one, is a built-in taint's or is declared twice, or if an alias
+     *  isn't one of those of the built-in taints
+     */
+    private function loadCustomTaints(SimpleXMLElement $taints): void
+    {
+        // the aliases of built-in taints: the names of more than one kind
+        $aliases = [];
+        foreach (TaintKind::TAINT_NAMES as $name => $kinds) {
+            if (($kinds & ($kinds - 1)) !== 0) {
+                $aliases[$name] = true;
+            }
+        }
+
+        foreach ($taints as $taint) {
+            $name = (string) $taint['name'];
+            // a word, like the taints of the annotations, which can't start like a conditional taint or a complement
+            if (preg_match('/^[A-Za-z_][\w-]*$/', $name) !== 1) {
+                throw new ConfigException('Invalid custom taint name "' . $name . '"');
+            }
+
+            if (isset(TaintKind::TAINT_NAMES[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            if (isset($this->custom_taints[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" is declared twice');
+            }
+
+            $this->custom_taints[$name] = [];
+            if (!isset($taint->alias)) {
+                continue;
+            }
+
+            /** @var SimpleXMLElement $alias */
+            foreach ($taint->alias as $alias) {
+                $alias_name = (string) $alias['name'];
+                if (!isset($aliases[$alias_name])) {
+                    throw new ConfigException(
+                        'The custom taint "' . $name . '" can only be added to an alias of built-in taints ('
+                        . implode(', ', array_keys($aliases)) . '), not to "' . $alias_name . '"',
+                    );
+                }
+
+                $this->custom_taints[$name][] = $alias_name;
+            }
         }
     }
 
@@ -2510,13 +2572,18 @@ final class Config
             return;
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->preloaded_stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2526,6 +2593,8 @@ final class Config
         $codebase->scanFiles();
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
 
         $progress->debug('Finished registering preloaded stub files' . "\n");
     }
@@ -2613,13 +2682,18 @@ final class Config
             }
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering stub files' . "\n");
@@ -2629,6 +2703,51 @@ final class Config
         $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * Reports the docblock issues of the stubs the config and the plugins add, which aren't analyzed (the analysis
+     * reports those of the code it analyzes): they are kept in the storages of the stubs, so that they are reported
+     * again when those come from the cache
+     *
+     * @param list<string> $file_paths
+     */
+    private static function reportStubDocblockIssues(Codebase $codebase, array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            if (!$codebase->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            $file_storage = $codebase->file_storage_provider->get($file_path);
+            $issues = $file_storage->docblock_issues;
+
+            foreach ($file_storage->functions as $function_storage) {
+                $issues = [...$issues, ...$function_storage->docblock_issues];
+            }
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                if (!$codebase->classlike_storage_provider->has($fq_classlike_name)) {
+                    continue;
+                }
+
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+                $issues = [...$issues, ...$classlike_storage->docblock_issues];
+
+                foreach ($classlike_storage->methods as $method_storage) {
+                    $issues = [...$issues, ...$method_storage->docblock_issues];
+                }
+            }
+
+            foreach ($issues as $issue) {
+                // a class of the stub may be declared by another file too
+                if ($issue->code_location->file_path === $file_path) {
+                    IssueBuffer::maybeAddStubIssue($issue);
+                }
+            }
+        }
     }
 
     public function getCacheDirectory(): ?string

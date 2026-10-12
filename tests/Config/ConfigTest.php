@@ -1365,6 +1365,200 @@ final class ConfigTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, array{0: string, 1: string|null}>
+     * @psalm-pure
+     */
+    public function providerCustomTaintsOfTheConfig(): array
+    {
+        $functions = '<?php
+            /** @psalm-taint-sink nosql_json $query */
+            function find(string $query): void {}
+
+            /** @psalm-taint-sink session_id $id */
+            function resume(string $id): void {}
+
+            /** @psalm-taint-sink tainted_only $value */
+            function keep(string $value): void {}
+
+            /** @psalm-taint-source tainted */
+            function readTainted(): string {
+                return "";
+            }
+
+            /** @psalm-taint-source input */
+            function read(): string {
+                return "";
+            }
+
+            /** @psalm-taint-source session_id */
+            function cookie(): string {
+                return "";
+            }
+
+            /** @psalm-taint-escape html */
+            function escapeHtml(string $text): string {
+                return $text;
+            }
+
+            /** @psalm-taint-escape input */
+            function validate(string $text): string {
+                return $text;
+            }
+
+            function param(): string {
+                $value = $_GET["q"] ?? "";
+                return is_string($value) ? $value : "";
+            }
+            ';
+
+        return [
+            'a taint added to input comes from the user input' => [
+                $functions . 'find(param());',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from the sources of input' => [
+                $functions . 'find(read());',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from STDIN' => [
+                $functions . 'find((string) fgets(STDIN));',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from the builtins reading the network' => [
+                $functions . '$handle = curl_init(); if ($handle !== false) { find((string) curl_exec($handle)); }',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from a caught exception' => [
+                $functions . 'try { param(); } catch (Exception $e) { find(print_r($e, true)); }',
+                'TaintedCustom',
+            ],
+            'a number holds no taint added to input' => [
+                $functions . 'find((string) (int) param());',
+                null,
+            ],
+            'a value formatted as a number holds no taint added to input' => [
+                $functions . 'find(sprintf("%d", param()));',
+                null,
+            ],
+            'a value formatted as a string holds a taint added to input' => [
+                $functions . 'find(sprintf("%s", param()));',
+                'TaintedCustom',
+            ],
+            'escaping another kind keeps a taint added to input' => [
+                $functions . 'find(escapeHtml(param()));',
+                'TaintedCustom',
+            ],
+            'escaping input escapes a taint added to it' => [
+                $functions . 'find(validate(param()));',
+                null,
+            ],
+            'a taint added to tainted comes from the sources of tainted' => [
+                $functions . 'keep(readTainted());',
+                'TaintedCustom',
+            ],
+            'a taint added to tainted only does not come from the user input' => [
+                $functions . 'keep(param());',
+                null,
+            ],
+            'a taint added to input only does not come from the sources of tainted' => [
+                $functions . 'find(readTainted());',
+                null,
+            ],
+            'a taint without alias comes from where it is named' => [
+                $functions . 'resume(cookie());',
+                'TaintedCustom',
+            ],
+            'a taint without alias does not come from the user input' => [
+                $functions . 'resume(param());',
+                null,
+            ],
+            'a taint without alias reaches only the sinks naming it' => [
+                $functions . 'echo cookie();',
+                null,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providerCustomTaintsOfTheConfig
+     */
+    public function testCustomTaintsOfTheConfig(string $code, ?string $error): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <taintAnalysis>
+                        <taints>
+                            <taint name="nosql_json">
+                                <alias name="input" />
+                            </taint>
+                            <taint name="session_id" />
+                            <taint name="tainted_only">
+                                <alias name="tainted" />
+                            </taint>
+                        </taints>
+                    </taintAnalysis>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, $code);
+
+        if ($error !== null) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessageMatches('/\b' . $error . '\b/');
+        }
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     * @psalm-pure
+     */
+    public function providerInvalidCustomTaintsOfTheConfig(): array
+    {
+        return [
+            'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
+            'not a word' => ['<taint name="~html" />', 'Invalid custom taint name'],
+            'declared twice' => ['<taint name="a" /><taint name="a" />', 'is declared twice'],
+            'added to a built-in kind' => [
+                '<taint name="a"><alias name="html" /></taint>',
+                'can only be added to an alias of built-in taints',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providerInvalidCustomTaintsOfTheConfig
+     */
+    public function testInvalidCustomTaintsOfTheConfig(string $taints, string $error): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage($error);
+
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <taintAnalysis>
+                    <taints>' . $taints . '</taints>
+                </taintAnalysis>
+            </psalm>',
+        );
+    }
+
     public function testGlobals(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

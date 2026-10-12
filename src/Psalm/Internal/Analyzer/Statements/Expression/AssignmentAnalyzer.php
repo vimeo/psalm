@@ -377,10 +377,11 @@ final class AssignmentAnalyzer
 
             $parent_nodes = $temp_assign_value_type->parent_nodes ?? [];
 
-            // whether the value is a fresh object or was reached from global state is a property of
-            // the value, not of its declared type
+            // whether the value is a fresh object, state of the closure or was reached from global
+            // state is a property of the value, not of its declared type
             $assign_value_type = $comment_type->setParentNodes($parent_nodes)->setProperties([
                 'reference_free' => $temp_assign_value_type->reference_free ?? false,
+                'closure_state' => $temp_assign_value_type->closure_state ?? false,
                 'from_global_state' => $temp_assign_value_type->from_global_state ?? false,
             ]);
         } elseif (!$assign_value_type) {
@@ -567,6 +568,15 @@ final class AssignmentAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
+
+        // the target's old value is dropped
+        DestructorAnalyzer::chargeOverwrite(
+            $statements_analyzer,
+            $context,
+            $assign_var,
+            $extended_var_id,
+            $assign_value_type,
+        );
 
         if (self::analyzeAssignment(
             $assign_var,
@@ -928,6 +938,7 @@ final class AssignmentAnalyzer
         CodeLocation $var_location,
         int $removed_taints,
         int $added_taints,
+        int $input_taints,
     ): void {
         $parent_nodes = $type->parent_nodes;
 
@@ -945,7 +956,7 @@ final class AssignmentAnalyzer
 
         // what the assigned value cannot hold, given its type
         if (!$flow_graph instanceof VariableUseGraph) {
-            $removed_taints |= $type->getTaintsToRemove();
+            $removed_taints |= $type->getTaintsToRemove($input_taints);
         }
 
         // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
@@ -1860,6 +1871,7 @@ final class AssignmentAnalyzer
                                     $var_location,
                                     $removed_taints,
                                     $added_taints,
+                                    $codebase->getInputTaints(),
                                 );
                             }
                         }
@@ -1959,8 +1971,16 @@ final class AssignmentAnalyzer
         $pureCompat = $statements_analyzer->node_data->isPureCompatible($assign_var->var);
 
         $isThis = MethodCallPurityAnalyzer::isReceiverThis($assign_var->var);
-        
-        $mutations = $isThis ? Capabilities::WRITE_THIS_PROPS : Capabilities::WRITE_PROPS;
+
+        $var_type = $statements_analyzer->node_data->getType($assign_var->var);
+
+        // an object a closure captured from the scope that created it is the closure's own state
+        $mutations = $isThis || ($var_type !== null && $var_type->closure_state)
+            ? Capabilities::WRITE_THIS_PROPS
+            : Capabilities::WRITE_PROPS;
+
+        // a fresh object, that nothing else holds, is not state of the function-like either
+        $isFresh = !$isThis && $var_type !== null && $var_type->reference_free && $var_type->allow_mutations;
 
         // prevents writing to any properties in a mutation-free context
         $statements_analyzer->signalMutation(
@@ -1969,7 +1989,7 @@ final class AssignmentAnalyzer
             'property assignment',
             ImpurePropertyAssignment::class,
             $assign_var,
-            $mutations,
+            $isFresh ? Capabilities::NONE : $mutations,
         );
     }
 
@@ -2205,6 +2225,7 @@ final class AssignmentAnalyzer
                 $var_location,
                 $removed_taints,
                 $added_taints,
+                $codebase->getInputTaints(),
             );
 
             // the start of a string assigned, for the keys of the keyed stores it is used as

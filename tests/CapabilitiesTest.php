@@ -576,6 +576,112 @@ final class CapabilitiesTest extends TestCase
                         };
                     }',
             ],
+            'closureMayWriteTheObjectsItCreates' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Box {
+                        $f = static function (): Box {
+                            $b = new Box();
+                            $b->n = 5;
+                            $b->n += 1;
+                            $b->items[] = 5;
+                            $b->setN(6);
+                            return $b;
+                        };
+                        return $f();
+                    }
+
+                    /** @psalm-pure */
+                    function makeAnnotated(): Box {
+                        $f = /** @psalm-pure */ static function (): Box {
+                            $b = new Box();
+                            $b->n = 5;
+                            return $b;
+                        };
+                        return $f();
+                    }',
+            ],
+            'closureMayWriteTheObjectsItCapturedFromTheScopeCreatingThem' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function counter(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): int {
+                            $b->n += 1;
+                            return $b->setN($b->n);
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function arrowCounter(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static fn(): int
+                            => $b->setN($b->n + 1);
+                    }
+
+                    /** @psalm-pure */
+                    function byReference(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use (&$b): int {
+                            $b->n = 5;
+                            return $b->setN(6);
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function inAnArray(): Closure {
+                        $boxes = [new Box()];
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($boxes): int {
+                            $boxes[0]->n = 1;
+                            $box = $boxes[0];
+                            $box->n = 2;
+                            return $boxes[0]->setN(5);
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function nested(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): Closure {
+                            return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): int {
+                                return $b->setN(5);
+                            };
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function countTwice(): int {
+                        $b = new Box();
+                        $f = static function () use ($b): int {
+                            $b->n = $b->n + 1;
+                            return $b->n;
+                        };
+                        $f();
+                        return $f();
+                    }',
+            ],
             'classMayWriteItsOwnAndFreshInstances' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
@@ -978,6 +1084,62 @@ final class CapabilitiesTest extends TestCase
                     /** @psalm-pure */
                     function given(Guard $g): int {
                         return 1;
+                    }',
+            ],
+            'droppingNothingOrValuesWithoutAKnownDestructorIsFree' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private Guard $guard;
+                        private ?Guard $lazy = null;
+                        /** @var list<Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function __construct() {
+                            $this->guard = new Guard();
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function __clone() {
+                            $this->guard = new Guard();
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function lazy(): Guard {
+                            if ($this->lazy === null) {
+                                $this->lazy = new Guard();
+                            }
+                            return $this->lazy;
+                        }
+
+                        /** @psalm-external-mutation-free */
+                        public function add(Guard $g): void {
+                            $this->guards[] = $g;
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @psalm-pure
+                     * @param T $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function pick(object $a, object $b): object {
+                        $a = $b;
+                        return $a;
+                    }
+
+                    /** @psalm-pure */
+                    function pickObject(object $a, object $b): object {
+                        $a = $b;
+                        return $a;
                     }',
             ],
             'generatorPurityTemplateIsBoundByTheGeneratorFunction' => [
@@ -1901,6 +2063,171 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-globals but property assignment to Box::$n on an object reached from global state requires write-props|write-globals',
             ],
+            'pureClosureCannotWriteAPropertyOfAnObjectCapturedByValue' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): int {
+                            $b->n = 5;
+                            return $b->n;
+                        };
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is pure but property assignment to Box::$n requires write-this-props',
+            ],
+            'pureClosureCannotMutateAnObjectCapturedByValue' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): int {
+                            return $b->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-this-props',
+            ],
+            'closureCannotWriteAParameterItCaptured' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-pure */
+                    function make(Box $b): Closure {
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): int {
+                            $b->n = 5;
+                            return $b->n;
+                        };
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - The context is read-props|write-this-props but property assignment to Box::$n requires write-props',
+            ],
+            'readPropsClosureCannotWriteAPropertyOfAnObjectCapturedByReference' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props */ static function () use (&$b): int {
+                            $b->n = 5;
+                            return $b->n;
+                        };
+                    }',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but property assignment to Box::$n requires write-this-props',
+            ],
+            'readPropsClosureCannotMutateAnObjectCapturedByReference' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props */ static function () use (&$b): int {
+                            return $b->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is read-props but method Box::setN requires write-this-props',
+            ],
+            'pureArrowFunctionCannotMutateACapturedObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static fn(): int => $b->setN(5);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:71 - The context is pure but method Box::setN requires write-this-props',
+            ],
+            'pureNestedClosureCannotMutateACapturedObject' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $b = new Box();
+                        return /** @psalm-pure */ static function () use ($b): Closure {
+                            return /** @psalm-pure */ static function () use ($b): int {
+                                return $b->setN(5);
+                            };
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - The context is pure but method Box::setN requires write-this-props',
+            ],
+            'pureClosureCannotMutateAnObjectInACapturedArray' => [
+                'code' => '<?php
+                    /** @psalm-external-mutation-free */
+                    final class Box {
+                        public int $n = 0;
+
+                        public function setN(int $n): int {
+                            $this->n = $n;
+                            return $n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Closure {
+                        $boxes = [new Box()];
+                        return /** @psalm-pure */ static function () use ($boxes): int {
+                            return $boxes[0]->setN(5);
+                        };
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-this-props',
+            ],
             'staticVariableNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
@@ -2636,6 +2963,123 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying $g (Guard::__destruct) requires',
+            ],
+            'anOverwrittenVariableRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function swap(Guard $a, Guard $b): Guard {
+                        $a = $b;
+                        return $a;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        /** @psalm-pure */
+                        public function __construct() {}
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<int> $ids
+                     */
+                    function each(array $ids): int {
+                        $n = 0;
+                        foreach ($ids as $id) {
+                            $g = new Guard();
+                            $n += $id;
+                        }
+                        return $n;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:29 - The context is pure but destroying the old value of $g (Guard::__destruct) requires',
+            ],
+            'anOverwrittenPropertyRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private ?Guard $guard = null;
+
+                        /** @psalm-external-mutation-free */
+                        public function replace(Guard $g): void {
+                            $this->guard = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-props|write-this-props|write-refs but destroying the old value of $this->guard (Guard::__destruct) requires',
+            ],
+            'anUnsetPropertyRunsTheDestructorOfItsValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        public ?Guard $guard = null;
+
+                        /** @psalm-external-mutation-free */
+                        public function drop(): void {
+                            unset($this->guard);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-props|write-this-props|write-refs but destroying $this->guard (Guard::__destruct) requires',
+            ],
+            'anUnsetArrayElementRunsTheDestructorOfItsValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        /** @var array<string, Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function evict(string $key): void {
+                            unset($this->guards[$key]);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29 - The context is read-props|write-this-props|write-refs but destroying $this->guards[$key] (Guard::__destruct) requires',
+            ],
+            'anOverwrittenArrayElementRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        /** @var array<string, Guard> */
+                        private array $guards = [];
+
+                        /** @psalm-external-mutation-free */
+                        public function put(string $key, Guard $g): void {
+                            $this->guards[$key] = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:29 - The context is read-props|write-this-props|write-refs but destroying the old value of $this->guards[$key] (Guard::__destruct) requires',
+            ],
+            'anOverwrittenStaticPropertyRunsTheDestructorOfItsOldValue' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    final class Holder {
+                        private static ?Guard $shared = null;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public static function share(Guard $g): void {
+                            self::$shared = $g;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - The context is read-globals|write-globals but destroying the old value of Holder::$shared (Guard::__destruct) requires',
             ],
             'generatorWithoutAKnownPurityIsImpureToIterate' => [
                 'code' => '<?php

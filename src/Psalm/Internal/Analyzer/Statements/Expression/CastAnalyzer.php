@@ -1155,7 +1155,7 @@ final class CastAnalyzer
             return $result_type;
         }
 
-        $removed_taints = $result_type->getTaintsToRemove();
+        $removed_taints = $result_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints());
 
         if ($removed_taints !== 0 && $parent_nodes) {
             $cast_node = DataFlowNode::getForAssignment(

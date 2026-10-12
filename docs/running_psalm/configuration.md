@@ -729,6 +729,9 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 </stubs>
 ```
 
+Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
+plugins add, so that an annotation a stub gets wrong isn't silently dropped.
+
 Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
 
 #### &lt;ignoreExceptions&gt;
@@ -783,6 +786,26 @@ Optional. Allows you to specify a list of constants that should emit the [`Forbi
 <forbiddenConstants>
   <constant name="FILTER_VALIDATE_URL" />
 </forbiddenConstants>
+```
+
+#### &lt;taintAnalysis&gt;
+Optional. Settings of the [security analysis](../security_analysis/index.md):
+- `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
+  [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
+- `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
+  to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
+  user input, which the built-in sources give (see
+  [Custom taints declared in the configuration](../security_analysis/custom_taint_sources.md#custom-taints-declared-in-the-configuration)).
+
+```xml
+<taintAnalysis>
+  <taints>
+    <taint name="nosql_json">
+      <alias name="input" />
+    </taint>
+    <taint name="session_id" />
+  </taints>
+</taintAnalysis>
 ```
 
 ## Accessing Psalm configuration in plugins

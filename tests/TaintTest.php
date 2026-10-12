@@ -2355,6 +2355,23 @@ final class TaintTest extends TestCase
                     };
                     echo $type;',
             ],
+            'dontTaintAValueAssertedToBeAKeyOfAConstant' => [
+                'code' => '<?php
+                    final class OwnerTypes {
+                        public const ALLOWED = ["organization" => true, "prof" => true];
+                    }
+
+                    /** @psalm-assert key-of<OwnerTypes::ALLOWED> $type */
+                    function assertOwnerType(string $type): void {
+                        if (!array_key_exists($type, OwnerTypes::ALLOWED)) {
+                            throw new InvalidArgumentException("unknown owner type");
+                        }
+                    }
+
+                    $type = (string) $_GET["type"];
+                    assertOwnerType($type);
+                    echo $type;',
+            ],
             'dontTaintLiteralStringType' => [
                 'code' => '<?php
                     /** @var "asc"|"desc" $direction */
@@ -3161,6 +3178,46 @@ final class TaintTest extends TestCase
                     echo count(args());
                     echo strlen((string) file_get_contents(path("dir")));',
                 'error_message' => 'TaintedFile',
+            ],
+            'taintSinkWithoutParameter' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html */
+                    function show(string $text): void {}',
+                'error_message' => 'expects 2 arguments',
+            ],
+            'taintSinkOfAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $txt */
+                    function show(string $text): void {}',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'assertUntaintedOfAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-assert-untainted $txt */
+                    function check(string $text): void {}',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'flowFromAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow ($txt) -> return */
+                    function wrap(string $text): string {
+                        return "<b>" . $text . "</b>";
+                    }',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'proxyFlowFromAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow proxy exec($cmd) */
+                    function run(string $command): void {}',
+                'error_message' => 'names $cmd, which is not a parameter',
+            ],
+            'flowOfNoKnownForm' => [
+                'code' => '<?php
+                    /** @psalm-flow $text to return */
+                    function wrap(string $text): string {
+                        return "<b>" . $text . "</b>";
+                    }',
+                'error_message' => 'is neither',
             ],
             'taintGlobalsItemSetInOneFunctionAndReadInAnother' => [
                 'code' => '<?php

@@ -166,6 +166,11 @@ final class MutableUnion implements TypeNode
 
     public bool $reference_free = false;
 
+    /**
+     * Whether the value is state of the closure being analysed
+     */
+    public bool $closure_state = false;
+
     public bool $allow_mutations = true;
 
     public bool $has_mutations = true;
