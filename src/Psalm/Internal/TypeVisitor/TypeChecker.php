@@ -43,6 +43,7 @@ use ReflectionProperty;
 
 use function array_keys;
 use function array_search;
+use function array_slice;
 use function count;
 use function explode;
 use function str_contains;
@@ -246,6 +247,20 @@ final class TypeChecker extends TypeVisitor
                     $template_result->lower_bounds[$expected_template_name][$defining_class][]
                         = new TemplateBound($type_param);
                 }
+            }
+        }
+
+        // an omitted trailing purity template takes its default, also in the bounds of the type templates
+        foreach (array_slice($expected_type_param_keys, $template_param_count) as $expected_template_name) {
+            $default = $class_storage->template_defaults[$expected_template_name] ?? null;
+
+            if ($default === null || !Capabilities::isPurityType($default)) {
+                continue;
+            }
+
+            foreach ($expected_type_params[$expected_template_name] as $defining_class => $_) {
+                $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                    = new TemplateBound($default);
             }
         }
 
