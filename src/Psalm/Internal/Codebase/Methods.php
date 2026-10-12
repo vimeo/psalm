@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\MethodCapabilitiesProvider;
 use Psalm\Internal\Provider\MethodExistenceProvider;
 use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
@@ -59,6 +60,8 @@ final class Methods
 {
     public MethodReturnTypeProvider $return_type_provider;
 
+    public MethodCapabilitiesProvider $capabilities_provider;
+
     public MethodParamsProvider $params_provider;
 
     public MethodExistenceProvider $existence_provider;
@@ -71,6 +74,7 @@ final class Methods
         private readonly ClassLikes $classlikes,
     ) {
         $this->return_type_provider = new MethodReturnTypeProvider();
+        $this->capabilities_provider = new MethodCapabilitiesProvider();
         $this->existence_provider = new MethodExistenceProvider();
         $this->visibility_provider = new MethodVisibilityProvider();
         $this->params_provider = new MethodParamsProvider();

@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -71,6 +72,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function mb_ord;
 use function preg_split;
 use function reset;
@@ -1857,7 +1859,40 @@ final class ArgumentAnalyzer
         // method body's parameter node). When the caller has no storage it is resolved from the cased
         // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
         // has no declared parameter to key on and so uses the call offset.
-        $method_node = ($function_storage
+        // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
+        /** @var string|null $body_class set by StaticCallAnalyzer */
+        $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
+        $called_declaring_method_id = is_string($body_class) && $method_id
+            ? $codebase->methods->getDeclaringMethodId($method_id)
+            : null;
+        $called_body_suffix = is_string($body_class) && $called_declaring_method_id
+            ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $body_class, $called_declaring_method_id)
+            : null;
+
+        $method_node = $called_body_suffix !== null && $called_declaring_method_id
+            ? InheritedMethodTaints::withMethodSuffix(
+                $called_declaring_method_id,
+                $called_body_suffix,
+                static function () use (
+                    $codebase,
+                    $called_declaring_method_id,
+                    $function_param,
+                    $argument_offset,
+                    $specialization_location,
+                ): DataFlowNode {
+                    $declaring_storage = $codebase->methods->getStorage($called_declaring_method_id);
+
+                    return DataFlowNode::getForMethodArgument(
+                        $codebase->methods->getCasedMethodId($called_declaring_method_id),
+                        DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
+                        $declaring_storage,
+                        $specialization_location,
+                    );
+                },
+            )
+            : null;
+
+        $method_node ??= ($function_storage
             ? DataFlowNode::getForMethodArgument(
                 $cased_method_id,
                 DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
@@ -1937,7 +1972,7 @@ final class ArgumentAnalyzer
             }
         }
 
-        if ($method_id && $taint_flow_graph) {
+        if ($method_id && $taint_flow_graph && $called_body_suffix === null) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             // the parameters of the body of the method, keyed by the class it is analyzed as one of (see
@@ -1951,15 +1986,25 @@ final class ArgumentAnalyzer
                 && strtolower($cased_body_method_id) !== strtolower($cased_method_id)
             ) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                // the body of the method analyzed for the class of the object, if it is (see InheritedMethodTaints)
+                $body_suffix = InheritedMethodTaints::getBodySuffix(
+                    $statements_analyzer,
+                    $method_id->fq_class_name,
+                    $declaring_method_id,
+                );
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
                 // with no call-site context, and out of it through every call's return.
-                $new_sink = DataFlowNode::getForMethodArgument(
-                    $cased_body_method_id,
-                    DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
-                    $declaring_storage,
-                    $specialization_location,
+                $new_sink = InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id,
+                    $body_suffix,
+                    static fn(): DataFlowNode => DataFlowNode::getForMethodArgument(
+                        $cased_body_method_id,
+                        DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
+                        $declaring_storage,
+                        $specialization_location,
+                    ),
                 );
 
                 $taint_flow_graph->addNode($new_sink);
