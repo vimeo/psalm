@@ -1719,6 +1719,68 @@ final class CapabilitiesTest extends TestCase
                         return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
                     }',
             ],
+            'iteratorPurityTemplateGivenOnByAnAbstractClassIsBoundBySubclasses' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, V>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /**
+                     * @template V
+                     * @psalm-purity-template P
+                     * @extends Base[P]<V>
+                     */
+                    final class Wrapper extends Base {
+                        /**
+                         * @param Iterator[P]<int, V> $inner
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(private readonly Iterator $inner) {}
+
+                        /**
+                         * @return V|null
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function current(): mixed { return $this->inner->current(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function key(): ?int { return $this->inner->key(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function next(): void { $this->inner->next(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function rewind(): void { $this->inner->rewind(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function valid(): bool { return $this->inner->valid(); }
+                    }
+
+                    /**
+                     * @param Wrapper[pure]<string> $wrapper
+                     * @return Wrapper[pure]<string>
+                     * @psalm-pure
+                     */
+                    function rewrap(Wrapper $wrapper): Wrapper {
+                        return new Wrapper($wrapper);
+                    }',
+            ],
             'iteratingAPureIterableIsPure' => [
                 'code' => '<?php
                     /**
@@ -3776,6 +3838,30 @@ final class CapabilitiesTest extends TestCase
                         public function valid(): bool { return false; }
                     }',
                 'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-this-props|write-props|read-globals|write-globals|write-refs|io|time',
+            ],
+            'iteratorMethodsMustFitThePurityTemplateBoundThroughAnAbstractClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, int>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /** @extends Base[pure] */
+                    final class Counter extends Base {
+                        private int $i = 0;
+                        /** @psalm-mutation-free */
+                        public function current(): int { return $this->i; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return $this->i; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function next(): void { $this->i++; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return $this->i < 3; }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Iterator::next is read-props, but Counter::next additionally requires write-this-props',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php
