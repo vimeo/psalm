@@ -440,6 +440,25 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'taintFreeAssignmentUnderOneOfLiteralKeys' => [
+                'code' => '<?php
+                    function show(string $key): void {
+                        $array = [];
+
+                        if ($key === "a" || $key === "b") {
+                            $array[$key] = (string) $_GET["value"];
+                        }
+
+                        echo (string) ($array["c"] ?? "");
+                    }',
+            ],
+            'taintFreeAssignmentUnderLiteralKeyVariable' => [
+                'code' => '<?php
+                    $key = "a";
+                    $array = [];
+                    $array[$key] = (string) $_GET["value"];
+                    echo (string) ($array["b"] ?? "");',
+            ],
             'dontTaintAPathResolvedFromGlobalsTheOperatorChose' => [
                 // like IncludeAnalyzer::getPathTo(), which resolves $GLOBALS["name"] with the value it has in Psalm
                 'code' => '<?php
@@ -3346,6 +3365,19 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAssignmentUnderOneOfLiteralKeys' => [
+                'code' => '<?php
+                    function show(string $key): void {
+                        $array = [];
+
+                        if ($key === "a" || $key === "b") {
+                            $array[$key] = (string) $_GET["value"];
+                        }
+
+                        echo (string) ($array["b"] ?? "");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
                 'code' => '<?php
                     function path(string $name): string {
