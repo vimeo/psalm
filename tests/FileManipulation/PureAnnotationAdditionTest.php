@@ -907,6 +907,30 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureAnnotationToFunctionReadingTheClock' => [
+                'input' => '<?php
+                    function year(): string {
+                        return date("Y");
+                    }
+
+                    function yearOf(int $ts): string {
+                        return date("Y", $ts);
+                    }',
+                'output' => '<?php
+                    function year(): string {
+                        return date("Y");
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function yearOf(int $ts): string {
+                        return date("Y", $ts);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'dontAddPureAnnotationToMutationFreeMethod' => [
                 'input' => '<?php
                     class A {

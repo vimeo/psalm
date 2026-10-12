@@ -60,11 +60,11 @@ final class LanguageServer
 {
     /**
      * @param array<int,string> $argv
-     * @psalm-suppress ComplexMethod
      */
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         $clientConfiguration = new ClientConfiguration();
         gc_disable();
         ErrorHandler::install($argv);
@@ -133,7 +133,7 @@ final class LanguageServer
         );
 
         // get options from command line
-        $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        $options = CliUtils::chosenByOperator(getopt(implode('', $valid_short_options), $valid_long_options));
         if ($options === false) {
             // shouldn't really happen, but just in case
             fwrite(
