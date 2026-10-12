@@ -272,6 +272,14 @@ final class MethodCallPurityAnalyzer
                 }
 
                 $result->can_memoize = true;
+
+                // the class is neither immutable nor pure
+                if (!Capabilities::allows(
+                    Capabilities::MUTATION_FREE,
+                    $method_storage->containing_class_capabilities,
+                )) {
+                    $result->memoized_result_has_mutations = true;
+                }
             }
 
             if ($codebase->find_unused_variables
@@ -355,9 +363,21 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
             }
-        } elseif (!$config->remember_property_assignments_after_call) {
-            // the method cannot write properties, but may still write static ones
-            $context->removeMutableObjectVars(false, $method_capabilities);
+        } else {
+            if (!$config->remember_property_assignments_after_call) {
+                // the method cannot write properties, but may still write static ones
+                $context->removeMutableObjectVars(false, $method_capabilities);
+            }
+
+            if (($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+                || self::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                // the method may write properties, but not which ones (a stub, a body writing `$this`
+                // by reference, or a method that may do anything), or moves engine state (the position
+                // of an iterator): what its receiver's methods returned before may have changed, even
+                // when the receiver is fresh and the caller is not charged
+                $context->removeMutableObjectVars(true);
+            }
         }
     }
 

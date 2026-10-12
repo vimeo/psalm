@@ -81,6 +81,112 @@ final class CapabilitiesTest extends TestCase
                         });
                     }',
             ],
+            'mutatingAnObjectForgetsWhatItsMutationFreeMethodsReturned' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var list<int> */
+                        private array $items = [1];
+
+                        /** @psalm-mutation-free */
+                        public function isEmpty(): bool {
+                            return $this->items === [];
+                        }
+
+                        public function clear(): void {
+                            $this->items = [];
+                        }
+
+                        public function reset(): void {
+                            $this->clear();
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function pop(): void {
+                            array_pop($this->items);
+                        }
+                    }
+
+                    function clearBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->clear();
+                        if ($box->isEmpty()) {
+                            echo "cleared";
+                        }
+                    }
+
+                    function popBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->pop();
+                        if ($box->isEmpty()) {
+                            echo "popped";
+                        }
+                    }
+
+                    function resetBox(Box $box): void {
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->reset();
+                        if ($box->isEmpty()) {
+                            echo "reset";
+                        }
+                    }
+
+                    function clearFreshBox(): void {
+                        $box = new Box();
+                        if ($box->isEmpty()) {
+                            return;
+                        }
+                        $box->clear();
+                        if ($box->isEmpty()) {
+                            echo "cleared";
+                        }
+                    }',
+            ],
+            'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    final class PureResult {
+                        public function getError(): ?string {
+                            return null;
+                        }
+                    }
+
+                    final class Box {
+                        /** @var list<int> */
+                        private array $items = [1];
+
+                        public function clear(): void {
+                            $this->items = [];
+                        }
+                    }
+
+                    function errorAfterClear(PureResult $result, Box $box): string {
+                        if ($result->getError() !== null) {
+                            $box->clear();
+                            return $result->getError();
+                        }
+                        return "";
+                    }',
+            ],
+            'movingAWrappingIteratorForgetsWhatValidReturned' => [
+                'code' => '<?php
+                    /** @param Iterator[pure]<int, int> $inner */
+                    function walk(Iterator $inner): void {
+                        $iterator = new IteratorIterator($inner);
+                        if (!$iterator->valid()) {
+                            return;
+                        }
+                        $iterator->next();
+                        if (!$iterator->valid()) {
+                            echo "done";
+                        }
+                    }',
+            ],
             'classImplementsOfAnObjectDoesNotAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
