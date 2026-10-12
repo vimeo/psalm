@@ -233,14 +233,23 @@ final class MutationLevelResolver
                 continue;
             }
 
+            // e.g. "Method Cart::addItem only needs read-props|write-this-props but has no @psalm-capabilities
+            // annotation": what Psalm inferred, and the annotation that is missing or too loose
+            $subject = $info['class'] !== null
+                ? 'Method ' . $info['class'] . '::' . $info['cased_name']
+                : ($info['cased_name'] === '{closure}' ? 'Closure' : 'Function ' . $info['cased_name']);
+            $inferred = $level === Capabilities::NONE ? 'is pure' : 'only needs ' . Capabilities::toString($level);
+            $annotation = $info['allowed'] === Capabilities::ALL
+                ? 'has no @' . ($level === Capabilities::NONE ? 'psalm-pure' : 'psalm-capabilities') . ' annotation'
+                : 'is marked @' . Capabilities::toFunctionAnnotation($info['allowed']);
+
             IssueBuffer::maybeAdd(
                 new MissingPureAnnotation(
-                    $info['cased_name'] . ' must be marked @' . Capabilities::toFunctionAnnotation($level)
-                    . ' to aid security analysis'
-                    . ', run with --alter --issues=MissingPureAnnotation to fix this',
+                    $subject . ' ' . $inferred . ' but ' . $annotation,
                     $info['location'],
                 ),
                 $info['suppressed_issues'],
+                true,
             );
 
             if ($fix) {

@@ -804,7 +804,7 @@ final class IssueBuffer
                 }
             }
 
-            if (self::$fixable_issue_counts && $show_suggestions && !$codebase->taint_flow_graph) {
+            if (self::$fixable_issue_counts && $show_suggestions) {
                 echo str_repeat('-', 30) . "\n";
 
                 $total_count = array_sum(self::$fixable_issue_counts);
