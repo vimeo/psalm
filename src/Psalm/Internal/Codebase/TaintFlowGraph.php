@@ -120,6 +120,13 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private const GENERATOR_SEND_CALL_DEPTH = 8;
 
+    /**
+     * The built-in kinds of user input every value able to hold user input can hold: those not tied to a type (see
+     * Union::getTaintsToRemove()). What has them all has the custom taints psalm.xml adds to `input` too.
+     */
+    private const GENERIC_INPUT = TaintKind::ALL_INPUT
+        & ~(TaintKind::NUMERIC_ONLY | TaintKind::BOOL_ONLY | TaintKind::ARRAY_ONLY);
+
     /** @var array<string, DataFlowNode> */
     private array $sources = [];
 
@@ -247,6 +254,20 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $despecialized_calls = [];
+
+    /**
+     * The custom taints psalm.xml adds to `input`: the built-in sources of user input give them, and what removes
+     * every other kind of user input removes them (see withCustomInputTaints())
+     */
+    private readonly int $custom_input_taints;
+
+    /**
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
+     */
+    public function __construct(int $input_taints = TaintKind::ALL_INPUT)
+    {
+        $this->custom_input_taints = $input_taints & ~TaintKind::ALL_INPUT;
+    }
 
     /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
@@ -472,7 +493,24 @@ final class TaintFlowGraph extends DataFlowGraph
             return;
         }
 
-        parent::addPath($from, $to, $path_type, $added_taints, $removed_taints);
+        parent::addPath(
+            $from,
+            $to,
+            $path_type,
+            $this->withCustomInputTaints($added_taints),
+            $this->withCustomInputTaints($removed_taints),
+        );
+    }
+
+    /**
+     * $taints with the custom taints psalm.xml adds to `input`, when they are every kind of user input not tied to a
+     * type (see GENERIC_INPUT)
+     *
+     * @psalm-mutation-free
+     */
+    private function withCustomInputTaints(int $taints): int
+    {
+        return ($taints & self::GENERIC_INPUT) === self::GENERIC_INPUT ? $taints | $this->custom_input_taints : $taints;
     }
 
     /**
@@ -506,7 +544,7 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function addSource(DataFlowNode $node): void
     {
-        $this->sources[$node->id] = $node;
+        $this->sources[$node->id] = $node->setTaints($this->withCustomInputTaints($node->taints));
     }
 
     /**
@@ -514,6 +552,7 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function addSink(DataFlowNode $node): void
     {
+        $node = $node->setTaints($this->withCustomInputTaints($node->taints));
         $this->sinks[$node->id] = $node;
         // in the rare case the sink is the _next_ node, this is necessary
         $this->nodes[$node->id] = $node;

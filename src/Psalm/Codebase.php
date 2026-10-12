@@ -653,6 +653,35 @@ final class Codebase
     }
 
     /**
+     * Registers the custom taints psalm.xml declares (`<taintAnalysis><taints>`), and adds each to the aliases of
+     * built-in taints it names. Called before scanning, once the taints of a previous run are restored (see
+     * importCustomTaints()).
+     *
+     * @internal
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function registerConfigTaints(): void
+    {
+        foreach ($this->config->custom_taints as $taint_type => $aliases) {
+            $taint = $this->getOrRegisterTaint($taint_type);
+
+            foreach ($aliases as $alias) {
+                $this->taint_map[$alias] = ($this->taint_map[$alias] ?? 0) | $taint;
+            }
+        }
+    }
+
+    /**
+     * The taints of user input, those of `input`: the built-in kinds, and the custom taints psalm.xml adds to it
+     *
+     * @psalm-mutation-free
+     */
+    public function getInputTaints(): int
+    {
+        return $this->taint_map['input'] ?? TaintKind::ALL_INPUT;
+    }
+
+    /**
      * Register an alias taint name based on one or more pre-existing taints.
      *
      * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.

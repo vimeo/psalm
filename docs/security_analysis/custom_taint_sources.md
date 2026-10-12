@@ -16,6 +16,31 @@ In the below example the `input` taint type is specified as a standin for input 
 function getQueryParam(string $name) : string {}
 ```
 
+## Custom taints declared in the configuration
+
+Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering
+them:
+
+```xml
+<taintAnalysis>
+  <taints>
+    <taint name="nosql_json">
+      <alias name="input" />
+    </taint>
+    <taint name="session_id" />
+  </taints>
+</taintAnalysis>
+```
+
+A taint added to the alias `input` with `<alias name="input" />` is a kind of user input like the built-in ones:
+`@psalm-taint-source input`, `$_GET` and the other built-in sources of user input give it, `@psalm-taint-sink input`
+and `@psalm-taint-escape input` name it, and what removes every other kind of user input removes it too (a value of a
+type that can't hold user input, such as a literal string or a number). `tainted` and `input_except_sleep` can be
+named the same way. A taint without an alias, like `session_id` above, only comes from the annotations naming it
+(`@psalm-taint-source session_id`), and only reaches the sinks naming it.
+
+A taint's name is a word (letters, digits, `_` and `-`) other than those of the built-in taints.
+
 ## Custom taint plugin
 
 For example this plugin treats all variables named `$bad_data` as taint sources.

@@ -49,6 +49,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Type\TaintKind;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
@@ -58,6 +59,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_key_exists;
+use function array_keys;
 use function array_merge;
 use function array_pad;
 use function array_pop;
@@ -476,6 +478,13 @@ final class Config
     private ?IncludeCollector $include_collector = null;
 
     private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
+
+    /**
+     * The custom taints declared in `<taintAnalysis><taints>` => the aliases of built-in taints each is added to
+     *
+     * @var array<string, list<string>>
+     */
+    public array $custom_taints = [];
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
@@ -1320,6 +1329,10 @@ final class Config
             );
         }
 
+        if (isset($config_xml->taintAnalysis->taints->taint)) {
+            $config->loadCustomTaints($config_xml->taintAnalysis->taints->taint);
+        }
+
         if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
@@ -1542,6 +1555,52 @@ final class Config
     {
         if (!isset($this->issue_handlers[$issue_key])) {
             $this->setCustomErrorLevel($issue_key, $error_level);
+        }
+    }
+
+    /**
+     * @throws ConfigException if a taint's name isn't one, is a built-in taint's or is declared twice, or if an alias
+     *  isn't one of those of the built-in taints
+     */
+    private function loadCustomTaints(SimpleXMLElement $taints): void
+    {
+        // the aliases of built-in taints: the names of more than one kind
+        $aliases = [];
+        foreach (TaintKind::TAINT_NAMES as $name => $kinds) {
+            if (($kinds & ($kinds - 1)) !== 0) {
+                $aliases[$name] = true;
+            }
+        }
+
+        /** @var SimpleXMLElement $taint */
+        foreach ($taints as $taint) {
+            $name = (string) $taint['name'];
+            // a word, like the taints of the annotations, which can't start like a conditional taint or a complement
+            if (preg_match('/^[A-Za-z_][\w-]*$/', $name) !== 1) {
+                throw new ConfigException('Invalid custom taint name "' . $name . '"');
+            }
+
+            if (isset(TaintKind::TAINT_NAMES[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            if (isset($this->custom_taints[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" is declared twice');
+            }
+
+            $this->custom_taints[$name] = [];
+            /** @var SimpleXMLElement $alias */
+            foreach ($taint->alias as $alias) {
+                $alias_name = (string) $alias['name'];
+                if (!isset($aliases[$alias_name])) {
+                    throw new ConfigException(
+                        'The custom taint "' . $name . '" can only be added to an alias of built-in taints ('
+                        . implode(', ', array_keys($aliases)) . '), not to "' . $alias_name . '"',
+                    );
+                }
+
+                $this->custom_taints[$name][] = $alias_name;
+            }
         }
     }
 
