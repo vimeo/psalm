@@ -466,6 +466,24 @@ final class TaintTest extends TestCase
                     echo store_get("loc");
                     echo store_get("other_lock_1");',
             ],
+            'overrideWithTaintAnnotationsOfItsOwnInheritsNone' => [
+                'code' => '<?php
+                    class Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class FixedInput extends Input {
+                        /** @psalm-taint-escape html */
+                        public function get(): string {
+                            return "fixed";
+                        }
+                    }
+
+                    echo (new FixedInput())->get();',
+            ],
             'keyedStoreConstructorArgumentStartDoesNotReachOtherKeys' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -2794,6 +2812,65 @@ final class TaintTest extends TestCase
 
                     apcu_store("a", (string) $_GET["x"]);
                     echo (string) apcu_fetch("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overrideInheritsTheTaintSinksOfTheInterfaceMethod' => [
+                'code' => '<?php
+                    interface Renderer {
+                        /** @psalm-taint-sink html $html */
+                        public function render(string $html): void;
+                    }
+
+                    final class NullRenderer implements Renderer {
+                        public function render(string $html): void {}
+                    }
+
+                    (new NullRenderer())->render((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overrideInheritsTheTaintSourceOfTheParentMethod' => [
+                'code' => '<?php
+                    class Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class EmptyInput extends Input {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    echo (new EmptyInput())->get();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'overrideInheritsTheKeyedStoreFlowsOfTheParentMethod' => [
+                'code' => '<?php
+                    abstract class Cache {
+                        /** @psalm-flow ($value) -> Cache::$data[$key] */
+                        abstract public function set(string $key, string $value): void;
+
+                        /** @psalm-flow Cache::$data[$key] -> return */
+                        abstract public function get(string $key): string;
+                    }
+
+                    final class NullCache extends Cache {
+                        public function set(string $key, string $value): void {}
+
+                        public function get(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    function write(NullCache $cache): void {
+                        $cache->set("a", (string) $_GET["x"]);
+                    }
+
+                    function read(NullCache $cache): void {
+                        echo $cache->get("a");
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keysOfAnArrayOfArraysHoldTheKeysOfTheInnerArrayOnceFetched' => [

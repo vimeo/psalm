@@ -1,5 +1,9 @@
 # Security analysis annotations
 
+A method overriding or implementing another one without any of these annotations of its own (sources, sinks,
+escapes, unescapes and flows) has those of the method it overrides, as it has its docblock types: the
+parameters are matched by their position. `@psalm-taint-specialize` is not inherited.
+
 ## `@psalm-taint-source <taint-type>`
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).

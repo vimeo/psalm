@@ -292,6 +292,61 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     }
 
     /**
+     * Whether the function-like declares how taints flow through it: taint sources, sinks and escapes, and flows
+     *
+     * @psalm-mutation-free
+     */
+    public function hasTaintAnnotations(): bool
+    {
+        if ($this->taint_source_types !== 0
+            || $this->added_taints !== 0
+            || $this->removed_taints !== 0
+            || $this->conditionally_removed_taints !== []
+            || $this->return_source_params !== []
+            || $this->return_source_this !== null
+            || $this->taint_store_writes !== []
+            || $this->taint_store_reads !== []
+            || ($this->proxy_calls ?? []) !== []
+        ) {
+            return true;
+        }
+
+        foreach ($this->params as $param) {
+            if ($param->sinks !== 0 || $param->assert_untainted) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Takes the taint annotations of the method this one overrides (see hasTaintAnnotations()), as its docblock
+     * types: the parameters are matched by their position
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
+    public function inheritTaintAnnotations(FunctionLikeStorage $overridden): void
+    {
+        $this->taint_source_types = $overridden->taint_source_types;
+        $this->added_taints = $overridden->added_taints;
+        $this->removed_taints = $overridden->removed_taints;
+        $this->conditionally_removed_taints = $overridden->conditionally_removed_taints;
+        $this->return_source_params = $overridden->return_source_params;
+        $this->return_source_this = $overridden->return_source_this;
+        $this->taint_store_writes = $overridden->taint_store_writes;
+        $this->taint_store_reads = $overridden->taint_store_reads;
+        $this->proxy_calls = $overridden->proxy_calls;
+
+        foreach ($overridden->params as $offset => $overridden_param) {
+            if (isset($this->params[$offset])) {
+                $this->params[$offset]->sinks = $overridden_param->sinks;
+                $this->params[$offset]->assert_untainted = $overridden_param->assert_untainted;
+            }
+        }
+    }
+
+    /**
      * @psalm-api
      * @psalm-mutation-free
      */
