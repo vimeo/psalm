@@ -1001,6 +1001,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_name_type->parent_nodes
+                && !self::isOnlyClosures($stmt_name_type)
                 && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
@@ -1391,5 +1392,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * Whether calling a value of type $type can only run the code of a closure: no input names the function
+     * called then, so the call is no callable sink
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOnlyClosures(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || strtolower($atomic_type->value) !== 'closure') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

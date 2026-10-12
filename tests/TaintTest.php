@@ -440,6 +440,14 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'dontTaintTheCallOfAValueThatIsAClosure' => [
+                'code' => '<?php
+                    /** @var mixed */
+                    $callback = json_decode((string) $_GET["callback"], true);
+                    if ($callback instanceof Closure) {
+                        $callback();
+                    }',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -6192,6 +6200,13 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     print_r($_GET["x"]);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintTheFirstClassCallableOfATaintedName' => [
+                'code' => '<?php
+                    $name = (string) $_GET["f"];
+                    $closure = $name(...);
+                    $closure();',
+                'error_message' => 'TaintedCallable',
             ],
             'taintClosureFromCallable' => [
                 'code' => '<?php
