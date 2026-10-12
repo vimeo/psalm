@@ -1781,6 +1781,32 @@ final class CapabilitiesTest extends TestCase
                         return new Wrapper($wrapper);
                     }',
             ],
+            'lowerBoundOfAPurityTemplateBindingAnAbstractIteratorsTemplateCovers' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, int>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /**
+                     * @psalm-purity-template write-this-props <= P
+                     * @extends Base[P]
+                     */
+                    final class Counter extends Base {
+                        private int $i = 0;
+                        /** @psalm-mutation-free */
+                        public function current(): int { return $this->i; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return $this->i; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function next(): void { $this->i++; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return $this->i < 3; }
+                    }',
+            ],
             'iteratingAPureIterableIsPure' => [
                 'code' => '<?php
                     /**
