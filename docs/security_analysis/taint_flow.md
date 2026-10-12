@@ -119,8 +119,10 @@ echo Cache::get('title_1');   // no issue
   giving the key starts with. A property set only by its default and its constructor starts like what the constructor
   is given by the `new` of the classes analyzed. A key the analysis knows nothing of can be any key.
 + Psalm's stubs declare the keyed store of phpredis, `Redis::$data`, and that of APCu, `APCu::$data`. Plugins can
-  write into a store and read from it with `Codebase::addTaintStoreWrite()`, `Codebase::addTaintStoreRead()` and
-  `Codebase::getTaintStoreNames()`, for stores whose keys an annotation can't express (a table named in an SQL query).
+  connect their own nodes to a store with `Codebase::addTaintStoreWrite()` (paths from a node into the store under
+  the names) and `Codebase::addTaintStoreRead()` (paths from the store to a node), with the names
+  `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
+  table named in an SQL query).
 
 ### Combined proxy & return value hint
 

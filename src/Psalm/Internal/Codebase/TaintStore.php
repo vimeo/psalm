@@ -188,7 +188,7 @@ final class TaintStore
             foreach ($write['params'] as $offset) {
                 foreach ($args[$offset] ?? [] as $arg) {
                     $arg_type = $statements_analyzer->node_data->getType($arg->value);
-                    foreach ($arg_type->parent_nodes ?? [] as $parent_node) {
+                    foreach ($arg_type?->parent_nodes ?? [] as $parent_node) {
                         $graph->addPath($parent_node, $write_node, $write['path_type']);
                         $has_value = true;
                     }

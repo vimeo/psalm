@@ -864,6 +864,8 @@ final class Codebase
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         if ($has_changes) {
+            // the classes scanned again may make other `new`
+            $this->constructor_argument_starts = null;
             $this->populator->populateCodebase();
         }
     }
@@ -2741,58 +2743,81 @@ final class Codebase
     }
 
     /**
-     * Makes what $value_type holds flow into the keyed store $store (a class and a property, `Store::$data`, which need
-     * not exist) under the names, as `@psalm-flow ($value) -> Store::$data[$key]` does: each name is exact (true), or
-     * only known to start with what is given (false). See getTaintStoreNames().
+     * Adds paths of type $path_type from $write_node into the keyed store $store (a class and a property,
+     * `Store::$data`, which need not exist) under each of the names, as `@psalm-flow ($value) -> Store::$data[$key]`
+     * does from what a call stores: each name is exact (true), or only known to start with what is given (false). See
+     * getTaintStoreNames(). With $value_type, what it holds flows into $write_node first.
+     *
+     * The paths go into the taint graph the statements of $source add theirs to (none while they suppress TaintedInput,
+     * or while Psalm analyzes them again only to collect what they mutate), or into the codebase's for another source.
      *
      * @param list<array{bool, string}> $names
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-props
      */
-    public function addTaintStoreWrite(string $store, array $names, Union $value_type, CodeLocation $location): void
-    {
-        if (!$this->taint_flow_graph || $value_type->parent_nodes === []) {
+    public function addTaintStoreWrite(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $write_node,
+        string $path_type = 'arg',
+        ?Union $value_type = null,
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
             return;
         }
 
-        $write_node = DataFlowNode::getForAssignment('store write ' . $store, $location);
-        $this->taint_flow_graph->addNode($write_node);
-
-        foreach ($value_type->parent_nodes as $parent_node) {
-            $this->taint_flow_graph->addPath($parent_node, $write_node, 'arg');
+        $graph->addNode($write_node);
+        foreach ($value_type?->parent_nodes ?? [] as $parent_node) {
+            $graph->addPath($parent_node, $write_node, $path_type);
         }
 
-        TaintStore::addWrite($this->taint_flow_graph, $store, $names, $write_node, 'arg');
+        TaintStore::addWrite($graph, $store, $names, $write_node, $path_type);
     }
 
     /**
-     * Returns $type also holding what the keyed store $store holds under the names, as
-     * `@psalm-flow Store::$data[$key] -> return` does (see addTaintStoreWrite())
+     * Adds paths of type $path_type to $read_node from the keyed store $store under each of the names, as
+     * `@psalm-flow Store::$data[$key] -> return` does to what a call returns (see addTaintStoreWrite())
      *
      * @param list<array{bool, string}> $names
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-props
      */
-    public function addTaintStoreRead(string $store, array $names, Union $type, CodeLocation $location): Union
-    {
-        if (!$this->taint_flow_graph) {
-            return $type;
+    public function addTaintStoreRead(
+        StatementsSource $source,
+        string $store,
+        array $names,
+        DataFlowNode $read_node,
+        string $path_type = 'arg',
+    ): void {
+        $graph = $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return;
         }
 
-        $read_node = DataFlowNode::getForAssignment('store read ' . $store, $location);
-        $this->taint_flow_graph->addNode($read_node);
-        TaintStore::addRead($this->taint_flow_graph, $store, $names, $read_node, 'arg');
-
-        return $type->addParentNodes([$read_node->id => $read_node]);
+        $graph->addNode($read_node);
+        TaintStore::addRead($graph, $store, $names, $read_node, $path_type);
     }
 
     /**
      * The names of a keyed store the analysed expression can be, for addTaintStoreWrite() and addTaintStoreRead():
-     * exact for a type of literals or class names, else the start the analysis knows of it
+     * exact for a type of literals or class names, else the start the analysis knows of it; any name without an
+     * expression
      *
      * @return list<array{bool, string}>
      */
-    public function getTaintStoreNames(StatementsSource $source, PhpParser\Node\Expr $expr): array
+    public function getTaintStoreNames(StatementsSource $source, ?PhpParser\Node\Expr $expr): array
     {
         return $source instanceof StatementsAnalyzer ? TaintStore::getNames($source, $expr) : [[false, '']];
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private function getTaintFlowGraphOf(StatementsSource $source): ?TaintFlowGraph
+    {
+        return $source instanceof StatementsAnalyzer
+            ? $source->getTaintFlowGraphWithSuppressed()
+            : $this->taint_flow_graph;
     }
 
     /**
