@@ -243,6 +243,8 @@ final class ProjectAnalyzer
             }
         }
 
+        $this->codebase->registerConfigTaints();
+
         $this->config->processPluginFileExtensions($this);
 
         if ($this->config::INIT_PROJECT_FILES_NOW) {
@@ -889,6 +891,10 @@ final class ProjectAnalyzer
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
+
         $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
@@ -992,6 +998,10 @@ final class ProjectAnalyzer
         $this->codebase->scanFiles($this->scanThreads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
         $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
