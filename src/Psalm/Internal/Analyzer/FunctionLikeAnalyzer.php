@@ -1057,6 +1057,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $storage,
                 $codebase->taint_flow_graph,
                 $method_source,
+                $codebase->getInputTaints(),
             );
         }
 
@@ -1535,7 +1536,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove() ?? 0,
+                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
                     );
                 }
 

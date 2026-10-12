@@ -1377,6 +1377,14 @@ final class ConfigTest extends TestCase
             /** @psalm-taint-sink session_id $id */
             function resume(string $id): void {}
 
+            /** @psalm-taint-sink tainted_only $value */
+            function keep(string $value): void {}
+
+            /** @psalm-taint-source tainted */
+            function readTainted(): string {
+                return "";
+            }
+
             /** @psalm-taint-source input */
             function read(): string {
                 return "";
@@ -1396,27 +1404,64 @@ final class ConfigTest extends TestCase
             function validate(string $text): string {
                 return $text;
             }
+
+            function param(): string {
+                $value = $_GET["q"] ?? "";
+                return is_string($value) ? $value : "";
+            }
             ';
 
         return [
             'a taint added to input comes from the user input' => [
-                $functions . 'find((string) $_GET["q"]);',
+                $functions . 'find(param());',
                 'TaintedCustom',
             ],
             'a taint added to input comes from the sources of input' => [
                 $functions . 'find(read());',
                 'TaintedCustom',
             ],
+            'a taint added to input comes from STDIN' => [
+                $functions . 'find((string) fgets(STDIN));',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from the builtins reading the network' => [
+                $functions . '$handle = curl_init(); if ($handle !== false) { find((string) curl_exec($handle)); }',
+                'TaintedCustom',
+            ],
+            'a taint added to input comes from a caught exception' => [
+                $functions . 'try { param(); } catch (Exception $e) { find(print_r($e, true)); }',
+                'TaintedCustom',
+            ],
             'a number holds no taint added to input' => [
-                $functions . 'find((string) (int) $_GET["q"]);',
+                $functions . 'find((string) (int) param());',
                 null,
             ],
+            'a value formatted as a number holds no taint added to input' => [
+                $functions . 'find(sprintf("%d", param()));',
+                null,
+            ],
+            'a value formatted as a string holds a taint added to input' => [
+                $functions . 'find(sprintf("%s", param()));',
+                'TaintedCustom',
+            ],
             'escaping another kind keeps a taint added to input' => [
-                $functions . 'find(escapeHtml((string) $_GET["q"]));',
+                $functions . 'find(escapeHtml(param()));',
                 'TaintedCustom',
             ],
             'escaping input escapes a taint added to it' => [
-                $functions . 'find(validate((string) $_GET["q"]));',
+                $functions . 'find(validate(param()));',
+                null,
+            ],
+            'a taint added to tainted comes from the sources of tainted' => [
+                $functions . 'keep(readTainted());',
+                'TaintedCustom',
+            ],
+            'a taint added to tainted only does not come from the user input' => [
+                $functions . 'keep(param());',
+                null,
+            ],
+            'a taint added to input only does not come from the sources of tainted' => [
+                $functions . 'find(readTainted());',
                 null,
             ],
             'a taint without alias comes from where it is named' => [
@@ -1424,7 +1469,7 @@ final class ConfigTest extends TestCase
                 'TaintedCustom',
             ],
             'a taint without alias does not come from the user input' => [
-                $functions . 'resume((string) $_GET["q"]);',
+                $functions . 'resume(param());',
                 null,
             ],
             'a taint without alias reaches only the sinks naming it' => [
@@ -1453,6 +1498,9 @@ final class ConfigTest extends TestCase
                                 <alias name="input" />
                             </taint>
                             <taint name="session_id" />
+                            <taint name="tainted_only">
+                                <alias name="tainted" />
+                            </taint>
                         </taints>
                     </taintAnalysis>
                 </psalm>',

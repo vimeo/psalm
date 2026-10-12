@@ -658,7 +658,6 @@ final class Codebase
      * importCustomTaints()).
      *
      * @internal
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function registerConfigTaints(): void
     {
@@ -672,12 +671,15 @@ final class Codebase
     }
 
     /**
-     * The taints of user input, those of `input`: the built-in kinds, and the custom taints psalm.xml adds to it
+     * The taints of user input, those of `input`: the built-in kinds (TaintKind::ALL_INPUT), and the custom taints
+     * psalm.xml adds to it. The built-in sources of user input give them, and the types that can't hold user input
+     * remove them (see Union::getTaintsToRemove()).
      *
      * @psalm-mutation-free
      */
     public function getInputTaints(): int
     {
+        // the built-in aliases are always registered, this is for Psalm
         return $this->taint_map['input'] ?? TaintKind::ALL_INPUT;
     }
 
@@ -2714,13 +2716,14 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints of the source, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
@@ -2729,7 +2732,7 @@ final class Codebase
         $source = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSource($source);
@@ -2738,12 +2741,13 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints the sink must not be given, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSink(
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
@@ -2752,7 +2756,7 @@ final class Codebase
         $sink = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSink($sink);

@@ -403,7 +403,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $method_storage,
                 null,
                 $method_storage->taint_source_types
-                    & ~($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+                    & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0),
             );
 
             $taint_flow_graph->addSource($method_node);
@@ -417,6 +417,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $specialization_location,
                 $method_source,
+                $codebase->getInputTaints(),
                 $method_storage->removed_taints | $removed_taints,
                 $added_taints,
             );

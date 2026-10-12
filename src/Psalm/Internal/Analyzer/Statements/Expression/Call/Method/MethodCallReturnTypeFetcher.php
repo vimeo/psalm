@@ -585,15 +585,18 @@ final class MethodCallReturnTypeFetcher
 
         // `@psalm-flow ($this) -> return`: what the method returns holds what the object it is called on holds
         if ($method_storage->return_source_this !== null) {
+            // what the native return type cannot hold, since PHP enforces it
+            $type_removed_taints = $method_storage->signature_return_type?->getTaintsToRemove(
+                $codebase->getInputTaints(),
+            ) ?? 0;
+
             foreach ($receiver_parent_nodes as $parent_node) {
                 $taint_flow_graph->addPath(
                     $parent_node,
                     $method_call_node,
                     $method_storage->return_source_this,
                     $added_taints | $method_storage->added_taints,
-                    // what the native return type cannot hold, since PHP enforces it
-                    $removed_taints | $method_storage->removed_taints
-                        | ($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+                    $removed_taints | $method_storage->removed_taints | $type_removed_taints,
                 );
             }
         }
@@ -605,6 +608,7 @@ final class MethodCallReturnTypeFetcher
             $args,
             $specialize_call ? $node_location : null,
             $method_call_node,
+            $codebase->getInputTaints(),
             $method_storage->removed_taints,
         );
 
@@ -612,6 +616,7 @@ final class MethodCallReturnTypeFetcher
             $method_storage,
             $taint_flow_graph,
             $method_call_node,
+            $codebase->getInputTaints(),
         );
     }
 

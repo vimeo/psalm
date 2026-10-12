@@ -545,7 +545,7 @@ final class ProjectAnalyzer
 
     public function trackTaintedInputs(): void
     {
-        $this->codebase->taint_flow_graph = new TaintFlowGraph($this->codebase->getInputTaints());
+        $this->codebase->taint_flow_graph = new TaintFlowGraph();
     }
 
     public function trackUnusedSuppressions(): void

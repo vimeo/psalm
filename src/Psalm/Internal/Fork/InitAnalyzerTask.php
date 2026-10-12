@@ -26,7 +26,7 @@ final class InitAnalyzerTask implements Task
         $file_reference_provider = $codebase->file_reference_provider;
 
         if ($codebase->taint_flow_graph) {
-            $codebase->taint_flow_graph = new TaintFlowGraph($codebase->getInputTaints());
+            $codebase->taint_flow_graph = new TaintFlowGraph();
         }
 
         // workers only report the references they found themselves

@@ -1572,7 +1572,6 @@ final class Config
             }
         }
 
-        /** @var SimpleXMLElement $taint */
         foreach ($taints as $taint) {
             $name = (string) $taint['name'];
             // a word, like the taints of the annotations, which can't start like a conditional taint or a complement
@@ -1589,6 +1588,10 @@ final class Config
             }
 
             $this->custom_taints[$name] = [];
+            if (!isset($taint->alias)) {
+                continue;
+            }
+
             /** @var SimpleXMLElement $alias */
             foreach ($taint->alias as $alias) {
                 $alias_name = (string) $alias['name'];

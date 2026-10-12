@@ -920,6 +920,7 @@ final class AssignmentAnalyzer
         CodeLocation $var_location,
         int $removed_taints,
         int $added_taints,
+        int $input_taints,
     ): void {
         $parent_nodes = $type->parent_nodes;
 
@@ -937,7 +938,7 @@ final class AssignmentAnalyzer
 
         // what the assigned value cannot hold, given its type
         if (!$flow_graph instanceof VariableUseGraph) {
-            $removed_taints |= $type->getTaintsToRemove();
+            $removed_taints |= $type->getTaintsToRemove($input_taints);
         }
 
         // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)
@@ -1852,6 +1853,7 @@ final class AssignmentAnalyzer
                                     $var_location,
                                     $removed_taints,
                                     $added_taints,
+                                    $codebase->getInputTaints(),
                                 );
                             }
                         }
@@ -2196,6 +2198,7 @@ final class AssignmentAnalyzer
                 $var_location,
                 $removed_taints,
                 $added_taints,
+                $codebase->getInputTaints(),
             );
         }
 

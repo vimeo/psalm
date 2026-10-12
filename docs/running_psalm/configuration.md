@@ -771,7 +771,8 @@ Optional. Settings of the [security analysis](../security_analysis/index.md):
 - `<ignoreFiles>`: the files and directories whose taint paths are not reported (see
   [Avoiding files in taint paths](../security_analysis/avoiding_false_positives.md#avoiding-files-in-taint-paths)).
 - `<taints>`: custom taints, which the annotations can then name without a plugin registering them. Each can be added
-  to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>` (see
+  to aliases of built-in taints (`input`, `tainted`, `input_except_sleep`) with `<alias>`: a taint added to `input` is
+  user input, which the built-in sources give (see
   [Custom taints declared in the configuration](../security_analysis/custom_taint_sources.md#custom-taints-declared-in-the-configuration)).
 
 ```xml

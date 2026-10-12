@@ -33,10 +33,11 @@ them:
 ```
 
 A taint added to the alias `input` with `<alias name="input" />` is a kind of user input like the built-in ones:
-`@psalm-taint-source input`, `$_GET` and the other built-in sources of user input give it, `@psalm-taint-sink input`
-and `@psalm-taint-escape input` name it, and what removes every other kind of user input removes it too (a value of a
-type that can't hold user input, such as a literal string or a number). `tainted` and `input_except_sleep` can be
-named the same way. A taint without an alias, like `session_id` above, only comes from the annotations naming it
+`$_GET` and the other built-in sources of user input give it, `@psalm-taint-source input`, `@psalm-taint-sink input`
+and `@psalm-taint-escape input` name it, and a value of a type that can't hold user input (a literal string, a number,
+a boolean, null) can't carry it. Plugins get these taints with `Codebase::getInputTaints()`. Each of the other aliases,
+`tainted` and `input_except_sleep`, holds the custom taints added to it with its own `<alias>`, and only those. A
+taint without an alias, like `session_id` above, only comes from the annotations naming it
 (`@psalm-taint-source session_id`), and only reaches the sinks naming it.
 
 A taint's name is a word (letters, digits, `_` and `-`) other than those of the built-in taints.
@@ -78,7 +79,7 @@ class TaintBadDataPlugin implements AddTaintsInterface
         // Taint alias names may be used in @psalm-taint-* annotations in the code.
         self::$myCustomTaintAlias = $codebase->registerTaintAlias(
             "my_custom_taint_alias",
-            self::$myCustomTaint | TaintKind::ALL_INPUT
+            self::$myCustomTaint | $codebase->getInputTaints()
         );
     }
 
@@ -92,7 +93,8 @@ class TaintBadDataPlugin implements AddTaintsInterface
         $expr = $event->getExpr();
 
         if ($expr instanceof Variable && $expr->name === 'bad_data') {
-            return TaintKind::ALL_INPUT;
+            // the taints of user input: the built-in kinds, and the custom taints psalm.xml adds to `input`
+            return $event->getCodebase()->getInputTaints();
         }
 
         if ($expr instanceof Variable && $expr->name === 'even_badder_data') {

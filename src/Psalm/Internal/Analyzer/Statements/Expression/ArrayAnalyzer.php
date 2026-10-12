@@ -431,7 +431,7 @@ final class ArrayAnalyzer
                         }
 
                         // what an item holds can't carry the taints its type can't (see Union::getTaintsToRemove())
-                        $removed_taints |= $item_value_type->getTaintsToRemove();
+                        $removed_taints |= $item_value_type->getTaintsToRemove($codebase->getInputTaints());
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
@@ -478,7 +478,7 @@ final class ArrayAnalyzer
                             $taint_flow_graph->addSource($taint_source);
                         }
 
-                        $removed_taints |= $item_key_type->getTaintsToRemove();
+                        $removed_taints |= $item_key_type->getTaintsToRemove($codebase->getInputTaints());
                     }
 
                     foreach ($item_key_type->parent_nodes as $parent_node) {

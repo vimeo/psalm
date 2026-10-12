@@ -716,7 +716,7 @@ final class FunctionCallReturnTypeFetcher
         );
         $graph->addNode($return_node);
 
-        self::taintUsingStorage($storage, $graph, $return_node);
+        self::taintUsingStorage($storage, $graph, $return_node, $statements_analyzer->getCodebase()->getInputTaints());
 
         // @psalm-flow: connect the actual argument nodes directly to the return. The
         // per-function argument nodes taintUsingFlows() relies on are not created for a
@@ -879,7 +879,12 @@ final class FunctionCallReturnTypeFetcher
             if ($callable_storage !== null) {
                 $callable_return_node = DataFlowNode::getForMethodReturn($atomic->callable_id, $callable_storage);
                 $graph->addNode($callable_return_node);
-                self::taintUsingStorage($callable_storage, $graph, $callable_return_node);
+                self::taintUsingStorage(
+                    $callable_storage,
+                    $graph,
+                    $callable_return_node,
+                    $statements_analyzer->getCodebase()->getInputTaints(),
+                );
                 $graph->addPath($callable_return_node, $return_node, 'callable-return');
             } else {
                 $callable_storage = self::getClosureStorage($statements_analyzer, $atomic->callable_id);
@@ -1195,7 +1200,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id . '(' . $path . ')',
-            TaintKind::ALL_INPUT,
+            $statements_analyzer->getCodebase()->getInputTaints(),
             $context,
             $stmt_type,
         );
@@ -1212,7 +1217,11 @@ final class FunctionCallReturnTypeFetcher
         Union &$stmt_type,
         Context $context,
     ): void {
-        $taints = InternalTaintSourceMap::getTaints($function_id, 'return');
+        $taints = InternalTaintSourceMap::getTaints(
+            $function_id,
+            'return',
+            $statements_analyzer->getCodebase()->getInputTaints(),
+        );
 
         if ($taints === 0 || !$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
             return;
@@ -1262,6 +1271,7 @@ final class FunctionCallReturnTypeFetcher
         $graph->addNode($return_node);
 
         $removed_taints = InternalCallMapHandler::getReturnRemovedTaints($function_id);
+        $input_taints = $statements_analyzer->getCodebase()->getInputTaints();
 
         $args = $stmt->getArgs();
         foreach ($flows as $offset => $path_type) {
@@ -1277,7 +1287,7 @@ final class FunctionCallReturnTypeFetcher
                         $return_node,
                         $path_type,
                         0,
-                        $removed_taints | $arg_type->getTaintsToRemove(),
+                        $removed_taints | $arg_type->getTaintsToRemove($input_taints),
                     );
                 }
             }
@@ -1433,6 +1443,7 @@ final class FunctionCallReturnTypeFetcher
                 ? self::getTaintsRemovedBySprintfFormats(
                     ConcatAnalyzer::getLiteralValues($format_type),
                     $args,
+                    $codebase->getInputTaints(),
                     $function_id === 'vsprintf',
                 )
                 : [];
@@ -1449,13 +1460,14 @@ final class FunctionCallReturnTypeFetcher
                 $args,
                 $specialization_location,
                 $function_call_node,
+                $codebase->getInputTaints(),
                 $removed_taints | $conditionally_removed_taints,
                 $added_taints,
                 $arg_removed_taints,
             );
         }
 
-        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node);
+        self::taintUsingStorage($function_storage, $taint_flow_graph, $function_call_node, $codebase->getInputTaints());
 
         return $function_call_node;
     }
@@ -1467,12 +1479,14 @@ final class FunctionCallReturnTypeFetcher
      *
      * @param list<string> $formats
      * @param array<PhpParser\Node\Arg> $args
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @return array<int, int> by index in $args
      * @psalm-mutation-free
      */
     public static function getTaintsRemovedBySprintfFormats(
         array $formats,
         array $args,
+        int $input_taints,
         bool $values_in_array = false,
     ): array {
         $string_args = [];
@@ -1522,7 +1536,7 @@ final class FunctionCallReturnTypeFetcher
             $is_formatted_as_string = $values_in_array ? $string_args !== [] : isset($string_args[$i]);
 
             if (!$is_formatted_as_string) {
-                $removed_taints[$i] = TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+                $removed_taints[$i] = $input_taints & ~TaintKind::NUMERIC_ONLY;
             }
         }
 
@@ -1540,6 +1554,7 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * @param array<int, PhpParser\Node\Arg> $args
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @param array<int, int> $arg_removed_taints the taints removed from the flows of some of $args only, by index
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -1550,6 +1565,7 @@ final class FunctionCallReturnTypeFetcher
         array $args,
         ?CodeLocation $specialization_location,
         DataFlowNode $function_call_node,
+        int $input_taints,
         int $removed_taints,
         int $added_taints = 0,
         array $arg_removed_taints = [],
@@ -1583,7 +1599,8 @@ final class FunctionCallReturnTypeFetcher
                     $path_type,
                     $added_taints | $function_storage->added_taints,
                     // what the native return type cannot hold, since PHP enforces it
-                    $path_removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0)
+                    $path_removed_taints
+                        | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0)
                         | ($arg_removed_taints[$arg_index] ?? 0),
                 );
             }
@@ -1591,12 +1608,14 @@ final class FunctionCallReturnTypeFetcher
     }
 
     /**
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public static function taintUsingStorage(
         FunctionLikeStorage $function_storage,
         TaintFlowGraph $graph,
         DataFlowNode $function_call_node,
+        int $input_taints,
     ): void {
         // Docblock-defined taints should override inherited
         $added_taints = 0;
@@ -1609,7 +1628,7 @@ final class FunctionCallReturnTypeFetcher
         // a source can only return taints its native return type can hold: a `string` is never a NoSQL query
         $taints = $added_taints
             & ~$function_storage->removed_taints
-            & ~($function_storage->signature_return_type?->getTaintsToRemove() ?? 0);
+            & ~($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0);
         if ($taints !== 0) {
             $taint_source = $function_call_node->setTaints($taints);
             $graph->addSource($taint_source);
