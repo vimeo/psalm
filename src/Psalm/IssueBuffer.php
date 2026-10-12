@@ -43,6 +43,7 @@ use Psalm\Report\XmlReport;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -61,6 +62,7 @@ use function implode;
 use function in_array;
 use function is_dir;
 use function is_int;
+use function is_string;
 use function ksort;
 use function memory_get_peak_usage;
 use function microtime;
@@ -79,10 +81,12 @@ use function strlen;
 use function trim;
 use function usort;
 
+use const ARRAY_FILTER_USE_KEY;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
+use const STDOUT;
 
 /**
  * @api
@@ -147,6 +151,20 @@ final class IssueBuffer
     }
 
     /**
+     * Adds an issue of a stub file, unless the config or a plugin suppresses it: the files whose issues the config
+     * reports don't include the stubs, which aren't analyzed (see Config::visitStubFiles())
+     */
+    public static function maybeAddStubIssue(CodeIssue $e): void
+    {
+        $event = new BeforeAddIssueEvent($e, false, ProjectAnalyzer::getInstance()->getCodebase());
+        if (Config::getInstance()->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return;
+        }
+
+        self::add($e);
+    }
+
+    /**
      * This will add an issue to be emitted if it's not suppressed
      *
      * @param string[]  $suppressed_issues
@@ -202,6 +220,11 @@ final class IssueBuffer
 
         if (!$e instanceof ConfigIssue && !$config->reportIssueInFile($issue_type, $file_path)) {
             return true;
+        }
+
+        if (!$config->isSuppressible($e)) {
+            // only the suppressions Psalm adds around the code it analyses itself apply (see Config::isSuppressible())
+            $suppressed_issues = array_filter($suppressed_issues, is_string(...), ARRAY_FILTER_USE_KEY);
         }
 
         $suppressed_issue_position = array_search($issue_type, $suppressed_issues, true);
@@ -613,7 +636,10 @@ final class IssueBuffer
                     $file = str_replace('\\', '/', $file);
                     $type = $issue_data->type;
 
-                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
+                    if (isset($issue_baseline[$file][$type])
+                        && $issue_baseline[$file][$type]['o'] > 0
+                        && $codebase->config->isSuppressible($type)
+                    ) {
                         if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
                             $position = array_search(
                                 str_replace("\r\n", "\n", trim($issue_data->selected_text)),
@@ -711,10 +737,14 @@ final class IssueBuffer
             }
         }
 
-        echo self::getOutput(
-            $issues_data,
-            $project_analyzer->stdout_report_options,
-            $codebase->analyzer->getTotalTypeCoverage($codebase),
+        // The report is written to the terminal, not into a web page, so it goes to STDOUT rather than through echo.
+        fwrite(
+            STDOUT,
+            self::getOutput(
+                $issues_data,
+                $project_analyzer->stdout_report_options,
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+            ),
         );
 
         foreach ($issues_data as $file_issues) {

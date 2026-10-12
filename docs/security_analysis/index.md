@@ -54,6 +54,7 @@ Psalm defines the following default taint sources:
  - the predefined `STDIN` constant (the `php://stdin` stream).
  - reading from the network: `socket_read()`, the data `socket_recv()`, `socket_recvfrom()` and `socket_recvmsg()` write to their by-reference parameter, `stream_socket_recvfrom()`, `curl_exec()` and `curl_multi_getcontent()`, and the streams opened with `fsockopen()`, `pfsockopen()`, `stream_socket_client()`, `stream_socket_accept()` and `socket_export_stream()` (so reading from them with `fgets()`, `fread()`, ... is a source too).
  - DNS answers, which whoever runs the name servers of a domain chooses: `dns_get_record()`, the hosts `getmxrr()` writes to its by-reference parameter, and `gethostbyaddr()`.
+ - the command-line options `getopt()` returns, which whoever runs the script chooses.
  - exceptions, since the analysis does not follow them from where they are thrown to where they are caught: their message (`getMessage()`), their trace (`getTraceAsString()`) and their string form, and the variable of a `catch` block, so dumping a caught exception (`print_r()`, `var_export()`) is a source too.
 
 You can also [define your own taint sources](custom_taint_sources.md).
@@ -61,6 +62,8 @@ You can also [define your own taint sources](custom_taint_sources.md).
 ## Taint Sinks
 
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
+
+What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 

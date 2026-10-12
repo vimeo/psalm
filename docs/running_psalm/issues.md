@@ -62,6 +62,7 @@
  - [InternalClass](issues/InternalClass.md)
  - [InternalMethod](issues/InternalMethod.md)
  - [InternalProperty](issues/InternalProperty.md)
+ - [IntMaskComparison](issues/IntMaskComparison.md)
  - [InvalidArgument](issues/InvalidArgument.md)
  - [InvalidArrayAccess](issues/InvalidArrayAccess.md)
  - [InvalidArrayAssignment](issues/InvalidArrayAssignment.md)

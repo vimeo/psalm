@@ -10,52 +10,85 @@ namespace Random\Engine
 {
     final class Mt19937 implements \Random\Engine
     {
+        /**
+         * Without a seed, the engine is seeded from the CSPRNG.
+         *
+         * @psalm-capabilities io
+         */
         public function __construct(int|null $seed = null, int $mode = MT_RAND_MT19937) {}
 
-        /** @return non-empty-string */
+        /**
+         * @return non-empty-string
+         * @psalm-capabilities read-props|write-this-props
+         */
         public function generate(): string {}
 
+        /** @psalm-mutation-free */
         public function __serialize(): array {}
 
+        /** @psalm-external-mutation-free */
         public function __unserialize(array $data): void {}
 
+        /** @psalm-mutation-free */
         public function __debugInfo(): array {}
     }
 
     final class PcgOneseq128XslRr64 implements \Random\Engine
     {
+        /**
+         * Without a seed, the engine is seeded from the CSPRNG.
+         *
+         * @psalm-capabilities io
+         */
         public function __construct(string|int|null $seed = null) {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function generate(): string {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function jump(int $advance): void {}
 
+        /** @psalm-mutation-free */
         public function __serialize(): array {}
 
+        /** @psalm-external-mutation-free */
         public function __unserialize(array $data): void {}
 
+        /** @psalm-mutation-free */
         public function __debugInfo(): array {}
     }
 
     final class Xoshiro256StarStar implements \Random\Engine
     {
+        /**
+         * Without a seed, the engine is seeded from the CSPRNG.
+         *
+         * @psalm-capabilities io
+         */
         public function __construct(string|int|null $seed = null) {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function generate(): string {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function jump(): void {}
 
+        /** @psalm-capabilities read-props|write-this-props */
         public function jumpLong(): void {}
 
+        /** @psalm-mutation-free */
         public function __serialize(): array {}
 
+        /** @psalm-external-mutation-free */
         public function __unserialize(array $data): void {}
 
+        /** @psalm-mutation-free */
         public function __debugInfo(): array {}
     }
 
     final class Secure implements \Random\CryptoSafeEngine
     {
+        /** @psalm-capabilities io */
         public function generate(): string {}
     }
 }
@@ -64,6 +97,11 @@ namespace Random
 {
     interface Engine
     {
+        /**
+         * Advances the engine's state, or reads randomness from the system (Secure)
+         *
+         * @psalm-capabilities read-props|write-this-props|io
+         */
         public function generate(): string;
     }
 
@@ -75,36 +113,63 @@ namespace Random
     {
         public readonly Engine $engine;
 
+        /** @psalm-pure */
         public function __construct(?Engine $engine = null) {}
 
+        /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
+         * @psalm-capabilities read-props|write-props|io
+         */
         public function nextInt(): int {}
 
+        /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
+         * @psalm-capabilities read-props|write-props|io
+         */
         public function getInt(int $min, int $max): int {}
 
         /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
          * @param positive-int $length
          * @return non-empty-string
+         * @psalm-capabilities read-props|write-props|io
          */
         public function getBytes(int $length): string {}
 
         /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
          * @template TValue
          * @param array<TValue> $array
          * @return list<TValue>
+         * @psalm-capabilities read-props|write-props|io
          */
         public function shuffleArray(array $array): array {}
 
+        /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
+         * @psalm-capabilities read-props|write-props|io
+         */
         public function shuffleBytes(string $bytes): string {}
 
         /**
+         * Calls the engine, which advances its state (or reads randomness from the system)
+         *
          * @template TKey as array-key
          * @param array<TKey, mixed> $array
          * @return list<TKey>
+         * @psalm-capabilities read-props|write-props|io
          */
         public function pickArrayKeys(array $array, int $num): array {}
 
+        /** @psalm-mutation-free */
         public function __serialize(): array {}
 
+        /** @psalm-external-mutation-free */
         public function __unserialize(array $data): void {}
     }
 
