@@ -177,6 +177,7 @@ abstract class Atomic implements TypeNode, Stringable
      * @param int $analysis_php_version_id contains php version when the type comes from signature
      * @param array<string, array<string, Union>> $template_type_map
      * @param array<string, TypeAlias> $type_aliases
+     * @psalm-pure
      */
     private static function createInner(
         string $value,
@@ -253,6 +254,7 @@ abstract class Atomic implements TypeNode, Stringable
             case 'write-globals':
             case 'write-refs':
             case 'io':
+            case 'time':
                 return new TCapabilities(Capabilities::NAMES[$value], $from_docblock);
 
             case 'array':

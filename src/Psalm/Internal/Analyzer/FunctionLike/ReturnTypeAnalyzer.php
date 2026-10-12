@@ -58,7 +58,6 @@ use function array_filter;
 use function array_values;
 use function count;
 use function implode;
-use function in_array;
 use function str_starts_with;
 use function strtolower;
 
@@ -350,7 +349,7 @@ final class ReturnTypeAnalyzer
                 if (!$closure_inside_call || $inferred_return_type->isMixed()) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['MissingClosureReturnType'])
-                        && !in_array('MissingClosureReturnType', $suppressed_issues)
+                        && !$codebase->config->suppressesIssueType($suppressed_issues, 'MissingClosureReturnType')
                     ) {
                         if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
                             return null;
@@ -385,7 +384,7 @@ final class ReturnTypeAnalyzer
 
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MissingReturnType'])
-                && !in_array('MissingReturnType', $suppressed_issues)
+                && !$codebase->config->suppressesIssueType($suppressed_issues, 'MissingReturnType')
             ) {
                 if ($inferred_return_type->hasMixed() || $inferred_return_type->isNull()) {
                     return null;
@@ -465,7 +464,7 @@ final class ReturnTypeAnalyzer
 
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
-                && !in_array('InvalidReturnType', $suppressed_issues)
+                && !$codebase->config->suppressesIssueType($suppressed_issues, 'InvalidReturnType')
             ) {
                 self::addOrUpdateReturnType(
                     $function,
@@ -536,7 +535,7 @@ final class ReturnTypeAnalyzer
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
-                    && !in_array('InvalidReturnType', $suppressed_issues)
+                    && !$codebase->config->suppressesIssueType($suppressed_issues, 'InvalidReturnType')
                 ) {
                     self::addOrUpdateReturnType(
                         $function,
@@ -622,7 +621,7 @@ final class ReturnTypeAnalyzer
                 ) {
                     if ($codebase->alter_code
                         && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
-                        && !in_array('InvalidReturnType', $suppressed_issues)
+                        && !$codebase->config->suppressesIssueType($suppressed_issues, 'InvalidReturnType')
                     ) {
                         self::addOrUpdateReturnType(
                             $function,
@@ -668,7 +667,7 @@ final class ReturnTypeAnalyzer
             )) {
                 if ($codebase->alter_code) {
                     if (isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
-                        && !in_array('LessSpecificReturnType', $suppressed_issues)
+                        && !$codebase->config->suppressesIssueType($suppressed_issues, 'LessSpecificReturnType')
                         && !($function_like_storage instanceof MethodStorage && $function_like_storage->inheritdoc)
                     ) {
                         self::addOrUpdateReturnType(
@@ -743,7 +742,7 @@ final class ReturnTypeAnalyzer
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
-                    && !in_array('InvalidNullableReturnType', $suppressed_issues)
+                    && !$codebase->config->suppressesIssueType($suppressed_issues, 'InvalidNullableReturnType')
                     && !$inferred_return_type->isNull()
                 ) {
                     self::addOrUpdateReturnType(
