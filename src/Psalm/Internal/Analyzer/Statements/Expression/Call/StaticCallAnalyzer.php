@@ -441,6 +441,9 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $node_location,
                 $return_type_candidate,
+                $cased_method_id,
+                $method_id,
+                $specialization_location,
             );
         }
     }

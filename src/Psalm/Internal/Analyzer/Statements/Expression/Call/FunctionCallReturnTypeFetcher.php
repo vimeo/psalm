@@ -1508,6 +1508,9 @@ final class FunctionCallReturnTypeFetcher
                 $stmt->getArgs(),
                 $node_location,
                 $stmt_type,
+                $cased_function_id,
+                null,
+                $specialization_location,
             );
         }
 
@@ -1662,25 +1665,13 @@ final class FunctionCallReturnTypeFetcher
         int $removed_taints,
         int $added_taints = 0,
     ): void {
-        if ($function_storage->return_source_callable_params === []) {
-            return;
-        }
-
-        $callable_param_method_id = $cased_function_id;
-        $callable_param_storage = $function_storage;
-
-        // keyed as the body of the method keys its callable parameters (see ArgumentAnalyzer)
-        $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
-        if ($method_id && $declaring_method_id) {
-            $callable_param_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
-            $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
-        }
-
         foreach ($function_storage->return_source_callable_params as $i => $path_type) {
-            $callable_return_node = DataFlowNode::getForCallableParamReturn(
-                $callable_param_method_id,
-                DataFlowNode::getParameterOffset($callable_param_storage, $function_storage->params[$i], $i),
-                $callable_param_storage,
+            $callable_return_node = self::getCallableParamReturnNode(
+                $codebase,
+                $function_storage,
+                $cased_function_id,
+                $method_id,
+                $i,
                 $specialization_location,
             );
             $graph->addNode($callable_return_node);
@@ -1694,6 +1685,44 @@ final class FunctionCallReturnTypeFetcher
                 $removed_taints | ($function_storage->signature_return_type?->getTaintsToRemove() ?? 0),
             );
         }
+    }
+
+    /**
+     * What the calls of the callable parameter at $param_offset give in the body of the function-like called: what the
+     * callables given to it return (see taintCallablePassedToParam())
+     *
+     * @param string $cased_function_id the function called, or the callable invoked
+     * @param ?MethodIdentifier $method_id the method called, whose callable parameters are keyed by its body
+     * @psalm-capabilities read-props
+     */
+    public static function getCallableParamReturnNode(
+        Codebase $codebase,
+        FunctionLikeStorage $function_storage,
+        string $cased_function_id,
+        ?MethodIdentifier $method_id,
+        int $param_offset,
+        ?CodeLocation $specialization_location,
+    ): DataFlowNode {
+        $callable_param_method_id = $cased_function_id;
+        $callable_param_storage = $function_storage;
+
+        // keyed as the body of the method keys its callable parameters (see ArgumentAnalyzer)
+        $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
+        if ($method_id && $declaring_method_id) {
+            $callable_param_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
+            $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
+        }
+
+        return DataFlowNode::getForCallableParamReturn(
+            $callable_param_method_id,
+            DataFlowNode::getParameterOffset(
+                $callable_param_storage,
+                $function_storage->params[$param_offset],
+                $param_offset,
+            ),
+            $callable_param_storage,
+            $specialization_location,
+        );
     }
 
     /**

@@ -229,9 +229,16 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The flows of arguments into keyed stores: `@psalm-flow ($value) -> Store::$data[$key]`. `key` is the offset of
      * the parameter giving the key (a list of keys with `is_list`), null for any key; `params` are those whose
-     * arguments are stored.
+     * arguments are stored, `callable_params` those whose callables' results are (`($compute()) -> ...`).
      *
-     * @var list<array{store: string, key: ?int, is_list: bool, params: list<int>, path_type: string}>
+     * @var list<array{
+     *     store: string,
+     *     key: ?int,
+     *     is_list: bool,
+     *     params: list<int>,
+     *     callable_params: list<int>,
+     *     path_type: string,
+     * }>
      */
     public array $taint_store_writes = [];
 

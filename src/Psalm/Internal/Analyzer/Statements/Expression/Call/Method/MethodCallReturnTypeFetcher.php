@@ -633,6 +633,9 @@ final class MethodCallReturnTypeFetcher
             $args,
             $node_location,
             $return_type_candidate,
+            $cased_method_id,
+            $method_id,
+            $specialize_call ? $node_location : null,
         );
     }
 

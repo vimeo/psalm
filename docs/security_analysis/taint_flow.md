@@ -131,7 +131,9 @@ echo Cache::get('title_1');   // no issue
 ```
 
 + `($value, $other) -> Store::$data[$key]` stores the arguments given to `$value` and `$other` under the key given to
-  `$key`, and `Store::$data[$key] -> return` makes a call return what is stored under its key.
+  `$key`, and `Store::$data[$key] -> return` makes a call return what is stored under its key. `($compute())` stores
+  what the callables given to `$compute` return, as in a [return value hint](#callable-result-to-return-value-hint):
+  `($compute()) -> Cache::$data[$key]` for a cache computing what it stores when the key is missing.
 + A store is named like a static property, `Class::$name`. The class and the property need not exist; `self` and
   `static` name the class declaring the method. The methods of other classes (a wrapper, an extension) share a store
   by naming the same one.

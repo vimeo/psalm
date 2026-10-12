@@ -25,6 +25,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -135,19 +136,30 @@ final class TaintStore
         }
 
         $params = [];
+        $callable_params = [];
         foreach (preg_split('/, ?/', substr($source, 1, -1)) ?: [] as $source_param) {
-            $offset = self::getParamOffset($storage, substr(trim($source_param), 1));
-            if ($offset !== null) {
+            $source_param = trim($source_param);
+            // what the callables given to the parameter return
+            $is_callable = str_ends_with($source_param, '()');
+            $offset = self::getParamOffset($storage, substr($source_param, 1, $is_callable ? -2 : null));
+            if ($offset === null) {
+                continue;
+            }
+
+            if ($is_callable) {
+                $callable_params[] = $offset;
+            } else {
                 $params[] = $offset;
             }
         }
 
-        if ($params !== []) {
+        if ($params !== [] || $callable_params !== []) {
             $storage->taint_store_writes[] = [
                 'store' => $store,
                 'key' => $key,
                 'is_list' => $is_list,
                 'params' => $params,
+                'callable_params' => $callable_params,
                 'path_type' => $path_type,
             ];
         }
@@ -159,6 +171,10 @@ final class TaintStore
      * Connects what the call stores to the store, and returns $return_type holding what the call reads from it
      *
      * @param array<array-key, Arg> $args
+     * @param ?string $cased_function_id the function-like called, whose callable parameters can be stored; null when
+     *                                   the callables given to it aren't followed (a builtin)
+     * @param ?MethodIdentifier $method_id the method called
+     * @param ?CodeLocation $specialization_location the call, when the callables given to it are its own
      */
     public static function taintCall(
         StatementsAnalyzer $statements_analyzer,
@@ -167,6 +183,9 @@ final class TaintStore
         array $args,
         CodeLocation $call_location,
         Union $return_type,
+        ?string $cased_function_id = null,
+        ?MethodIdentifier $method_id = null,
+        ?CodeLocation $specialization_location = null,
     ): Union {
         if ($storage->taint_store_writes === [] && $storage->taint_store_reads === []) {
             return $return_type;
@@ -193,6 +212,25 @@ final class TaintStore
                         $has_value = true;
                     }
                 }
+            }
+
+            // what the callables given return, as the calls of the parameter in the body get it
+            foreach ($write['callable_params'] as $offset) {
+                if ($cased_function_id === null || !isset($args[$offset])) {
+                    continue;
+                }
+
+                $callable_return_node = FunctionCallReturnTypeFetcher::getCallableParamReturnNode(
+                    $statements_analyzer->getCodebase(),
+                    $storage,
+                    $cased_function_id,
+                    $method_id,
+                    $offset,
+                    $specialization_location,
+                );
+                $graph->addNode($callable_return_node);
+                $graph->addPath($callable_return_node, $write_node, $write['path_type']);
+                $has_value = true;
             }
 
             if (!$has_value) {
