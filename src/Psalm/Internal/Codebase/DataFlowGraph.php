@@ -27,7 +27,9 @@ abstract class DataFlowGraph
      * print_r(), ...): an open array assignment, under no key in particular, that a fetch or conversion of the
      * string takes, as the string holds everything the value holds. The edge from such a string to the value a
      * builtin decodes from it (json_decode(), unserialize(), ...) closes it, so the fetches of the decoded value
-     * tell its keys apart again.
+     * tell its keys apart again. The decoded value can be an array or an object again: a flow of user input taking
+     * such an edge gets back the taints only those can hold (TaintKind::ARRAY_ONLY), which the string's type took
+     * away.
      */
     public const SERIALIZATION_PATH_TYPE = 'serialization';
     public const UNSERIALIZATION_PATH_TYPE = 'unserialization';

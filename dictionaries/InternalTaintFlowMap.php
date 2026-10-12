@@ -8,7 +8,9 @@ declare(strict_types=1);
  * declared by stubs carry `@psalm-flow` annotations in the stubs instead. A parameter given as a key flows through
  * the path its value names, as `@psalm-flow ($array) -(arrayvalue-fetch)-> return` does: what returns one of the
  * values (or keys) of an array takes only its taints, and what encodes all of a value in a string, or decodes it back,
- * goes through `serialization` and `unserialization` (see DataFlowGraph::SERIALIZATION_PATH_TYPE).
+ * goes through `serialization` and `unserialization` (see DataFlowGraph::SERIALIZATION_PATH_TYPE). What builds an
+ * array or an object out of a string, such as parse_ini_string(), goes through `unserialization` too: decoded user
+ * input can be a NoSQL query.
  *
  * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>
  */
@@ -62,7 +64,7 @@ return [
     'dirname' => ['path'],
     'fgetcsv' => ['stream'],
     'fscanf' => ['stream'],
-    'parse_ini_string' => ['ini_string'],
+    'parse_ini_string' => ['ini_string' => 'unserialization'],
     // standard: variables and serialization
     'get_object_vars' => ['object'],
     'serialize' => ['value' => 'serialization'],

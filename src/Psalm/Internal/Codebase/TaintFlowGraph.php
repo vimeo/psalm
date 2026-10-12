@@ -1693,6 +1693,7 @@ final class TaintFlowGraph extends DataFlowGraph
         $source_taints = $generated_source->taints;
         $context = $generated_source->context;
         $open_assignments = self::getOpenAssignments($generated_source->path_types);
+        $input_taints = $codebase->getInputTaints();
 
         foreach ($this->forward_edges[$generated_source->id] as $to_id => $path) {
             if (!isset($this->nodes[$to_id])) {
@@ -1708,6 +1709,12 @@ final class TaintFlowGraph extends DataFlowGraph
             $new_taints = ($source_taints | $path->added_taints) & ~$path->removed_taints;
 
             $path_type = $path->type;
+
+            // what a builtin decodes from a string (json_decode(), unserialize(), parse_str(), ...) can be an array
+            // or an object again, whatever the string's type took away: decoded user input can be a NoSQL query
+            if ($path_type === self::UNSERIALIZATION_PATH_TYPE && ($new_taints & $input_taints) !== 0) {
+                $new_taints |= TaintKind::ARRAY_ONLY;
+            }
 
             if (self::shouldIgnoreFetch($path_type, 'arraykey', $open_assignments)) {
                 continue;

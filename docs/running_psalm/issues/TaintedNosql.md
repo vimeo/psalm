@@ -14,6 +14,10 @@ Because of this, only values that can hold an array (or object) can carry the `n
 a scalar can never be a NoSQL query, so casting user input to `string`, `int`, `float` or
 `bool` removes the taint.
 
+A string decoded back into an array or an object can be a query again, though: what
+`json_decode()`, `unserialize()`, `parse_str()`, `parse_ini_string()` and the other decoders
+build out of user input carries the `nosql` taint, whatever the type of the string was.
+
 ```php
 <?php
 
@@ -24,6 +28,17 @@ function getUser(MongoDB\Driver\Manager $manager): array {
 
     return $manager->executeQuery("db.users", $query)->toArray();
 }
+```
+
+```php
+<?php
+
+function findUsers(string $json): MongoDB\Driver\Query {
+    // {"username": {"$ne": null}} decodes to a query operator
+    return new MongoDB\Driver\Query(json_decode($json, true));
+}
+
+findUsers((string) $_POST["filter"]);
 ```
 
 ## Safe alternatives

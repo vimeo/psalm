@@ -24,7 +24,7 @@ them:
 ```xml
 <taintAnalysis>
   <taints>
-    <taint name="nosql_json">
+    <taint name="file_upload">
       <alias name="input" />
     </taint>
     <taint name="session_id" />
