@@ -71,16 +71,7 @@ final class MethodCapabilitiesProviderEvent
      */
     public function getCallArgs(): array
     {
-        $args = [];
-
-        // a first-class callable (`$a->m(...)`) has a placeholder instead
-        foreach ($this->stmt->args as $arg) {
-            if ($arg instanceof PhpParser\Node\Arg) {
-                $args[] = $arg;
-            }
-        }
-
-        return $args;
+        return $this->stmt->getArgs();
     }
 
     public function getContext(): Context
