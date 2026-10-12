@@ -64,4 +64,10 @@ final class AtomicMethodCallAnalysisResult
     public array $too_few_arguments_method_ids = [];
 
     public bool $can_memoize = false;
+
+    /**
+     * Whether a memoizable result may be changed by a later call that mutates its receiver, i.e.
+     * whether it comes from a mutation-free method of a class that is not immutable
+     */
+    public bool $memoized_result_has_mutations = false;
 }

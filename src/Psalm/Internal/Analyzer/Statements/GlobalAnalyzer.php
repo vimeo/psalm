@@ -126,6 +126,14 @@ final class GlobalAnalyzer
                     $taint_flow_graph->addPath($global_node, $assignment_node, '=');
                 }
 
+                if ($var_id === '$argv') {
+                    $taint_flow_graph->addPath(
+                        VariableFetchAnalyzer::getArgvTaintSource($statements_analyzer, $taint_flow_graph, $var),
+                        $assignment_node,
+                        '=',
+                    );
+                }
+
                 // what the variable holds when it stops referencing the global, as for a by-reference parameter
                 $context->by_ref_param_out_nodes[$var_id] = self::getGlobalNode($taint_flow_graph, $var_name);
             }

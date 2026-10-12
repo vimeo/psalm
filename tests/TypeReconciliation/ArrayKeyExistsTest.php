@@ -23,6 +23,56 @@ final class ArrayKeyExistsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
+                'code' => '<?php
+                    function f(array $options): string {
+                        if (!isset($options["b"]) || !is_string($options["b"])) {
+                            return "";
+                        }
+                        if (isset($options["a"])) {
+                            return "a";
+                        } else {
+                            /** @psalm-check-type-exact $options[\'b\'] = string */;
+                            return $options["b"];
+                        }
+                    }
+
+                    /** @param array<string, int|string> $options */
+                    function g(array $options): string {
+                        $options["b"] = "x";
+                        if (!array_key_exists("a", $options)) {
+                            /** @psalm-check-type-exact $options[\'b\'] = \'x\' */;
+                            return $options["b"];
+                        }
+                        return "";
+                    }',
+            ],
+            'negatedArrayKeyExistsRemovesAnOptionalKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (array_key_exists("descr", $a)) {
+                            throw new \Exception();
+                        }
+                        return $a;
+                    }',
+            ],
+            'negatedIssetRemovesAnOptionalKeyThatCantBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (!isset($a["descr"])) {
+                            return $a;
+                        }
+                        throw new \Exception();
+                    }',
+            ],
             'arrayKeyExistsOnStringArrayShouldInformArrayness' => [
                 'code' => '<?php
                     /**
@@ -538,6 +588,20 @@ final class ArrayKeyExistsTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @param array{phone: string, descr?: ?string} $a
+                     * @return array{phone: string}
+                     */
+                    function withoutDescr(array $a): array {
+                        if (!isset($a["descr"])) {
+                            return $a;
+                        }
+                        throw new \Exception();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnWrongKey' => [
                 'code' => '<?php
                     if (rand(0,1)) {

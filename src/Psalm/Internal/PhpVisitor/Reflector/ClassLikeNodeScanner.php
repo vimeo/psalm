@@ -573,7 +573,7 @@ final class ClassLikeNodeScanner
 
                         if (!Capabilities::isPurityType($lower)
                             || ($bound !== null
-                                && !Capabilities::allows(Capabilities::fromType($bound), $lower_capabilities))
+                                && !Capabilities::allowsAnyOf(Capabilities::fromType($bound), $lower_capabilities))
                         ) {
                             $storage->docblock_issues[] = new InvalidDocblock(
                                 'The lower bound of the purity template ' . $purity_template . ' must be a set'
@@ -621,8 +621,11 @@ final class ClassLikeNodeScanner
 
                     if (!Capabilities::isPurityType($default)
                         || ($bound !== null
-                            && !Capabilities::allows(Capabilities::fromType($bound), Capabilities::fromType($default)))
-                        || !Capabilities::allows(
+                            && !Capabilities::allowsAnyOf(
+                                Capabilities::fromType($bound),
+                                Capabilities::fromType($default),
+                            ))
+                        || !Capabilities::allowsAnyOf(
                             Capabilities::fromType($default),
                             $storage->template_lower_bounds[$purity_template] ?? Capabilities::NONE,
                         )
@@ -926,7 +929,7 @@ final class ClassLikeNodeScanner
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
                     && $deferred_capabilities === []
-                    && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities));
+                    && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $docblock_info->capabilities));
 
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
             $storage->override_method_visibility = $docblock_info->override_method_visibility;

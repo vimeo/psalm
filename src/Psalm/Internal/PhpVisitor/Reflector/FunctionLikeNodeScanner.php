@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\ThisReturnVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
@@ -339,6 +340,14 @@ final class FunctionLikeNodeScanner
                     && $last_stmt->expr->name === 'this'
                 ) {
                     $storage->probably_fluent = true;
+                }
+
+                // the body only proves what the method returns if no override can replace it
+                if (!$storage->is_static
+                    && ($storage->final || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                    && ThisReturnVisitor::returnsOnlyThis($stmt->stmts)
+                ) {
+                    $storage->returns_this = true;
                 }
             }
         }

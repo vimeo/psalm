@@ -143,6 +143,19 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
+     * overrides of the classes extending it: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForDispatch(string $cased_method_id, int $argument_offset): self
+    {
+        $label = 'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1);
+
+        return self::make(strtolower($label), $label, null);
+    }
+
+    /**
      * What the global variable $name holds, for the whole program as a static property's: what any function-like
      * writes to it through `global` or $GLOBALS, any other may read. A null $name stands for the globals written by
      * a name not known statically, which may be any of them.
@@ -539,6 +552,19 @@ final class DataFlowNode implements Stringable
             $specialization_key,
             $taints,
         );
+    }
+
+    /**
+     * What the virtual calls of a method on a class get from the methods of the classes extending it that may run
+     * instead: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForReturnDispatch(string $cased_method_id): self
+    {
+        $label = 'dispatch of ' . $cased_method_id;
+
+        return self::make(strtolower($label), $label, null);
     }
 
     /**

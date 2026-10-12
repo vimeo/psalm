@@ -15,8 +15,6 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 
-use function in_array;
-
 /**
  * @internal
  */
@@ -39,7 +37,7 @@ final class EvalAnalyzer
         if ($expr_type) {
             if ($statements_analyzer->taint_flow_graph
                 && $expr_type->parent_nodes
-                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !$codebase->config->suppressesIssueType($statements_analyzer->getSuppressedIssues(), 'TaintedInput')
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt->expr);
 
