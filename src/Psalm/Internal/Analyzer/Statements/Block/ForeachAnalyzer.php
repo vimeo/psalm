@@ -80,7 +80,6 @@ use function array_search;
 use function array_values;
 use function assert;
 use function implode;
-use function in_array;
 use function is_string;
 use function reset;
 use function stripos;
@@ -1150,11 +1149,11 @@ final class ForeachAnalyzer
 
                     $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                         $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
                         $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
                     }
 
@@ -1174,11 +1173,11 @@ final class ForeachAnalyzer
                     $context->inside_call = $was_inside_call;
                     $context->inside_type_only_call = $was_inside_type_only_call;
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
 
-                    if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
                     }
 
@@ -1610,7 +1609,7 @@ final class ForeachAnalyzer
             $capabilities,
             null,
             self::collectClassTemplateParams($codebase, $iterator_atomic_type, $expr, $declaring_method_id),
-            MethodCallPurityAnalyzer::isThis($expr),
+            MethodCallPurityAnalyzer::isReceiverThis($expr),
             MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $expr),
         );
     }
@@ -1668,11 +1667,11 @@ final class ForeachAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
         }
 
@@ -1692,11 +1691,11 @@ final class ForeachAnalyzer
         $context->inside_call = $was_inside_call;
         $context->inside_type_only_call = $was_inside_type_only_call;
 
-        if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
         }
 
-        if (!in_array('PossiblyUndefinedMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
         }
 

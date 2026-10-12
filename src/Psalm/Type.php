@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -285,12 +286,18 @@ abstract class Type
         return TLiteralString::make($value);
     }
 
+    /**
+     * @psalm-taint-specialize
+     */
     public static function getString(?string $value = null): Union
     {
         return new Union([$value === null ? new TString() : self::getAtomicStringFromLiteral($value)]);
     }
 
-    /** @return TLiteralString|TNonEmptyString|TNonFalsyString */
+    /**
+     * @return TLiteralString|TNonEmptyString|TNonFalsyString
+     * @psalm-taint-specialize
+     */
     public static function getAtomicStringFromLiteral(string $value, bool $from_docblock = false): TString
     {
         $config = Config::getInstance();
@@ -732,6 +739,12 @@ abstract class Type
             if ($type_1->reference_free && $type_2->reference_free) {
                 $combined_type->reference_free = true;
             }
+
+            if ($type_1->closure_state && $type_2->closure_state) {
+                $combined_type->closure_state = true;
+            }
+
+            $combined_type->int_mask_bits = IntMask::combineBits($type_1, $type_2);
 
             if ($both_failed_reconciliation) {
                 $combined_type->failed_reconciliation = true;

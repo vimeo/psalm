@@ -160,6 +160,8 @@ final class BinaryOpAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Spaceship) {
+            IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $stmt);
+
             $statements_analyzer->node_data->setType(
                 $stmt,
                 new Union(
@@ -192,6 +194,8 @@ final class BinaryOpAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
             $statements_analyzer->node_data->setType($stmt, Type::getBool());
+
+            IntMaskComparisonAnalyzer::analyzeBinaryOp($statements_analyzer, $stmt);
 
             $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
             $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);

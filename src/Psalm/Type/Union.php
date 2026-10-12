@@ -20,6 +20,7 @@ use function get_object_vars;
  * @psalm-type TProperties=array{
  *      from_docblock?: bool,
  *      from_calculation?: bool,
+ *      int_mask_bits?: ?int,
  *      from_property?: bool,
  *      from_static_property?: bool,
  *      from_global_state?: bool,
@@ -37,6 +38,7 @@ use function get_object_vars;
  *      from_template_default?: bool,
  *      by_ref?: bool,
  *      reference_free?: bool,
+ *      closure_state?: bool,
  *      allow_mutations?: bool,
  *      has_mutations?: bool,
  *      different?: bool,
@@ -64,6 +66,13 @@ final class Union implements TypeNode
      * Whether the type originated from integer calculation
      */
     public bool $from_calculation = false;
+
+    /**
+     * Set when the value is a bit set: declared as `int-mask` or `int-mask-of`, or derived from one
+     * with `&`, `|` or `^`. It holds every bit the value may have. Such a value may only be compared
+     * by value with 0 (no bit set) or with all of these bits, see IntMaskComparison.
+     */
+    public ?int $int_mask_bits = null;
 
     /**
      * Whether the type originated from a property
@@ -174,6 +183,13 @@ final class Union implements TypeNode
 
     public bool $reference_free = false;
 
+    /**
+     * Whether the value is state of the closure being analysed: a closure captured it from the
+     * scope that created it (it was reference-free there), so only that scope and the closure hold
+     * it, as a class instance holds the objects it creates. Writing it needs write-this-props.
+     */
+    public bool $closure_state = false;
+
     public bool $allow_mutations = true;
 
     public bool $has_mutations = true;
@@ -202,6 +218,7 @@ final class Union implements TypeNode
         "\0" . self::class . "\0" . 'types' => 'types',
         'from_docblock' => 'from_docblock',
         'from_calculation' => 'from_calculation',
+        'int_mask_bits' => 'int_mask_bits',
         'from_property' => 'from_property',
         'from_static_property' => 'from_static_property',
         'from_global_state' => 'from_global_state',
@@ -223,6 +240,7 @@ final class Union implements TypeNode
         "\0" . self::class . "\0" . 'literal_float_types' => 'literal_float_types',
         'by_ref' => 'by_ref',
         'reference_free' => 'reference_free',
+        'closure_state' => 'closure_state',
         'allow_mutations' => 'allow_mutations',
         'has_mutations' => 'has_mutations',
         "\0" . self::class . "\0" . 'id' => 'id',
