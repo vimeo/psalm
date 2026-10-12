@@ -88,6 +88,17 @@ abstract class DataFlowGraph
 
             for ($x = count($previous_path_types)-1; $x >= 0; $x--) {
                 $previous_path_type = $previous_path_types[$x];
+                if ($previous_path_type === self::SERIALIZATION_PATH_TYPE && $expression_type !== 'property') {
+                    if ($fetch_nesting === 0) {
+                        // a fetch from a string holding all of the value
+                        return false;
+                    }
+
+                    $fetch_nesting--;
+
+                    continue;
+                }
+
                 if ($previous_path_type === $expression_type . '-assignment') {
                     if ($fetch_nesting === 0) {
                         // a value assigned under any key: the keys of the array don't hold it
@@ -124,7 +135,8 @@ abstract class DataFlowGraph
      * replaced (see ArrayAssignmentAnalyzer::getOverwritePathType()), drops a flow whose open assignments are
      * $open_assignments: a flow of that value, the innermost of them being the assignment to that key. A flow of
      * the array's other values, of its keys or of all of it goes on, also one whose key isn't known, which may be
-     * that one.
+     * that one. A flow of all of it is not under that key anymore, though (see
+     * TaintFlowGraph::fetchesAnOverwrittenKey()).
      *
      * @param list<string> $open_assignments
      * @psalm-pure

@@ -120,6 +120,7 @@ At the default level (2), these are reported as info. Set `errorLevel="1"` to tr
 
  - [ImmutableDependency](issues/ImmutableDependency.md)
  - [IncompatibleTypeParameters](issues/IncompatibleTypeParameters.md)
+ - [IntMaskComparison](issues/IntMaskComparison.md)
  - [InvalidClassConstantType](issues/InvalidClassConstantType.md)
  - [LessSpecificClassConstantType](issues/LessSpecificClassConstantType.md)
  - [LessSpecificReturnType](issues/LessSpecificReturnType.md)

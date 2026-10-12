@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -313,6 +314,17 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
+            if ($has_inverted_key_exists || $has_inverted_isset) {
+                self::reconcileAbsentArrayValue(
+                    $new_type_parts,
+                    $key,
+                    $existing_types,
+                    $changed_var_ids,
+                    $statements_analyzer,
+                    $code_location,
+                );
+            }
+
             if (!$did_type_exist && $result_type->isNever()) {
                 continue;
             }
@@ -320,7 +332,7 @@ class Reconciler
             // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
             $can_carry_taints = (!$result_type->hasScalarType()
                     || ($result_type->hasString() && !$result_type->hasLiteralString()))
-                && ($result_type->getTaintsToRemove() & TaintKind::ALL_INPUT) !== TaintKind::ALL_INPUT;
+                && $result_type->getTaintsToRemove($codebase->getInputTaints()) !== $codebase->getInputTaints();
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
@@ -696,6 +708,7 @@ class Reconciler
      *
      * @param array<string, Union>  $existing_keys
      * @param array<string,mixed>       $new_assertions
+     * @psalm-suppress ComplexMethod
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -1175,6 +1188,127 @@ class Reconciler
                     $issue,
                     $suppressed_issues,
                 );
+            }
+        }
+    }
+
+    /**
+     * When $new_type_parts assert that the offset $key of an array variable has no value, as array_key_exists()
+     * or isset() negated do (one of its clauses is that assertion alone), the array, in $existing_types, holds
+     * nothing under that literal offset: its shape loses the offset where that was optional (where isset() is
+     * negated, only if the offset can't hold null), and in the taint graph it no longer holds what it held under
+     * that offset, like once that offset is unset (see UnsetAnalyzer).
+     *
+     * @param array<array<int, Assertion>> $new_type_parts
+     * @param array<string, Union> $existing_types
+     * @param array<string, bool> $changed_var_ids
+     */
+    private static function reconcileAbsentArrayValue(
+        array $new_type_parts,
+        string $key,
+        array &$existing_types,
+        array &$changed_var_ids,
+        StatementsAnalyzer $statements_analyzer,
+        ?CodeLocation $code_location,
+    ): void {
+        $is_absent = false;
+        $has_no_value = false;
+
+        foreach ($new_type_parts as $new_type_part_parts) {
+            if (count($new_type_part_parts) !== 1) {
+                continue;
+            }
+
+            foreach ($new_type_part_parts as $new_type_part_part) {
+                $is_absent = $is_absent || $new_type_part_part instanceof ArrayKeyDoesNotExist;
+                $has_no_value = $has_no_value || $new_type_part_part instanceof IsNotIsset;
+            }
+        }
+
+        if (!$is_absent && !$has_no_value) {
+            return;
+        }
+
+        $key_parts = self::breakUpPathIntoParts($key);
+
+        if (count($key_parts) !== 4 || $key_parts[1] !== '[' || $key_parts[3] !== ']') {
+            return;
+        }
+
+        [$base_key, , $array_key] = $key_parts;
+
+        if (!isset($existing_types[$base_key])) {
+            return;
+        }
+
+        if ($array_key[0] === '\'' || $array_key[0] === '"') {
+            $offset = TLiteralString::make(substr($array_key, 1, -1));
+        } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
+            $offset = new TLiteralInt((int) $array_key);
+        } else {
+            return;
+        }
+
+        $base_type = $existing_types[$base_key];
+        $new_base_type = $base_type;
+        $atomic_types = [];
+        $shape_changed = false;
+
+        foreach ($base_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray
+                && !$atomic_type->is_list
+                && isset($atomic_type->properties[$offset->value])
+                && $atomic_type->properties[$offset->value]->possibly_undefined
+                && ($is_absent
+                    || (!$atomic_type->properties[$offset->value]->isNullable()
+                        && !$atomic_type->properties[$offset->value]->hasMixed()))
+            ) {
+                $properties = $atomic_type->properties;
+                unset($properties[$offset->value]);
+
+                if ($properties) {
+                    $atomic_type = $atomic_type->setProperties($properties);
+                } elseif ($atomic_type->fallback_params) {
+                    $atomic_type = new TArray($atomic_type->fallback_params);
+                } else {
+                    $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
+                }
+
+                $shape_changed = true;
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        // the array changes only where its shape loses the offset
+        if ($shape_changed) {
+            $new_base_type = $new_base_type->setTypes($atomic_types);
+        }
+
+        $graph = $statements_analyzer->taint_flow_graph;
+
+        if ($graph && $code_location && $base_type->parent_nodes) {
+            $path_type = ArrayAssignmentAnalyzer::getOverwritePathType($base_type, $offset);
+
+            // only an array surely holds nothing under the offset then
+            if ($path_type !== '=') {
+                $node = DataFlowNode::getForAssignment($base_key . ' without ' . $array_key, $code_location);
+                $graph->addNode($node);
+
+                foreach ($base_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $node, $path_type);
+                }
+
+                $new_base_type = $new_base_type->setParentNodes([$node->id => $node]);
+            }
+        }
+
+        if ($new_base_type !== $base_type) {
+            $existing_types[$base_key] = $new_base_type;
+
+            // what the array holds under its other offsets stays known where only its data flow changed
+            if ($shape_changed) {
+                $changed_var_ids[$base_key] = true;
             }
         }
     }
