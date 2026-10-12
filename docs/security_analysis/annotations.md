@@ -1,5 +1,9 @@
 # Security analysis annotations
 
+An annotation missing its arguments, naming a parameter the function doesn't have, or a `@psalm-flow` that is neither
+`(...) -> ...` nor `proxy ...` is reported as [`InvalidDocblock`](../running_psalm/issues/InvalidDocblock.md), also
+in stubs, which are otherwise not analyzed.
+
 ## `@psalm-taint-source <taint-type>`
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).

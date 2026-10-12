@@ -2837,6 +2837,46 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintSinkWithoutParameter' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html */
+                    function show(string $text): void {}',
+                'error_message' => 'expects 2 arguments',
+            ],
+            'taintSinkOfAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $txt */
+                    function show(string $text): void {}',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'assertUntaintedOfAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-assert-untainted $txt */
+                    function check(string $text): void {}',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'flowFromAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow ($txt) -> return */
+                    function wrap(string $text): string {
+                        return "<b>" . $text . "</b>";
+                    }',
+                'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'proxyFlowFromAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow proxy exec($cmd) */
+                    function run(string $command): void {}',
+                'error_message' => 'names $cmd, which is not a parameter',
+            ],
+            'flowOfNoKnownForm' => [
+                'code' => '<?php
+                    /** @psalm-flow $text to return */
+                    function wrap(string $text): string {
+                        return "<b>" . $text . "</b>";
+                    }',
+                'error_message' => 'is neither',
+            ],
             'taintGlobalsItemSetInOneFunctionAndReadInAnother' => [
                 'code' => '<?php
                     function stash(): void {

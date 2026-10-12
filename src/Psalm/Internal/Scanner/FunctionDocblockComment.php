@@ -123,6 +123,14 @@ final class FunctionDocblockComment
     public array $assert_untainted_params = [];
 
     /**
+     * What is wrong with the taint annotations (`@psalm-taint-*`): FunctionLikeDocblockScanner reports it, also in
+     * stubs
+     *
+     * @var list<non-empty-string>
+     */
+    public array $invalid_taint_annotations = [];
+
+    /**
      * Whether or not to ignore the nullability of this function's return type
      */
     public bool $ignore_nullable_return = false;

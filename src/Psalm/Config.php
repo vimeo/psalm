@@ -2510,6 +2510,7 @@ final class Config
             return;
         }
 
+        $scanned_file_paths = [];
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
@@ -2517,6 +2518,7 @@ final class Config
                 $file_path = 'phar://'. substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            $scanned_file_paths[] = $file_path;
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2526,6 +2528,8 @@ final class Config
         $codebase->scanFiles();
 
         $codebase->register_stub_files = false;
+
+        self::reportInvalidStubTaintAnnotations($codebase, $scanned_file_paths);
 
         $progress->debug('Finished registering preloaded stub files' . "\n");
     }
@@ -2613,6 +2617,7 @@ final class Config
             }
         }
 
+        $scanned_file_paths = [];
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
@@ -2620,6 +2625,7 @@ final class Config
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            $scanned_file_paths[] = $file_path;
         }
 
         $progress->debug('Registering stub files' . "\n");
@@ -2629,6 +2635,28 @@ final class Config
         $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
+
+        self::reportInvalidStubTaintAnnotations($codebase, $scanned_file_paths);
+    }
+
+    /**
+     * Reports what is wrong with the taint annotations of the stubs (see FunctionLikeDocblockScanner): the files the
+     * config reports issues in don't include them, as they aren't analyzed. They are kept in the storage of the stubs,
+     * so that they are reported again when it comes from the cache.
+     *
+     * @param list<string> $file_paths
+     */
+    private static function reportInvalidStubTaintAnnotations(Codebase $codebase, array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            if (!$codebase->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            foreach ($codebase->file_storage_provider->get($file_path)->invalid_stub_taint_annotations as $issue) {
+                IssueBuffer::maybeAddStubIssue($issue);
+            }
+        }
     }
 
     public function getCacheDirectory(): ?string

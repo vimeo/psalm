@@ -1505,4 +1505,40 @@ final class StubTest extends TestCase
         $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * Stubs aren't analyzed, so the docblock issues of their taint annotations are reported once they are scanned
+     */
+    public function testInvalidTaintAnnotationOfAStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('@psalm-taint-sink expects 2 arguments in docblock for invalid_taint_sink');
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/invalid_taint_annotations.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                invalid_taint_sink("text");',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

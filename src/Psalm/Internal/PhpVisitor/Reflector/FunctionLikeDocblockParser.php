@@ -228,12 +228,7 @@ final class FunctionLikeDocblockParser
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            '@psalm-taint-sink expects 2 arguments',
-                            $code_location,
-                        ),
-                    );
+                    $info->invalid_taint_annotations[] = '@psalm-taint-sink expects 2 arguments';
                 }
             }
         }
@@ -273,12 +268,7 @@ final class FunctionLikeDocblockParser
                         $info->taint_source_types |= $t;
                     }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            '@psalm-taint-source expects 1 argument',
-                            $code_location,
-                        ),
-                    );
+                    $info->invalid_taint_annotations[] = '@psalm-taint-source expects 1 argument';
                 }
             }
         } elseif (isset($parsed_docblock->tags['return-taint'])) {
@@ -304,12 +294,7 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);
                 if ($param === '') {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            '@psalm-taint-unescape expects 1 argument',
-                            $code_location,
-                        ),
-                    );
+                    $info->invalid_taint_annotations[] = '@psalm-taint-unescape expects 1 argument';
                 } else {
                     $info->added_taints[] = $param;
                 }
@@ -320,12 +305,7 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 if ($param === '') {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            '@psalm-taint-escape expects 1 argument',
-                            $code_location,
-                        ),
-                    );
+                    $info->invalid_taint_annotations[] = '@psalm-taint-escape expects 1 argument';
                 } elseif ($param[0] === '(') {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 

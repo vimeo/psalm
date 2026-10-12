@@ -151,6 +151,20 @@ final class IssueBuffer
     }
 
     /**
+     * Adds an issue of a stub file, unless the config or a plugin suppresses it: the files whose issues the config
+     * reports don't include the stubs, which aren't analyzed (see Config::visitStubFiles())
+     */
+    public static function maybeAddStubIssue(CodeIssue $e): void
+    {
+        $event = new BeforeAddIssueEvent($e, false, ProjectAnalyzer::getInstance()->getCodebase());
+        if (Config::getInstance()->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return;
+        }
+
+        self::add($e);
+    }
+
+    /**
      * This will add an issue to be emitted if it's not suppressed
      *
      * @param string[]  $suppressed_issues
