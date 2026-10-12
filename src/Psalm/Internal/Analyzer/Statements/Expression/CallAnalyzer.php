@@ -811,6 +811,31 @@ abstract class CallAnalyzer
                                 $assertion_rule = $assertion_rule->setAtomicType($atomic_type);
                                 $orred_rules[] = $assertion_rule;
                             }
+                        } elseif ($assertion_rule instanceof IsType) {
+                            $asserted_type = $context->vars_in_scope[$assertion_var_id] ?? null;
+                            if ($asserted_type
+                                && !UnionTypeComparator::canExpressionTypesBeIdentical(
+                                    $codebase,
+                                    $assertion_type,
+                                    $asserted_type,
+                                )
+                            ) {
+                                IssueBuffer::maybeAdd(
+                                    new TypeDoesNotContainType(
+                                        $asserted_type->getId() . ' is not contained by '
+                                        . $assertion_type->getId(),
+                                        new CodeLocation($statements_analyzer->getSource(), $expr),
+                                        $asserted_type->getId() . ' ' . $assertion_type->getId(),
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                );
+                            }
+
+                            // being of a union is being of one of its types, as for a union written out
+                            // in the docblock, whether or not the variable is in scope yet
+                            foreach ($assertion_type->getAtomicTypes() as $atomic_type) {
+                                $orred_rules[] = new IsType($atomic_type);
+                            }
                         } elseif (isset($context->vars_in_scope[$assertion_var_id])) {
                             $asserted_type = $context->vars_in_scope[$assertion_var_id];
                             if ($assertion_rule instanceof IsIdentical) {
@@ -832,27 +857,6 @@ abstract class CallAnalyzer
                                 }
                                 foreach ($intersection->getAtomicTypes() as $atomic_type) {
                                     $orred_rules[] = new IsIdentical($atomic_type);
-                                }
-                            } elseif ($assertion_rule instanceof IsType) {
-                                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
-                                    $codebase,
-                                    $assertion_type,
-                                    $asserted_type,
-                                )) {
-                                    IssueBuffer::maybeAdd(
-                                        new TypeDoesNotContainType(
-                                            $asserted_type->getId() . ' is not contained by '
-                                            . $assertion_type->getId(),
-                                            new CodeLocation($statements_analyzer->getSource(), $expr),
-                                            $asserted_type->getId() . ' ' . $assertion_type->getId(),
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues(),
-                                    );
-                                }
-
-                                // being of a union is being of one of its types
-                                foreach ($assertion_type->getAtomicTypes() as $atomic_type) {
-                                    $orred_rules[] = new IsType($atomic_type);
                                 }
                             } else {
                                 // Ignore negations and loose assertions with union types
