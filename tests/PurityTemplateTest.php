@@ -27,6 +27,25 @@ final class PurityTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'newOfAClassExtendingAPurityTemplatedClassResolvesItsUnboundTemplatesToTheirBounds' => [
+                'code' => '<?php
+                    /** @psalm-purity-template P */
+                    abstract class View {}
+
+                    /**
+                     * @template TValue
+                     * @template TContext as array
+                     */
+                    final class Table extends View {
+                        /** @param list<TValue> $values */
+                        public function __construct(public array $values) {}
+                    }
+
+                    /** @return Table<int, array> */
+                    function make(): Table {
+                        return new Table([1]);
+                    }',
+            ],
             'callbackStoredByAMethodWideningThePurityTemplate' => [
                 'code' => '<?php
                     /**

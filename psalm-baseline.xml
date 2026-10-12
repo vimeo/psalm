@@ -1118,7 +1118,6 @@
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName()]]></code>
-      <code><![CDATA[$storage->template_extended_params]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
