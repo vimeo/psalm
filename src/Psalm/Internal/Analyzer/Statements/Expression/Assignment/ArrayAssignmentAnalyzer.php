@@ -652,12 +652,29 @@ final class ArrayAssignmentAnalyzer
                 $value_graph = $graph instanceof CombinedFlowGraph ? $graph->variable_use_graph : null;
             }
 
-            if ($value_graph === null) {
-                return;
-            }
-
             if (count($key_values) > self::MAX_KEY_VALUES) {
                 $key_values = [];
+            }
+
+            // a global variable, by its name if known: also where the value is a copy of the elements of another array
+            if ($expr->var instanceof Variable
+                && $expr->var->name === 'GLOBALS'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                foreach ($key_values === [] ? [null] : $key_values as $key_value) {
+                    $global_node = GlobalAnalyzer::getGlobalNode(
+                        $taint_flow_graph,
+                        $key_value === null ? null : (string) $key_value->value,
+                    );
+
+                    foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
+                        $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
+                    }
+                }
+            }
+
+            if ($value_graph === null) {
+                return;
             }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
@@ -711,23 +728,6 @@ final class ArrayAssignmentAnalyzer
                                 $removed_taints,
                             );
                         }
-                    }
-                }
-            }
-
-            // a global variable, by its name if known
-            if ($expr->var instanceof Variable
-                && $expr->var->name === 'GLOBALS'
-                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-            ) {
-                foreach ($key_values === [] ? [null] : $key_values as $key_value) {
-                    $global_node = GlobalAnalyzer::getGlobalNode(
-                        $taint_flow_graph,
-                        $key_value === null ? null : (string) $key_value->value,
-                    );
-
-                    foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
-                        $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
                     }
                 }
             }
