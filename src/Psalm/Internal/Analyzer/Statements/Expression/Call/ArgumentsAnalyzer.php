@@ -1462,7 +1462,11 @@ final class ArgumentsAnalyzer
             // a builtin reading from outside the program into this parameter (socket_recv(), ...)
             if ($source_param !== null
                 && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-                && ($source_taints = InternalTaintSourceMap::getTaints($method_id, $source_param)) !== 0
+                && ($source_taints = InternalTaintSourceMap::getTaints(
+                    $method_id,
+                    $source_param,
+                    $statements_analyzer->getCodebase()->getInputTaints(),
+                )) !== 0
             ) {
                 $by_ref_out_type = InternalTaintSourceMap::addSource(
                     $graph,
@@ -2410,6 +2414,7 @@ final class ArgumentsAnalyzer
             ? FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
                 ConcatAnalyzer::getLiteralValues($format_type),
                 $args,
+                $statements_analyzer->getCodebase()->getInputTaints(),
                 $function_id === 'vprintf',
             )
             : [];

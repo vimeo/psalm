@@ -23,7 +23,6 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -146,7 +145,7 @@ final class ConstFetchAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
-        $taints = TaintKind::ALL_INPUT;
+        $taints = $codebase->getInputTaints();
         $taints |= $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $taints &= ~$codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 

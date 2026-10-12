@@ -89,7 +89,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -481,7 +480,7 @@ final class ArrayFetchAnalyzer
         $taint_source = DataFlowNode::getForTaint(
             $label,
             new CodeLocation($statements_analyzer->getSource(), $var),
-            TaintKind::ALL_INPUT,
+            $statements_analyzer->getCodebase()->getInputTaints(),
         );
         $graph->addSource($taint_source);
 

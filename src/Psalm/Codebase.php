@@ -710,6 +710,37 @@ final class Codebase
     }
 
     /**
+     * Registers the custom taints psalm.xml declares (`<taintAnalysis><taints>`), and adds each to the aliases of
+     * built-in taints it names. Called before scanning, once the taints of a previous run are restored (see
+     * importCustomTaints()).
+     *
+     * @internal
+     */
+    public function registerConfigTaints(): void
+    {
+        foreach ($this->config->custom_taints as $taint_type => $aliases) {
+            $taint = $this->getOrRegisterTaint($taint_type);
+
+            foreach ($aliases as $alias) {
+                $this->taint_map[$alias] = ($this->taint_map[$alias] ?? 0) | $taint;
+            }
+        }
+    }
+
+    /**
+     * The taints of user input, those of `input`: the built-in kinds (TaintKind::ALL_INPUT), and the custom taints
+     * psalm.xml adds to it. The built-in sources of user input give them, and the types that can't hold user input
+     * remove them (see Union::getTaintsToRemove()).
+     *
+     * @psalm-mutation-free
+     */
+    public function getInputTaints(): int
+    {
+        // the built-in aliases are always registered, this is for Psalm
+        return $this->taint_map['input'] ?? TaintKind::ALL_INPUT;
+    }
+
+    /**
      * Register an alias taint name based on one or more pre-existing taints.
      *
      * @throws AssertionError if the passed taint is already registered or if the alias uses some unregistered taints.
@@ -2782,13 +2813,14 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints of the source, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
@@ -2797,7 +2829,7 @@ final class Codebase
         $source = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSource($source);
@@ -2806,12 +2838,13 @@ final class Codebase
     }
 
     /**
+     * @param ?int $taints the taints the sink must not be given, those of user input (see getInputTaints()) if null
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addTaintSink(
         string $taint_id,
         CodeLocation $code_location,
-        int $taints = TaintKind::ALL_INPUT,
+        ?int $taints = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;
@@ -2820,7 +2853,7 @@ final class Codebase
         $sink = DataFlowNode::getForTaint(
             $taint_id,
             $code_location,
-            $taints,
+            $taints ?? $this->getInputTaints(),
         );
 
         $this->taint_flow_graph->addSink($sink);

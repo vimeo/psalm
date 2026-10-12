@@ -36,7 +36,6 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -569,7 +568,7 @@ final class VariableFetchAnalyzer
         $taint_source = DataFlowNode::getForTaint(
             '$argv',
             new CodeLocation($statements_analyzer->getSource(), $stmt),
-            TaintKind::ALL_INPUT,
+            $statements_analyzer->getCodebase()->getInputTaints(),
         );
         $graph->addSource($taint_source);
 
@@ -587,19 +586,20 @@ final class VariableFetchAnalyzer
             return;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         // Add superglobal server taint sources
         if ($var_name === '$_GET'
             || $var_name === '$_POST'
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
         ) {
-            $taints = TaintKind::ALL_INPUT;
+            $taints = $codebase->getInputTaints();
         } else {
             $taints = 0;
         }
 
         // Trigger event to possibly get more/less taints
-        $codebase = $statements_analyzer->getCodebase();
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -610,7 +610,7 @@ final class VariableFetchAnalyzer
         $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
         if ($var_name === '$_FILES' && $taints === 0) {
-            $type = self::taintFiles($graph, $taint_location, $type);
+            $type = self::taintFiles($graph, $taint_location, $type, $codebase->getInputTaints());
             return;
         }
 
@@ -657,10 +657,16 @@ final class VariableFetchAnalyzer
     /**
      * The client chooses the names of the files it uploads, `$_FILES[...]['name']`, unlike the entries of an
      * uploaded file the server writes (see also ArrayFetchAnalyzer::taintSuperGlobalFetch()).
+     *
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
      */
-    private static function taintFiles(TaintFlowGraph $graph, CodeLocation $taint_location, Union $type): Union
-    {
-        $taint_source = DataFlowNode::getForTaint('$_FILES[][\'name\']', $taint_location, TaintKind::ALL_INPUT);
+    private static function taintFiles(
+        TaintFlowGraph $graph,
+        CodeLocation $taint_location,
+        Union $type,
+        int $input_taints,
+    ): Union {
+        $taint_source = DataFlowNode::getForTaint('$_FILES[][\'name\']', $taint_location, $input_taints);
         $name_node = DataFlowNode::getForAssignment('$_FILES[] name', $taint_location);
         $files_node = DataFlowNode::getForAssignment('$_FILES', $taint_location);
 
