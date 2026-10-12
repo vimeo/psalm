@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 
 /**
@@ -123,12 +124,12 @@ final class FunctionDocblockComment
     public array $assert_untainted_params = [];
 
     /**
-     * What is wrong with the taint annotations (`@psalm-taint-*`): FunctionLikeDocblockScanner reports it, also in
-     * stubs
+     * What is wrong with the docblock: FunctionLikeDocblockScanner keeps it in the storage of the function-like, whose
+     * analysis reports it (Config reports those of the stubs, which aren't analyzed)
      *
-     * @var list<non-empty-string>
+     * @var list<InvalidDocblock>
      */
-    public array $invalid_taint_annotations = [];
+    public array $docblock_issues = [];
 
     /**
      * Whether or not to ignore the nullability of this function's return type

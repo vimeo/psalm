@@ -2,7 +2,7 @@
 
 An annotation missing its arguments, naming a parameter the function doesn't have, or a `@psalm-flow` that is neither
 `(...) -> ...` nor `proxy ...` is reported as [`InvalidDocblock`](../running_psalm/issues/InvalidDocblock.md), also
-in stubs, which are otherwise not analyzed.
+in the stubs of the config and of plugins (see [stubs](../running_psalm/configuration.md#stubs)).
 
 ## `@psalm-taint-source <taint-type>`
 

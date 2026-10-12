@@ -100,6 +100,8 @@ final class FunctionLikeDocblockScanner
         bool $fake_method,
         string $cased_function_id,
     ): void {
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
         $config = Config::getInstance();
@@ -383,13 +385,13 @@ final class FunctionLikeDocblockScanner
             $param_names[$param_storage->name] = true;
         }
 
-        $invalid_taint_annotations = $docblock_info->invalid_taint_annotations;
+        $invalid_annotations = [];
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
 
             if (!isset($param_names[$param_name])) {
-                $invalid_taint_annotations[] = '@psalm-taint-sink names ' . $taint_sink_param['name']
+                $invalid_annotations[] = '@psalm-taint-sink names ' . $taint_sink_param['name']
                     . ', which is not a parameter';
             }
 
@@ -440,7 +442,7 @@ final class FunctionLikeDocblockScanner
             $param_name = substr($untainted_assert_param['name'], 1);
 
             if (!isset($param_names[$param_name])) {
-                $invalid_taint_annotations[] = '@psalm-assert-untainted names ' . $untainted_assert_param['name']
+                $invalid_annotations[] = '@psalm-assert-untainted names ' . $untainted_assert_param['name']
                     . ', which is not a parameter';
             }
 
@@ -454,19 +456,14 @@ final class FunctionLikeDocblockScanner
         foreach ($docblock_info->flows as $flow) {
             $invalid_flow = self::getInvalidFlow($flow, $param_names);
             if ($invalid_flow !== null) {
-                $invalid_taint_annotations[] = $invalid_flow;
+                $invalid_annotations[] = $invalid_flow;
             }
         }
 
-        foreach ($invalid_taint_annotations as $invalid_taint_annotation) {
-            self::addInvalidTaintAnnotation(
-                $codebase,
-                $storage,
-                $file_storage,
-                new InvalidDocblock(
-                    $invalid_taint_annotation . ' in docblock for ' . $cased_function_id,
-                    $location,
-                ),
+        foreach ($invalid_annotations as $invalid_annotation) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $invalid_annotation . ' in docblock for ' . $cased_function_id,
+                $location,
             );
         }
 
@@ -1359,34 +1356,10 @@ final class FunctionLikeDocblockScanner
 
             $storage->conditionally_removed_taints[] = $removed_taint;
         } catch (TypeParseTreeException $e) {
-            self::addInvalidTaintAnnotation(
-                $codebase,
-                $storage,
-                $file_storage,
-                new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
-                ),
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
-        }
-    }
-
-    /**
-     * Stubs aren't analyzed, which reports the docblock issues of the code: Config::visitStubFiles() reports those
-     * of their taint annotations, so that a sink or a flow a stub gets wrong isn't silently lost.
-     *
-     * @psalm-capabilities read-props|write-props
-     */
-    private static function addInvalidTaintAnnotation(
-        Codebase $codebase,
-        FunctionLikeStorage $storage,
-        FileStorage $file_storage,
-        InvalidDocblock $issue,
-    ): void {
-        if ($codebase->register_stub_files) {
-            $file_storage->invalid_stub_taint_annotations[] = $issue;
-        } else {
-            $storage->docblock_issues[] = $issue;
         }
     }
 

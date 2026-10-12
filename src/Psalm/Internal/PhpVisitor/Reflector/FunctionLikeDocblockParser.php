@@ -16,7 +16,6 @@ use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
-use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
 
@@ -134,11 +133,9 @@ final class FunctionLikeDocblockParser
                         $info->params[] = $info_param;
                     }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location,
-                        ),
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        'Badly-formatted @param in docblock for ' . $cased_function_id,
+                        $code_location,
                     );
                 }
             }
@@ -154,6 +151,7 @@ final class FunctionLikeDocblockParser
                     $comment_text,
                     $cased_function_id,
                     $code_location,
+                    $info,
                 );
 
                 if ($parsed === null) {
@@ -228,7 +226,10 @@ final class FunctionLikeDocblockParser
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
                 } else {
-                    $info->invalid_taint_annotations[] = '@psalm-taint-sink expects 2 arguments';
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-taint-sink expects 2 arguments in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
                 }
             }
         }
@@ -268,7 +269,10 @@ final class FunctionLikeDocblockParser
                         $info->taint_source_types |= $t;
                     }
                 } else {
-                    $info->invalid_taint_annotations[] = '@psalm-taint-source expects 1 argument';
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-taint-source expects 1 argument in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
                 }
             }
         } elseif (isset($parsed_docblock->tags['return-taint'])) {
@@ -294,7 +298,10 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);
                 if ($param === '') {
-                    $info->invalid_taint_annotations[] = '@psalm-taint-unescape expects 1 argument';
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-taint-unescape expects 1 argument in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
                 } else {
                     $info->added_taints[] = $param;
                 }
@@ -305,7 +312,10 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
                 if ($param === '') {
-                    $info->invalid_taint_annotations[] = '@psalm-taint-escape expects 1 argument';
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-taint-escape expects 1 argument in docblock for ' . $cased_function_id,
+                        $code_location,
+                    );
                 } elseif ($param[0] === '(') {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
@@ -362,11 +372,9 @@ final class FunctionLikeDocblockParser
                         ];
                     }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Badly-formatted @param in docblock for ' . $cased_function_id,
-                            $code_location,
-                        ),
+                    $info->docblock_issues[] = new InvalidDocblock(
+                        'Badly-formatted @param in docblock for ' . $cased_function_id,
+                        $code_location,
                     );
                 }
             }
@@ -679,11 +687,9 @@ final class FunctionLikeDocblockParser
                 $info->return_type_start = $offset;
                 $info->return_type_end = $end;
             } else {
-                IssueBuffer::maybeAdd(
-                    new InvalidDocblock(
-                        'Badly-formatted @param in docblock for ' . $cased_function_id,
-                        $code_location,
-                    ),
+                $info->docblock_issues[] = new InvalidDocblock(
+                    'Badly-formatted @param in docblock for ' . $cased_function_id,
+                    $code_location,
                 );
             }
 
@@ -819,6 +825,7 @@ final class FunctionLikeDocblockParser
         string $comment_text,
         string $cased_function_id,
         CodeLocation $code_location,
+        FunctionDocblockComment $info,
     ): ?array {
         $line_parts = CommentAnalyzer::splitDocLine($param);
 
@@ -827,11 +834,9 @@ final class FunctionLikeDocblockParser
         }
 
         if (count($line_parts) <= 1) {
-            IssueBuffer::maybeAdd(
-                new InvalidDocblock(
-                    'Badly-formatted @' . $tag . ' in docblock for ' . $cased_function_id,
-                    $code_location,
-                ),
+            $info->docblock_issues[] = new InvalidDocblock(
+                'Badly-formatted @' . $tag . ' in docblock for ' . $cased_function_id,
+                $code_location,
             );
 
             return null;

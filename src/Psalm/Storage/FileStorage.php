@@ -8,7 +8,6 @@ use Psalm\Aliases;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Issue\CodeIssue;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Type\Union;
 
 /**
@@ -80,13 +79,6 @@ final class FileStorage
      * @var list<CodeIssue>
      */
     public array $docblock_issues = [];
-
-    /**
-     * What is wrong with the taint annotations of a stub, which isn't analyzed: Config::visitStubFiles() reports it
-     *
-     * @var list<InvalidDocblock>
-     */
-    public array $invalid_stub_taint_annotations = [];
 
     /**
      * @var array<string, TypeAlias>
