@@ -669,6 +669,70 @@ final class PurityTemplateTest extends TestCase
                         return PureBase::make();
                     }',
             ],
+            'newStaticOfClassWithPurityTemplateBoundByChildren' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @psalm-purity-template C
+                     */
+                    abstract class Base {
+                        /** @psalm-pure */
+                        public function __construct() {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template C
+                         */
+                        public static function make(): static {
+                            return new static();
+                        }
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template C
+                         */
+                        public function run(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @extends Base[pure] */
+                    final class PureBase extends Base {}
+
+                    /**
+                     * @psalm-purity-template T
+                     * @extends Base[T]
+                     */
+                    final class ArbitraryBase extends Base {}
+
+                    /** @psalm-pure */
+                    function makePure(): PureBase {
+                        $b = PureBase::make();
+                        /** @psalm-check-type-exact $b = PureBase */;
+                        $b->run();
+                        return $b;
+                    }
+
+                    /**
+                     * @param ArbitraryBase[pure] $b
+                     * @psalm-pure
+                     */
+                    function runPure(ArbitraryBase $b): int {
+                        return $b->run();
+                    }
+
+                    /** @param ArbitraryBase[io] $b */
+                    function runIo(ArbitraryBase $b): void {
+                        $b->run();
+                    }
+
+                    function makeArbitrary(): ArbitraryBase {
+                        $b = ArbitraryBase::make();
+                        /** @psalm-check-type-exact $b = ArbitraryBase */;
+                        $b->run();
+                        return $b;
+                    }',
+            ],
             'classPurityTemplateDefault' => [
                 'code' => '<?php
                     /** @psalm-purity-template C(pure) <= write-this-props|write-props */
@@ -3163,6 +3227,37 @@ final class PurityTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnsafeInstantiation',
+            ],
+            'newStaticOfClassPassingItsPurityTemplateOnIsImpureByDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @psalm-purity-template C
+                     */
+                    abstract class Base {
+                        /** @psalm-pure */
+                        public function __construct() {}
+
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template C
+                         */
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @psalm-purity-template T
+                     * @extends Base[T]
+                     */
+                    final class ArbitraryBase extends Base {}
+
+                    /** @psalm-pure */
+                    function makeArbitrary(): ArbitraryBase {
+                        return ArbitraryBase::make();
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
         ];
     }
