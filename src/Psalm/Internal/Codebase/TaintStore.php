@@ -807,6 +807,9 @@ final class TaintStore
     }
 
     /**
+     * The node of what a store holds under keys of a kind: like a static property, it is shared by all the calls,
+     * so what one specialized call leaves in it, another may read
+     *
      * @param 'E'|'U'|'P' $kind
      * @psalm-capabilities read-props|write-props
      */
@@ -814,6 +817,7 @@ final class TaintStore
     {
         $node = DataFlowNode::getForPropertyFetch($store . '[' . $kind . ':' . $known . ']');
         $graph->addNode($node);
+        $graph->addSharedState($node);
 
         return $node;
     }
