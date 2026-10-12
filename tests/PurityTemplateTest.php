@@ -46,6 +46,34 @@ final class PurityTemplateTest extends TestCase
                         return new Table([1]);
                     }',
             ],
+            'newOfAClassGivingItsPurityTemplateToItsParentResolvesItLikeAClassExtendingNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P
+                     */
+                    abstract class View {}
+
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P(pure) <= io
+                     * @extends View[P]<TValue>
+                     */
+                    final class Table extends View {
+                        /**
+                         * @param list<TValue> $values
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(public readonly array $values = []) {}
+                    }
+
+                    $table = new Table([1]);
+                    $empty = new Table();',
+                'assertions' => [
+                    '$table===' => 'Table[io]<1>',
+                    '$empty===' => 'Table[io]<mixed>',
+                ],
+            ],
             'callbackStoredByAMethodWideningThePurityTemplate' => [
                 'code' => '<?php
                     /**
