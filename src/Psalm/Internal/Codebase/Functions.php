@@ -457,7 +457,11 @@ final class Functions
             return $listed_capabilities;
         }
 
-        // one whose stub declares what it does (see stubs/extensions/mongodb.phpstub), not only that it's pure
+        // A builtin whose stub declares what it may do with a purity annotation (the subscriber functions of
+        // stubs/extensions/mongodb.phpstub: `@psalm-capabilities read-globals|write-globals`) is charged exactly that,
+        // instead of what the guesses below make of it: all capabilities for a call without arguments, or for a
+        // function returning void. ImpureFunctionsList, above, still takes precedence. A stub declaring no capability
+        // (`@psalm-pure`) only says the function is pure, and is still subject to the guesses.
         if ($stub_storage !== null
             && $stub_storage->has_mutations_annotation
             && $stub_storage->capabilities !== Capabilities::NONE
