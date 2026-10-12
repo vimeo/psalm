@@ -176,7 +176,10 @@ final class VariableFetchAnalyzer
                 self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
                 $context->vars_in_scope[$var_name] = $type;
-                $statements_analyzer->node_data->setType($stmt, $type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+                );
 
                 return true;
             }
@@ -185,7 +188,10 @@ final class VariableFetchAnalyzer
 
             self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
-            $statements_analyzer->node_data->setType($stmt, $type);
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::taintGlobals($statements_analyzer, $var_name, $type, $array_assignment),
+            );
             $context->vars_in_scope[$var_name] = $type;
             $context->vars_possibly_in_scope[$var_name] = true;
 
@@ -389,10 +395,46 @@ final class VariableFetchAnalyzer
 
             self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
 
+            if ($var_name === '$argv'
+                && $context->is_global
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $argv_source = self::getArgvTaintSource($statements_analyzer, $graph, $stmt);
+                $stmt_type = $stmt_type->addParentNodes([$argv_source->id => $argv_source]);
+            }
+
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            if ($stmt_type->possibly_undefined
+                && !$stmt_type->possibly_undefined_from_try
+                && !$context->inside_isset
+                && !$context->inside_unset
+                // passed by reference, which defines it
+                && (!$context->inside_assignment || $array_assignment)
+                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
+                && !$codebase->alter_code
+            ) {
+                IssueBuffer::maybeAdd(
+                    $context->is_global
+                        ? new PossiblyUndefinedGlobalVariable(
+                            'Possibly undefined global variable ' . $var_name . ', first seen on line '
+                                . $first_appearance->getLineNumber(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $var_name,
+                        )
+                        : new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $var_name . ', first seen on line '
+                                . $first_appearance->getLineNumber(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                    $statements_analyzer->getSuppressedIssues(),
+                    (bool) $statements_analyzer->getBranchPoint($var_name),
+                );
+            }
 
             if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
                 if ($context->is_global) {
@@ -515,6 +557,25 @@ final class VariableFetchAnalyzer
         }
     }
 
+    /**
+     * The arguments of a CLI script are its user's input, and PHP builds $argv from the query string with
+     * register_argc_argv (see also ArrayFetchAnalyzer::USER_CONTROLLED_SERVER_KEYS).
+     */
+    public static function getArgvTaintSource(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        PhpParser\Node\Expr\Variable $stmt,
+    ): DataFlowNode {
+        $taint_source = DataFlowNode::getForTaint(
+            '$argv',
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            TaintKind::ALL_INPUT,
+        );
+        $graph->addSource($taint_source);
+
+        return $taint_source;
+    }
+
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -567,6 +628,30 @@ final class VariableFetchAnalyzer
         $type = $type->setParentNodes([
             $taint_source->id => $taint_source,
         ]);
+    }
+
+    /**
+     * $GLOBALS holds what the whole program writes to the global variables (see GlobalAnalyzer::getGlobalNode()).
+     * The variable in scope doesn't, and neither does $GLOBALS assigned to: reading a global by its name gets
+     * what is written to that name only (see ArrayFetchAnalyzer::taintArrayFetch()).
+     */
+    private static function taintGlobals(
+        StatementsAnalyzer $statements_analyzer,
+        string $var_name,
+        Union $type,
+        bool $array_assignment,
+    ): Union {
+        if ($var_name !== '$GLOBALS'
+            || $array_assignment
+            || !($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+        ) {
+            return $type;
+        }
+
+        $globals_node = DataFlowNode::getForGlobals();
+        $graph->addNode($globals_node);
+
+        return $type->addParentNodes([$globals_node->id => $globals_node]);
     }
 
     /**

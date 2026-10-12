@@ -153,7 +153,7 @@ final class FunctionLikeDocblockScanner
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
-            && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
+            && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_assumed = false;
@@ -1082,6 +1082,11 @@ final class FunctionLikeDocblockScanner
 
             if ($storage instanceof MethodStorage) {
                 $storage->has_docblock_return_type = true;
+
+                // the type of `$this` is `static`, but the annotation also promises the receiver itself
+                if ($docblock_return_type === '$this' && !$fake_method && !$storage->is_static) {
+                    $storage->returns_this = true;
+                }
             }
 
             if ($storage->signature_return_type) {
@@ -1221,6 +1226,11 @@ final class FunctionLikeDocblockScanner
 
                         foreach ($source_params as $source_param) {
                             $source_param = substr($source_param, 1);
+
+                            if ($source_param === 'this') {
+                                $storage->return_source_this = $path_type;
+                                continue;
+                            }
 
                             foreach ($storage->params as $i => $param_storage) {
                                 if ($param_storage->name === $source_param) {

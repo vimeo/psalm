@@ -137,6 +137,7 @@ final class YieldAnalyzer
 
             self::taintGenerator(
                 $statements_analyzer,
+                $context,
                 $statements_analyzer->node_data->getType($stmt->key),
                 'arraykey-assignment',
             );
@@ -151,6 +152,7 @@ final class YieldAnalyzer
 
             self::taintGenerator(
                 $statements_analyzer,
+                $context,
                 $statements_analyzer->node_data->getType($stmt->value),
                 'arrayvalue-assignment',
             );
@@ -275,7 +277,7 @@ final class YieldAnalyzer
             }
         }
 
-        self::taintYieldResult($statements_analyzer, $stmt);
+        self::taintYieldResult($statements_analyzer, $context, $stmt);
 
         return true;
     }
@@ -285,9 +287,10 @@ final class YieldAnalyzer
      */
     private static function taintYieldResult(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         PhpParser\Node\Expr\Yield_ $stmt,
     ): void {
-        $sent_node = self::getSentNode($statements_analyzer);
+        $sent_node = self::getSentNode($statements_analyzer, $context);
         $yield_type = $statements_analyzer->node_data->getType($stmt);
 
         if (!$sent_node || !$yield_type || !$statements_analyzer->taint_flow_graph) {
@@ -308,9 +311,12 @@ final class YieldAnalyzer
     /**
      * What is sent to a generator delegating to another (`yield from`) is sent to the latter
      */
-    public static function taintDelegatedSends(StatementsAnalyzer $statements_analyzer, Union $delegate_type): void
-    {
-        $sent_node = self::getSentNode($statements_analyzer);
+    public static function taintDelegatedSends(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Union $delegate_type,
+    ): void {
+        $sent_node = self::getSentNode($statements_analyzer, $context);
 
         if (!$sent_node || !$delegate_type->parent_nodes || !$statements_analyzer->taint_flow_graph) {
             return;
@@ -322,7 +328,7 @@ final class YieldAnalyzer
     /**
      * The node of what is sent to the generators of the function-like analyzed, recorded in the taint graph
      */
-    private static function getSentNode(StatementsAnalyzer $statements_analyzer): ?DataFlowNode
+    private static function getSentNode(StatementsAnalyzer $statements_analyzer, Context $context): ?DataFlowNode
     {
         $graph = $statements_analyzer->taint_flow_graph;
         $source = $statements_analyzer->getSource();
@@ -337,7 +343,7 @@ final class YieldAnalyzer
             return null;
         }
 
-        $cased_method_id = $source->getCorrectlyCasedMethodId();
+        $cased_method_id = self::getCasedGeneratorId($source, $context);
 
         $sent_node = DataFlowNode::getForGeneratorSend($cased_method_id, $storage);
 
@@ -354,6 +360,7 @@ final class YieldAnalyzer
      */
     public static function taintGenerator(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         ?Union $yielded_type,
         string $path_type,
     ): void {
@@ -373,12 +380,23 @@ final class YieldAnalyzer
             return;
         }
 
-        $generator_node = DataFlowNode::getForMethodReturn($source->getCorrectlyCasedMethodId(), $storage);
+        $generator_node = DataFlowNode::getForMethodReturn(self::getCasedGeneratorId($source, $context), $storage);
 
         $statements_analyzer->data_flow_graph->addNode($generator_node);
 
         foreach ($yielded_type->parent_nodes as $parent_node) {
             $statements_analyzer->data_flow_graph->addPath($parent_node, $generator_node, $path_type);
         }
+    }
+
+    /**
+     * The id of the function-like a generator is returned by: the body of a method of a trait is analyzed as one
+     * of each class using it (see FunctionLikeAnalyzer::getBodyMethodId())
+     */
+    private static function getCasedGeneratorId(FunctionLikeAnalyzer $source, Context $context): string
+    {
+        return $source->getSource() instanceof TraitAnalyzer
+            ? $source->getCorrectlyCasedMethodId($context->self)
+            : $source->getCorrectlyCasedMethodId();
     }
 }

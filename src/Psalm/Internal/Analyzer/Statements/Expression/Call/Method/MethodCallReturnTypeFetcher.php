@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -368,7 +369,12 @@ final class MethodCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer, $name_expr);
 
-        $is_declaring = (string) $declaring_method_id === (string) $method_id;
+        // the nodes of the body of the method are keyed by the class it is analyzed as one of, which for a method
+        // of a trait is the class using it
+        $body_method_id = FunctionLikeAnalyzer::getBodyMethodId($codebase, $method_id);
+        $cased_body_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
+
+        $is_declaring = (string) $body_method_id === (string) $method_id;
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $var_expr,
@@ -382,6 +388,13 @@ final class MethodCallReturnTypeFetcher
             $method_storage,
             $node_location,
         );
+
+        // what the object holds before the call, which a specialized call may replace in the context below
+        $receiver_parent_nodes = $method_storage->return_source_this === null
+            ? []
+            : (($var_id !== null && isset($context->vars_in_scope[$var_id])
+                ? $context->vars_in_scope[$var_id]
+                : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
 
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
@@ -408,7 +421,7 @@ final class MethodCallReturnTypeFetcher
                     // from this node: this call enters it with its own specialization, like the arguments do, so
                     // that what it returns is this object's and not every object's
                     $this_parent_node = DataFlowNode::getForAssignment(
-                        '$this in ' . (string) $declaring_method_id,
+                        '$this in ' . (string) $body_method_id,
                         $method_storage->location,
                         $call_specialization_key,
                     );
@@ -442,14 +455,12 @@ final class MethodCallReturnTypeFetcher
 
                 $taint_flow_graph->addNode($method_call_node);
 
-                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
                 // what the method leaves in the object, which isn't what it returns
                 if ($var_node !== null && $method_storage->location) {
                     $taint_flow_graph->addNode($var_node);
 
                     $this_out_node = DataFlowNode::getForAssignment(
-                        '$this out of ' . $cased_declaring_method_id,
+                        '$this out of ' . $cased_body_method_id,
                         $method_storage->location,
                         $method_call_node->specialization_key,
                     );
@@ -467,7 +478,7 @@ final class MethodCallReturnTypeFetcher
                     if ($method_storage->stubbed) {
                         $taint_flow_graph->addPath(
                             DataFlowNode::getForAssignment(
-                                '$this in ' . (string) $declaring_method_id,
+                                '$this in ' . (string) $body_method_id,
                                 $method_storage->location,
                                 $call_specialization_key,
                             ),
@@ -479,7 +490,7 @@ final class MethodCallReturnTypeFetcher
 
                 if (!$is_declaring) {
                     $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_declaring_method_id,
+                        $cased_body_method_id,
                         $method_storage,
                         null,
                         0,
@@ -513,10 +524,8 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if (!$is_declaring) {
-                    $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
                     $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                        $cased_declaring_method_id,
+                        $cased_body_method_id,
                         $method_storage,
                         $node_location,
                     );
@@ -547,10 +556,8 @@ final class MethodCallReturnTypeFetcher
             );
 
             if (!$is_declaring) {
-                $cased_declaring_method_id = $codebase->methods->getCasedMethodId($declaring_method_id);
-
                 $declaring_method_call_node = DataFlowNode::getForMethodReturn(
-                    $cased_declaring_method_id,
+                    $cased_body_method_id,
                     $method_storage,
                     null,
                 );
@@ -574,6 +581,21 @@ final class MethodCallReturnTypeFetcher
 
         if (!$taint_flow_graph) {
             return;
+        }
+
+        // `@psalm-flow ($this) -> return`: what the method returns holds what the object it is called on holds
+        if ($method_storage->return_source_this !== null) {
+            foreach ($receiver_parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath(
+                    $parent_node,
+                    $method_call_node,
+                    $method_storage->return_source_this,
+                    $added_taints | $method_storage->added_taints,
+                    // what the native return type cannot hold, since PHP enforces it
+                    $removed_taints | $method_storage->removed_taints
+                        | ($method_storage->signature_return_type?->getTaintsToRemove() ?? 0),
+                );
+            }
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(

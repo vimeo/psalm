@@ -11,6 +11,7 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -32,6 +33,7 @@ use function count;
 use function in_array;
 use function is_string;
 use function spl_object_id;
+use function str_contains;
 
 /**
  * @internal
@@ -209,6 +211,9 @@ final class LoopAnalyzer
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
 
+            // the types the variables the loop defines start an iteration with
+            $loop_var_types_at_start = [];
+
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
 
@@ -263,6 +268,14 @@ final class LoopAnalyzer
                             $has_changes = true;
                         }
 
+                        // the next iteration starts with what this one left in the variable (see below)
+                        if (self::isLoopVar($var_id)
+                            && (!isset($loop_var_types_at_start[$var_id])
+                                || !$type->setPossiblyUndefined(false)->equals($loop_var_types_at_start[$var_id]))
+                        ) {
+                            $has_changes = true;
+                        }
+
                         // if we're in a do block we don't want to remove vars before evaluating
                         // the where conditional
                         if (!$is_do) {
@@ -280,9 +293,32 @@ final class LoopAnalyzer
                     break;
                 }
 
-                // remove vars that were defined in the foreach
+                // the variables the loop defines are possibly defined where the next iteration starts, holding what
+                // an iteration left in them where it ended or continued: the other ones defined in the loop go
+                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($original_parent_context->vars_in_scope[$var_id])
+                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
+                        && !$is_do
+                    ) {
+                        $vars_to_remove[] = $var_id;
+                    }
+                }
+
                 foreach ($vars_to_remove as $var_id) {
-                    $continue_context->removePossibleReference($var_id);
+                    if (!self::isLoopVar($var_id) || isset($continue_context->references_in_scope[$var_id])) {
+                        $continue_context->removePossibleReference($var_id);
+
+                        continue;
+                    }
+
+                    $loop_var_types_at_start[$var_id] = Type::combineUnionTypes(
+                        $continue_context->vars_in_scope[$var_id] ?? null,
+                        $loop_scope->possibly_defined_loop_vars[$var_id] ?? null,
+                    )->setPossiblyUndefined(false);
+                    $continue_context->vars_in_scope[$var_id] = $loop_var_types_at_start[$var_id]
+                        ->setPossiblyUndefined(true);
+                    $continue_context->vars_possibly_in_scope[$var_id] = true;
                 }
 
                 $continue_context->clauses = $pre_loop_context->clauses;
@@ -694,6 +730,18 @@ final class LoopAnalyzer
         }
 
         return $always_enters_loop;
+    }
+
+    /**
+     * A variable the loop can define, rather than an array item, a property or a static property of one, or a
+     * superglobal, which the loop only reads (and which is always defined)
+     */
+    private static function isLoopVar(string $var_id): bool
+    {
+        return !str_contains($var_id, '[')
+            && !str_contains($var_id, '->')
+            && !str_contains($var_id, '::')
+            && !VariableFetchAnalyzer::isSuperGlobal($var_id);
     }
 
     private static function updateLoopScopeContexts(

@@ -62,6 +62,76 @@ final class ArrayAssignmentTest extends TestCase
                     '$resultOpt===' => 'array{a?: true, b?: true}',
                 ],
             ],
+            'unknownKeyAssignmentForgetsTheOffsetsItMayBe' => [
+                'code' => '<?php
+                    /** @var array<string, string> $a */
+                    $a = [];
+                    $a["x"] = 1;
+                    $a[(string) rand()] = "b";
+                    $b = $a["x"];
+                    /** @psalm-check-type-exact $b = 1|string */;
+
+                    /** @var array<string, array<string, int|string>> $e */
+                    $e = [];
+                    $e["x"]["y"] = 1;
+                    $e["x"][(string) rand()] = "b";
+                    $f = $e["x"]["y"];
+                    /** @psalm-check-type-exact $f = \'b\'|1 */;
+
+                    $g = ["y" => 1];
+                    $g["x"] = 1;
+                    $g[] = "b";
+                    $h = $g["x"];
+                    /** @psalm-check-type-exact $h = 1 */;
+
+                    /** @var array<string, int|string> $i */
+                    $i = [];
+                    $k = (string) rand();
+                    $i[$k] = 1;
+                    $i["x"] = "b";
+                    $j = $i[$k];
+                    /** @psalm-check-type-exact $j = int|string */;',
+            ],
+            'unknownKeyAssignmentKeepsTheOffsetsItCannotBe' => [
+                'code' => '<?php
+                    /** @var array{x: array<string, int>, y: int} $a */
+                    $a = ["x" => [], "y" => 1];
+                    $a["z"] = "z";
+                    $a["x"][(string) rand()] = 1;
+                    $b = $a["y"];
+                    /** @psalm-check-type-exact $b = int */;
+                    $c = $a["z"];
+                    /** @psalm-check-type-exact $c = \'z\' */;
+
+                    /** @var array<string, array<string, int|string>> $d */
+                    $d = [];
+                    $d["any"]["x"] = 5;
+                    $d["any"]["y"] = 6;
+                    $d[(string) rand()]["x"] = "s";
+                    $e = $d["any"]["x"];
+                    /** @psalm-check-type-exact $e = int|string */;
+                    $f = $d["any"]["y"];
+                    /** @psalm-check-type-exact $f = 6 */;
+
+                    /** @var array<string, array<string, int|string>> $g */
+                    $g = [];
+                    $k = (string) rand();
+                    $g[$k]["other"] = 5;
+                    $g[$k]["lit"] = 6;
+                    $g["x"]["lit"] = "s";
+                    $h = $g[$k]["other"];
+                    /** @psalm-check-type-exact $h = 5 */;
+                    $i = $g[$k]["lit"];
+                    /** @psalm-check-type-exact $i = int|string */;
+
+                    /** @var array<int, array<string, int|string>> $j */
+                    $j = [];
+                    $n = rand();
+                    $j[$n]["x"] = 5;
+                    $j[]["x"] = "s";
+                    $l = $j[$n]["x"];
+                    /** @psalm-check-type-exact $l = 5 */;',
+            ],
             'assignUnionOfLiteralsClassKeys' => [
                 'code' => '<?php
                     class a {}
@@ -128,7 +198,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $out[] = $bits;',
                 'assertions' => [
-                    '$out' => 'non-empty-list<non-empty-list<int>>',
+                    '$out' => 'non-empty-list<list<int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
@@ -1614,7 +1684,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     $x = [...$x, ...$y];
                 ',
-                'assertions' => ['$x===' => 'list{int, int, ...<int>}'],
+                'assertions' => ['$x===' => 'non-empty-list<int>'],
             ],
             'unpackEmptyKeepsCorrectKeys' => [
                 'code' => '<?php
@@ -1704,11 +1774,68 @@ final class ArrayAssignmentTest extends TestCase
                     $y = [...$shape, ...$a, ...$b, ...$c]; // Shape is first, but only possibly matching keys union their values
                 ',
                 'assertions' => [
-                    '$x===' => 'array{0: 3, bar: 2, foo: 1, ...<array-key, 4|5|6>}',
-                    '$y===' => 'array{0: 3|4|5|6, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
+                    '$x===' => 'array{bar: 2, foo: 1, ...<array-key, 3|4|5|6>}',
+                    '$y===' => 'array{0: 3, bar: 2|6, foo: 1|6, ...<array-key, 4|5|6>}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'unpackListAfterLiteralItemsKeepsThem' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $objects = [];
+                    /** @var list<string> */
+                    $strings = [];
+
+                    $a = ["OR", ...$objects];
+                    $b = ["OR", ...$strings];
+                    $c = ["OR", "AND", ...$strings];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', ...<X>}",
+                    '$b===' => "list{'OR', ...<string>}",
+                    '$c===' => "list{'OR', 'AND', ...<string>}",
+                ],
+            ],
+            'unpackListAfterLiteralItemKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $conditions */
+                    function orWhere(array $conditions): void {
+                        takesWhere(["OR", ...$conditions]);
+                    }
+                ',
+            ],
+            'itemsAfterUnpackedListOfUnknownLengthGoToTheRest' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $strings = [];
+                    /** @var non-empty-list<int> */
+                    $ints = [];
+
+                    $a = ["OR", "AND", ...$strings, "x"];
+                    $b = ["OR", ...$ints, "x"];
+                    $c = ["OR", ...$ints, ...["a", "b"]];
+                    $d = [...$strings, "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'AND', ...<string>}",
+                    '$b===' => "list{'OR', int, ...<'x'|int>}",
+                    '$c===' => "list{'OR', int, ...<'a'|'b'|int>}",
+                    '$d===' => 'non-empty-list<string>',
+                ],
+            ],
+            'itemsAfterUnpackedListOfKnownLengthKeepTheirSlots' => [
+                'code' => '<?php
+                    $a = ["OR", ...["a", "b"], "x"];
+                ',
+                'assertions' => [
+                    '$a===' => "list{'OR', 'a', 'b', 'x'}",
+                ],
             ],
             'unpackNonObjectlike' => [
                 'code' => '<?php
@@ -2101,6 +2228,62 @@ final class ArrayAssignmentTest extends TestCase
                     '$b===' => 'list{0, 1, 2}',
                 ],
             ],
+            'listAppendKeepsKnownItems' => [
+                'code' => '<?php
+                    final class X {}
+
+                    /** @var list<X> */
+                    $items = [];
+
+                    $a = ["OR"];
+                    foreach ($items as $item) {
+                        $a[] = $item;
+                    }
+
+                    $b = ["OR", "AND"];
+                    foreach ($items as $_) {
+                        $b[] = "x";
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $c = ["OR"];
+                    foreach ($items as $item) {
+                        $c[] = $item;
+                    }
+
+                    /** @var list{0: "OR", 1?: "AND"} */
+                    $d = ["OR"];
+                    foreach ($items as $item) {
+                        $d[] = $item;
+                    }
+
+                    /** @var list{"OR", ...<X>} */
+                    $e = ["OR"];
+                    $e[] = new X;
+                ',
+                'assertions' => [
+                    '$a===' => "list{0: 'OR', 1?: X, ...<X>}",
+                    '$b===' => "list{0: 'OR', 1: 'AND', 2?: 'x', ...<'x'>}",
+                    '$c===' => "list{'OR', ...<X>}",
+                    '$d===' => "list{0: 'OR', 1?: 'AND'|X, 2?: X, ...<X>}",
+                    '$e===' => "list{'OR', ...<X>}",
+                ],
+            ],
+            'listAppendInLoopKeepsShapeAccepted' => [
+                'code' => '<?php
+                    /** @param array{0: "OR"|"AND"|"NOT", ...<int, string|array>} $where */
+                    function takesWhere(array $where): void {}
+
+                    /** @param list<list{string, string}> $periods */
+                    function orWhere(array $periods): void {
+                        $conditions = ["OR"];
+                        foreach ($periods as $period) {
+                            $conditions[] = $period;
+                        }
+                        takesWhere($conditions);
+                    }
+                ',
+            ],
             'appendValuesToMap' => [
                 'code' => '<?php
                     /**
@@ -2166,6 +2349,26 @@ final class ArrayAssignmentTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a["any"]["x"] = 5;
+                        $a[$k]["x"] = "s";
+                        return $a["any"]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalKeyAssignmentForgetsTheOffsetsOfAnUnknownParentItMayBe' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int|string>> $a */
+                    function f(array $a, string $k): int {
+                        $a[$k]["x"] = 5;
+                        $a["y"]["x"] = "s";
+                        return $a[$k]["x"];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'objectAssignment' => [
                 'code' => '<?php
                     class A {}

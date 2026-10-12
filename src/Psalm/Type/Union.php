@@ -20,6 +20,7 @@ use function get_object_vars;
  * @psalm-type TProperties=array{
  *      from_docblock?: bool,
  *      from_calculation?: bool,
+ *      int_mask_bits?: ?int,
  *      from_property?: bool,
  *      from_static_property?: bool,
  *      from_global_state?: bool,
@@ -64,6 +65,13 @@ final class Union implements TypeNode
      * Whether the type originated from integer calculation
      */
     public bool $from_calculation = false;
+
+    /**
+     * Set when the value is a bit set: declared as `int-mask` or `int-mask-of`, or derived from one
+     * with `&`, `|` or `^`. It holds every bit the value may have. Such a value may only be compared
+     * by value with 0 (no bit set) or with all of these bits, see IntMaskComparison.
+     */
+    public ?int $int_mask_bits = null;
 
     /**
      * Whether the type originated from a property
@@ -202,6 +210,7 @@ final class Union implements TypeNode
         "\0" . self::class . "\0" . 'types' => 'types',
         'from_docblock' => 'from_docblock',
         'from_calculation' => 'from_calculation',
+        'int_mask_bits' => 'int_mask_bits',
         'from_property' => 'from_property',
         'from_static_property' => 'from_static_property',
         'from_global_state' => 'from_global_state',

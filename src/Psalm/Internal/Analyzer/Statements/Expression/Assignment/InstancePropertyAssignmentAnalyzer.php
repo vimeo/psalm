@@ -439,7 +439,9 @@ final class InstancePropertyAssignmentAnalyzer
                 $lhs_var_id === '$this' => Capabilities::WRITE_THIS_PROPS,
                 default => Capabilities::WRITE_PROPS,
             };
-            $mut = $can_set_readonly_property
+            // PHP lets a class set the readonly properties of any of its instances, but only `$this`
+            // belongs to the method: writing another, non-fresh instance mutates state held elsewhere.
+            $mut = $lhs_var_id === '$this' && $can_set_readonly_property
                 ? ($property_var_pure_compatible ? Capabilities::NONE : Capabilities::READ_PROPS)
                 : $real;
 
@@ -1819,7 +1821,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
         }
 
@@ -1830,7 +1832,7 @@ final class InstancePropertyAssignmentAnalyzer
             false,
         );
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
         }
 

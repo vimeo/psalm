@@ -21,6 +21,29 @@ final class ConditionalTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofDoesNotTakeObjectsWithToStringFromStrings' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @return Box<int>|string */
+                    function getBoxOrString() {
+                        return new Box(1);
+                    }
+
+                    $item = getBoxOrString();
+                    $box = $item instanceof Box ? $item : null;',
+                'assertions' => [
+                    '$box' => 'Box<int>|null',
+                ],
+            ],
             'arrayAssignmentPropagation' => [
                 'code' => '<?php
                     $dummy = ["test" => 123];

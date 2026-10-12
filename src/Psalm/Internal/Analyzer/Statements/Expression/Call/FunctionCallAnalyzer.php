@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -269,6 +270,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $template_result,
                 $code_location,
                 $context,
+            );
+        }
+
+        if (!$is_first_class_callable
+            && $function_call_info->function_id !== null
+            && ($function_call_info->in_call_map || $function_call_info->is_stubbed)
+        ) {
+            IntMaskComparisonAnalyzer::analyzeSearch(
+                $statements_analyzer,
+                $stmt,
+                $function_call_info->function_id,
+                $code_location,
             );
         }
 
@@ -1001,7 +1014,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_name_type->parent_nodes
-                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !$codebase->config->suppressesIssueType(
+                    $statements_analyzer->getSuppressedIssues(),
+                    'TaintedInput',
+                )
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -1066,7 +1082,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['InternalMethod'])) {
             $statements_analyzer->addSuppressedIssues(['InternalMethod']);
         }
 
@@ -1079,7 +1095,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             false,
         );
 
-        if (!in_array('InternalMethod', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['InternalMethod'])) {
             $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
         }
 
