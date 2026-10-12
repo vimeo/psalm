@@ -67,6 +67,20 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'php_version' => '8.0',
             ],
+            'phpredisCommandsRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-props|io */
+                    function cached(Redis $redis, RedisCluster $cluster, string $key): array {
+                        return [$redis->getEx($key, ["EX" => 5]), $cluster->get($key)];
+                    }
+
+                    /** @psalm-capabilities write-props|io */
+                    function listen(Redis $redis): void {
+                        $redis->subscribe(["news"], static function (Redis $redis, string $channel, string $message): void {
+                            echo $message;
+                        });
+                    }',
+            ],
             'classImplementsOfAnObjectDoesNotAutoload' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1575,6 +1589,16 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
                 'php_version' => '8.0',
+            ],
+            'phpredisSubscribeChargesTheCallback' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-props|io */
+                    function listen(Redis $redis): void {
+                        $redis->subscribe(["news"], static function (Redis $redis, string $channel, string $message): void {
+                            $GLOBALS["last"] = $message;
+                        });
+                    }',
+                'error_message' => 'ImpureMethodCall',
             ],
             'classUsesOfAClassNameMayAutoload' => [
                 'code' => '<?php
