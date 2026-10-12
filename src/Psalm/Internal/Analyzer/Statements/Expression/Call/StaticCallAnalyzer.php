@@ -351,6 +351,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
             );
         } else {
+            /** @var string|null $body_class set above */
             $body_class = $stmt->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
             $declaring_method_id = is_string($body_class)
                 ? $statements_analyzer->getCodebase()->methods->getDeclaringMethodId($method_id)

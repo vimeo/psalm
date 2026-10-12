@@ -638,6 +638,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\FunctionLikeAnalyzer::class,
         \Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer::class,
         \Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector::class,
+        \Psalm\Internal\Analyzer\InheritedMethodTaints::class,
         \Psalm\Internal\Analyzer\InterfaceAnalyzer::class,
         \Psalm\Internal\Analyzer\IssueData::class,
         \Psalm\Internal\Analyzer\MethodAnalyzer::class,

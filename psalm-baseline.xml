@@ -1713,13 +1713,22 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
+    <ImpureMethodCall>
+      <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>
+    </ImpureMethodCall>
     <ImpureStaticProperty>
+      <code><![CDATA[self::$body_suffix]]></code>
+      <code><![CDATA[self::$body_suffix]]></code>
       <code><![CDATA[self::$forClosureUse]]></code>
       <code><![CDATA[self::$forClosureUse]]></code>
       <code><![CDATA[self::$forUnknownOrigin]]></code>
       <code><![CDATA[self::$forUnknownOrigin]]></code>
       <code><![CDATA[self::$forVariableUse]]></code>
       <code><![CDATA[self::$forVariableUse]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
     </ImpureStaticProperty>
     <RedundantPropertyInitializationCheck>
       <code><![CDATA[new self('closure-use', null, null, 'closure use')]]></code>

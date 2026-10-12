@@ -1860,6 +1860,7 @@ final class ArgumentAnalyzer
         // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
         // has no declared parameter to key on and so uses the call offset.
         // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
+        /** @var string|null $body_class set by StaticCallAnalyzer */
         $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
         $called_declaring_method_id = is_string($body_class) && $method_id
             ? $codebase->methods->getDeclaringMethodId($method_id)
