@@ -546,6 +546,76 @@ final class TaintTest extends TestCase
                     echo store_get("pf");
                     echo store_get("other");',
             ],
+            'keyedStoreKeyStartsOfAppendedItemsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        echo store_get_many($keys);
+                    }',
+            ],
+            'keyedStoreKeyStartsOfAListAMethodReturnsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        private function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -3480,6 +3550,81 @@ final class TaintTest extends TestCase
 
                     store_set("a", (string) $_GET["x"]);
                     echo store_get_many(["b", "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsAreWhatAllStartWith' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids, string $key): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        $keys[] = $key;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsReachTheirKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAListChangedByReferenceAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id, string $key): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        array_push($keys, $key);
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnReachesItsKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreAnyKey' => [

@@ -191,6 +191,14 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private array $string_starts = [];
 
+    /**
+     * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
+     * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
+     *
+     * @var array<string, true>
+     */
+    private array $empty_arrays = [];
+
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
      * Empty outside of connectSinksAndSources().
@@ -573,6 +581,34 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * Records that the variable whose node $node is was assigned an empty array: its items start with anything
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addEmptyArray(DataFlowNode $node): void
+    {
+        $this->empty_arrays[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmptyArray(string $node_id): bool
+    {
+        return isset($this->empty_arrays[$node_id]);
+    }
+
+    /**
+     * Forgets what the analysis recorded of the start of the string assigned to the variable whose node $node is
+     *
+     * @psalm-external-mutation-free
+     */
+    public function removeStringStart(DataFlowNode $node): void
+    {
+        unset($this->string_starts[$node->id]);
     }
 
     /**
