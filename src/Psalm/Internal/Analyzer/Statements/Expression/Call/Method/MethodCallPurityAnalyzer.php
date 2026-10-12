@@ -60,15 +60,17 @@ final class MethodCallPurityAnalyzer
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
      * `$this` and write-props otherwise, as writing its properties directly would. Callers that
-     * know the receiver to be fresh by other means say so with $receiver_is_fresh.
+     * know the receiver to be fresh by other means say so with $receiver_is_fresh, and those that
+     * know the callee's capabilities for this call with $callee_capabilities.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
         MethodStorage $method_storage,
         bool $receiver_is_fresh = false,
+        ?int $callee_capabilities = null,
     ): int {
-        $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
+        $capabilities = ($callee_capabilities ?? $method_storage->capabilities) & ~Capabilities::READ_PROPS;
 
         if (!self::isFromGlobalState($statements_analyzer, $var)
             && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
@@ -80,6 +82,38 @@ final class MethodCallPurityAnalyzer
             $capabilities,
             self::isReceiverThis($var),
             self::isFromGlobalState($statements_analyzer, $var),
+        );
+    }
+
+    /**
+     * The capabilities a plugin (MethodCapabilitiesProviderInterface) registered for the class
+     * declaring the method gives this call of it
+     */
+    private static function getProvidedCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        Context $context,
+    ): ?int {
+        $provider = $codebase->methods->capabilities_provider;
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null || !$provider->has($declaring_method_id->fq_class_name)) {
+            return null;
+        }
+
+        // implicit calls (__get, ...) have no location of their own, see analyze()
+        $location_node = $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name;
+
+        return $provider->getMethodCapabilities(
+            $statements_analyzer,
+            $declaring_method_id->fq_class_name,
+            $declaring_method_id->method_name,
+            $method_id->fq_class_name,
+            $stmt,
+            $context,
+            new CodeLocation($statements_analyzer, $location_node),
         );
     }
 
@@ -154,10 +188,22 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
+        // a plugin may know what this call of the method requires, e.g. from its arguments
+        $provided_capabilities = self::getProvidedCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $method_id,
+            $context,
+        );
+        $callee_capabilities = $provided_capabilities ?? $method_storage->capabilities;
+
         $method_capabilities = self::getMethodCapabilities(
             $statements_analyzer,
             $stmt->var,
             $method_storage,
+            false,
+            $callee_capabilities,
         );
 
         // with a receiver of several types, the call gives back `$this` only if every method called does
@@ -209,14 +255,16 @@ final class MethodCallPurityAnalyzer
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
             // mutating a receiver other than `$this` writes another object's properties
-            $method_storage->capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
+            $callee_capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
-            $lhs_var_id === '$this'
-                || $method_storage->final
-                || $class_storage->final
-                || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            // (and not this call, if a plugin gave its level)
+            $provided_capabilities === null
+                && ($lhs_var_id === '$this'
+                    || $method_storage->final
+                    || $class_storage->final
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 ? $method_storage
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
