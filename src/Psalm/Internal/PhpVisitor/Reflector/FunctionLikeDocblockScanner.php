@@ -1410,8 +1410,9 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`) nor a proxy call
-     * (`proxy ...`), or it names a parameter (`$name`) that isn't one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`, or out of a keyed
+     * store: `Store::$data[$key] -> ...`) nor a proxy call (`proxy ...`), or it names a parameter (`$name`) that isn't
+     * one of $param_names
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
@@ -1424,6 +1425,11 @@ final class FunctionLikeDocblockScanner
         } elseif (preg_match('/^(\(.*?\))\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1
             && isset($matches[1])
         ) {
+            $sources = $matches[1];
+        } elseif (preg_match('/^\\\\?[A-Za-z_][\w\\\\]*::\$\w+(\[.*\])\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1
+            && isset($matches[1])
+        ) {
+            // what a keyed store holds under the keys a parameter names (see TaintStore::addFlow())
             $sources = $matches[1];
         } else {
             return '@psalm-flow "' . $flow . '" is neither "(...) -> ..." nor "proxy ..."';

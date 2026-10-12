@@ -3212,6 +3212,42 @@ final class TaintTest extends TestCase
                     function check(string $text): void {}',
                 'error_message' => 'names $txt, which is not a parameter',
             ],
+            'keyedStoreReadUnderAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[$k] -> return */
+                    function store_get(string $key): string {
+                        return $key;
+                    }',
+                'error_message' => 'names $k, which is not a parameter',
+            ],
+            'taintedThroughAKeyedStoreOfAFullyQualifiedClassFromAnotherNamespace' => [
+                'code' => '<?php
+                    namespace App\Writer {
+                        final class Writer {
+                            /** @psalm-flow ($value) -> \Cache::$data[$key] */
+                            public static function set(string $key, string $value): void {}
+                        }
+                    }
+
+                    namespace App\Reader {
+                        final class Reader {
+                            /**
+                             * @param list<string> $keys
+                             * @return list<string>
+                             * @psalm-flow \Cache::$data[$keys[*]] -> return
+                             */
+                            public static function mGet(array $keys): array {
+                                return [];
+                            }
+                        }
+                    }
+
+                    namespace {
+                        App\Writer\Writer::set("a", (string) $_GET["x"]);
+                        echo implode(",", App\Reader\Reader::mGet(["a"]));
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'flowFromAParameterThatDoesNotExist' => [
                 'code' => '<?php
                     /** @psalm-flow ($txt) -> return */
