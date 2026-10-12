@@ -7,7 +7,8 @@ declare(strict_types=1);
  * their parameters: the taints of these parameters flow into the return value, as with `@psalm-flow`. The builtins
  * declared by stubs carry `@psalm-flow` annotations in the stubs instead. A parameter given as a key flows through
  * the path its value names, as `@psalm-flow ($array) -(arrayvalue-fetch)-> return` does: what returns one of the
- * values (or keys) of an array takes only its taints.
+ * values (or keys) of an array takes only its taints, and what encodes all of a value in a string, or decodes it back,
+ * goes through `serialization` and `unserialization` (see DataFlowGraph::SERIALIZATION_PATH_TYPE).
  *
  * @var array<lowercase-string, array<int|non-empty-string, non-empty-string>>
  */
@@ -64,8 +65,8 @@ return [
     'parse_ini_string' => ['ini_string'],
     // standard: variables and serialization
     'get_object_vars' => ['object'],
-    'serialize' => ['value'],
-    'unserialize' => ['data'],
+    'serialize' => ['value' => 'serialization'],
+    'unserialize' => ['data' => 'unserialization'],
     // standard: misc
     'gethostbyname' => ['hostname'],
     'hex2bin' => ['string'],
@@ -140,23 +141,23 @@ return [
     'intlchar::totitle' => ['codepoint'],
     'intlchar::toupper' => ['codepoint'],
     'intldateformatter::formatobject' => ['format'],
-    'intllistformatter::format' => ['strings'],
-    'locale::composelocale' => ['subtags'],
+    'intllistformatter::format' => ['strings' => 'arrayvalue-fetch'],
+    'locale::composelocale' => ['subtags' => 'arrayvalue-fetch'],
     'locale::getallvariants' => ['locale'],
     'locale::getkeywords' => ['locale'],
     'locale::lookup' => ['languageTag', 'defaultLocale'],
     'locale::parselocale' => ['locale'],
-    'locale_compose' => ['subtags'],
+    'locale_compose' => ['subtags' => 'arrayvalue-fetch'],
     'locale_get_all_variants' => ['locale'],
     'locale_get_keywords' => ['locale'],
     'locale_lookup' => ['languageTag', 'defaultLocale'],
     'locale_parse' => ['locale'],
-    'messageformatter::format' => ['values'],
-    'messageformatter::formatmessage' => ['pattern', 'values'],
+    'messageformatter::format' => ['values' => 'arrayvalue-fetch'],
+    'messageformatter::formatmessage' => ['pattern', 'values' => 'arrayvalue-fetch'],
     'messageformatter::parse' => ['string'],
     'messageformatter::parsemessage' => ['message'],
-    'msgfmt_format' => ['values'],
-    'msgfmt_format_message' => ['pattern', 'values'],
+    'msgfmt_format' => ['values' => 'arrayvalue-fetch'],
+    'msgfmt_format_message' => ['pattern', 'values' => 'arrayvalue-fetch'],
     'msgfmt_parse' => ['string'],
     'msgfmt_parse_message' => ['message'],
     'normalizer::normalize' => ['string'],
@@ -190,7 +191,7 @@ return [
     // imap
     'imap_8bit' => ['string'],
     'imap_base64' => ['string'],
-    'imap_mail_compose' => ['envelope', 'bodies'],
+    'imap_mail_compose' => ['envelope' => 'serialization', 'bodies' => 'serialization'],
     'imap_mime_header_decode' => ['string'],
     'imap_mutf7_to_utf8' => ['string'],
     'imap_qprint' => ['string'],
@@ -213,9 +214,9 @@ return [
     // tokenizer
     'token_get_all' => ['code'],
     // yaml
-    'yaml_emit' => ['data'],
-    'yaml_parse' => ['input'],
+    'yaml_emit' => ['data' => 'serialization'],
+    'yaml_parse' => ['input' => 'unserialization'],
     // igbinary
-    'igbinary_serialize' => ['value'],
-    'igbinary_unserialize' => ['str'],
+    'igbinary_serialize' => ['value' => 'serialization'],
+    'igbinary_unserialize' => ['str' => 'unserialization'],
 ];

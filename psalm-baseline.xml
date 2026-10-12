@@ -1118,8 +1118,6 @@
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName()]]></code>
-      <code><![CDATA[$storage->template_extended_params]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -2017,7 +2015,6 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionResolver.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$fq_classlike_name]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>
@@ -3275,8 +3272,6 @@
       <code><![CDATA[$result->offset_start]]></code>
       <code><![CDATA[$result->text]]></code>
       <code><![CDATA[$result->text]]></code>
-      <code><![CDATA[$type->is_enum]]></code>
-      <code><![CDATA[$type->is_interface]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[array_keys($template_type_map[$value])[0]]]></code>
@@ -3811,7 +3806,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!strpos($key, '$')]]></code>
       <code><![CDATA[!strpos($key, '[')]]></code>
-      <code><![CDATA[$failed_reconciliation]]></code>
       <code><![CDATA[strpos($base_key, '::')]]></code>
       <code><![CDATA[strpos($key, '::')]]></code>
       <code><![CDATA[strpos($nk, '->')]]></code>
@@ -3822,9 +3816,6 @@
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[TypeNode]]></code>
     </MissingInterfaceImmutableAnnotation>
-    <ReferenceConstraintViolation>
-      <code><![CDATA[$node]]></code>
-    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Type/TypeVisitor.php">
     <ImpureMethodCall>
