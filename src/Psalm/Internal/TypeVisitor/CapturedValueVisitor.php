@@ -12,14 +12,16 @@ use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
 /**
- * Marks a value and the values it contains, like the elements of an array, as not fresh.
+ * Turns the type of a value captured by a closure, and of the values it contains, like the elements
+ * of an array, into the type the closure sees: not fresh, as the enclosing scope holds it too, but
+ * state of the closure where it was fresh in the enclosing scope.
  *
  * The types of callables are left as they are: that their calls return fresh values does not
  * depend on who holds the callable.
  *
  * @internal
  */
-final class ReferenceFreeRemover extends MutableTypeVisitor
+final class CapturedValueVisitor extends MutableTypeVisitor
 {
     /**
      * @psalm-capabilities read-props|write-this-props|write-refs
@@ -31,8 +33,11 @@ final class ReferenceFreeRemover extends MutableTypeVisitor
             return self::DONT_TRAVERSE_CHILDREN;
         }
 
-        if ($type instanceof Union) {
-            $type = $type->setProperties(['reference_free' => false]);
+        if ($type instanceof Union && $type->reference_free) {
+            $type = $type->setProperties([
+                'reference_free' => false,
+                'closure_state' => $type->allow_mutations,
+            ]);
         }
 
         return null;

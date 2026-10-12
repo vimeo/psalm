@@ -13,7 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
-use Psalm\Internal\TypeVisitor\ReferenceFreeRemover;
+use Psalm\Internal\TypeVisitor\CapturedValueVisitor;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -167,25 +167,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * The type of a variable captured by a closure, as seen in its body. The value is shared with
      * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
      * the closure may be called more than once, and writing that object writes state that outlives
-     * the call. The same holds for the objects in a captured array.
+     * the call. Only the enclosing scope and the closure hold it, though, so it is state of the
+     * closure, as the objects a class instance creates are its own. The same holds for the objects
+     * in a captured array, for a capture by reference, and for a closure capturing state of the
+     * closure it is created in.
      */
     private static function getCapturedType(Union $type): Union
     {
-        (new ReferenceFreeRemover())->traverse($type);
+        (new CapturedValueVisitor())->traverse($type);
 
         return $type;
-    }
-
-    /**
-     * Whether a value captured by value is state of the closure: the enclosing scope created it,
-     * so only the enclosing scope and the closure hold it, as a class instance holds the objects
-     * it creates. Writing it is then writing the closure's own state.
-     *
-     * @psalm-pure
-     */
-    private static function isCapturedState(Union $type): bool
-    {
-        return $type->reference_free && $type->allow_mutations;
     }
 
     /**
@@ -301,10 +292,6 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     // shared with the enclosing scope, plus what that scope needs to write it
                     $use_context->captured_by_ref[$use_var_id]
                         = AssignmentAnalyzer::getExternalWriteCapabilities($context, $use_var_id);
-                } elseif ($context->hasVariable($use_var_id)
-                    && self::isCapturedState($context->vars_in_scope[$use_var_id])
-                ) {
-                    $use_context->captured_state[$use_var_id] = true;
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
@@ -313,10 +300,6 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
                         $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
                         $use_context->vars_possibly_in_scope[$var_id] = true;
-
-                        if (!$use->byRef && self::isCapturedState($type)) {
-                            $use_context->captured_state[$var_id] = true;
-                        }
                     }
                 }
             }
@@ -333,10 +316,6 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $use_context->vars_in_scope[$use_var_id] = self::getCapturedType(
                         $context->vars_in_scope[$use_var_id],
                     );
-
-                    if (self::isCapturedState($context->vars_in_scope[$use_var_id])) {
-                        $use_context->captured_state[$use_var_id] = true;
-                    }
 
                     if ($statements_analyzer->data_flow_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;

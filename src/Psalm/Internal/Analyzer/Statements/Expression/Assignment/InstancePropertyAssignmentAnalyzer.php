@@ -438,7 +438,7 @@ final class InstancePropertyAssignmentAnalyzer
             $real = match (true) {
                 $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
                 $lhs_var_id === '$this',
-                isset($context->captured_state[$lhs_var_id]) => Capabilities::WRITE_THIS_PROPS,
+                $var_type !== null && $var_type->closure_state => Capabilities::WRITE_THIS_PROPS,
                 default => Capabilities::WRITE_PROPS,
             };
             // PHP lets a class set the readonly properties of any of its instances, but only `$this`

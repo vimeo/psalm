@@ -559,6 +559,36 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /** @psalm-pure */
+                    function byReference(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use (&$b): int {
+                            $b->n = 5;
+                            return $b->setN(6);
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function inAnArray(): Closure {
+                        $boxes = [new Box()];
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($boxes): int {
+                            $boxes[0]->n = 1;
+                            $box = $boxes[0];
+                            $box->n = 2;
+                            return $boxes[0]->setN(5);
+                        };
+                    }
+
+                    /** @psalm-pure */
+                    function nested(): Closure {
+                        $b = new Box();
+                        return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): Closure {
+                            return /** @psalm-capabilities read-props|write-this-props */ static function () use ($b): int {
+                                return $b->setN(5);
+                            };
+                        };
+                    }
+
+                    /** @psalm-pure */
                     function countTwice(): int {
                         $b = new Box();
                         $f = static function () use ($b): int {
@@ -1851,7 +1881,7 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - The context is read-props|write-this-props but property assignment to Box::$n requires write-props',
             ],
-            'closureCannotWriteAPropertyOfAnObjectCapturedByReference' => [
+            'readPropsClosureCannotWriteAPropertyOfAnObjectCapturedByReference' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     final class Box {
@@ -1871,9 +1901,9 @@ final class CapabilitiesTest extends TestCase
                             return $b->n;
                         };
                     }',
-                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but property assignment to Box::$n requires write-props',
+                'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - The context is read-props but property assignment to Box::$n requires write-this-props',
             ],
-            'closureCannotMutateAnObjectCapturedByReference' => [
+            'readPropsClosureCannotMutateAnObjectCapturedByReference' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     final class Box {
@@ -1892,7 +1922,7 @@ final class CapabilitiesTest extends TestCase
                             return $b->setN(5);
                         };
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is read-props but method Box::setN requires write-props',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is read-props but method Box::setN requires write-this-props',
             ],
             'pureArrowFunctionCannotMutateACapturedObject' => [
                 'code' => '<?php
@@ -1913,7 +1943,7 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:71 - The context is pure but method Box::setN requires write-this-props',
             ],
-            'nestedClosureCannotMutateACapturedObject' => [
+            'pureNestedClosureCannotMutateACapturedObject' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     final class Box {
@@ -1934,9 +1964,9 @@ final class CapabilitiesTest extends TestCase
                             };
                         };
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - The context is pure but method Box::setN requires write-props',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - The context is pure but method Box::setN requires write-this-props',
             ],
-            'closureCannotMutateAnObjectInACapturedArray' => [
+            'pureClosureCannotMutateAnObjectInACapturedArray' => [
                 'code' => '<?php
                     /** @psalm-external-mutation-free */
                     final class Box {
@@ -1955,7 +1985,7 @@ final class CapabilitiesTest extends TestCase
                             return $boxes[0]->setN(5);
                         };
                     }',
-                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-props',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:36 - The context is pure but method Box::setN requires write-this-props',
             ],
             'staticVariableNeedsWriteGlobals' => [
                 'code' => '<?php

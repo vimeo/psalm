@@ -192,12 +192,12 @@ function leak(): int {
 }
 ```
 
-Likewise, an object the enclosing scope created and the closure captures by value (or uses in an
-arrow function) is state of the closure, as an object a class instance creates is its own: writing
-it, or calling a method that writes it, needs `write-this-props`, and the enclosing scope may call
-the closure freely. An object the enclosing scope did not create, like a parameter, or one
-captured by reference, which the enclosing scope may replace, belongs to someone else: writing it
-needs `write-props`.
+Likewise, an object the enclosing scope created and the closure captures, by value or by
+reference, is state of the closure, as an object a class instance creates is its own. So are the
+objects in a captured array the enclosing scope created, and the state of a closure that a closure
+created in it captures. Writing that state, or calling a method that writes it, needs
+`write-this-props`, and the enclosing scope may call the closure freely. An object the enclosing
+scope did not create, like a parameter, belongs to someone else: writing it needs `write-props`.
 
 ## Class-level contracts
 

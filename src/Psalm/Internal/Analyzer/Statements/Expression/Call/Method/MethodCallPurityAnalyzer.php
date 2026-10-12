@@ -68,7 +68,6 @@ final class MethodCallPurityAnalyzer
         Expr $var,
         MethodStorage $method_storage,
         bool $receiver_is_fresh = false,
-        bool $receiver_is_closure_state = false,
     ): int {
         $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
 
@@ -80,7 +79,8 @@ final class MethodCallPurityAnalyzer
 
         return self::getCapabilitiesForReceiver(
             $capabilities,
-            $receiver_is_closure_state || self::isReceiverThis($var),
+            self::isReceiverThis($var)
+                || $statements_analyzer->node_data->getType($var)?->closure_state === true,
             self::isFromGlobalState($statements_analyzer, $var),
         );
     }
@@ -160,8 +160,6 @@ final class MethodCallPurityAnalyzer
             $statements_analyzer,
             $stmt->var,
             $method_storage,
-            false,
-            $lhs_var_id !== null && isset($context->captured_state[$lhs_var_id]),
         );
 
         // with a receiver of several types, the call gives back `$this` only if every method called does
