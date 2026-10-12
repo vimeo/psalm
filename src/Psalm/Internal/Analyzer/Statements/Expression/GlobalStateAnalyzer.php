@@ -119,7 +119,7 @@ final class GlobalStateAnalyzer
     ): void {
         if (($callee_capabilities & Capabilities::WRITE_PROPS) === 0
             // the call itself is reported when it is not allowed
-            || !Capabilities::allows($context->capabilities, $callee_capabilities)
+            || !Capabilities::allowsAnyOf($context->capabilities, $callee_capabilities)
         ) {
             return;
         }
