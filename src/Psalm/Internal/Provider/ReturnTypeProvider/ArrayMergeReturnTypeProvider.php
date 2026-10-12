@@ -40,6 +40,9 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
         return ['array_merge', 'array_replace'];
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {

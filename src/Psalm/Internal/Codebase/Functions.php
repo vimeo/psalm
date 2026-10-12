@@ -495,15 +495,17 @@ final class Functions
         }
 
         // the date functions read the clock when no timestamp is given, or a null one
-        $reads_clock = static function (int $offset) use ($args, $type_provider): bool {
-            if (!isset($args[$offset])) {
-                return true;
-            }
+        $reads_clock =
+            /** @psalm-capabilities read-props */
+            static function (int $offset) use ($args, $type_provider): bool {
+                if (!isset($args[$offset])) {
+                    return true;
+                }
 
-            $arg_type = $type_provider?->getType($args[$offset]->value);
+                $arg_type = $type_provider?->getType($args[$offset]->value);
 
-            return $arg_type === null || $arg_type->isNullable() || $arg_type->hasMixed();
-        };
+                return $arg_type === null || $arg_type->isNullable() || $arg_type->hasMixed();
+            };
 
         if (in_array($function_id, ['date', 'gmdate', 'idate', 'strtotime'], true) && $reads_clock(1)) {
             return Capabilities::TIME;
