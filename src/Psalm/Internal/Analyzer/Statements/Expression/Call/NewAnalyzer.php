@@ -86,6 +86,36 @@ use function strtolower;
 final class NewAnalyzer extends CallAnalyzer
 {
     /**
+     * Whether the class gives the template to a class it extends (`@extends Parent<T>`): what the constructor
+     * arguments bound for the parent's template is then the template's. A template it doesn't give, like one beside
+     * the purity template of a parent, is resolved like that of a class extending nothing.
+     *
+     * @param array<string, array<string, Union>>|null $template_extended_params
+     * @psalm-assert-if-true !null $template_extended_params
+     * @psalm-mutation-free
+     */
+    private static function isGivenToParent(
+        string $fq_class_name,
+        string $template_name,
+        ?array $template_extended_params,
+    ): bool {
+        foreach ($template_extended_params ?? [] as $type_map) {
+            foreach ($type_map as $extended_type) {
+                foreach ($extended_type->getAtomicTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TTemplateParam
+                        && $atomic_type->param_name === $template_name
+                        && $atomic_type->defining_class === $fq_class_name
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The node attribute holding the capabilities a `new` or static call required from its caller,
      * used to decide whether the callee may have changed refined properties or statics.
      */
@@ -347,7 +377,7 @@ final class NewAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
-            } elseif ($storage->template_types
+            } elseif (self::hasTemplatesInferredByConstructor($codebase, $storage)
                 && !$storage->enforce_template_inheritance
             ) {
                 $source = $statements_analyzer->getSource();
@@ -605,7 +635,9 @@ final class NewAnalyzer extends CallAnalyzer
                                 new TTypeVariable($type_variable_name, $type_variable_bounds),
                             ]);
                         }
-                    } elseif ($storage->template_extended_params && $template_result->lower_bounds) {
+                    } elseif ($template_result->lower_bounds
+                        && self::isGivenToParent($fq_class_name, $template_name, $storage->template_extended_params)
+                    ) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
                             $template_name,
@@ -757,7 +789,10 @@ final class NewAnalyzer extends CallAnalyzer
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
         if (!$statements_analyzer->taint_flow_graph
-            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+            || $statements_analyzer->getCodebase()->config->suppressesIssueType(
+                $statements_analyzer->getSuppressedIssues(),
+                'TaintedInput',
+            )
             || !$stmt_type
         ) {
             return;
@@ -781,6 +816,12 @@ final class NewAnalyzer extends CallAnalyzer
             ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $fq_class_name, $declaring_method_id)
             : null;
 
+        // the node the body of the constructor returns into, wherever it is declared (see
+        // FunctionLikeAnalyzer::getBodyMethodId())
+        $cased_constructor_id = $declaring_method_id
+            ? FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id)
+            : $fq_class_name . '::__construct';
+
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
@@ -788,11 +829,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $storage->isExternalMutationFree() ? $code_location : null,
             );
         } else {
-            // the node the body of the constructor returns into, wherever it is declared
-            $cased_constructor_id = $declaring_method_id
-                ? $codebase->methods->getCasedMethodId($declaring_method_id)
-                : $fq_class_name . '::__construct';
-
             $method_source = InheritedMethodTaints::withMethodSuffix(
                 $declaring_method_id ?? $method_id,
                 $body_suffix,
@@ -821,7 +857,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $declaring_method_id ?? $method_id,
                 $body_suffix,
                 static fn(): DataFlowNode => DataFlowNode::getForAssignment(
-                    '$this out of ' . $codebase->methods->getCasedMethodId($declaring_method_id ?? $method_id),
+                    '$this out of ' . $cased_constructor_id,
                     $constructor_location,
                     $method_source->specialization_key,
                 ),
@@ -831,7 +867,13 @@ final class NewAnalyzer extends CallAnalyzer
             $parent_nodes[$this_out_node->id] = $this_out_node;
         }
 
-        $stmt_type = $stmt_type->setParentNodes($parent_nodes);
+        $stmt_type = OutputStreamTaintAnalyzer::taintOpenedStream(
+            $statements_analyzer,
+            $fq_class_name . '::__construct',
+            $stmt->getArgs(),
+            $stmt_type->setParentNodes($parent_nodes),
+            $code_location,
+        );
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
     }
 
@@ -1064,7 +1106,10 @@ final class NewAnalyzer extends CallAnalyzer
         } else {
             if ($statements_analyzer->taint_flow_graph
                 && $stmt_class_type->parent_nodes
-                && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                && !$statements_analyzer->getCodebase()->config->suppressesIssueType(
+                    $statements_analyzer->getSuppressedIssues(),
+                    'TaintedInput',
+                )
             ) {
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $stmt_class);
 
@@ -1638,6 +1683,26 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $templates;
+    }
+
+    /**
+     * Whether `new static()` may infer a template of the class differently from what a child class
+     * binds it to: a type template, or a purity template the constructor's parameters take (a
+     * `Closure[C]` argument), as the others are only bound by the classes extending it.
+     *
+     * @psalm-mutation-free
+     */
+    private static function hasTemplatesInferredByConstructor(Codebase $codebase, ClassLikeStorage $storage): bool
+    {
+        // every purity template the class declares has a default (its upper bound without one),
+        // which tells it apart from a type template bounded by a type alias or a purity template
+        foreach ($storage->template_types ?? [] as $template_name => $_) {
+            if (!isset($storage->template_defaults[$template_name])) {
+                return true;
+            }
+        }
+
+        return self::getConstructorParamTemplates($codebase, $storage) !== [];
     }
 
     /**
