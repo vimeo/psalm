@@ -148,7 +148,7 @@ final class TypeCombinationTest extends TestCase
                         $x[] = "some_" . $id;
                     }',
                 'assertions' => [
-                    '$x===' => 'list<non-empty-string>',
+                    '$x===' => "list{0?: '0', ...<non-empty-string>}",
                 ],
             ],
             'loopNonLowercaseLiteralWithNonEmptyLowercaseShouldBeNonEmptyAndNotLowercase' => [
@@ -165,7 +165,7 @@ final class TypeCombinationTest extends TestCase
                         $x[] = "some_" . $id;
                     }',
                 'assertions' => [
-                    '$x===' => 'list<non-empty-string>',
+                    '$x===' => "list{0?: 'TEXT', ...<non-empty-string>}",
                 ],
             ],
             'nonemptyliteralstring' => [

@@ -20,6 +20,7 @@ use function strtolower;
  * type may do.
  *
  * @internal
+ * @psalm-immutable
  */
 final class IterationPurity
 {

@@ -349,7 +349,7 @@ abstract class SourceAnalyzer implements StatementsSource
             $callee_id,
         );
 
-        if (!Capabilities::allows($context->capabilities, $mutation_level)
+        if (!Capabilities::allowsAnyOf($context->capabilities, $mutation_level)
 
             // These are secondary scan modes that shouldn't report this issue
             && !$context->collect_mutations
