@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
@@ -1156,6 +1157,14 @@ final class AtomicStaticCallAnalyzer
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 
         $statements_analyzer->node_data = $old_data_provider;
+
+        // a mixin forwards to another object, so only a call on the caller's own `$this` can give it back
+        if ($virtual_var_name === 'this') {
+            MethodCallPurityAnalyzer::setReturnsThis(
+                $stmt,
+                $fake_method_call_expr->getAttribute('returns_this', false) === true,
+            );
+        }
 
         if ($fake_method_call_type) {
             $statements_analyzer->node_data->setType($stmt, $fake_method_call_type);

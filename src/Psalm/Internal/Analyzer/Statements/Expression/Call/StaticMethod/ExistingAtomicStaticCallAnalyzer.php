@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -270,6 +271,20 @@ final class ExistingAtomicStaticCallAnalyzer
         $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
+            // only a named class is a single receiver part: with a variable class, other parts of its
+            // type (such as `__callStatic`) never reach this point and would not clear the flag
+            MethodCallPurityAnalyzer::setReturnsThis(
+                $stmt,
+                $stmt->class instanceof PhpParser\Node\Name
+                    && $method_storage->returns_this
+                    && !$method_storage->is_static
+                    && !$stmt->isFirstClassCallable()
+                    && !$statements_analyzer->isStatic()
+                    && isset($context->vars_in_scope['$this'])
+                    && $context->self !== null
+                    && $codebase->classExtends($context->self, $method_id->fq_class_name),
+            );
+
             if ($method_storage->abstract
                 && $stmt->class instanceof PhpParser\Node\Name
                 && (!$context->self

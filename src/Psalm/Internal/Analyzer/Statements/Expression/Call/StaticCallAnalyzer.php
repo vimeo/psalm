@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -47,6 +48,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         ?TemplateResult $template_result = null,
     ): bool {
         NullsafeChainState::None->markOn($stmt);
+        MethodCallPurityAnalyzer::clearReturnsThis($stmt);
 
         $method_id = null;
 

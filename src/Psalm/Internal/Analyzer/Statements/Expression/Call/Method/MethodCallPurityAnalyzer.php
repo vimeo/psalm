@@ -28,6 +28,8 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+use function array_diff_key;
+
 /**
  * @internal
  */
@@ -133,7 +135,25 @@ final class MethodCallPurityAnalyzer
     public static function isReceiverThis(Expr $var): bool
     {
         return self::isThis($var)
-            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+            || (($var instanceof Expr\MethodCall || $var instanceof Expr\StaticCall)
+                && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * Drops the flag, as a trait's call node is analyzed again for each class using it. Unset rather
+     * than false, because the attributes of a static call are copied onto its synthetic method call.
+     */
+    public static function clearReturnsThis(Expr\StaticCall $stmt): void
+    {
+        $stmt->setAttributes(array_diff_key($stmt->getAttributes(), [self::RETURNS_THIS => true]));
+    }
+
+    /**
+     * Flags a `parent::f()`, `self::f()` or `static::f()` call as giving back the caller's own `$this`
+     */
+    public static function setReturnsThis(Expr\StaticCall $stmt, bool $returns_this): void
+    {
+        $stmt->setAttribute(self::RETURNS_THIS, $returns_this);
     }
 
     /**
