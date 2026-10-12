@@ -708,6 +708,7 @@ class Reconciler
      *
      * @param array<string, Union>  $existing_keys
      * @param array<string,mixed>       $new_assertions
+     * @psalm-suppress ComplexMethod
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -1241,7 +1242,7 @@ class Reconciler
         }
 
         if ($array_key[0] === '\'' || $array_key[0] === '"') {
-            $offset = new TLiteralString(substr($array_key, 1, -1));
+            $offset = TLiteralString::make(substr($array_key, 1, -1));
         } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
             $offset = new TLiteralInt((int) $array_key);
         } else {
@@ -1251,6 +1252,7 @@ class Reconciler
         $base_type = $existing_types[$base_key];
         $new_base_type = $base_type;
         $atomic_types = [];
+        $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TKeyedArray
@@ -1271,12 +1273,15 @@ class Reconciler
                 } else {
                     $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
                 }
+
+                $shape_changed = true;
             }
 
             $atomic_types[] = $atomic_type;
         }
 
-        if ($atomic_types) {
+        // the array changes only where its shape loses the offset
+        if ($shape_changed) {
             $new_base_type = $new_base_type->setTypes($atomic_types);
         }
 
@@ -1300,7 +1305,11 @@ class Reconciler
 
         if ($new_base_type !== $base_type) {
             $existing_types[$base_key] = $new_base_type;
-            $changed_var_ids[$base_key] = true;
+
+            // what the array holds under its other offsets stays known where only its data flow changed
+            if ($shape_changed) {
+                $changed_var_ids[$base_key] = true;
+            }
         }
     }
 

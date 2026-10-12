@@ -1421,7 +1421,9 @@ final class FunctionLikeDocblockScanner
     {
         if (str_starts_with($flow, 'proxy')) {
             $sources = explode('->', $flow, 2)[0];
-        } elseif (preg_match('/^(\(.*?\))\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1) {
+        } elseif (preg_match('/^(\(.*?\))\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1
+            && isset($matches[1])
+        ) {
             $sources = $matches[1];
         } else {
             return '@psalm-flow "' . $flow . '" is neither "(...) -> ..." nor "proxy ..."';
@@ -1429,7 +1431,7 @@ final class FunctionLikeDocblockScanner
 
         // the parameters it names, not what calling one returns (`$name()`)
         preg_match_all('/\$(\w+)\b(?!\s*\()/', $sources, $matches);
-        foreach ($matches[1] as $name) {
+        foreach ($matches[1] ?? [] as $name) {
             if ($name !== 'this' && !isset($param_names[$name])) {
                 return '@psalm-flow names $' . $name . ', which is not a parameter';
             }

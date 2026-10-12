@@ -19,10 +19,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_keys;
-use function explode;
 use function preg_match;
-use function str_contains;
 use function str_ends_with;
+use function strpos;
+use function substr;
 
 /**
  * Destroying an object calls its destructor, an implicit call like `__toString` or `offsetGet`:
@@ -161,13 +161,17 @@ final class DestructorAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
-            if ($var_id === null || !str_contains($var_id, '::$')) {
+            $separator = $var_id === null ? false : strpos($var_id, '::$');
+
+            if ($var_id === null || $separator === false) {
                 return null;
             }
 
-            [$fq_class_name, $property_name] = explode('::$', $var_id, 2);
-
-            return self::getDeclaredPropertyType($statements_analyzer, $fq_class_name, $property_name);
+            return self::getDeclaredPropertyType(
+                $statements_analyzer,
+                substr($var_id, 0, $separator),
+                substr($var_id, $separator + 3),
+            );
         }
 
         if ($expr instanceof PhpParser\Node\Expr\PropertyFetch) {
@@ -227,6 +231,9 @@ final class DestructorAnalyzer
         return null;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getDeclaredPropertyType(
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,

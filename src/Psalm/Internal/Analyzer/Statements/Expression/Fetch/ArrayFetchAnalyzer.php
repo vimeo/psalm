@@ -98,6 +98,7 @@ use function array_pop;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function is_int;
 use function spl_object_id;
 use function str_starts_with;

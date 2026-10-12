@@ -23,6 +23,30 @@ final class ArrayKeyExistsTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
+                'code' => '<?php
+                    function f(array $options): string {
+                        if (!isset($options["b"]) || !is_string($options["b"])) {
+                            return "";
+                        }
+                        if (isset($options["a"])) {
+                            return "a";
+                        } else {
+                            /** @psalm-check-type-exact $options[\'b\'] = string */;
+                            return $options["b"];
+                        }
+                    }
+
+                    /** @param array<string, int|string> $options */
+                    function g(array $options): string {
+                        $options["b"] = "x";
+                        if (!array_key_exists("a", $options)) {
+                            /** @psalm-check-type-exact $options[\'b\'] = \'x\' */;
+                            return $options["b"];
+                        }
+                        return "";
+                    }',
+            ],
             'negatedArrayKeyExistsRemovesAnOptionalKey' => [
                 'code' => '<?php
                     /**
