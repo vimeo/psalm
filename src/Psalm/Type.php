@@ -734,6 +734,10 @@ abstract class Type
                 $combined_type->reference_free = true;
             }
 
+            if ($type_1->closure_state && $type_2->closure_state) {
+                $combined_type->closure_state = true;
+            }
+
             $combined_type->int_mask_bits = IntMask::combineBits($type_1, $type_2);
 
             if ($both_failed_reconciliation) {
