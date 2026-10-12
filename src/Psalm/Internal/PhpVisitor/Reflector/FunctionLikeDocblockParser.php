@@ -428,10 +428,12 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
-                /** @psalm-suppress PossiblyInvalidArrayAccess */
-                $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
+                // Take everything up to the first whitespace that is not inside
+                // generic parameters, e.g. `Foo<int, string>|Bar description`
+                preg_match('/^(?:[^\s<]++|(<(?:[^<>]++|(?1))*+>))++/', $throws_entry, $matches);
+                $throws_class = $matches[0] ?? '';
 
-                if (!$throws_class) {
+                if ($throws_class === '') {
                     throw new IncorrectDocblockException('Unexpectedly empty @throws');
                 }
 

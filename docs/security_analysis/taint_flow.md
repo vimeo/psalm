@@ -46,6 +46,35 @@ again in the return value. Thus, in case any of the input parameters to the func
 `inputOutputHandler` is tainted, then the resulting return value is as well. In this
 example `TaintedHtml` would be detected due to using `echo`.
 
+### Object to return value hint
+
+```php
+<?php // --taint-analysis
+interface Message
+{
+    /**
+     * @psalm-taint-specialize
+     * @psalm-flow ($this) -> return
+     */
+    public function getBody(): string;
+}
+
+/**
+ * @psalm-taint-source input
+ */
+function fetch(): Message {
+    // a request to another server
+}
+
+echo fetch()->getBody();
+```
+
+`$this` in a return value hint states that what a method returns holds what the object it is called on holds: here,
+the bodies of the messages `fetch()` returns are tainted, while those of the messages the code builds itself only hold
+what they were given. This is useful for methods whose bodies Psalm doesn't analyze, such as those of interfaces,
+stubs and vendor code. With `@psalm-taint-specialize`, each call returns what its own object holds; without it, what
+any object the method is called on holds flows into what every call returns.
+
 ### Combined proxy & return value hint
 
 ```php

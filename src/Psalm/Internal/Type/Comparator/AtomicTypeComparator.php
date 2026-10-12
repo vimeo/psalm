@@ -146,6 +146,22 @@ final class AtomicTypeComparator
                 return true;
             }
 
+            // a conditional purity argument (`[$param is array ? pure : P]`) fits if both branches do
+            if ($input_type_part instanceof TConditional) {
+                $branch_type_parts = array_merge(
+                    array_values($input_type_part->if_type->getAtomicTypes()),
+                    array_values($input_type_part->else_type->getAtomicTypes()),
+                );
+
+                foreach ($branch_type_parts as $branch_type_part) {
+                    if (!self::isContainedBy($codebase, $branch_type_part, $container_type_part)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             // a capability set fits a purity template if every value of the template allows it,
             // i.e. its lower bound does: `pure` fits `Closure[P]` for any P
             if ($input_type_part instanceof TCapabilities

@@ -389,6 +389,14 @@ final class VariableFetchAnalyzer
 
             self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
 
+            if ($var_name === '$argv'
+                && $context->is_global
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                $argv_source = self::getArgvTaintSource($statements_analyzer, $graph, $stmt);
+                $stmt_type = $stmt_type->addParentNodes([$argv_source->id => $argv_source]);
+            }
+
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
@@ -513,6 +521,25 @@ final class VariableFetchAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The arguments of a CLI script are its user's input, and PHP builds $argv from the query string with
+     * register_argc_argv (see also ArrayFetchAnalyzer::USER_CONTROLLED_SERVER_KEYS).
+     */
+    public static function getArgvTaintSource(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        PhpParser\Node\Expr\Variable $stmt,
+    ): DataFlowNode {
+        $taint_source = DataFlowNode::getForTaint(
+            '$argv',
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            TaintKind::ALL_INPUT,
+        );
+        $graph->addSource($taint_source);
+
+        return $taint_source;
     }
 
     private static function taintVariable(

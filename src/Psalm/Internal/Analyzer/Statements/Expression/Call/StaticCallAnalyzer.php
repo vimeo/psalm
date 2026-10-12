@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -45,6 +46,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
         Context $context,
         ?TemplateResult $template_result = null,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $method_id = null;
 
         $lhs_type = null;
@@ -224,18 +227,36 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $moved_call = false;
         $has_existing_method = false;
 
+        // `$a?->b()::c()` short-circuits the whole chain: null is not a class to call, it is the result
+        $class_state = $stmt->class instanceof PhpParser\Node\Expr && $lhs_type->isNullable()
+            ? NullsafeChainState::of($stmt->class)
+            : NullsafeChainState::None;
+
         foreach ($lhs_type->getAtomicTypes() as $lhs_type_part) {
             AtomicStaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues,
+                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
                 $template_result,
             );
+        }
+
+        if ($class_state !== NullsafeChainState::None) {
+            $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+
+            if ($stmt_type && !$stmt_type->isNullable()) {
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, Type::getNull()),
+                );
+            }
         }
 
         if (!$stmt->isFirstClassCallable() && !$has_existing_method) {

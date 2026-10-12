@@ -124,12 +124,14 @@ final class IssueBufferTest extends TestCase
         $projectAnalyzer->method('getCodebase')->willReturn($codebase);
 
         $projectAnalyzer->stdout_report_options = new ReportOptions();
+        // the report goes to STDOUT, keep the baselined issues out of it
+        $projectAnalyzer->stdout_report_options->show_info = false;
         $projectAnalyzer->generated_report_options = [];
 
         ob_start();
         IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
         $output = (string) ob_get_clean();
-        $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
+        $this->assertStringContainsString('No errors found!', $output, 'all issues baselined');
         IssueBuffer::clear();
     }
 

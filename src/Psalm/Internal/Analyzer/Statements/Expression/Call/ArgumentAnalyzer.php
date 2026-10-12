@@ -1919,14 +1919,23 @@ final class ArgumentAnalyzer
         if ($method_id && $taint_flow_graph) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-            if ($declaring_method_id && (string) $declaring_method_id !== (string) $method_id) {
+            // the parameters of the body of the method, keyed by the class it is analyzed as one of (see
+            // FunctionLikeAnalyzer::getBodyMethodId())
+            $cased_body_method_id = $declaring_method_id
+                ? FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id)
+                : null;
+
+            if ($declaring_method_id
+                && $cased_body_method_id !== null
+                && strtolower($cased_body_method_id) !== strtolower($cased_method_id)
+            ) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
                 // with no call-site context, and out of it through every call's return.
                 $new_sink = DataFlowNode::getForMethodArgument(
-                    $codebase->methods->getCasedMethodId($declaring_method_id),
+                    $cased_body_method_id,
                     DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
                     $declaring_storage,
                     $specialization_location,
@@ -1952,7 +1961,7 @@ final class ArgumentAnalyzer
             // keyed as the body of the method keys its callable parameters (a magic method has none)
             $declaring_method_id = $method_id ? $codebase->methods->getDeclaringMethodId($method_id) : null;
             if ($method_id && $declaring_method_id) {
-                $callable_param_method_id = FunctionLikeAnalyzer::getByRefParamsOutMethodId($codebase, $method_id);
+                $callable_param_method_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
                 $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 

@@ -232,7 +232,8 @@ charged more precisely.
 A method that needs `write-this-props` writes its own `$this`, which may or may not be the
 caller's. The call is charged according to the receiver:
 
-- the caller's own `$this`: `write-this-props`;
+- the caller's own `$this`, also when a call on it of a method returning its receiver gives it
+  back (see [Fluent calls](#fluent-calls)): `write-this-props`;
 - an object the caller created with `new`, from a class whose contract needs at most
   `read-props|write-this-props|write-refs`: nothing, as nobody else can see it change;
 - any other object, including a parameter, a property of `$this`, or an object returned by
@@ -281,6 +282,50 @@ The `write-this-props` that a class purity template of the receiver is bound to
 (`Doer[write-this-props]`, see [Purity templates](#purity-templates)) is charged the same way,
 except that it is never waived for a new object. A receiver reached from
 [global state](#global-state) also costs `write-globals`.
+
+### Fluent calls
+
+A method returns its receiver if it declares `@return $this`, or if no override can replace it
+(it is private, final or in a final class) and each of its returns is `return $this;`. A call on
+`$this` of such a method gives back `$this`, so a fluent chain on `$this` only mutates `$this`,
+and so does writing a property of what the chain returns. `@return static` is not enough: the
+method may return another instance of the class.
+
+`@return $this` is a promise, checked like a return type: the method and every override of it may
+only return `$this`, or a call on it of another method returning its receiver; any other return is
+an [InvalidReturnStatement](../running_psalm/issues/InvalidReturnStatement.md).
+
+```php
+<?php
+abstract class Query {
+    /** @var list<string> */
+    private array $conditions = [];
+
+    /**
+     * @return $this
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function where(string $condition): static {
+        $this->conditions[] = $condition;
+        return $this;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function whereBetween(string $from, string $to): static {
+        return $this->where($from)->where($to); // fine: costs write-this-props
+    }
+
+    /** @psalm-capabilities read-props */
+    public function copy(): static {
+        return clone $this;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function copyWhere(string $condition): static {
+        return $this->copy()->where($condition); // ImpureMethodCall: The context is read-props|write-this-props but method Query::where requires write-props
+    }
+}
+```
 
 ### By-reference arguments
 
@@ -668,6 +713,14 @@ function fromObject(stdClass $object): int {
 An argument that may be either an array or an object gives the union of both types, so calling
 `add()` on the result costs `write-props`. A `@return` without a condition binds type templates
 the same way: with `@return Box<int>` on its constructor, `new Box()` is a `Box<int>`.
+
+A condition can also be given to each purity argument, inside the brackets, and a branch may be a
+purity template of the constructor, bound from the argument. With
+`@param array<K, V>|Container[PP]<K, V> $param` and `@return self[$param is array ? pure : PP]<K, V>`,
+`new Wrapper($container)` takes the purity argument of `$container`, `io` for a
+`Container[io]<string, int>`. Such conditional purity arguments are resolved per call in the
+`@return` of any function or method, also nested (`list<Box[$x is array ? pure : io]<int>>`), and in
+`@psalm-self-out`.
 
 The `@return` of a constructor may only name its own class (or `self` or `static`); anything else
 is an `InvalidDocblock`. Since it names the class itself, a subclass inheriting the constructor,

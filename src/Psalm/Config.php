@@ -2871,6 +2871,7 @@ final class Config
                     '8.3',
                     '8.4',
                     '8.5',
+                    '8.6',
                 ];
 
                 foreach ($php_versions as $candidate) {

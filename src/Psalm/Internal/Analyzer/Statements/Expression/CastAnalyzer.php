@@ -551,12 +551,6 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
-
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
@@ -591,10 +585,9 @@ final class CastAnalyzer
             if ($atomic_type instanceof TString) {
                 if ($atomic_type instanceof TLiteralString) {
                     $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNumericString) {
-                    $castable_types[] = new TFloat();
                 } else {
-                    // any normal string is technically $valid_floats[] = new TLiteralFloat(0.0);
+                    // a numeric string can be any float, and any other string is technically
+                    // $valid_floats[] = new TLiteralFloat(0.0);
                     // however we cannot be certain that it's not inferred, therefore less strict
                     $castable_types[] = new TFloat();
                 }
@@ -630,13 +623,7 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TNamedObject) {
-                $intersection_types = [$atomic_type];
-
-                if ($atomic_type->extra_types) {
-                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
-                }
-
-                foreach ($intersection_types as $intersection_type) {
+                foreach ([$atomic_type, ...$atomic_type->extra_types] as $intersection_type) {
                     if (!$intersection_type instanceof TNamedObject) {
                         continue;
                     }
@@ -730,7 +717,7 @@ final class CastAnalyzer
             $statements_analyzer,
             $float_type,
             $stmt,
-            $parent_nodes,
+            $stmt_type->parent_nodes,
             'float',
             $stmt_type,
         );

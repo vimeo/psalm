@@ -107,6 +107,23 @@ final class MethodComparator
             $suppressed_issues,
         );
 
+        // a method a class takes from a trait is bound to what the class binds, not the trait
+        self::checkCapabilities(
+            $codebase,
+            $guide_classlike_storage,
+            $implementer_classlike_storage,
+            $implementer_classlike_storage->is_trait
+                && $codebase->classlike_storage_provider->has($implementer_called_class_name)
+                ? $codebase->classlike_storage_provider->get($implementer_called_class_name)
+                : $implementer_classlike_storage,
+            $guide_method_storage,
+            $implementer_method_storage,
+            $cased_guide_method_id,
+            $prevent_method_signature_mismatch,
+            $code_location,
+            $suppressed_issues,
+        );
+
         if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
             self::compareMethodSignatureReturnTypes(
                 $codebase,
@@ -379,7 +396,25 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
 
+    /**
+     * An override may need fewer capabilities than the overridden method, never more
+     *
+     * @param  string[]         $suppressed_issues
+     */
+    private static function checkCapabilities(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        ClassLikeStorage $implementer_classlike_storage,
+        ClassLikeStorage $binding_classlike_storage,
+        MethodStorage $guide_method_storage,
+        MethodStorage $implementer_method_storage,
+        string $cased_guide_method_id,
+        bool $prevent_method_signature_mismatch,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
         // an override may need fewer capabilities than the overridden method, never more. For a
         // method with `@psalm-purity-from-template`, the capabilities it needs unconditionally
         // must fit those the overridden method needs unconditionally (a caller passing pure
@@ -388,36 +423,12 @@ final class MethodComparator
         $guide_capabilities = $guide_method_storage->capabilities;
         $implementer_capabilities = $implementer_method_storage->capabilities;
 
-        // a class-level purity template the implementer's class binds (`@extends Doer[io]`)
-        // is part of what the overridden method needs unconditionally in that class. One it
-        // forwards to a purity template of its own (`@extends Doer[P]`) is still open: it will be
-        // bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and
-        // an override may use the rest only through `@psalm-purity-from-template P`, like Hack's
-        // abstract context constants
-        foreach ($guide_method_storage->purity_from_templates as $template_name) {
-            if (!isset($guide_classlike_storage->template_types[$template_name])) {
-                continue;
-            }
-
-            $bound_type = $implementer_classlike_storage
-                ->template_extended_params[$guide_classlike_storage->name][$template_name] ?? null;
-
-            if ($bound_type === null) {
-                continue;
-            }
-
-            foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
-                if ($bound_atomic instanceof TTemplateParam
-                    && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
-                ) {
-                    $guide_capabilities |= $codebase->classlike_storage_provider
-                        ->get($bound_atomic->defining_class)
-                        ->template_lower_bounds[$bound_atomic->param_name] ?? Capabilities::NONE;
-                } else {
-                    $guide_capabilities |= Capabilities::fromType(new Union([$bound_atomic]));
-                }
-            }
-        }
+        $guide_capabilities |= self::getBoundCapabilities(
+            $codebase,
+            $guide_classlike_storage,
+            $guide_method_storage,
+            $binding_classlike_storage,
+        );
 
         if (Capabilities::allows($guide_capabilities, $implementer_capabilities)) {
             $guide_capabilities = $guide_method_storage->getWorstCaseCapabilities(
@@ -444,6 +455,51 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * What the class-level purity templates the overridden method depends on are bound to in the class of the
+     * override: a template the class binds (`@extends Doer[io]`) is part of what the overridden method needs
+     * unconditionally there. One it forwards to a purity template of its own (`@extends Doer[P]`) is still open: it
+     * will be bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and an override may
+     * use the rest only through `@psalm-purity-from-template P`, like Hack's abstract context constants.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getBoundCapabilities(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        ClassLikeStorage $binding_classlike_storage,
+    ): int {
+        $capabilities = Capabilities::NONE;
+
+        foreach ($guide_method_storage->purity_from_templates as $template_name) {
+            if (!isset($guide_classlike_storage->template_types[$template_name])) {
+                continue;
+            }
+
+            $bound_type = $binding_classlike_storage
+                ->template_extended_params[$guide_classlike_storage->name][$template_name] ?? null;
+
+            if ($bound_type === null) {
+                continue;
+            }
+
+            foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
+                if ($bound_atomic instanceof TTemplateParam
+                    && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
+                ) {
+                    $capabilities |= $codebase->classlike_storage_provider
+                        ->get($bound_atomic->defining_class)
+                        ->template_lower_bounds[$bound_atomic->param_name] ?? Capabilities::NONE;
+                } else {
+                    $capabilities |= Capabilities::fromType(new Union([$bound_atomic]));
+                }
+            }
+        }
+
+        return $capabilities;
     }
 
     /**

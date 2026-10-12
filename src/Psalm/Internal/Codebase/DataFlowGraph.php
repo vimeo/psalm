@@ -114,7 +114,8 @@ abstract class DataFlowGraph
      * replaced (see ArrayAssignmentAnalyzer::getOverwritePathType()), drops a flow whose open assignments are
      * $open_assignments: a flow of that value, the innermost of them being the assignment to that key. A flow of
      * the array's other values, of its keys or of all of it goes on, also one whose key isn't known, which may be
-     * that one.
+     * that one. A flow of all of it is not under that key anymore, though (see
+     * TaintFlowGraph::fetchesAnOverwrittenKey()).
      *
      * @param list<string> $open_assignments
      * @psalm-pure

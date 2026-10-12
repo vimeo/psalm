@@ -510,6 +510,22 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->capabilities,
                     )]);
+                } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
+                    && !$statements_analyzer->isStatic()
+                    && isset($class_storage->pseudo_methods[$method_name_lc])
+                    && $codebase->methodExists(
+                        new MethodIdentifier($method_id->fq_class_name, '__call'),
+                        is_used: false,
+                    )
+                ) {
+                    // Same instance-context fallback as ordinary parent::xxx() calls below:
+                    // the closure is bound to $this and dispatches through __call
+                    $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                    $return_type_candidate = new Union([new TClosure(
+                        $pseudo_method_storage->params,
+                        $pseudo_method_storage->return_type,
+                        $pseudo_method_storage->capabilities,
+                    )]);
                 } elseif ($codebase->methodExists(
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     null,

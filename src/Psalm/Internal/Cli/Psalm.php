@@ -193,6 +193,7 @@ final class Psalm
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $argv = CliUtils::chosenByOperator($argv);
         gc_collect_cycles();
         gc_disable();
 
@@ -201,7 +202,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
         if (false === $options) {
             throw new RuntimeException('Failed to parse CLI options');
         }
@@ -1495,7 +1496,8 @@ final class Psalm
 
             --find-dead-code[=auto]
             --find-unused-code[=auto]
-                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
+                Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'.
+                Unused code detection is already on by default (see the findUnusedCode config option)
 
             --find-unused-psalm-suppress
                 Finds all @psalm-suppress annotations that aren’t used, including those on
