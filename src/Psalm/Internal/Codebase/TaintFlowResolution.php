@@ -21,6 +21,7 @@ use function array_slice;
 use function count;
 use function explode;
 use function implode;
+use function in_array;
 use function ksort;
 use function max;
 use function min;
@@ -75,10 +76,28 @@ final class TaintFlowResolution
     private const PROPERTY_FAMILY = 1;
 
     /**
+     * The prefix of the type of an edge from an array to the array it becomes once its value under a key is replaced
+     * (see ArrayAssignmentAnalyzer::getOverwritePathType())
+     */
+    private const OVERWRITE_PREFIX = 'arrayvalue-overwrite-';
+
+    /**
      * The class (see getClass()) of an open assignment of an array key: a fetch of an array value ignores
      * it, a fetch of an array key doesn't.
      */
     private const KEY_CLASS = 'key';
+
+    /**
+     * The class of an open assignment of an array value under a key not known: a fetch of an array value takes
+     * it, under any key, but a fetch of an array key doesn't, as the keys of the array don't hold it.
+     */
+    private const UNKEYED_VALUE_CLASS = 'value';
+
+    /**
+     * The class of the open assignment a value has in the string a builtin encodes all of it in (see
+     * DataFlowGraph::SERIALIZATION_PATH_TYPE): any fetch from the string takes it.
+     */
+    private const SERIALIZATION_CLASS = 'serialization';
 
     /**
      * How many of its innermost open assignments of each expression type a flow outside of any context keeps
@@ -283,6 +302,14 @@ final class TaintFlowResolution
      * @var array<int, true>
      */
     private array $array_conversion_path_types = [];
+
+    /**
+     * The path types of the edges to what an array becomes once its value under a key is replaced (see
+     * DataFlowGraph::isOverwritten() and addOverwrite())
+     *
+     * @var array<int, true>
+     */
+    private array $overwrite_path_types = [];
 
     /**
      * Open assignments => key (see internOpenAssignments())
@@ -495,6 +522,14 @@ final class TaintFlowResolution
     private array $filter_conversions = [];
 
     /**
+     * Filter => [how many of their open assignments of each expression type the flows going through an overwrite
+     * closed, whether it is for the calls they are anywhere in an array of (see getAnywhereFilter())]
+     *
+     * @var array<int, array{array<int, int>, bool}>
+     */
+    private array $filter_anywhere = [];
+
+    /**
      * Entry => position (see getPosition()) => class => the filter of the entry for the calls whose open
      * assignment there is of that class (see dependOnClass())
      *
@@ -558,37 +593,12 @@ final class TaintFlowResolution
     private array $entry_tracks_classes = [];
 
     /**
-     * Specialization key => the key standing for the function-like called there: two keys stand for the same
-     * one when a node is specialized for both (see getCallee())
+     * Unspecialized node entered by a specialized call => exit node id => whether the exit is one of the
+     * function-like of the node entered (see isExitOfEntered())
      *
-     * @var array<string, string>
+     * @var array<string, array<string, bool>>
      */
-    private array $callees = [];
-
-    /**
-     * Specialized call entry => the function-likes (see getCallee()) of the calls entering it and of those
-     * enclosing them => true: an exit of another function-like can't lead back to a call site (see
-     * addEntryExit())
-     *
-     * @var array<int, array<string, true>>
-     */
-    private array $entry_callees = [];
-
-    /**
-     * Specialized call entry => the specialized call entries with calls made in its walk => true
-     *
-     * @var array<int, array<int, true>>
-     */
-    private array $entry_dependents = [];
-
-    /**
-     * Specialized call entry => function-like => the exits of that function-like its walk reached (see
-     * addEntryExit()): exit node id . ' ' . open assignments => [exit node id, open assignments, state, caller
-     * link, kept, added]
-     *
-     * @var array<int, array<string, array<string, array{string, int, int, int, int, int}>>>
-     */
-    private array $unmatched_exits = [];
+    private array $exits_of_entered = [];
 
     /**
      * Entry => the taints of the flows entering it (see getUnionTaints())
@@ -673,6 +683,7 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $param_keys
      * @param array<string, array{string, string, int, int}> $call_arguments
      * @param array<string, array{string, string, int, int, string}> $recursive_calls
+     * @param array<string, true> $shared_state see TaintFlowGraph::addSharedState()
      * @psalm-capabilities read-props
      */
     public function __construct(
@@ -688,6 +699,7 @@ final class TaintFlowResolution
         private readonly array $param_keys,
         private readonly array $call_arguments,
         private readonly array $recursive_calls,
+        private readonly array $shared_state,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -833,7 +845,6 @@ final class TaintFlowResolution
 
         $this->computeObservableDepths($reverse);
         $this->computeTaintAddingReachable($reverse);
-        $this->computeCallees();
         $this->computeKeyParamCalls();
     }
 
@@ -1088,50 +1099,6 @@ final class TaintFlowResolution
     }
 
     /**
-     * Groups the specialization keys by the function-like called (see getCallee()): the specializations of
-     * the nodes of a function-like (its parameters, its return, ...) share the keys of its calls.
-     *
-     * @psalm-external-mutation-free
-     */
-    private function computeCallees(): void
-    {
-        foreach ($this->specializations as $specializations) {
-            $first = null;
-
-            foreach ($specializations as $specialization_key => $_) {
-                $callee = $this->getCallee($specialization_key);
-
-                if ($first === null) {
-                    $first = $callee;
-                } elseif ($callee !== $first) {
-                    $this->callees[$callee] = $first;
-                }
-            }
-        }
-    }
-
-    /**
-     * The key standing for the function-like called at the call site of specialization key $key
-     *
-     * @psalm-external-mutation-free
-     */
-    private function getCallee(string $key): string
-    {
-        $callee = $key;
-
-        while (isset($this->callees[$callee]) && $this->callees[$callee] !== $callee) {
-            $callee = $this->callees[$callee];
-        }
-
-        // shorten the path for the next time
-        if ($callee !== $key) {
-            $this->callees[$key] = $callee;
-        }
-
-        return $callee;
-    }
-
-    /**
      * @psalm-external-mutation-free
      */
     private function getPathTypeId(string $path_type): int
@@ -1153,6 +1120,8 @@ final class TaintFlowResolution
 
         if (str_ends_with($path_type, TaintFlowGraph::ARRAY_CONVERSION_SUFFIX)) {
             $this->array_conversion_path_types[$id] = true;
+        } elseif (str_starts_with($path_type, self::OVERWRITE_PREFIX)) {
+            $this->overwrite_path_types[$id] = true;
         }
 
         return $id;
@@ -1179,8 +1148,19 @@ final class TaintFlowResolution
             return [self::ARRAY_FAMILY, '', self::ARRAY_FAMILY, -1];
         }
 
-        if (str_starts_with($path_type, 'arrayvalue-overwrite-')) {
-            return [-1, '!' . substr($path_type, 21), -1, -1];
+        if (str_starts_with($path_type, self::OVERWRITE_PREFIX)) {
+            return [-1, '!' . substr($path_type, strlen(self::OVERWRITE_PREFIX)), -1, -1];
+        }
+
+        if ($path_type === DataFlowGraph::SERIALIZATION_PATH_TYPE) {
+            // what a value holds, all in the string it is encoded in (see getClass())
+            return [-1, null, -1, self::ARRAY_FAMILY];
+        }
+
+        if ($path_type === DataFlowGraph::UNSERIALIZATION_PATH_TYPE) {
+            // the value decoded from a string is the one encoded in it: that closes its innermost open array
+            // assignment, whatever it is, without a fetch observing it (see applyPathType())
+            return [-1, null, self::ARRAY_FAMILY, -1];
         }
 
         $observed_family = -1;
@@ -1315,17 +1295,31 @@ final class TaintFlowResolution
         [$made, $closed] = $this->open_assignments[$open_assignments];
         $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
 
+        // the innermost open array assignment the flow made, if any: the overwrites of a flow anywhere in an array
+        // (see addOverwrite()) are no assignment, and only ever below the others
+        $innermost = $array_assignments
+            && !isset($this->overwrite_path_types[$array_assignments[count($array_assignments) - 1]])
+            ? $array_assignments[count($array_assignments) - 1]
+            : -1;
+
         if (isset($this->array_conversion_path_types[$path_type])) {
             // An array converts to "Array", or to 0/1, never to what it holds: the conversion takes nothing the
             // flow put in an array as its innermost open assignment, under a key or as a key. That's the one it
             // made last, past any open assignment of a property it made: those of the call entering its context
             // are all outer ones. How the two expression types interleave where it made both isn't known, so the
-            // flow goes on, and where it made none, the innermost one is the call's (see passesConversion()).
+            // flow goes on, and where it made none, the innermost one is the call's (see passesConversion()). A
+            // value encoded in a string (see DataFlowGraph::SERIALIZATION_PATH_TYPE) isn't in an array, and a flow
+            // anywhere in an array is all of one.
             $property_assignments = $made[self::PROPERTY_FAMILY] ?? [];
 
-            if ($array_assignments || $property_assignments) {
-                $next = $array_assignments && !$property_assignments ? self::IGNORED : $open_assignments;
-            } elseif ($closed[self::ARRAY_FAMILY] === self::NO_CALL
+            if ($innermost >= 0 || $property_assignments) {
+                $next = $innermost >= 0
+                    && !$property_assignments
+                    && $this->path_types[$innermost] !== DataFlowGraph::SERIALIZATION_PATH_TYPE
+                    ? self::IGNORED
+                    : $open_assignments;
+            } elseif ($array_assignments
+                || $closed[self::ARRAY_FAMILY] === self::NO_CALL
                 || $closed[self::ARRAY_FAMILY] === self::FORGOTTEN
                 || $closed[self::PROPERTY_FAMILY] === self::NO_CALL
                 || $closed[self::PROPERTY_FAMILY] === self::FORGOTTEN
@@ -1342,14 +1336,21 @@ final class TaintFlowResolution
             // filters, would lose the precision of the fetches in them (see getAssignmentClass()) for no flow
             // they would take otherwise. Nor is it an observation keeping the open assignments of the flows
             // reaching it (see computeObservableDepths()): where no fetch past it can observe the one it would
-            // stop, the flow goes on as it did through the plain edge it replaces.
-            $innermost = $array_assignments ? $array_assignments[count($array_assignments) - 1] : -1;
-            $next = $innermost >= 0
-                && !self::classPassesFetch($this->getClass($innermost, self::ARRAY_FAMILY), $observed_key)
-                ? self::IGNORED
-                : $open_assignments;
-        } elseif ($array_assignments
-            && $this->path_types[$array_assignments[count($array_assignments) - 1]] === 'arraykey-assignment'
+            // stop, the flow goes on as it did through the plain edge it replaces. A flow anywhere in the array
+            // isn't under that key anymore, though (see addOverwrite()).
+            if ($innermost >= 0) {
+                $next = self::classPassesFetch($this->getClass($innermost, self::ARRAY_FAMILY), $observed_key)
+                    ? $open_assignments
+                    : self::IGNORED;
+            } else {
+                $anywhere = $this->isAnywhereInArray($made, $closed);
+
+                $next = $anywhere === null
+                    ? self::OBSERVES_CALL
+                    : ($anywhere ? $this->addOverwrite($open_assignments, $path_type) : $open_assignments);
+            }
+        } elseif ($innermost >= 0
+            && $this->path_types[$innermost] === 'arraykey-assignment'
             && $this->path_types[$path_type] === 'arrayvalue-fetch'
         ) {
             // The value of an item under an unknown key doesn't take what was assigned to its key either. Only
@@ -1358,9 +1359,24 @@ final class TaintFlowResolution
             $next = self::IGNORED;
         } elseif ($observed_family === -1) {
             $next = $this->applyPathType($open_assignments, $path_type);
-        } elseif ($made[$observed_family]) {
+        } elseif ($this->isOverwrittenAnywhere($made)) {
+            // A fetch from an array the flow is anywhere in but under the keys overwritten (see addOverwrite()):
+            // not of one of those, and else anywhere in what it fetches (see applyPathType())
+            $overwrite = $observed_family === self::ARRAY_FAMILY && $observed_key !== ''
+                ? $this->path_type_ids[self::OVERWRITE_PREFIX . (string) $observed_key] ?? -1
+                : -1;
+
+            $next = $overwrite !== -1 && in_array($overwrite, $array_assignments, true)
+                ? self::IGNORED
+                : $this->applyPathType($open_assignments, $path_type);
+        } elseif ($observed_family === self::ARRAY_FAMILY ? $innermost !== -1 : $made[$observed_family] !== []) {
             $next = self::classPassesFetch(
-                $this->getClass($made[$observed_family][count($made[$observed_family]) - 1], $observed_family),
+                $this->getClass(
+                    $observed_family === self::ARRAY_FAMILY
+                        ? $innermost
+                        : $made[$observed_family][count($made[$observed_family]) - 1],
+                    $observed_family,
+                ),
                 $observed_key ?? '',
             ) ? $this->applyPathType($open_assignments, $path_type) : self::IGNORED;
         } elseif ($closed[$observed_family] !== self::NO_CALL && $closed[$observed_family] !== self::FORGOTTEN) {
@@ -1393,7 +1409,28 @@ final class TaintFlowResolution
         [$made, $closed, $guards, $call] = $this->open_assignments[$open_assignments];
 
         if ($closed_family !== -1) {
-            if ($made[$closed_family]) {
+            $array_assignments = $made[self::ARRAY_FAMILY];
+            $made_overwrites = $array_assignments
+                && isset($this->overwrite_path_types[$array_assignments[count($array_assignments) - 1]]);
+
+            if ($made_overwrites && !$made[self::PROPERTY_FAMILY]) {
+                // Anywhere in an array but under the keys overwritten (see addOverwrite()): a fetch takes the flow
+                // anywhere in what it fetches, where those keys aren't overwritten, nor those overwritten in the
+                // array of the call entering its context (see composeOpenAssignments()). The decoding of a string
+                // closes nothing it put in one.
+                if ($this->path_types[$path_type] !== DataFlowGraph::UNSERIALIZATION_PATH_TYPE) {
+                    $made[self::ARRAY_FAMILY] = [];
+
+                    if ($closed[self::ARRAY_FAMILY] !== self::NO_CALL
+                        && $closed[self::ARRAY_FAMILY] !== self::FORGOTTEN
+                    ) {
+                        $closed[self::ARRAY_FAMILY]++;
+                    }
+                }
+            } elseif ($closed_family === self::ARRAY_FAMILY
+                ? $array_assignments && !$made_overwrites
+                : $made[$closed_family]
+            ) {
                 array_pop($made[$closed_family]);
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
                 // past MAX_CALL_OPEN_ASSIGNMENT_DEPTH, FORGOTTEN
@@ -1407,6 +1444,76 @@ final class TaintFlowResolution
         }
 
         return $this->internOpenAssignments($made, $closed, $guards, $call);
+    }
+
+    /**
+     * Whether a flow that made the open assignments $made is anywhere in an array but under the keys it went
+     * through the overwrites of (see addOverwrite()): the open assignments it made are only those overwrites.
+     *
+     * @param array<int, list<int>> $made
+     * @psalm-mutation-free
+     */
+    private function isOverwrittenAnywhere(array $made): bool
+    {
+        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+
+        return $array_assignments !== []
+            && ($made[self::PROPERTY_FAMILY] ?? []) === []
+            && isset($this->overwrite_path_types[$array_assignments[count($array_assignments) - 1]]);
+    }
+
+    /**
+     * Whether a flow that made the open assignments $made, and closed $closed of those of the call entering its
+     * context, is anywhere in an array, rather than under a key or in a property of it: it has no open
+     * assignment but overwrites (see addOverwrite()). Null if that depends on the open assignments of the call,
+     * which it doesn't know (see passesAnywhere()). A flow that forgot some doesn't know it is.
+     *
+     * @param array<int, list<int>> $made
+     * @param array<int, int> $closed
+     * @psalm-mutation-free
+     */
+    private function isAnywhereInArray(array $made, array $closed): ?bool
+    {
+        if ($made[self::PROPERTY_FAMILY] ?? []) {
+            return false;
+        }
+
+        if ($made[self::ARRAY_FAMILY] ?? []) {
+            return $this->isOverwrittenAnywhere($made);
+        }
+
+        if ($closed[self::ARRAY_FAMILY] === self::NO_CALL) {
+            return true;
+        }
+
+        if ($closed[self::ARRAY_FAMILY] === self::FORGOTTEN || $closed[self::PROPERTY_FAMILY] === self::FORGOTTEN) {
+            return false;
+        }
+
+        return null;
+    }
+
+    /**
+     * The open assignments $open_assignments of a flow anywhere in an array (see isAnywhereInArray()) after it
+     * goes through the edge of type $path_type to what the array becomes once its value under a key is replaced:
+     * the flow is anywhere in it but under that key. It keeps the overwrite among its open assignments, which a
+     * fetch of that key drops it at, and any other fetch closes with the others (see getNextOpenAssignments()).
+     * A key overwritten again is kept once, or a loop overwriting it would make new open assignments forever.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function addOverwrite(int $open_assignments, int $path_type): int
+    {
+        [$made, $closed] = $this->open_assignments[$open_assignments];
+
+        if (in_array($path_type, $made[self::ARRAY_FAMILY], true)) {
+            return $open_assignments;
+        }
+
+        $made[self::ARRAY_FAMILY][] = $path_type;
+        self::capMadeOpenAssignments($made, $closed, self::ARRAY_FAMILY);
+
+        return $this->internOpenAssignments($made, $closed, $this->open_assignments[$open_assignments][2]);
     }
 
     /**
@@ -1435,10 +1542,21 @@ final class TaintFlowResolution
                 $made[$family] = $flow_made[$family];
                 $closed[$family] = $call_closed[$family] === self::NO_CALL ? self::NO_CALL : self::FORGOTTEN;
             } elseif ($flow_closed_count <= $count) {
-                $made[$family] = array_merge(
-                    array_slice($call_made[$family], 0, $count - $flow_closed_count),
-                    $flow_made[$family],
-                );
+                $call_left = array_slice($call_made[$family], 0, $count - $flow_closed_count);
+
+                // A fetch the flow took anywhere in the array of the call takes it out of the overwrites of the call
+                // too (see applyPathType()), as may one of a property of it
+                if ($family === self::ARRAY_FAMILY
+                    && $call_left
+                    && isset($this->overwrite_path_types[$call_left[count($call_left) - 1]])
+                    && (($flow_closed_count > 0
+                            && isset($this->overwrite_path_types[$call_made[$family][$count - $flow_closed_count]]))
+                        || $flow_closed[self::PROPERTY_FAMILY] > count($call_made[self::PROPERTY_FAMILY]))
+                ) {
+                    $call_left = [];
+                }
+
+                $made[$family] = array_merge($call_left, $flow_made[$family]);
                 $closed[$family] = $call_closed[$family];
             } else {
                 $made[$family] = $flow_made[$family];
@@ -1509,6 +1627,12 @@ final class TaintFlowResolution
 
         foreach (self::FAMILIES as $family => $_) {
             $depth = ($depths >> ($family * self::DEPTH_BITS)) & self::DEPTH_MASK;
+
+            // a fetch of a key drops a flow anywhere in an array whichever of its overwrites is of that key (see
+            // getNextOpenAssignments())
+            if ($depth > 0 && $family === self::ARRAY_FAMILY && $this->isOverwrittenAnywhere($made)) {
+                $depth = max($depth, count($made[$family]));
+            }
 
             self::capOpenAssignments($made, $closed, $family, $depth);
 
@@ -1621,6 +1745,27 @@ final class TaintFlowResolution
     private function walk(int $state): void
     {
         $id = $this->state_nodes[$state];
+
+        if (isset($this->shared_state[$id])
+            && isset($this->forward_edges[$id])
+            && !$this->isOutsideOfCalls($this->state_contexts[$state])
+        ) {
+            // What a specialized call leaves in shared state (see TaintFlowGraph::addSharedState()), any other call
+            // may read: the flow leaves the call there, as an exit of its entry (see exitThroughCaller()), rather
+            // than staying in it until it reaches an exit of the call, which would then only lead back to the call
+            // site.
+            $this->addEntryExit(
+                $this->state_contexts[$state],
+                $id,
+                $this->state_open_assignments[$state],
+                $state,
+                0,
+                $this->state_kept[$state],
+                $this->state_added[$state],
+            );
+
+            return;
+        }
 
         if (isset($this->forward_edges[$id])) {
             if (!isset($this->root_entries[$state])
@@ -1833,6 +1978,27 @@ final class TaintFlowResolution
         ) {
             // it goes on for the calls whose innermost open assignment isn't one of an array
             $context = $this->getConversionFilter($context, $this->open_assignments[$open_assignments][1]);
+            $next_open_assignments = $open_assignments;
+        } elseif ($next_open_assignments === self::OBSERVES_CALL
+            && isset($this->overwrite_path_types[$path_type])
+        ) {
+            // For the calls the flow is anywhere in an array of, it goes on anywhere in it but under the key
+            // overwritten (see addOverwrite()), and for the others as through the plain edge it replaces. (An
+            // overwrite leads from an array to an array, never into a sink.)
+            $closed = $this->open_assignments[$open_assignments][1];
+
+            $this->reach(
+                $to_id,
+                $this->getAnywhereFilter($context, $closed, true),
+                $this->addOverwrite($open_assignments, $path_type),
+                $kept,
+                $added,
+                $predecessor,
+                $link,
+                $path_type,
+            );
+
+            $context = $this->getAnywhereFilter($context, $closed, false);
             $next_open_assignments = $open_assignments;
         } elseif ($next_open_assignments === self::OBSERVES_CALL) {
             // it goes on for the calls whose open assignment it doesn't ignore
@@ -2101,18 +2267,6 @@ final class TaintFlowResolution
     {
         $this->entry_callers[$entry][$caller] = $specialization_key;
 
-        if ($this->entry_kinds[$entry] !== self::ENTRY_CONVERGENCE) {
-            $caller_context = $this->state_contexts[$caller];
-            $callees = $specialization_key === null ? [] : [$this->getCallee($specialization_key) => true];
-
-            if (!$this->isOutsideOfCalls($caller_context)) {
-                $this->entry_dependents[$caller_context][$entry] = true;
-                $callees += $this->entry_callees[$caller_context] ?? [];
-            }
-
-            $this->addEntryCallees($entry, $callees);
-        }
-
         $caller_context = $this->state_contexts[$caller];
 
         if ($caller_context !== -1) {
@@ -2132,6 +2286,7 @@ final class TaintFlowResolution
         foreach ($this->entry_exits[$entry] as [$exit_id, $open_assignments, , , $reaches]) {
             foreach ($reaches as [$state, $link, $kept, $added]) {
                 $this->exitThroughCaller(
+                    $entry,
                     $exit_id,
                     $open_assignments,
                     $state,
@@ -2153,6 +2308,16 @@ final class TaintFlowResolution
                 continue;
             }
 
+            if (isset($this->filter_anywhere[$filter])) {
+                [$closed, $anywhere] = $this->filter_anywhere[$filter];
+
+                if ($this->passesAnywhere($caller, $closed) === $anywhere) {
+                    $this->addEntryCaller($filter, $caller, $specialization_key);
+                }
+
+                continue;
+            }
+
             [$family, $depth, $fetched_key] = $this->filter_fetches[$filter];
 
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
@@ -2166,43 +2331,6 @@ final class TaintFlowResolution
 
         foreach ($this->entry_param_filters[$entry] ?? [] as $param => $_) {
             $this->addParamFilterCaller($entry, $param, $caller, $specialization_key);
-        }
-    }
-
-    /**
-     * The calls entering specialized call entry $entry, or enclosing them, are calls to the function-likes
-     * $callees (see getCallee()): continues the exits of those its walk reached (see addEntryExit()), and
-     * tells the entries of the calls made in its walk.
-     *
-     * @param array<string, true> $callees
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    private function addEntryCallees(int $entry, array $callees): void
-    {
-        $new_callees = [];
-
-        foreach ($callees as $callee => $_) {
-            if (!isset($this->entry_callees[$entry][$callee])) {
-                $this->entry_callees[$entry][$callee] = true;
-                $new_callees[$callee] = true;
-            }
-        }
-
-        if (!$new_callees) {
-            return;
-        }
-
-        foreach ($new_callees as $callee => $_) {
-            $exits = $this->unmatched_exits[$entry][$callee] ?? [];
-            unset($this->unmatched_exits[$entry][$callee]);
-
-            foreach ($exits as [$exit_id, $open_assignments, $state, $link, $kept, $added]) {
-                $this->addEntryExit($entry, $exit_id, $open_assignments, $state, $link, $kept, $added);
-            }
-        }
-
-        foreach ($this->entry_dependents[$entry] ?? [] as $dependent => $_) {
-            $this->addEntryCallees($dependent, $new_callees);
         }
     }
 
@@ -2271,6 +2399,7 @@ final class TaintFlowResolution
             $this->entry_kinds[$entry],
             $this->entry_facts[$entry],
             $this->entry_bases[$entry],
+            $this->entry_param_facts[$entry],
         );
         $this->entry_filters[$entry][$filter_key] = $filter;
         $this->filter_conversions[$filter] = $closed;
@@ -2289,7 +2418,8 @@ final class TaintFlowResolution
      * no open assignment and closed $closed of theirs of each expression type: unless the innermost open
      * assignment left is one of an array they made past any of a property they made. Those of the call
      * entering their own context are all outer ones, and how the two expression types interleave there isn't
-     * known, so a conversion of an array of theirs doesn't drop them either.
+     * known, so a conversion of an array of theirs doesn't drop them either. A value encoded in a string isn't
+     * in an array, and a flow anywhere in an array is all of one (see getNextOpenAssignments()).
      *
      * @param array<int, int> $closed
      * @psalm-mutation-free
@@ -2297,9 +2427,75 @@ final class TaintFlowResolution
     private function passesConversion(int $state, array $closed): bool
     {
         [$made] = $this->open_assignments[$this->state_open_assignments[$state]];
+        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+        $array_left = count($array_assignments) - $closed[self::ARRAY_FAMILY];
 
-        return count($made[self::ARRAY_FAMILY] ?? []) <= $closed[self::ARRAY_FAMILY]
-            || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY];
+        if ($array_left <= 0 || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY]) {
+            return true;
+        }
+
+        $innermost = $array_assignments[$array_left - 1];
+
+        return isset($this->overwrite_path_types[$innermost])
+            || $this->path_types[$innermost] === DataFlowGraph::SERIALIZATION_PATH_TYPE;
+    }
+
+    /**
+     * The filter of $entry for the calls a flow of its walk that made no open assignment and closed $closed of
+     * theirs of each expression type is anywhere in an array of (see isAnywhereInArray()), or for the others if
+     * $anywhere is false, made if needed (see getFilter()).
+     *
+     * @param array<int, int> $closed
+     */
+    private function getAnywhereFilter(int $entry, array $closed, bool $anywhere): int
+    {
+        $filter_key = ($anywhere ? 'anywhere ' : 'not anywhere ') . implode(' ', $closed);
+
+        if (isset($this->entry_filters[$entry][$filter_key])) {
+            return $this->entry_filters[$entry][$filter_key];
+        }
+
+        $filter = $this->addEntry(
+            $this->entry_nodes[$entry],
+            $this->entry_kinds[$entry],
+            $this->entry_facts[$entry],
+            $this->entry_bases[$entry],
+            $this->entry_param_facts[$entry],
+        );
+        $this->entry_filters[$entry][$filter_key] = $filter;
+        $this->filter_anywhere[$filter] = [$closed, $anywhere];
+
+        foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
+            if ($this->passesAnywhere($caller, $closed) === $anywhere) {
+                $this->addEntryCaller($filter, $caller, $specialization_key);
+            }
+        }
+
+        return $filter;
+    }
+
+    /**
+     * Whether the flows of state $state entering a walk whose flow made no open assignment and closed $closed of
+     * theirs of each expression type are anywhere in an array there (see isAnywhereInArray()): what is left of
+     * their open assignments is none or overwrites. Only those outside of any context know it.
+     *
+     * @param array<int, int> $closed
+     * @psalm-mutation-free
+     */
+    private function passesAnywhere(int $state, array $closed): bool
+    {
+        [$made, $state_closed] = $this->open_assignments[$this->state_open_assignments[$state]];
+
+        if ($state_closed[self::ARRAY_FAMILY] !== self::NO_CALL
+            || count($made[self::PROPERTY_FAMILY] ?? []) > $closed[self::PROPERTY_FAMILY]
+        ) {
+            return false;
+        }
+
+        $array_assignments = $made[self::ARRAY_FAMILY] ?? [];
+        $array_left = count($array_assignments) - $closed[self::ARRAY_FAMILY];
+
+        return $array_left <= 0 || isset($this->overwrite_path_types[$array_assignments[$array_left - 1]]);
     }
 
     /**
@@ -2424,8 +2620,9 @@ final class TaintFlowResolution
 
     /**
      * The class of an open assignment of type $family: what decides whether a fetch ignores it (see
-     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, or '' if no fetch
-     * ignores it.
+     * shouldIgnoreFetch()). That's its key, prefixed with ':', KEY_CLASS for an array key, UNKEYED_VALUE_CLASS
+     * for an array value under a key not known, SERIALIZATION_CLASS for a value encoded in a string, or '' if no
+     * fetch ignores it.
      *
      * @psalm-mutation-free
      */
@@ -2436,6 +2633,14 @@ final class TaintFlowResolution
 
         if ($assignment_type === 'arraykey-assignment') {
             return self::KEY_CLASS;
+        }
+
+        if ($assignment_type === DataFlowGraph::SERIALIZATION_PATH_TYPE) {
+            return self::SERIALIZATION_CLASS;
+        }
+
+        if ($family === self::ARRAY_FAMILY && $assignment_type === 'arrayvalue-assignment') {
+            return self::UNKEYED_VALUE_CLASS;
         }
 
         return $assignment_type !== $expression_type . '-assignment'
@@ -2470,7 +2675,12 @@ final class TaintFlowResolution
             return $fetched_key === '';
         }
 
-        return $class === '' || $class === ':' . $fetched_key;
+        if ($class === self::UNKEYED_VALUE_CLASS) {
+            // a value assigned under any key: the keys of the array don't hold it
+            return $fetched_key !== '';
+        }
+
+        return $class === '' || $class === self::SERIALIZATION_CLASS || $class === ':' . $fetched_key;
     }
 
     /**
@@ -2931,8 +3141,8 @@ final class TaintFlowResolution
 
     /**
      * The body walk of $entry reached $exit_id, an unspecialized node whose specializations lead back to
-     * call sites, from state $state (seen through the calls of $link, see buildTrace()). Continues it at the
-     * call site of each call entering $entry.
+     * call sites, or shared state (see walk()), from state $state (seen through the calls of $link, see
+     * buildTrace()). Continues it at the call site of each call entering $entry (see exitThroughCaller()).
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -2945,33 +3155,6 @@ final class TaintFlowResolution
         int $kept,
         int $added,
     ): void {
-        if ($this->entry_kinds[$entry] !== self::ENTRY_CONVERGENCE) {
-            $callee = $this->getCallee((string) array_key_first($this->specializations[$exit_id]));
-
-            if (!isset($this->entry_callees[$entry][$callee])) {
-                // Not an exit of the function-like of a call entering the entry or enclosing it (it was reached
-                // through e.g. a property): it can't lead back to a call site, unless one comes later.
-                $exit_key = $exit_id . ' ' . $open_assignments;
-                $unmatched = $this->unmatched_exits[$entry][$callee][$exit_key] ?? null;
-
-                if ($unmatched !== null && ($kept & ~$unmatched[4]) === 0 && ($added & ~$unmatched[5]) === 0) {
-                    return;
-                }
-
-                // the first flow's trace, with all the taints
-                $this->unmatched_exits[$entry][$callee][$exit_key] = [
-                    $exit_id,
-                    $open_assignments,
-                    $unmatched[2] ?? $state,
-                    $unmatched[3] ?? $link,
-                    $kept | ($unmatched[4] ?? 0),
-                    $added | ($unmatched[5] ?? 0),
-                ];
-
-                return;
-            }
-        }
-
         $exit_key = $exit_id . ' ' . $open_assignments;
         $exit = $this->entry_exits[$entry][$exit_key] ?? [$exit_id, $open_assignments, 0, 0, []];
         $new_kept = $kept & ~$exit[2];
@@ -2993,6 +3176,7 @@ final class TaintFlowResolution
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
             $this->exitThroughCaller(
+                $entry,
                 $exit_id,
                 $open_assignments,
                 $state,
@@ -3006,10 +3190,14 @@ final class TaintFlowResolution
     }
 
     /**
-     * Continues an exit reached by the body walk of an entry in the context of one call entering it: at that
-     * call's specialization of the exit node if it has one, else -- the flow leaves through an enclosing
-     * call, e.g. after passing through a static property -- as an exit of the entry the call is made from.
-     * Outside of any specialized call the flow cannot be matched to a call site and ends.
+     * Continues an exit reached by the body walk of $entry in the context of one call entering it: at that call's
+     * specialization of the exit node if it has one. Else, if the exit is one of the function-like the call
+     * enters, the call site doesn't use it, and the flow ends. If it is one of another function-like, reached
+     * through something the calls share (a property, a static property, ...), any call to it may return what the
+     * flow holds: as an exit of the entry the call is made from, so that it leaves through an enclosing call of
+     * that function-like if any, and outside of any specialized call through all of its call sites, as a flow
+     * reaching it there would (see walk()). Shared state (see TaintFlowGraph::addSharedState()) is left the same
+     * way, outside of any specialized call: from there, it reaches every call reading it.
      *
      * A convergence of flows in specialized calls is left like its node would be left in the context of the
      * call (see walk()): as an exit of the entry it is in.
@@ -3017,6 +3205,7 @@ final class TaintFlowResolution
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function exitThroughCaller(
+        int $entry,
         string $exit_id,
         int $open_assignments,
         int $state,
@@ -3034,9 +3223,36 @@ final class TaintFlowResolution
         $caller_kept = $this->state_kept[$caller] & $kept;
         $caller_added = ($this->state_added[$caller] & $kept) | $added;
 
-        if ($specialization_key !== null && isset($this->specializations[$exit_id][$specialization_key])) {
+        if ($specialization_key !== null && !isset($this->shared_state[$exit_id])) {
+            if (isset($this->specializations[$exit_id][$specialization_key])) {
+                $this->reach(
+                    $this->specializations[$exit_id][$specialization_key],
+                    $context,
+                    $caller_open_assignments,
+                    $caller_kept,
+                    $caller_added,
+                    $state,
+                    $link,
+                    -1,
+                    $caller,
+                );
+
+                return;
+            }
+
+            // An exit of the function-like entered: the call site doesn't use it. Its specialization of the exit,
+            // if any, was left out with the others that have no outgoing edge (see
+            // TaintFlowGraph::connectSinksAndSources()).
+            if (isset($this->nodes[$exit_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . $specialization_key])
+                || $this->isExitOfEntered($exit_id, $this->entry_nodes[$entry])
+            ) {
+                return;
+            }
+        }
+
+        if ($this->isOutsideOfCalls($context)) {
             $this->reach(
-                $this->specializations[$exit_id][$specialization_key],
+                $exit_id,
                 $context,
                 $caller_open_assignments,
                 $caller_kept,
@@ -3046,24 +3262,52 @@ final class TaintFlowResolution
                 -1,
                 $caller,
             );
-        } elseif (!$this->isOutsideOfCalls($context)) {
-            $exit = $this->entry_exits[$context][$exit_id . ' ' . $caller_open_assignments] ?? null;
 
-            // the link is made only for a flow that gets recorded
-            if ($exit !== null && ($caller_kept & ~$exit[2]) === 0 && ($caller_added & ~$exit[3]) === 0) {
-                return;
+            return;
+        }
+
+        $exit = $this->entry_exits[$context][$exit_id . ' ' . $caller_open_assignments] ?? null;
+
+        // the link is made only for a flow that gets recorded
+        if ($exit !== null && ($caller_kept & ~$exit[2]) === 0 && ($caller_added & ~$exit[3]) === 0) {
+            return;
+        }
+
+        $this->addEntryExit(
+            $context,
+            $exit_id,
+            $caller_open_assignments,
+            $state,
+            $this->getLink($caller, $link),
+            $caller_kept,
+            $caller_added,
+        );
+    }
+
+    /**
+     * Whether exit $exit_id is one of the function-like of the unspecialized node $entered_id a specialized call
+     * entered: that one is specialized for some of the calls the exit is (whether or not a given call uses the
+     * exit, that is whether it has a specialization of it: see TaintFlowGraph::connectSinksAndSources()).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isExitOfEntered(string $exit_id, string $entered_id): bool
+    {
+        if (!isset($this->exits_of_entered[$entered_id][$exit_id])) {
+            $is_exit = false;
+
+            foreach ($this->specializations[$exit_id] ?? [] as $specialization_key => $_) {
+                if (isset($this->nodes[$entered_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . $specialization_key])) {
+                    $is_exit = true;
+
+                    break;
+                }
             }
 
-            $this->addEntryExit(
-                $context,
-                $exit_id,
-                $caller_open_assignments,
-                $state,
-                $this->getLink($caller, $link),
-                $caller_kept,
-                $caller_added,
-            );
+            $this->exits_of_entered[$entered_id][$exit_id] = $is_exit;
         }
+
+        return $this->exits_of_entered[$entered_id][$exit_id];
     }
 
     /**
