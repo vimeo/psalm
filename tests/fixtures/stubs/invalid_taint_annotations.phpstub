@@ -1,0 +1,6 @@
+<?php
+
+/**
+ * @psalm-taint-sink html
+ */
+function invalid_taint_sink(string $text): void {}

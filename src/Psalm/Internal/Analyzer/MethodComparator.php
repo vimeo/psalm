@@ -430,7 +430,7 @@ final class MethodComparator
             $binding_classlike_storage,
         );
 
-        if (Capabilities::allows($guide_capabilities, $implementer_capabilities)) {
+        if (Capabilities::allowsAnyOf($guide_capabilities, $implementer_capabilities)) {
             $guide_capabilities = $guide_method_storage->getWorstCaseCapabilities(
                 $guide_classlike_storage->template_types ?? [],
             );
@@ -439,7 +439,7 @@ final class MethodComparator
             );
         }
 
-        if (!Capabilities::allows($guide_capabilities, $implementer_capabilities)
+        if (!Capabilities::allowsAnyOf($guide_capabilities, $implementer_capabilities)
             && !$guide_method_storage->mutation_free_assumed
             && $prevent_method_signature_mismatch
         ) {

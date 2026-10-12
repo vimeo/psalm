@@ -21,6 +21,24 @@ final class WhileTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedLaterInTheBodyHoldsWhatThePreviousIterationLeft' => [
+                'code' => '<?php
+                    function f(): void {
+                        $whileValues = [];
+                        while (rand(0, 1)) {
+                            $whileValues[] = isset($previous) ? $previous : 0;
+                            $previous = "x";
+                        }
+                        /** @psalm-check-type-exact $whileValues = list<\'x\'|0> */;
+
+                        $forValues = [];
+                        for ($i = 0; $i < 3; $i++) {
+                            $forValues[] = $last ?? null;
+                            $last = "y";
+                        }
+                        /** @psalm-check-type-exact $forValues = non-empty-list<\'y\'|null> */;
+                    }',
+            ],
             'whileTrue' => [
                 'code' => '<?php
                     function ret(): int {

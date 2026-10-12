@@ -46,13 +46,16 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use Webmozart\Assert\Assert;
 
+use function array_diff;
 use function array_pop;
 use function array_slice;
 use function array_splice;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
 use function implode;
+use function in_array;
 use function ksort;
 use function str_ends_with;
 use function str_starts_with;
@@ -83,6 +86,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * CastAnalyzer::getArrayConversionSuffix() and convertsTheArrayHoldingTheTaint()).
      */
     public const ARRAY_CONVERSION_SUFFIX = '-of-array';
+
+    /**
+     * The prefix of the type of an edge from an array to the array it becomes once its value under a key is replaced
+     * (see ArrayAssignmentAnalyzer::getOverwritePathType()).
+     */
+    private const OVERWRITE_PREFIX = 'arrayvalue-overwrite-';
 
     /**
      * How many of the innermost open assignments (see appendPathType()) of a flow
@@ -172,6 +181,15 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $shared_state = [];
+
+    /**
+     * The ids of the nodes of variables assigned a string the analysis knows the start of => that start, for the names
+     * of the keyed stores (see TaintStore). Only used while analysing the function-like they are in, so never merged by
+     * addGraph().
+     *
+     * @var array<string, string>
+     */
+    private array $string_starts = [];
 
     /*
      * Taint resolution state, see connectSinksAndSources() and enterSpecializedCall().
@@ -450,6 +468,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function hasNode(DataFlowNode $node): bool
+    {
+        return isset($this->nodes[$node->id]);
+    }
+
+    /**
      * Leaves out the paths no taint goes through, and those to the uses only the variable use
      * graph tracks: the analysis adds every path to the data flow graph, whichever graphs it
      * builds, so that types get the same parent nodes either way.
@@ -545,6 +571,26 @@ final class TaintFlowGraph extends DataFlowGraph
     public function isSharedState(DataFlowNode $node): bool
     {
         return isset($this->shared_state[$node->id]);
+    }
+
+    /**
+     * Records that the variable whose node $node is was assigned a string starting with $start
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addStringStart(DataFlowNode $node, string $start): void
+    {
+        $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * The start of the string assigned to the variable whose node has the id, null if the analysis doesn't know it
+     *
+     * @psalm-mutation-free
+     */
+    public function getStringStart(string $node_id): ?string
+    {
+        return $this->string_starts[$node_id] ?? null;
     }
 
     /**
@@ -1154,8 +1200,11 @@ final class TaintFlowGraph extends DataFlowGraph
             )];
         }
 
-        // an exit of the function-like entered: the call site doesn't use it
-        if ($this->isExitOfEntered($exit->id, $caller->id)) {
+        // an exit of the function-like entered: the call site doesn't use it. Its specialization of the exit,
+        // if any, was left out with the others that have no outgoing edge (see connectSinksAndSources()).
+        if (isset($this->nodes[$exit->id . self::SPECIALIZATION_SEPARATOR . $specialization_key])
+            || $this->isExitOfEntered($exit->id, $caller->id)
+        ) {
             return [];
         }
 
@@ -1552,8 +1601,9 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Whether an edge of type $path_type may drop a flow by its open assignments: a fetch
      * of a given array key or property, or of an array key, which shouldIgnoreFetch() may
-     * ignore, an overwrite of an array key (see isOverwritten()), or a conversion of an
-     * array (see convertsTheArrayHoldingTheTaint())
+     * ignore or that may fetch an overwritten key (see fetchesAnOverwrittenKey()), an
+     * overwrite of an array key (see isOverwritten()), or a conversion of an array (see
+     * convertsTheArrayHoldingTheTaint())
      *
      * @psalm-pure
      */
@@ -1683,6 +1733,10 @@ final class TaintFlowGraph extends DataFlowGraph
                 continue;
             }
 
+            if (self::fetchesAnOverwrittenKey($path_type, $open_assignments)) {
+                continue;
+            }
+
             if (self::convertsTheArrayHoldingTheTaint($path_type, $open_assignments)) {
                 continue;
             }
@@ -1784,10 +1838,12 @@ final class TaintFlowGraph extends DataFlowGraph
      * Of the path types a flow went through, only what shouldIgnoreFetch() can still
      * observe is kept: the assignments to array keys, array values and properties
      * that no later fetch has matched yet -- a fetch matches the latest such
-     * assignment of its expression type -- followed by the type of the edge the
-     * flow took last, which the trace displays, unless that is such an assignment
-     * itself. Keeping each node's full path would make the resolution use memory
-     * quadratic in the length of the flows.
+     * assignment of its expression type -- and the overwrites of array keys a flow
+     * anywhere in the array went through since its last fetch (see
+     * isOverwrittenAnywhere()), followed by the type of the edge the flow took
+     * last, which the trace displays, unless that is such an assignment or
+     * overwrite itself. Keeping each node's full path would make the resolution use
+     * memory quadratic in the length of the flows.
      *
      * @param list<string> $open_assignments
      * @return non-empty-list<string>
@@ -1795,13 +1851,37 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function appendPathType(array $open_assignments, string $path_type): array
     {
+        if ($path_type === self::UNSERIALIZATION_PATH_TYPE) {
+            // what was decoded from the string is the value encoded in it: the innermost open array assignment
+            for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
+                if ($open_assignments[$i] === self::SERIALIZATION_PATH_TYPE
+                    || str_starts_with($open_assignments[$i], 'arrayvalue-assignment')
+                    || str_starts_with($open_assignments[$i], 'arraykey-assignment')
+                ) {
+                    array_splice($open_assignments, $i, 1);
+
+                    break;
+                }
+            }
+        }
+
         foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
             if (!str_starts_with($path_type, $family . '-fetch')) {
                 continue;
             }
 
+            // a fetch from an array the flow is anywhere in but under the keys overwritten: it is anywhere in what it
+            // fetches
+            if (self::isOverwrittenAnywhere($open_assignments)) {
+                $open_assignments = [];
+
+                break;
+            }
+
             for ($i = count($open_assignments) - 1; $i >= 0; $i--) {
-                if (str_starts_with($open_assignments[$i], $family . '-assignment')) {
+                if (str_starts_with($open_assignments[$i], $family . '-assignment')
+                    || ($family !== 'property' && $open_assignments[$i] === self::SERIALIZATION_PATH_TYPE)
+                ) {
                     array_splice($open_assignments, $i, 1);
 
                     break;
@@ -1809,6 +1889,11 @@ final class TaintFlowGraph extends DataFlowGraph
             }
 
             break;
+        }
+
+        // a key overwritten again: once is enough, or a loop overwriting it would make new open assignments forever
+        if (str_starts_with($path_type, self::OVERWRITE_PREFIX) && self::isOverwrittenAnywhere($open_assignments)) {
+            $open_assignments = array_values(array_diff($open_assignments, [$path_type]));
         }
 
         $open_assignments[] = $path_type;
@@ -1819,8 +1904,8 @@ final class TaintFlowGraph extends DataFlowGraph
     /**
      * Returns the open assignments of a flow from its path types (see
      * appendPathType()): the path types without the trailing one if that is not an
-     * assignment. This is the history shouldIgnoreFetch() matches the flow's next
-     * edge against; it gives the same result as on the full history.
+     * assignment, nor an overwrite the flow keeps (see isOverwrittenAnywhere()). This is the history
+     * shouldIgnoreFetch() matches the flow's next edge against; it gives the same result as on the full history.
      *
      * @param list<string> $path_types
      * @return list<string>
@@ -1828,11 +1913,52 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function getOpenAssignments(array $path_types): array
     {
-        if ($path_types && !self::isStructuralAssignment($path_types[count($path_types) - 1])) {
+        $last = count($path_types) - 1;
+
+        if ($last >= 0
+            && !self::isStructuralAssignment($path_types[$last])
+            && !(str_starts_with($path_types[$last], self::OVERWRITE_PREFIX)
+                && self::isOverwrittenAnywhere(array_slice($path_types, 0, $last)))
+        ) {
             array_pop($path_types);
         }
 
         return $path_types;
+    }
+
+    /**
+     * Whether a flow with the open assignments $open_assignments is anywhere in an array but under the keys it went
+     * through the overwrites of (see isOverwritten()): its open assignments are only those overwrites, if any.
+     *
+     * A flow that went through an overwrite of a key keeps it among its open assignments only if it could be anywhere
+     * in the array then: it is nowhere under that key anymore (see fetchesAnOverwrittenKey()). A flow put in the
+     * array under another key is under that key still, and one put in it under an unknown key under some other key:
+     * those don't need it. So the overwrites a flow keeps are its outermost open assignments: if the innermost one is
+     * an overwrite, all of them are.
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function isOverwrittenAnywhere(array $open_assignments): bool
+    {
+        return $open_assignments === []
+            || str_starts_with($open_assignments[count($open_assignments) - 1], self::OVERWRITE_PREFIX);
+    }
+
+    /**
+     * Whether the edge of type $path_type fetches from an array the value under a key that the flow, with the open
+     * assignments $open_assignments, is not in: it went through the overwrite of that key, being anywhere in the
+     * array (see isOverwrittenAnywhere()).
+     *
+     * @param list<string> $open_assignments
+     * @psalm-pure
+     */
+    private static function fetchesAnOverwrittenKey(string $path_type, array $open_assignments): bool
+    {
+        return $open_assignments !== []
+            && str_starts_with($path_type, 'arrayvalue-fetch-')
+            && self::isOverwrittenAnywhere($open_assignments)
+            && in_array(self::OVERWRITE_PREFIX . substr($path_type, 17), $open_assignments, true);
     }
 
     /**
@@ -1864,6 +1990,10 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private static function isStructuralAssignment(string $path_type): bool
     {
+        if ($path_type === self::SERIALIZATION_PATH_TYPE) {
+            return true;
+        }
+
         foreach (self::STRUCTURAL_PATH_TYPE_FAMILIES as $family) {
             if (str_starts_with($path_type, $family . '-assignment')) {
                 return true;
