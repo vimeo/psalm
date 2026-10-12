@@ -466,6 +466,29 @@ final class TaintTest extends TestCase
                     echo store_get("loc");
                     echo store_get("other_lock_1");',
             ],
+            'keyedStoreOfACallableResultKeepsKeysApart' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($compute()) -> Cache::$data[$key]
+                         * @psalm-flow Cache::$data[$key] -> return
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        public function get(string $key, callable $compute): mixed;
+                    }
+
+                    function warm(Cache $cache): void {
+                        $cache->get("a", fn(): string => (string) $_GET["x"]);
+                    }
+
+                    function show(Cache $cache, string $fallback): void {
+                        echo $cache->get("b", fn(): string => $fallback);
+                    }',
+            ],
             'keyedStoreKeyStartFromImplodeDoesNotReachOtherKeys' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -3451,6 +3474,30 @@ final class TaintTest extends TestCase
 
                     function read(Redis $redis): void {
                         echo (string) $redis->get("session_1");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreOfACallableResult' => [
+                'code' => '<?php
+                    interface Cache {
+                        /**
+                         * @template T
+                         * @param callable(): T $compute
+                         * @return T
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($compute()) -> Cache::$data[$key]
+                         * @psalm-flow Cache::$data[$key] -> return
+                         * @psalm-flow ($compute()) -> return
+                         */
+                        public function get(string $key, callable $compute): mixed;
+                    }
+
+                    function warm(Cache $cache): void {
+                        $cache->get("a", fn(): string => (string) $_GET["x"]);
+                    }
+
+                    function show(Cache $cache, string $fallback): void {
+                        echo $cache->get("a", fn(): string => $fallback);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
