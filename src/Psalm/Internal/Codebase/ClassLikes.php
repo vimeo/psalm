@@ -1071,18 +1071,14 @@ final class ClassLikes
     }
 
     /**
-     * Whether an interface declares methods and every one of them says what it may do, with a purity annotation or
-     * by taking its purity from a template: then a class-level contract would only cap its implementers further.
-     * An interface declaring no method (a marker) says nothing about its implementers, so it still needs one.
+     * Whether every method an interface declares says what it may do, with a purity annotation or by taking its
+     * purity from a template: then a class-level contract would only cap its implementers further, and an interface
+     * declaring no method (a marker) has nothing to cap.
      *
      * @psalm-mutation-free
      */
     private static function areAllMethodsAnnotated(ClassLikeStorage $storage): bool
     {
-        if ($storage->methods === []) {
-            return false;
-        }
-
         foreach ($storage->methods as $method_storage) {
             if (!$method_storage->has_mutations_annotation && $method_storage->purity_from_templates === []) {
                 return false;

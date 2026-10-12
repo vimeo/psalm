@@ -241,7 +241,7 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
-    public function testOnlyAnInterfaceWhoseMethodsAllSayWhatTheyDoNeedsNoClassAnnotation(): void
+    public function testOnlyAnInterfaceDeclaringAMethodThatDoesntSayWhatItDoesNeedsAClassAnnotation(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -292,7 +292,7 @@ final class UnusedCodeTest extends TestCase
             }
         }
 
-        self::assertSame(['Marker', 'Store'], $missing);
+        self::assertSame(['Store'], $missing);
     }
 
     public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void
