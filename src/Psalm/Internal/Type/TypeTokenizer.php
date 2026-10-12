@@ -79,6 +79,7 @@ final class TypeTokenizer
         'write-globals' => true,
         'write-refs' => true,
         'io' => true,
+        'time' => true,
         'literal-string' => true,
         'non-empty-literal-string' => true,
         'lowercase-string' => true,
