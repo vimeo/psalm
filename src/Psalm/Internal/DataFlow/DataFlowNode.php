@@ -54,6 +54,11 @@ final class DataFlowNode implements Stringable
     private const NARROWED_TO_SCALAR = 'narrowed to a scalar: ';
 
     /**
+     * The prefix of the ids of the nodes of getForNarrowingAway(), followed by the taints they don't take
+     */
+    private const NARROWED_AWAY = 'narrowed away from taints ';
+
+    /**
      * @psalm-mutation-free
      */
     private function __construct(
@@ -480,26 +485,77 @@ final class DataFlowNode implements Stringable
      *
      * Data flows from $node to it, but no taint does, so that the narrowed value takes none: see
      * Reconciler. It stands for $node when types compare their parent nodes (see
-     * getNarrowedNodeId()).
+     * getNarrowedNodeId()). $node itself if it is one already.
      *
      * @psalm-pure
      */
     public static function getForNarrowingToScalar(self $node): self
     {
+        if (str_starts_with($node->id, self::NARROWED_TO_SCALAR)) {
+            return $node;
+        }
+
         // $node's location is a function of its id, so of this id too: see the class invariant
-        return self::make(self::NARROWED_TO_SCALAR . $node->id, $node->label, $node->code_location);
+        return self::make(
+            self::NARROWED_TO_SCALAR . ($node->getNarrowedNodeId() ?? $node->id),
+            $node->label,
+            $node->code_location,
+        );
     }
 
     /**
-     * The id of the node this one narrows if it is one of getForNarrowingToScalar(), else null.
+     * The node of a value of $node narrowed to a type that can't carry the taints $taints, which $node's type
+     * could (e.g. a scalar narrowed from mixed, nosql)
+     *
+     * Data flows from $node to it, but those taints don't, so that the narrowed value doesn't take them: see
+     * Reconciler. Like the nodes of getForNarrowingToScalar(), it stands for $node when types compare their
+     * parent nodes (see getNarrowedNodeId()). $node itself if it doesn't take those taints already.
+     *
+     * @psalm-pure
+     */
+    public static function getForNarrowingAway(self $node, int $taints): self
+    {
+        if (str_starts_with($node->id, self::NARROWED_TO_SCALAR)) {
+            return $node;
+        }
+
+        $narrowed_node_id = $node->getNarrowedNodeId();
+
+        if ($narrowed_node_id !== null) {
+            $narrowed_taints = (int) substr($node->id, strlen(self::NARROWED_AWAY));
+
+            if (($taints & ~$narrowed_taints) === 0) {
+                return $node;
+            }
+
+            $taints |= $narrowed_taints;
+        }
+
+        // $node's location is a function of its id, so of this id too: see the class invariant
+        return self::make(
+            self::NARROWED_AWAY . $taints . ': ' . ($narrowed_node_id ?? $node->id),
+            $node->label,
+            $node->code_location,
+        );
+    }
+
+    /**
+     * The id of the node this one narrows if it is one of getForNarrowingToScalar() or getForNarrowingAway(),
+     * else null.
      *
      * @psalm-mutation-free
      */
     public function getNarrowedNodeId(): ?string
     {
-        return str_starts_with($this->id, self::NARROWED_TO_SCALAR)
-            ? substr($this->id, strlen(self::NARROWED_TO_SCALAR))
-            : null;
+        if (str_starts_with($this->id, self::NARROWED_TO_SCALAR)) {
+            return substr($this->id, strlen(self::NARROWED_TO_SCALAR));
+        }
+
+        if (str_starts_with($this->id, self::NARROWED_AWAY)) {
+            return substr($this->id, (int) strpos($this->id, ': ', strlen(self::NARROWED_AWAY)) + 2);
+        }
+
+        return null;
     }
 
     /**
