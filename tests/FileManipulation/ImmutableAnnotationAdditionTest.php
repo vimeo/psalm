@@ -256,6 +256,129 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddClassContractThatASubclassExceeds' => [
+                'input' => '<?php
+                    abstract class Base {
+                        /** @psalm-pure */
+                        public function name(): string {
+                            return "base";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function shout(): void {
+                            echo "hello";
+                        }
+                    }',
+                'output' => '<?php
+                    abstract class Base {
+                        /** @psalm-pure */
+                        public function name(): string {
+                            return "base";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function shout(): void {
+                            echo "hello";
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addClassContractCoveringTheSubclasses' => [
+                'input' => '<?php
+                    class Base {
+                        /** @psalm-pure */
+                        public function name(): string {
+                            return "base";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-capabilities read-props|write-this-props|write-refs
+                     */
+                    class Base {
+                        /** @psalm-pure */
+                        public function name(): string {
+                            return "base";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddClassContractBelowThePurityTemplateBound' => [
+                'input' => '<?php
+                    /** @psalm-purity-template P */
+                    abstract class Handler {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function handle(string $input): string;
+                    }',
+                'output' => '<?php
+                    /** @psalm-purity-template P */
+                    abstract class Handler {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function handle(string $input): string;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
+            'addClassContractCoveringThePurityTemplateBound' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-purity-template P <= read-props
+                     */
+                    abstract class Handler {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function handle(string $input): string;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-purity-template P <= read-props
+                     *
+                     * @psalm-immutable
+                     */
+                    abstract class Handler {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        abstract public function handle(string $input): string;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingImmutableAnnotation'],
+                'safe_types' => true,
+            ],
             'addImmutableAnnotationAbstractClass' => [
                 'input' => '<?php
                     abstract class A {

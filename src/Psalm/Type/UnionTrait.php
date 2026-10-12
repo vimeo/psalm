@@ -19,6 +19,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -1679,12 +1680,17 @@ trait UnionTrait
         return $this->types === [];
     }
 
-    public function getTaintsToRemove(): int
+    /**
+     * The taints of user input a value of this type can't hold
+     *
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
+     */
+    public function getTaintsToRemove(int $input_taints): int
     {
         // a value has a taint only if every type it can have holds it
-        $taints_to_remove = TaintKind::ALL_INPUT;
+        $taints_to_remove = $input_taints;
         foreach ($this->types as $atomic) {
-            $taints_to_remove &= self::getAtomicTaintsToRemove($atomic);
+            $taints_to_remove &= self::getAtomicTaintsToRemove($atomic, $input_taints);
             if ($taints_to_remove === 0) {
                 break;
             }
@@ -1696,23 +1702,23 @@ trait UnionTrait
     /**
      * @psalm-pure
      */
-    private static function getAtomicTaintsToRemove(Atomic $atomic): int
+    private static function getAtomicTaintsToRemove(Atomic $atomic, int $input_taints): int
     {
         // a value the code wrote, or null, cannot hold what the client sends
         if ($atomic instanceof TLiteralString
             || $atomic instanceof TNonspecificLiteralString
             || $atomic instanceof TNull
         ) {
-            return TaintKind::ALL_INPUT;
+            return $input_taints;
         }
 
-        // numeric types can't be tainted (except sleep & custom taints), neither can bool
+        // numeric types can't be tainted (except sleep & the custom taints not added to `input`), neither can bool
         if ($atomic instanceof TInt || $atomic instanceof TFloat) {
-            return TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+            return $input_taints & ~TaintKind::NUMERIC_ONLY;
         }
 
         if ($atomic instanceof TBool) {
-            return TaintKind::ALL_INPUT & ~TaintKind::BOOL_ONLY;
+            return $input_taints & ~TaintKind::BOOL_ONLY;
         }
 
         // a plain string can't carry a NoSQL query (only arrays/objects can),
@@ -1721,24 +1727,29 @@ trait UnionTrait
             return TaintKind::ARRAY_ONLY;
         }
 
+        // neither can any other scalar, such as scalar, array-key or numeric
+        if ($atomic instanceof Scalar) {
+            return TaintKind::ARRAY_ONLY;
+        }
+
         // an array holds what its keys and its values can hold: the keys of an array shape are written by the code
         if ($atomic instanceof TKeyedArray) {
-            $taints_to_remove = TaintKind::ALL_INPUT;
+            $taints_to_remove = $input_taints;
             foreach ($atomic->properties as $property) {
-                $taints_to_remove &= $property->getTaintsToRemove();
+                $taints_to_remove &= $property->getTaintsToRemove($input_taints);
             }
 
             if ($atomic->fallback_params !== null) {
-                $taints_to_remove &= self::getArrayKeyTaintsToRemove($atomic->fallback_params[0])
-                    & $atomic->fallback_params[1]->getTaintsToRemove();
+                $taints_to_remove &= self::getArrayKeyTaintsToRemove($atomic->fallback_params[0], $input_taints)
+                    & $atomic->fallback_params[1]->getTaintsToRemove($input_taints);
             }
 
             return $taints_to_remove;
         }
 
         if ($atomic instanceof TArray) {
-            return self::getArrayKeyTaintsToRemove($atomic->type_params[0])
-                & $atomic->type_params[1]->getTaintsToRemove();
+            return self::getArrayKeyTaintsToRemove($atomic->type_params[0], $input_taints)
+                & $atomic->type_params[1]->getTaintsToRemove($input_taints);
         }
 
         return 0;
@@ -1749,9 +1760,9 @@ trait UnionTrait
      *
      * @psalm-pure
      */
-    private static function getArrayKeyTaintsToRemove(Union $key_type): int
+    private static function getArrayKeyTaintsToRemove(Union $key_type, int $input_taints): int
     {
-        $taints_to_remove = TaintKind::ALL_INPUT;
+        $taints_to_remove = $input_taints;
         foreach ($key_type->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TLiteralString || $atomic instanceof TNever) {
                 continue;
@@ -1761,7 +1772,7 @@ trait UnionTrait
                 return 0;
             }
 
-            $taints_to_remove &= TaintKind::ALL_INPUT & ~TaintKind::NUMERIC_ONLY;
+            $taints_to_remove &= $input_taints & ~TaintKind::NUMERIC_ONLY;
         }
 
         return $taints_to_remove;
