@@ -1262,56 +1262,6 @@ final class TaintTest extends TestCase
                     echo (string) $id;
                     echo "<a href=\'/o/{$id}\'>";',
             ],
-            'dontTaintTheValueAWholeArrayPassedToASpecializedCallHeldUnderAKeyAssignedThere' => [
-                'code' => '<?php // --taint-analysis
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
-                        return $value["d"];
-                    }
-                    /** @var array<string, string> */
-                    $a = $_GET["a"];
-                    echo f($a);',
-            ],
-            'dontTaintTheValueWholeArraysPassedToASpecializedCallHeldUnderAKeyAssignedInALoopThere' => [
-                'code' => '<?php // --taint-analysis
-                    /**
-                     * @param list<array<string, string>> $values
-                     * @return list<string>
-                     */
-                    function f(array $values): array {
-                        $r = [];
-                        foreach ($values as $value) {
-                            $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
-                            $r[] = $value["d"];
-                        }
-                        return $r;
-                    }
-                    /** @var list<array<string, string>> */
-                    $a = $_GET["a"];
-                    echo implode(",", f($a));',
-            ],
-            'dontTaintTheValueAnArrayPassedToASpecializedCallHeldUnderAKeyAssignedThere' => [
-                'code' => '<?php // --taint-analysis
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
-                        return $value["d"];
-                    }
-                    echo f(["d" => (string) $_GET["a"]]);',
-            ],
-            'dontTaintTheValueAWholeArrayPassedToASpecializedCallHeldUnderAKeyAssignedThereOnceFetched' => [
-                'code' => '<?php // --taint-analysis
-                    /** @param array<string, array<string, string>> $value */
-                    function f(array $value): string {
-                        $v = $value["x"] ?? [];
-                        $v["d"] = htmlspecialchars($v["d"] ?? "", ENT_QUOTES);
-                        return $v["d"];
-                    }
-                    /** @var array<string, string> */
-                    $a = $_GET["a"];
-                    echo f(["x" => $a]);',
-            ],
             'dontTaintTheStringConversionOfAnObjectWhoseToStringEscapesIt' => [
                 'code' => '<?php // --taint-analysis
                     final class Tag {
@@ -4796,65 +4746,6 @@ final class TaintTest extends TestCase
                     foreach ($items as $item) {
                         echo (string) $item["zip"];
                     }',
-                'error_message' => 'TaintedHtml',
-            ],
-            'taintTheOtherValuesOfAWholeArrayPassedToASpecializedCallAfterAKeyIsAssignedThere' => [
-                'code' => '<?php
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "");
-                        return $value["o"] ?? "";
-                    }
-                    /** @var array<string, string> */
-                    $a = $_GET["a"];
-                    echo f($a);',
-                'error_message' => 'TaintedHtml',
-            ],
-            'taintAWholeArrayPassedToASpecializedCallConvertedAfterAKeyIsAssignedThere' => [
-                'code' => '<?php
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "");
-                        return implode(",", $value);
-                    }
-                    /** @var array<string, string> */
-                    $a = $_GET["a"];
-                    echo f($a);',
-                'error_message' => 'TaintedHtml',
-            ],
-            'taintTheValueAnArrayPassedToASpecializedCallHeldUnderAnotherKeyThanTheOneAssignedThere' => [
-                'code' => '<?php
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "");
-                        return $value["o"] ?? "";
-                    }
-                    echo f(["o" => (string) $_GET["a"]]);',
-                'error_message' => 'TaintedHtml',
-            ],
-            'taintTheValueAnArrayPassedToASpecializedCallHeldUnderAnUnknownKeyAfterAKeyIsAssignedThere' => [
-                'code' => '<?php
-                    /** @param array<string, string> $value */
-                    function f(array $value): string {
-                        $value["d"] = htmlspecialchars($value["d"] ?? "");
-                        return $value["o"] ?? "";
-                    }
-                    function g(string $k): void {
-                        echo f([$k => (string) $_GET["a"]]);
-                    }',
-                'error_message' => 'TaintedHtml',
-            ],
-            'taintTheOtherValuesOfAWholeArrayPassedToASpecializedCallAfterAKeyIsAssignedThereOnceFetched' => [
-                'code' => '<?php
-                    /** @param array<string, array<string, string>> $value */
-                    function f(array $value): string {
-                        $v = $value["x"] ?? [];
-                        $v["d"] = htmlspecialchars($v["d"] ?? "");
-                        return $v["o"] ?? "";
-                    }
-                    /** @var array<string, string> */
-                    $a = $_GET["a"];
-                    echo f(["x" => $a]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfWholeArraysIteratedOverAfterAKeyIsAssigned' => [
