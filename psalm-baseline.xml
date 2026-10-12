@@ -3739,6 +3739,9 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TTemplateParam.php">
+    <ImmutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
     </RiskyTruthyFalsyComparison>
