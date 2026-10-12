@@ -804,7 +804,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     // Get actual types used for templates (to support @template-covariant)
-                    $template_standins = new TemplateResult($lower_bounds, []);
+                    $template_standins = TemplateResult::make($lower_bounds, []);
                     TemplateStandinTypeReplacer::fillTemplateResult(
                         $guide_property_type,
                         $template_standins,
@@ -839,7 +839,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_class = $parent_storage->parent_class;
                     }
 
-                    $template_result = new TemplateResult([], $lower_bounds);
+                    $template_result = TemplateResult::make([], $lower_bounds);
 
                     $guide_property_type = TemplateInferredTypeReplacer::replace(
                         $guide_property_type,
@@ -2025,7 +2025,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $this_object_type,
             ) ?: [];
 
-            $template_result = new TemplateResult(
+            $template_result = TemplateResult::make(
                 $class_template_params ?: [],
                 [],
             );

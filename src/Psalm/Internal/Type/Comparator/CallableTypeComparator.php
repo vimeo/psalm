@@ -525,7 +525,7 @@ final class CallableTypeComparator
 
                     if (!empty($type_params)) {
                         $input_with_templates = new Atomic\TGenericObject($input_type_part->value, $type_params);
-                        $template_result = new TemplateResult($invokable_storage->template_types ?? [], []);
+                        $template_result = TemplateResult::make($invokable_storage->template_types ?? [], []);
 
                         TemplateStandinTypeReplacer::fillTemplateResult(
                             new Type\Union([$input_with_templates]),
@@ -643,7 +643,7 @@ final class CallableTypeComparator
 
         $replaced = TemplateInferredTypeReplacer::replace(
             new Union([$callable]),
-            new TemplateResult([], $lower_bounds),
+            TemplateResult::make([], $lower_bounds),
             $codebase,
         )->getSingleAtomic();
 
