@@ -1246,6 +1246,30 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'randomizerAndEngineCapabilities' => [
+                'code' => '<?php
+                    use Random\Engine\Mt19937;
+                    use Random\Randomizer;
+
+                    /** @psalm-capabilities write-props|io */
+                    function jitter(int $max): int {
+                        $randomizer = new Randomizer(new Mt19937());
+                        return $randomizer->getInt(0, $max);
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function advance(Mt19937 $engine): string {
+                        return $engine->generate();
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Randomizer {
+                        return new Randomizer();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -2820,6 +2844,30 @@ final class CapabilitiesTest extends TestCase
                         Box::of($box)->items[] = 5;
                     }',
                 'error_message' => 'ImpurePropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:25 - The context is read-props but property assignment requires write-props',
+            ],
+            'unseededMt19937ReadsRandomness' => [
+                'code' => '<?php
+                    use Random\Engine\Mt19937;
+
+                    /** @psalm-capabilities write-props */
+                    function engine(): Mt19937 {
+                        return new Mt19937();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'randomizerAdvancesItsEngine' => [
+                'code' => '<?php
+                    use Random\Randomizer;
+
+                    /** @psalm-capabilities read-props|io */
+                    function pick(Randomizer $randomizer): int {
+                        return $randomizer->getInt(0, 10);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
         ];
     }
