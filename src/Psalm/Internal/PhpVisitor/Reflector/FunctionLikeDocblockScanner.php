@@ -153,7 +153,7 @@ final class FunctionLikeDocblockScanner
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
-            && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
+            && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_assumed = false;

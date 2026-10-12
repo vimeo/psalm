@@ -929,7 +929,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             );
                         } elseif ($lower_bound !== null
                             && Capabilities::isPurityType($extended_type)
-                            && !Capabilities::allows(Capabilities::fromType($extended_type), $lower_bound)
+                            && !Capabilities::allowsAnyOf(Capabilities::fromType($extended_type), $lower_bound)
                         ) {
                             // a purity template with a lower bound: the value must require at least that
                             IssueBuffer::maybeAdd(
