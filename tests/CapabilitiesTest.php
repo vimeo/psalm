@@ -312,7 +312,7 @@ final class CapabilitiesTest extends TestCase
                         }
                     }
 
-                    /** @psalm-capabilities read-props|write-props|io */
+                    /** @psalm-capabilities io */
                     function detachFresh(stdClass $key): void {
                         /** @var SplObjectStorage<stdClass, int> */
                         $storage = new SplObjectStorage();

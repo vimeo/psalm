@@ -381,6 +381,11 @@ class Reconciler
                 $result_type = $result_type->setProperties(['from_global_state' => true]);
             }
 
+            // narrowing doesn't change the value: an object nothing else references stays so
+            if ($before_adjustment && $before_adjustment->reference_free) {
+                $result_type = $result_type->setProperties(['reference_free' => true]);
+            }
+
             $type_changed = !$before_adjustment
                 || !$result_type->equals($before_adjustment)
                 || $result_type->different
