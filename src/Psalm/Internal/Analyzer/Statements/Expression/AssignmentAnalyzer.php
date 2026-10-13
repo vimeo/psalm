@@ -1595,7 +1595,8 @@ final class AssignmentAnalyzer
                 }
             }
 
-            if ($list_var_id) {
+            // an array-dim target (e.g. $a['b']) never enters the scope when its root var is undefined
+            if ($list_var_id && isset($context->vars_in_scope[$list_var_id])) {
                 if (($context->error_suppressing && ($offset || $can_be_empty))
                     || $has_null
                 ) {
