@@ -1,0 +1,11 @@
+<?php
+namespace {
+    class DateInterval
+    {
+        /**
+         * @return DateInterval
+         * @throws DateMalformedIntervalStringException
+         */
+        public static function createFromDateString(string $datetime = ''): DateInterval {}
+    }
+}
