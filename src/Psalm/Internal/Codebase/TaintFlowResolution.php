@@ -85,6 +85,13 @@ final class TaintFlowResolution
     private const KEY_CLASS = 'key';
 
     /**
+     * The class (see getAssignmentClass()) of an open assignment of the calls entering a filter not split by class
+     * (see tracksClasses()), which know it only through the calls entering them: a fetch observing it in the walk
+     * of a call made there goes on per fetched key (see passesFetch()).
+     */
+    private const DEFERRED_CLASS = '?';
+
+    /**
      * The class of an open assignment of an array value under a key not known: a fetch of an array value takes
      * it, under any key, but a fetch of an array key doesn't, as the keys of the array don't hold it.
      */
@@ -173,6 +180,12 @@ final class TaintFlowResolution
      * different arrays, ...): past those, no fetch ignores the open assignment.
      */
     private const CONVERGENCE_LEVELS = 12;
+
+    /**
+     * How many facts (see addEntry()) a filter can know and still be split by the class of another open
+     * assignment of the calls entering it (see tracksClasses())
+     */
+    private const MAX_TRACKING_FILTER_FACTS = 1;
 
     /**
      * How many convergences of a node know the innermost open assignments of the flows entering them at most
@@ -1819,7 +1832,7 @@ final class TaintFlowResolution
             $depth = $this->open_assignments[$open_assignments][1][$observed_family] + 1;
             $fact = $this->entry_facts[$context][self::getPosition($observed_family, $depth)] ?? null;
 
-            if ($fact !== null && $fact[0] !== null) {
+            if ($fact !== null && $fact[0] !== null && $fact[0] !== self::DEFERRED_CLASS) {
                 if (!self::classPassesFetch($fact[0], $observed_key)) {
                     return;
                 }
@@ -2060,6 +2073,24 @@ final class TaintFlowResolution
         $this->reach($id, $entry, $open_assignments, self::ALL_TAINTS, 0, $caller, 0, -1);
 
         return $entry;
+    }
+
+    /**
+     * Whether the walks of entry $entry are split by the class of the open assignments of the calls entering
+     * it (see dependOnClass()). Those of an entry are, and those of a filter knowing a single fact (e.g. the
+     * key of the property its walk read) too: each of its walks only observes that one so far, so splitting
+     * them by the class of another one (e.g. the key of the array that property holds, fetched further on)
+     * multiplies them by the classes of that one at most. A filter knowing more isn't split by class: that
+     * would make a walk for every combination of classes of all the open assignments the walks observe. A
+     * fetch in the walk of a call it makes is told apart in it by whether it ignores the open assignment
+     * only (see passesFetch()).
+     *
+     * @psalm-mutation-free
+     */
+    private function tracksClasses(int $entry): bool
+    {
+        return $this->entry_bases[$entry] === $entry
+            || count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS;
     }
 
     /**
@@ -2334,8 +2365,8 @@ final class TaintFlowResolution
     /**
      * Whether a fetch of key $fetched_key doesn't ignore the open assignment of type $family at depth $depth
      * of the flows of state $state, or null if they don't know it: it is one of those of the flows entering
-     * their context, which decides (see dependOnClass()), through $levels more convergences at most (see
-     * getAssignmentClass()).
+     * their context, which decides (see dependOnClass(), or getFilter() in a filter not split by class),
+     * through $levels more convergences at most (see getAssignmentClass()).
      */
     private function passesFetch(int $state, int $family, int $depth, string $fetched_key, int $levels): ?bool
     {
@@ -2369,7 +2400,7 @@ final class TaintFlowResolution
 
         $fact = $this->entry_facts[$context][self::getPosition($family, $call_depth)] ?? null;
 
-        if ($fact !== null && $fact[0] !== null) {
+        if ($fact !== null && $fact[0] !== null && $fact[0] !== self::DEFERRED_CLASS) {
             return self::classPassesFetch($fact[0], $fetched_key);
         }
 
@@ -2377,7 +2408,25 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
+        if (!$this->tracksClasses($context) || ($fact !== null && $fact[0] === self::DEFERRED_CLASS)) {
+            if (!$is_convergence) {
+                // A fetch in the walk of a call made there only asks whether it ignores that open assignment: the
+                // flows go on in the filter of their context for the calls whose open assignment it doesn't ignore
+                // (see getFilter()), one per fetched key and not per class. Else a call made past two observed
+                // open assignments would take everything assigned under any key (e.g. the values of an array as
+                // its keys).
+                $filter = $this->getFilter($context, $family, $call_depth, $fetched_key);
+
+                if ($filter === $context) {
+                    // past MAX_FILTERS, the fetch doesn't ignore it
+                    return true;
+                }
+
+                $this->copyToFilter($state, $filter);
+
+                return null;
+            }
+
             // see getAssignmentClass()
             return true;
         }
@@ -2438,11 +2487,14 @@ final class TaintFlowResolution
             return $class;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
-            // Already in a filter, for the calls agreeing on another open assignment: a filter of it for each
+        if (!$this->tracksClasses($context)) {
+            // Already in a filter, for the calls agreeing on other open assignments: a filter of it for each
             // class there too would make one for every combination of classes of the open assignments a walk
-            // observes. So no fetch ignores it, as above.
-            return '';
+            // observes. So the calls entering it only know it per fetched key: the flows of a walk of the call
+            // depending on it go on in a filter of that walk for the calls with a deferred class there, whose
+            // fetches observing it ask them per key too (see passesFetch()). In a convergence, no fetch ignores
+            // it, as above.
+            return $is_convergence ? '' : self::DEFERRED_CLASS;
         }
 
         $this->dependOnClass($context, $position, $state, $is_convergence ? $levels - 1 : $levels);
@@ -2562,6 +2614,11 @@ final class TaintFlowResolution
 
         if ($class === null) {
             return;
+        }
+
+        if ($class === self::DEFERRED_CLASS && $this->entry_kinds[$entry] !== self::ENTRY_CALL) {
+            // no fetch in the walk of a convergence asks per key (see passesFetch())
+            $class = '';
         }
 
         if (!isset($this->entry_class_filters[$entry][$position][$class])) {

@@ -525,6 +525,80 @@ final class TaintTest extends TestCase
                     showValues([$name => "value"]);
                     showValues(["a" => "value"]);',
             ],
+            'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsIgnoresValues' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function decorate(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function anchor(array $opts): string {
+                        return decorate($opts["wrap"]["attr"]);
+                    }
+
+                    echo anchor(["wrap" => ["attr" => ["data-q" => (string) $_GET["q"]]]]);',
+            ],
+            'keyFetchInACallMadeWhereTheFlowsObservedTwoOpenAssignmentsIgnoresValues' => [
+                // prepare() asks for the class of an open assignment of the calls entering tag() deeper than its
+                // flows have: past that, they are in a filter knowing two of them, which tells apart the calls
+                // passing the key fetch in render() from the others, like a filter knowing one.
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function prepare(array $attr): array {
+                        foreach ($attr as $value) {
+                            if (is_array($value)) {
+                                foreach ($value as $key => $_) {
+                                    $attr["keys"] = $key;
+                                }
+                            }
+                        }
+                        return $attr;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = "";
+                        foreach ($attr as $name => $_) {
+                            $html .= $name . " ";
+                        }
+                        return $html;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $holder): string {
+                        return render(prepare($holder["attr"]));
+                    }
+
+                    echo tag(["attr" => ["href" => (string) $_GET["p"]]]);',
+            ],
+            'keyFetchTwoCallsDownIgnoresTheValuesOfAKeyFetchedOneCallDown' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function keys(array $attr): string {
+                        $out = "";
+                        foreach ($attr as $k => $_) {
+                            $out .= $k;
+                        }
+                        return $out;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function render(array $data): string {
+                        return keys($data["attr"]);
+                    }
+
+                    echo render(["attr" => ["href" => (string) $_GET["p"]]]);',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -3719,6 +3793,80 @@ final class TaintTest extends TestCase
                     $input = (string) ($_GET["input"] ?? "");
                     showValues([$input => "value"]);
                     showValues(["value" => $input]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyFetchInACallOfACallMadeWhereTheFlowsObservedTwoOpenAssignmentsTakesKeys' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function decorate(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function anchor(array $opts): string {
+                        return decorate($opts["wrap"]["attr"]);
+                    }
+
+                    echo anchor(["wrap" => ["attr" => [(string) $_GET["q"] => "x"]]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyFetchInACallMadeWhereTheFlowsObservedTwoOpenAssignmentsTakesKeys' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function prepare(array $attr): array {
+                        foreach ($attr as $value) {
+                            if (is_array($value)) {
+                                foreach ($value as $key => $_) {
+                                    $attr["keys"] = $key;
+                                }
+                            }
+                        }
+                        return $attr;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = "";
+                        foreach ($attr as $name => $_) {
+                            $html .= $name . " ";
+                        }
+                        return $html;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $holder): string {
+                        return render(prepare($holder["attr"]));
+                    }
+
+                    echo tag(["attr" => [(string) $_GET["p"] => "x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyFetchTwoCallsDownTakesTheKeysOfAKeyFetchedOneCallDown' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function keys(array $attr): string {
+                        $out = "";
+                        foreach ($attr as $k => $_) {
+                            $out .= $k;
+                        }
+                        return $out;
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function render(array $data): string {
+                        return keys($data["attr"]);
+                    }
+
+                    echo render(["attr" => [(string) $_GET["p"] => 1]]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
