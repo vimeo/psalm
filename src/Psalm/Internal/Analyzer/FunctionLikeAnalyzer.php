@@ -774,11 +774,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $codebase->code_use_graph->addMutationInfo($node_id, [
                     // the calls of an unannotated overridden method may run any of its overrides,
                     // which could do anything: annotating it would restrict them
-                    'intrinsic' => $storage instanceof MethodStorage
+                    'intrinsic' => ($storage instanceof MethodStorage
                         && $storage->overridden_somewhere
                         && !$storage->has_mutations_annotation
                             ? Capabilities::ALL
-                            : $this->intrinsic_capabilities,
+                            : $this->intrinsic_capabilities)
+                        | $this->getPurityTemplateLowerBounds($codebase, $storage),
                     'allowed' => $storage->capabilities,
                     'callees' => $this->deferred_callees,
                     'default_intrinsic' => $this->param_default_intrinsic_capabilities,
@@ -2458,6 +2459,34 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return [];
+    }
+
+    /**
+     * The lower bounds of the class purity templates the method inherits its purity from: it
+     * declares them as its own capabilities (see FunctionLikeDocblockScanner::applyPurityTemplateLowerBounds)
+     * and its callers pay them anyway, so no stricter annotation can be suggested without them.
+     *
+     * @psalm-capabilities read-props
+     */
+    private function getPurityTemplateLowerBounds(Codebase $codebase, FunctionLikeStorage $storage): int
+    {
+        if (!$storage instanceof MethodStorage
+            || $storage->defining_fqcln === null
+            || $storage->purity_from_templates === []
+        ) {
+            return Capabilities::NONE;
+        }
+
+        $lower_bounds = $codebase->classlike_storage_provider->get($storage->defining_fqcln)->template_lower_bounds;
+        $capabilities = Capabilities::NONE;
+
+        foreach ($storage->purity_from_templates as $purity_template) {
+            if (isset($lower_bounds[$purity_template]) && !isset($storage->template_types[$purity_template])) {
+                $capabilities |= $lower_bounds[$purity_template];
+            }
+        }
+
+        return $capabilities;
     }
 
     /**
