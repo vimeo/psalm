@@ -1149,6 +1149,24 @@ final class ClassLikes
         return $capabilities;
     }
 
+    /**
+     * Whether every method an interface declares says what it may do, with a purity annotation or by taking its
+     * purity from a template: then a class-level contract would only cap its implementers further, and an interface
+     * declaring no method (a marker) has nothing to cap.
+     *
+     * @psalm-mutation-free
+     */
+    private static function areAllMethodsAnnotated(ClassLikeStorage $storage): bool
+    {
+        foreach ($storage->methods as $method_storage) {
+            if (!$method_storage->has_mutations_annotation && $method_storage->purity_from_templates === []) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function makeImmutable(
         int $capabilities,
         bool $change,
@@ -1161,7 +1179,7 @@ final class ClassLikes
             return;
         }
         if ($storage->is_interface) {
-            if ($storage->has_mutations_annotation) {
+            if ($storage->has_mutations_annotation || self::areAllMethodsAnnotated($storage)) {
                 return;
             }
             IssueBuffer::maybeAdd(
