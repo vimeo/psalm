@@ -465,7 +465,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key, if
-     * it does. It may copy only some of them. $stmt is analyzed already. The copies are:
+     * it does. It may copy only some of them. $stmt is analyzed already, $target_type is the type of $stmt->var.
+     * The target is an array too (see hasElementsOfItsOwn()): an object puts the value where its offsetSet()
+     * does, maybe under another key. The copies are:
      * - $r[$k] = $y[$k], with $y an array (see hasElementsOfItsOwn()) and $k the same at both dims;
      * - $r[$k] = $v in the body of a foreach loop over an array, with $k and $v the key and value variables of
      *   the loop, not reassigned since (see Context::$foreach_element_copies).
@@ -480,12 +482,14 @@ final class ArrayAssignmentAnalyzer
     private static function getElementCopySource(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Union $target_type,
         ?PhpParser\Node\Expr $assign_value,
         Context $context,
     ): ?array {
         if (!$stmt->dim instanceof PhpParser\Node\Expr\Variable
             || !is_string($stmt->dim->name)
             || $assign_value === null
+            || !self::hasElementsOfItsOwn($target_type)
         ) {
             return null;
         }
@@ -591,9 +595,18 @@ final class ArrayAssignmentAnalyzer
     ): void {
         if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             $element_copy_source = $assignment_context
-                ? self::getElementCopySource($statements_analyzer, $expr, $assign_value, $assignment_context)
+                ? self::getElementCopySource(
+                    $statements_analyzer,
+                    $expr,
+                    $stmt_type,
+                    $assign_value,
+                    $assignment_context,
+                )
                 : null;
-            $foreach_marker = $assignment_context && $element_copy_source === null
+            // an object puts the value where its offsetSet() does, maybe under another key
+            $foreach_marker = $assignment_context
+                && $element_copy_source === null
+                && self::hasElementsOfItsOwn($stmt_type)
                 ? self::getForeachMarker($statements_analyzer, $expr, $assignment_context)
                 : null;
 
