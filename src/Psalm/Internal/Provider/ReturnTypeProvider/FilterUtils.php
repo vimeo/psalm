@@ -59,6 +59,7 @@ use const FILTER_FLAG_ALLOW_OCTAL;
 use const FILTER_FLAG_ALLOW_SCIENTIFIC;
 use const FILTER_FLAG_ALLOW_THOUSAND;
 use const FILTER_FLAG_EMAIL_UNICODE;
+use const FILTER_FLAG_EMPTY_STRING_NULL;
 use const FILTER_FLAG_ENCODE_AMP;
 use const FILTER_FLAG_ENCODE_HIGH;
 use const FILTER_FLAG_ENCODE_LOW;
@@ -1246,11 +1247,39 @@ final class FilterUtils
             case FILTER_DEFAULT:
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($filter_int_used === FILTER_DEFAULT
-                        && $flags_int_used === 0
                         && $atomic_type instanceof TString
                     ) {
-                        $filter_types[] = $atomic_type;
-                        continue;
+                        if ($flags_int_used === 0) {
+                            $filter_types[] = $atomic_type;
+                            continue;
+                        }
+
+                        if (self::hasFlag($flags_int_used, FILTER_FLAG_EMPTY_STRING_NULL)) {
+                            if ($atomic_type instanceof TLiteralString
+                                && $atomic_type->value === ''
+                            ) {
+                                $filter_types[] = new TNull();
+                                continue;
+                            }
+
+                            if ($atomic_type instanceof TNonEmptyString
+                                || $atomic_type instanceof TNonEmptyNonspecificLiteralString
+                            ) {
+                                $filter_types[] = $atomic_type;
+                                continue;
+                            }
+
+                            // Any literal string here is non-empty due to usage of FILTER_FLAG_EMPTY_STRING_NULL.
+                            if ($atomic_type instanceof TLiteralString) {
+                                $filter_types[] = new TNonEmptyNonspecificLiteralString();
+                                continue;
+                            }
+
+                            // Any string here is null|non-empty due to usage of FILTER_FLAG_EMPTY_STRING_NULL.
+                            $filter_types[] = new TNull();
+                            $filter_types[] = new TNonEmptyString();
+                            continue;
+                        }
                     }
 
                     if ($atomic_type instanceof TNumericString) {
@@ -1522,6 +1551,7 @@ final class FilterUtils
             FILTER_REQUIRE_ARRAY,
             FILTER_FORCE_ARRAY,
             FILTER_FLAG_NONE, // does nothing, default
+            FILTER_FLAG_EMPTY_STRING_NULL,
         );
 
         // https://www.php.net/manual/en/filter.filters.sanitize.php
