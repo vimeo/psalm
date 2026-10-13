@@ -99,6 +99,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `FunctionExistenceProviderInterface` - can be used to override Psalm's builtin function existence checks for one or more functions.
 - `FunctionParamsProviderInterface.php` - can be used to override Psalm's builtin function parameter lookup for one or more functions.
 - `FunctionReturnTypeProviderInterface` - can be used to override Psalm's builtin function return type lookup for one or more functions.
+- `MethodCapabilitiesProviderInterface` - can be used to give the capabilities (purity) a call of a method of one or more classes requires, e.g. from its arguments.
 - `MethodExistenceProviderInterface` - can be used to override Psalm's builtin method existence checks for one or more classes.
 - `MethodParamsProviderInterface` - can be used to override Psalm's builtin method parameter lookup for one or more classes.
 - `MethodReturnTypeProviderInterface` - can be used to override Psalm's builtin method return type lookup for one or more classes.

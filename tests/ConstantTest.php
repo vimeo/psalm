@@ -18,6 +18,91 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                namespace Foo;
+
+                enum Action {
+                    case Skip;
+                    case Fail;
+                }
+
+                const SKIP = Action::Skip;
+                const MAPPING = ["a" => Action::Skip, "b" => ["x" => 1]];
+                const NESTED = ["m" => MAPPING, "f" => Action::Fail];
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                namespace Baz;
+
+                use const Foo\\MAPPING;
+                use const Foo\\NESTED;
+                use const Foo\\SKIP;
+
+                /** @psalm-check-type-exact $skip = \\Foo\\Action::Skip */
+                $skip = SKIP;
+                /** @psalm-check-type-exact $mapping = array{a: \\Foo\\Action::Skip, b: array{x: 1}} */
+                $mapping = MAPPING;
+                /** @psalm-check-type-exact $nested = array{m: array{a: \\Foo\\Action::Skip, b: array{x: 1}}, f: \\Foo\\Action::Fail} */
+                $nested = NESTED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
+    public function testGlobalConstantOfClassConstFetchFromAnotherFile(): void
+    {
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                namespace ClassConstFetch;
+
+                final class Bar {
+                    public const BAZ = "baz";
+                }
+
+                const BAR_CLASS = Bar::class;
+                const BAR_BAZ = Bar::BAZ;
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                namespace ClassConstFetchUsage;
+
+                use const ClassConstFetch\\BAR_BAZ;
+                use const ClassConstFetch\\BAR_CLASS;
+
+                /** @psalm-check-type-exact $class = \\ClassConstFetch\\Bar::class */
+                $class = BAR_CLASS;
+                /** @psalm-check-type-exact $baz = "baz" */
+                $baz = BAR_BAZ;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
     // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
     // {

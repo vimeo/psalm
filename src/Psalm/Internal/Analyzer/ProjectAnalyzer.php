@@ -243,6 +243,8 @@ final class ProjectAnalyzer
             }
         }
 
+        $this->codebase->registerConfigTaints();
+
         $this->config->processPluginFileExtensions($this);
 
         if ($this->config::INIT_PROJECT_FILES_NOW) {

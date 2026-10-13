@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -71,6 +72,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function mb_ord;
 use function preg_split;
 use function reset;
@@ -96,6 +98,12 @@ final class ArgumentAnalyzer
     // e.g. header_register_callback will not throw an error immediately like user-land functions
     // however error log "Could not call the sapi_header_callback" if it's not public
     // this is NOT a complete list, but just what was easily available and to be extended
+    /**
+     * Set on the arguments of a call naming the class of its method (parent::, self::, A::), which runs that method
+     * and no override of it: their taints don't go to the overrides
+     */
+    public const NON_VIRTUAL_CALL_ATTRIBUTE = 'nonVirtualCallArgument';
+
     private const PHP_NATIVE_NON_PUBLIC_CB = [
         ...ArgumentsAnalyzer::ARRAY_FILTERLIKE,
         'array_diff_uassoc',
@@ -1822,7 +1830,7 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove() : 0;
+        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove($codebase->getInputTaints()) : 0;
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
@@ -1851,7 +1859,40 @@ final class ArgumentAnalyzer
         // method body's parameter node). When the caller has no storage it is resolved from the cased
         // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
         // has no declared parameter to key on and so uses the call offset.
-        $method_node = ($function_storage
+        // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
+        /** @var string|null $body_class set by StaticCallAnalyzer */
+        $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
+        $called_declaring_method_id = is_string($body_class) && $method_id
+            ? $codebase->methods->getDeclaringMethodId($method_id)
+            : null;
+        $called_body_suffix = is_string($body_class) && $called_declaring_method_id
+            ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $body_class, $called_declaring_method_id)
+            : null;
+
+        $method_node = $called_body_suffix !== null && $called_declaring_method_id
+            ? InheritedMethodTaints::withMethodSuffix(
+                $called_declaring_method_id,
+                $called_body_suffix,
+                static function () use (
+                    $codebase,
+                    $called_declaring_method_id,
+                    $function_param,
+                    $argument_offset,
+                    $specialization_location,
+                ): DataFlowNode {
+                    $declaring_storage = $codebase->methods->getStorage($called_declaring_method_id);
+
+                    return DataFlowNode::getForMethodArgument(
+                        $codebase->methods->getCasedMethodId($called_declaring_method_id),
+                        DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
+                        $declaring_storage,
+                        $specialization_location,
+                    );
+                },
+            )
+            : null;
+
+        $method_node ??= ($function_storage
             ? DataFlowNode::getForMethodArgument(
                 $cased_method_id,
                 DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
@@ -1874,49 +1915,64 @@ final class ArgumentAnalyzer
                 $specialization_location,
             );
 
+        // A virtual call of a method on a class may run an override of a class extending it: the call goes to
+        // them, as well as to the parameter of its method. But that parameter is also where the calls on the
+        // classes extending it go when they inherit the method, which can't run those overrides: what the call
+        // dispatches to the overrides goes through a node of its own, not the parameter. That node is shared by
+        // the virtual calls of the method on the class, so that their number doesn't multiply its paths.
+        $dispatch_node = null;
+
         if (!$specialize_taint
             && $taint_flow_graph
             && $method_id
             && $method_id->method_name !== '__construct'
+            // a call naming its class (parent::, self::, A::) runs that method only (see StaticCallAnalyzer)
+            && $expr->getAttribute(self::NON_VIRTUAL_CALL_ATTRIBUTE) !== true
         ) {
-            $fq_classlike_name = $method_id->fq_class_name;
-            $cased_method_name = explode('::', $cased_method_id)[1];
+            $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
 
-            $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+            if ($class_storage->dependent_classlikes !== []) {
+                $param_offset = $function_storage
+                    ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
+                    : $argument_offset;
 
-            foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
-                $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
-                    $dependent_classlike_lc,
-                );
+                $dispatch_node = DataFlowNode::getForDispatch($cased_method_id, $param_offset);
 
-                // Resolve the declaring method's storage (a dependent class usually inherits the
-                // method, so it has no storage under its own id) so this node's location -- and the
-                // declared parameter it is keyed by -- is the same canonical one used wherever else
-                // the node id is created.
-                $new_sink = DataFlowNode::getForMethodArgumentById(
-                    $codebase->methods,
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $argument_offset,
-                    null,
-                    $function_param,
-                ) ?? DataFlowNode::getForCallableArg(
-                    'inherited-method',
-                    $dependent_classlike_storage->name . '::' . $cased_method_name,
-                    $argument_offset,
-                );
+                // the first of these calls links it to the overrides
+                if (!$taint_flow_graph->hasNode($dispatch_node)) {
+                    $taint_flow_graph->addNode($dispatch_node);
 
-                $taint_flow_graph->addNode($new_sink);
-                $taint_flow_graph->addPath(
-                    $method_node,
-                    $new_sink,
-                    'arg',
-                    $added_taints,
-                    $removed_taints,
-                );
+                    $cased_method_name = explode('::', $cased_method_id)[1];
+
+                    foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
+                            $dependent_classlike_lc,
+                        );
+
+                        // Resolve the declaring method's storage (a dependent class usually inherits the
+                        // method, so it has no storage under its own id) so this node's location -- and the
+                        // declared parameter it is keyed by -- is the same canonical one used wherever else
+                        // the node id is created.
+                        $new_sink = DataFlowNode::getForMethodArgumentById(
+                            $codebase->methods,
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $param_offset,
+                            null,
+                            $function_param,
+                        ) ?? DataFlowNode::getForCallableArg(
+                            'inherited-method',
+                            $dependent_classlike_storage->name . '::' . $cased_method_name,
+                            $param_offset,
+                        );
+
+                        $taint_flow_graph->addNode($new_sink);
+                        $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
+                    }
+                }
             }
         }
 
-        if ($method_id && $taint_flow_graph) {
+        if ($method_id && $taint_flow_graph && $called_body_suffix === null) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             // the parameters of the body of the method, keyed by the class it is analyzed as one of (see
@@ -1930,15 +1986,25 @@ final class ArgumentAnalyzer
                 && strtolower($cased_body_method_id) !== strtolower($cased_method_id)
             ) {
                 $declaring_storage = $codebase->methods->getStorage($declaring_method_id);
+                // the body of the method analyzed for the class of the object, if it is (see InheritedMethodTaints)
+                $body_suffix = InheritedMethodTaints::getBodySuffix(
+                    $statements_analyzer,
+                    $method_id->fq_class_name,
+                    $declaring_method_id,
+                );
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
                 // with no call-site context, and out of it through every call's return.
-                $new_sink = DataFlowNode::getForMethodArgument(
-                    $cased_body_method_id,
-                    DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
-                    $declaring_storage,
-                    $specialization_location,
+                $new_sink = InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id,
+                    $body_suffix,
+                    static fn(): DataFlowNode => DataFlowNode::getForMethodArgument(
+                        $cased_body_method_id,
+                        DataFlowNode::getParameterOffset($declaring_storage, $function_param, $argument_offset),
+                        $declaring_storage,
+                        $specialization_location,
+                    ),
                 );
 
                 $taint_flow_graph->addNode($new_sink);
@@ -1973,6 +2039,7 @@ final class ArgumentAnalyzer
                 $callable_param_storage,
                 $specialization_location,
                 $input_type,
+                $arg_location,
             );
         }
 
@@ -1990,6 +2057,10 @@ final class ArgumentAnalyzer
             $added_taints,
             $removed_taints,
         );
+
+        if ($dispatch_node && $taint_flow_graph) {
+            $taint_flow_graph->addPath($argument_value_node, $dispatch_node, 'arg', $added_taints, $removed_taints);
+        }
 
         foreach ($input_type->parent_nodes as $parent_node) {
             $graph->addNode($method_node);

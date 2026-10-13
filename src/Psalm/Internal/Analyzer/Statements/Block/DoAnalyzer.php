@@ -19,7 +19,6 @@ use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_values;
-use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
@@ -163,13 +162,13 @@ final class DoAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
         }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
             $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
 
@@ -177,13 +176,13 @@ final class DoAnalyzer
 
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
         }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
-        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
     }

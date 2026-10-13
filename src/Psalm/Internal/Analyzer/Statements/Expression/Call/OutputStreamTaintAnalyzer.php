@@ -132,6 +132,7 @@ final class OutputStreamTaintAnalyzer
      *
      * @param list<PhpParser\Node\Arg> $args
      * @return array<int, int>
+     * @psalm-capabilities read-props
      */
     private static function getTaintsRemovedByFormat(
         StatementsAnalyzer $statements_analyzer,
@@ -154,6 +155,7 @@ final class OutputStreamTaintAnalyzer
         foreach (FunctionCallReturnTypeFetcher::getTaintsRemovedBySprintfFormats(
             ConcatAnalyzer::getLiteralValues($format_type),
             array_slice($args, 1),
+            $statements_analyzer->getCodebase()->getInputTaints(),
             $function_id === 'vfprintf',
         ) as $offset => $taints) {
             $removed_taints[$offset + 1] = $taints;
@@ -211,6 +213,7 @@ final class OutputStreamTaintAnalyzer
 
     /**
      * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
      */
     private static function getArgType(
         StatementsAnalyzer $statements_analyzer,
@@ -250,8 +253,10 @@ final class OutputStreamTaintAnalyzer
 
         $graph->addSink($sink);
 
+        $type_removed_taints = $arg_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints());
+
         foreach ($arg_type->parent_nodes as $parent_node) {
-            $graph->addPath($parent_node, $sink, 'arg', 0, $arg_type->getTaintsToRemove());
+            $graph->addPath($parent_node, $sink, 'arg', 0, $type_removed_taints);
         }
     }
 }

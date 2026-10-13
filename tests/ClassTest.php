@@ -658,6 +658,7 @@ final class ClassTest extends TestCase
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class iter extends ArrayObject {
                         /**
@@ -693,6 +694,7 @@ final class ClassTest extends TestCase
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class iter extends ArrayObject {
                         /**
@@ -730,6 +732,7 @@ final class ClassTest extends TestCase
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class iter extends ArrayObject {
                         /**
@@ -1296,6 +1299,7 @@ final class ClassTest extends TestCase
 
             'detectMissingTemplateExtendsNative' => [
                 'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
                     final class C extends ArrayObject {}
                 ',
                 'error_message' => 'MissingTemplateParam',

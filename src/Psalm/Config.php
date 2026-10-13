@@ -49,6 +49,7 @@ use Psalm\Plugin\PluginFileExtensionsInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
+use Psalm\Type\TaintKind;
 use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Filesystem\Path;
@@ -58,6 +59,7 @@ use XdgBaseDir\Xdg;
 use stdClass;
 
 use function array_key_exists;
+use function array_keys;
 use function array_merge;
 use function array_pad;
 use function array_pop;
@@ -66,6 +68,8 @@ use function assert;
 use function basename;
 use function chdir;
 use function class_exists;
+use function class_implements;
+use function class_parents;
 use function clearstatcache;
 use function count;
 use function dirname;
@@ -82,6 +86,7 @@ use function getcwd;
 use function glob;
 use function implode;
 use function in_array;
+use function interface_exists;
 use function is_a;
 use function is_array;
 use function is_dir;
@@ -92,6 +97,7 @@ use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
 use function libxml_use_internal_errors;
+use function ltrim;
 use function max;
 use function mkdir;
 use function phpversion;
@@ -333,6 +339,21 @@ final class Config
 
     public bool $disable_suppress_all = true;
 
+    /**
+     * The classes of the issues that can't be suppressed (see isSuppressible())
+     *
+     * @var list<string>
+     */
+    public array $unsuppressible_issues = [];
+
+    /**
+     * The names of the issues that can't be suppressed, and of the classes of issues that can't all be
+     *
+     * @var array<string, true>
+     */
+    private array $unsuppressible_issue_types = [];
+
+
     public bool $use_phpdoc_method_without_magic_or_parent = false;
 
     public bool $use_phpdoc_property_without_magic_or_parent = false;
@@ -476,6 +497,13 @@ final class Config
     private ?IncludeCollector $include_collector = null;
 
     private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
+
+    /**
+     * The custom taints declared in `<taintAnalysis><taints>` => the aliases of built-in taints each is added to
+     *
+     * @var array<string, list<string>>
+     */
+    public array $custom_taints = [];
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
@@ -1320,6 +1348,10 @@ final class Config
             );
         }
 
+        if (isset($config_xml->taintAnalysis->taints->taint)) {
+            $config->loadCustomTaints($config_xml->taintAnalysis->taints->taint);
+        }
+
         if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
@@ -1361,6 +1393,13 @@ final class Config
                     }
                     $config->ignored_exceptions_and_descendants_in_global_scope[$exception_name] = true;
                 }
+            }
+        }
+
+        if (isset($config_xml->unsuppressibleIssues) && isset($config_xml->unsuppressibleIssues->issue)) {
+            /** @var SimpleXMLElement $unsuppressible_issue */
+            foreach ($config_xml->unsuppressibleIssues->issue as $unsuppressible_issue) {
+                $config->addUnsuppressibleIssue((string) $unsuppressible_issue['name']);
             }
         }
 
@@ -1542,6 +1581,54 @@ final class Config
     {
         if (!isset($this->issue_handlers[$issue_key])) {
             $this->setCustomErrorLevel($issue_key, $error_level);
+        }
+    }
+
+    /**
+     * @throws ConfigException if a taint's name isn't one, is a built-in taint's or is declared twice, or if an alias
+     *  isn't one of those of the built-in taints
+     */
+    private function loadCustomTaints(SimpleXMLElement $taints): void
+    {
+        // the aliases of built-in taints: the names of more than one kind
+        $aliases = [];
+        foreach (TaintKind::TAINT_NAMES as $name => $kinds) {
+            if (($kinds & ($kinds - 1)) !== 0) {
+                $aliases[$name] = true;
+            }
+        }
+
+        foreach ($taints as $taint) {
+            $name = (string) $taint['name'];
+            // a word, like the taints of the annotations, which can't start like a conditional taint or a complement
+            if (preg_match('/^[A-Za-z_][\w-]*$/', $name) !== 1) {
+                throw new ConfigException('Invalid custom taint name "' . $name . '"');
+            }
+
+            if (isset(TaintKind::TAINT_NAMES[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
+            }
+
+            if (isset($this->custom_taints[$name])) {
+                throw new ConfigException('The custom taint "' . $name . '" is declared twice');
+            }
+
+            $this->custom_taints[$name] = [];
+            if (!isset($taint->alias)) {
+                continue;
+            }
+
+            foreach ($taint->alias as $alias) {
+                $alias_name = (string) $alias['name'];
+                if (!isset($aliases[$alias_name])) {
+                    throw new ConfigException(
+                        'The custom taint "' . $name . '" can only be added to an alias of built-in taints ('
+                        . implode(', ', array_keys($aliases)) . '), not to "' . $alias_name . '"',
+                    );
+                }
+
+                $this->custom_taints[$name][] = $alias_name;
+            }
         }
     }
 
@@ -1832,7 +1919,10 @@ final class Config
 
     public function reportIssueInFile(string $issue_type, string $file_path): bool
     {
-        if ((($this->level < 3 && $this->show_mixed_issues === false)
+        $suppressible = $this->isSuppressible($issue_type);
+
+        if ($suppressible
+            && (($this->level < 3 && $this->show_mixed_issues === false)
             || ($this->level > 2 && $this->show_mixed_issues !== true))
             && in_array($issue_type, self::MIXED_ISSUES, true)
         ) {
@@ -1881,11 +1971,109 @@ final class Config
             return false;
         }
 
-        if ($this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
+        if ($suppressible && $this->getReportingLevelForFile($issue_type, $file_path) === self::REPORT_SUPPRESS) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Makes the issues of $name, and those of its subclasses, unsuppressible (see isSuppressible()). $name is the
+     * name of an issue (TaintedHtml), of a class or interface issues extend (TaintedInput, MixedIssue, ...), or the
+     * fully qualified name of the class of a plugin issue.
+     *
+     * @throws ConfigException if $name names no issue
+     */
+    public function addUnsuppressibleIssue(string $name): void
+    {
+        $issue_class = str_contains($name, '\\') ? ltrim($name, '\\') : 'Psalm\\Issue\\' . $name;
+
+        if (class_exists($issue_class) || interface_exists($issue_class)) {
+            // the issues of Psalm it is a class of, and the classes they and it extend, which can't all be suppressed
+            foreach (IssueHandler::getAllIssueTypes() as $issue_type) {
+                if (is_a('Psalm\\Issue\\' . $issue_type, $issue_class, true)) {
+                    $this->unsuppressible_issue_types[$issue_type] = true;
+                }
+            }
+
+            $parents = class_parents($issue_class);
+            $interfaces = class_implements($issue_class);
+            $classes = [
+                $issue_class,
+                ...$parents === false ? [] : $parents,
+                ...$interfaces === false ? [] : $interfaces,
+            ];
+
+            foreach ($classes as $class) {
+                $this->unsuppressible_issue_types[self::getShortName($class)] = true;
+            }
+        } elseif (str_contains($name, '\\')) {
+            // the class of a plugin issue may only be loaded with the plugin
+            $this->unsuppressible_issue_types[self::getShortName($issue_class)] = true;
+        } else {
+            throw new ConfigException('Unknown issue type ' . $name . ' in <unsuppressibleIssues>');
+        }
+
+        $this->unsuppressible_issues[] = $issue_class;
+    }
+
+    /**
+     * Whether $issue, or the issues of the type $issue names, can be suppressed, by `@psalm-suppress`,
+     * <issueHandlers>, the error level or the baseline: they can't if <unsuppressibleIssues> names their class or
+     * one it extends. $issue can also name a class issues extend (TaintedInput, ...): its issues can't all be
+     * suppressed if <unsuppressibleIssues> names one of them.
+     *
+     * Only the suppressions of the user are concerned: those Psalm adds around the code it analyses itself, which
+     * the user didn't write (see StatementsSource::addSuppressedIssues()), still apply.
+     *
+     * @psalm-mutation-free
+     */
+    public function isSuppressible(CodeIssue|string $issue): bool
+    {
+        if ($this->unsuppressible_issues === []) {
+            return true;
+        }
+
+        if ($issue instanceof CodeIssue) {
+            // the issue of a plugin can extend a class of issues <unsuppressibleIssues> names
+            foreach ($this->unsuppressible_issues as $unsuppressible_class) {
+                if ($issue instanceof $unsuppressible_class) {
+                    return false;
+                }
+            }
+
+            $issue = $issue::class;
+        }
+
+        return !isset($this->unsuppressible_issue_types[self::getShortName($issue)]);
+    }
+
+    /**
+     * Whether $suppressed_issues suppress all the issues of $issue_type: those Psalm adds around the code it analyses
+     * itself do, and those of `@psalm-suppress` unless the issues can't all be suppressed (see isSuppressible()).
+     *
+     * @param array<array-key, string> $suppressed_issues
+     * @psalm-mutation-free
+     */
+    public function suppressesIssueType(array $suppressed_issues, string $issue_type): bool
+    {
+        // see StatementsSource::addSuppressedIssues()
+        if (isset($suppressed_issues[$issue_type])) {
+            return true;
+        }
+
+        return in_array($issue_type, $suppressed_issues, true) && $this->isSuppressible($issue_type);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getShortName(string $class): string
+    {
+        $offset = strrpos($class, '\\');
+
+        return $offset === false ? $class : substr($class, $offset + 1);
     }
 
     /**
@@ -1923,6 +2111,10 @@ final class Config
 
     public function getReportingLevelForIssue(CodeIssue $e): string
     {
+        if (!$this->isSuppressible($e)) {
+            return self::REPORT_ERROR;
+        }
+
         $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
 
@@ -2379,13 +2571,18 @@ final class Config
             return;
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->preloaded_stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering preloaded stub files' . "\n");
@@ -2395,6 +2592,8 @@ final class Config
         $codebase->scanFiles();
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
 
         $progress->debug('Finished registering preloaded stub files' . "\n");
     }
@@ -2482,13 +2681,18 @@ final class Config
             }
         }
 
+        $user_stub_paths = [];
         foreach ($stub_files as $file_path) {
+            $is_user_stub = isset($this->stub_files[$file_path]);
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
             if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
+            if ($is_user_stub) {
+                $user_stub_paths[] = $file_path;
+            }
         }
 
         $progress->debug('Registering stub files' . "\n");
@@ -2498,6 +2702,51 @@ final class Config
         $progress->debug('Finished registering stub files' . "\n");
 
         $codebase->register_stub_files = false;
+
+        self::reportStubDocblockIssues($codebase, $user_stub_paths);
+    }
+
+    /**
+     * Reports the docblock issues of the stubs the config and the plugins add, which aren't analyzed (the analysis
+     * reports those of the code it analyzes): they are kept in the storages of the stubs, so that they are reported
+     * again when those come from the cache
+     *
+     * @param list<string> $file_paths
+     */
+    private static function reportStubDocblockIssues(Codebase $codebase, array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            if (!$codebase->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            $file_storage = $codebase->file_storage_provider->get($file_path);
+            $issues = $file_storage->docblock_issues;
+
+            foreach ($file_storage->functions as $function_storage) {
+                $issues = [...$issues, ...$function_storage->docblock_issues];
+            }
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                if (!$codebase->classlike_storage_provider->has($fq_classlike_name)) {
+                    continue;
+                }
+
+                $classlike_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+                $issues = [...$issues, ...$classlike_storage->docblock_issues];
+
+                foreach ($classlike_storage->methods as $method_storage) {
+                    $issues = [...$issues, ...$method_storage->docblock_issues];
+                }
+            }
+
+            foreach ($issues as $issue) {
+                // a class of the stub may be declared by another file too
+                if ($issue->code_location->file_path === $file_path) {
+                    IssueBuffer::maybeAddStubIssue($issue);
+                }
+            }
+        }
     }
 
     public function getCacheDirectory(): ?string

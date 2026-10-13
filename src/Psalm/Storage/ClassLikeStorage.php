@@ -47,6 +47,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $stubbed = false;
 
     /**
+     * How the strings some members of the class hold start, as the scan found them, for the names of the keyed stores
+     * of the taint analysis (see StringStartScanner)
+     *
+     * @internal
+     * @var array<string, string>
+     */
+    public array $string_starts = [];
+
+    /**
      * The `analysis_php_version_id` at which this native symbol became available, from an `@since`
      * tag on a stub class (e.g. 8_05_00 for a class tagged `@since 8.5`). Used to report the symbol
      * as undefined when analysing an older PHP version without a polyfill, while still keeping its
@@ -194,6 +203,13 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?Union $capabilities_type = null;
 
     public bool $has_mutations_annotation = false;
+
+    /**
+     * Whether the class is a marker interface without a class-level purity annotation: it declares no method or
+     * property, nor inherits one, so it does nothing and counts as pure. Its contract caps no implementer, as it has
+     * none of their methods to cap.
+     */
+    public bool $is_marker_interface = false;
 
     public bool $specialize_instance = false;
 
@@ -459,7 +475,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isPure(): bool
     {
-        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::NONE, $this->capabilities);
     }
 
     /**
@@ -467,7 +483,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -475,7 +491,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function isExternalMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**

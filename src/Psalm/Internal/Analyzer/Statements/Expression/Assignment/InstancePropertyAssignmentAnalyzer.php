@@ -16,6 +16,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -430,23 +431,22 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_var_id !== null
             && isset($context->vars_in_scope[$lhs_var_id])
         ) {
-            $real = $lhs_var_id === '$this'
-                ? Capabilities::WRITE_THIS_PROPS
-                : Capabilities::WRITE_PROPS;
             // Only whether a readonly property may be set depends on the class scope: nothing else
-            // holds a fresh object, so writing it is free in a function as in a method. `$this` is
-            // the caller's own instance, never a fresh one, even where its type is reference-free.
+            // holds a fresh object, so writing it is free in a function as in a method, and for
+            // the inferred level as for the reported one. `$this` is the caller's own instance,
+            // never a fresh one, even where its type is reference-free, and an object a closure
+            // captured from the scope that created it is the closure's own state.
+            $real = match (true) {
+                $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
+                $lhs_var_id === '$this',
+                $var_type !== null && $var_type->closure_state => Capabilities::WRITE_THIS_PROPS,
+                default => Capabilities::WRITE_PROPS,
+            };
             // PHP lets a class set the readonly properties of any of its instances, but only `$this`
             // belongs to the method: writing another, non-fresh instance mutates state held elsewhere.
-            $mut = match (true) {
-                $lhs_var_id !== '$this' => $property_var_pure_compatible
-                    ? Capabilities::NONE
-                    : $real,
-                $can_set_readonly_property => $property_var_pure_compatible
-                    ? Capabilities::NONE
-                    : Capabilities::READ_PROPS,
-                default => $real,
-            };
+            $mut = $lhs_var_id === '$this' && $can_set_readonly_property
+                ? ($property_var_pure_compatible ? Capabilities::NONE : Capabilities::READ_PROPS)
+                : $real;
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;
@@ -598,7 +598,8 @@ final class InstancePropertyAssignmentAnalyzer
 
                 if ($assignment_value_type->parent_nodes) {
                     // what the assigned value cannot hold, given its type, which the property's may not tell
-                    $value_removed_taints = $removed_taints | $assignment_value_type->getTaintsToRemove();
+                    $value_removed_taints = $removed_taints
+                        | $assignment_value_type->getTaintsToRemove($codebase->getInputTaints());
 
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
@@ -678,6 +679,10 @@ final class InstancePropertyAssignmentAnalyzer
 
         $graph->addNode($property_node);
 
+        if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch && $statements_analyzer->taint_flow_graph) {
+            $statements_analyzer->taint_flow_graph->addSharedState($property_node);
+        }
+
         $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -699,7 +704,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($assignment_value_type->parent_nodes) {
             // what the assigned value cannot hold, given its type, which the property's may not tell
-            $value_removed_taints = $removed_taints | $assignment_value_type->getTaintsToRemove();
+            $value_removed_taints = $removed_taints
+                | $assignment_value_type->getTaintsToRemove($codebase->getInputTaints());
 
             foreach ($assignment_value_type->parent_nodes as $parent_node) {
                 $graph->addPath(
@@ -1351,9 +1357,13 @@ final class InstancePropertyAssignmentAnalyzer
 
         $has_regular_setter = true;
 
+        // in the body of an inherited method analyzed for a class inheriting it, `$this` is an object of that class
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
             && $stmt->var->name === 'this'
             && $context->self
+            && (DataFlowNode::$body_suffix === null
+                || !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+                || InheritedMethodTaints::isPrivateIn($codebase, $context->self, $prop_name))
         ) {
             $self_property_id = $context->self . '::$' . $prop_name;
 
@@ -1824,7 +1834,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
         }
 
@@ -1835,7 +1845,7 @@ final class InstancePropertyAssignmentAnalyzer
             false,
         );
 
-        if (!in_array('PossiblyNullReference', $suppressed_issues, true)) {
+        if (!isset($suppressed_issues['PossiblyNullReference'])) {
             $statements_analyzer->removeSuppressedIssues(['PossiblyNullReference']);
         }
 

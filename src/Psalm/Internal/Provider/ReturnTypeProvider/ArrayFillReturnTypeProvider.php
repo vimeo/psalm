@@ -29,6 +29,9 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
         return ['array_fill'];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
     {

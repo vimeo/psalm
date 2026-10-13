@@ -13,15 +13,18 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -248,6 +251,26 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context,
             );
 
+            $unknown_method_capabilities = MethodCallPurityAnalyzer::getUnknownMethodCapabilities(
+                $statements_analyzer,
+                $stmt->var,
+                $class_storage,
+                $intersection_types,
+            );
+
+            $statements_analyzer->signalMutation(
+                ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    $unknown_method_capabilities,
+                    $stmt->getArgs(),
+                ),
+                $context,
+                'method ' . ($intersection_types ? '(' . $lhs_type_part . ')' : $class_storage->name) . '::{unknown}',
+                ImpureMethodCall::class,
+                $stmt,
+            );
+
             $result->return_type = Type::getMixed();
             return;
         }
@@ -277,6 +300,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         $fake_method_exists = false;
+        // the class whose @mixin the method is found through, as the call goes through its __call()
+        $mixin_user_class = null;
+        $mixin_method_id = null;
 
         if (!$naive_method_exists) {
             // if the method doesn't exist we check for any method existence providers
@@ -294,6 +320,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $naive_method_exists = false;
+            $class_name_before_mixins = $fq_class_name;
+            $method_id_before_mixins = $method_id;
 
             // @mixin attributes are an absolute pain! Lots of complexity here,
             // as they can redefine the called class, method id etc.
@@ -331,6 +359,12 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $fq_class_name,
                         $lhs_var_id,
                     );
+            }
+
+            // a templated mixin keeps $fq_class_name, only the method id moves to the mixin
+            if ($naive_method_exists && $method_id !== $method_id_before_mixins) {
+                $mixin_user_class = $class_name_before_mixins;
+                $mixin_method_id = $method_id;
             }
         }
 
@@ -428,9 +462,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             : null;
         $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
+        // in the body of an inherited method analyzed for a class inheriting it, `$this` is an object of that class
         if ($lhs_var_id === '$this'
             && $context->self
             && $fq_class_name !== $context->self
+            && DataFlowNode::$body_suffix === null
             && $codebase->methodExists(
                 new MethodIdentifier($context->self, $method_name_lc),
             )
@@ -501,6 +537,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $result,
             $inferred_template_result,
+            $method_id === $mixin_method_id ? $mixin_user_class : null,
         );
 
         $statements_analyzer->node_data = $old_node_data;

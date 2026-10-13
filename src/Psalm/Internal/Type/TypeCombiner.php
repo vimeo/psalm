@@ -870,10 +870,13 @@ final class TypeCombiner
                 $existing_template_type = $combination->value_types[$type_key];
 
                 if (!$existing_template_type->as->equals($type->as)) {
+                    // a template bounded by mixed and narrowed in one branch is bounded by mixed again
                     $existing_template_type = $existing_template_type->replaceAs(Type::combineUnionTypes(
                         $type->as,
                         $existing_template_type->as,
                         $codebase,
+                        false,
+                        false,
                     ));
                     $combination->value_types[$type_key] = $existing_template_type;
                 }

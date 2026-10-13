@@ -1552,7 +1552,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if (!Capabilities::allows($storage->capabilities, $trait_storage->capabilities)) {
+            if (!Capabilities::allowsAnyOf($storage->capabilities, $trait_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
@@ -1687,7 +1687,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->alter_code
             && $source === $this
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
-            && !in_array('MissingPropertyType', $this->getSuppressedIssues())
+            && !$codebase->config->suppressesIssueType($this->getSuppressedIssues(), 'MissingPropertyType')
             && $suggested_type
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
@@ -2272,7 +2272,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!Capabilities::allows($interface_storage->capabilities, $storage->capabilities)) {
+            // a marker interface is pure without saying so, which caps none of its implementers' methods
+            if (!$interface_storage->is_marker_interface
+                && !Capabilities::allowsAnyOf($interface_storage->capabilities, $storage->capabilities)
+            ) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
                         $fq_interface_name . ' is marked with @'
@@ -2516,7 +2519,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!Capabilities::allows($parent_class_storage->capabilities, $storage->capabilities)) {
+            if (!Capabilities::allowsAnyOf($parent_class_storage->capabilities, $storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
                         $parent_fq_class_name . ' is marked with @'
@@ -2526,7 +2529,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
-            } elseif (!Capabilities::allows($storage->capabilities, $parent_class_storage->capabilities)) {
+            } elseif (!Capabilities::allowsAnyOf($storage->capabilities, $parent_class_storage->capabilities)) {
                 IssueBuffer::maybeAdd(
                     new MutableDependency(
                         $fq_class_name . ' is marked with @'
@@ -2549,7 +2552,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
             }
-            $codebase->analyzer->addMutableClass($storage->name, $parent_class_storage->capabilities);
 
             if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(

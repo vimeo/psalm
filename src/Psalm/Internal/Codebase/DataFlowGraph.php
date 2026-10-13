@@ -8,10 +8,10 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
-use function array_key_last;
 use function array_keys;
 use function array_sum;
 use function count;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -22,6 +22,16 @@ use function substr;
  */
 abstract class DataFlowGraph
 {
+    /**
+     * The type of the edge from a value to the string a builtin encodes all of it in (json_encode(), serialize(),
+     * print_r(), ...): an open array assignment, under no key in particular, that a fetch or conversion of the
+     * string takes, as the string holds everything the value holds. The edge from such a string to the value a
+     * builtin decodes from it (json_decode(), unserialize(), ...) closes it, so the fetches of the decoded value
+     * tell its keys apart again.
+     */
+    public const SERIALIZATION_PATH_TYPE = 'serialization';
+    public const UNSERIALIZATION_PATH_TYPE = 'unserialization';
+
     /** @var array<string, array<string, Path>> */
     protected array $forward_edges = [];
 
@@ -78,6 +88,17 @@ abstract class DataFlowGraph
 
             for ($x = count($previous_path_types)-1; $x >= 0; $x--) {
                 $previous_path_type = $previous_path_types[$x];
+                if ($previous_path_type === self::SERIALIZATION_PATH_TYPE && $expression_type !== 'property') {
+                    if ($fetch_nesting === 0) {
+                        // a fetch from a string holding all of the value
+                        return false;
+                    }
+
+                    $fetch_nesting--;
+
+                    continue;
+                }
+
                 if ($previous_path_type === $expression_type . '-assignment') {
                     if ($fetch_nesting === 0) {
                         // a value assigned under any key: the keys of the array don't hold it
@@ -97,11 +118,7 @@ abstract class DataFlowGraph
                         continue;
                     }
 
-                    if (substr($previous_path_type, $el + 12) === substr($path_type, $el + 7)) {
-                        return false;
-                    }
-
-                    return true;
+                    return !self::keysMayBeEqual(substr($previous_path_type, $el + 12), substr($path_type, $el + 7));
                 }
             }
         }
@@ -110,26 +127,57 @@ abstract class DataFlowGraph
     }
 
     /**
-     * Whether an edge of type $path_type, from an array to the array it becomes once its value under a key is
-     * replaced (see ArrayAssignmentAnalyzer::getOverwritePathType()), drops a flow whose open assignments are
-     * $open_assignments: a flow of that value, the innermost of them being the assignment to that key. A flow of
-     * the array's other values, of its keys or of all of it goes on, also one whose key isn't known, which may be
-     * that one. A flow of all of it is not under that key anymore, though (see
-     * TaintFlowGraph::fetchesAnOverwrittenKey()).
+     * Whether the array key or property assigned by an edge of type $expression_type . '-assignment-' .
+     * $assigned_key and the one fetched by an edge of type $expression_type . '-fetch-' . $fetched_key can be
+     * the same.
      *
-     * @param list<string> $open_assignments
+     * An array key known exactly is quoted ('k'), and one whose start only is known is quoted and followed by
+     * a star ('k'*: any key starting with k). A property name is bare. An array key fetch fetches the key ''.
+     *
      * @psalm-pure
      */
-    protected static function isOverwritten(string $path_type, array $open_assignments): bool
+    public static function keysMayBeEqual(string $assigned_key, string $fetched_key): bool
     {
-        if (!str_starts_with($path_type, 'arrayvalue-overwrite-')) {
-            return false;
+        $assigned_prefix = self::getKeyPrefix($assigned_key);
+        $fetched_prefix = self::getKeyPrefix($fetched_key);
+
+        if ($assigned_prefix === null && $fetched_prefix === null) {
+            return $assigned_key === $fetched_key;
         }
 
-        $innermost = array_key_last($open_assignments);
+        if ($assigned_prefix === null) {
+            return str_starts_with(self::getKeyValue($assigned_key), $fetched_prefix);
+        }
 
-        return $innermost !== null
-            && $open_assignments[$innermost] === 'arrayvalue-assignment-' . substr($path_type, 21);
+        if ($fetched_prefix === null) {
+            return str_starts_with(self::getKeyValue($fetched_key), $assigned_prefix);
+        }
+
+        return str_starts_with($assigned_prefix, $fetched_prefix) || str_starts_with($fetched_prefix, $assigned_prefix);
+    }
+
+    /**
+     * The start of the array key of a path type whose key only that is known (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    private static function getKeyPrefix(string $key): ?string
+    {
+        return strlen($key) > 3 && str_starts_with($key, "'") && str_ends_with($key, "'*")
+            ? substr($key, 1, -2)
+            : null;
+    }
+
+    /**
+     * The array key or property name of a path type whose key is known exactly (see keysMayBeEqual())
+     *
+     * @psalm-pure
+     */
+    private static function getKeyValue(string $key): string
+    {
+        return strlen($key) > 1 && str_starts_with($key, "'") && str_ends_with($key, "'")
+            ? substr($key, 1, -1)
+            : $key;
     }
 
     /**

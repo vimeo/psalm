@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -17,6 +16,8 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowAnnotation;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -61,10 +62,8 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
-use function preg_last_error_msg;
-use function preg_match;
+use function is_string;
 use function preg_replace;
-use function preg_split;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -99,6 +98,8 @@ final class FunctionLikeDocblockScanner
         bool $fake_method,
         string $cased_function_id,
     ): void {
+        $storage->docblock_issues = [...$storage->docblock_issues, ...$docblock_info->docblock_issues];
+
         self::handleUnexpectedTags($docblock_info, $storage, $stmt, $file_scanner, $cased_function_id);
 
         $config = Config::getInstance();
@@ -153,7 +154,7 @@ final class FunctionLikeDocblockScanner
         $storage->has_mutations_annotation = $docblock_info->has_mutations_annotation;
         
         if ($storage instanceof MethodStorage
-            && Capabilities::allows(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
+            && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $docblock_info->capabilities)
         ) {
             // If we explicitly marked this as mutation free, it's not inferred anymore.
             $storage->mutation_free_assumed = false;
@@ -377,11 +378,34 @@ final class FunctionLikeDocblockScanner
             $classlike_storage,
         );
 
+        $param_names = [];
+        foreach ($storage->params as $param_storage) {
+            $param_names[$param_storage->name] = true;
+        }
+
+        $invalid_annotations = [];
+
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
+            $values_only = str_ends_with($param_name, '[*]');
+
+            if ($values_only) {
+                $param_name = substr($param_name, 0, -3);
+            }
+
+            if (!isset($param_names[$param_name])) {
+                $invalid_annotations[] = '@psalm-taint-sink names ' . $taint_sink_param['name']
+                    . ', which is not a parameter';
+            }
 
             foreach ($storage->params as $param_storage) {
-                if ($param_storage->name === $param_name) {
+                if ($param_storage->name !== $param_name) {
+                    continue;
+                }
+
+                if ($values_only) {
+                    $param_storage->value_sinks |= $taint_sink_param['taint'];
+                } else {
                     $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
@@ -421,16 +445,35 @@ final class FunctionLikeDocblockScanner
             );
         }
 
-        self::handleTaintFlow($docblock_info, $storage);
+        self::handleTaintFlow($docblock_info, $storage, $aliases, $classlike_storage);
 
         foreach ($docblock_info->assert_untainted_params as $untainted_assert_param) {
             $param_name = substr($untainted_assert_param['name'], 1);
+
+            if (!isset($param_names[$param_name])) {
+                $invalid_annotations[] = '@psalm-assert-untainted names ' . $untainted_assert_param['name']
+                    . ', which is not a parameter';
+            }
 
             foreach ($storage->params as $param_storage) {
                 if ($param_storage->name === $param_name) {
                     $param_storage->assert_untainted = true;
                 }
             }
+        }
+
+        foreach ($docblock_info->flows as $flow) {
+            $invalid_flow = self::getInvalidFlow($flow, $param_names);
+            if ($invalid_flow !== null) {
+                $invalid_annotations[] = $invalid_flow;
+            }
+        }
+
+        foreach ($invalid_annotations as $invalid_annotation) {
+            $storage->docblock_issues[] = new InvalidDocblock(
+                $invalid_annotation . ' in docblock for ' . $cased_function_id,
+                $location,
+            );
         }
 
         if ($classlike_storage !== null) {
@@ -1198,77 +1241,60 @@ final class FunctionLikeDocblockScanner
     private static function handleTaintFlow(
         FunctionDocblockComment $docblock_info,
         FunctionLikeStorage $storage,
+        Aliases $aliases,
+        ?ClassLikeStorage $classlike_storage,
     ): void {
-        if ($docblock_info->flows) {
-            foreach ($docblock_info->flows as $flow) {
-                $path_type = 'arg';
+        foreach ($docblock_info->flows as $flow_annotation) {
+            // a malformed one is reported by handleTaintAnnotations()
+            $flow = TaintFlowAnnotation::parse($flow_annotation);
+            if (is_string($flow)) {
+                continue;
+            }
 
-                $fancy_path_regex = '/-\(([a-z\-]+)\)->/';
-
-                if (preg_match($fancy_path_regex, $flow, $matches)) {
-                    if (isset($matches[1])) {
-                        $path_type = $matches[1];
+            if ($flow->kind === TaintFlowAnnotation::STORE_WRITE || $flow->kind === TaintFlowAnnotation::STORE_READ) {
+                TaintStore::addFlow($storage, $flow, $aliases, $classlike_storage?->name);
+            } elseif ($flow->kind === TaintFlowAnnotation::RETURN) {
+                foreach ($flow->sources as $source_param) {
+                    if ($source_param === 'this') {
+                        $storage->return_source_this = $flow->path_type;
+                        continue;
                     }
 
-                    $flow = (string) preg_replace($fancy_path_regex, '->', $flow);
-                }
+                    // what the callable given to the parameter returns
+                    if (str_ends_with($source_param, '()')) {
+                        $source_param = substr($source_param, 0, -2);
 
-                $flow_parts = explode('->', $flow);
-
-                if (isset($flow_parts[1]) && trim($flow_parts[1]) === 'return') {
-                    $source_param_string = trim($flow_parts[0]);
-
-                    if ($source_param_string[0] === '(' && str_ends_with($source_param_string, ')')) {
-                        $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
-                        if ($source_params === false) {
-                            throw new AssertionError(preg_last_error_msg());
-                        }
-
-                        foreach ($source_params as $source_param) {
-                            $source_param = substr($source_param, 1);
-
-                            if ($source_param === 'this') {
-                                $storage->return_source_this = $path_type;
-                                continue;
-                            }
-
-                            foreach ($storage->params as $i => $param_storage) {
-                                if ($param_storage->name === $source_param) {
-                                    $storage->return_source_params[$i] = $path_type;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (isset($flow_parts[0]) && str_starts_with(trim($flow_parts[0]), 'proxy')) {
-                    $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
-                    [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
-
-                    if (!empty($fully_qualified_name) && !empty($source_param_string)) {
-                        $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
-                        $call_params = [];
-                        foreach ($source_params as $source_param) {
-                            $source_param = substr($source_param, 1);
-
-                            foreach ($storage->params as $i => $param_storage) {
-                                if ($param_storage->name === $source_param) {
-                                    $call_params[] = $i;
-                                }
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->return_source_callable_params[$i] = $flow->path_type;
                             }
                         }
 
-                        if ($storage->proxy_calls === null) {
-                            $storage->proxy_calls = [];
-                        }
+                        continue;
+                    }
 
-                        $storage->proxy_calls[] = [
-                            'fqn' => $fully_qualified_name,
-                            'params' => $call_params,
-                            'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return',
-                        ];
+                    foreach ($storage->params as $i => $param_storage) {
+                        if ($param_storage->name === $source_param) {
+                            $storage->return_source_params[$i] = $flow->path_type;
+                        }
                     }
                 }
+            } elseif ($flow->proxy_function !== null) {
+                $call_params = [];
+                foreach ($flow->sources as $source_param) {
+                    foreach ($storage->params as $i => $param_storage) {
+                        if ($param_storage->name === $source_param) {
+                            $call_params[] = $i;
+                        }
+                    }
+                }
+
+                $storage->proxy_calls ??= [];
+                $storage->proxy_calls[] = [
+                    'fqn' => $flow->proxy_function,
+                    'params' => $call_params,
+                    'return' => $flow->proxy_returns,
+                ];
             }
         }
     }
@@ -1327,6 +1353,30 @@ final class FunctionLikeDocblockScanner
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
         }
+    }
+
+    /**
+     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), or it names a
+     * parameter (`$name`) that isn't one of $param_names
+     *
+     * @param array<string, true> $param_names
+     * @return non-empty-string|null
+     * @psalm-pure
+     */
+    private static function getInvalidFlow(string $flow, array $param_names): ?string
+    {
+        $parsed_flow = TaintFlowAnnotation::parse($flow);
+        if (is_string($parsed_flow)) {
+            return $parsed_flow;
+        }
+
+        foreach ($parsed_flow->getParamNames() as $name) {
+            if ($name !== 'this' && !isset($param_names[$name])) {
+                return '@psalm-flow names $' . $name . ', which is not a parameter';
+            }
+        }
+
+        return null;
     }
 
     /**

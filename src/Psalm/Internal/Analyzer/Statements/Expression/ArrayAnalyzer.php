@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -49,6 +50,7 @@ use function filter_var;
 use function is_int;
 use function is_numeric;
 use function is_string;
+use function substr;
 use function trim;
 
 use const FILTER_VALIDATE_INT;
@@ -405,9 +407,12 @@ final class ArrayAnalyzer
                 if ($item_value_type->parent_nodes) {
                     $var_location = new CodeLocation($statements_analyzer->getSource(), $item);
 
+                    $key_path_suffix = $item_key_value !== null
+                        ? '-\'' . $item_key_value . '\''
+                        : ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $item->key) ?? '';
+
                     $new_parent_node = DataFlowNode::getForAssignment(
-                        'array'
-                            . ($item_key_value !== null ? '[\'' . $item_key_value . '\']' : ''),
+                        'array' . ($key_path_suffix !== '' ? '[' . substr($key_path_suffix, 1) . ']' : ''),
                         $var_location,
                     );
 
@@ -431,15 +436,14 @@ final class ArrayAnalyzer
                         }
 
                         // what an item holds can't carry the taints its type can't (see Union::getTaintsToRemove())
-                        $removed_taints |= $item_value_type->getTaintsToRemove();
+                        $removed_taints |= $item_value_type->getTaintsToRemove($codebase->getInputTaints());
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
                         $graph->addPath(
                             $parent_node,
                             $new_parent_node,
-                            'arrayvalue-assignment'
-                                . ($item_key_value !== null ? '-\'' . $item_key_value . '\'' : ''),
+                            'arrayvalue-assignment' . $key_path_suffix,
                             $added_taints,
                             $removed_taints,
                         );
@@ -478,7 +482,7 @@ final class ArrayAnalyzer
                             $taint_flow_graph->addSource($taint_source);
                         }
 
-                        $removed_taints |= $item_key_type->getTaintsToRemove();
+                        $removed_taints |= $item_key_type->getTaintsToRemove($codebase->getInputTaints());
                     }
 
                     foreach ($item_key_type->parent_nodes as $parent_node) {
@@ -625,6 +629,25 @@ final class ArrayAnalyzer
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if ($property_value->possibly_undefined) {
+                        // a string key keeps its place: it is either what the unpacked array holds under it, or
+                        // what the array had before (a list renumbers its keys, so their places are unknown);
+                        // not in array_keys, as a later item setting the key is no duplicate of a maybe missing one
+                        if (is_string($key) && $codebase->analysis_php_version_id > 8_00_00) {
+                            $previous_value = $array_creation_info->property_types[$key] ?? null;
+
+                            $array_creation_info->item_key_atomic_types[] = Type::getAtomicStringFromLiteral($key);
+                            $array_creation_info->all_list = false;
+                            $array_creation_info->property_types[$key] = $previous_value === null
+                                ? $property_value
+                                : Type::combineUnionTypes(
+                                    $previous_value,
+                                    $property_value->setPossiblyUndefined(false),
+                                    $codebase,
+                                )->setPossiblyUndefined($previous_value->possibly_undefined);
+
+                            continue;
+                        }
+
                         $has_possibly_undefined = true;
                         continue;
                     }

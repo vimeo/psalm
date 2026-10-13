@@ -26,6 +26,12 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     public int $sinks = 0;
 
+    /**
+     * The sinks of the values of the array given to the parameter, but not of its keys
+     * (`@psalm-taint-sink <taint-type> $param[*]`)
+     */
+    public int $value_sinks = 0;
+
     public bool $assert_untainted = false;
 
     public bool $type_inferred = false;
