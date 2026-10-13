@@ -1381,7 +1381,7 @@ final class TaintFlowResolution
             ) {
                 $closed_assignment = array_pop($made[$closed_family]);
 
-                if ($foreach_marker !== null && $fetches_elements) {
+                if ($foreach_marker !== null && $fetches_elements && $closed_assignment !== null) {
                     $slot = $this->getSlot($foreach_marker, $closed_assignment);
                 }
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {

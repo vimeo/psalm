@@ -184,7 +184,7 @@ final class ArrayAssignmentAnalyzer
             $current_type,
             $current_dim,
             $offset_already_existed,
-            $is_assignment,
+            $is_assignment ? $context : null,
         );
 
         $root_is_string = $root_type->isString();
@@ -478,6 +478,7 @@ final class ArrayAssignmentAnalyzer
      * of the array would lose: the assignment of such an element is no copy.
      *
      * @return array<string, DataFlowNode>|null
+     * @psalm-capabilities read-props
      */
     private static function getElementCopySource(
         StatementsAnalyzer $statements_analyzer,
@@ -555,6 +556,7 @@ final class ArrayAssignmentAnalyzer
      * in, if it assigns under the key variable of the loop, not reassigned since (see getElementCopySource()):
      * the taint analysis puts the value of the element of the iteration back under its key there, as it was in
      * the array iterated over, if that's what is assigned or what it's made of. $stmt is analyzed already.
+     * @psalm-capabilities read-props
      */
     private static function getForeachMarker(
         StatementsAnalyzer $statements_analyzer,
@@ -1138,7 +1140,7 @@ final class ArrayAssignmentAnalyzer
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
-        bool $is_assignment,
+        ?Context $assignment_context,
     ): void {
         $var_id_additions = [];
         $written_offsets = [];
@@ -1239,21 +1241,14 @@ final class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt, $assignment_type);
 
                 if ($statements_analyzer->data_flow_graph) {
-                    self::taintArrayAssignment(
+                    self::taintNestedArrayAssignment(
                         $statements_analyzer,
                         $child_stmt,
                         $array_type,
                         $assignment_type,
-                        ExpressionIdentifier::getExtendedVarId(
-                            $child_stmt->var,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        ),
-                        $offset_type !== null
-                            ? [$offset_type]
-                            : ($child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : []),
+                        $offset_type,
                         $assign_value,
-                        $is_assignment ? $context : null,
+                        $assignment_context,
                     );
                 }
             }
@@ -1327,7 +1322,7 @@ final class ArrayAssignmentAnalyzer
                 throw new InvalidArgumentException('Should never get here');
             }
 
-            $key_values = $current_dim ? self::getDimKeyValues($statements_analyzer, $current_dim) : [];
+            $key_values = self::getDimKeyValues($statements_analyzer, $current_dim);
 
             if ($key_values) {
                 $new_child_type = self::updateTypeWithKeyValues(
@@ -1394,7 +1389,7 @@ final class ArrayAssignmentAnalyzer
                     $array_type,
                     $new_child_type,
                     $parent_array_var_id,
-                    $child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : [],
+                    self::getDimKeyValues($statements_analyzer, $child_stmt->dim),
                 );
                 if ($t_orig) {
                     $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
@@ -1499,13 +1494,48 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * Taints the assignment of $assignment_type to $child_stmt, the innermost dim of a nested array assignment
+     * (see taintArrayAssignment()), under $offset_type if known
+     */
+    private static function taintNestedArrayAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $child_stmt,
+        Union &$array_type,
+        Union $assignment_type,
+        TLiteralInt|TLiteralString|null $offset_type,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Context $assignment_context,
+    ): void {
+        self::taintArrayAssignment(
+            $statements_analyzer,
+            $child_stmt,
+            $array_type,
+            $assignment_type,
+            ExpressionIdentifier::getExtendedVarId(
+                $child_stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ),
+            $offset_type !== null ? [$offset_type] : self::getDimKeyValues($statements_analyzer, $child_stmt->dim),
+            $assign_value,
+            $assignment_context,
+        );
+    }
+
+    /**
+     * The literal keys dim $dim can be: none if there is no dim (an append) or they aren't known
+     *
      * @return list<TLiteralInt|TLiteralString>
      */
     private static function getDimKeyValues(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $dim,
+        ?PhpParser\Node\Expr $dim,
     ): array {
         $key_values = [];
+
+        if ($dim === null) {
+            return $key_values;
+        }
 
         if ($dim instanceof PhpParser\Node\Scalar\String_) {
             $value_type = Type::getAtomicStringFromLiteral($dim->value);
