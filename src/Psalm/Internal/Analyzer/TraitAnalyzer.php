@@ -9,6 +9,7 @@ use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ConstExprClosureValidator;
 use Psalm\IssueBuffer;
 
 use function assert;
@@ -69,6 +70,8 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     public static function analyze(StatementsAnalyzer $statements_analyzer, Trait_ $stmt, Context $context): void
     {
         assert($stmt->name !== null);
+        ConstExprClosureValidator::validateTraitMembers($statements_analyzer, $stmt);
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classlike_storage_provider->has($stmt->name->name)) {
