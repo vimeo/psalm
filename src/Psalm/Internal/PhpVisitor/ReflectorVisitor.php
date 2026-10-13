@@ -373,6 +373,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $this->aliases,
                     $template_types,
                     $this->type_aliases,
+                    $node instanceof PhpParser\Node\Stmt\Global_,
                 );
             } catch (DocblockParseException) {
                 // do nothing
