@@ -550,10 +550,38 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The marker of the foreach loop (see ForeachAnalyzer::getForeachMarker()) whose body assignment $stmt is
+     * in, if it assigns under the key variable of the loop, not reassigned since (see getElementCopySource()):
+     * the taint analysis puts the value of the element of the iteration back under its key there, as it was in
+     * the array iterated over, if that's what is assigned or what it's made of. $stmt is analyzed already.
+     */
+    private static function getForeachMarker(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Context $context,
+    ): ?string {
+        $dim = $stmt->dim;
+
+        if (!$dim instanceof PhpParser\Node\Expr\Variable || !is_string($dim->name)) {
+            return null;
+        }
+
+        $key_var_id = '$' . $dim->name;
+
+        if (!isset($context->foreach_keys[$key_var_id])) {
+            return null;
+        }
+
+        [$key_node_ids, $foreach_marker] = $context->foreach_keys[$key_var_id];
+        $key_type = $statements_analyzer->node_data->getType($dim);
+
+        return $key_type !== null && array_keys($key_type->parent_nodes) === $key_node_ids ? $foreach_marker : null;
+    }
+
+    /**
      * @param list<TLiteralInt|TLiteralString> $key_values $key_values
-     * @param array<string, DataFlowNode>|null $element_copy_source the parent nodes of the array whose elements
-     *                                                              the assignment copies under their own key
-     *                                                              (see getElementCopySource())
+     * @param ?Context $assignment_context the context of the assignment if $child_stmt_type is the type of
+     *                                     the value it assigns, $assign_value: not of an operand of it
      */
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -562,9 +590,26 @@ final class ArrayAssignmentAnalyzer
         Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values,
-        ?array $element_copy_source = null,
+        ?PhpParser\Node\Expr $assign_value = null,
+        ?Context $assignment_context = null,
     ): void {
         if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+            $element_copy_source = $assignment_context
+                ? self::getElementCopySource(
+                    $statements_analyzer,
+                    $expr,
+                    $stmt_type,
+                    $assign_value,
+                    $assignment_context,
+                )
+                : null;
+            // an object puts the value where its offsetSet() does, maybe under another key
+            $foreach_marker = $assignment_context
+                && $element_copy_source === null
+                && self::hasElementsOfItsOwn($stmt_type)
+                ? self::getForeachMarker($statements_analyzer, $expr, $assignment_context)
+                : null;
+
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
             $parent_node = DataFlowNode::getForAssignment(
@@ -665,14 +710,37 @@ final class ArrayAssignmentAnalyzer
                             $removed_taints,
                         );
                     } else {
-                        $value_graph->addPath(
-                            $child_parent_node,
-                            $parent_node,
-                            'arrayvalue-assignment'
-                                . (ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim) ?? ''),
-                            0,
-                            $removed_taints,
-                        );
+                        $key_path_suffix = ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim);
+
+                        if ($foreach_marker !== null
+                            && $key_path_suffix === null
+                            && $taint_graph instanceof TaintFlowGraph
+                        ) {
+                            // under the key of the element of the iteration (see getForeachMarker())
+                            $taint_graph->addPath(
+                                $child_parent_node,
+                                $parent_node,
+                                'arrayvalue-assignment@' . $foreach_marker,
+                                0,
+                                $removed_taints,
+                            );
+
+                            if ($value_graph instanceof CombinedFlowGraph) {
+                                $value_graph->variable_use_graph->addPath(
+                                    $child_parent_node,
+                                    $parent_node,
+                                    'arrayvalue-assignment',
+                                );
+                            }
+                        } else {
+                            $value_graph->addPath(
+                                $child_parent_node,
+                                $parent_node,
+                                'arrayvalue-assignment' . ($key_path_suffix ?? ''),
+                                0,
+                                $removed_taints,
+                            );
+                        }
                     }
                 }
             }
@@ -1182,15 +1250,8 @@ final class ArrayAssignmentAnalyzer
                         $offset_type !== null
                             ? [$offset_type]
                             : ($child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : []),
-                        $is_assignment
-                            ? self::getElementCopySource(
-                                $statements_analyzer,
-                                $child_stmt,
-                                $array_type,
-                                $assign_value,
-                                $context,
-                            )
-                            : null,
+                        $assign_value,
+                        $is_assignment ? $context : null,
                     );
                 }
             }
