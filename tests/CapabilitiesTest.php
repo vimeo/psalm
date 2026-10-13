@@ -263,7 +263,7 @@ final class CapabilitiesTest extends TestCase
                         }
                     }
 
-                    /** @psalm-capabilities read-props */
+                    /** @psalm-capabilities pure */
                     function useFreshStorage(stdClass $key): int {
                         /** @var SplObjectStorage<stdClass, int> */
                         $storage = new SplObjectStorage();
