@@ -72,7 +72,7 @@ use function trim;
  */
 final class TaintStore
 {
-    private const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(\*|\$\w+(?:\[\*\])?)\](?:\[[^\]]*\])*$/';
+    public const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(\*|\$\w+(?:\[\*\])?)\](?:\[[^\]]*\])*$/';
 
     /**
      * Records a flow into a keyed store (`($value, $other) -> Store::$data[$key]`) or out of it

@@ -3220,6 +3220,14 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'names $k, which is not a parameter',
             ],
+            'keyedStoreReadUnderAKeyThatIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[key] -> return */
+                    function store_get(string $key): string {
+                        return $key;
+                    }',
+                'error_message' => 'is neither',
+            ],
             'taintedThroughAKeyedStoreOfAFullyQualifiedClassFromAnotherNamespace' => [
                 'code' => '<?php
                     namespace App\Writer {

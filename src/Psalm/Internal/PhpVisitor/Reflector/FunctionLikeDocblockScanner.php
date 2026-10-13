@@ -1410,9 +1410,9 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`, or out of a keyed
-     * store: `Store::$data[$key] -> ...`) nor a proxy call (`proxy ...`), or it names a parameter (`$name`) that isn't
-     * one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`), a read of a keyed
+     * store (`Store::$data[$key] -> return`, see TaintStore::addFlow()) nor a proxy call (`proxy ...`), or it names a
+     * parameter (`$name`) that isn't one of $param_names
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
@@ -1426,13 +1426,14 @@ final class FunctionLikeDocblockScanner
             && isset($matches[1])
         ) {
             $sources = $matches[1];
-        } elseif (preg_match('/^\\\\?[A-Za-z_][\w\\\\]*::\$\w+(\[.*\])\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1
-            && isset($matches[1])
+        } elseif (preg_match('/^(.*?)\s*-(?:\([a-z\-]+\)-)?>\s*return$/', $flow, $matches) === 1
+            && preg_match(TaintStore::STORE_REGEX, $matches[1] ?? '', $store_matches) === 1
         ) {
-            // what a keyed store holds under the keys a parameter names (see TaintStore::addFlow())
-            $sources = $matches[1];
+            // what a keyed store holds under the key a parameter names, read as TaintStore::addFlow() reads it
+            $sources = $store_matches[3] ?? '';
         } else {
-            return '@psalm-flow "' . $flow . '" is neither "(...) -> ..." nor "proxy ..."';
+            return '@psalm-flow "' . $flow . '" is neither "(...) -> ...", "Store::$data[$key] -> return"'
+                . ' nor "proxy ..."';
         }
 
         // the parameters it names, not what calling one returns (`$name()`)
