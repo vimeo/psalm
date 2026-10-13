@@ -2405,6 +2405,7 @@ final class ArgumentsAnalyzer
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @return array<int, int>
+     * @psalm-capabilities read-props
      */
     private static function getTaintsRemovedByPrintfFormat(
         StatementsAnalyzer $statements_analyzer,

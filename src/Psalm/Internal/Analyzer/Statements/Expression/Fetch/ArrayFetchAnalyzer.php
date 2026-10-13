@@ -627,6 +627,8 @@ final class ArrayFetchAnalyzer
      * known statically, as for "k{$x}" or 'k' . $x: quoted and followed by a star (see
      * DataFlowGraph::keysMayBeEqual()). Null if not even its start is known, or if it is known exactly (the
      * paths encode it quoted then).
+     *
+     * @psalm-capabilities read-props
      */
     public static function getKeyPrefixPathSuffix(
         StatementsAnalyzer $statements_analyzer,
@@ -649,6 +651,8 @@ final class ArrayFetchAnalyzer
 
     /**
      * The literal string $expr starts with, as far as it is known statically
+     *
+     * @psalm-capabilities read-props
      */
     private static function getLiteralStart(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): ?string
     {

@@ -542,9 +542,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * The type of the path from an array to the array it becomes once its value under $key is replaced: one
-     * keeping what it held under its other keys only (see DataFlowGraph::isOverwritten()). Assigning an offset of
-     * anything that may not be an array (an ArrayAccess object, a string...) may do anything else with what it held,
-     * so the path keeps it all then.
+     * keeping what it held under its other keys only (see TaintFlowResolution::getNextOpenAssignments()).
+     * Assigning an offset of anything that may not be an array (an ArrayAccess object, a string...) may do anything
+     * else with what it held, so the path keeps it all then.
      *
      * @psalm-mutation-free
      */
