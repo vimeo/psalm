@@ -18,8 +18,10 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function implode;
 use function in_array;
 use function preg_quote;
+use function range;
 use function sort;
 use function str_starts_with;
 use function strpos;
@@ -524,6 +526,28 @@ final class TaintTest extends TestCase
                     new Loader([$name => "template"]);
                     showValues([$name => "value"]);
                     showValues(["a" => "value"]);',
+            ],
+            'keysOfArraysPassedToASpecializedFunctionFromManyCalls' => [
+                // more calls than a node can hold states before widening: the copies of the call of render() in
+                // the filters of the walk of tag() for each key keep the open assignments of the calls
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
+                    range(1, 1100),
+                )),
             ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
@@ -3719,6 +3743,28 @@ final class TaintTest extends TestCase
                     $input = (string) ($_GET["input"] ?? "");
                     showValues([$input => "value"]);
                     showValues(["value" => $input]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyOfAnArrayPassedToASpecializedFunctionFromOneOfManyCalls' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function render(array $attr): string {
+                        $html = [];
+                        foreach ($attr as $name => $value) {
+                            $html[] = $name . "=\"" . htmlspecialchars((string) $value, ENT_QUOTES) . "\"";
+                        }
+                        return implode(" ", $html);
+                    }
+
+                    /** @psalm-taint-specialize */
+                    function tag(array $attr): string {
+                        return "<a " . render($attr) . ">";
+                    }
+' . implode('', array_map(
+                    static fn(int $i): string => 'echo tag(["k' . $i . '" => (string) $_GET["q"]]);' . "\n",
+                    range(1, 1100),
+                )) . '
+                    echo tag([(string) $_GET["q"] => "x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
