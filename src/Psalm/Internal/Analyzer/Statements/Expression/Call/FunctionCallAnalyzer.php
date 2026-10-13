@@ -874,6 +874,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+
+                    // the callee is unknown, so it may do anything
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'function call on ' . $var_type_part->getId(),
+                        ImpureFunctionCall::class,
+                        $stmt,
+                    );
                 } elseif ($var_type_part instanceof TCallableObject) {
                     $has_valid_function_call_type = true;
                     self::analyzeInvokeCall(
