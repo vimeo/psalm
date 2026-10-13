@@ -109,6 +109,7 @@ return [
     'proc_terminate' => true,
     // curl
     'curl_setopt' => true,
+    'curl_share_setopt' => true,
     'curl_close' => true,
     'curl_multi_add_handle' => true,
     'curl_multi_remove_handle' => true,
@@ -259,4 +260,7 @@ return [
     'xml_parser_free' => true,
     // mail
     'mail' => true,
+    // IMAP:
+    'imap_timeout' => true,
+    'imap_expunge' => true,
 ];
