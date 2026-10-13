@@ -256,7 +256,7 @@ final class TaintFlowResolution
 
     /**
      * The path types of the edges to what an array becomes once its value under a key is replaced (see
-     * DataFlowGraph::isOverwritten() and addOverwrite())
+     * getNextOpenAssignments() and addOverwrite())
      *
      * @var array<int, true>
      */
@@ -277,7 +277,7 @@ final class TaintFlowResolution
      *     if it doesn't know, or NO_CALL outside of any context,
      * ]
      *
-     * @var list<array{array<int, list<int>>, array<int, int>}>
+     * @var list<array{array{list<int>, list<int>}, array{int, int}}>
      */
     private array $open_assignments = [];
 
@@ -439,7 +439,7 @@ final class TaintFlowResolution
      * closed, for the calls entering it whose innermost open assignment left isn't one of an array (see
      * getConversionFilter())
      *
-     * @var array<int, array<int, int>>
+     * @var array<int, array{int, int}>
      */
     private array $filter_conversions = [];
 
@@ -447,7 +447,7 @@ final class TaintFlowResolution
      * Filter => [how many of their open assignments of each expression type the flows going through an overwrite
      * closed, whether it is for the calls they are anywhere in an array of (see getAnywhereFilter())]
      *
-     * @var array<int, array{array<int, int>, bool}>
+     * @var array<int, array{array{int, int}, bool}>
      */
     private array $filter_anywhere = [];
 
@@ -986,8 +986,8 @@ final class TaintFlowResolution
      * What an edge of type $path_type does with the open assignments of a flow, as shouldIgnoreFetch() and
      * appendPathType() treat them, except that the array keys are at the level of the array values (see
      * FAMILIES). The edge to what an array becomes once its value under a key is replaced (see
-     * DataFlowGraph::isOverwritten()) has that key prefixed with '!' as observed key, and observes, closes and
-     * adds nothing (see getNextOpenAssignments()).
+     * ArrayAssignmentAnalyzer::getOverwritePathType()) has that key prefixed with '!' as observed key, and observes,
+     * closes and adds nothing (see getNextOpenAssignments()).
      *
      * @return array{int, ?string, int, int}
      * @psalm-pure
@@ -1068,7 +1068,10 @@ final class TaintFlowResolution
 
         $id = count($this->open_assignments);
         $this->open_assignment_ids[$key] = $id;
-        $this->open_assignments[] = [$made, $closed];
+        $this->open_assignments[] = [
+            [$made[self::ARRAY_FAMILY] ?? [], $made[self::PROPERTY_FAMILY] ?? []],
+            [$closed[self::ARRAY_FAMILY] ?? self::NO_CALL, $closed[self::PROPERTY_FAMILY] ?? self::NO_CALL],
+        ];
 
         return $id;
     }
@@ -1145,6 +1148,8 @@ final class TaintFlowResolution
             && !isset($this->overwrite_path_types[$array_assignments[count($array_assignments) - 1]])
             ? $array_assignments[count($array_assignments) - 1]
             : -1;
+        $property_assignments = $made[self::PROPERTY_FAMILY];
+        $innermost_property = $property_assignments ? $property_assignments[count($property_assignments) - 1] : -1;
 
         if (isset($this->array_conversion_path_types[$path_type])) {
             // An array converts to "Array", or to 0/1, never to what it holds: the conversion takes nothing the
@@ -1154,8 +1159,6 @@ final class TaintFlowResolution
             // flow goes on, and where it made none, the innermost one is the call's (see passesConversion()). A
             // value encoded in a string (see DataFlowGraph::SERIALIZATION_PATH_TYPE) isn't in an array, and a flow
             // anywhere in an array is all of one.
-            $property_assignments = $made[self::PROPERTY_FAMILY] ?? [];
-
             if ($innermost >= 0 || $property_assignments) {
                 $next = $innermost >= 0
                     && !$property_assignments
@@ -1213,12 +1216,10 @@ final class TaintFlowResolution
             $next = $overwrite !== -1 && in_array($overwrite, $array_assignments, true)
                 ? self::IGNORED
                 : $this->applyPathType($open_assignments, $path_type);
-        } elseif ($observed_family === self::ARRAY_FAMILY ? $innermost !== -1 : $made[$observed_family] !== []) {
+        } elseif ($observed_family === self::ARRAY_FAMILY ? $innermost !== -1 : $innermost_property !== -1) {
             $next = self::classPassesFetch(
                 $this->getClass(
-                    $observed_family === self::ARRAY_FAMILY
-                        ? $innermost
-                        : $made[$observed_family][count($made[$observed_family]) - 1],
+                    $observed_family === self::ARRAY_FAMILY ? $innermost : $innermost_property,
                     $observed_family,
                 ),
                 $observed_key ?? '',
@@ -1273,7 +1274,7 @@ final class TaintFlowResolution
                 }
             } elseif ($closed_family === self::ARRAY_FAMILY
                 ? $array_assignments && !$made_overwrites
-                : $made[$closed_family]
+                : $made[$closed_family] !== []
             ) {
                 array_pop($made[$closed_family]);
             } elseif ($closed[$closed_family] !== self::NO_CALL && $closed[$closed_family] !== self::FORGOTTEN) {
@@ -1312,8 +1313,8 @@ final class TaintFlowResolution
      * assignment but overwrites (see addOverwrite()). Null if that depends on the open assignments of the call,
      * which it doesn't know (see passesAnywhere()). A flow that forgot some doesn't know it is.
      *
-     * @param array<int, list<int>> $made
-     * @param array<int, int> $closed
+     * @param array{list<int>, list<int>} $made
+     * @param array{int, int} $closed
      * @psalm-mutation-free
      */
     private function isAnywhereInArray(array $made, array $closed): ?bool
@@ -1394,7 +1395,7 @@ final class TaintFlowResolution
                     && $call_left
                     && isset($this->overwrite_path_types[$call_left[count($call_left) - 1]])
                     && (($flow_closed_count > 0
-                            && isset($this->overwrite_path_types[$call_made[$family][$count - $flow_closed_count]]))
+                            && isset($this->overwrite_path_types[$call_made[$family][count($call_left)]]))
                         || $flow_closed[self::PROPERTY_FAMILY] > count($call_made[self::PROPERTY_FAMILY]))
                 ) {
                     $call_left = [];
@@ -1469,7 +1470,7 @@ final class TaintFlowResolution
             // a fetch of a key drops a flow anywhere in an array whichever of its overwrites is of that key (see
             // getNextOpenAssignments())
             if ($depth > 0 && $family === self::ARRAY_FAMILY && $this->isOverwrittenAnywhere($made)) {
-                $depth = max($depth, count($made[$family]));
+                $depth = max($depth, count($made[$family] ?? []));
             }
 
             self::capOpenAssignments($made, $closed, $family, $depth);
@@ -2146,7 +2147,7 @@ final class TaintFlowResolution
      * drop, in a walk of $entry whose flow made no open assignment and closed $closed of those of the call
      * of each expression type, made if needed (see getFilter()).
      *
-     * @param array<int, int> $closed
+     * @param array{int, int} $closed
      */
     private function getConversionFilter(int $entry, array $closed): int
     {
@@ -2182,7 +2183,7 @@ final class TaintFlowResolution
      * known, so a conversion of an array of theirs doesn't drop them either. A value encoded in a string isn't
      * in an array, and a flow anywhere in an array is all of one (see getNextOpenAssignments()).
      *
-     * @param array<int, int> $closed
+     * @param array{int, int} $closed
      * @psalm-mutation-free
      */
     private function passesConversion(int $state, array $closed): bool
@@ -2206,7 +2207,7 @@ final class TaintFlowResolution
      * theirs of each expression type is anywhere in an array of (see isAnywhereInArray()), or for the others if
      * $anywhere is false, made if needed (see getFilter()).
      *
-     * @param array<int, int> $closed
+     * @param array{int, int} $closed
      */
     private function getAnywhereFilter(int $entry, array $closed, bool $anywhere): int
     {
@@ -2239,7 +2240,7 @@ final class TaintFlowResolution
      * theirs of each expression type are anywhere in an array there (see isAnywhereInArray()): what is left of
      * their open assignments is none or overwrites. Only those outside of any context know it.
      *
-     * @param array<int, int> $closed
+     * @param array{int, int} $closed
      * @psalm-mutation-free
      */
     private function passesAnywhere(int $state, array $closed): bool

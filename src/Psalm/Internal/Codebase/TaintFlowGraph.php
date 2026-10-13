@@ -914,7 +914,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
-     * @psalm-pure
+     * @psalm-capabilities write-refs
      */
     private static function linkSpecialization(array &$reverse, string $id): void
     {
