@@ -1297,6 +1297,53 @@ final class CapabilitiesTest extends TestCase
                         });
                     }',
             ],
+            'closureLiteralArgumentReadsAndWritesItsByRefCapturesInTheCallingScope' => [
+                'code' => '<?php
+                    /**
+                     * @param (Closure[_](int): void) $f
+                     * @psalm-pure
+                     */
+                    function each2(Closure $f): void {
+                        $f(1);
+                        $f(2);
+                    }
+
+                    /** @psalm-pure */
+                    function sum(): int {
+                        $total = 0;
+                        each2(static function (int $v) use (&$total): void {
+                            $total += $v;
+                        });
+                        array_map(static function (int $v) use (&$total): void {
+                            $total += $v;
+                        }, [1, 2]);
+                        return $total;
+                    }
+
+                    final class Tree {
+                        /** @param list<Tree> $children */
+                        public function __construct(private array $children, private int $value) {}
+
+                        /**
+                         * @param (Closure[_](Tree): void) $f
+                         * @psalm-capabilities read-props
+                         */
+                        public function eachChild(Closure $f): void {
+                            foreach ($this->children as $child) {
+                                $f($child);
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        public function total(): int {
+                            $total = $this->value;
+                            $this->eachChild(static function (Tree $child) use (&$total): void {
+                                $total += $child->total();
+                            });
+                            return $total;
+                        }
+                    }',
+            ],
             'closureWritingByRefParamNeedsWriteRefsFromTheEnclosingScope' => [
                 'code' => '<?php
                     /** @psalm-capabilities write-refs */
@@ -3386,6 +3433,28 @@ final class CapabilitiesTest extends TestCase
                         takesPure($get);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'closureLiteralArgumentStillRequiresWhatItDoesBeyondItsByRefCaptures' => [
+                'code' => '<?php
+                    /**
+                     * @param (Closure[_](int): void) $f
+                     * @psalm-pure
+                     */
+                    function each2(Closure $f): void {
+                        $f(1);
+                    }
+
+                    final class Box {
+                        public int $x = 0;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function set(Box $box): void {
+                        each2(static function (int $v) use ($box): void {
+                            $box->x = $v;
+                        });
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25 - The context is read-props but function call on each2 requires write-props',
             ],
             'closureWritingByRefParamChargesTheEnclosingScope' => [
                 'code' => '<?php

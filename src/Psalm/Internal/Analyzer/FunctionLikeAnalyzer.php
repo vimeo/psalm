@@ -23,6 +23,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -147,6 +148,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public bool $track_mutations = false;
 
     public int $inferred_capabilities = Capabilities::NONE;
+
+    /**
+     * The part of $inferred_capabilities a closure needs for something other than reading and
+     * writing the variables it captured by reference: a closure literal passed as an argument
+     * reads and writes them in the scope calling with it, which already required what writing
+     * them needs where it created the closure.
+     */
+    public int $inferred_capabilities_beyond_captures = Capabilities::NONE;
+
+    /**
+     * Whether the mutation being signalled is the closure's reading or writing of a variable it
+     * captured by reference.
+     */
+    public bool $signalling_by_ref_capture = false;
 
     /**
      * The mutations performed by this function-like itself, excluding those of
@@ -935,6 +950,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ),
                     )->setProperties(['reference_free' => true]);
                 }
+
+                $this->function->setAttribute(
+                    CallPurityResolver::ARGUMENT_PURITY_ATTRIBUTE,
+                    self::getClosurePurity(
+                        $this->inferred_capabilities_beyond_captures,
+                        $this->used_purity_templates,
+                    ),
+                );
 
                 // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(

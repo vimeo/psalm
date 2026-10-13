@@ -978,6 +978,7 @@ final class NewAnalyzer extends CallAnalyzer
             Capabilities::NONE,
             $template_result,
             self::getConstructorClassTemplateParams($codebase, $context, $method_storage, $fq_class_name),
+            args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
         $resolved_capabilities = $template_capabilities
             | ($method_storage->capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));

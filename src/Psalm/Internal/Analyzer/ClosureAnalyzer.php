@@ -356,6 +356,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 continue;
             }
 
+            // in an enclosing closure, writing a variable that closure captured by reference too
+            $enclosing_closure = $statements_analyzer->getSource();
+            $enclosing_closure = $enclosing_closure instanceof self && isset($context->captured_by_ref[$var_id])
+                ? $enclosing_closure
+                : null;
+
+            if ($enclosing_closure !== null) {
+                $enclosing_closure->signalling_by_ref_capture = true;
+            }
+
             $statements_analyzer->signalMutation(
                 $required,
                 $context,
@@ -363,6 +373,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 ImpureByReferenceAssignment::class,
                 $stmt,
             );
+
+            if ($enclosing_closure !== null) {
+                $enclosing_closure->signalling_by_ref_capture = false;
+            }
         }
         
         // creating a closure is not an effect: its capabilities are carried by its type and are
