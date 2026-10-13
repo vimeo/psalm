@@ -36,6 +36,7 @@ use function function_exists;
 use function intdiv;
 use function interface_exists;
 use function is_int;
+use function is_string;
 use function max;
 use function min;
 use function str_contains;
@@ -44,7 +45,6 @@ use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
-use function trim;
 
 use const PHP_VERSION;
 
@@ -457,8 +457,12 @@ final class InternalCallMapHandler
 
         $flows = self::$taint_store_map[strtolower($function_id)] ?? [];
         foreach ($flows as $flow) {
-            $sides = explode('->', $flow, 2);
-            TaintStore::addFlow($storage, trim($sides[0]), trim($sides[1] ?? ''), 'arg');
+            $parsed_flow = TaintFlowAnnotation::parse($flow);
+            if (is_string($parsed_flow)) {
+                throw new UnexpectedValueException($parsed_flow . ' in the keyed store flows of ' . $function_id);
+            }
+
+            TaintStore::addFlow($storage, $parsed_flow);
         }
 
         return $flows !== [];

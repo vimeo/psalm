@@ -3804,6 +3804,34 @@ final class TaintTest extends TestCase
                     function check(string $text): void {}',
                 'error_message' => 'names $txt, which is not a parameter',
             ],
+            'flowIntoNeitherTheReturnNorAKeyedStore' => [
+                'code' => '<?php
+                    /** @psalm-flow ($text) -(html)-> $other */
+                    function wrap(string $text, string $other): string {
+                        return $text . $other;
+                    }',
+                'error_message' => 'is neither',
+            ],
+            'keyedStoreWriteUnderAKeyThatIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[key] */
+                    function store_set(string $key, string $value): void {}',
+                'error_message' => 'is neither',
+            ],
+            'flowFromWhatACallableThatIsNotAParameterReturns' => [
+                'code' => '<?php
+                    /** @psalm-flow ($fn()) -> return */
+                    function call(callable $callback): string {
+                        return "";
+                    }',
+                'error_message' => 'names $fn, which is not a parameter',
+            ],
+            'proxyFlowIntoNeitherTheReturnNorNothing' => [
+                'code' => '<?php
+                    /** @psalm-flow proxy exec($cmd) -> $out */
+                    function run(string $cmd, string $out): void {}',
+                'error_message' => 'is neither',
+            ],
             'keyedStoreReadUnderAParameterThatDoesNotExist' => [
                 'code' => '<?php
                     /** @psalm-flow Store::$data[$k] -> return */
