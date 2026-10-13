@@ -654,47 +654,40 @@ final class NewAnalyzer extends CallAnalyzer
                             ),
                         );
                     } else {
-                        if ($fq_class_name === 'SplObjectStorage') {
-                            // SplObjectStorage's unbound templates resolve to `never` rather
-                            // than their bounds, so a later write on a bare `new SplObjectStorage()`
-                            // reports InvalidArgument. No type variable is minted for it.
-                            $generic_param_type = Type::getNever();
-                        } else {
-                            $generic_param_type = array_values($base_type)[0];
+                        $generic_param_type = array_values($base_type)[0];
 
-                            // The constructor arguments did not bind this template, but later
-                            // code may still constrain it (Hack's `new Foo<_>(...)` model):
-                            // mint a fresh type variable whose upper bound is the template's
-                            // declared constraint. Constraints recorded while the variable
-                            // flows through the rest of the body are reconciled when the
-                            // surrounding function-like has been analyzed.
-                            //
-                            // A template with no public mutation channel (named only in the
-                            // constructor) can never be constrained later, so no variable is
-                            // minted and the template resolves eagerly to its constraint.
-                            $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
+                        // The constructor arguments did not bind this template, but later
+                        // code may still constrain it (Hack's `new Foo<_>(...)` model):
+                        // mint a fresh type variable whose upper bound is the template's
+                        // declared constraint. Constraints recorded while the variable
+                        // flows through the rest of the body are reconciled when the
+                        // surrounding function-like has been analyzed.
+                        //
+                        // A template with no public mutation channel (named only in the
+                        // constructor) can never be constrained later, so no variable is
+                        // minted and the template resolves eagerly to its constraint.
+                        $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
-                            if (!isset($unconstrainable_templates[$template_name])) {
-                                $type_variable_bounds = new TypeVariableBounds(
-                                    [],
-                                    [new TemplateBound(
-                                        $generic_param_type,
-                                        0,
-                                        null,
-                                        null,
-                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    ),
-                                    ],
-                                );
+                        if (!isset($unconstrainable_templates[$template_name])) {
+                            $type_variable_bounds = new TypeVariableBounds(
+                                [],
+                                [new TemplateBound(
+                                    $generic_param_type,
+                                    0,
+                                    null,
+                                    null,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                ),
+                                ],
+                            );
 
-                                $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                    $type_variable_bounds,
-                                );
+                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
+                                $type_variable_bounds,
+                            );
 
-                                $generic_param_type = new Union([
-                                    new TTypeVariable($type_variable_name, $type_variable_bounds),
-                                ]);
-                            }
+                            $generic_param_type = new Union([
+                                new TTypeVariable($type_variable_name, $type_variable_bounds),
+                            ]);
                         }
                     }
 

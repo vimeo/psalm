@@ -286,6 +286,16 @@ final class CapabilitiesTest extends TestCase
                         $storage->attach(new stdClass(), 2);
                     }',
             ],
+            'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities pure */
+                    function useFreshStorage(object $key): bool {
+                        $storage = new SplObjectStorage();
+                        $storage->offsetSet($key, "a");
+                        $storage->offsetSet($key, $storage->offsetGet($key) . "a");
+                        return $storage->offsetExists($key);
+                    }',
+            ],
             'mutatingAnSplObjectStorageForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
                     /**
