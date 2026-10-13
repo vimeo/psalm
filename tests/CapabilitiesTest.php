@@ -257,13 +257,13 @@ final class CapabilitiesTest extends TestCase
                             $this->seen = $seen;
                         }
 
-                        /** @psalm-mutation-free */
+                        /** @psalm-capabilities read-props */
                         public function hasSeen(Node $node): bool {
                             return isset($this->seen[$node]) && $this->seen->contains($node) && count($this->seen) > 0;
                         }
                     }
 
-                    /** @psalm-mutation-free */
+                    /** @psalm-capabilities read-props */
                     function useFreshStorage(stdClass $key): int {
                         /** @var SplObjectStorage<stdClass, int> */
                         $storage = new SplObjectStorage();
@@ -288,7 +288,10 @@ final class CapabilitiesTest extends TestCase
             ],
             'mutatingAnSplObjectStorageForgetsWhatItsReadersReturned' => [
                 'code' => '<?php
-                    /** @param SplObjectStorage<stdClass, int> $storage */
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props|write-props|io
+                     */
                     function attachOnce(SplObjectStorage $storage, stdClass $key): void {
                         if ($storage->contains($key)) {
                             return;
@@ -299,6 +302,7 @@ final class CapabilitiesTest extends TestCase
                         }
                     }
 
+                    /** @psalm-capabilities read-props|write-props|io */
                     function detachFresh(stdClass $key): void {
                         /** @var SplObjectStorage<stdClass, int> */
                         $storage = new SplObjectStorage();
@@ -1718,7 +1722,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param SplObjectStorage<stdClass, int> $storage
-                     * @psalm-mutation-free
+                     * @psalm-capabilities read-props
                      */
                     function add(SplObjectStorage $storage, stdClass $key): void {
                         $storage[$key] = 1;
