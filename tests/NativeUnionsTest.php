@@ -110,6 +110,22 @@ final class NativeUnionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'duplicateNativeUnionTypeInParam' => [
+                'code' => '<?php
+                    function foo(string|string $bar): void {}',
+                'error_message' => 'MethodSignatureMismatch',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'duplicateNativeUnionTypeInReturn' => [
+                'code' => '<?php
+                    function foo(): array|array {
+                        return [];
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }
