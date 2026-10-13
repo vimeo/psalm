@@ -144,6 +144,36 @@ final class Populator
      * Applies a `@psalm-capabilities` value naming imported type aliases, which the scanner
      * could not resolve because the declaring class may not have been scanned yet.
      */
+    /**
+     * A readonly class (whose subclasses PHP requires to be readonly too), or a final class without a parent
+     * whose properties are all readonly or computed by a get hook.
+     *
+     * @psalm-pure
+     */
+    private static function cannotChangeOnceConstructed(ClassLikeStorage $storage): bool
+    {
+        if ($storage->is_interface || $storage->is_trait || $storage->is_enum) {
+            return false;
+        }
+
+        if ($storage->readonly) {
+            return true;
+        }
+
+        if (!$storage->final || $storage->parent_classes !== [] || $storage->properties === []) {
+            return false;
+        }
+
+        foreach ($storage->properties as $property) {
+            $computed = $property->hook_get !== null && $property->hook_set === null && !$property->is_promoted;
+            if (!$property->is_static && !$property->readonly && !$computed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function resolveDeferredCapabilities(ClassLikeStorage|FunctionLikeStorage $storage): void
     {
         if ($storage->capabilities_type === null) {
@@ -544,6 +574,12 @@ final class Populator
                     }
                 }
             }
+        }
+
+        // A readonly object cannot change once constructed: its properties hold the taints of its own
+        // construction rather than those of every object of its class
+        if (!$storage->specialize_instance && self::cannotChangeOnceConstructed($storage)) {
+            $storage->specialize_instance = true;
         }
 
         if ($storage->specialize_instance) {

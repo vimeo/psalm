@@ -56,7 +56,7 @@ final class TaintTest extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      */
-    public function testValidCode(string $code): void
+    public function testValidCode(string $code, string $php_version = '8.0'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -70,7 +70,7 @@ final class TaintTest extends TestCase
             $code,
         );
 
-        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $this->project_analyzer->trackTaintedInputs();
         foreach (self::IGNORE as $issue_name) {
@@ -116,10 +116,10 @@ final class TaintTest extends TestCase
      *
      * @dataProvider providerValidCodeParse
      */
-    public function testValidCodeTrackingUnusedVariables(string $code): void
+    public function testValidCodeTrackingUnusedVariables(string $code, string $php_version = '8.0'): void
     {
         $this->trackUnusedVariables();
-        $this->testValidCode($code);
+        $this->testValidCode($code, $php_version);
     }
 
     /**
@@ -1783,6 +1783,34 @@ final class TaintTest extends TestCase
 
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
+            ],
+            'dontTaintAReadonlyObjectBuiltFromAnotherCallsArgument' => [
+                // A readonly object cannot change after its construction: its properties hold its own taints
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    echo $safe->text;',
+                'php_version' => '8.2',
+            ],
+            'dontTaintAnObjectWithOnlyReadonlyPropertiesBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-suppress PropertyNotSetInConstructor A virtual property, which has nothing to set */
+                    final class Greeting {
+                        public string $shouted {
+                            get => strtoupper($this->text);
+                        }
+
+                        public function __construct(public readonly string $text) {}
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    echo $safe->text;',
+                'php_version' => '8.4',
             ],
             'dontTaintAContainerWithWhatAnotherOneHolds' => [
                 'code' => '<?php // --taint-analysis
@@ -3783,6 +3811,32 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintAReadonlyObjectBuiltFromUserInput' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    $safe = new Greeting("Hello");
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    echo $tainted->text;',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'taintAReadonlyObjectBuiltFromUserInputInTheFunctionItIsGivenTo' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    function show(Greeting $greeting): void {
+                        echo $greeting->text;
+                    }
+
+                    show(new Greeting((string) $_GET["text"]));',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
