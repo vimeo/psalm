@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -24,6 +25,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DeprecatedFunction;
@@ -59,6 +61,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -814,7 +817,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         'function call on ' . $var_type_part->getId(),
                         ImpureFunctionCall::class,
                         $stmt,
-                        null,
+                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                            ? Capabilities::NONE
+                            : null,
                         false,
                         $function_call_info->function_storage,
                     )) {
@@ -868,6 +873,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
+                    );
+
+                    // the callee is unknown, so it may do anything
+                    $statements_analyzer->signalMutation(
+                        Capabilities::ALL,
+                        $context,
+                        'function call on ' . $var_type_part->getId(),
+                        ImpureFunctionCall::class,
+                        $stmt,
                     );
                 } elseif ($var_type_part instanceof TCallableObject) {
                     $has_valid_function_call_type = true;
@@ -1020,6 +1034,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                     'TaintedInput',
                 )
+                && !self::isOnlyObjects($stmt_name_type)
             ) {
                 assert($statements_analyzer->data_flow_graph !== null);
                 $arg_location = new CodeLocation($statements_analyzer->getSource(), $function_name);
@@ -1337,6 +1352,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * A call of a closure or callable with the default purity (`impure`) found in a parameter of
+     * the function or method being analysed (`$f()`, `$fs[0]()`, `foreach ($fs as $f) { $f(); }`):
+     * with a `_` purity there (`Closure[_]`), the call would be charged to the callers, so it is left
+     * out of the purity inferred for the function-like, which records where `--alter` adds the `_`
+     * along with the purity annotation ({@see PurityWildcardInference}).
+     */
+    private static function isPurityWildcardCandidate(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $function_name,
+        TClosure|TCallable $var_type_part,
+    ): bool {
+        // only the default purity of a closure type: one written out was chosen deliberately
+        if (!$var_type_part->hasFixedPurity() || $var_type_part->getCapabilities() !== Capabilities::ALL) {
+            return false;
+        }
+
+        $found = PurityWildcardInference::getParamPath($statements_analyzer, $function_name);
+
+        if ($found === null) {
+            return false;
+        }
+
+        [$source, $param_name, $steps] = $found;
+
+        return PurityWildcardInference::record($source, $param_name, PurityWildcardPaths::closure($steps));
+    }
+
+    /**
      * Reports the return value of a `#[\NoDiscard]` function being discarded at a call site.
      *
      * @see NoDiscardAnalyzer::isDiscardReported() for when this applies.
@@ -1409,5 +1452,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
+     * chosen by the client, whatever data it was built from.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOnlyObjects(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class FunctionTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -1967,6 +1969,36 @@ final class FunctionTemplateTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template I
+                     * @param I $foo
+                     */
+                    function bar($foo): void {
+                        if (!is_string($foo)) {}
+                        if (is_int($foo)) {}
+                        takesInt($foo);
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of takesInt expects int, but parent type I:fn-bar as mixed provided',
+            ],
+            'templateBoundedByAUnionIsBoundedByItAgainAfterABranchNarrowingIt' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template T of int|string
+                     * @param T $value
+                     */
+                    function baz($value): void {
+                        if (is_string($value)) {}
+                        if (is_int($value)) {}
+                        takesInt($value);
+                    }',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of takesInt expects int, but T:fn-baz as int|string provided',
+            ],
             'invalidTemplatedType' => [
                 'code' => '<?php
                     namespace FooFoo;

@@ -244,6 +244,9 @@ final class CommentAnalyzer
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
+                if ($param === '') {
+                    throw new DocblockParseException('@psalm-taint-escape expects the kind of taint it escapes');
+                }
                 if ($param[0] === '(') {
                     continue;
                 }

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
@@ -800,6 +801,12 @@ final class NewAnalyzer extends CallAnalyzer
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
         }
 
+        // an inherited constructor analyzed for the class of the object (see InheritedMethodTaints) returns into a node
+        // of its own
+        $body_suffix = $method_storage && $declaring_method_id && (string) $declaring_method_id !== (string) $method_id
+            ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $fq_class_name, $declaring_method_id)
+            : null;
+
         // the node the body of the constructor returns into, wherever it is declared (see
         // FunctionLikeAnalyzer::getBodyMethodId())
         $cased_constructor_id = $declaring_method_id
@@ -813,10 +820,14 @@ final class NewAnalyzer extends CallAnalyzer
                 $storage->isExternalMutationFree() ? $code_location : null,
             );
         } else {
-            $method_source = DataFlowNode::getForMethodReturn(
-                $cased_constructor_id,
-                $method_storage,
-                $storage->isExternalMutationFree() || $method_storage->specialize_call ? $code_location : null,
+            $method_source = InheritedMethodTaints::withMethodSuffix(
+                $declaring_method_id ?? $method_id,
+                $body_suffix,
+                static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
+                    $cased_constructor_id,
+                    $method_storage,
+                    $storage->isExternalMutationFree() || $method_storage->specialize_call ? $code_location : null,
+                ),
             );
         }
 
@@ -833,10 +844,14 @@ final class NewAnalyzer extends CallAnalyzer
             ? $method_storage->location
             : null;
         if ($constructor_location) {
-            $this_out_node = DataFlowNode::getForAssignment(
-                '$this out of ' . $cased_constructor_id,
-                $constructor_location,
-                $method_source->specialization_key,
+            $this_out_node = InheritedMethodTaints::withMethodSuffix(
+                $declaring_method_id ?? $method_id,
+                $body_suffix,
+                static fn(): DataFlowNode => DataFlowNode::getForAssignment(
+                    '$this out of ' . $cased_constructor_id,
+                    $constructor_location,
+                    $method_source->specialization_key,
+                ),
             );
 
             $statements_analyzer->taint_flow_graph->addNode($this_out_node);

@@ -439,6 +439,10 @@ return [
     'bcscale' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     // json
     'json_last_error' => Capabilities::READ_GLOBALS,
+    'json_last_error_msg' => Capabilities::READ_GLOBALS,
+    // pcre: the error of the last call
+    'preg_last_error' => Capabilities::READ_GLOBALS,
+    'preg_last_error_msg' => Capabilities::READ_GLOBALS,
     // opcache
     'opcache_compile_file' => Capabilities::IO,
     'opcache_get_configuration' => Capabilities::IO,

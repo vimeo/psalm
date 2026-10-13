@@ -390,6 +390,11 @@ final class FunctionLikeDocblockScanner
 
         foreach ($docblock_info->taint_sink_params as $taint_sink_param) {
             $param_name = substr($taint_sink_param['name'], 1);
+            $values_only = str_ends_with($param_name, '[*]');
+
+            if ($values_only) {
+                $param_name = substr($param_name, 0, -3);
+            }
 
             if (!isset($param_names[$param_name])) {
                 $invalid_annotations[] = '@psalm-taint-sink names ' . $taint_sink_param['name']
@@ -397,7 +402,13 @@ final class FunctionLikeDocblockScanner
             }
 
             foreach ($storage->params as $param_storage) {
-                if ($param_storage->name === $param_name) {
+                if ($param_storage->name !== $param_name) {
+                    continue;
+                }
+
+                if ($values_only) {
+                    $param_storage->value_sinks |= $taint_sink_param['taint'];
+                } else {
                     $param_storage->sinks |= $taint_sink_param['taint'];
                 }
             }
@@ -1410,8 +1421,9 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`) nor a proxy call
-     * (`proxy ...`), or it names a parameter (`$name`) that isn't one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`), a flow out of a
+     * keyed store (`Store::$data[$key] -> ...`, see TaintStore) nor a proxy call (`proxy ...`), or it names a parameter
+     * (`$name`) that isn't one of $param_names
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
@@ -1425,8 +1437,17 @@ final class FunctionLikeDocblockScanner
             && isset($matches[1])
         ) {
             $sources = $matches[1];
+        } elseif (preg_match(
+            '/^\\\\?[A-Za-z_\\\\][\w\\\\]*::\$\w+((?:\[(?:[^\[\]]|\[[^\]]*\])*\])+)\s*-(?:\([a-z\-]+\)-)?>/',
+            $flow,
+            $matches,
+        ) === 1
+            && isset($matches[1])
+        ) {
+            // only the keys of the store name parameters, not the property holding it
+            $sources = $matches[1];
         } else {
-            return '@psalm-flow "' . $flow . '" is neither "(...) -> ..." nor "proxy ..."';
+            return '@psalm-flow "' . $flow . '" is neither "(...) -> ...", "Store::$data[$key] -> ..." nor "proxy ..."';
         }
 
         // the parameters it names, not what calling one returns (`$name()`)

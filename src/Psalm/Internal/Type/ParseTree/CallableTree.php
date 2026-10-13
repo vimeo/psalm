@@ -15,6 +15,13 @@ final class CallableTree extends ParseTree
     public bool $terminated = false;
 
     /**
+     * Where the keyword starts and ends in the type string, if known.
+     */
+    public ?int $offset_start = null;
+
+    public ?int $offset_end = null;
+
+    /**
      * The purity given as `Closure[...](...)`/`callable[...](...)`: a capability set or a
      * purity template, if any.
      */

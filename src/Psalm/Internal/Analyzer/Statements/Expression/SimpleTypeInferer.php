@@ -35,6 +35,7 @@ use ReflectionProperty;
 
 use function array_merge;
 use function array_values;
+use function assert;
 use function count;
 use function is_string;
 use function strtolower;
@@ -338,9 +339,9 @@ final class SimpleTypeInferer
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if ($stmt->class instanceof PhpParser\Node\Name
                 && $stmt->name instanceof PhpParser\Node\Identifier
-                && $fq_classlike_name
                 && $stmt->class->getParts() !== ['static']
                 && $stmt->class->getParts() !== ['parent']
+                && ($stmt->class->getParts() !== ['self'] || $fq_classlike_name !== null)
             ) {
                 if (isset($existing_class_constants[$stmt->name->name])
                     && $existing_class_constants[$stmt->name->name]->type
@@ -351,6 +352,7 @@ final class SimpleTypeInferer
                 }
 
                 if ($stmt->class->getParts() === ['self']) {
+                    assert($fq_classlike_name !== null);
                     $const_fq_class_name = $fq_classlike_name;
                 } else {
                     $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -359,7 +361,8 @@ final class SimpleTypeInferer
                     );
                 }
 
-                if (strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
+                if ($fq_classlike_name !== null
+                    && strtolower($const_fq_class_name) === strtolower($fq_classlike_name)
                     && isset($existing_class_constants[$stmt->name->name])
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {

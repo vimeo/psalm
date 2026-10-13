@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
@@ -61,15 +62,17 @@ final class MethodCallPurityAnalyzer
      * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
      * `$this` or state of the closure being analysed and write-props otherwise, as writing its
      * properties directly would. Callers that know the receiver to be fresh by other means say so
-     * with $receiver_is_fresh.
+     * with $receiver_is_fresh, and those that know the callee's capabilities for this call with
+     * $callee_capabilities.
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
         Expr $var,
         MethodStorage $method_storage,
         bool $receiver_is_fresh = false,
+        ?int $callee_capabilities = null,
     ): int {
-        $capabilities = $method_storage->capabilities & ~Capabilities::READ_PROPS;
+        $capabilities = ($callee_capabilities ?? $method_storage->capabilities) & ~Capabilities::READ_PROPS;
 
         if (!self::isFromGlobalState($statements_analyzer, $var)
             && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
@@ -82,6 +85,38 @@ final class MethodCallPurityAnalyzer
             self::isReceiverThis($var)
                 || $statements_analyzer->node_data->getType($var)?->closure_state === true,
             self::isFromGlobalState($statements_analyzer, $var),
+        );
+    }
+
+    /**
+     * The capabilities a plugin (MethodCapabilitiesProviderInterface) registered for the class
+     * declaring the method gives this call of it
+     */
+    private static function getProvidedCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        MethodIdentifier $method_id,
+        Context $context,
+    ): ?int {
+        $provider = $codebase->methods->capabilities_provider;
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null || !$provider->has($declaring_method_id->fq_class_name)) {
+            return null;
+        }
+
+        // implicit calls (__get, ...) have no location of their own, see analyze()
+        $location_node = $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name;
+
+        return $provider->getMethodCapabilities(
+            $statements_analyzer,
+            $declaring_method_id->fq_class_name,
+            $declaring_method_id->method_name,
+            $method_id->fq_class_name,
+            $stmt,
+            $context,
+            new CodeLocation($statements_analyzer, $location_node),
         );
     }
 
@@ -159,10 +194,22 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
+        // a plugin may know what this call of the method requires, e.g. from its arguments
+        $provided_capabilities = self::getProvidedCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $stmt,
+            $method_id,
+            $context,
+        );
+        $callee_capabilities = $provided_capabilities ?? $method_storage->capabilities;
+
         $method_capabilities = self::getMethodCapabilities(
             $statements_analyzer,
             $stmt->var,
             $method_storage,
+            false,
+            $callee_capabilities,
         );
 
         // with a receiver of several types, the call gives back `$this` only if every method called does
@@ -173,6 +220,8 @@ final class MethodCallPurityAnalyzer
                 && !$stmt->isFirstClassCallable()
                 && self::isReceiverThis($stmt->var),
         );
+
+        $receiver_capabilities = $method_capabilities;
 
         // @psalm-purity-from-template: the call also needs the capabilities of the closures the
         // templates are bound to here; this can only make the call less pure, never more
@@ -187,6 +236,17 @@ final class MethodCallPurityAnalyzer
             self::isFromGlobalState($statements_analyzer, $stmt->var),
         );
         $method_capabilities |= $template_capabilities;
+
+        $inferred_template_capabilities = self::getInferredTemplateCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $stmt->var,
+            $method_storage,
+            $class_storage,
+            $template_result,
+            $class_template_params,
+            $template_capabilities,
+        );
 
         // whether the result may come from global state depends on what this call reads,
         // not on what it writes through its by-reference arguments
@@ -205,6 +265,17 @@ final class MethodCallPurityAnalyzer
             $args,
         );
 
+        // the same for the inferred purity, which some template capabilities may be left out of
+        $inferred_capabilities = $inferred_template_capabilities === $template_capabilities
+            ? $method_capabilities
+            : ByRefArgumentAnalyzer::adjustCapabilities(
+                $statements_analyzer,
+                $context,
+                $receiver_capabilities | $inferred_template_capabilities,
+                $method_storage->params,
+                $args,
+            );
+
         $statements_analyzer->signalMutation(
             $method_capabilities,
             $context,
@@ -214,22 +285,24 @@ final class MethodCallPurityAnalyzer
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
             // mutating a receiver other than `$this` writes another object's properties
-            $method_storage->capabilities | ($method_capabilities & Capabilities::WRITE_PROPS),
+            $callee_capabilities | ($inferred_capabilities & Capabilities::WRITE_PROPS),
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
-            $lhs_var_id === '$this'
-                || $method_storage->final
-                || $class_storage->final
-                || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            // (and not this call, if a plugin gave its level)
+            $provided_capabilities === null
+                && ($lhs_var_id === '$this'
+                    || $method_storage->final
+                    || $class_storage->final
+                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
                 ? $method_storage
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $stmt->var),
         );
 
         // the callee's level does not include what its purity templates are bound to here
-        if ($template_capabilities !== Capabilities::NONE) {
-            $statements_analyzer->signalMutationOnlyInferred($template_capabilities);
+        if ($inferred_template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($inferred_template_capabilities);
         }
 
         if ($reads_globals) {
@@ -372,7 +445,7 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if (($method_storage->capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+            if (($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 // the method may write properties, but not which ones (a stub, a body writing `$this`
@@ -382,6 +455,47 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(true);
             }
         }
+    }
+
+    /**
+     * The capabilities the purity templates of the call are bound to, without what depends on a
+     * purity argument of a receiver found in a parameter: the parameter's `_` would charge it to
+     * the callers, so it is left out of the inferred purity.
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function getInferredTemplateCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Expr $receiver,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        ?TemplateResult $template_result,
+        array $class_template_params,
+        int $template_capabilities,
+    ): int {
+        $marked_class_template_params = PurityWildcardInference::markReceiverTemplates(
+            $statements_analyzer,
+            $codebase,
+            $receiver,
+            $class_storage->name,
+            $class_template_params,
+        );
+
+        if ($marked_class_template_params === null) {
+            return $template_capabilities;
+        }
+
+        return CallPurityResolver::getCallCapabilities(
+            $statements_analyzer,
+            $codebase,
+            $method_storage,
+            Capabilities::NONE,
+            $template_result,
+            $marked_class_template_params,
+            self::isThis($receiver),
+            self::isFromGlobalState($statements_analyzer, $receiver),
+        );
     }
 
     /**
