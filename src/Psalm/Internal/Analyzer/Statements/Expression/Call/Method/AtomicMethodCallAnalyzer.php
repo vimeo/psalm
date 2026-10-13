@@ -254,6 +254,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $stmt->var,
                 $class_storage,
+                $intersection_types,
             );
 
             $statements_analyzer->signalMutation(
@@ -264,7 +265,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                 ),
                 $context,
-                'method ' . $class_storage->name . '::{unknown}',
+                'method ' . ($intersection_types ? '(' . $lhs_type_part . ')' : $class_storage->name) . '::{unknown}',
                 ImpureMethodCall::class,
                 $stmt,
             );

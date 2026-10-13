@@ -1279,6 +1279,63 @@ final class CapabilitiesTest extends TestCase
                         return $callable("k");
                     }',
             ],
+            'methodCalledByAnUnknownNameOnAnIntersectionNeedsTheContractOfEachPart' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Logs&Counts $object, string $name): mixed {
+                        $callable = [$object, $name];
+                        $callable();
+                        return $object->{$name}();
+                    }',
+            ],
+            'callableArrayOfAMethodOfAnotherPartOfAnIntersectionNeedsItsCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    interface Resets {
+                        /** @psalm-capabilities write-globals */
+                        public function reset(): void;
+                    }
+
+                    /** @psalm-capabilities read-props|write-globals */
+                    function resetIt(Named&Resets $object): void {
+                        $callable = [$object, "reset"];
+                        $callable();
+                    }',
+            ],
+            'callableArrayWithAnUnknownMethodOfThisNeedsWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function call(string $name): void {
+                            [$this, $name]();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function callFresh(string $name): void {
+                        [new Counter(), $name]();
+                    }',
+            ],
             'callsOfUnknownMethodsWriteOnlyTheReferencesPassed' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-props|write-this-props|write-refs|io */
@@ -2942,6 +2999,131 @@ final class CapabilitiesTest extends TestCase
                         return $conn->{$name}($out);
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'methodCalledByAnUnknownNameOnAnIntersectionWithAPartWithoutAContractIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    interface Unknown {
+                        /** @psalm-impure */
+                        public function run(): void;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function call(Named&Unknown $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'methodCalledByAnUnknownNameOnAnIntersectionMayDoWhatAnyPartAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Logs&Counts $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - The context is read-props|io but method (Logs&Counts)::{unknown} requires write-props|io',
+            ],
+            'callableArrayWithAnUnknownMethodOnAnIntersectionMayDoWhatAnyPartAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function call(Counts&Logs $object, string $name): void {
+                        $callable = [$object, $name];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'callableArrayOfAMethodOfAnotherPartOfAnIntersectionMayDoWhatItDoes' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    interface Resets {
+                        /** @psalm-capabilities write-globals */
+                        public function reset(): void;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function resetIt(Named&Resets $object): void {
+                        $callable = [$object, "reset"];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-props but method Resets::reset requires write-globals',
+            ],
+            'callableArrayWithAnUnknownMethodOfThisMayWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function call(string $name): void {
+                            [$this, $name]();
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - The context is read-props|write-props but function call on list{Counter, string} requires write-this-props|write-props',
+            ],
+            'callableArrayWithAnUnknownMethodOfAVariableMayWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function call(string $name): void {
+                            $callable = [$this, $name];
+                            $callable();
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'callableArrayWithAnUnknownMethodOfAnObjectFromGlobalStateWritesGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-props|io */
+                    function call(string $name): void {
+                        /** @var Conn $conn */
+                        global $conn;
+                        [$conn, $name]("k");
+                    }',
+                'error_message' => 'requires write-props|write-globals|io',
             ],
             'callableArrayWithAnUnknownMethodMayWriteAPropertyPassed' => [
                 'code' => '<?php
