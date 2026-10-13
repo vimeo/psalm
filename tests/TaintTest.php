@@ -532,6 +532,23 @@ final class TaintTest extends TestCase
                     show(["name_tail" => ""], $data);
                 ',
             ],
+            'fetchOfTheKeyOfAForeachAssignmentOfTheEscapedElements' => [
+                // An escaped element is no copy of it: its taints aren't those of the element.
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = htmlspecialchars($value);
+                        }
+                        echo $copy["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
             'fetchOfAKeyStartingWithAnotherStartThanTheAssignedKey' => [
                 // The start of the fetched key is known: it can't be "name_tail".
                 'code' => '<?php
@@ -3775,14 +3792,12 @@ final class TaintTest extends TestCase
                     function show(array $data): void {
                         $copy = [];
                         foreach ($data as $key => $value) {
-                            $copy[$key] = $value . "x";
+                            $copy[$key] = $value . (string)($_GET["suffix"] ?? "");
                         }
                         echo $copy["city"] ?? "";
                     }
 
-                    $data = [];
-                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
-                    show($data);',
+                    show(["city" => "Paris"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfAnotherKeyOfAForeachAssignmentUnderAnotherKey' => [
@@ -3798,7 +3813,7 @@ final class TaintTest extends TestCase
                     }
 
                     $data = [];
-                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["City"] = (string)($_GET["city"] ?? "");
                     show($data);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -3808,15 +3823,13 @@ final class TaintTest extends TestCase
                     function show(array $data): void {
                         $copy = [];
                         foreach ($data as $key => $value) {
-                            $value = trim($value);
+                            $value = trim($value . (string)($_GET["suffix"] ?? ""));
                             $copy[$key] = $value;
                         }
                         echo $copy["city"] ?? "";
                     }
 
-                    $data = [];
-                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
-                    show($data);',
+                    show(["city" => "Paris"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfAnotherKeyOfAForeachAssignmentOfAValueReassignedInABranch' => [
@@ -3869,16 +3882,16 @@ final class TaintTest extends TestCase
                         $diff = [];
                         foreach ($old as $key => $value) {
                             if (array_key_exists($key, $data) && $data[$key] !== $value) {
-                                $other_key = strtolower($key);
+                                $other_key = strtoupper($key);
                                 $diff[$key] = $data[$other_key];
                             }
                         }
                         echo $diff["city"] ?? "";
                     }
 
-                    $data = [];
-                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
-                    show(["name_tail" => ""], $data);',
+                    $data = ["city" => ""];
+                    $data["CITY"] = (string)($_GET["city"] ?? "");
+                    show(["city" => "Paris"], $data);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfAnotherKeyOfAnAssignmentOfAnotherValueThanAnElement' => [
@@ -3891,15 +3904,13 @@ final class TaintTest extends TestCase
                         $diff = [];
                         foreach ($old as $key => $value) {
                             if (array_key_exists($key, $data) && $data[$key] !== $value) {
-                                $diff[$key] = $data[$key] . "x";
+                                $diff[$key] = $data[$key] . (string)($_GET["suffix"] ?? "");
                             }
                         }
                         echo $diff["city"] ?? "";
                     }
 
-                    $data = [];
-                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
-                    show(["name_tail" => ""], $data);',
+                    show(["city" => "Paris"], ["city" => ""]);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfTheKeyOfAnAssignmentOfAnElementWhoseFetchTakesMoreThanTheArrayHolds' => [
