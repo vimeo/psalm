@@ -14,11 +14,13 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_column;
 use function getcwd;
 use function preg_quote;
+use function sort;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -293,6 +295,79 @@ final class UnusedCodeTest extends TestCase
         }
 
         self::assertSame(['Store'], $missing);
+    }
+
+    public function testMarkerInterfacesArePure(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->getConfig()->setCustomErrorLevel(
+            'MissingInterfaceImmutableAnnotation',
+            Config::REPORT_ERROR,
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @api */
+                interface Marker {}
+
+                /** @api */
+                interface SubMarker extends Marker {}
+
+                /**
+                 * @api
+                 * @psalm-immutable
+                 */
+                interface ImmutableMarker {}
+
+                /** @api */
+                interface Service extends Marker {
+                    public function run(): void;
+                }
+
+                /** @api */
+                final class Counter implements SubMarker, ImmutableMarker {
+                    private int $count = 0;
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    public function increment(): void {
+                        $this->count++;
+                        echo $this->count;
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MissingInterfaceImmutableAnnotation' || $issue->type === 'ImmutableDependency') {
+                $issues[] = $issue->type . ' ' . $issue->selected_text;
+            }
+        }
+
+        sort($issues);
+
+        // only the marker interface marked immutable caps its implementers
+        self::assertSame(['ImmutableDependency ImmutableMarker', 'MissingInterfaceImmutableAnnotation Service'], $issues);
+
+        $classlike_storage_provider = $this->project_analyzer->getCodebase()->classlike_storage_provider;
+
+        foreach (['Marker', 'SubMarker'] as $marker) {
+            $storage = $classlike_storage_provider->get($marker);
+
+            self::assertTrue($storage->is_marker_interface);
+            self::assertTrue($storage->has_mutations_annotation);
+            self::assertSame(Capabilities::NONE, $storage->capabilities);
+        }
+
+        foreach (['ImmutableMarker', 'Service'] as $interface) {
+            self::assertFalse($classlike_storage_provider->get($interface)->is_marker_interface);
+        }
     }
 
     public function testDeadReadDoesNotMakeConstructorOnlyPropertyUsed(): void

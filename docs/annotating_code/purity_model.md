@@ -217,6 +217,9 @@ final class Logger {
 
 A class extending or implementing one with a contract must have a contract that fits inside it;
 otherwise Psalm reports [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md).
+A marker interface, declaring no method or property and inheriting none, is pure without an
+annotation, as it does nothing; unlike an interface marked `@psalm-pure`, it caps none of its
+implementers.
 Abstract methods, and the methods of interfaces, have no body to infer anything from, so each of
 them needs its own annotation, even inside a class with a contract
 ([MissingAbstractPureAnnotation](../running_psalm/issues/MissingAbstractPureAnnotation.md)); use

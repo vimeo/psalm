@@ -1,6 +1,6 @@
 # MissingInterfaceImmutableAnnotation
 
-Emitted when an interface is not annotated with `@psalm-pure`, `@psalm-immutable`, `@psalm-capabilities` or `@psalm-mutable`, and declares a method without a purity annotation of its own (or a `@psalm-purity-from-template`): to fix, mark the interface with one of them, which then applies to all properties and methods of implementing classes. An interface declaring no method, or whose methods all say what they may do, needs no class-level annotation.
+Emitted when an interface is not annotated with `@psalm-pure`, `@psalm-immutable`, `@psalm-capabilities` or `@psalm-mutable`, and declares a method without a purity annotation of its own (or a `@psalm-purity-from-template`): to fix, mark the interface with one of them, which then applies to all properties and methods of implementing classes. An interface whose methods all say what they may do needs no class-level annotation. Nor does a marker interface, which declares no method or property and inherits none: it does nothing, so it is pure, without capping its implementers.
 
 This issue is emitted to aid [security analysis](https://psalm.dev/docs/security_analysis/), which works best when all explicitly immutable interfaces and classes are marked as immutable.  
 

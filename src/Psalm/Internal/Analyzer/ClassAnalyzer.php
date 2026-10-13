@@ -2272,7 +2272,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if (!Capabilities::allows($interface_storage->capabilities, $storage->capabilities)) {
+            // a marker interface is pure without saying so, which caps none of its implementers' methods
+            if (!$interface_storage->is_marker_interface
+                && !Capabilities::allows($interface_storage->capabilities, $storage->capabilities)
+            ) {
                 IssueBuffer::maybeAdd(
                     new ImmutableDependency(
                         $fq_interface_name . ' is marked with @'
