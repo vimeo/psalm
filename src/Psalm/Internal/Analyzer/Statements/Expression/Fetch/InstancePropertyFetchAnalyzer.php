@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -488,7 +489,7 @@ final class InstancePropertyFetchAnalyzer
                     if (!($class_storage->isExternalMutationFree()
                         && $stmt_type->allow_mutations)
                     ) {
-                        if ($context->inside_unset) {
+                        if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)) {
                             $statements_analyzer->signalMutation(
                                 $stmt_var_id === '$this'
                                     ? Capabilities::WRITE_THIS_PROPS

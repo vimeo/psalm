@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -418,7 +419,13 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             // unsetting a property is a write, so the set visibility applies
-            if ($context->inside_unset
+            if (UnsetAnalyzer::writesFetchedProperty(
+                $context,
+                $stmt,
+                $codebase->properties->hasStorage($property_id)
+                    ? $codebase->properties->getStorage($property_id)->type
+                    : null,
+            )
                 && ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     $context,
@@ -511,7 +518,7 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->inside_unset) {
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $property_storage->type)) {
                 InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
                     $statements_analyzer,
                     $stmt,
@@ -548,7 +555,7 @@ final class AtomicPropertyFetchAnalyzer
         if (!($class_storage->isExternalMutationFree()
             && $class_property_type->allow_mutations)
         ) {
-            if ($context->inside_unset) {
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
                 $statements_analyzer->signalMutation(
                     $stmt_var_id === '$this'
                         ? Capabilities::WRITE_THIS_PROPS
