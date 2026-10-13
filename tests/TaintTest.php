@@ -539,7 +539,7 @@ final class TaintTest extends TestCase
                     function show(array $data): void {
                         $copy = [];
                         foreach ($data as $key => $value) {
-                            $copy[$key] = htmlspecialchars($value);
+                            $copy[$key] = htmlspecialchars($value, ENT_QUOTES);
                         }
                         echo $copy["name_tail"] ?? "";
                     }
@@ -4009,6 +4009,45 @@ final class TaintTest extends TestCase
                     show($data);',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchOfAnotherKeyOfAMixedValueAssignedTheElementsUnderTheirKey' => [
+                // A mixed value may be an object putting what is assigned to it under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /**
+                     * @param mixed $map
+                     * @param array<string, string> $data
+                     */
+                    function fill($map, array $data): void {
+                        foreach ($data as $key => $value) {
+                            $map[$key] = $value;
+                        }
+                        echo (string) $map["city"];
+                    }
+
+                    fill(new CaseInsensitiveMap(), ["City" => (string) ($_GET["city"] ?? "")]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfTheKeyOfAForeachTransformOfTheElements' => [
                 'code' => '<?php // --taint-analysis
                     /** @param array<string, string> $data */
@@ -4117,6 +4156,45 @@ final class TaintTest extends TestCase
                     $data = [];
                     $data["City"] = (string)($_GET["city"] ?? "");
                     show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAMixedValueAssignedTransformsOfTheElementsUnderTheirKey' => [
+                // A mixed value may be an object putting what is assigned to it under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /**
+                     * @param mixed $map
+                     * @param array<string, string> $data
+                     */
+                    function fill($map, array $data): void {
+                        foreach ($data as $key => $value) {
+                            $map[$key] = trim($value);
+                        }
+                        echo (string) $map["city"];
+                    }
+
+                    fill(new CaseInsensitiveMap(), ["City" => (string) ($_GET["city"] ?? "")]);',
                 'error_message' => 'TaintedHtml',
             ],
             'fetchOfTheKeyOfAnAssignmentOfAnElementWhoseFetchTakesMoreThanTheArrayHolds' => [
