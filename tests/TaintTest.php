@@ -2065,6 +2065,26 @@ final class TaintTest extends TestCase
                         query(["name" => $number]);
                     }',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowingWhereItsTypeMixesWithAnObject' => [
+                'code' => '<?php
+                    final class Regex {
+                        public function __construct(public string $pattern) {}
+                    }
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the value narrowed to a scalar holds no NoSQL query document, whatever its item mixes with
+                    $value = input();
+                    if (is_scalar($value)) {
+                        query(["name" => rand(0, 1) ? ["\$regex" => new Regex((string) $value)] : $value]);
+                    }',
+            ],
             'nosqlSinkNotTaintedByIntCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -3680,6 +3700,36 @@ final class TaintTest extends TestCase
                     show([], 1);',
                 'error_message' => 'TaintedHtml',
             ],
+            'nosqlSinkTaintedByArrayNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if (is_array($value)) {
+                        query(rand(0, 1) ? ["name" => "x"] : $value);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'htmlSinkTaintedByStringNarrowingDroppingNosql' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // a string can\'t carry a NoSQL query document, but it can carry HTML
+                    $value = input();
+                    if (is_string($value)) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
@@ -3753,6 +3803,42 @@ final class TaintTest extends TestCase
                     /** @psalm-assert-untainted $txt */
                     function check(string $text): void {}',
                 'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'keyedStoreReadUnderAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[$k] -> return */
+                    function store_get(string $key): string {
+                        return $key;
+                    }',
+                'error_message' => 'names $k, which is not a parameter',
+            ],
+            'taintedThroughAKeyedStoreOfAFullyQualifiedClassFromAnotherNamespace' => [
+                'code' => '<?php
+                    namespace App\Writer {
+                        final class Writer {
+                            /** @psalm-flow ($value) -> \Cache::$data[$key] */
+                            public static function set(string $key, string $value): void {}
+                        }
+                    }
+
+                    namespace App\Reader {
+                        final class Reader {
+                            /**
+                             * @param list<string> $keys
+                             * @return list<string>
+                             * @psalm-flow \Cache::$data[$keys[*]] -> return
+                             */
+                            public static function mGet(array $keys): array {
+                                return [];
+                            }
+                        }
+                    }
+
+                    namespace {
+                        App\Writer\Writer::set("a", (string) $_GET["x"]);
+                        echo implode(",", App\Reader\Reader::mGet(["a"]));
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'flowFromAParameterThatDoesNotExist' => [
                 'code' => '<?php

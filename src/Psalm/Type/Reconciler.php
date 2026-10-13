@@ -330,9 +330,11 @@ class Reconciler
             }
 
             // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            $input_taints = $codebase->getInputTaints();
+            $taints_to_remove = $result_type->getTaintsToRemove($input_taints);
             $can_carry_taints = (!$result_type->hasScalarType()
                     || ($result_type->hasString() && !$result_type->hasLiteralString()))
-                && $result_type->getTaintsToRemove($codebase->getInputTaints()) !== $codebase->getInputTaints();
+                && $taints_to_remove !== $input_taints;
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
@@ -344,25 +346,30 @@ class Reconciler
                 }
 
                 // A type that cannot carry taints keeps its data flow, but gets nodes standing for its
-                // parent nodes, that no taint goes through.
+                // parent nodes, that no taint goes through. One that can't carry some taints the type it is
+                // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
+                $narrowed_taints = $can_carry_taints
+                    ? $taints_to_remove & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
+                    : TaintKind::ALL;
+
                 if ($parent_nodes !== null
                     && $parent_nodes !== []
-                    && !$can_carry_taints
+                    && $narrowed_taints !== 0
                     && $statements_analyzer->taint_flow_graph
                 ) {
                     $narrowed_parent_nodes = [];
 
                     foreach ($parent_nodes as $parent_node) {
-                        if ($parent_node->getNarrowedNodeId() === null) {
-                            $narrowed_node = DataFlowNode::getForNarrowingToScalar($parent_node);
+                        $narrowed_node = $can_carry_taints
+                            ? DataFlowNode::getForNarrowingAway($parent_node, $narrowed_taints)
+                            : DataFlowNode::getForNarrowingToScalar($parent_node);
 
+                        if ($narrowed_node->id !== $parent_node->id) {
                             $graph->addNode($narrowed_node);
-                            $graph->addPath($parent_node, $narrowed_node, '=', 0, TaintKind::ALL);
-
-                            $parent_node = $narrowed_node;
+                            $graph->addPath($parent_node, $narrowed_node, '=', 0, $narrowed_taints);
                         }
 
-                        $narrowed_parent_nodes[$parent_node->id] = $parent_node;
+                        $narrowed_parent_nodes[$narrowed_node->id] = $narrowed_node;
                     }
 
                     $parent_nodes = $narrowed_parent_nodes;
