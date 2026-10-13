@@ -65,6 +65,7 @@ final class TaintSqlTables implements AfterExpressionAnalysisInterface
             if ($sql !== null
                 && $sql->isSingleStringLiteral()
                 && preg_match('/\bFROM\s+(\w+)/i', $sql->getSingleStringLiteral()->value, $matches) === 1
+                && isset($matches[1])
             ) {
                 $tables = [[true, $matches[1]]];
             }

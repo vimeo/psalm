@@ -286,12 +286,18 @@ abstract class Type
         return TLiteralString::make($value);
     }
 
+    /**
+     * @psalm-taint-specialize
+     */
     public static function getString(?string $value = null): Union
     {
         return new Union([$value === null ? new TString() : self::getAtomicStringFromLiteral($value)]);
     }
 
-    /** @return TLiteralString|TNonEmptyString|TNonFalsyString */
+    /**
+     * @return TLiteralString|TNonEmptyString|TNonFalsyString
+     * @psalm-taint-specialize
+     */
     public static function getAtomicStringFromLiteral(string $value, bool $from_docblock = false): TString
     {
         $config = Config::getInstance();

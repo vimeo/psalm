@@ -39,6 +39,7 @@ use function array_merge;
 use function array_reverse;
 use function array_shift;
 use function count;
+use function in_array;
 use function spl_object_id;
 use function str_starts_with;
 use function substr;

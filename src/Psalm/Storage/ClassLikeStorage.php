@@ -204,6 +204,13 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $has_mutations_annotation = false;
 
+    /**
+     * Whether the class is a marker interface without a class-level purity annotation: it declares no method or
+     * property, nor inherits one, so it does nothing and counts as pure. Its contract caps no implementer, as it has
+     * none of their methods to cap.
+     */
+    public bool $is_marker_interface = false;
+
     public bool $specialize_instance = false;
 
     /**

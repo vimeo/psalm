@@ -1618,7 +1618,6 @@ final class Config
                 continue;
             }
 
-            /** @var SimpleXMLElement $alias */
             foreach ($taint->alias as $alias) {
                 $alias_name = (string) $alias['name'];
                 if (!isset($aliases[$alias_name])) {

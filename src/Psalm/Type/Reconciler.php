@@ -330,9 +330,11 @@ class Reconciler
             }
 
             // a value narrowed to a type holding no input (a literal-string a validation asserts) can't carry taints
+            $input_taints = $codebase->getInputTaints();
+            $taints_to_remove = $result_type->getTaintsToRemove($input_taints);
             $can_carry_taints = (!$result_type->hasScalarType()
                     || ($result_type->hasString() && !$result_type->hasLiteralString()))
-                && $result_type->getTaintsToRemove($codebase->getInputTaints()) !== $codebase->getInputTaints();
+                && $taints_to_remove !== $input_taints;
 
             if ($graph = $statements_analyzer->data_flow_graph) {
                 $parent_nodes = null;
@@ -344,25 +346,30 @@ class Reconciler
                 }
 
                 // A type that cannot carry taints keeps its data flow, but gets nodes standing for its
-                // parent nodes, that no taint goes through.
+                // parent nodes, that no taint goes through. One that can't carry some taints the type it is
+                // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
+                $narrowed_taints = $can_carry_taints
+                    ? $taints_to_remove & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
+                    : TaintKind::ALL;
+
                 if ($parent_nodes !== null
                     && $parent_nodes !== []
-                    && !$can_carry_taints
+                    && $narrowed_taints !== 0
                     && $statements_analyzer->taint_flow_graph
                 ) {
                     $narrowed_parent_nodes = [];
 
                     foreach ($parent_nodes as $parent_node) {
-                        if ($parent_node->getNarrowedNodeId() === null) {
-                            $narrowed_node = DataFlowNode::getForNarrowingToScalar($parent_node);
+                        $narrowed_node = $can_carry_taints
+                            ? DataFlowNode::getForNarrowingAway($parent_node, $narrowed_taints)
+                            : DataFlowNode::getForNarrowingToScalar($parent_node);
 
+                        if ($narrowed_node->id !== $parent_node->id) {
                             $graph->addNode($narrowed_node);
-                            $graph->addPath($parent_node, $narrowed_node, '=', 0, TaintKind::ALL);
-
-                            $parent_node = $narrowed_node;
+                            $graph->addPath($parent_node, $narrowed_node, '=', 0, $narrowed_taints);
                         }
 
-                        $narrowed_parent_nodes[$parent_node->id] = $parent_node;
+                        $narrowed_parent_nodes[$narrowed_node->id] = $narrowed_node;
                     }
 
                     $parent_nodes = $narrowed_parent_nodes;
@@ -379,6 +386,11 @@ class Reconciler
 
             if ($before_adjustment && $before_adjustment->from_global_state) {
                 $result_type = $result_type->setProperties(['from_global_state' => true]);
+            }
+
+            // narrowing doesn't change the value: an object nothing else references stays so
+            if ($before_adjustment && $before_adjustment->reference_free) {
+                $result_type = $result_type->setProperties(['reference_free' => true]);
             }
 
             $type_changed = !$before_adjustment
@@ -708,6 +720,7 @@ class Reconciler
      *
      * @param array<string, Union>  $existing_keys
      * @param array<string,mixed>       $new_assertions
+     * @psalm-suppress ComplexMethod
      */
     private static function getValueForKey(
         Codebase $codebase,
@@ -1241,7 +1254,7 @@ class Reconciler
         }
 
         if ($array_key[0] === '\'' || $array_key[0] === '"') {
-            $offset = new TLiteralString(substr($array_key, 1, -1));
+            $offset = TLiteralString::make(substr($array_key, 1, -1));
         } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
             $offset = new TLiteralInt((int) $array_key);
         } else {
@@ -1251,6 +1264,7 @@ class Reconciler
         $base_type = $existing_types[$base_key];
         $new_base_type = $base_type;
         $atomic_types = [];
+        $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TKeyedArray
@@ -1271,12 +1285,15 @@ class Reconciler
                 } else {
                     $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
                 }
+
+                $shape_changed = true;
             }
 
             $atomic_types[] = $atomic_type;
         }
 
-        if ($atomic_types) {
+        // the array changes only where its shape loses the offset
+        if ($shape_changed) {
             $new_base_type = $new_base_type->setTypes($atomic_types);
         }
 
@@ -1287,20 +1304,33 @@ class Reconciler
 
             // only an array surely holds nothing under the offset then
             if ($path_type !== '=') {
-                $node = DataFlowNode::getForAssignment($base_key . ' without ' . $array_key, $code_location);
-                $graph->addNode($node);
+                $removal = DataFlowNode::getForAssignment($base_key . ' without ' . $array_key, $code_location);
+                $parent_nodes = [];
 
+                // one node per parent node, so that merging the array back with what it was before the check
+                // keeps that only (see DataFlowNode::combineParentNodes())
                 foreach ($base_type->parent_nodes as $parent_node) {
-                    $graph->addPath($parent_node, $node, $path_type);
+                    $node = DataFlowNode::getForKeyRemoval($parent_node, $removal);
+
+                    if ($node !== $parent_node) {
+                        $graph->addNode($node);
+                        $graph->addPath($parent_node, $node, $path_type);
+                    }
+
+                    $parent_nodes[$node->id] = $node;
                 }
 
-                $new_base_type = $new_base_type->setParentNodes([$node->id => $node]);
+                $new_base_type = $new_base_type->setParentNodes($parent_nodes);
             }
         }
 
         if ($new_base_type !== $base_type) {
             $existing_types[$base_key] = $new_base_type;
-            $changed_var_ids[$base_key] = true;
+
+            // what the array holds under its other offsets stays known where only its data flow changed
+            if ($shape_changed) {
+                $changed_var_ids[$base_key] = true;
+            }
         }
     }
 

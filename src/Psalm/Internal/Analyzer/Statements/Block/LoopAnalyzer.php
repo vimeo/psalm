@@ -675,6 +675,7 @@ final class LoopAnalyzer
 
     /**
      * @param array<string, Union> $init_var_types
+     * @psalm-capabilities read-props
      */
     private static function doesEnterLoop(
         StatementsAnalyzer $statements_analyzer,
@@ -735,6 +736,8 @@ final class LoopAnalyzer
     /**
      * A variable the loop can define, rather than an array item, a property or a static property of one, or a
      * superglobal, which the loop only reads (and which is always defined)
+     *
+     * @psalm-pure
      */
     private static function isLoopVar(string $var_id): bool
     {
