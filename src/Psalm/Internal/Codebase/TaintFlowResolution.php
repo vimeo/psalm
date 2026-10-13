@@ -2096,14 +2096,16 @@ final class TaintFlowResolution
      * multiplies them by the classes of that one at most. A filter knowing more isn't split by class: that
      * would make a walk for every combination of classes of all the open assignments the walks observe. A
      * fetch in the walk of a call it makes is told apart in it by whether it ignores the open assignment
-     * only (see passesFetch()).
+     * only (see passesFetch()). Nor is a filter of an entry with MAX_FILTERS filters already (filters by class
+     * included): past those, its fetches ask per key too, and take everything (see getFilter()).
      *
      * @psalm-mutation-free
      */
     private function tracksClasses(int $entry): bool
     {
         return $this->entry_bases[$entry] === $entry
-            || count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS;
+            || (count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS
+                && ($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) < self::MAX_FILTERS);
     }
 
     /**
@@ -2664,6 +2666,15 @@ final class TaintFlowResolution
             $class = self::EXACT_KEY_CLASS;
         } elseif ($class === self::DEFERRED_CLASS && $this->entry_kinds[$entry] !== self::ENTRY_CALL) {
             // no fetch in the walk of a convergence asks per key (see passesFetch())
+            $class = '';
+        }
+
+        if (!isset($this->entry_class_filters[$entry][$position][$class])
+            && $this->entry_bases[$entry] !== $entry
+            && ($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS
+        ) {
+            // past MAX_FILTERS, a filter already split by class sends the calls of a class it has no filter for yet
+            // to that of the class of none, which every fetch takes (see tracksClasses())
             $class = '';
         }
 
