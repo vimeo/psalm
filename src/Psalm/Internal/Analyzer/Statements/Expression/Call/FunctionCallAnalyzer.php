@@ -565,10 +565,85 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * Charges the call of callable string or array $var_type_part what the method it names requires (see
+     * getIntersectionCallableArrayMethods() for one on an intersection), or, if it names none (and isn't the name of
+     * a function, see FunctionCallInfo::$new_function_name), what the class contract of its object allows
+     */
+    private static function signalCallableArrayCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        Atomic $var_type_part,
+        ?MethodIdentifier $potential_method_id,
+        FunctionCallInfo $function_call_info,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $has_new_function_name = $function_call_info->new_function_name !== null;
+
+        if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
+            $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
+
+            $statements_analyzer->signalMutation(
+                $potential_method_storage->capabilities,
+                $context,
+                'method ' . (string) $potential_method_id,
+                ImpureMethodCall::class,
+                $stmt,
+                null,
+                false,
+                $potential_method_storage,
+            );
+        } elseif (!$has_new_function_name
+            && ($intersection_method_storages = self::getIntersectionCallableArrayMethods(
+                $codebase,
+                $var_type_part,
+            )) !== []
+        ) {
+            // a method of another part of an intersection
+            foreach ($intersection_method_storages as $intersection_method_storage) {
+                $statements_analyzer->signalMutation(
+                    $intersection_method_storage->capabilities,
+                    $context,
+                    'method ' . $intersection_method_storage->defining_fqcln . '::'
+                        . (string) $intersection_method_storage->cased_name,
+                    ImpureMethodCall::class,
+                    $stmt,
+                    null,
+                    false,
+                    $intersection_method_storage,
+                );
+            }
+        } elseif (!$has_new_function_name) {
+            // a callable string or array whose target is unknown may do anything, but a method of an
+            // object whose class contract caps them all
+            $statements_analyzer->signalMutation(
+                ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                    $statements_analyzer,
+                    $context,
+                    self::getCallableArrayContractCapabilities(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $var_type_part,
+                        $function_name,
+                    ),
+                    $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                ),
+                $context,
+                'function call on ' . $var_type_part->getId(),
+                ImpureFunctionCall::class,
+                $stmt,
+            );
+        }
+    }
+
+    /**
      * The methods a callable array `[$object, 'method']` may call when the class of its object doesn't have the
      * method, but the object is an intersection: the method of each other part that has it.
      *
      * @return list<MethodStorage>
+     * @psalm-capabilities read-props
      */
     private static function getIntersectionCallableArrayMethods(Codebase $codebase, Atomic $callable): array
     {
@@ -1056,61 +1131,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     // this is also kind of fine
                     $has_valid_function_call_type = true;
 
-                    if ($potential_method_id && $codebase->methods->hasStorage($potential_method_id)) {
-                        $potential_method_storage = $codebase->methods->getStorage($potential_method_id);
-
-                        $statements_analyzer->signalMutation(
-                            $potential_method_storage->capabilities,
-                            $context,
-                            'method ' . (string) $potential_method_id,
-                            ImpureMethodCall::class,
-                            $stmt,
-                            null,
-                            false,
-                            $potential_method_storage,
-                        );
-                    } elseif (!$function_call_info->new_function_name
-                        && ($intersection_method_storages = self::getIntersectionCallableArrayMethods(
-                            $codebase,
-                            $var_type_part,
-                        )) !== []
-                    ) {
-                        // a method of another part of an intersection
-                        foreach ($intersection_method_storages as $intersection_method_storage) {
-                            $statements_analyzer->signalMutation(
-                                $intersection_method_storage->capabilities,
-                                $context,
-                                'method ' . $intersection_method_storage->defining_fqcln . '::'
-                                    . (string) $intersection_method_storage->cased_name,
-                                ImpureMethodCall::class,
-                                $stmt,
-                                null,
-                                false,
-                                $intersection_method_storage,
-                            );
-                        }
-                    } elseif (!$function_call_info->new_function_name) {
-                        // a callable string or array whose target is unknown may do anything, but a method of an
-                        // object whose class contract caps them all
-                        $statements_analyzer->signalMutation(
-                            ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
-                                $statements_analyzer,
-                                $context,
-                                self::getCallableArrayContractCapabilities(
-                                    $statements_analyzer,
-                                    $codebase,
-                                    $context,
-                                    $var_type_part,
-                                    $function_name,
-                                ),
-                                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                            ),
-                            $context,
-                            'function call on ' . $var_type_part->getId(),
-                            ImpureFunctionCall::class,
-                            $stmt,
-                        );
-                    }
+                    self::signalCallableArrayCall(
+                        $statements_analyzer,
+                        $context,
+                        $stmt,
+                        $function_name,
+                        $var_type_part,
+                        $potential_method_id,
+                        $function_call_info,
+                    );
                 } elseif ($var_type_part instanceof TNull) {
                     // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
