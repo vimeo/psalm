@@ -440,6 +440,172 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'fetchOfAnotherKeyOfAForeachCopyOfTheElements' => [
+                // Each element is copied under its own key: "city" isn't "name_tail".
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = $value;
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachCopyOfTheElementsFetchedByKey' => [
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = $data[$key];
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachCopyOfTheNarrowedElements' => [
+                // A narrowing isn't a reassignment.
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            if ($value !== "") {
+                                $copy[$key] = $value;
+                            }
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachCopyOfTheElementsOfAMixedValue' => [
+                // The elements of a mixed value are taken from the value as those of an array.
+                'code' => '<?php
+                    function show(mixed $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            if (is_string($key) && $value !== null) {
+                                $copy[$key] = $value;
+                            }
+                        }
+                        echo (string)($copy["city"] ?? "");
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfACopyOfTheElementsOfAnotherArrayUnderTheirKey' => [
+                // $diff[$key] = $data[$key] copies an element of $data under its own key, whatever $key is.
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key];
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);
+                ',
+            ],
+            'fetchOfTheKeyOfAForeachAssignmentOfTheEscapedElements' => [
+                // An escaped element is no copy of it: its taints aren't those of the element.
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = htmlspecialchars($value, ENT_QUOTES);
+                        }
+                        echo $copy["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformOfTheElementsThroughAConcatenation' => [
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = $value . "x";
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformOfTheElementsThroughABuiltin' => [
+                // What is made of the value of each element is put back under its key: "city" isn't "name_tail".
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $result[$key] = strtolower($value);
+                        }
+                        echo $result["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);
+                ',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformOfTheElementsThroughAMethod' => [
+                'code' => '<?php
+                    final class Field {
+                        public function normalize(string $value): string {
+                            return trim($value);
+                        }
+                    }
+
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $result[$key] = (new Field())->normalize($value);
+                        }
+                        echo $result["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);
+                ',
+            ],
             'fetchOfAKeyStartingWithAnotherStartThanTheAssignedKey' => [
                 // The start of the fetched key is known: it can't be "name_tail".
                 'code' => '<?php
@@ -3693,6 +3859,399 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
+                'code' => '<?php
+                    function show(): void {
+                        echo (string) ($GLOBALS["name"] ?? "");
+                    }
+
+                    /** @param array<string, string> $data */
+                    function copyOne(array $data, string $k): void {
+                        $GLOBALS[$k] = $data[$k];
+                    }
+
+                    copyOne(["name" => (string) $_GET["n"]], "name");
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfAForeachCopyOfTheElements' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = $value;
+                        }
+                        echo $copy["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachAssignmentOfAnotherValue' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $copy[$key] = $value . (string)($_GET["suffix"] ?? "");
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    show(["city" => "Paris"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachAssignmentUnderAnotherKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $other_key = strtolower($key);
+                            $copy[$other_key] = $value;
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["City"] = (string)($_GET["city"] ?? "");
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachAssignmentOfAReassignedValue' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            $value = trim($value . (string)($_GET["suffix"] ?? ""));
+                            $copy[$key] = $value;
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    show(["city" => "Paris"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachAssignmentOfAValueReassignedInABranch' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $copy = [];
+                        foreach ($data as $key => $value) {
+                            if (rand(0, 1)) {
+                                $value = (string)($_GET["value"] ?? "");
+                            }
+                            $copy[$key] = $value;
+                        }
+                        echo $copy["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = "";
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfACopyOfTheElementsOfAnotherArrayUnderTheirKey' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key];
+                            }
+                        }
+                        echo $diff["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    show(["name_tail" => ""], $data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfACopyOfTheElementsOfAnotherArrayUnderAnotherKey' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $other_key = strtoupper($key);
+                                $diff[$key] = $data[$other_key];
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    $data = ["city" => ""];
+                    $data["CITY"] = (string)($_GET["city"] ?? "");
+                    show(["city" => "Paris"], $data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAnAssignmentOfAnotherValueThanAnElement' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param array<string, string> $old
+                     * @param array<string, string> $data
+                     */
+                    function show(array $old, array $data): void {
+                        $diff = [];
+                        foreach ($old as $key => $value) {
+                            if (array_key_exists($key, $data) && $data[$key] !== $value) {
+                                $diff[$key] = $data[$key] . (string)($_GET["suffix"] ?? "");
+                            }
+                        }
+                        echo $diff["city"] ?? "";
+                    }
+
+                    show(["city" => "Paris"], ["city" => ""]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAnObjectAssignedTheElementsUnderTheirKey' => [
+                // An object puts what is assigned to it where its offsetSet() does: here under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $map = new CaseInsensitiveMap();
+                        foreach ($data as $key => $value) {
+                            $map[$key] = $value;
+                        }
+                        echo $map["city"];
+                    }
+
+                    $data = [];
+                    $data["City"] = (string)($_GET["city"] ?? "");
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAMixedValueAssignedTheElementsUnderTheirKey' => [
+                // A mixed value may be an object putting what is assigned to it under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /**
+                     * @param mixed $map
+                     * @param array<string, string> $data
+                     */
+                    function fill($map, array $data): void {
+                        foreach ($data as $key => $value) {
+                            $map[$key] = $value;
+                        }
+                        echo (string) $map["city"];
+                    }
+
+                    fill(new CaseInsensitiveMap(), ["City" => (string) ($_GET["city"] ?? "")]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfAForeachTransformOfTheElements' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $result[$key] = strtolower($value);
+                        }
+                        echo $result["name_tail"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformUnderAnotherKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $other_key = strtolower($key);
+                            $result[$other_key] = strtolower($value);
+                        }
+                        echo $result["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformUnderAReassignedKey' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $key = strtolower($key);
+                            $result[$key] = strtolower($value);
+                        }
+                        echo $result["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAForeachTransformOfThePreviousElement' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $result = [];
+                        foreach ($data as $key => $value) {
+                            $result[$key] = strtolower($previous ?? "");
+                            $previous = $value;
+                        }
+                        echo $result["city"] ?? "";
+                    }
+
+                    $data = [];
+                    $data["name_tail"] = (string)($_GET["name_tail"] ?? "");
+                    $data["city"] = "Moscow";
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAnObjectAssignedTransformsOfTheElementsUnderTheirKey' => [
+                // An object puts what is assigned to it where its offsetSet() does: here under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $map = new CaseInsensitiveMap();
+                        foreach ($data as $key => $value) {
+                            $map[$key] = trim($value);
+                        }
+                        echo $map["city"];
+                    }
+
+                    $data = [];
+                    $data["City"] = (string)($_GET["city"] ?? "");
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfAnotherKeyOfAMixedValueAssignedTransformsOfTheElementsUnderTheirKey' => [
+                // A mixed value may be an object putting what is assigned to it under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /**
+                     * @param mixed $map
+                     * @param array<string, string> $data
+                     */
+                    function fill($map, array $data): void {
+                        foreach ($data as $key => $value) {
+                            $map[$key] = trim($value);
+                        }
+                        echo (string) $map["city"];
+                    }
+
+                    fill(new CaseInsensitiveMap(), ["City" => (string) ($_GET["city"] ?? "")]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfAnAssignmentOfAnElementWhoseFetchTakesMoreThanTheArrayHolds' => [
+                'code' => '<?php
+                    $key = "type";
+                    $file = [];
+                    $file[$key] = $_FILES["upload"][$key];
+                    echo $file["type"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfAKeyStartingLikeTheAssignedKey' => [
                 'code' => '<?php // --taint-analysis
                     /** @param array<string, string> $data */
