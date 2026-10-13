@@ -555,6 +555,9 @@ final class TaintStore
         return $names ?? [[false, self::getKnownStart($statements_analyzer, $key_expr) ?? '']];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function isSingleLiteral(StatementsAnalyzer $statements_analyzer, Expr $expr): bool
     {
         return $statements_analyzer->node_data->getType($expr)?->isSingleStringLiteral() ?? false;

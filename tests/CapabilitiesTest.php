@@ -36,6 +36,9 @@ final class CapabilitiesTest extends TestCase
                     function lastErrors(): string {
                         return preg_last_error() . preg_last_error_msg() . json_last_error() . json_last_error_msg();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'splContainersOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
@@ -1955,6 +1958,8 @@ final class CapabilitiesTest extends TestCase
                         return preg_last_error_msg();
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on preg_last_error_msg requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'writingACallersSplQueueRequiresWriteProps' => [
                 'code' => '<?php

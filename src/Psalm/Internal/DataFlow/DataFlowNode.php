@@ -586,7 +586,7 @@ final class DataFlowNode implements Stringable
         $parent_nodes += $other_parent_nodes;
 
         foreach ($parent_nodes as $parent_node_id => $_) {
-            $base_id = (string) $parent_node_id;
+            $base_id = $parent_node_id;
 
             while (true) {
                 $base_id = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
