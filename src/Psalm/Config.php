@@ -519,6 +519,7 @@ final class Config
         "geos" => null,
         "gmp" => null,
         "ibm_db2" => null,
+        "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
