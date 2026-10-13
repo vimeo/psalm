@@ -2706,6 +2706,21 @@ final class TaintFlowResolution
                 }
             }
 
+            // or for a call that doesn't use it: its specialization of the exit has no outgoing edge
+            $prefix = $entered_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR;
+
+            foreach ($is_exit ? [] : $this->specialization_links[$entered_id] ?? [] as $specialized_id => $_) {
+                if (str_starts_with($specialized_id, $prefix)
+                    && isset($this->nodes[
+                        $exit_id . TaintFlowGraph::SPECIALIZATION_SEPARATOR . substr($specialized_id, strlen($prefix))
+                    ])
+                ) {
+                    $is_exit = true;
+
+                    break;
+                }
+            }
+
             $this->exits_of_entered[$entered_id][$exit_id] = $is_exit;
         }
 
