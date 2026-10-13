@@ -44,14 +44,12 @@ use Psalm\Type\Union;
 use function array_values;
 use function count;
 use function in_array;
-use function preg_match;
-use function preg_split;
+use function ltrim;
 use function str_ends_with;
 use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
-use function trim;
 
 /**
  * Keyed stores: what a call stores under a key (`@psalm-flow ($value) -> Store::$data[$key]`) flows into what the
@@ -71,77 +69,60 @@ use function trim;
  */
 final class TaintStore
 {
-    private const STORE_REGEX = '/^\\\\?([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(\*|\$\w+(?:\[\*\])?)\](?:\[[^\]]*\])*$/';
-
     /**
      * Records a flow into a keyed store (`($value, $other) -> Store::$data[$key]`) or out of it
-     * (`Store::$data[$key] -> return`), given as the two sides of a `@psalm-flow`. The key is a parameter, `*` for any
-     * key, or `$keys[*]` for each key in a list. Only the first key of a nested store (`Store::$data[$ns][$key]`) tells
-     * the values apart.
+     * (`Store::$data[$key] -> return`), see TaintFlowAnnotation. Any other flow is not one of a keyed store.
      *
      * @param ?Aliases $aliases resolve the class of the store, else it is fully qualified
      * @param ?string $self_class the class `self` and `static` name
-     * @return bool whether the flow is one of a keyed store
      */
     public static function addFlow(
         FunctionLikeStorage $storage,
-        string $source,
-        string $target,
-        string $path_type,
+        TaintFlowAnnotation $flow,
         ?Aliases $aliases = null,
         ?string $self_class = null,
-    ): bool {
-        if (preg_match(self::STORE_REGEX, $target, $store_matches) === 1) {
-            $is_write = true;
-        } elseif ($target === 'return' && preg_match(self::STORE_REGEX, $source, $store_matches) === 1) {
-            $is_write = false;
-        } else {
-            return false;
+    ): void {
+        if ($flow->store_class === null || $flow->store_property === null) {
+            return;
         }
 
-        // the pattern matched, so its three groups are there
-        $class_name = $store_matches[1] ?? '';
-        $key_spec = $store_matches[3] ?? '';
+        $class_name = $flow->store_class;
         if ($self_class !== null && in_array(strtolower($class_name), ['self', 'static'], true)) {
             $class_name = $self_class;
         } elseif ($aliases !== null) {
+            // a leading backslash makes the class fully qualified
             $class_name = Type::getFQCLNFromString($class_name, $aliases);
+        } else {
+            $class_name = ltrim($class_name, '\\');
         }
 
-        $store = $class_name . '::$' . ($store_matches[2] ?? '');
+        $store = $class_name . '::$' . $flow->store_property;
 
         $key = null;
-        $is_list = false;
-        if ($key_spec !== '*') {
-            $is_list = str_ends_with($key_spec, '[*]');
-            $key = self::getParamOffset($storage, substr($key_spec, 1, $is_list ? -3 : null));
+        if ($flow->store_key !== null) {
+            $key = self::getParamOffset($storage, $flow->store_key);
             if ($key === null) {
-                return true;
+                return;
             }
         }
 
-        if (!$is_write) {
+        if ($flow->kind === TaintFlowAnnotation::STORE_READ) {
             $storage->taint_store_reads[] = [
                 'store' => $store,
                 'key' => $key,
-                'is_list' => $is_list,
-                'path_type' => $path_type,
+                'is_list' => $flow->store_key_is_list,
+                'path_type' => $flow->path_type,
             ];
 
-            return true;
-        }
-
-        if ($source === '' || $source[0] !== '(' || !str_ends_with($source, ')')) {
-            return true;
+            return;
         }
 
         $params = [];
         $callable_params = [];
-        foreach (preg_split('/, ?/', substr($source, 1, -1)) ?: [] as $source_param) {
-            $source_param = trim($source_param);
+        foreach ($flow->sources as $source_param) {
             // what the callables given to the parameter return
             $is_callable = str_ends_with($source_param, '()');
-            $offset = self::getParamOffset($storage, substr($source_param, 1, $is_callable ? -2 : null));
+            $offset = self::getParamOffset($storage, $is_callable ? substr($source_param, 0, -2) : $source_param);
             if ($offset === null) {
                 continue;
             }
@@ -157,14 +138,12 @@ final class TaintStore
             $storage->taint_store_writes[] = [
                 'store' => $store,
                 'key' => $key,
-                'is_list' => $is_list,
+                'is_list' => $flow->store_key_is_list,
                 'params' => $params,
                 'callable_params' => $callable_params,
-                'path_type' => $path_type,
+                'path_type' => $flow->path_type,
             ];
         }
-
-        return true;
     }
 
     /**

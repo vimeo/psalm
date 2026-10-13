@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
@@ -48,6 +49,7 @@ use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -506,6 +508,103 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The capabilities a callable array `[$object, $method]` whose method isn't known requires: any method of the
+     * object may run, `__call()` too, which only the class contract of each part of its type caps (see
+     * MethodCallPurityAnalyzer::getClassContractCapabilities()). A method writing the object's own properties writes
+     * those of the receiver: the caller's `$this` or another object, unless the callable is written out in the call
+     * (`[$this, $method]()`). Any other callable may do anything.
+     */
+    private static function getCallableArrayContractCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        Atomic $callable,
+        PhpParser\Node\Expr $function_name,
+    ): int {
+        if (!$callable instanceof TKeyedArray
+            || !isset($callable->properties[0])
+            || count($callable->properties) !== 2
+        ) {
+            return Capabilities::ALL;
+        }
+
+        $capabilities = Capabilities::NONE;
+
+        foreach ($callable->properties[0]->getAtomicTypes() as $object_type) {
+            $capabilities |= MethodCallPurityAnalyzer::getClassContractCapabilities($codebase, $object_type);
+        }
+
+        if ($capabilities === Capabilities::ALL) {
+            return $capabilities;
+        }
+
+        $receiver = $function_name instanceof PhpParser\Node\Expr\Array_
+            && count($function_name->items) === 2
+            && isset($function_name->items[0])
+            && !$function_name->items[0]->unpack
+            ? $function_name->items[0]->value
+            : null;
+
+        if ($receiver !== null) {
+            return MethodCallPurityAnalyzer::getReceiverCallCapabilities(
+                $statements_analyzer,
+                $receiver,
+                $capabilities,
+            );
+        }
+
+        // the receiver may be the caller's `$this`, if it has one, as well as another object
+        return MethodCallPurityAnalyzer::getCapabilitiesForReceiver(
+            $capabilities & ~Capabilities::READ_PROPS,
+            false,
+            $callable->properties[0]->from_global_state,
+        ) | (isset($context->vars_in_scope['$this']) ? $capabilities & Capabilities::WRITE_THIS_PROPS : 0);
+    }
+
+    /**
+     * The methods a callable array `[$object, 'method']` may call when the class of its object doesn't have the
+     * method, but the object is an intersection: the method of each other part that has it.
+     *
+     * @return list<MethodStorage>
+     */
+    private static function getIntersectionCallableArrayMethods(Codebase $codebase, Atomic $callable): array
+    {
+        if (!$callable instanceof TKeyedArray
+            || !isset($callable->properties[0], $callable->properties[1])
+            || !$callable->properties[0]->isSingle()
+            || !$callable->properties[1]->isSingleStringLiteral()
+        ) {
+            return [];
+        }
+
+        $object_type = $callable->properties[0]->getSingleAtomic();
+
+        if (!$object_type instanceof TNamedObject) {
+            return [];
+        }
+
+        $method_name_lc = strtolower($callable->properties[1]->getSingleStringLiteral()->value);
+
+        $method_storages = [];
+
+        foreach ($object_type->getIntersectionTypes() as $intersection_type) {
+            if (!$intersection_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $method_id = $codebase->methods->getDeclaringMethodId(
+                new MethodIdentifier($intersection_type->value, $method_name_lc),
+            );
+
+            if ($method_id !== null && $codebase->methods->hasStorage($method_id)) {
+                $method_storages[] = $codebase->methods->getStorage($method_id);
+            }
+        }
+
+        return $method_storages;
     }
 
     private static function handleNamedFunction(
@@ -970,10 +1069,42 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             false,
                             $potential_method_storage,
                         );
+                    } elseif (!$function_call_info->new_function_name
+                        && ($intersection_method_storages = self::getIntersectionCallableArrayMethods(
+                            $codebase,
+                            $var_type_part,
+                        )) !== []
+                    ) {
+                        // a method of another part of an intersection
+                        foreach ($intersection_method_storages as $intersection_method_storage) {
+                            $statements_analyzer->signalMutation(
+                                $intersection_method_storage->capabilities,
+                                $context,
+                                'method ' . $intersection_method_storage->defining_fqcln . '::'
+                                    . (string) $intersection_method_storage->cased_name,
+                                ImpureMethodCall::class,
+                                $stmt,
+                                null,
+                                false,
+                                $intersection_method_storage,
+                            );
+                        }
                     } elseif (!$function_call_info->new_function_name) {
-                        // a callable string or array whose target is unknown may do anything
+                        // a callable string or array whose target is unknown may do anything, but a method of an
+                        // object whose class contract caps them all
                         $statements_analyzer->signalMutation(
-                            Capabilities::ALL,
+                            ByRefArgumentAnalyzer::adjustUnknownParamsCapabilities(
+                                $statements_analyzer,
+                                $context,
+                                self::getCallableArrayContractCapabilities(
+                                    $statements_analyzer,
+                                    $codebase,
+                                    $context,
+                                    $var_type_part,
+                                    $function_name,
+                                ),
+                                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                            ),
                             $context,
                             'function call on ' . $var_type_part->getId(),
                             ImpureFunctionCall::class,

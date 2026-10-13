@@ -786,6 +786,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\Reflection::class,
         \Psalm\Internal\Codebase\Scanner::class,
         \Psalm\Internal\Codebase\StorageByPatternResolver::class,
+        \Psalm\Internal\Codebase\TaintFlowAnnotation::class,
         \Psalm\Internal\Codebase\TaintFlowGraph::class,
         \Psalm\Internal\Codebase\TaintFlowResolution::class,
         \Psalm\Internal\Codebase\TaintStore::class,

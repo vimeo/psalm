@@ -68,6 +68,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param  list<PhpParser\Node\Arg> $args
+     * @param  ?string $mixin_user_class the class whose `@mixin` the method was found through
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -82,6 +83,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
+        ?string $mixin_user_class = null,
     ): Union {
         $config = $codebase->config;
 
@@ -398,6 +400,20 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$context->collect_mutations && !$context->collect_initializations) {
+                // a method of a mixin runs through the __call() of the class using the mixin
+                $magic_method_id = $mixin_user_class !== null
+                    ? $codebase->methods->getDeclaringMethodId(new MethodIdentifier($mixin_user_class, '__call'))
+                    : null;
+                $purity_method_storage = $method_storage;
+                $purity_class_storage = $class_storage;
+
+                if ($magic_method_id !== null && $mixin_user_class !== null) {
+                    $purity_method_storage = clone $codebase->methods->getStorage($magic_method_id);
+                    $purity_method_storage->setParams($method_storage->params);
+                    $purity_method_storage->purity_from_templates = $method_storage->purity_from_templates;
+                    $purity_class_storage = $codebase->classlike_storage_provider->get($mixin_user_class);
+                }
+
                 MethodCallPurityAnalyzer::analyze(
                     $statements_analyzer,
                     $codebase,
@@ -405,8 +421,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_var_id,
                     $cased_method_id,
                     $method_id,
-                    $method_storage,
-                    $class_storage,
+                    $purity_method_storage,
+                    $purity_class_storage,
                     $context,
                     $config,
                     $result,

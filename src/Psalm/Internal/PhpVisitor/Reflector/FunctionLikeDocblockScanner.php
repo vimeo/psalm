@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
-use AssertionError;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -17,6 +16,7 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowAnnotation;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
@@ -62,11 +62,8 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
-use function preg_last_error_msg;
-use function preg_match;
-use function preg_match_all;
+use function is_string;
 use function preg_replace;
-use function preg_split;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -1059,22 +1056,6 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * Records a flow into a keyed store or out of it (see TaintStore::addFlow())
-     *
-     * @return bool whether the flow is one of a keyed store
-     */
-    private static function handleTaintStoreFlow(
-        string $source,
-        string $target,
-        string $path_type,
-        FunctionLikeStorage $storage,
-        Aliases $aliases,
-        ?ClassLikeStorage $classlike_storage,
-    ): bool {
-        return TaintStore::addFlow($storage, $source, $target, $path_type, $aliases, $classlike_storage?->name);
-    }
-
-    /**
      * @param array<string, TypeAlias> $type_aliases
      * @param array<string, non-empty-array<string, Union>> $function_template_types
      * @param array<string, non-empty-array<string, Union>> $class_template_types
@@ -1263,103 +1244,57 @@ final class FunctionLikeDocblockScanner
         Aliases $aliases,
         ?ClassLikeStorage $classlike_storage,
     ): void {
-        if ($docblock_info->flows) {
-            foreach ($docblock_info->flows as $flow) {
-                $path_type = 'arg';
+        foreach ($docblock_info->flows as $flow_annotation) {
+            // a malformed one is reported by handleTaintAnnotations()
+            $flow = TaintFlowAnnotation::parse($flow_annotation);
+            if (is_string($flow)) {
+                continue;
+            }
 
-                $fancy_path_regex = '/-\(([a-z\-]+)\)->/';
-
-                if (preg_match($fancy_path_regex, $flow, $matches)) {
-                    if (isset($matches[1])) {
-                        $path_type = $matches[1];
+            if ($flow->kind === TaintFlowAnnotation::STORE_WRITE || $flow->kind === TaintFlowAnnotation::STORE_READ) {
+                TaintStore::addFlow($storage, $flow, $aliases, $classlike_storage?->name);
+            } elseif ($flow->kind === TaintFlowAnnotation::RETURN) {
+                foreach ($flow->sources as $source_param) {
+                    if ($source_param === 'this') {
+                        $storage->return_source_this = $flow->path_type;
+                        continue;
                     }
 
-                    $flow = (string) preg_replace($fancy_path_regex, '->', $flow);
-                }
+                    // what the callable given to the parameter returns
+                    if (str_ends_with($source_param, '()')) {
+                        $source_param = substr($source_param, 0, -2);
 
-                $flow_parts = explode('->', $flow);
-
-                // a keyed store: `($value) -> Store::$data[$key]` and `Store::$data[$key] -> return`
-                if (isset($flow_parts[1])
-                    && self::handleTaintStoreFlow(
-                        trim($flow_parts[0]),
-                        trim($flow_parts[1]),
-                        $path_type,
-                        $storage,
-                        $aliases,
-                        $classlike_storage,
-                    )
-                ) {
-                    continue;
-                }
-
-                if (isset($flow_parts[1]) && trim($flow_parts[1]) === 'return') {
-                    $source_param_string = trim($flow_parts[0]);
-
-                    if ($source_param_string[0] === '(' && str_ends_with($source_param_string, ')')) {
-                        $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
-                        if ($source_params === false) {
-                            throw new AssertionError(preg_last_error_msg());
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->return_source_callable_params[$i] = $flow->path_type;
+                            }
                         }
 
-                        foreach ($source_params as $source_param) {
-                            $source_param = substr($source_param, 1);
+                        continue;
+                    }
 
-                            if ($source_param === 'this') {
-                                $storage->return_source_this = $path_type;
-                                continue;
-                            }
-
-                            // what the callable given to the parameter returns
-                            if (str_ends_with($source_param, '()')) {
-                                $source_param = substr($source_param, 0, -2);
-
-                                foreach ($storage->params as $i => $param_storage) {
-                                    if ($param_storage->name === $source_param) {
-                                        $storage->return_source_callable_params[$i] = $path_type;
-                                    }
-                                }
-
-                                continue;
-                            }
-
-                            foreach ($storage->params as $i => $param_storage) {
-                                if ($param_storage->name === $source_param) {
-                                    $storage->return_source_params[$i] = $path_type;
-                                }
-                            }
+                    foreach ($storage->params as $i => $param_storage) {
+                        if ($param_storage->name === $source_param) {
+                            $storage->return_source_params[$i] = $flow->path_type;
+                        }
+                    }
+                }
+            } elseif ($flow->proxy_function !== null) {
+                $call_params = [];
+                foreach ($flow->sources as $source_param) {
+                    foreach ($storage->params as $i => $param_storage) {
+                        if ($param_storage->name === $source_param) {
+                            $call_params[] = $i;
                         }
                     }
                 }
 
-                if (isset($flow_parts[0]) && str_starts_with(trim($flow_parts[0]), 'proxy')) {
-                    $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
-                    [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
-
-                    if (!empty($fully_qualified_name) && !empty($source_param_string)) {
-                        $source_params = preg_split('/, ?/', substr($source_param_string, 0, -1)) ?: [];
-                        $call_params = [];
-                        foreach ($source_params as $source_param) {
-                            $source_param = substr($source_param, 1);
-
-                            foreach ($storage->params as $i => $param_storage) {
-                                if ($param_storage->name === $source_param) {
-                                    $call_params[] = $i;
-                                }
-                            }
-                        }
-
-                        if ($storage->proxy_calls === null) {
-                            $storage->proxy_calls = [];
-                        }
-
-                        $storage->proxy_calls[] = [
-                            'fqn' => $fully_qualified_name,
-                            'params' => $call_params,
-                            'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return',
-                        ];
-                    }
-                }
+                $storage->proxy_calls ??= [];
+                $storage->proxy_calls[] = [
+                    'fqn' => $flow->proxy_function,
+                    'params' => $call_params,
+                    'return' => $flow->proxy_returns,
+                ];
             }
         }
     }
@@ -1421,9 +1356,8 @@ final class FunctionLikeDocblockScanner
     }
 
     /**
-     * What is wrong with the `@psalm-flow` annotation $flow: it is neither a flow (`(...) -> ...`), a flow out of a
-     * keyed store (`Store::$data[$key] -> ...`, see TaintStore) nor a proxy call (`proxy ...`), or it names a parameter
-     * (`$name`) that isn't one of $param_names
+     * What is wrong with the `@psalm-flow` annotation $flow: it is malformed (see TaintFlowAnnotation), or it names a
+     * parameter (`$name`) that isn't one of $param_names
      *
      * @param array<string, true> $param_names
      * @return non-empty-string|null
@@ -1431,28 +1365,12 @@ final class FunctionLikeDocblockScanner
      */
     private static function getInvalidFlow(string $flow, array $param_names): ?string
     {
-        if (str_starts_with($flow, 'proxy')) {
-            $sources = explode('->', $flow, 2)[0];
-        } elseif (preg_match('/^(\(.*?\))\s*-(?:\([a-z\-]+\)-)?>/', $flow, $matches) === 1
-            && isset($matches[1])
-        ) {
-            $sources = $matches[1];
-        } elseif (preg_match(
-            '/^\\\\?[A-Za-z_\\\\][\w\\\\]*::\$\w+((?:\[(?:[^\[\]]|\[[^\]]*\])*\])+)\s*-(?:\([a-z\-]+\)-)?>/',
-            $flow,
-            $matches,
-        ) === 1
-            && isset($matches[1])
-        ) {
-            // only the keys of the store name parameters, not the property holding it
-            $sources = $matches[1];
-        } else {
-            return '@psalm-flow "' . $flow . '" is neither "(...) -> ...", "Store::$data[$key] -> ..." nor "proxy ..."';
+        $parsed_flow = TaintFlowAnnotation::parse($flow);
+        if (is_string($parsed_flow)) {
+            return $parsed_flow;
         }
 
-        // the parameters it names, not what calling one returns (`$name()`)
-        preg_match_all('/\$(\w+)\b(?!\s*\()/', $sources, $matches);
-        foreach ($matches[1] ?? [] as $name) {
+        foreach ($parsed_flow->getParamNames() as $name) {
             if ($name !== 'this' && !isset($param_names[$name])) {
                 return '@psalm-flow names $' . $name . ', which is not a parameter';
             }

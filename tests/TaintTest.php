@@ -2231,6 +2231,26 @@ final class TaintTest extends TestCase
                         query(["name" => $number]);
                     }',
             ],
+            'nosqlSinkNotTaintedByScalarNarrowingWhereItsTypeMixesWithAnObject' => [
+                'code' => '<?php
+                    final class Regex {
+                        public function __construct(public string $pattern) {}
+                    }
+
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // the value narrowed to a scalar holds no NoSQL query document, whatever its item mixes with
+                    $value = input();
+                    if (is_scalar($value)) {
+                        query(["name" => rand(0, 1) ? ["\$regex" => new Regex((string) $value)] : $value]);
+                    }',
+            ],
             'nosqlSinkNotTaintedByIntCast' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -3155,6 +3175,33 @@ final class TaintTest extends TestCase
                     /** @psalm-taint-specialize */
                     function remember(string $v): string {
                         Memo::$last = $v;
+                        return $v;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+            ],
+            'dontTaintWithAStaticVariableCounter' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function countCalls(string $label): string {
+                        /** @var int */
+                        static $count = 0;
+                        $count++;
+                        return $label . (string) $count;
+                    }
+
+                    countCalls((string) $_GET["x"]);
+                    echo countCalls("safe");',
+            ],
+            'dontTaintSpecializedCallWithWhatAnotherLeavesInAStaticVariable' => [
+                // what the calls leave in the static variable doesn't leak into what they return
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $last = $v;
                         return $v;
                     }
 
@@ -4239,6 +4286,36 @@ final class TaintTest extends TestCase
                     show([], 1);',
                 'error_message' => 'TaintedHtml',
             ],
+            'nosqlSinkTaintedByArrayNarrowing' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(array $filter): void {}
+
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    $value = input();
+                    if (is_array($value)) {
+                        query(rand(0, 1) ? ["name" => "x"] : $value);
+                    }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'htmlSinkTaintedByStringNarrowingDroppingNosql' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function input(): mixed {
+                        return null;
+                    }
+
+                    // a string can\'t carry a NoSQL query document, but it can carry HTML
+                    $value = input();
+                    if (is_string($value)) {
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
@@ -4312,6 +4389,78 @@ final class TaintTest extends TestCase
                     /** @psalm-assert-untainted $txt */
                     function check(string $text): void {}',
                 'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'flowIntoNeitherTheReturnNorAKeyedStore' => [
+                'code' => '<?php
+                    /** @psalm-flow ($text) -(html)-> $other */
+                    function wrap(string $text, string $other): string {
+                        return $text . $other;
+                    }',
+                'error_message' => 'is neither',
+            ],
+            'keyedStoreWriteUnderAKeyThatIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[key] */
+                    function store_set(string $key, string $value): void {}',
+                'error_message' => 'is neither',
+            ],
+            'flowFromWhatACallableThatIsNotAParameterReturns' => [
+                'code' => '<?php
+                    /** @psalm-flow ($fn()) -> return */
+                    function call(callable $callback): string {
+                        return "";
+                    }',
+                'error_message' => 'names $fn, which is not a parameter',
+            ],
+            'proxyFlowIntoNeitherTheReturnNorNothing' => [
+                'code' => '<?php
+                    /** @psalm-flow proxy exec($cmd) -> $out */
+                    function run(string $cmd, string $out): void {}',
+                'error_message' => 'is neither',
+            ],
+            'keyedStoreReadUnderAParameterThatDoesNotExist' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[$k] -> return */
+                    function store_get(string $key): string {
+                        return $key;
+                    }',
+                'error_message' => 'names $k, which is not a parameter',
+            ],
+            'keyedStoreReadUnderAKeyThatIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow Store::$data[key] -> return */
+                    function store_get(string $key): string {
+                        return $key;
+                    }',
+                'error_message' => 'is neither',
+            ],
+            'taintedThroughAKeyedStoreOfAFullyQualifiedClassFromAnotherNamespace' => [
+                'code' => '<?php
+                    namespace App\Writer {
+                        final class Writer {
+                            /** @psalm-flow ($value) -> \Cache::$data[$key] */
+                            public static function set(string $key, string $value): void {}
+                        }
+                    }
+
+                    namespace App\Reader {
+                        final class Reader {
+                            /**
+                             * @param list<string> $keys
+                             * @return list<string>
+                             * @psalm-flow \Cache::$data[$keys[*]] -> return
+                             */
+                            public static function mGet(array $keys): array {
+                                return [];
+                            }
+                        }
+                    }
+
+                    namespace {
+                        App\Writer\Writer::set("a", (string) $_GET["x"]);
+                        echo implode(",", App\Reader\Reader::mGet(["a"]));
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'flowFromAParameterThatDoesNotExist' => [
                 'code' => '<?php
@@ -10534,6 +10683,117 @@ final class TaintTest extends TestCase
 
                     remember((string) $_GET["x"]);
                     echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMethodCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    final class A {
+                        public function remember(string $v): string {
+                            /** @var string */
+                            static $last = "";
+                            $prev = $last;
+                            $last = $v;
+                            return $prev;
+                        }
+                    }
+
+                    $a = new A();
+                    $a->remember((string) $_GET["x"]);
+                    echo $a->remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintClosureCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    $remember = function (string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    };
+
+                    $remember((string) $_GET["x"]);
+                    echo $remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCallReturningWhatAnotherLeftInAStaticVariableMemo' => [
+                'code' => '<?php
+                    function memo(string $k, ?string $v = null): ?string {
+                        /** @var array<string, string> */
+                        static $cache = [];
+                        if ($v !== null) {
+                            $cache[$k] = $v;
+                            return null;
+                        }
+                        return $cache[$k] ?? null;
+                    }
+
+                    memo("a", (string) $_GET["x"]);
+                    echo (string) memo("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedCallReturningWhatAnotherLeftInAStaticVariable' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function remember(string $v): string {
+                        /** @var string */
+                        static $last = "";
+                        $prev = $last;
+                        $last = $v;
+                        return $prev;
+                    }
+
+                    remember((string) $_GET["x"]);
+                    echo remember("safe");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSpecializedCallReturningWhatAnotherLeftInAStaticVariableMemo' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function memo(string $k, ?string $v = null): ?string {
+                        /** @var array<string, string> */
+                        static $cache = [];
+                        if ($v !== null) {
+                            $cache[$k] = $v;
+                            return null;
+                        }
+                        return $cache[$k] ?? null;
+                    }
+
+                    memo("a", (string) $_GET["x"]);
+                    echo (string) memo("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedCallReadingWhatTheOuterCallLeftInAStaticVariable' => [
+                // the outer call overwrites the static variable before it returns, after the nested call read it
+                'code' => '<?php
+                    function reenter(?string $v): string {
+                        /** @var string */
+                        static $s = "";
+                        if ($v !== null) {
+                            $s = $v;
+                            echo reenter(null);
+                            $s = "";
+                            return "";
+                        }
+                        return $s;
+                    }
+
+                    reenter((string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedNewCall' => [
