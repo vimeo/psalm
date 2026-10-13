@@ -91,7 +91,7 @@ final class MethodCallPurityAnalyzer
      * (`$obj->{$name}()`) requires from its caller, given the receiver: any of its methods may run,
      * `__call()` too, which only its class contract caps. On an intersection, the method may be one
      * of any of the other parts, $intersection_types, each capped by its own contract. Without one,
-     * the call may do anything.
+     * or with the contract of a marker interface, which caps no implementer, the call may do anything.
      *
      * @param array<string, Atomic> $intersection_types
      */
@@ -101,7 +101,7 @@ final class MethodCallPurityAnalyzer
         ClassLikeStorage $class_storage,
         array $intersection_types = [],
     ): int {
-        if (!$class_storage->has_mutations_annotation) {
+        if (!$class_storage->has_mutations_annotation || $class_storage->is_marker_interface) {
             return Capabilities::ALL;
         }
 
@@ -118,8 +118,8 @@ final class MethodCallPurityAnalyzer
     /**
      * What any method of an object of the type $type may do, as the class contract of each part of
      * it caps them: the parts of an intersection, and the bound of a template. A method may be one
-     * of any part, so it may do what any of them allows; a part that isn't a class, or one without
-     * a contract, allows anything.
+     * of any part, so it may do what any of them allows; a part that isn't a class, one without a
+     * contract, or a marker interface, whose contract caps no implementer, allows anything.
      */
     public static function getClassContractCapabilities(Codebase $codebase, Atomic $type): int
     {
@@ -144,7 +144,7 @@ final class MethodCallPurityAnalyzer
 
             $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
-            if (!$class_storage->has_mutations_annotation) {
+            if (!$class_storage->has_mutations_annotation || $class_storage->is_marker_interface) {
                 return Capabilities::ALL;
             }
 

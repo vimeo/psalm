@@ -4359,6 +4359,30 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'methodCalledByAnUnknownNameOfAMarkerInterfaceIsImpure' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @psalm-capabilities read-props */
+                    function call(Marker $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'callableArrayWithAnUnknownMethodOfAMarkerInterfaceIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    interface Marker {}
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Logs&Marker $object, string $name): void {
+                        $callable = [$object, $name];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'methodCalledByAnUnknownNameOnAnIntersectionMayDoWhatAnyPartAllows' => [
                 'code' => '<?php
                     /** @psalm-capabilities io */
