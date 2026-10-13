@@ -2229,6 +2229,15 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on time requires time',
             ],
+            'callOnMixedMayDoAnything' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function pick(mixed $selector): mixed {
+                        /** @psalm-suppress MixedFunctionCall */
+                        return $selector(1);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - The context is read-globals but function call on mixed requires impure',
+            ],
             'dateWithoutTimestampReadsTheClock' => [
                 'code' => '<?php
                     /** @psalm-pure */
