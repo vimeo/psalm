@@ -1990,12 +1990,22 @@ final class TaintFlowResolution
 
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
+            $next_added = ($added | $path->added_taints) & ~$removed_taints;
+
+            // What a builtin decodes from a string (json_decode(), unserialize(), parse_str(), ...) can be an array
+            // or an object again, whatever the string's type took away: decoded user input can be a NoSQL query.
+            // In the walk of an entry, the taints the calls keep aren't known: any of them may be user input.
+            if ($path->type === DataFlowGraph::UNSERIALIZATION_PATH_TYPE
+                && (($kept | $next_added) & ~$removed_taints & $this->codebase->getInputTaints()) !== 0
+            ) {
+                $next_added |= TaintKind::ARRAY_ONLY;
+            }
 
             $this->takeEdge(
                 $context,
                 $open_assignments,
                 $kept & ~$removed_taints,
-                ($added | $path->added_taints) & ~$removed_taints,
+                $next_added,
                 $state,
                 0,
                 $from_id,

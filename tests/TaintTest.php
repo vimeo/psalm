@@ -2431,6 +2431,26 @@ final class TaintTest extends TestCase
 
                     echo fetch()->getStatusCode();',
             ],
+            'nosqlSinkNotTaintedByDecodedSecret' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    /** @psalm-taint-source system_secret */
+                    function secret(): string {
+                        return "";
+                    }
+
+                    // only decoded user input becomes a NoSQL query again
+                    query(json_decode(secret(), true));',
+            ],
+            'nosqlSinkNotTaintedByDecodedLiteral' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    query(json_decode("{\\"name\\": \\"x\\"}", true));',
+            ],
             'nosqlSinkNotTaintedByFlowIntoStringReturn' => [
                 'code' => '<?php
                     /** @psalm-taint-sink nosql $filter */
@@ -7751,6 +7771,46 @@ final class TaintTest extends TestCase
                         // $_GET["filter"] may be an array like ["username" => ["$ne" => null]]
                         return new MongoDB\Driver\Query((array) $_GET["filter"]);
                     }',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromJsonDecodedString' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    // the string cast removes the nosql taint, but the decoded value can be ["$ne" => null] again
+                    $json = (string) $_GET["filter"];
+                    query(json_decode($json, true));',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromJsonDecodedStringParameter' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    function search(string $json): void {
+                        query(["name" => json_decode($json)]);
+                    }
+
+                    search((string) $_POST["json"]);',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromParseStr' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    // "name[$ne]=" gives ["name" => ["$ne" => ""]]
+                    parse_str((string) $_SERVER["QUERY_STRING"], $params);
+                    query($params);',
+                'error_message' => 'TaintedNosql',
+            ],
+            'taintedNosqlFromParseIniString' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink nosql $filter */
+                    function query(mixed $filter): void {}
+
+                    query(parse_ini_string((string) $_POST["settings"], true));',
                 'error_message' => 'TaintedNosql',
             ],
             'taintedInputFromFunctionReturnType' => [

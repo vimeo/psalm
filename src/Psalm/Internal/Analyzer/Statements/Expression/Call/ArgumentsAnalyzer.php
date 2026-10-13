@@ -82,7 +82,7 @@ final class ArgumentsAnalyzer
 {
     /**
      * @see self::getByRefFlowInputs()
-     * @var array<lowercase-string, array<string, list<string>>>|null
+     * @var array<lowercase-string, array<string, array<int|string, string>>>|null
      */
     private static ?array $by_ref_flow_map = null;
 
@@ -1456,15 +1456,34 @@ final class ArgumentsAnalyzer
             // a builtin filling this parameter with data given to other ones (preg_match(), ...)
             if ($function_storage === null
                 && $function_param !== null
-                && $statements_analyzer->getTaintFlowGraphWithSuppressed()
+                && ($graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
             ) {
-                foreach (self::getByRefFlowInputs($method_id, $function_param->name) as $input_name) {
+                foreach (self::getByRefFlowInputs($method_id, $function_param->name) as $input_key => $input_value) {
+                    [$input_name, $path_type] = is_int($input_key) ? [$input_value, null] : [$input_key, $input_value];
                     $input_arg = self::getArgForParam($args, $function_params, $input_name);
                     $input_type = $input_arg ? $statements_analyzer->node_data->getType($input_arg->value) : null;
 
-                    if ($input_type && $input_type->parent_nodes) {
-                        $by_ref_out_type = $by_ref_out_type->addParentNodes($input_type->parent_nodes);
+                    if (!$input_type || !$input_type->parent_nodes) {
+                        continue;
                     }
+
+                    if ($path_type === null) {
+                        $by_ref_out_type = $by_ref_out_type->addParentNodes($input_type->parent_nodes);
+
+                        continue;
+                    }
+
+                    $flow_node = DataFlowNode::getForAssignment(
+                        $method_id . '($' . $function_param->name . ')',
+                        $call_location,
+                    );
+                    $graph->addNode($flow_node);
+
+                    foreach ($input_type->parent_nodes as $parent_node) {
+                        $graph->addPath($parent_node, $flow_node, $path_type);
+                    }
+
+                    $by_ref_out_type = $by_ref_out_type->addParentNodes([$flow_node->id => $flow_node]);
                 }
             }
 
@@ -1504,16 +1523,16 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The parameters of a builtin whose taints flow into its by-reference parameter $param_name
-     * (see dictionaries/InternalTaintByRefFlowMap.php)
+     * The parameters of a builtin whose taints flow into its by-reference parameter $param_name, each as a value, or
+     * as a key whose value is the type of the path it flows through (see dictionaries/InternalTaintByRefFlowMap.php)
      *
-     * @return list<string>
+     * @return array<int|string, string>
      * @psalm-capabilities read-globals|write-globals
      */
     private static function getByRefFlowInputs(string $function_id, string $param_name): array
     {
         if (self::$by_ref_flow_map === null) {
-            /** @var array<lowercase-string, array<string, list<string>>> */
+            /** @var array<lowercase-string, array<string, array<int|string, string>>> */
             self::$by_ref_flow_map = require(dirname(__DIR__, 7) . '/dictionaries/InternalTaintByRefFlowMap.php');
         }
 
