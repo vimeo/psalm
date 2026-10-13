@@ -168,6 +168,19 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the static variable $var_id of the function-like $function_id holds, for all its calls as a static
+     * property's: what one call leaves in it, the next ones read.
+     *
+     * @psalm-pure
+     */
+    public static function getForStaticVariable(string $function_id, string $var_id): self
+    {
+        $id = strtolower($function_id) . ' static ' . $var_id;
+
+        return self::make($id, $function_id . ' static ' . $var_id, null);
+    }
+
+    /**
      * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
      * overrides of the classes extending it: shared by all those calls, so it has no location.
      *

@@ -504,6 +504,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function isSharedState(DataFlowNode $node): bool
+    {
+        return isset($this->shared_state[$node->id]);
+    }
+
+    /**
      * Records that the variable whose node $node is was assigned a string starting with $start
      *
      * @psalm-external-mutation-free
