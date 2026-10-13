@@ -27,7 +27,7 @@ abstract class TaintCasesTestCase extends TestCase
     protected const SHARDS = 4;
 
     /**
-     * @return array<string, array{code: string}>
+     * @return array<string, array{code: string, php_version?: string}>
      */
     abstract public static function validCases(): array;
 
@@ -59,7 +59,7 @@ abstract class TaintCasesTestCase extends TestCase
     }
 
     #[DataProvider('validCases')]
-    public function testValidCode(string $code): void
+    public function testValidCode(string $code, string $php_version = '8.0'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -73,7 +73,7 @@ abstract class TaintCasesTestCase extends TestCase
             $code,
         );
 
-        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $this->project_analyzer->trackTaintedInputs();
         foreach (TaintTest::IGNORE as $issue_name) {
@@ -116,10 +116,10 @@ abstract class TaintCasesTestCase extends TestCase
      * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
      */
     #[DataProvider('validCases')]
-    public function testValidCodeTrackingUnusedVariables(string $code): void
+    public function testValidCodeTrackingUnusedVariables(string $code, string $php_version = '8.0'): void
     {
         $this->trackUnusedVariables();
-        $this->testValidCode($code);
+        $this->testValidCode($code, $php_version);
     }
 
     /**

@@ -2059,6 +2059,34 @@ final class TaintTest extends TestCase
                     $tainted = new Url((string) $_GET["url"]);
                     fetch(new Url("https://example.com/"));',
             ],
+            'dontTaintAReadonlyObjectBuiltFromAnotherCallsArgument' => [
+                // A readonly object cannot change after its construction: its properties hold its own taints
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    echo $safe->text;',
+                'php_version' => '8.2',
+            ],
+            'dontTaintAnObjectWithOnlyReadonlyPropertiesBuiltFromAnotherCallsArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-suppress PropertyNotSetInConstructor A virtual property, which has nothing to set */
+                    final class Greeting {
+                        public string $shouted {
+                            get => strtoupper($this->text);
+                        }
+
+                        public function __construct(public readonly string $text) {}
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    echo $safe->text;',
+                'php_version' => '8.4',
+            ],
             'dontTaintAContainerWithWhatAnotherOneHolds' => [
                 'code' => '<?php // --taint-analysis
                     $tainted = new SplQueue();
@@ -4191,6 +4219,32 @@ final class TaintTest extends TestCase
                     store();
                     echo Settings::get("a");',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintAReadonlyObjectBuiltFromUserInput' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    $safe = new Greeting("Hello");
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    echo $tainted->text;',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'taintAReadonlyObjectBuiltFromUserInputInTheFunctionItIsGivenTo' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {}
+                    }
+
+                    function show(Greeting $greeting): void {
+                        echo $greeting->text;
+                    }
+
+                    show(new Greeting((string) $_GET["text"]));',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
             ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
