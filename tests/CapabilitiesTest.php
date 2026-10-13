@@ -547,6 +547,89 @@ final class CapabilitiesTest extends TestCase
                         return spl_autoload_functions();
                     }',
             ],
+            'splObjectStorageOnlyRequiresWritingItsOwnContents' => [
+                'code' => '<?php
+                    final class Node {
+                        /** @var SplObjectStorage<Node, true> */
+                        private SplObjectStorage $seen;
+
+                        /** @psalm-capabilities read-props */
+                        public function __construct() {
+                            /** @var SplObjectStorage<Node, true> $seen */
+                            $seen = new SplObjectStorage();
+                            $seen[$this] = true;
+                            $this->seen = $seen;
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        public function hasSeen(Node $node): bool {
+                            return isset($this->seen[$node]) && $this->seen->contains($node) && count($this->seen) > 0;
+                        }
+                    }
+
+                    /** @psalm-capabilities pure */
+                    function useFreshStorage(stdClass $key): int {
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $storage->attach($key, 1);
+                        $storage[$key] = $storage[$key] + 1;
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $other = new SplObjectStorage();
+                        $other->addAll($storage);
+                        $other->detach($key);
+                        unset($storage[$key]);
+                        return count($storage) + count($other);
+                    }
+
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function addToStorage(SplObjectStorage $storage, stdClass $key): void {
+                        $storage[$key] = 1;
+                        $storage->attach(new stdClass(), 2);
+                    }',
+            ],
+            'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities pure */
+                    function useFreshStorage(object $key): bool {
+                        $storage = new SplObjectStorage();
+                        $storage->offsetSet($key, "a");
+                        $storage->offsetSet($key, $storage->offsetGet($key) . "a");
+                        return $storage->offsetExists($key);
+                    }',
+            ],
+            'mutatingAnSplObjectStorageForgetsWhatItsReadersReturned' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props|write-props|io
+                     */
+                    function attachOnce(SplObjectStorage $storage, stdClass $key): void {
+                        if ($storage->contains($key)) {
+                            return;
+                        }
+                        $storage->attach($key, 1);
+                        if ($storage->contains($key)) {
+                            echo "attached";
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function detachFresh(stdClass $key): void {
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $storage[$key] = 1;
+                        if (!isset($storage[$key])) {
+                            return;
+                        }
+                        unset($storage[$key]);
+                        if (!isset($storage[$key])) {
+                            echo "detached";
+                        }
+                    }',
+            ],
             'traversableWithPurityCombinesWithIterable' => [
                 'code' => '<?php
                     /**
@@ -1951,6 +2034,17 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'writingACallersSplObjectStorageRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props
+                     */
+                    function add(SplObjectStorage $storage, stdClass $key): void {
+                        $storage[$key] = 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method SplObjectStorage::offsetSet requires write-props',
+            ],
             'theLastPcreErrorIsNotPure' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1983,6 +2077,12 @@ final class CapabilitiesTest extends TestCase
                         return $storage->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'splObjectStorageSubclassesKeepItsContract' => [
+                'code' => '<?php
+                    /** @extends SplObjectStorage<object, mixed> */
+                    final class Storage extends SplObjectStorage {}',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49 - SplObjectStorage is marked with @psalm-capabilities read-props|write-this-props, but Storage is not',
             ],
             'splHeapSubclassesMustCompareWithoutSideEffects' => [
                 'code' => '<?php

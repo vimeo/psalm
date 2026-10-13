@@ -2503,7 +2503,7 @@ final class ArrayAssignmentTest extends TestCase
                     $key = [1,2,3];
                     $storage = new \SplObjectStorage();
                     $storage[$key] = "test";',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'IncompatibleTypeParameters',
             ],
             'listUsedAsArrayWrongType' => [
                 'code' => '<?php
