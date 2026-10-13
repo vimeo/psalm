@@ -27,7 +27,13 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+
+use function array_pop;
+use function array_values;
 
 /**
  * @internal
@@ -72,7 +78,94 @@ final class MethodCallPurityAnalyzer
         bool $receiver_is_fresh = false,
         ?int $callee_capabilities = null,
     ): int {
-        $capabilities = ($callee_capabilities ?? $method_storage->capabilities) & ~Capabilities::READ_PROPS;
+        return self::getReceiverCallCapabilities(
+            $statements_analyzer,
+            $var,
+            $callee_capabilities ?? $method_storage->capabilities,
+            $receiver_is_fresh,
+        );
+    }
+
+    /**
+     * The capabilities a call of a method of the class of $class_storage whose name isn't known
+     * (`$obj->{$name}()`) requires from its caller, given the receiver: any of its methods may run,
+     * `__call()` too, which only its class contract caps. On an intersection, the method may be one
+     * of any of the other parts, $intersection_types, each capped by its own contract. Without one,
+     * the call may do anything.
+     *
+     * @param array<string, Atomic> $intersection_types
+     */
+    public static function getUnknownMethodCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $var,
+        ClassLikeStorage $class_storage,
+        array $intersection_types = [],
+    ): int {
+        if (!$class_storage->has_mutations_annotation) {
+            return Capabilities::ALL;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $capabilities = $class_storage->capabilities;
+
+        foreach ($intersection_types as $intersection_type) {
+            $capabilities |= self::getClassContractCapabilities($codebase, $intersection_type);
+        }
+
+        return self::getReceiverCallCapabilities($statements_analyzer, $var, $capabilities);
+    }
+
+    /**
+     * What any method of an object of the type $type may do, as the class contract of each part of
+     * it caps them: the parts of an intersection, and the bound of a template. A method may be one
+     * of any part, so it may do what any of them allows; a part that isn't a class, or one without
+     * a contract, allows anything.
+     */
+    public static function getClassContractCapabilities(Codebase $codebase, Atomic $type): int
+    {
+        $capabilities = Capabilities::NONE;
+        $types = [$type];
+
+        while (($type = array_pop($types)) !== null) {
+            if ($type instanceof TTemplateParam) {
+                $types = [
+                    ...$types,
+                    ...array_values($type->as->getAtomicTypes()),
+                    ...array_values($type->getIntersectionTypes()),
+                ];
+                continue;
+            }
+
+            if (!$type instanceof TNamedObject
+                || !$codebase->classlikes->classOrInterfaceExists($type->value)
+            ) {
+                return Capabilities::ALL;
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($type->value);
+
+            if (!$class_storage->has_mutations_annotation) {
+                return Capabilities::ALL;
+            }
+
+            $capabilities |= $class_storage->capabilities;
+            $types = [...$types, ...array_values($type->getIntersectionTypes())];
+        }
+
+        return $capabilities;
+    }
+
+    /**
+     * The capabilities a call of a method that may use $method_capabilities requires from its
+     * caller, given the receiver (see getMethodCapabilities())
+     */
+    public static function getReceiverCallCapabilities(
+        StatementsAnalyzer $statements_analyzer,
+        Expr $var,
+        int $method_capabilities,
+        bool $receiver_is_fresh = false,
+    ): int {
+        $capabilities = $method_capabilities & ~Capabilities::READ_PROPS;
 
         if (!self::isFromGlobalState($statements_analyzer, $var)
             && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
