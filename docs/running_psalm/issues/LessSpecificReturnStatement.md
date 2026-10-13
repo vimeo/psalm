@@ -8,7 +8,8 @@ Emitted when a return statement is more general than the return type given for t
 class A {}
 class B extends A {}
 
-function foo() : B {
+function foo(): B
+{
     return new A(); // emitted here
 }
 ```
