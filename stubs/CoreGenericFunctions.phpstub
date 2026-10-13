@@ -1101,7 +1101,7 @@ function escapeshellcmd(string $command) : string {}
 function strlen(string $string) : int {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1116,7 +1116,7 @@ function strlen(string $string) : int {}
 function str_replace($search, $replace, $subject, &$count = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1277,7 +1277,7 @@ function strrev(string $string): string {}
 function str_word_count(string $string, int $format = 0, string|null $characters = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
@@ -1290,7 +1290,7 @@ function str_word_count(string $string, int $format = 0, string|null $characters
 function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1381,7 +1381,7 @@ function iterator_count(Traversable $iterator): int {}
 function iterator_apply(Traversable $iterator, callable $callback, ?array $args = null): int {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  * @template TFlags as int
  *
  * @param non-empty-string $pattern
@@ -1417,7 +1417,7 @@ function iterator_apply(Traversable $iterator, callable $callback, ?array $args 
 function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int $offset = 0) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  * @template TFlags as int-mask<0, 256, 512>
  *
  * @param non-empty-string $pattern
