@@ -3913,6 +3913,45 @@ final class TaintTest extends TestCase
                     show(["city" => "Paris"], ["city" => ""]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchOfAnotherKeyOfAnObjectAssignedTheElementsUnderTheirKey' => [
+                // An object puts what is assigned to it where its offsetSet() does: here under another key.
+                'code' => '<?php // --taint-analysis
+                    /** @implements ArrayAccess<string, string> */
+                    final class CaseInsensitiveMap implements ArrayAccess {
+                        /** @var array<string, string> */
+                        private array $values = [];
+
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->values[strtolower($offset)]);
+                        }
+
+                        public function offsetGet(mixed $offset): string {
+                            return $this->values[strtolower($offset)] ?? "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            $this->values[strtolower((string) $offset)] = $value;
+                        }
+
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->values[strtolower($offset)]);
+                        }
+                    }
+
+                    /** @param array<string, string> $data */
+                    function show(array $data): void {
+                        $map = new CaseInsensitiveMap();
+                        foreach ($data as $key => $value) {
+                            $map[$key] = $value;
+                        }
+                        echo $map["city"];
+                    }
+
+                    $data = [];
+                    $data["City"] = (string)($_GET["city"] ?? "");
+                    show($data);',
+                'error_message' => 'TaintedHtml',
+            ],
             'fetchOfTheKeyOfAnAssignmentOfAnElementWhoseFetchTakesMoreThanTheArrayHolds' => [
                 'code' => '<?php
                     $key = "type";
