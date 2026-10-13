@@ -24,9 +24,9 @@ namespace MongoDB\BSON
     {
         /**
          * Without an id, the constructor generates a new one from the clock and a counter of the process. Given an
-         * id (not null), it only validates it: such a `new ObjectId($id)` costs nothing (see NewAnalyzer).
+         * id, it only validates it.
          *
-         * @psalm-capabilities read-globals|write-globals|io
+         * @psalm-capabilities ($id is null ? read-globals|write-globals|io : pure)
          */
         final public function __construct(?string $id = null)
         {
