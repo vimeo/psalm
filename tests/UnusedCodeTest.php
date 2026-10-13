@@ -1385,6 +1385,14 @@ final class UnusedCodeTest extends TestCase
                     bar(foo());
                     echo "hello";',
             ],
+            'arrayMapImpureCallback' => [
+                'code' => '<?php
+                    array_map("unlink", [__FILE__]);',
+            ],
+            'arrayMapImpureCallback2' => [
+                'code' => '<?php
+                    array_map("header", ["Cache-Control: no-cache"]);',
+            ],
         ];
     }
 
