@@ -583,9 +583,7 @@ final class NewAnalyzer extends CallAnalyzer
                         );
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
-                        if ($fq_class_name !== 'SplObjectStorage'
-                            && !isset($unconstrainable_templates[$template_name])
-                        ) {
+                        if (!isset($unconstrainable_templates[$template_name])) {
                             $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                             $lower_bounds = [];
