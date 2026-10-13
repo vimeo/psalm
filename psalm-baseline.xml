@@ -1343,9 +1343,6 @@
     <ComplexMethod>
       <code><![CDATA[infer]]></code>
     </ComplexMethod>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$fq_classlike_name]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/TernaryAnalyzer.php">
     <RiskyTruthyFalsyComparison>
