@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -545,9 +546,7 @@ final class AtomicPropertyFetchAnalyzer
             $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
         }
 
-        if (!($class_storage->isExternalMutationFree()
-            && $class_property_type->allow_mutations)
-        ) {
+        if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
             if ($context->inside_unset) {
                 $statements_analyzer->signalMutation(
                     $stmt_var_id === '$this'
@@ -1144,6 +1143,22 @@ final class AtomicPropertyFetchAnalyzer
             $stmt,
             new Union($case_values),
         );
+    }
+
+    /**
+     * Whether accessing a property of the object needs no capability: the object is immutable, or the
+     * caller created it from a class whose contract keeps its changes to itself, so nobody else can see
+     * or change its properties. This is the same waiver a method call on such an object gets.
+     */
+    public static function isFreeToAccess(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        ClassLikeStorage $class_storage,
+    ): bool {
+        return $class_storage->isMutationFree()
+            || ($class_storage->isExternalMutationFree()
+                && MethodCallPurityAnalyzer::receiverAllowsInternalMutations($statements_analyzer, $stmt->var)
+                && !MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $stmt->var));
     }
 
     private static function handleUndefinedProperty(
