@@ -5342,6 +5342,33 @@ final class TaintTest extends TestCase
                     (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintAPropertyAnInheritedMethodSetsBeforeACallWithAnUntaintedArgument' => [
+                // the calls of an inherited method share the path into its body for the class: the untainted
+                // argument of a later call removes nothing from what an earlier one passed
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("k", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
                 'code' => '<?php // --taint-analysis
                     class Field {
