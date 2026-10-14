@@ -29,7 +29,7 @@ use function strtolower;
  */
 final class InheritedMethodTaints
 {
-    /** The class of the object a call of an inherited method (parent::, self::) runs on, set on its arguments */
+    /** The class of the object a call of an inherited method (parent::, self::, A::) runs on, set on its arguments */
     public const BODY_CLASS_ATTRIBUTE = 'inheritedMethodBodyClass';
 
     /** @var array<string, string|null> class (lowercase) and declaring method id => suffix of its nodes, if any */
