@@ -2654,6 +2654,14 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'co\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'co\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -2706,6 +2714,10 @@ return array (
   array (
     0 => 'mixed',
     'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
   ),
   'co\\context::__construct' => 
   array (
@@ -40495,6 +40507,15 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+    'callback=' => 'callable',
+  ),
+  'swoole\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -40563,6 +40584,10 @@ return array (
     'how' => 'mixed',
   ),
   'swoole\\client::sleep' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client::verifypeercert' => 
   array (
     0 => 'mixed',
   ),
@@ -40812,6 +40837,14 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole\\coroutine\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\coroutine\\client::getpeername' => 
   array (
     0 => 'mixed',
@@ -40864,6 +40897,10 @@ return array (
   array (
     0 => 'mixed',
     'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\coroutine\\context::__construct' => 
   array (
@@ -44482,6 +44519,15 @@ return array (
     'timeout=' => 'mixed',
     'sock_flag=' => 'mixed',
   ),
+  'swoole_client::enablessl' => 
+  array (
+    0 => 'mixed',
+    'callback=' => 'callable',
+  ),
+  'swoole_client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole_client::getpeername' => 
   array (
     0 => 'mixed',
@@ -44550,6 +44596,10 @@ return array (
     'how' => 'mixed',
   ),
   'swoole_client::sleep' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::verifypeercert' => 
   array (
     0 => 'mixed',
   ),

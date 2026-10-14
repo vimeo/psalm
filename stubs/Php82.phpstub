@@ -1,4 +1,10 @@
 <?php
+
+// Reopens of pre-existing classes to refine their types / add PHP 8.2 methods. These stay version
+// gated (loaded only when analysing >= 8.2). The genuinely-new 8.2 class SensitiveParameterValue
+// lives in PhpVersionedClasses.phpstub (always loaded, `@since` tagged); the refined str_split
+// signature lives in Php82Functions.phpstub.
+
 namespace {
     class ReflectionClass implements Reflector {
         /** @psalm-pure */
@@ -32,32 +38,5 @@ namespace {
 
         /** @psalm-return (Start is string ? Iterator<int, DateTime> : Iterator<int, Start>) */
         public function getIterator(): Iterator {}
-    }
-
-    /**
-    * @psalm-pure
-    * @param positive-int $length
-    * @return list<non-empty-string>
-    *
-    * @psalm-flow ($string) -> return
-    */
-    function str_split(string $string, int $length = 1) {}
-
-    /**
-     * @psalm-immutable
-     * @template TValue
-     *
-     * @since 8.2.0
-     */
-    final class SensitiveParameterValue
-    {
-        /** @param TValue $value */
-        public function __construct(private readonly mixed $value) {}
-
-        /** @return array<never, never> */
-        public function __debugInfo(): array {}
-
-        /** @return TValue */
-        public function getValue(): mixed {}
     }
 }

@@ -206,7 +206,7 @@ final class TryAnalyzer
                         $context->self,
                         $context->calling_method_id,
                         $statements_analyzer->getSuppressedIssues(),
-                        new ClassLikeNameOptions(true),
+                        new ClassLikeNameOptions(true, context: $context),
                     );
                 }
 

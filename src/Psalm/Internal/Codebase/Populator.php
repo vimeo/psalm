@@ -19,7 +19,9 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\PropertyStorage;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -31,10 +33,12 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_shift;
 use function array_splice;
 use function count;
 use function in_array;
 use function key;
+use function krsort;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -67,6 +71,8 @@ final class Populator
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
+
+        $this->populateTransitiveMixins();
 
         $this->progress->debug('ClassLikeStorage is populated' . "\n");
 
@@ -564,6 +570,98 @@ final class Populator
         $parent_storage->has_children = true;
     }
 
+    /**
+     * Second populate pass: resolve transitive `@mixin` chains.
+     *
+     * `namedMixins` holds only the mixins a class declares or inherits from its parent, and the analyzers look
+     * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
+     * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
+     *
+     * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
+     * inherited from its parent class. `namedMixins` itself is never modified, which keeps the result
+     * independent of population order and leaves declaration-site checks on the declared mixins only.
+     */
+    private function populateTransitiveMixins(): void
+    {
+        foreach ($this->classlike_storage_provider->getNew() as $storage) {
+            if ($storage->namedMixins) {
+                $storage->transitiveNamedMixins = $this->resolveTransitiveMixins($storage);
+            }
+        }
+    }
+
+    /**
+     * Breadth-first walk of a host's `@mixin` chain, returning the mixins not already in its `namedMixins`,
+     * deepest hop first and in declaration order within a hop.
+     *
+     * Only named (non-generic) mixins are followed: a generic hop such as `@mixin Collection<T>` needs its
+     * template arguments bound per hop, so it is neither collected nor descended into. A mutual `@mixin`
+     * (A mixes B, B mixes A) terminates via the visited set.
+     *
+     * @return list<TNamedObject>
+     */
+    private function resolveTransitiveMixins(ClassLikeStorage $storage): array
+    {
+        $storage_name_lc = strtolower($storage->name);
+
+        $direct = [];
+        $queue = [];
+        foreach ($storage->namedMixins as $mixin) {
+            $direct[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
+            $queue[] = [$mixin, 1];
+        }
+
+        $visited = [$storage_name_lc => true];
+        $by_depth = [];
+
+        while ($queue) {
+            [$mixin, $depth] = array_shift($queue);
+
+            if ($mixin instanceof TGenericObject) {
+                continue;
+            }
+
+            $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+
+            if (isset($visited[$mixin_name_lc])) {
+                continue;
+            }
+
+            $visited[$mixin_name_lc] = true;
+
+            try {
+                $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
+            } catch (InvalidArgumentException) {
+                // A missing mixin target is reported as UndefinedDocblockClass where it is declared. Unlike a
+                // missing parent it is not recorded as an invalid dependency, which would turn every call on
+                // the host into MixedMethodCall.
+                continue;
+            }
+
+            // A change anywhere in the chain must invalidate the host.
+            $mixin_storage->dependent_classlikes[$storage_name_lc] = true;
+
+            if ($storage->location) {
+                $this->file_reference_provider->addFileInheritanceToClass(
+                    $storage->location->file_path,
+                    $mixin_name_lc,
+                );
+            }
+
+            if (!isset($direct[$mixin_name_lc])) {
+                $by_depth[$depth][] = $mixin;
+            }
+
+            foreach ($mixin_storage->namedMixins as $deeper_mixin) {
+                $queue[] = [$deeper_mixin, $depth + 1];
+            }
+        }
+
+        krsort($by_depth);
+
+        return array_merge(...$by_depth);
+    }
+
     private function populateInterfaceData(
         ClassLikeStorage $storage,
         ClassLikeStorage $interface_storage,
@@ -999,8 +1097,33 @@ final class Populator
                             = $declaring_method_id;
                     }
                 } else {
-                    $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
-                        = $declaring_method_id;
+                    // A method can end up in $parent_storage->inheritable_method_ids
+                    // while being private -- this happens when it was originally declared in a trait, since
+                    // traits copy even private methods into every using class (see
+                    // FunctionLikeNodeScanner::$classlike_storage->is_trait carve-out). Such a private method
+                    // is not part of the externally visible API and PHP does not consider it overridable
+                    // across a real class boundary, so it must not be recorded as "overridden" here -- doing
+                    // so produced a MissingOverrideAttribute false positive whenever a subclass re-declared
+                    // (or re-imported via the same trait) a same-named private method.
+                    $declaring_class_storage = $this->classlike_storage_provider->get(
+                        $declaring_method_id->fq_class_name,
+                    );
+                    $declaring_method_storage = $declaring_class_storage->methods[$method_name_lc] ?? null;
+
+                    // A `use T { f as public; }` adaptation does not rewrite the copied method's own
+                    // visibility -- Psalm keeps it in trait_visibility_map on the using class and every
+                    // consumer overlays it (see MethodVisibilityAnalyzer). Reading only
+                    // $declaring_method_storage->visibility would therefore still see `private` for a
+                    // method the parent exposes publicly, and would wrongly drop a real override.
+                    $declaring_visibility = $parent_storage->trait_visibility_map[$method_name_lc]
+                        ?? $declaring_method_storage?->visibility;
+
+                    if ($declaring_method_storage === null
+                        || $declaring_visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    ) {
+                        $storage->overridden_method_ids[$method_name_lc][$declaring_method_id->fq_class_name]
+                            = $declaring_method_id;
+                    }
                 }
 
                 if (isset($parent_storage->overridden_method_ids[$method_name_lc])

@@ -230,7 +230,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/CommentAnalyzer.php">
@@ -1268,7 +1267,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$string_type]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1846,7 +1844,6 @@
       <code><![CDATA[$e]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$matches[0]]]></code>
       <code><![CDATA[$method_tree->children[0]]]></code>
       <code><![CDATA[$method_tree->children[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1934,7 +1931,6 @@
       <code><![CDATA[$docblock_info->return_type_line_number]]></code>
       <code><![CDATA[$docblock_info->return_type_line_number]]></code>
       <code><![CDATA[$docblock_info->return_type_start]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
@@ -2370,7 +2366,6 @@
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$parse_tree->children[0]]]></code>
-      <code><![CDATA[$parse_tree->condition->children[0]]]></code>
       <code><![CDATA[array_keys($offset_template_data)[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$array_param_name])[0]]]></code>
       <code><![CDATA[array_keys($template_type_map[$class_name])[0]]]></code>
@@ -2512,6 +2507,7 @@
   </file>
   <file src="src/Psalm/Storage/FunctionLikeParameter.php">
     <ImpureMethodCall>
+      <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>
       <code><![CDATA[traverse]]></code>

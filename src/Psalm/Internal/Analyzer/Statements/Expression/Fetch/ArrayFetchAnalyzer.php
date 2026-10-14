@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -27,6 +28,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -85,6 +87,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -111,6 +114,8 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
     ): bool {
+        NullsafeChainState::None->markOn($stmt);
+
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
@@ -205,6 +210,8 @@ final class ArrayFetchAnalyzer
         }
 
         $can_store_result = false;
+        $chain_state = NullsafeChainState::None;
+        $own_nullable = false;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
@@ -227,6 +234,15 @@ final class ArrayFetchAnalyzer
                 return true;
             }
 
+            $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
+
+            if ($chain_state === NullsafeChainState::ShortCircuit) {
+                // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
+                $non_null_var_type = $stmt_var_type->getBuilder();
+                $non_null_var_type->removeType('null');
+                $stmt_var_type = $non_null_var_type->freeze();
+            }
+
             $stmt_type = self::getArrayAccessTypeGivenOffset(
                 $statements_analyzer,
                 $stmt,
@@ -237,6 +253,8 @@ final class ArrayFetchAnalyzer
                 $context,
                 null,
             );
+
+            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -342,6 +360,11 @@ final class ArrayFetchAnalyzer
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
+        }
+
+        if ($chain_state !== NullsafeChainState::None) {
+            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && !$new_offset_type->isUnionEmpty()) {
@@ -609,6 +632,26 @@ final class ArrayFetchAnalyzer
             $original_type_real = $type;
             $original_type = $type;
 
+            if ($type instanceof TTypeVariable) {
+                // A type variable minted for a class template at its construction
+                // site (Hack's `new Foo<_>(...)`) prints as, and is fetched
+                // through, the bound its constructor arguments inferred — just as
+                // the TTemplateParam branch below reads through `as`. Resolve it to
+                // that bound so `$var[0]` reaches the inferred element type; without
+                // this the bare variable falls through every array branch and is
+                // reported as a non-array despite printing like one.
+                $resolved = TypeVariableTracker::resolveTypeVariables(
+                    new Union([$type]),
+                    $codebase,
+                );
+
+                if ($resolved->isSingle()) {
+                    $type = $resolved->getSingleAtomic();
+                    $original_type = $type;
+                    $original_type_real = $type;
+                }
+            }
+
             if ($type instanceof TMixed
                 || $type instanceof TTemplateParam
                 || $type instanceof TNever
@@ -655,7 +698,7 @@ final class ArrayFetchAnalyzer
                         $array_access_type = new Union([new TNever]);
                     }
                 } else {
-                    if (!$context->inside_isset && !MethodCallAnalyzer::hasNullsafe($stmt->var)) {
+                    if (!$context->inside_isset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $extended_var_id .

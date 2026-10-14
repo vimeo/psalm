@@ -195,6 +195,8 @@ final class CoreStubsTest extends TestCase
                 '$b3===' => 'false',
                 '$c3===' => 'bool',
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'PHP80-str_* function assert non-empty-string' => [
             'code' => '<?php
@@ -308,6 +310,9 @@ final class CoreStubsTest extends TestCase
                 $d = __DIR__;
                 echo str_contains($d, "psalm");
             ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'glob return types' => [
             'code' => <<<'PHP'
@@ -464,18 +469,24 @@ final class CoreStubsTest extends TestCase
                 str_contains("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'str_starts_with literal haystack' => [
             'code' => '<?php
                 str_starts_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'str_ends_with literal haystack' => [
             'code' => '<?php
                 str_ends_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
     }
 }

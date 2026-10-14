@@ -19,6 +19,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -76,8 +77,6 @@ final class TypeHintResolver
         }
 
         if ($hint instanceof PhpParser\Node\IntersectionType) {
-            $type = null;
-
             if (!$hint->types) {
                 throw new UnexpectedValueException('Intersection type should not be empty');
             }
@@ -91,6 +90,13 @@ final class TypeHintResolver
                 );
             }
 
+            // Build the intersection structurally, like the docblock parser does. This runs while scanning, so
+            // class storage for the members may not be populated yet (and in a parallel scan whether it is depends
+            // on which files a worker happened to scan first). Any narrowing that needs class hierarchy data
+            // belongs to the analysis phase.
+            $first_type = null;
+            $extra_types = [];
+
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
@@ -102,23 +108,33 @@ final class TypeHintResolver
                     $analysis_php_version_id,
                 );
 
-                if ($resolved_type->hasScalarType()) {
-                    IssueBuffer::maybeAdd(
-                        new ParseError(
-                            'Intersection types cannot contain scalar types',
-                            $code_location,
-                        ),
-                    );
+                foreach ($resolved_type->getAtomicTypes() as $atomic_type) {
+                    if (!$atomic_type instanceof TNamedObject) {
+                        IssueBuffer::maybeAdd(
+                            new ParseError(
+                                $resolved_type->hasScalarType()
+                                    ? 'Intersection types cannot contain scalar types'
+                                    : 'Intersection types can only contain class types',
+                                $code_location,
+                            ),
+                        );
+
+                        return Type::getMixed();
+                    }
+
+                    if ($first_type === null) {
+                        $first_type = $atomic_type;
+                    } else {
+                        $extra_types[$atomic_type->getKey()] = $atomic_type;
+                    }
                 }
-
-                $type = Type::intersectUnionTypes($resolved_type, $type, $codebase);
             }
 
-            if ($type === null) {
-                $type = Type::getNever();
+            if ($extra_types) {
+                $first_type = $first_type->setIntersectionTypes([...$first_type->extra_types, ...$extra_types]);
             }
 
-            return $type;
+            return new Union([$first_type]);
         }
 
         $is_nullable = false;
