@@ -2493,6 +2493,47 @@ final class CapabilitiesTest extends TestCase
                         return $copy;
                     }',
             ],
+            'anElementOfAnArrayAccessPropertyIsWrittenByItsOffsetMethodsOnly' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Bag implements ArrayAccess {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->items[$offset]);
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function offsetGet(mixed $offset): int {
+                            return $this->items[$offset] ?? 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            if ($offset !== null) {
+                                $this->items[$offset] = $value;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->items[$offset]);
+                        }
+                    }
+
+                    final class Holder {
+                        /** @psalm-mutation-free */
+                        public function __construct(private readonly Bag $bag) {}
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function add(string $key, int $value): void {
+                            $this->bag[$key] = $value;
+                            unset($this->bag["old"]);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -5403,6 +5444,60 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'property assignment to Inner::$n on an object reached from global state requires write-props|write-globals',
+            ],
+            'writingAnElementOfAnArrayAccessPropertyChargesItsOffsetSet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Bag implements ArrayAccess {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->items[$offset]);
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function offsetGet(mixed $offset): int {
+                            return $this->items[$offset] ?? 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            if ($offset !== null) {
+                                $this->items[$offset] = $value;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->items[$offset]);
+                        }
+                    }
+
+                    final class Holder {
+                        /** @psalm-mutation-free */
+                        public function __construct(private readonly Bag $bag) {}
+
+                        /** @psalm-mutation-free */
+                        public function add(string $key): void {
+                            $this->bag[$key] = 1;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:36:29 - The context is read-props but method Bag::offsetSet requires write-props',
+            ],
+            'unsettingAnElementOfAnArrayPropertyWritesTheProperty' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function remove(): void {
+                            unset($this->items["x"]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
         ];
     }
