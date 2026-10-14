@@ -1983,6 +1983,12 @@ final class ArgumentAnalyzer
             }
         }
 
+        // the function-like whose body the argument enters: its return node, as InheritedMethodTaints names it
+        $declaring_storage = $function_storage;
+        $declaring_return_id = $called_body_suffix !== null && $called_declaring_method_id
+            ? strtolower($codebase->methods->getCasedMethodId($called_declaring_method_id)) . $called_body_suffix
+            : strtolower($cased_method_id);
+
         if ($method_id && $taint_flow_graph && $called_body_suffix === null) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -2003,6 +2009,7 @@ final class ArgumentAnalyzer
                     $method_id->fq_class_name,
                     $declaring_method_id,
                 );
+                $declaring_return_id = strtolower($cased_body_method_id) . ($body_suffix ?? '');
                 // Specialized like $method_node: that node has an outgoing edge, so it is
                 // propagated from as-is rather than entered as a specialized call. An edge
                 // into the unspecialized declaring parameter would take the flow into the body
@@ -2028,13 +2035,13 @@ final class ArgumentAnalyzer
                 );
 
                 if ($param_key !== null) {
-                    $taint_flow_graph->addParamKey($new_sink, $param_key);
+                    $taint_flow_graph->addParamKey($new_sink, $param_key, $function_call_location);
                 }
             }
         }
 
         if ($param_key !== null) {
-            $taint_flow_graph?->addParamKey($method_node, $param_key);
+            $taint_flow_graph?->addParamKey($method_node, $param_key, $function_call_location);
         }
 
         $graph->addNode($method_node);
@@ -2076,6 +2083,22 @@ final class ArgumentAnalyzer
             $added_taints,
             $removed_taints,
         );
+
+        $callee_location = $declaring_storage?->stmt_location;
+
+        if ($taint_flow_graph && !$specialize_taint && $callee_location !== null) {
+            $taint_flow_graph->addCallArgument($argument_value_node, $function_call_location, $callee_location);
+        }
+
+        if ($taint_flow_graph
+            && $callee_location !== null
+            && $function_call_location->file_path === $callee_location->file_path
+            && $function_call_location->raw_file_start >= $callee_location->raw_file_start
+            && $function_call_location->raw_file_end <= $callee_location->raw_file_end
+        ) {
+            // a call the function-like makes to itself
+            $taint_flow_graph->addRecursiveCall($function_call_location, $callee_location, $declaring_return_id);
+        }
 
         if ($dispatch_node && $taint_flow_graph) {
             $taint_flow_graph->addPath($argument_value_node, $dispatch_node, 'arg', $added_taints, $removed_taints);
