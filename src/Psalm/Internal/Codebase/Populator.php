@@ -745,7 +745,8 @@ final class Populator
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
 
-                    // a method without its own tag keeps the one of the method it overrides
+                    // a method without its own tag keeps the tag of the method it overrides, while a method that
+                    // disallows named arguments is reported as MethodSignatureMismatch, as the parent allows them
                     if ($method_storage->allow_named_arg_calls
                         && !$method_storage->args_by_name
                         && !$method_storage->optional_args_by_name

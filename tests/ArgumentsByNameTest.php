@@ -87,6 +87,53 @@ final class ArgumentsByNameTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testOptionalArgumentsByNameCheckTheOptionalParametersOfTheParentMethod(): void
+    {
+        $this->project_analyzer->getConfig()->allow_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @optional-arguments-by-name */
+                    public function foo(int $a): void {}
+                }
+
+                final class B extends A {
+                    public function foo(int $c = 0): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testInterfaceTagReportsRenamesWhenNamedArgumentCallsAreDisallowed(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('ParamNameMismatch');
+
+        $this->project_analyzer->getConfig()->allow_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @stable-parameter-names */
+                interface I {
+                    public function foo(int $a): void;
+                }
+
+                final class C implements I {
+                    public function foo(int $b): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -180,6 +227,34 @@ final class ArgumentsByNameTest extends TestCase
                     (new Foo())->bar(1);',
                 'assertions' => [],
                 'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayMapCallbackIsNotReported' => [
+                'code' => '<?php
+                    /** @arguments-by-name */
+                    function process(string $item): string {
+                        return strtoupper($item);
+                    }
+
+                    array_map("process", ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorRenamesAreNotReported' => [
+                'code' => '<?php
+                    class A {
+                        /** @arguments-by-name */
+                        public function __construct(int $a) {}
+                    }
+
+                    final class B extends A {
+                        public function __construct(int $b) {
+                            parent::__construct(a: $b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam'],
                 'php_version' => '8.0',
             ],
             'positionalArgumentsBeforePhp80' => [
@@ -369,6 +444,21 @@ final class ArgumentsByNameTest extends TestCase
                 'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'noNamedArgumentsOverridingATaggedMethod' => [
+                'code' => '<?php
+                    class A {
+                        /** @arguments-by-name */
+                        public function foo(int $a): void {}
+                    }
+
+                    final class B extends A {
+                        /** @no-named-arguments */
+                        public function foo(int $a): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'conflictsWithNoNamedArguments' => [
                 'code' => '<?php
