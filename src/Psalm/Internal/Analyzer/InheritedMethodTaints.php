@@ -91,9 +91,9 @@ final class InheritedMethodTaints
             || $class_storage->is_trait
             || $class_storage->is_interface
             || !$codebase->config->isInProjectDirs($method_storage->location->file_path)
-            // only the files analyzed have the classes their bodies name scanned (all of them in a full run): the
-            // body of one that isn't may name a class that wasn't, e.g. narrowing `$this` to it
-            || !$codebase->analyzer->canReportIssues($method_storage->location->file_path)
+            // only a deep scan queues the classes a body names (a full run deep-scans every project file): the
+            // body of a file only shallow-scanned may name a class that wasn't scanned, e.g. narrowing `$this` to it
+            || !($codebase->scanner->getScannedFiles()[$method_storage->location->file_path] ?? false)
             || !$codebase->classExtends($class_storage->name, $declaring_class_storage->name)
         ) {
             return null;
