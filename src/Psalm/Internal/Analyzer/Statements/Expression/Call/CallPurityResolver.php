@@ -80,7 +80,12 @@ final class CallPurityResolver
 
         if ($bound !== null) {
             $arg_type = $statements_analyzer->node_data->getType($arg->value);
-            $closure = $arg_type !== null && $arg_type->isSingle() ? $arg_type->getSingleAtomic() : null;
+
+            if ($arg_type === null || !$arg_type->isSingle()) {
+                return null;
+            }
+
+            $closure = $arg_type->getSingleAtomic();
 
             if (!$closure instanceof TClosure
                 || ($bound->getId() !== $closure->purity->getId() && $bound->getId() !== $arg_type->getId())
@@ -323,7 +328,7 @@ final class CallPurityResolver
     /**
      * @param list<string> $exempt
      * @return CapabilitySet
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function resolveWithExemptions(Union $purity, array $exempt): int
     {
@@ -356,7 +361,6 @@ final class CallPurityResolver
 
     /**
      * @param array<array-key, Arg|VariadicPlaceholder> $args
-     * @psalm-capabilities read-props
      */
     private static function resolveMethodTemplateType(
         StatementsAnalyzer $statements_analyzer,

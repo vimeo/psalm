@@ -95,7 +95,7 @@ final class NewAnalyzer extends CallAnalyzer
      * @param array<string, array<string, Union>>|null $template_extended_params
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds
      * @psalm-assert-if-true !null $template_extended_params
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isGivenToBoundParentTemplate(
         string $fq_class_name,

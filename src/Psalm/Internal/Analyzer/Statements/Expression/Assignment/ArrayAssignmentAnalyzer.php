@@ -759,7 +759,7 @@ final class ArrayAssignmentAnalyzer
      * Assigning an offset of anything that may not be an array (an ArrayAccess object, a string...) may do anything
      * else with what it held, so the path keeps it all then.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getOverwritePathType(Union $array_type, TLiteralInt|TLiteralString $key): string
     {

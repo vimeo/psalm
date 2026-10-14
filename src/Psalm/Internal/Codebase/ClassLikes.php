@@ -1303,7 +1303,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     private static function getFinalInsertionPosition(CodeLocation $class_location): int
     {

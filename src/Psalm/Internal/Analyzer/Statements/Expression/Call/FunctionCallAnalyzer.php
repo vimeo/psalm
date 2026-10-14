@@ -1626,7 +1626,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
      * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
      * chosen by the client, whatever data it was built from.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isOnlyObjects(Union $type): bool
     {

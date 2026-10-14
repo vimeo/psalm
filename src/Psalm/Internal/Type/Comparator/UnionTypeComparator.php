@@ -607,6 +607,7 @@ final class UnionTypeComparator
      *
      * @param non-empty-list<array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}> $arm_bounds
      * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function mergeAlternativeArmBounds(Codebase $codebase, array $arm_bounds): array
     {
@@ -635,6 +636,7 @@ final class UnionTypeComparator
      *
      * @param list<list<array{string, TemplateBound}>> $arm_side_bounds one entry per matching arm
      * @return list<array{string, TemplateBound}>
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function mergeAlternativeArmSideBounds(Codebase $codebase, array $arm_side_bounds): array
     {
