@@ -5602,7 +5602,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo count(args());
-                    unlink(path("file"));',
+                    unlink(path("argv"));',
                 'error_message' => 'TaintedFile',
             ],
             'taintSinkWithoutParameter' => [

@@ -1308,8 +1308,7 @@ final class TaintFlowResolution
         int $slot = self::NO_SLOT,
         array $guards = [],
         string $call = '',
-    ): int
-    {
+    ): int {
         $key = (string) $slot . '|';
 
         foreach (self::FAMILIES as $family => $_) {
