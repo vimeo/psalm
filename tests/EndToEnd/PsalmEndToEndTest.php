@@ -217,6 +217,30 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    /**
+     * A partial run analyzes the body of a method a subclass inherits again for the subclass only if the file
+     * declaring it was deep-scanned: the classes the body names, like Other here, aren't scanned otherwise.
+     */
+    public function testPartialTaintAnalysisOfACallOfAnInheritedMethod(): void
+    {
+        foreach (['Base', 'Other', 'Child', 'Use'] as $name) {
+            copy(
+                __DIR__ . '/../fixtures/PartialRunOfAnInheritedMethod/src/' . $name . '.php',
+                self::$tmpDir . '/src/' . $name . '.php',
+            );
+        }
+
+        $this->runPsalmInit(1);
+
+        $result = $this->runPartialTaintAnalysis(['src/Use.php']);
+        $this->assertStringNotContainsString('Could not get class storage', $result);
+        $this->assertStringContainsString('Checks took', $result);
+
+        // the file of the subclass deep-scans the file declaring the method
+        $result = $this->runPartialTaintAnalysis(['src/Use.php', 'src/Child.php']);
+        $this->assertStringContainsString('TaintedHtml', $result);
+    }
+
     public function testPsalmSetBaseline(): void
     {
         $this->runPsalmInit(1);
@@ -347,6 +371,32 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         $this->assertSame('', $process->getErrorOutput());
+    }
+
+    /**
+     * What a taint analysis of the files $files of the project prints
+     *
+     * @param list<string> $files
+     */
+    private function runPartialTaintAnalysis(array $files): string
+    {
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--output-format=console',
+                '--monochrome',
+                '--no-progress',
+                '--no-cache',
+                '--taint-analysis',
+                ...$files,
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        return $process->getOutput() . $process->getErrorOutput();
     }
 
     /**
