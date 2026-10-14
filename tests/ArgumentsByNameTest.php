@@ -262,6 +262,27 @@ final class ArgumentsByNameTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'variadicArgumentsAfterNamedOnesAreNamed' => [
+                'code' => '<?php
+                    /**
+                     * @arguments-by-name
+                     * @return array<string, int>
+                     */
+                    function foo(int $a, int ...$rest): array {
+                        return $rest;
+                    }
+
+                    /**
+                     * @optional-arguments-by-name
+                     * @return array<string, int>
+                     */
+                    function bar(int $a, int $b = 0, int ...$rest): array {
+                        return $rest;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam'],
+                'php_version' => '8.0',
+            ],
             'arrayMapCallbackIsNotReported' => [
                 'code' => '<?php
                     /** @arguments-by-name */

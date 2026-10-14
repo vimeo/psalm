@@ -1693,7 +1693,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->is_variadic) {
                 if ($storage->allow_named_arg_calls) {
                     $var_type = new Union([
-                        new TArray([Type::getArrayKey(), $param_type]),
+                        new TArray([self::getVariadicKeyType($storage), $param_type]),
                     ], [
                         'by_ref' => $function_param->by_ref,
                         'parent_nodes' => $parent_nodes,
@@ -1902,6 +1902,25 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return $check_stmts;
+    }
+
+    /**
+     * A variadic parameter gets arguments passed by position only when the parameters before it are passed by
+     * position too, which `@arguments-by-name` and `@optional-arguments-by-name` may forbid
+     */
+    private static function getVariadicKeyType(FunctionLikeStorage $storage): Union
+    {
+        foreach ($storage->params as $param) {
+            if ($param->is_variadic) {
+                break;
+            }
+
+            if ($storage->args_by_name || ($storage->optional_args_by_name && $param->is_optional)) {
+                return Type::getString();
+            }
+        }
+
+        return Type::getArrayKey();
     }
 
     /**
