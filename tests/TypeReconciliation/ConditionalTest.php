@@ -41,6 +41,9 @@ final class ConditionalTest extends TestCase
 
                         return $id . $name;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'orWithAnAssignmentOnTheSideAssertingNothingWhenFalseForgetsWhatTheOtherSideTested' => [
                 'code' => '<?php

@@ -623,6 +623,9 @@ final class ClassTemplateCovarianceTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

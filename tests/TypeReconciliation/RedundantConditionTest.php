@@ -47,6 +47,9 @@ final class RedundantConditionTest extends TestCase
                             return $source;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'instanceofThenPropertyOfATemplateParamNarrowedBefore' => [
                 'code' => '<?php
