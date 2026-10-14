@@ -15,6 +15,7 @@ use Psalm\Type\TaintKind;
 use function array_filter;
 use function array_key_exists;
 use function array_key_first;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
@@ -295,8 +296,9 @@ final class TaintFlowResolution
     private array $path_type_params = [];
 
     /**
-     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()), of a call a
-     * function-like makes to itself prefixed with '^' (see bindRecursiveCall()), or the calls of the flows entering
+     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()), or the declaration of
+     * the function-like called prefixed with '#' for a call passing no key it uses, the specialization key of a call
+     * a function-like makes to itself prefixed with '^' (see bindRecursiveCall()), or the calls of the flows entering
      * a convergence (see getConvergenceOpenAssignments()) => the file, start and end of the declaration of the
      * function-like called
      *
@@ -318,6 +320,14 @@ final class TaintFlowResolution
      * @var array<string, true>
      */
     private array $literal_key_calls = [];
+
+    /**
+     * The specialization keys of the calls passing an array key to a parameter that the body of the function-like
+     * called fetches or assigns under, or passes on to a call doing so (see computeKeyParamCalls())
+     *
+     * @var array<string, true>
+     */
+    private array $key_param_calls = [];
 
     /**
      * The path types converting to a scalar a value that may be an array (see
@@ -917,6 +927,42 @@ final class TaintFlowResolution
 
         $this->computeObservableDepths($reverse);
         $this->computeTaintAddingReachable($reverse);
+        $this->computeKeyParamCalls();
+    }
+
+    /**
+     * Computes $key_param_calls: the parameters whose keys the edges fetch or assign under (see
+     * ArrayFetchAnalyzer::getParamKey()), and those passed on to them, have their keys bound by their calls.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function computeKeyParamCalls(): void
+    {
+        $key_params = [];
+
+        foreach ($this->forward_edges as $destinations) {
+            foreach ($destinations as $path) {
+                foreach (['arrayvalue-fetch-@', 'arrayvalue-assignment-@'] as $prefix) {
+                    if (str_starts_with($path->type, $prefix)) {
+                        $key_params[substr($path->type, strlen($prefix))] = true;
+                    }
+                }
+            }
+        }
+
+        $queue = array_keys($key_params);
+
+        while ($queue) {
+            foreach ($this->param_keys[array_pop($queue)] ?? [] as $call => $key) {
+                $this->key_param_calls[$call] = true;
+                $passed_on = substr($key, 1);
+
+                if (str_starts_with($key, '@') && !isset($key_params[$passed_on])) {
+                    $key_params[$passed_on] = true;
+                    $queue[] = $passed_on;
+                }
+            }
+        }
     }
 
     /**
@@ -3373,14 +3419,16 @@ final class TaintFlowResolution
     }
 
     /**
-     * The open assignments $open_assignments of a flow entering the body of an unspecialized call through its
-     * argument node $argument_id (see TaintFlowGraph::$call_arguments): the flow knows the array keys the call
-     * passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not those of a
-     * call the body makes to its own function-like: the body would know them past that call.
+     * The open assignments $open_assignments of a flow entering the body of an unspecialized or despecialized call
+     * through its argument node $argument_id (see TaintFlowGraph::$call_arguments): the flow knows the array keys
+     * the call passes to the parameters (see takeEdge()), as long as it stays in the body (see scopeCall()). Not
+     * those of a call the body makes to its own function-like: the body would know them past that call.
      *
      * The flow keeps the calls whose bodies it is in, innermost first (see resolveBoundKey()), up to
      * MAX_BOUND_CALLS of them, and none if it enters one of those function-likes again. It forgets the outermost
-     * ones as long as they pass no literal key, as it knows nothing from them.
+     * ones as long as they pass no literal key, as it knows nothing from them. A call passing no key that its
+     * function-like uses (see $key_param_calls) is kept as its function-like only, which tells where its body is
+     * (see scopeCall()): the flows entering it through its call sites are the same.
      *
      * @psalm-external-mutation-free
      */
@@ -3394,6 +3442,15 @@ final class TaintFlowResolution
         }
 
         $range = [$file_path, $start, $end];
+
+        if (!isset($this->key_param_calls[$new_call])) {
+            if ($call === '') {
+                return $open_assignments;
+            }
+
+            $new_call = '#' . $file_path . ':' . $start . ':' . $end;
+        }
+
         $this->call_ranges[$new_call] = $range;
         $calls = [$new_call];
 
@@ -3413,10 +3470,10 @@ final class TaintFlowResolution
         }
 
         $calls = array_slice($calls, 0, self::MAX_BOUND_CALLS);
-        $kept = 1;
+        $kept = 0;
 
         foreach ($calls as $depth => $bound_call) {
-            if (isset($this->literal_key_calls[$bound_call])) {
+            if (isset($this->literal_key_calls[$bound_call]) && isset($this->key_param_calls[$bound_call])) {
                 $kept = $depth + 1;
             }
         }
