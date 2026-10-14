@@ -3808,6 +3808,37 @@ final class TaintTest extends TestCase
                         echo (string) $value;
                     }',
             ],
+            'taintFreeTopLevelVariableSetByAFunctionThroughAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = "safe";
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    $other = (string) $_GET["a"];
+                    stashLater();
+                    echo (string) $value;',
+            ],
+            'taintFreeLocalVariableAfterACallOfAMethodBindingTheGlobal' => [
+                'code' => '<?php
+                    class Stash {
+                        public static function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    function show(): void {
+                        $value = "safe";
+                        Stash::stash();
+                        echo (string) $value;
+                    }',
+            ],
             'taintFreeLocalVariableAfterACallOfAFunctionBindingTheGlobal' => [
                 'code' => '<?php
                     function stash(): void {
@@ -4856,6 +4887,102 @@ final class TaintTest extends TestCase
                     }
 
                     stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAStaticMethod' => [
+                'code' => '<?php
+                    class Stash {
+                        public static function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    $value = "safe";
+                    Stash::stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAnInstanceMethod' => [
+                'code' => '<?php
+                    class Stash {
+                        public function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    $value = "safe";
+                    (new Stash())->stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetThroughGlobalsByAFunction' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    $value = "safe";
+                    stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunctionThroughAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    stashLater();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAMethodThroughAnother' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    class Stash {
+                        public static function stash(): void {
+                            $GLOBALS["value"] = (string) $_GET["a"];
+                        }
+
+                        public function stashLater(): void {
+                            self::stash();
+                        }
+
+                        public function stashLaterStill(): void {
+                            $this->stashLater();
+                        }
+                    }
+
+                    $value = "safe";
+                    (new Stash())->stashLaterStill();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunctionThroughANamespacedOne' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    \Ns\stashLater();
                     echo (string) $value;',
                 'error_message' => 'TaintedHtml',
             ],

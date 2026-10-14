@@ -407,6 +407,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 
+        if ($function_call_info->function_storage) {
+            // and those the functions it calls write
+            GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
+        }
+
         if ($function_name instanceof PhpParser\Node\Name
             && $function_name->getParts() === ['assert']
             && isset($stmt->getArgs()[0])

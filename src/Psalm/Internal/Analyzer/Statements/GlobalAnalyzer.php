@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -13,15 +14,22 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
+use UnexpectedValueException;
+use WeakMap;
 
+use function array_pop;
+use function explode;
 use function is_string;
 use function preg_match;
+use function strtolower;
 use function substr;
 
 /**
@@ -29,6 +37,14 @@ use function substr;
  */
 final class GlobalAnalyzer
 {
+    private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
+
+    /**
+     * @see getGlobalsWrittenBy()
+     * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
+     */
+    private static ?WeakMap $globals_written_by = null;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Global_ $stmt,
@@ -213,6 +229,125 @@ final class GlobalAnalyzer
     }
 
     /**
+     * What the globals bound in this scope hold after a call of the function-like of $storage, which may have
+     * written to them, or the function-likes it calls may have (see getGlobalsWrittenBy()): whatever the program
+     * writes to them. A variable of the scope that isn't bound to a global is left alone.
+     */
+    public static function readGlobalsWrittenBy(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        FunctionLikeStorage $storage,
+    ): void {
+        if (!$context->is_global && !$context->references_to_external_scope) {
+            return;
+        }
+
+        $analysis_php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
+
+        foreach (self::getGlobalsWrittenBy($statements_analyzer, $storage) as $var_id => $_) {
+            if ((!$context->is_global && !isset($context->references_to_external_scope[$var_id]))
+                || preg_match(self::VARIABLE_ID_PATTERN, $var_id) !== 1
+                || VariableFetchAnalyzer::isSuperGlobal($var_id)
+            ) {
+                continue;
+            }
+
+            $context->vars_in_scope[$var_id] = self::taintGlobalRead(
+                $statements_analyzer,
+                $context,
+                $var_id,
+                VariableFetchAnalyzer::getGlobalType($var_id, $analysis_php_version_id),
+            );
+            $context->vars_possibly_in_scope[$var_id] = true;
+        }
+    }
+
+    /**
+     * The globals the body of the function-like of $storage, or of those it calls by name, binds or writes
+     * through $GLOBALS (see FunctionLikeStorage::$global_variables), by variable id
+     *
+     * @return array<string, bool>
+     */
+    private static function getGlobalsWrittenBy(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+    ): array {
+        if (!$storage->called_function_like_ids) {
+            return $storage->global_variables;
+        }
+
+        if (self::$globals_written_by === null) {
+            /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
+            self::$globals_written_by = new WeakMap();
+        }
+
+        $memoized = self::$globals_written_by[$storage] ?? null;
+
+        if ($memoized !== null) {
+            return $memoized;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $global_variables = [];
+        $seen = new WeakMap();
+        $seen[$storage] = true;
+        $queue = [$storage];
+
+        while ($queue) {
+            $function_like_storage = array_pop($queue);
+            $global_variables += $function_like_storage->global_variables;
+
+            foreach ($function_like_storage->called_function_like_ids as $function_like_id => $_) {
+                $callee_storage = self::getCalleeStorage($codebase, $statements_analyzer, $function_like_id);
+
+                if ($callee_storage !== null && !isset($seen[$callee_storage])) {
+                    $seen[$callee_storage] = true;
+                    $queue[] = $callee_storage;
+                }
+            }
+        }
+
+        self::$globals_written_by[$storage] = $global_variables;
+
+        return $global_variables;
+    }
+
+    /**
+     * @param lowercase-string $function_like_id
+     */
+    private static function getCalleeStorage(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        string $function_like_id,
+    ): ?FunctionLikeStorage {
+        if ($function_like_id === '') {
+            return null;
+        }
+
+        $parts = explode('::', $function_like_id, 2);
+
+        if (!isset($parts[1])) {
+            try {
+                return $codebase->functions->getStorage($statements_analyzer, strtolower($function_like_id));
+            } catch (UnexpectedValueException) {
+                return null;
+            }
+        }
+
+        [$fq_class_name, $method_name] = $parts;
+
+        if (!$codebase->classlike_storage_provider->has($fq_class_name)) {
+            return null;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($fq_class_name, strtolower($method_name)),
+        );
+
+        return $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+    }
+
+    /**
      * Whether $var_id is a global: bound by `global`, or any variable at file scope (but not $a['k'], $a->p, ...,
      * which are part of $a, nor the superglobals).
      *
@@ -226,7 +361,7 @@ final class GlobalAnalyzer
         }
 
         return $context->is_global
-            && preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D', $var_id) === 1
+            && preg_match(self::VARIABLE_ID_PATTERN, $var_id) === 1
             && !VariableFetchAnalyzer::isSuperGlobal($var_id);
     }
 

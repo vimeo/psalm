@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
@@ -307,6 +308,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($is_first_class_callable) {
             return $return_type_candidate;
+        }
+
+        if ($method_storage) {
+            GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
         }
 
         $in_call_map = InternalCallMapHandler::inCallMap((string) ($declaring_method_id ?? $method_id));
