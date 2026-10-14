@@ -138,6 +138,9 @@ final class ClassLikeDocblockComment
 
     public bool $consistent_templates = false;
 
+    /** Whether the methods forbid named arguments, per `@no-named-arguments` */
+    public bool $no_named_args = false;
+
     /** Whether the methods require all arguments by name, per `@arguments-by-name` */
     public bool $args_by_name = false;
 

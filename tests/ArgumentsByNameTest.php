@@ -134,6 +134,39 @@ final class ArgumentsByNameTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testTagsAllowNamedArgumentsOfInternalMethods(): void
+    {
+        $this->project_analyzer->getConfig()->allow_internal_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                /** @internal */
+                final class A {
+                    /** @arguments-by-name */
+                    public function foo(int $a): void {}
+                }
+
+                /**
+                 * @internal
+                 * @stable-parameter-names
+                 */
+                final class B {
+                    /** @return void */
+                    public function foo(int $a) {}
+                }
+
+                (new A())->foo(a: 1);
+                (new B())->foo(a: 1);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -237,6 +270,24 @@ final class ArgumentsByNameTest extends TestCase
                     }
 
                     array_map("process", ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classNoNamedArgumentsWithArgumentsByNameOnConstructor' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    final class Foo {
+                        /** @arguments-by-name */
+                        public function __construct(public string $name, public int $age) {}
+
+                        public function bar(int $a, int $b): int {
+                            return $a + $b;
+                        }
+                    }
+
+                    $foo = new Foo(name: "Alice", age: 30);
+                    $foo->bar(1, 2);',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -444,6 +495,33 @@ final class ArgumentsByNameTest extends TestCase
                 'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'classNoNamedArguments' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    final class Foo {
+                        public function bar(int $a, int $b): int {
+                            return $a + $b;
+                        }
+                    }
+
+                    (new Foo())->bar(a: 1, b: 2);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classNoNamedArgumentsWithArgumentsByNameOnConstructor' => [
+                'code' => '<?php
+                    /** @no-named-arguments */
+                    final class Foo {
+                        /** @arguments-by-name */
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    new Foo("Alice", 30);',
+                'error_message' => 'Argument for parameter $name of Foo::__construct must be passed by name',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'noNamedArgumentsOverridingATaggedMethod' => [
                 'code' => '<?php
