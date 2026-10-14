@@ -23,6 +23,31 @@ final class RedundantConditionTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template K as array-key
+                     * @implements Iterator<K, mixed>
+                     */
+                    abstract class Rows implements Iterator {}
+
+                    /**
+                     * @template K as array-key
+                     */
+                    final class Holder {
+                        /** @param Iterator<K, mixed> $source */
+                        public function __construct(private readonly Iterator $source) {}
+
+                        /** @return Rows<K> */
+                        public function rows(): Rows {
+                            $source = $this->source;
+                            if (!$source instanceof Rows) {
+                                throw new Exception();
+                            }
+                            return $source;
+                        }
+                    }',
+            ],
             'instanceofThenPropertyOfATemplateParamNarrowedBefore' => [
                 'code' => '<?php
                     interface Node {}
