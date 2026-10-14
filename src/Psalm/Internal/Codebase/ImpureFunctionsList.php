@@ -14,10 +14,11 @@ use function strtolower;
  *
  * @internal
  * @psalm-external-mutation-free
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ImpureFunctionsList
 {
-    /** @var null|array<string, int> */
+    /** @var null|array<string, CapabilitySet> */
     private static ?array $capabilities = null;
 
     /**
@@ -30,13 +31,14 @@ final class ImpureFunctionsList
             return;
         }
 
-        /** @var array<string, int> */
+        /** @var array<string, CapabilitySet> */
         self::$capabilities = require(dirname(__DIR__, 4) . '/dictionaries/ImpureFunctionsList.php');
     }
 
     /**
      * The capabilities a builtin function requires: none for a function that is not listed.
      *
+     * @return CapabilitySet
      * @psalm-external-mutation-free
      */
     public static function getCapabilities(string $function_id): int
