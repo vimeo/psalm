@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -631,6 +632,19 @@ final class ArrayAssignmentAnalyzer
                 : '=';
 
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
+
+            // the start of the items, for the keys of a keyed store a list of keys names: $assign_value is the
+            // value assigned only with $assignment_context, not an operand of it
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+            if ($assign_value !== null && $assignment_context !== null && $taint_flow_graph && !$stmt_type->by_ref) {
+                TaintStore::recordItemAssignment(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $old_parent_nodes,
+                    $assign_value,
+                    $parent_node,
+                );
+            }
 
             foreach ($old_parent_nodes as $old_parent_node) {
                 $graph->addPath(

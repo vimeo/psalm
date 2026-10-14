@@ -16,6 +16,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\InterpolatedStringPart;
 use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\MagicConst\Class_;
 use PhpParser\Node\Scalar\MagicConst\Function_;
@@ -41,6 +42,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_values;
 use function count;
 use function in_array;
@@ -313,14 +315,54 @@ final class TaintStore
         Expr $assigned,
         DataFlowNode $var_node,
     ): void {
+        // for an array, the start of its items (of the keys a list of keys names)
         $type = $statements_analyzer->node_data->getType($assigned);
-        if ($type === null || !$type->hasString() || $type->isSingleStringLiteral()) {
+        if ($type === null || (!$type->hasString() && !$type->hasArray()) || $type->isSingleStringLiteral()) {
+            return;
+        }
+
+        if ($assigned instanceof Array_ && $assigned->items === []) {
+            $graph->addEmptyArray($var_node);
+
             return;
         }
 
         $start = self::getKnownStart($statements_analyzer, $assigned);
         if ($start !== null && $start !== '') {
             $graph->addStringStart($var_node, $start);
+        }
+    }
+
+    /**
+     * Records what the items of an array start with once one is assigned (`$keys[] = 'lock_' . $id;`), for the array's
+     * node after the assignment: what the assigned value and the items it held before start with
+     *
+     * @param array<string, DataFlowNode> $previous_nodes the nodes of the array before the assignment
+     */
+    public static function recordItemAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        array $previous_nodes,
+        Expr $assigned,
+        DataFlowNode $array_node,
+    ): void {
+        $start = self::getKnownStart($statements_analyzer, $assigned);
+
+        // what `[]` was assigned to held no item
+        $previous_nodes = array_filter(
+            $previous_nodes,
+            static fn(DataFlowNode $node): bool => !$graph->isEmptyArray($node->id),
+        );
+        if ($start !== null && $start !== '' && $previous_nodes !== []) {
+            $previous_start = self::getStartOfNodes($statements_analyzer, $previous_nodes);
+            $start = $previous_start === null ? null : StringStartScanner::getCommonStart($start, $previous_start);
+        }
+
+        // a loop analyzes the assignment again with more previous nodes: what it recorded then may not hold anymore
+        if ($start === null || $start === '') {
+            $graph->removeStringStart($array_node);
+        } else {
+            $graph->addStringStart($array_node, $start);
         }
     }
 
@@ -406,6 +448,8 @@ final class TaintStore
             if ($function === 'implode' || $function === 'join') {
                 return self::getKnownStartOfImplode($statements_analyzer, $expr->getArgs());
             }
+
+            return self::getKnownStartOfFunctionCall($statements_analyzer, $expr->name);
         }
 
         // a list of names: what they all start with
@@ -553,6 +597,11 @@ final class TaintStore
         $start = null;
 
         foreach ($nodes as $node_id => $_) {
+            // an empty array has no item to start otherwise
+            if ($graph?->isEmptyArray($node_id) === true) {
+                continue;
+            }
+
             $node_start = $graph?->getStringStart($node_id)
                 ?? self::getParameterStart($statements_analyzer, $node_id);
             if ($node_start === null) {
@@ -659,6 +708,41 @@ final class TaintStore
                 $declaring_method_id->fq_class_name,
                 $declaring_method_id->method_name,
             );
+    }
+
+    /**
+     * What the function of the project called returns starts with, as the scan recorded it (see StringStartScanner)
+     */
+    private static function getKnownStartOfFunctionCall(StatementsAnalyzer $statements_analyzer, Name $name): ?string
+    {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_function_ids = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath())
+            ->declaring_function_ids;
+
+        // those declared in the files the file includes, and those registered globally (autoloaded files, ...)
+        $has_storage = static fn(string $function_id): bool => isset($declaring_function_ids[$function_id])
+            || $codebase->functions->hasStubbedFunction($function_id);
+
+        $function_id = strtolower(
+            $name instanceof FullyQualified
+                ? $name->toString()
+                : $codebase->functions->getFullyQualifiedFunctionNameFromString(
+                    $name->toString(),
+                    $statements_analyzer,
+                ),
+        );
+
+        // a function not found in the namespace is the global one
+        if (!$has_storage($function_id) && !$name instanceof FullyQualified) {
+            $function_id = strtolower($name->toString());
+        }
+
+        return $has_storage($function_id)
+            ? StringStartScanner::getFunctionStart(
+                $codebase,
+                $codebase->functions->getStorage($statements_analyzer, $function_id),
+            )
+            : null;
     }
 
     /**
