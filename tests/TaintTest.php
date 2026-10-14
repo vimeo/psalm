@@ -691,6 +691,47 @@ final class TaintTest extends TestCase
                     showValues([$name => "value"]);
                     showValues(["a" => "value"]);',
             ],
+            'fetchOfAnotherKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["page"])) {
+                        echo $attr["data"]["page"];
+                    }',
+            ],
+            'fetchOfAnotherKeyOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["class" => "button", "data-q" => (string) $_GET["q"]]);
+                    echo is_array($attr) ? (string) ($attr["icon"] ?? "") : "";',
+            ],
             'recursiveCallReturnsIntoTheBodyMakingIt' => [
                 'code' => '<?php // --taint-analysis
                     function wrap(mixed $value): mixed {
@@ -4035,6 +4076,73 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'fetchOfTheKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["q"])) {
+                        echo $attr["data"]["q"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["class" => "button", "icon" => (string) $_GET["q"]]);
+                    echo is_array($attr) ? (string) ($attr["icon"] ?? "") : "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keysOfTheElementsARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare([(string) $_GET["q"] => "button"]);
+                    if (is_array($attr)) {
+                        foreach ($attr as $name => $_) {
+                            echo $name;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
