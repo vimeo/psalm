@@ -7801,7 +7801,7 @@ final class TaintTest extends TestCase
                     function query(mixed $filter): void {}
 
                     // "name[$ne]=" gives ["name" => ["$ne" => ""]]
-                    parse_str((string) $_SERVER["QUERY_STRING"], $params);
+                    parse_str($_SERVER["QUERY_STRING"] ?? "", $params);
                     query($params);',
                 'error_message' => 'TaintedNosql',
             ],
