@@ -444,6 +444,8 @@ final class Psalm
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);
+            } elseif (isset($options['threads'])) {
+                $threads = max(1, (int)$options['threads']);
             } elseif (isset($options['debug']) || $in_ci) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
