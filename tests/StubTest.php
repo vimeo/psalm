@@ -17,6 +17,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use Psalm\Tests\fixtures\AutoloadableStubMerge\ClassFilePathProvider;
 
 use function assert;
 use function dirname;
@@ -1360,6 +1361,53 @@ final class StubTest extends TestCase
         $this->expectException(InvalidMethodOverrideException::class);
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubMergesWithAutoloadableClassNotYetScanned(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/autoloadable_stub_merge.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getConfig()->eventDispatcher->registerClass(ClassFilePathProvider::class);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use AutoloadableStubMerge\Factory;
+                use AutoloadableStubMerge\StubOnly;
+
+                /** @param positive-int $i */
+                function takesPositive(int $i): void {}
+
+                takesPositive(Factory::make()->stubbed());
+                echo Factory::make()->notStubbed();
+                takesPositive(Factory::makeConditional()->stubbed());
+                echo Factory::makeConditional()->notStubbed();
+                echo (new StubOnly())->bar();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $constant = $this->project_analyzer->getCodebase()->classlike_storage_provider
+            ->get('autoloadablestubmerge\\constholder')->constants['VALUE'];
+        $this->assertSame('int<1, max>', $constant->type?->getId());
     }
 
     public function testStubReplacingInterfaceDocblock(): void
