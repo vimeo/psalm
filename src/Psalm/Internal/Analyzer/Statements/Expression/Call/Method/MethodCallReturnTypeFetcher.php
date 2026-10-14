@@ -610,19 +610,24 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 $graph->addNode($declaring_method_call_node);
-                $graph->addPath(
-                    $declaring_method_call_node,
-                    $method_call_node,
-                    'parent',
-                    $added_taints,
-                    $removed_taints,
-                );
+                $graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
             }
 
             $graph->addNode($method_call_node);
 
+            // what the plugins add to and remove from the result of this call: not on the paths into
+            // $method_call_node, which every call shares, the last call deciding for all
+            $call_result_node = $method_call_node;
+
+            if ($added_taints !== 0 || $removed_taints !== 0) {
+                $call_result_node = DataFlowNode::getForAssignment($cased_method_id, $node_location);
+
+                $graph->addNode($call_result_node);
+                $graph->addPath($method_call_node, $call_result_node, '=', $added_taints, $removed_taints);
+            }
+
             $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
+                $call_result_node->id => $call_result_node,
             ]);
         }
 

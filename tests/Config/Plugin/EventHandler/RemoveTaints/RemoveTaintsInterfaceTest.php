@@ -183,4 +183,75 @@ final class RemoveTaintsInterfaceTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    private function analyzeWithSafeVariablePlugin(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="tests/Config/Plugin/EventHandler/RemoveTaints/RemoveTaintsOfSafeVariablePlugin.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * What a plugin removes from the result of a call of an inherited method isn't removed from those of the
+     * other calls, which share the path from the body of the method.
+     */
+    public function testRemoveTaintsOfOneCallOfInheritedMethod(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeWithSafeVariablePlugin(
+            '<?php // --taint-analysis
+            class A {
+                public function get(): string {
+                    return (string) $_GET["x"];
+                }
+            }
+            class B extends A {}
+
+            $tainted = new B();
+            $safe = new B();
+            echo $tainted->get();
+            echo $safe->get();',
+        );
+    }
+
+    public function testRemoveTaintsOfCallOfDeclaredMethod(): void
+    {
+        $this->analyzeWithSafeVariablePlugin(
+            '<?php // --taint-analysis
+            class A {
+                public function get(): string {
+                    return (string) $_GET["x"];
+                }
+            }
+
+            $safe = new A();
+            echo $safe->get();',
+        );
+    }
 }
