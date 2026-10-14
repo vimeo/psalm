@@ -88,14 +88,6 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * Whether each type param of the generic object checkGenericParams() last checked is in a position where a
-     * covariant template is not allowed
-     *
-     * @var array<int, bool>|null
-     */
-    private ?array $type_param_prevents_covariance = null;
-
-    /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null
      */
     #[Override]
@@ -110,13 +102,10 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
-            $this->type_param_prevents_covariance = null;
-            $this->checkNamedObject($type);
+            $prevents_covariance = $this->checkNamedObject($type);
 
-            if ($type instanceof TGenericObject && $this->type_param_prevents_covariance !== null) {
+            if ($type instanceof TGenericObject && $prevents_covariance !== null) {
                 // each type param is checked with its own variance, and the siblings with the outer one
-                $prevents_covariance = $this->type_param_prevents_covariance;
-                $this->type_param_prevents_covariance = null;
                 $outer_prevents_covariance = $this->prevent_template_covariance;
                 $outer_in_invariant_position = $this->in_invariant_position;
 
@@ -190,7 +179,11 @@ final class TypeChecker extends TypeVisitor
         return $this->has_errors;
     }
 
-    private function checkNamedObject(TNamedObject $atomic): void
+    /**
+     * @return array<int, bool>|null whether each type param of a generic object is in a position where a covariant
+     *                               template is not allowed, null if its type params weren't checked
+     */
+    private function checkNamedObject(TNamedObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
@@ -233,7 +226,7 @@ final class TypeChecker extends TypeVisitor
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false) {
                 $this->has_errors = true;
-                return;
+                return null;
             }
         }
 
@@ -269,18 +262,24 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($atomic instanceof TGenericObject) {
-            $this->checkGenericParams($atomic);
+            return $this->checkGenericParams($atomic);
         }
+
+        return null;
     }
 
-    private function checkGenericParams(TGenericObject $atomic): void
+    /**
+     * @return array<int, bool>|null whether each type param is in a position where a covariant template is not
+     *                               allowed, null for an unknown class
+     */
+    private function checkGenericParams(TGenericObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
         $expected_type_params = $class_storage->template_types ?: [];
@@ -400,7 +399,7 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
-        $this->type_param_prevents_covariance = $prevents_covariance;
+        return $prevents_covariance;
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void
