@@ -262,6 +262,22 @@ final class ArgumentsByNameTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classTagSkipsPrivateMethods' => [
+                'code' => '<?php
+                    /** @arguments-by-name */
+                    final class Foo {
+                        public function run(): void {
+                            $this->bar(1);
+                        }
+
+                        private function bar(int $a): void {}
+                    }
+
+                    (new Foo())->run();',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedParam'],
+                'php_version' => '8.0',
+            ],
             'variadicArgumentsAfterNamedOnesAreNamed' => [
                 'code' => '<?php
                     /**
@@ -433,6 +449,26 @@ final class ArgumentsByNameTest extends TestCase
                     (new Foo())->bar(1);',
                 'error_message' => 'PositionalArgumentNotAllowed',
                 'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitTagCoversPrivateMethods' => [
+                'code' => '<?php
+                    /** @arguments-by-name */
+                    trait T {
+                        public function run(): void {
+                            $this->bar(1);
+                        }
+
+                        private function bar(int $a): void {}
+                    }
+
+                    final class Foo {
+                        use T;
+                    }
+
+                    (new Foo())->run();',
+                'error_message' => 'PositionalArgumentNotAllowed',
+                'error_levels' => ['UnusedParam'],
                 'php_version' => '8.0',
             ],
             'enumTag' => [

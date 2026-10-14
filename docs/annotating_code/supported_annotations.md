@@ -695,7 +695,7 @@ new Configuration('openapi-3.1', groups: ['read']); // OK
 new Configuration('openapi-3.1', ['read']); // PositionalArgumentNotAllowed
 ```
 
-This annotation, `@arguments-by-name` and `@stable-parameter-names` can also be used in the docblock of a class, an interface, a trait or an enum. They then apply to all the methods of that class. A tag on a method replaces the tag on the class. A method that overrides or implements a tagged method keeps the tag of the parent method, unless the overriding method declares another tag. These annotations can't be combined with each other, nor with `@no-named-arguments`. They also apply to `@internal` code when `allowInternalNamedArgumentCalls` is `false`.
+This annotation, `@arguments-by-name` and `@stable-parameter-names` can also be used in the docblock of a class, an interface, a trait or an enum. They then apply to the public and protected methods of that class. In a trait, they apply to private methods too, because the classes that use the trait can call them. A tag on a method replaces the tag on the class. A method that overrides or implements a tagged method keeps the tag of the parent method, unless the overriding method declares another tag. These annotations can't be combined with each other, nor with `@no-named-arguments`. They also apply to `@internal` code when `allowInternalNamedArgumentCalls` is `false`.
 
 Variadic parameters are not affected. But a variadic parameter gets arguments passed by position only when the parameters before it are passed by position too. When one of these parameters must be passed by name, the type of `...$args` is `array<string, T>` instead of `array<array-key, T>`.
 
