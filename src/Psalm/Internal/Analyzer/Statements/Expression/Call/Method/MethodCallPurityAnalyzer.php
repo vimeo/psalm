@@ -346,6 +346,7 @@ final class MethodCallPurityAnalyzer
             $class_template_params,
             self::isReceiverThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
         $method_capabilities |= $template_capabilities;
 

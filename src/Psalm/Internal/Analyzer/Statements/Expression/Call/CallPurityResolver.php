@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\VariadicPlaceholder;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -40,6 +44,54 @@ use function in_array;
  */
 final class CallPurityResolver
 {
+    /**
+     * The attribute of a closure literal holding the purity it requires where it is passed as an
+     * argument ({@see self::getArgumentPurity()}).
+     */
+    public const ARGUMENT_PURITY_ATTRIBUTE = 'argumentPurity';
+
+    /**
+     * The purity a closure literal passed as the argument requires of the call: that of its type,
+     * without reading and writing the variables it captured by reference. The call runs it while
+     * those are still the caller's own variables, and creating it already required what writing
+     * them needs.
+     *
+     * With a bound, only if the bound is the closure's purity or type (what a purity template was
+     * inferred from it).
+     */
+    public static function getArgumentPurity(
+        StatementsAnalyzer $statements_analyzer,
+        Arg|VariadicPlaceholder $arg,
+        ?Union $bound = null,
+    ): ?Union {
+        if (!$arg instanceof Arg
+            || $arg->unpack
+            || (!$arg->value instanceof Closure && !$arg->value instanceof ArrowFunction)
+        ) {
+            return null;
+        }
+
+        /** @var mixed $purity */
+        $purity = $arg->value->getAttribute(self::ARGUMENT_PURITY_ATTRIBUTE);
+
+        if (!$purity instanceof Union) {
+            return null;
+        }
+
+        if ($bound !== null) {
+            $arg_type = $statements_analyzer->node_data->getType($arg->value);
+            $closure = $arg_type !== null && $arg_type->isSingle() ? $arg_type->getSingleAtomic() : null;
+
+            if (!$closure instanceof TClosure
+                || ($bound->getId() !== $closure->purity->getId() && $bound->getId() !== $arg_type->getId())
+            ) {
+                return null;
+            }
+        }
+
+        return $purity;
+    }
+
     /**
      * The purity templates the function-like being analysed inherits its purity from, including
      * those of the function-likes a closure is nested in: like their captured variables, closures
@@ -216,6 +268,7 @@ final class CallPurityResolver
      *
      * @param CapabilitySet $capabilities
      * @param array<string, array<string, Union>> $class_template_params
+     * @param array<array-key, Arg|VariadicPlaceholder> $args
      * @return CapabilitySet
      */
     public static function getCallCapabilities(
@@ -227,13 +280,14 @@ final class CallPurityResolver
         array $class_template_params = [],
         ?bool $receiver_is_this = null,
         bool $receiver_from_global_state = false,
+        array $args = [],
     ): int {
         if ($storage->purity_from_templates === []) {
             return $capabilities;
         }
 
         foreach ($storage->purity_from_templates as $template_name) {
-            $bound = self::resolveMethodTemplateType($template_name, $template_result);
+            $bound = self::resolveMethodTemplateType($statements_analyzer, $template_name, $template_result, $args);
             $on_receiver = false;
 
             if ($bound === null) {
@@ -301,10 +355,15 @@ final class CallPurityResolver
     }
 
     /**
+     * @param array<array-key, Arg|VariadicPlaceholder> $args
      * @psalm-capabilities read-props
      */
-    private static function resolveMethodTemplateType(string $template_name, ?TemplateResult $template_result): ?Union
-    {
+    private static function resolveMethodTemplateType(
+        StatementsAnalyzer $statements_analyzer,
+        string $template_name,
+        ?TemplateResult $template_result,
+        array $args,
+    ): ?Union {
         if ($template_result !== null && isset($template_result->lower_bounds[$template_name])) {
             $atomics = [];
 
@@ -313,9 +372,17 @@ final class CallPurityResolver
                     // a template no argument bound is defaulted to its upper bound, without an
                     // argument offset: nothing was passed, so nothing is required
                     if ($bound->arg_offset !== null) {
+                        $type = $bound->type;
+
+                        // bound to the purity of a closure literal passed there, or to its type
+                        if (isset($args[$bound->arg_offset])) {
+                            $type = self::getArgumentPurity($statements_analyzer, $args[$bound->arg_offset], $type)
+                                ?? $type;
+                        }
+
                         // the call requires what every position the template is inferred from
                         // requires: unlike the template's type, no bound is dropped for a deeper one
-                        foreach ($bound->type->getAtomicTypes() as $atomic) {
+                        foreach ($type->getAtomicTypes() as $atomic) {
                             $atomics[] = $atomic;
                         }
                     }

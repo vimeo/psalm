@@ -303,6 +303,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 Capabilities::NONE,
                 $template_result,
                 $found_generic_params ?? [],
+                args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             );
             $resolved_capabilities = $template_capabilities
                 | CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
