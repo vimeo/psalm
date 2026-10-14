@@ -27,6 +27,7 @@ use function in_array;
 use function ksort;
 use function max;
 use function min;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -2787,9 +2788,38 @@ final class TaintFlowResolution
             return $fetched_key !== '';
         }
 
-        return $class === ''
-            || $class === self::SERIALIZATION_CLASS
-            || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key);
+        if ($class === '' || $class === self::SERIALIZATION_CLASS) {
+            return true;
+        }
+
+        foreach (self::getFetchedKeys($fetched_key) as $key) {
+            if (DataFlowGraph::keysMayBeEqual(substr($class, 1), $key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The keys a fetch of key $fetched_key may fetch: the quoted keys a fetch of a key that is one of a few literals
+     * separates by '|' (see ArrayFetchAnalyzer::getFetchedKeys()), or that key
+     *
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    private static function getFetchedKeys(string $fetched_key): array
+    {
+        if (!str_starts_with($fetched_key, "'") || !str_contains($fetched_key, "'|'")) {
+            return [$fetched_key];
+        }
+
+        $keys = [];
+        foreach (explode("'|'", substr($fetched_key, 1, -1)) as $key) {
+            $keys[] = "'" . $key . "'";
+        }
+
+        return $keys;
     }
 
     /**

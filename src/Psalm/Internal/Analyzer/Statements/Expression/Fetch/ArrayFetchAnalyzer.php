@@ -493,6 +493,35 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The key of the path of a fetch whose key is one of a few literals (two to eight, as for assignments, see
+     * ArrayAssignmentAnalyzer::MAX_KEY_VALUES): each quoted, separated by '|' (see
+     * TaintFlowResolution::getFetchedKeys()). What it fetches is what is under one of them. Null if the key isn't
+     * one of a few literals.
+     *
+     * @psalm-mutation-free
+     */
+    private static function getFetchedKeys(Union $offset_type): ?string
+    {
+        $string_literals = $offset_type->getLiteralStrings();
+        $int_literals = $offset_type->getLiteralInts();
+        $count = count($string_literals) + count($int_literals);
+
+        if ($count < 2 || $count > 8 || $count !== count($offset_type->getAtomicTypes())) {
+            return null;
+        }
+
+        $keys = [];
+        foreach ($string_literals as $string_literal) {
+            $keys[] = '\'' . $string_literal->value . '\'';
+        }
+        foreach ($int_literals as $int_literal) {
+            $keys[] = '\'' . $int_literal->value . '\'';
+        }
+
+        return implode('|', $keys);
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -576,6 +605,10 @@ final class ArrayFetchAnalyzer
                 && $key_path_suffix === ''
                 && $taint_graph instanceof TaintFlowGraph;
 
+            // a key that is one of a few literals fetches what is under one of them (see getFetchedKeys()): the
+            // variable use graph, and an assignment through a reference, only know the key is one of them
+            $fetched_keys = $dim_value === null && !$marks_elements ? self::getFetchedKeys($offset_type) : null;
+
             $parent_nodes = $stmt_var_type->parent_nodes;
 
             // a global read by its name gets what is written to that name, not all of them
@@ -610,11 +643,28 @@ final class ArrayFetchAnalyzer
                             $removed_taints,
                         );
                     }
+                } elseif ($fetched_keys !== null && $graph instanceof CombinedFlowGraph) {
+                    $graph->taint_flow_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch-' . $fetched_keys,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                    $graph->variable_use_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
                 } else {
                     $graph->addPath(
                         $parent_node,
                         $new_parent_node,
-                        'arrayvalue-fetch' . $key_path_suffix,
+                        $fetched_keys !== null && !$graph instanceof VariableUseGraph
+                            ? 'arrayvalue-fetch-' . $fetched_keys
+                            : 'arrayvalue-fetch' . $key_path_suffix,
                         $added_taints,
                         $removed_taints,
                     );
