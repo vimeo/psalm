@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -166,6 +167,31 @@ final class CallPurityResolver
                 self::recordUsedTemplates($atomic->purity, $exempt, $source);
             }
         }
+    }
+
+    /**
+     * What a call of $storage requires of its own, besides what its purity templates are bound to (see
+     * getCallCapabilities()): its capabilities, with those that depend on its arguments
+     * ({@see FunctionLikeStorage::$conditional_capabilities}) resolved for the arguments of the call
+     */
+    public static function getOwnCapabilities(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        ?TemplateResult $template_result,
+    ): int {
+        if ($storage->conditional_capabilities === [] || $template_result === null) {
+            return $storage->capabilities;
+        }
+
+        $capabilities = $storage->unconditional_capabilities;
+
+        foreach ($storage->conditional_capabilities as $conditional) {
+            $capabilities |= Capabilities::fromType(
+                TemplateInferredTypeReplacer::replace($conditional, $template_result, $codebase),
+            );
+        }
+
+        return $capabilities & $storage->capabilities;
     }
 
     /**

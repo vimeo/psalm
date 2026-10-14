@@ -30,6 +30,73 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalCapabilitiesTakeTheBranchTheArgumentsSelect' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, int $seed): int {
+                        $id = new Id($seed);
+                        return makeId($seed) + $ids->make($seed) + Ids::makeStatic($seed) + $id->value;
+                    }',
+            ],
+            'mongodbDriverCapabilities' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectId;
+                    use MongoDB\Driver\Cursor;
+                    use MongoDB\Driver\Monitoring\CommandSubscriber;
+                    use MongoDB\Driver\Server;
+
+                    /** @psalm-pure */
+                    function id(string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals|io */
+                    function newId(?string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-mutation-free */
+                    function tags(Server $server): array {
+                        return $server->getTags();
+                    }
+
+                    /** @psalm-capabilities write-props|io */
+                    function documents(Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function subscribe(CommandSubscriber $subscriber): void {
+                        MongoDB\Driver\Monitoring\addSubscriber($subscriber);
+                    }',
+            ],
             'theLastErrorFunctionsOnlyReadGlobals' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals */
@@ -2146,6 +2213,178 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return makeId();
+                    }',
+                'error_message' => 'The context is read-props but function call on makeid requires io',
+            ],
+            'conditionalCapabilitiesOfAMethodCalledWithANullableArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return $ids->make($seed);
+                    }',
+                'error_message' => 'The context is read-props but method Ids::make requires io',
+            ],
+            'conditionalCapabilitiesOfAStaticMethodCalledWithNull' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return Ids::makeStatic(null);
+                    }',
+                'error_message' => 'The context is read-props but method Ids::makeStatic requires io',
+            ],
+            'conditionalCapabilitiesOfAConstructorCalledWithoutTheArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return (new Id())->value;
+                    }',
+                'error_message' => 'The context is read-props but constructor Id::__construct requires io',
+            ],
+            'conditionalCapabilitiesBoundTheBodyByEveryBranch' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? read-props : pure) */
+                    function makeId(?int $seed): int {
+                        return $seed ?? random_int(0, 10);
+                    }',
+                'error_message' => 'The context is read-props but function call on random_int requires io',
+            ],
+            'conditionalCapabilitiesMustBeAConditional' => [
+                'code' => '<?php
+                    /** @psalm-capabilities (io) */
+                    function makeId(): int {
+                        return random_int(0, 10);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'mongodbObjectIdWithoutAnIdIsGenerated' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newId(): MongoDB\BSON\ObjectId {
+                        return new MongoDB\BSON\ObjectId();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'mongodbCursorIterationFetches' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function documents(MongoDB\Driver\Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'writingACallersSplObjectStorageRequiresWriteProps' => [
                 'code' => '<?php
                     /**

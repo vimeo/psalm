@@ -148,6 +148,34 @@ final class Service {
 }
 ```
 
+### Conditional capabilities
+
+What a call requires may depend on its arguments, like a conditional return type. Each call
+requires the branch its arguments select. Where the arguments may go either way, or there is no
+call (a callable taken from the function), it requires both. The body may do what either branch
+allows.
+
+```php
+<?php
+/** @psalm-capabilities ($seed is null ? io : pure) */
+function makeId(?int $seed = null): int {
+    return $seed ?? random_int(0, PHP_INT_MAX);
+}
+
+/** @psalm-pure */
+function fromSeed(int $seed): int {
+    return makeId($seed); // fine: $seed can't be null
+}
+
+/** @psalm-pure */
+function fresh(): int {
+    return makeId(); // ImpureFunctionCall: The context is pure but function call on makeid requires io
+}
+```
+
+The constructor of `MongoDB\BSON\ObjectId` is stubbed this way: without an id it generates one
+from the clock and a counter of the process, while given an id it only validates it.
+
 ### Closures
 
 Closures don't need an annotation. Psalm infers their capabilities from their bodies and keeps

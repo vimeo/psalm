@@ -457,6 +457,15 @@ final class Functions
             return $listed_capabilities;
         }
 
+        // A builtin whose stub declares what it may do with a purity annotation (`@psalm-pure`, or the subscriber
+        // functions of stubs/extensions/mongodb.phpstub: `@psalm-capabilities read-globals|write-globals`) is charged
+        // exactly that, instead of what the guesses below make of it: all capabilities for a call without arguments,
+        // or for a function returning void, write-refs for its by-reference parameters. ImpureFunctionsList, above,
+        // still takes precedence. A stub writing through its by-reference parameters declares write-refs.
+        if ($stub_storage !== null && $stub_storage->has_mutations_annotation) {
+            return $stub_storage->capabilities;
+        }
+
         $type_provider = $statements_analyzer?->node_data;
         // they call the __serialize()/__sleep() of the objects they are given
         if (($function_id === 'serialize' || $function_id === 'igbinary_serialize')

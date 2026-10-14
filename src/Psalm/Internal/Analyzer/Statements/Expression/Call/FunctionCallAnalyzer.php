@@ -1401,7 +1401,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $codebase,
                         $function_call_info->function_storage,
-                        $function_call_info->function_storage->capabilities,
+                        CallPurityResolver::getOwnCapabilities(
+                            $codebase,
+                            $function_call_info->function_storage,
+                            $template_result,
+                        ),
                         $template_result,
                     )
                     : null);

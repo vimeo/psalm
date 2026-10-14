@@ -295,7 +295,8 @@ final class MethodCallPurityAnalyzer
             $method_id,
             $context,
         );
-        $callee_capabilities = $provided_capabilities ?? $method_storage->capabilities;
+        $callee_capabilities = $provided_capabilities
+            ?? CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
 
         $method_capabilities = self::getMethodCapabilities(
             $statements_analyzer,

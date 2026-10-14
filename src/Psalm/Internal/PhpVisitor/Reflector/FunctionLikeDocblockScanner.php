@@ -104,32 +104,17 @@ final class FunctionLikeDocblockScanner
 
         $config = Config::getInstance();
 
-        $deferred_capabilities = [];
+        $deferred_capabilities = self::resolveCapabilitiesExpressions(
+            $file_scanner,
+            $aliases,
+            $type_aliases,
+            $classlike_storage,
+            $storage,
+            $stmt,
+            $docblock_info,
+            $cased_function_id,
+        );
 
-        foreach ($docblock_info->capabilities_expressions as $capabilities_expression) {
-            try {
-                $resolved = CapabilitiesExpressionResolver::resolve(
-                    $capabilities_expression,
-                    $aliases,
-                    $classlike_storage->template_types ?? [],
-                    $type_aliases,
-                    $classlike_storage?->name,
-                );
-
-                if ($resolved instanceof Union) {
-                    $deferred_capabilities[] = $resolved;
-                } else {
-                    $docblock_info->capabilities |= $resolved;
-                }
-            } catch (TypeParseTreeException $e) {
-                $storage->docblock_issues[] = new InvalidDocblock(
-                    'Invalid @psalm-capabilities tag: ' . $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true),
-                );
-            }
-        }
-
-        $docblock_info->capabilities_expressions = [];
 
         if ($storage instanceof MethodStorage
             && $storage->mutation_free_assumed
@@ -545,6 +530,126 @@ final class FunctionLikeDocblockScanner
                 $storage->capabilities |= $classlike_storage->template_lower_bounds[$purity_template];
             }
         }
+    }
+
+    /**
+     * Adds the `@psalm-capabilities` values that aren't plain lists of capabilities to $docblock_info: purity types,
+     * and conditionals (see getConditionalCapabilities()), which $storage keeps too. Returns those naming imported
+     * type aliases, which the populator resolves.
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @return list<Union>
+     */
+    private static function resolveCapabilitiesExpressions(
+        FileScanner $file_scanner,
+        Aliases $aliases,
+        array $type_aliases,
+        ?ClassLikeStorage $classlike_storage,
+        FunctionLikeStorage $storage,
+        PhpParser\Node\FunctionLike $stmt,
+        FunctionDocblockComment $docblock_info,
+        string $cased_function_id,
+    ): array {
+        $deferred_capabilities = [];
+        $conditional_capabilities = [];
+
+        foreach ($docblock_info->capabilities_expressions as $capabilities_expression) {
+            try {
+                if (str_starts_with($capabilities_expression, '(')) {
+                    $conditional_capabilities[] = self::getConditionalCapabilities(
+                        $capabilities_expression,
+                        $aliases,
+                        $type_aliases,
+                        $storage,
+                        $classlike_storage,
+                        $cased_function_id,
+                    );
+
+                    continue;
+                }
+
+                $resolved = CapabilitiesExpressionResolver::resolve(
+                    $capabilities_expression,
+                    $aliases,
+                    $classlike_storage->template_types ?? [],
+                    $type_aliases,
+                    $classlike_storage?->name,
+                );
+
+                if ($resolved instanceof Union) {
+                    $deferred_capabilities[] = $resolved;
+                } else {
+                    $docblock_info->capabilities |= $resolved;
+                }
+            } catch (TypeParseTreeException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    'Invalid @psalm-capabilities tag: ' . $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($file_scanner, $stmt, null, true),
+                );
+            }
+        }
+
+        if ($conditional_capabilities !== []) {
+            // a call requires the branches its arguments select, the body may do what any branch allows
+            $storage->unconditional_capabilities = $docblock_info->capabilities;
+            $storage->conditional_capabilities = $conditional_capabilities;
+
+            foreach ($conditional_capabilities as $conditional) {
+                $docblock_info->capabilities |= Capabilities::fromType($conditional);
+            }
+        }
+
+
+        $docblock_info->capabilities_expressions = [];
+
+        return $deferred_capabilities;
+    }
+
+    /**
+     * A conditional `@psalm-capabilities` value, over the parameters of the function-like: `($id is null ? io : pure)`
+     *
+     * @param array<string, TypeAlias> $type_aliases
+     * @throws TypeParseTreeException
+     */
+    private static function getConditionalCapabilities(
+        string $expression,
+        Aliases $aliases,
+        array $type_aliases,
+        FunctionLikeStorage $storage,
+        ?ClassLikeStorage $classlike_storage,
+        string $cased_function_id,
+    ): Union {
+        $class_template_types = $classlike_storage->template_types ?? [];
+
+        [$fixed_type_tokens, $function_template_types] = self::getConditionalSanitizedTypeTokens(
+            $expression,
+            $aliases,
+            ($storage->template_types ?? []) + $class_template_types,
+            $type_aliases,
+            $storage,
+            $classlike_storage,
+            $cased_function_id,
+            $storage->template_types ?? [],
+        );
+
+        $type = TypeParser::parseTokens(
+            array_values($fixed_type_tokens),
+            null,
+            $function_template_types + $class_template_types,
+            $type_aliases,
+        );
+
+        if (!$type->isSingle()
+            || !$type->getSingleAtomic() instanceof TConditional
+            || !Capabilities::isPurityType($type)
+        ) {
+            throw new TypeParseTreeException(
+                '@psalm-capabilities ' . $expression . ' is no conditional over parameters,'
+                    . ' like ($param is null ? io : pure)',
+            );
+        }
+
+        return $type;
     }
 
     /**
