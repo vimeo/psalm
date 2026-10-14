@@ -681,7 +681,10 @@ final class TaintStore
 
         $class = null;
         $method_name = null;
+        // `$this->method()` and `static::method()` call what a class extending $self may override it with
+        $late_bound = true;
         if ($expr instanceof StaticCall && $expr->class instanceof Name && $expr->name instanceof Identifier) {
+            $late_bound = $expr->class->toLowerString() === 'static';
             $class = in_array($expr->class->toLowerString(), ['self', 'static'], true)
                 ? $self
                 : ClassLikeAnalyzer::getFQCLNFromNameObject($expr->class, $statements_analyzer->getAliases());
@@ -702,6 +705,7 @@ final class TaintStore
         $declaring_method_id = $codebase->methods->getDeclaringMethodId(new MethodIdentifier($class, $method_name));
 
         return $declaring_method_id === null
+            || ($late_bound && !StringStartScanner::isOwnMethodFinal($codebase, $class, $declaring_method_id))
             ? null
             : StringStartScanner::getMethodStart(
                 $codebase,

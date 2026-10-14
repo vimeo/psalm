@@ -782,9 +782,27 @@ final class StringStartScanner
             new MethodIdentifier($self, strtolower($method)),
         );
 
-        return $declaring_method_id === null
+        return $declaring_method_id === null || !self::isOwnMethodFinal($codebase, $self, $declaring_method_id)
             ? null
             : self::getMethodStart($codebase, $declaring_method_id->fq_class_name, $declaring_method_id->method_name);
+    }
+
+    /**
+     * Whether calling the method on `$this` or `static` in the class calls the method declared for it: no class
+     * extending it can override it
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function isOwnMethodFinal(
+        Codebase $codebase,
+        string $self,
+        MethodIdentifier $declaring_method_id,
+    ): bool {
+        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        return self::getStorage($codebase, $self)?->final === true
+            || $method_storage->final
+            || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
     }
 
     /** @psalm-capabilities read-props */

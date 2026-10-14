@@ -5124,6 +5124,84 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'keyedStoreKeyStartsOfAListAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        protected function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = "data_" . $id;
+                            }
+                            return $keys;
+                        }
+                    }
+
+                    final class AnyKeys extends Reader {
+                        #[Override]
+                        protected function keys(array $ids): array {
+                            return $ids;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfItemsAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        protected function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }
+
+                    final class AnyKey extends Reader {
+                        #[Override]
+                        protected function key(string $id): string {
+                            return $id;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'keyedStoreAnyKey' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
