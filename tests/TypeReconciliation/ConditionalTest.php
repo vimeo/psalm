@@ -21,6 +21,47 @@ final class ConditionalTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'orWithACallAssertingNothingWhenFalseNarrowsWhatItsOtherSideTested' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =non-empty-string $s */
+                    function isFilled(string $s): bool {
+                        return $s !== "";
+                    }
+
+                    function f(?string $id, ?string $name): string {
+                        if ($id === null || !str_contains($id, "::")) {
+                            return "";
+                        }
+                        /** @psalm-check-type-exact $id = string */;
+
+                        if ($name === null || !isFilled($name)) {
+                            return "";
+                        }
+                        /** @psalm-check-type-exact $name = string */;
+
+                        return $id . $name;
+                    }',
+            ],
+            'orWithAnAssignmentOnTheSideAssertingNothingWhenFalseForgetsWhatTheOtherSideTested' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =non-empty-string $s */
+                    function isFilled(string $s, ?string $other): bool {
+                        return $s !== "";
+                    }
+
+                    function nextId(): ?string {
+                        return null;
+                    }
+
+                    function f(?string $id, string $name): ?string {
+                        if ($id === null || !isFilled($name, $id = nextId())) {
+                            return "";
+                        }
+                        /** @psalm-check-type-exact $id = null|string */;
+
+                        return $id;
+                    }',
+            ],
             'elseIfConditionAssignmentReachesTheBranchesAfterIt' => [
                 'code' => '<?php
                     function configured(): ?string {
