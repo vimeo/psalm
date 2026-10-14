@@ -2280,6 +2280,108 @@ final class CapabilitiesTest extends TestCase
                         return array_map(static fn(Counter $counter): int => $counter->get(), $counters);
                     }',
             ],
+            'objectsWhoseConstructorKeepsNoReferenceToThemAreFresh' => [
+                'code' => '<?php
+                    final class Handler {
+                        private ?string $formatter = null;
+                        public string $label = "";
+
+                        /** @psalm-mutation-free */
+                        public function __construct(public readonly string $path) {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setFormatter(string $formatter): void {
+                            $this->formatter = $formatter;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getFormatter(): ?string {
+                            return $this->formatter;
+                        }
+                    }
+
+                    final class EnvHandler {
+                        private ?string $formatter = null;
+                        public string $label = "";
+                        public readonly string $path;
+
+                        /** @psalm-capabilities read-globals */
+                        public function __construct() {
+                            $this->path = (string) getenv("LOG_PATH");
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setFormatter(string $formatter): void {
+                            $this->formatter = $formatter;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getFormatter(): ?string {
+                            return $this->formatter;
+                        }
+                    }
+
+                    final class NoConstructor {
+                        public string $label = "";
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makeHandler(): Handler {
+                        $handler = new Handler("a");
+                        $handler->setFormatter("b");
+                        $handler->label = "c";
+                        (new Handler("d"))->setFormatter("e");
+                        return $handler;
+                    }
+
+                    /** @psalm-pure */
+                    function makeNoConstructor(): NoConstructor {
+                        $object = new NoConstructor();
+                        $object->setLabel("a");
+                        return $object;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    function makeEnvHandler(): EnvHandler {
+                        $handler = new EnvHandler();
+                        $handler->setFormatter("a");
+                        $handler->label = "b";
+                        return $handler;
+                    }',
+            ],
+            'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
+                'code' => '<?php
+                    final class Inner {
+                        public int $n = 0;
+                    }
+
+                    final class Config {
+                        public string $env = "prod";
+                        public Inner $inner;
+                        public static ?Config $instance = null;
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {
+                            $this->inner = new Inner();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals */
+                    function copyConfig(): ?Config {
+                        $config = Config::$instance;
+                        if ($config === null) {
+                            return null;
+                        }
+                        $copy = clone $config;
+                        $copy->env = "dev";
+                        return $copy;
+                    }',
+            ],
         ];
     }
 
@@ -5003,6 +5105,157 @@ final class CapabilitiesTest extends TestCase
                         return $holder->counter->n;
                     }',
                 'error_message' => 'ImpurePropertyFetch',
+            ],
+            'objectWhoseConstructorStoresItInGlobalStateIsNotFresh' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public string $label = "";
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function make(): Registered {
+                        $object = new Registered();
+                        $object->setLabel("a");
+                        return $object;
+                    }',
+                'error_message' => 'method Registered::setLabel requires write-props',
+            ],
+            'objectWhoseConstructorGivesItToAnotherObjectIsNotFresh' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var list<object> */
+                        public array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function add(object $item): void {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    final class Joined {
+                        public string $label = "";
+
+                        /** @psalm-capabilities write-props */
+                        public function __construct(Registry $registry) {
+                            $registry->add($this);
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function make(Registry $registry): Joined {
+                        $object = new Joined($registry);
+                        $object->label = "a";
+                        return $object;
+                    }
+
+                    /** @psalm-capabilities write-this-props */
+                    function makeLabelled(Registry $registry): Joined {
+                        $object = new Joined($registry);
+                        $object->setLabel("a");
+                        return $object;
+                    }',
+                'error_message' => 'constructor Joined::__construct requires write-props',
+            ],
+            'newStaticOfAnExtendableClassIsNotFresh' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {
+                        public string $label = "";
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+
+                        /** @psalm-pure */
+                        public static function make(): static {
+                            $object = new static();
+                            $object->setLabel("a");
+                            return $object;
+                        }
+                    }',
+                'error_message' => 'method Base::setLabel requires write-props',
+            ],
+            'freshObjectHoldingGlobalStateWritesGlobalStateThroughIt' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var list<object> */
+                        public array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function add(object $item): void {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    final class Holder {
+                        public static ?Registry $global = null;
+                        public ?Registry $registry;
+
+                        /** @psalm-capabilities read-globals */
+                        public function __construct() {
+                            $this->registry = self::$global;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function addToRegistry(object $item): void {
+                            $this->registry?->add($item);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function add(): void {
+                        $holder = new Holder();
+                        $holder->addToRegistry(new stdClass());
+                    }',
+                'error_message' => 'method Holder::addToRegistry requires write-props|write-globals',
+            ],
+            'theCloneOfAnObjectReachedFromGlobalStateHoldsGlobalState' => [
+                'code' => '<?php
+                    final class Inner {
+                        public int $n = 0;
+                    }
+
+                    final class Config {
+                        public string $env = "prod";
+                        public Inner $inner;
+                        public static ?Config $instance = null;
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {
+                            $this->inner = new Inner();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|read-globals */
+                    function tamper(): void {
+                        $config = Config::$instance;
+                        if ($config !== null) {
+                            $copy = clone $config;
+                            $copy->inner->n = 1;
+                        }
+                    }',
+                'error_message' => 'property assignment to Inner::$n on an object reached from global state requires write-props|write-globals',
             ],
         ];
     }
