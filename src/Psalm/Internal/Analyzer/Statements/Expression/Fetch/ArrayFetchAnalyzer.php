@@ -105,6 +105,7 @@ use function is_int;
 use function spl_object_id;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strtolower;
 use function substr;
 
@@ -496,7 +497,7 @@ final class ArrayFetchAnalyzer
      * The key of the path of a fetch whose key is one of a few literals (two to eight, as for assignments, see
      * ArrayAssignmentAnalyzer::MAX_KEY_VALUES): each quoted, separated by '|' (see
      * TaintFlowResolution::getFetchedKeys()). What it fetches is what is under one of them. Null if the key isn't
-     * one of a few literals.
+     * one of a few literals, or if one of them has a quote or a '|', which would split it.
      *
      * @psalm-mutation-free
      */
@@ -512,6 +513,10 @@ final class ArrayFetchAnalyzer
 
         $keys = [];
         foreach ($string_literals as $string_literal) {
+            if (strpbrk($string_literal->value, '\'|') !== false) {
+                return null;
+            }
+
             $keys[] = '\'' . $string_literal->value . '\'';
         }
         foreach ($int_literals as $int_literal) {

@@ -4545,6 +4545,16 @@ final class TaintTest extends TestCase
                     show(["ids" => $_GET["ids"], "other" => "a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsWithAQuoteAndABarTakesWhatIsUnderEach' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        foreach (["mode", "x\'|\'y"] as $key) {
+                            echo (string) $options[$key];
+                        }
+                    }
+                    show(["x\'|\'y" => $_GET["ids"], "other" => "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
