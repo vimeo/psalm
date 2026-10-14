@@ -107,6 +107,12 @@ vendor/bin/psalm --set-baseline=your-baseline.xml
 
 You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either.
 
+`--set-baseline` also sets `errorBaseline` in your config to the generated file. When combined with `--use-baseline`, the config is left untouched and the baseline is written to the `--use-baseline` file unless `--set-baseline` names another one. This lets you keep a second baseline for a different set of CLI options:
+
+```
+vendor/bin/psalm --use-baseline=other-baseline.xml --set-baseline=other-baseline.xml
+```
+
 You have two options to use the generated baseline when running psalm:
 
 ```
