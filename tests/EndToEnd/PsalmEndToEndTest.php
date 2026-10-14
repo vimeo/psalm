@@ -87,7 +87,9 @@ final class PsalmEndToEndTest extends TestCase
     {
         @unlink(self::$tmpDir . '/psalm.xml');
 
-        foreach (glob(self::$tmpDir . '/*baseline*.xml') ?: [] as $baseline_file) {
+        $baseline_files = glob(self::$tmpDir . '/*baseline*.xml');
+        assert($baseline_files !== false);
+        foreach ($baseline_files as $baseline_file) {
             unlink($baseline_file);
         }
 
