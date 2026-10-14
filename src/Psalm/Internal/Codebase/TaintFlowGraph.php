@@ -153,12 +153,32 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $speculative_calls = [];
 
     /**
+     * The array keys passed to parameters at specialized call sites: unspecialized argument node id =>
+     * (specialization key => key). A literal key is as the keys of array fetches and assignments are in path
+     * types, and a parameter of the function-like making the call, as passed, is its unspecialized argument node
+     * id prefixed with '@'. The body of a function-like whose array key is one of its parameters, as passed,
+     * fetches or assigns the key of each call (see ArrayFetchAnalyzer::getParamKey() and
+     * TaintFlowResolution::resolveParamKey()).
+     *
+     * @var array<string, array<string, string>>
+     */
+    private array $param_keys = [];
+
+    /**
      * Speculatively specialized call sites of a callee that turned out not to be pure,
      * which are resolved as if they were not specialized: specialization key => true
      *
      * @var array<string, true>
      */
     private array $despecialized_calls = [];
+
+    /**
+     * The despecialized calls whose callees only read, and so can't keep what a call gets for another one to
+     * return: specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $read_only_calls = [];
 
     /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
@@ -338,12 +358,35 @@ final class TaintFlowGraph extends DataFlowGraph
         $mutation_levels = $codebase->code_use_graph->getMutationLevels();
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
+            $is_read_only = true;
+
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                $mutation_level = $mutation_levels[$function_node_id] ?? Capabilities::ALL;
+
+                if ($mutation_level !== Capabilities::NONE) {
                     $this->despecialized_calls[$specialization_key] = true;
-                    break;
                 }
+
+                $is_read_only = $is_read_only
+                    && ($mutation_level & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) === 0;
             }
+
+            if ($is_read_only && isset($this->despecialized_calls[$specialization_key])) {
+                $this->read_only_calls[$specialization_key] = true;
+            }
+        }
+    }
+
+    /**
+     * Records that the call of $argument_node, if specialized, passes the array key $key (see $param_keys) to
+     * its parameter
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addParamKey(DataFlowNode $argument_node, string $key): void
+    {
+        if ($argument_node->unspecialized_id !== null && $argument_node->specialization_key !== null) {
+            $this->param_keys[$argument_node->unspecialized_id][$argument_node->specialization_key] = $key;
         }
     }
 
@@ -585,6 +628,10 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->generator_sends[$key] = ($this->generator_sends[$key] ?? []) + $map;
         }
 
+        foreach ($other->param_keys as $key => $map) {
+            $this->param_keys[$key] = ($this->param_keys[$key] ?? []) + $map;
+        }
+
         foreach ($other->speculative_calls as $key => $map) {
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
         }
@@ -745,6 +792,8 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specializations,
             $this->specialized_calls,
             $this->despecialized_calls,
+            $this->read_only_calls,
+            $this->param_keys,
             $this->shared_state,
             Config::getInstance(),
             $project_analyzer,
