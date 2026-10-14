@@ -2106,6 +2106,9 @@ final class CapabilitiesTest extends TestCase
                     function call(Conn $conn, string $name): mixed {
                         return $conn->{$name}("k");
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodNeedsTheClassContract' => [
                 'code' => '<?php
@@ -2123,6 +2126,9 @@ final class CapabilitiesTest extends TestCase
                         $callable = [$conn, $name];
                         return $callable("k");
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameOnAnIntersectionNeedsTheContractOfEachPart' => [
                 'code' => '<?php
@@ -2138,6 +2144,9 @@ final class CapabilitiesTest extends TestCase
                         $callable();
                         return $object->{$name}();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayOfAMethodOfAnotherPartOfAnIntersectionNeedsItsCapabilities' => [
                 'code' => '<?php
@@ -2158,6 +2167,9 @@ final class CapabilitiesTest extends TestCase
                         $callable = [$object, "reset"];
                         $callable();
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodOfThisNeedsWriteThisProps' => [
                 'code' => '<?php
@@ -2202,6 +2214,9 @@ final class CapabilitiesTest extends TestCase
                         $callable(strtolower($name), "k");
                         return $conn->{$name}(...$arguments);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -2693,6 +2708,8 @@ final class CapabilitiesTest extends TestCase
                         return $selector(1);
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - The context is read-globals but function call on mixed requires impure',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'dateWithoutTimestampReadsTheClock' => [
                 'code' => '<?php
@@ -4626,6 +4643,8 @@ final class CapabilitiesTest extends TestCase
                         return $conn->{$name}("k");
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameMayDoWhatTheClassContractAllows' => [
                 'code' => '<?php
@@ -4643,6 +4662,8 @@ final class CapabilitiesTest extends TestCase
                         return $conn->{$name}("k");
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodMayDoWhatTheClassContractAllows' => [
                 'code' => '<?php
@@ -4661,6 +4682,8 @@ final class CapabilitiesTest extends TestCase
                         return $callable("k");
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameMayWriteAReferenceParamPassed' => [
                 'code' => '<?php
@@ -4678,6 +4701,8 @@ final class CapabilitiesTest extends TestCase
                         return $conn->{$name}($out);
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameOnAnIntersectionWithAPartWithoutAContractIsImpure' => [
                 'code' => '<?php
@@ -4697,6 +4722,8 @@ final class CapabilitiesTest extends TestCase
                         return $object->{$name}();
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameOfAMarkerInterfaceIsImpure' => [
                 'code' => '<?php
@@ -4707,6 +4734,8 @@ final class CapabilitiesTest extends TestCase
                         return $object->{$name}();
                     }',
                 'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodOfAMarkerInterfaceIsImpure' => [
                 'code' => '<?php
@@ -4721,6 +4750,8 @@ final class CapabilitiesTest extends TestCase
                         $callable();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'methodCalledByAnUnknownNameOnAnIntersectionMayDoWhatAnyPartAllows' => [
                 'code' => '<?php
@@ -4735,6 +4766,8 @@ final class CapabilitiesTest extends TestCase
                         return $object->{$name}();
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - The context is read-props|io but method (Logs&Counts)::{unknown} requires write-props|io',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodOnAnIntersectionMayDoWhatAnyPartAllows' => [
                 'code' => '<?php
@@ -4750,6 +4783,8 @@ final class CapabilitiesTest extends TestCase
                         $callable();
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayOfAMethodOfAnotherPartOfAnIntersectionMayDoWhatItDoes' => [
                 'code' => '<?php
@@ -4771,6 +4806,8 @@ final class CapabilitiesTest extends TestCase
                         $callable();
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-props but method Resets::reset requires write-globals',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'callableArrayWithAnUnknownMethodOfThisMayWriteThisProps' => [
                 'code' => '<?php
@@ -4849,6 +4886,8 @@ final class CapabilitiesTest extends TestCase
                         return $callable($holder->value);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

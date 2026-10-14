@@ -714,9 +714,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
         }
 
-        StaticAnalyzer::taintBoundStaticVariables($statements_analyzer, $context);
-
-        if (self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
+        if (self::afterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }
 
@@ -830,6 +828,20 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Once a statement is analyzed, the variables bound to static variables write them (see
+     * StaticAnalyzer::taintBoundStaticVariables()), and plugins are told
+     */
+    private static function afterStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): ?bool {
+        StaticAnalyzer::taintBoundStaticVariables($statements_analyzer, $context);
+
+        return self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer);
     }
 
     private static function dispatchAfterStatementAnalysis(

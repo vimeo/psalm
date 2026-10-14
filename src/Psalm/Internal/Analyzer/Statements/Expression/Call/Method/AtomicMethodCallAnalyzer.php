@@ -458,7 +458,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         $intersection_method_id = $intersection_types
-            ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
+            ? '(' . $lhs_type_part->getId() . ')'  . '::' . $stmt->name->name
             : null;
         $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 

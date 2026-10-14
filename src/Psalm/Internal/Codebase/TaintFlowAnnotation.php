@@ -187,7 +187,10 @@ final class TaintFlowAnnotation
 
         $sources = [];
         foreach (preg_split('/\s*,\s*/', $list) ?: [] as $source) {
-            if (preg_match('/^\$(\w+(?:\(\))?)$/', $source, $matches) !== 1 || !isset($matches[1])) {
+            if (preg_match('/^\$(\w+(?:\(\))?)$/', $source, $matches) !== 1
+                || !isset($matches[1])
+                || $matches[1] === ''
+            ) {
                 return null;
             }
 
@@ -212,7 +215,10 @@ final class TaintFlowAnnotation
             return null;
         }
 
-        $key = ($matches[3] ?? '') === '' ? null : $matches[3];
+        $key = $matches[3];
+        if ($key === '') {
+            $key = null;
+        }
 
         preg_match_all('/\$(\w+)/', $matches[5] ?? '', $other_key_matches);
 
