@@ -473,7 +473,9 @@ final class InstancePropertyAssignmentAnalyzer
             );
             $codebase->analyzer->addMutableClass(
                 $declaring_class_storage->name,
-                $mut,
+                // writing a fresh object is free for the writer, but the class still has a property written
+                // where a readonly one couldn't be: it can't be immutable
+                $can_set_readonly_property ? $mut : $mut | Capabilities::WRITE_PROPS,
             );
         } else {
             if ($on_global_state) {

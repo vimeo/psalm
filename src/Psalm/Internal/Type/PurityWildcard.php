@@ -60,6 +60,7 @@ final class PurityWildcard
 
     /**
      * Whether the type has the `_` purity anywhere.
+     *
      * @psalm-pure
      */
     public static function contains(Union $type): bool
