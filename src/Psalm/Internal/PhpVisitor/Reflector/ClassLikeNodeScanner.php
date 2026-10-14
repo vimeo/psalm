@@ -1323,7 +1323,8 @@ final class ClassLikeNodeScanner
         $config = $this->config;
 
         if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
-            $comments = DocComment::parsePreservingLength($comment);
+            // unknown @psalm- tags are reported by CommentAnalyzer::getTypeFromComment() below
+            $comments = DocComment::parsePreservingLength($comment, true);
 
             if (isset($comments->tags['deprecated'])) {
                 $deprecated = true;
@@ -1572,10 +1573,17 @@ final class ClassLikeNodeScanner
 
             $comment = $stmt->getDocComment();
             if ($comment) {
-                $comments = DocComment::parsePreservingLength($comment);
+                try {
+                    $comments = DocComment::parsePreservingLength($comment);
 
-                if (isset($comments->tags['deprecated'])) {
-                    $case->deprecated = true;
+                    if (isset($comments->tags['deprecated'])) {
+                        $case->deprecated = true;
+                    }
+                } catch (DocblockParseException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage(),
+                        $case_location,
+                    );
                 }
             }
             $storage->enum_cases[$stmt->name->name] = $case;
@@ -1726,7 +1734,7 @@ final class ClassLikeNodeScanner
             $property_storage->has_default = (bool)$property->default;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->since_php_version_id = $comment
-                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment))
+                ? $this->parseSincePhpVersionId(DocComment::parsePreservingLength($comment, true))
                 : null;
             $property_storage->suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
             $property_storage->internal = $var_comment ? $var_comment->psalm_internal : [];
