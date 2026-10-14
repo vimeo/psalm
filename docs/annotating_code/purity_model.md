@@ -419,6 +419,37 @@ function register(): Registered {
 A constructor that writes another object, such as linking the new object to a parent passed to
 it, or that writes a by-reference parameter, loses it the same way.
 
+A `clone` is a new object too, by the same rule: the copy is free to mutate unless the class's
+`__clone` needs `write-props`, `write-globals` or `write-refs`, and so may hand the copy to someone
+else. A class-level contract keeps the waiver, for a clone as for a new object:
+
+```php
+<?php
+final class Tracked {
+    /** @var list<Tracked> */
+    public static array $copies = [];
+
+    public int $uses = 0;
+
+    /** @psalm-capabilities read-props|read-globals|write-globals */
+    public function __clone() {
+        self::$copies[] = $this;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function use(): void {
+        $this->uses++;
+    }
+}
+
+/** @psalm-capabilities read-props|read-globals|write-globals */
+function copyTracked(Tracked $tracked): Tracked {
+    $copy = clone $tracked;
+    $copy->use(); // ImpureMethodCall: The context is read-props|read-globals|write-globals but method Tracked::use requires write-props
+    return $copy;
+}
+```
+
 When the class isn't known exactly, there is no waiver: `new static()` in a class that may be
 extended, and `new $class()`, may run the constructor of a subclass that keeps a reference:
 

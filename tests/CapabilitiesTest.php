@@ -1053,6 +1053,30 @@ final class CapabilitiesTest extends TestCase
                         return $i;
                     }',
             ],
+            'cloneWhoseCloneMethodOnlyWritesTheCopyIsFresh' => [
+                'code' => '<?php
+                    final class Counted {
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __clone() {
+                            $this->uses = 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function use(): void {
+                            $this->uses++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function copyCounted(Counted $counted): Counted {
+                        $copy = clone $counted;
+                        $copy->use();
+                        $copy->uses = 1;
+                        return $copy;
+                    }',
+            ],
             'pureClone' => [
                 'code' => '<?php
                     final class Point {
@@ -3778,6 +3802,55 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImmutableDependency',
+            ],
+            'cloneWhoseCloneMethodStoresTheCopyIsNotFresh' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|read-globals|write-globals */
+                        public function __clone() {
+                            self::$all[] = $this;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function use(): void {
+                            $this->uses++;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals */
+                    function copyRegistered(Registered $registered): Registered {
+                        $copy = clone $registered;
+                        $copy->use();
+                        return $copy;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'writingACloneWhoseCloneMethodStoresTheCopy' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|read-globals|write-globals */
+                        public function __clone() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals */
+                    function copyRegistered(Registered $registered): Registered {
+                        $copy = clone $registered;
+                        $copy->uses = 1;
+                        return $copy;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
             'impureCloneMethod' => [
                 'code' => '<?php
