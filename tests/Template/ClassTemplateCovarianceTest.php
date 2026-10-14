@@ -586,6 +586,23 @@ final class ClassTemplateCovarianceTest extends TestCase
                         abstract public function pair(): Pair;
                     }',
             ],
+            'allowCovariantTemplateInOutputPositionsOfReturnAndCallableParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Box {}
+
+                    /** @template-covariant T */
+                    abstract class C {
+                        /** @return Closure(Closure(T): void): void */
+                        abstract public function each(): Closure;
+
+                        /** @param Closure(Box<T>): void $f */
+                        abstract public function withBox(Closure $f): void;
+
+                        /** @return Box<Closure(): T> */
+                        abstract public function producers(): Box;
+                    }',
+            ],
             'allowCovariantTemplateInCallableParamOfParam' => [
                 'code' => '<?php
                     /**
@@ -843,6 +860,39 @@ final class ClassTemplateCovarianceTest extends TestCase
                     final class C {
                         /** @param Inv<Closure(T): void> $f */
                         public function f(Inv $f): void {}
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInACovariantParamOfAParam' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Box {}
+
+                    /** @template-covariant T */
+                    abstract class C {
+                        /** @param Box<T> $box */
+                        abstract public function put(Box $box): void;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInCallableParamOfReturn' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    abstract class C {
+                        /** @return Closure(T): void */
+                        abstract public function consumer(): Closure;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'preventCovariantTemplateInCallableParamOfACovariantParamOfReturn' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Box {}
+
+                    /** @template-covariant T */
+                    abstract class C {
+                        /** @return Box<Closure(T): void> */
+                        abstract public function consumers(): Box;
                     }',
                 'error_message' => 'InvalidTemplateParam',
             ],

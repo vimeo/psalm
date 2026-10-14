@@ -64,15 +64,13 @@ final class TypeChecker extends TypeVisitor
     private bool $in_invariant_position = false;
 
     /**
-     * Whether entering a callable's parameter types turned an input position into an output one: a covariant
-     * template may be what a callable parameter receives (a method's `Closure(T): void` parameter hands T out),
-     * and the parameter types of a callable in there are an input position again
-     */
-    private bool $flipped_from_input = false;
-
-    /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
+     * @param bool $prevent_template_covariance whether the type is in an input position, a method's parameter
+     * @param bool $in_output_position whether the type is in an output position, a method's return type, or one
+     *                                 an input position turns into: a covariant template may be there (a method's
+     *                                 `Closure(T): void` parameter hands T out), but the parameter types of a
+     *                                 callable in there are an input position
      * @psalm-mutation-free
      */
     public function __construct(
@@ -84,6 +82,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
         private readonly ?Context $context = null,
+        private bool $in_output_position = false,
     ) {
     }
 
@@ -105,7 +104,8 @@ final class TypeChecker extends TypeVisitor
             $prevents_covariance = $this->checkNamedObject($type);
 
             if ($type instanceof TGenericObject && $prevents_covariance !== null) {
-                // each type param is checked with its own variance, and the siblings with the outer one
+                // each type param is checked with its own variance, and the siblings with the outer one. Variance
+                // composes: a covariant type param is in the position of the type, an invariant one in neither
                 $outer_prevents_covariance = $this->prevent_template_covariance;
                 $outer_in_invariant_position = $this->in_invariant_position;
 
@@ -151,25 +151,25 @@ final class TypeChecker extends TypeVisitor
             return parent::traverse($node);
         }
 
-        // a callable's parameter types are in the opposite position. Output positions that aren't reached from
-        // an input one (return types, constructor parameters) stay unchecked
+        // a callable's parameter types are in the opposite position. Positions that are neither (constructor
+        // parameters, and what isn't a method's signature) stay unchecked
         $outer_prevents_covariance = $this->prevent_template_covariance;
-        $outer_flipped_from_input = $this->flipped_from_input;
+        $outer_in_output_position = $this->in_output_position;
 
         if (!$this->in_invariant_position) {
             if ($outer_prevents_covariance) {
                 $this->prevent_template_covariance = false;
-                $this->flipped_from_input = true;
-            } elseif ($outer_flipped_from_input) {
+                $this->in_output_position = true;
+            } elseif ($outer_in_output_position) {
                 $this->prevent_template_covariance = true;
-                $this->flipped_from_input = false;
+                $this->in_output_position = false;
             }
         }
 
         $result = parent::traverse($node);
 
         $this->prevent_template_covariance = $outer_prevents_covariance;
-        $this->flipped_from_input = $outer_flipped_from_input;
+        $this->in_output_position = $outer_in_output_position;
 
         return $result;
     }
@@ -180,8 +180,9 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * @return array<int, bool>|null whether each type param of a generic object is in a position where a covariant
-     *                               template is not allowed, null if its type params weren't checked
+     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
+     *                                template is not allowed, null for one in the position of the generic object, or
+     *                                for all if its type params weren't checked
      */
     private function checkNamedObject(TNamedObject $atomic): ?array
     {
@@ -269,8 +270,9 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * @return array<int, bool>|null whether each type param is in a position where a covariant template is not
-     *                               allowed, null for an unknown class
+     * @return array<int, ?bool>|null whether each type param is in a position where a covariant template is not
+     *                                allowed, null for one in the position of the generic object (a covariant one),
+     *                                or for all for an unknown class
      */
     private function checkGenericParams(TGenericObject $atomic): ?array
     {
@@ -333,9 +335,10 @@ final class TypeChecker extends TypeVisitor
         $prevents_covariance = [];
 
         foreach ($atomic->type_params as $i => $type_param) {
-            $prevents_covariance[$i] = $this->source instanceof MethodAnalyzer
-                && $this->source->getMethodName() !== '__construct'
-                && empty($expected_param_covariants[$i]);
+            // a covariant type param is in the position of the type (null): an invariant one is in neither
+            $prevents_covariance[$i] = empty($expected_param_covariants[$i])
+                ? $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
+                : null;
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];

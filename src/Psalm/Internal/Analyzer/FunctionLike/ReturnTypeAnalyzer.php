@@ -17,6 +17,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
@@ -875,6 +876,7 @@ final class ReturnTypeAnalyzer
                 false,
                 false,
                 $context,
+                $function_like_analyzer instanceof MethodAnalyzer,
             );
 
             return null;
@@ -935,6 +937,7 @@ final class ReturnTypeAnalyzer
             [],
             false,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
+            template_output_position: $function_like_analyzer instanceof MethodAnalyzer,
         ) === false) {
             return false;
         }
