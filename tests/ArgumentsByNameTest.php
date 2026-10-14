@@ -238,11 +238,11 @@ final class ArgumentsByNameTest extends TestCase
                     function foo(int $a = 0, int $b = 0): void {}
 
                     /**
-                     * @param list<int> $list
+                     * @param array<array-key, int> $array
                      * @param array<string, int> $map
                      */
-                    function bar(array $list, array $map): void {
-                        foo(...$list);
+                    function bar(array $array, array $map): void {
+                        foo(...$array);
                         foo(...$map);
                     }',
                 'assertions' => [],
@@ -492,6 +492,32 @@ final class ArgumentsByNameTest extends TestCase
                     function foo(int $a = 0, int $b = 0): void {}
 
                     foo(...[1, "b" => 2]);',
+                'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackedListIsPositional' => [
+                'code' => '<?php
+                    /** @arguments-by-name */
+                    function foo(int $a = 0, int $b = 0): void {}
+
+                    /** @param list<int> $list */
+                    function bar(array $list): void {
+                        foo(...$list);
+                    }',
+                'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedIterableWithIntKeysIsPositional' => [
+                'code' => '<?php
+                    /** @optional-arguments-by-name */
+                    function foo(int $a = 0, int $b = 0): void {}
+
+                    /** @param iterable<int, int> $values */
+                    function bar(iterable $values): void {
+                        foo(...$values);
+                    }',
                 'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
                 'error_levels' => [],
                 'php_version' => '8.1',

@@ -1275,6 +1275,7 @@ final class ArgumentsAnalyzer
         bool $args_by_name,
         string $cased_method_id,
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
         $position = 0;
 
         foreach ($args as $arg) {
@@ -1286,29 +1287,46 @@ final class ArgumentsAnalyzer
             $count = 1;
             $next_position_is_known = true;
 
+            // the integer keys of an unpacked array are passed by position, its string keys by name
             if ($arg->unpack) {
                 $arg_type = $statements_analyzer->node_data->getType($arg->value);
-                $array_type = $arg_type && $arg_type->isSingle() ? $arg_type->getSingleAtomic() : null;
+                $iterable_type = $arg_type && $arg_type->isSingle() ? $arg_type->getSingleAtomic() : null;
 
-                // the integer keys of an unpacked array are passed by position, its string keys by name
-                if (!$array_type instanceof TKeyedArray || ($array_type->fallback_params && !$array_type->is_list)) {
-                    return;
-                }
+                if ($iterable_type instanceof TKeyedArray
+                    && ($iterable_type->is_list || !$iterable_type->fallback_params)
+                ) {
+                    $count = 0;
+                    $next_position_is_known = !$iterable_type->fallback_params;
 
-                $count = 0;
-                $next_position_is_known = !$array_type->fallback_params;
+                    foreach ($iterable_type->properties as $key => $property) {
+                        if (is_string($key)) {
+                            break;
+                        }
 
-                foreach ($array_type->properties as $key => $property) {
-                    if (is_string($key)) {
-                        break;
+                        $count++;
+
+                        if ($property->possibly_undefined) {
+                            $next_position_is_known = false;
+                            break;
+                        }
+                    }
+                } else {
+                    if ($iterable_type instanceof TKeyedArray) {
+                        $key_type = $iterable_type->getGenericKeyType();
+                    } elseif ($iterable_type instanceof TArray) {
+                        $key_type = $iterable_type->type_params[0];
+                    } elseif ($iterable_type && $iterable_type->isIterable($codebase)) {
+                        $key_type = $codebase->getKeyValueParamsForTraversableObject($iterable_type)[0];
+                    } else {
+                        return;
                     }
 
-                    if ($property->possibly_undefined) {
-                        $next_position_is_known = false;
-                        break;
+                    // the first value goes to the next parameter, the position of the others is not known
+                    if (!$key_type->isInt()) {
+                        return;
                     }
 
-                    $count++;
+                    $next_position_is_known = false;
                 }
             }
 
