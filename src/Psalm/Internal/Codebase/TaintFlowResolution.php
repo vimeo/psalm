@@ -160,11 +160,11 @@ final class TaintFlowResolution
      * putting what they return for an element back under its key, components passing arrays of options on through
      * many levels, ... Convergence (see enterConvergence()) doesn't help in a body walk the flows of a single call
      * reach, since it leaves through all the call sites. A node that holds that many states lets the flows reaching
-     * it in more forget what they would only use to tell apart deeper fetches. 96 tells apart the flows of
-     * dozens of calls passing arrays with differently keyed values on through several functions; on Psalm's own
-     * code, 1024 made 14M states, most of the 20 GB its self-analysis took.
+     * it in more forget what they would only use to tell apart deeper fetches. On Psalm's own code, 1024 made
+     * 14M states, most of the 20 GB its self-analysis took: past 16, a fetch takes the flows of a node whose keys
+     * it would tell apart.
      */
-    private const WIDENING_STATES = 96;
+    private const WIDENING_STATES = 16;
 
     /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
