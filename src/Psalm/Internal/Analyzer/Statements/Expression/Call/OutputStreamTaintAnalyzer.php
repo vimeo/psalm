@@ -132,6 +132,7 @@ final class OutputStreamTaintAnalyzer
      *
      * @param list<PhpParser\Node\Arg> $args
      * @return array<int, int>
+     * @psalm-capabilities read-props
      */
     private static function getTaintsRemovedByFormat(
         StatementsAnalyzer $statements_analyzer,
@@ -212,6 +213,7 @@ final class OutputStreamTaintAnalyzer
 
     /**
      * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
      */
     private static function getArgType(
         StatementsAnalyzer $statements_analyzer,

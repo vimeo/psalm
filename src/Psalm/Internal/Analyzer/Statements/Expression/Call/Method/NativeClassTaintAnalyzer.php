@@ -129,6 +129,7 @@ final class NativeClassTaintAnalyzer
      * array
      *
      * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
      */
     private static function addLiteralKey(
         StatementsAnalyzer $statements_analyzer,

@@ -473,6 +473,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function isSource(DataFlowNode $node): bool
+    {
+        return isset($this->sources[$node->id]);
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addSink(DataFlowNode $node): void
@@ -501,6 +509,14 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addSharedState(DataFlowNode $node): void
     {
         $this->shared_state[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isSharedState(DataFlowNode $node): bool
+    {
+        return isset($this->shared_state[$node->id]);
     }
 
     /**
@@ -914,7 +930,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse
      * @param-out array<string, array<string, true>> $reverse
-     * @psalm-pure
+     * @psalm-capabilities write-refs
      */
     private static function linkSpecialization(array &$reverse, string $id): void
     {

@@ -8,7 +8,6 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
-use function array_key_last;
 use function array_keys;
 use function array_sum;
 use function count;
@@ -28,7 +27,9 @@ abstract class DataFlowGraph
      * print_r(), ...): an open array assignment, under no key in particular, that a fetch or conversion of the
      * string takes, as the string holds everything the value holds. The edge from such a string to the value a
      * builtin decodes from it (json_decode(), unserialize(), ...) closes it, so the fetches of the decoded value
-     * tell its keys apart again.
+     * tell its keys apart again. The decoded value can be an array or an object again: a flow of user input taking
+     * such an edge gets back the taints only those can hold (TaintKind::ARRAY_ONLY), which the string's type took
+     * away.
      */
     public const SERIALIZATION_PATH_TYPE = 'serialization';
     public const UNSERIALIZATION_PATH_TYPE = 'unserialization';
@@ -179,29 +180,6 @@ abstract class DataFlowGraph
         return strlen($key) > 1 && str_starts_with($key, "'") && str_ends_with($key, "'")
             ? substr($key, 1, -1)
             : $key;
-    }
-
-    /**
-     * Whether an edge of type $path_type, from an array to the array it becomes once its value under a key is
-     * replaced (see ArrayAssignmentAnalyzer::getOverwritePathType()), drops a flow whose open assignments are
-     * $open_assignments: a flow of that value, the innermost of them being the assignment to that key. A flow of
-     * the array's other values, of its keys or of all of it goes on, also one whose key isn't known, which may be
-     * that one. A flow of all of it is not under that key anymore, though (see
-     * TaintFlowGraph::fetchesAnOverwrittenKey()).
-     *
-     * @param list<string> $open_assignments
-     * @psalm-pure
-     */
-    protected static function isOverwritten(string $path_type, array $open_assignments): bool
-    {
-        if (!str_starts_with($path_type, 'arrayvalue-overwrite-')) {
-            return false;
-        }
-
-        $innermost = array_key_last($open_assignments);
-
-        return $innermost !== null
-            && $open_assignments[$innermost] === 'arrayvalue-assignment-' . substr($path_type, 21);
     }
 
     /**

@@ -262,6 +262,9 @@ final class Capabilities
             } elseif ($atomic instanceof TClosure || $atomic instanceof TCallable) {
                 // a type template bound to a closure type carries the closure's purity
                 $capabilities |= self::fromType($atomic->purity);
+            } elseif ($atomic instanceof TConditional) {
+                // a condition that isn't decided (no call, or arguments that may go either way): either branch
+                $capabilities |= self::fromType($atomic->if_type) | self::fromType($atomic->else_type);
             } else {
                 // including a type alias that has not been expanded yet
                 $capabilities |= self::ALL;
