@@ -171,6 +171,9 @@ final class CapabilitiesTest extends TestCase
                         $map[$key] = 1;
                         unset($map[new stdClass()]);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'splObjectStorageWithVarStillRequiresWritingProps' => [
                 'code' => '<?php
@@ -2003,6 +2006,9 @@ final class CapabilitiesTest extends TestCase
                     function rewrap(Wrapper $wrapper): Wrapper {
                         return new Wrapper($wrapper);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'lowerBoundOfAPurityTemplateBindingAnAbstractIteratorsTemplateCovers' => [
                 'code' => '<?php
@@ -2511,6 +2517,9 @@ final class CapabilitiesTest extends TestCase
                         $handler->label = "b";
                         return $handler;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
                 'code' => '<?php
@@ -2580,6 +2589,9 @@ final class CapabilitiesTest extends TestCase
                             unset($this->bag["old"]);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
@@ -2795,6 +2807,8 @@ final class CapabilitiesTest extends TestCase
                         return 1;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method WeakMap::offsetSet requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'writingACallersSplQueueRequiresWriteProps' => [
                 'code' => '<?php
@@ -5486,6 +5500,8 @@ final class CapabilitiesTest extends TestCase
                         $holder->addToRegistry(new stdClass());
                     }',
                 'error_message' => 'method Holder::addToRegistry requires write-props|write-globals',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'theCloneOfAnObjectReachedFromGlobalStateHoldsGlobalState' => [
                 'code' => '<?php
@@ -5554,6 +5570,8 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:36:29 - The context is read-props but method Bag::offsetSet requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'unsettingAnElementOfAnArrayPropertyWritesTheProperty' => [
                 'code' => '<?php

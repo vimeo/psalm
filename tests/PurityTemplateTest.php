@@ -73,6 +73,8 @@ final class PurityTemplateTest extends TestCase
                     '$table===' => 'Table[io]<1>',
                     '$empty===' => 'Table[io]<mixed>',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callbackStoredByAMethodWideningThePurityTemplate' => [
                 'code' => '<?php
