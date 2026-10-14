@@ -215,6 +215,8 @@ final class GlobalAnalyzer
     /**
      * Whether $var_id is a global: bound by `global`, or any variable at file scope (but not $a['k'], $a->p, ...,
      * which are part of $a, nor the superglobals).
+     *
+     * @psalm-capabilities read-props
      */
     private static function isBoundToGlobal(Context $context, string $var_id): bool
     {
