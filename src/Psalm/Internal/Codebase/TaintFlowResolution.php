@@ -1568,7 +1568,13 @@ final class TaintFlowResolution
      * Whether a flow that made the open assignments $made, and closed $closed of those of the call entering its
      * context, is anywhere in an array, rather than under a key or in a property of it: it has no open
      * assignment but overwrites (see addOverwrite()). Null if that depends on the open assignments of the call,
-     * which it doesn't know (see passesAnywhere()). A flow that forgot some doesn't know it is.
+     * which it doesn't know (see passesAnywhere()). A flow that forgot those of an array doesn't know it is.
+     *
+     * One that only forgot those of a property still asks the call: they are forgotten where no fetch of a
+     * property can observe them (see truncateOpenAssignments()), and a flow taken anywhere in the array only
+     * stops at a fetch of the key overwritten, which takes the value that replaced it, also where the flow of the
+     * call was in a property of the array (an object implementing ArrayAccess). Else every flow entering a
+     * specialized call with a whole array would go on through the overwrites in its body.
      *
      * @param array{list<int>, list<int>} $made
      * @param array{int, int} $closed
@@ -1588,7 +1594,7 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($closed[self::ARRAY_FAMILY] === self::FORGOTTEN || $closed[self::PROPERTY_FAMILY] === self::FORGOTTEN) {
+        if ($closed[self::ARRAY_FAMILY] === self::FORGOTTEN) {
             return false;
         }
 
@@ -2104,8 +2110,10 @@ final class TaintFlowResolution
             && isset($this->overwrite_path_types[$path_type])
         ) {
             // For the calls the flow is anywhere in an array of, it goes on anywhere in it but under the key
-            // overwritten (see addOverwrite()), and for the others as through the plain edge it replaces. (An
-            // overwrite leads from an array to an array, never into a sink.)
+            // overwritten (see addOverwrite()). For the others, the overwrite stops it where the innermost open
+            // array assignment of the call is one under that key, as a fetch would (see classPassesFetch()), and
+            // it goes on as through the plain edge it replaces elsewhere. (An overwrite leads from an array to an
+            // array, never into a sink.)
             $closed = $this->open_assignments[$open_assignments][1];
 
             $this->reach(
@@ -2120,6 +2128,18 @@ final class TaintFlowResolution
             );
 
             $context = $this->getAnywhereFilter($context, $closed, false);
+            $overwritten_key = (string) $this->path_type_effects[$path_type][1];
+            $depth = $closed[self::ARRAY_FAMILY] + 1;
+            $fact = $this->entry_facts[$context][self::getPosition(self::ARRAY_FAMILY, $depth)] ?? null;
+
+            if ($fact !== null && $fact[0] !== null) {
+                if (!self::classPassesFetch($fact[0], $overwritten_key)) {
+                    return;
+                }
+            } elseif ($fact === null || !isset($fact[1][$overwritten_key])) {
+                $context = $this->getFilter($context, self::ARRAY_FAMILY, $depth, $overwritten_key);
+            }
+
             $next_open_assignments = $open_assignments;
         } elseif ($next_open_assignments === self::OBSERVES_CALL) {
             // it goes on for the calls whose open assignment it doesn't ignore
