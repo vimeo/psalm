@@ -87,25 +87,36 @@ use function strtolower;
 final class NewAnalyzer extends CallAnalyzer
 {
     /**
-     * Whether the class gives the template to a class it extends (`@extends Parent<T>`): what the constructor
-     * arguments bound for the parent's template is then the template's. A template it doesn't give, like one beside
-     * the purity template of a parent, is resolved like that of a class extending nothing.
+     * Whether the class gives the template to a class it extends (`@extends Parent<T>`) whose template the
+     * constructor arguments bound: that is then the template's. A template it doesn't give, like one beside
+     * the purity template of a parent, or one given to a parent template the arguments didn't bind, like a purity
+     * template given to that of a parent (`@extends Parent[P]`), is resolved like that of a class extending nothing.
      *
      * @param array<string, array<string, Union>>|null $template_extended_params
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds
      * @psalm-assert-if-true !null $template_extended_params
      * @psalm-mutation-free
      */
-    private static function isGivenToParent(
+    private static function isGivenToBoundParentTemplate(
         string $fq_class_name,
         string $template_name,
         ?array $template_extended_params,
+        array $lower_bounds,
     ): bool {
-        foreach ($template_extended_params ?? [] as $type_map) {
-            foreach ($type_map as $extended_type) {
+        foreach ($template_extended_params ?? [] as $extended_class_name => $type_map) {
+            foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TTemplateParam
                         && $atomic_type->param_name === $template_name
                         && $atomic_type->defining_class === $fq_class_name
+                        && (isset($lower_bounds[$extended_template_name][$extended_class_name])
+                            || self::isGivenToBoundParentTemplate(
+                                $extended_class_name,
+                                $extended_template_name,
+                                $template_extended_params,
+                                $lower_bounds,
+                            )
+                        )
                     ) {
                         return true;
                     }
@@ -638,9 +649,12 @@ final class NewAnalyzer extends CallAnalyzer
                                 new TTypeVariable($type_variable_name, $type_variable_bounds),
                             ]);
                         }
-                    } elseif ($template_result->lower_bounds
-                        && self::isGivenToParent($fq_class_name, $template_name, $storage->template_extended_params)
-                    ) {
+                    } elseif (self::isGivenToBoundParentTemplate(
+                        $fq_class_name,
+                        $template_name,
+                        $storage->template_extended_params,
+                        $template_result->lower_bounds,
+                    )) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
                             $template_name,
