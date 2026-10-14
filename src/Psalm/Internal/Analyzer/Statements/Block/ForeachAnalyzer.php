@@ -403,8 +403,12 @@ final class ForeachAnalyzer
             && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
             && isset($foreach_context->vars_in_scope['$' . $stmt->valueVar->name])
         ) {
-            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
-            $value_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->valueVar->name]->parent_nodes);
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
+            $value_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->valueVar->name],
+            );
 
             if ($key_node_ids !== [] && $value_node_ids !== []) {
                 $foreach_context->foreach_element_copies['$' . $stmt->valueVar->name] = [
@@ -421,7 +425,9 @@ final class ForeachAnalyzer
             && is_string($stmt->keyVar->name)
             && isset($foreach_context->vars_in_scope['$' . $stmt->keyVar->name])
         ) {
-            $key_node_ids = array_keys($foreach_context->vars_in_scope['$' . $stmt->keyVar->name]->parent_nodes);
+            $key_node_ids = ArrayAssignmentAnalyzer::getValueNodeIds(
+                $foreach_context->vars_in_scope['$' . $stmt->keyVar->name],
+            );
 
             if ($key_node_ids !== []) {
                 $foreach_context->foreach_keys['$' . $stmt->keyVar->name] = [$key_node_ids, $foreach_marker];
