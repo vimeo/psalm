@@ -149,6 +149,29 @@ final class CapabilitiesTest extends TestCase
                         return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
                     }',
             ],
+            'weakMapReadsAreMutationFreeAndWritesWriteTheMap' => [
+                'code' => '<?php
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-mutation-free
+                     */
+                    function sumMap(WeakMap $map, stdClass $key): int {
+                        $sum = count($map) + (isset($map[$key]) ? 1 : 0) + (int) $map[$key];
+                        foreach ($map as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }
+
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function fillMap(WeakMap $map, stdClass $key): void {
+                        $map[$key] = 1;
+                        unset($map[new stdClass()]);
+                    }',
+            ],
             'splObjectStorageWithVarStillRequiresWritingProps' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-props|write-props */
@@ -2584,6 +2607,18 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on preg_last_error_msg requires read-globals',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'writingACallersWeakMapRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-mutation-free
+                     */
+                    function add(WeakMap $map, stdClass $key): int {
+                        $map[$key] = 1;
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method WeakMap::offsetSet requires write-props',
             ],
             'writingACallersSplQueueRequiresWriteProps' => [
                 'code' => '<?php
