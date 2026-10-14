@@ -59,6 +59,7 @@ use function end;
 use function implode;
 use function is_string;
 use function preg_match;
+use function sort;
 use function str_contains;
 use function str_starts_with;
 use function strlen;
@@ -442,6 +443,28 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The ids of the parent nodes of a variable of type $type, where those of narrowings (see
+     * DataFlowNode::getNarrowedNodeId()) count as the nodes they narrow: a variable is the same value while they are
+     * (see getElementCopySource()), and a narrowing keeps it
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    public static function getValueNodeIds(?Union $type): array
+    {
+        $ids = [];
+
+        foreach ($type->parent_nodes ?? [] as $node) {
+            $ids[$node->getNarrowedNodeId() ?? $node->id] = true;
+        }
+
+        $ids = array_keys($ids);
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
      * Whether the elements of a value of type $type are taken from the value itself (those of an array, or of what
      * is taken for one), not made by it (those of an object).
      *
@@ -497,7 +520,7 @@ final class ArrayAssignmentAnalyzer
         }
 
         $key_type = $statements_analyzer->node_data->getType($stmt->dim);
-        $key_node_ids = array_keys($key_type?->parent_nodes ?? []);
+        $key_node_ids = self::getValueNodeIds($key_type);
         $value_type = $statements_analyzer->node_data->getType($assign_value);
 
         if ($key_type === null
@@ -525,7 +548,7 @@ final class ArrayAssignmentAnalyzer
             $array_type = $statements_analyzer->node_data->getType($assign_value->var);
 
             return $fetched_key_type !== null
-                && array_keys($fetched_key_type->parent_nodes) === $key_node_ids
+                && self::getValueNodeIds($fetched_key_type) === $key_node_ids
                 && $array_type !== null
                 && $array_type->parent_nodes !== []
                 && self::hasElementsOfItsOwn($array_type)
@@ -546,7 +569,7 @@ final class ArrayAssignmentAnalyzer
 
         return $key_var_id === '$' . $stmt->dim->name
             && $loop_key_node_ids === $key_node_ids
-            && $loop_value_node_ids === array_keys($value_type->parent_nodes)
+            && $loop_value_node_ids === self::getValueNodeIds($value_type)
             ? $array_nodes
             : null;
     }
@@ -556,6 +579,7 @@ final class ArrayAssignmentAnalyzer
      * in, if it assigns under the key variable of the loop, not reassigned since (see getElementCopySource()):
      * the taint analysis puts the value of the element of the iteration back under its key there, as it was in
      * the array iterated over, if that's what is assigned or what it's made of. $stmt is analyzed already.
+     *
      * @psalm-capabilities read-props
      */
     private static function getForeachMarker(
@@ -578,7 +602,7 @@ final class ArrayAssignmentAnalyzer
         [$key_node_ids, $foreach_marker] = $context->foreach_keys[$key_var_id];
         $key_type = $statements_analyzer->node_data->getType($dim);
 
-        return $key_type !== null && array_keys($key_type->parent_nodes) === $key_node_ids ? $foreach_marker : null;
+        return $key_type !== null && self::getValueNodeIds($key_type) === $key_node_ids ? $foreach_marker : null;
     }
 
     /**
