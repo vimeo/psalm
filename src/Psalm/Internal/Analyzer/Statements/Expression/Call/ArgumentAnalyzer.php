@@ -2026,13 +2026,9 @@ final class ArgumentAnalyzer
                 );
 
                 $taint_flow_graph->addNode($new_sink);
-                $taint_flow_graph->addPath(
-                    $method_node,
-                    $new_sink,
-                    'arg',
-                    $added_taints,
-                    $removed_taints,
-                );
+                // what this call's argument adds and removes is on its own path into $method_node, which the
+                // other calls may share: on this one, it would apply to theirs too, the last call deciding for all
+                $taint_flow_graph->addPath($method_node, $new_sink, 'arg');
 
                 if ($param_key !== null) {
                     $taint_flow_graph->addParamKey($new_sink, $param_key, $function_call_location);
