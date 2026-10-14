@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -932,6 +933,8 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
+        $template_result = new TemplateResult($pseudo_method_storage->template_types ?? [], []);
+
         if (ArgumentsAnalyzer::analyze(
             $statements_analyzer,
             $args,
@@ -939,6 +942,7 @@ final class AtomicStaticCallAnalyzer
             (string) $method_id,
             true,
             $context,
+            $template_result,
         ) === false) {
             return false;
         }
@@ -952,7 +956,7 @@ final class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             $pseudo_method_storage,
             null,
-            new TemplateResult([], []),
+            $template_result,
             new CodeLocation($statements_analyzer, $stmt),
             $context,
         ) === false) {
@@ -991,7 +995,13 @@ final class AtomicStaticCallAnalyzer
         }
 
         if ($pseudo_method_storage->return_type) {
-            $return_type_candidate = $pseudo_method_storage->return_type;
+            $return_type_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
+                $pseudo_method_storage->return_type,
+                $template_result,
+                $method_id,
+                count($args),
+                $codebase,
+            );
 
             $return_type_candidate = TypeExpander::expandUnion(
                 $statements_analyzer->getCodebase(),
