@@ -15,7 +15,7 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 
 | Capability         | Allows                                                                          |
 |--------------------|---------------------------------------------------------------------------------|
-| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor [new objects](#method-calls) of some classes) |
+| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor objects the caller created with `new` from a class whose contract needs at most `read-props\|write-this-props\|write-refs`, see [Method calls](#method-calls)) |
 | `write-this-props` | writing or unsetting properties of `$this`                                      |
 | `write-props`      | writing or unsetting properties of any other object                             |
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
