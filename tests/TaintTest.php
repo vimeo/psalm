@@ -4793,7 +4793,9 @@ final class TaintTest extends TestCase
                     function show(): void {
                         global $value;
                         echo (string) $value;
-                    }',
+                    }
+
+                    show();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTopLevelVariableReadThroughGlobals' => [
@@ -4802,7 +4804,9 @@ final class TaintTest extends TestCase
 
                     function show(): void {
                         echo (string) $GLOBALS["value"];
-                    }',
+                    }
+
+                    show();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTopLevelArrayItemReadAsGlobal' => [
@@ -4813,7 +4817,9 @@ final class TaintTest extends TestCase
                     function show(): void {
                         global $config;
                         echo (string) $config["value"];
-                    }',
+                    }
+
+                    show();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTopLevelVariableAssignedInABranch' => [
@@ -4825,7 +4831,9 @@ final class TaintTest extends TestCase
                     function show(): void {
                         global $value;
                         echo (string) $value;
-                    }',
+                    }
+
+                    show();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTopLevelVariableOverwrittenAfterACall' => [
