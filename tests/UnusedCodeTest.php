@@ -352,8 +352,8 @@ final class UnusedCodeTest extends TestCase
 
         sort($issues);
 
-        // only the marker interface marked immutable caps its implementers
-        self::assertSame(['ImmutableDependency ImmutableMarker', 'MissingInterfaceImmutableAnnotation Service'], $issues);
+        // only the marker interface marked immutable caps its implementers (reported on the implementing class)
+        self::assertSame(['ImmutableDependency Counter', 'MissingInterfaceImmutableAnnotation Service'], $issues);
 
         $classlike_storage_provider = $this->project_analyzer->getCodebase()->classlike_storage_provider;
 
