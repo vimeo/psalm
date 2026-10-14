@@ -2240,6 +2240,46 @@ final class CapabilitiesTest extends TestCase
                         return $counter->n + (new Counter())->n;
                     }',
             ],
+            'closureMutatingAParamCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): int {
+                            return ++$this->count;
+                        }
+                    }
+
+                    /**
+                     * @param list<Counter> $counters
+                     * @return list<int>
+                     * @psalm-capabilities write-props
+                     */
+                    function incrementAll(array $counters): array {
+                        return array_map(static fn(Counter $counter): int => $counter->increment(), $counters);
+                    }',
+            ],
+            'closureReadingAParamIsPure' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $count = 0;
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->count;
+                        }
+                    }
+
+                    /**
+                     * @param list<Counter> $counters
+                     * @return list<int>
+                     * @psalm-pure
+                     */
+                    function getAll(array $counters): array {
+                        return array_map(static fn(Counter $counter): int => $counter->get(), $counters);
+                    }',
+            ],
         ];
     }
 

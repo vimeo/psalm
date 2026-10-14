@@ -392,8 +392,10 @@ final class MethodCallPurityAnalyzer
             // implicit calls (__get, __invoke, offsetGet, ...) are virtual nodes without a
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
-            // mutating a receiver other than `$this` writes another object's properties
-            $callee_capabilities | ($inferred_capabilities & Capabilities::WRITE_PROPS),
+            // what the call costs the caller, as checked above: the callee's writes to a receiver
+            // other than `$this` are write-props, and reading the receiver needs nothing (without
+            // what a purity wildcard of a parameter leaves out, see getInferredTemplateCapabilities())
+            $inferred_capabilities,
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
