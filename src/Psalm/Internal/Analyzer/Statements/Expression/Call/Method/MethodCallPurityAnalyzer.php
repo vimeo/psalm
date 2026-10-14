@@ -379,7 +379,7 @@ final class MethodCallPurityAnalyzer
         );
 
         // the same for the inferred purity, which some template capabilities may be left out of
-        $inferred_capabilities = $inferred_template_capabilities === $template_capabilities
+        $inferred_capabilities = Capabilities::equals($inferred_template_capabilities, $template_capabilities)
             ? $method_capabilities
             : ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,

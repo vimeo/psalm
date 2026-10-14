@@ -1642,10 +1642,8 @@ final class ForeachAnalyzer
      * purity template (`Iterator[pure]<int, int>`, `Generator[io]<int, int, mixed, void>`) when
      * the method depends on it.
      *
-     * @return CapabilitySet
-     */
-    /**
      * @param array<string, array<string, Union>> $class_template_params
+     * @return CapabilitySet
      */
     private static function getImplicitMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
