@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -397,7 +398,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         foreach ($function_call_info->global_variables as $var_id => $_) {
-            $context->vars_in_scope[$var_id] = Type::getMixed();
+            $context->vars_in_scope[$var_id] = GlobalAnalyzer::taintGlobalRead(
+                $statements_analyzer,
+                $context,
+                $var_id,
+                Type::getMixed(),
+            );
             $context->vars_possibly_in_scope[$var_id] = true;
         }
 

@@ -831,8 +831,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Once a statement is analyzed, the variables bound to static variables write them (see
-     * StaticAnalyzer::taintBoundStaticVariables()), and plugins are told
+     * Once a statement is analyzed, the variables bound to static variables or globals write them (see
+     * StaticAnalyzer::taintBoundStaticVariables() and GlobalAnalyzer::taintBoundGlobals()), and plugins are told
      */
     private static function afterStatementAnalysis(
         PhpParser\Node\Stmt $stmt,
@@ -840,6 +840,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         StaticAnalyzer::taintBoundStaticVariables($statements_analyzer, $context);
+        GlobalAnalyzer::taintBoundGlobals($statements_analyzer, $context);
 
         return self::dispatchAfterStatementAnalysis($stmt, $context, $statements_analyzer);
     }
