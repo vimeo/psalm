@@ -624,6 +624,9 @@ final class MethodComparator
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
+                    || $guide_method_storage->stable_param_names
+                    || $guide_method_storage->args_by_name
+                    || ($guide_method_storage->optional_args_by_name && $guide_param->is_optional)
                 ) {
                     if ($codebase->alter_code) {
                         $project_analyzer = ProjectAnalyzer::getInstance();

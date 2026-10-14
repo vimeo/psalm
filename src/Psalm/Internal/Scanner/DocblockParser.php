@@ -38,6 +38,13 @@ use const PREG_OFFSET_CAPTURE;
  */
 final class DocblockParser
 {
+    private const NAMED_ARGUMENTS_TAGS = [
+        'no-named-arguments',
+        'arguments-by-name',
+        'optional-arguments-by-name',
+        'stable-parameter-names',
+    ];
+
     /**
      * $offsetStart is the absolute position of the docblock in the file. It'll be used to add to the position of some
      * special tags (like `psalm-suppress`) for future uses
@@ -311,6 +318,30 @@ final class DocblockParser
         }
 
         return [];
+    }
+
+    /**
+     * Returns the tag that says how arguments can be passed: by name, by position or both
+     *
+     * @return 'no-named-arguments'|'arguments-by-name'|'optional-arguments-by-name'|'stable-parameter-names'|null
+     * @throws DocblockParseException when more than one of these tags is used
+     * @psalm-mutation-free
+     */
+    public static function getNamedArgumentsTag(ParsedDocblock $parsed_docblock): ?string
+    {
+        $tags = [];
+
+        foreach (self::NAMED_ARGUMENTS_TAGS as $tag) {
+            if (isset($parsed_docblock->tags[$tag])) {
+                $tags[] = $tag;
+            }
+        }
+
+        if (count($tags) > 1) {
+            throw new DocblockParseException('@' . implode(' and @', $tags) . ' cannot be used together');
+        }
+
+        return $tags[0] ?? null;
     }
 
     /**

@@ -744,6 +744,18 @@ final class Populator
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
+
+                    // a method without its own tag keeps the one of the method it overrides
+                    if ($method_storage->allow_named_arg_calls
+                        && !$method_storage->args_by_name
+                        && !$method_storage->optional_args_by_name
+                        && !$method_storage->stable_param_names
+                        && ($method_name !== '__construct' || $declaring_class_storage->preserve_constructor_signature)
+                    ) {
+                        $method_storage->args_by_name = $declaring_method_storage->args_by_name;
+                        $method_storage->optional_args_by_name = $declaring_method_storage->optional_args_by_name;
+                        $method_storage->stable_param_names = $declaring_method_storage->stable_param_names;
+                    }
                 }
             }
         }

@@ -446,6 +446,12 @@ final class FunctionLikeNodeScanner
             $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
 
+        if ($classlike_storage && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+            $storage->args_by_name = $classlike_storage->args_by_name;
+            $storage->optional_args_by_name = $classlike_storage->optional_args_by_name;
+            $storage->stable_param_names = $classlike_storage->stable_param_names;
+        }
+
         if ($doc_comment) {
             try {
                 $code_location = new CodeLocation($this->file_scanner, $stmt, null, true);

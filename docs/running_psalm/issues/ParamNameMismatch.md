@@ -73,6 +73,8 @@ This prevents any use of named params in your codebase. Ideal for self-contained
 
 It means the original code above will not emit any errors as long as the class `A` is defined in a directory that Psalm can scan.
 
+This issue is still emitted when the parent method has `@stable-parameter-names` or `@arguments-by-name`, because these annotations make parameter names part of the API. The same goes for optional parameters when the parent method has `@optional-arguments-by-name`.
+
 ### Config allowInternalNamedArgumentCalls="false"
 
 For library authors Psalm supports a more nuanced flag that tells Psalm to prohibit any named parameter calls on `@internal` classes or methods.

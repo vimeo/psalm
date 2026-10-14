@@ -595,9 +595,11 @@ final class FunctionLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['no-named-arguments'])) {
-            $info->no_named_args = true;
-        }
+        $named_args_tag = DocblockParser::getNamedArgumentsTag($parsed_docblock);
+        $info->no_named_args = $named_args_tag === 'no-named-arguments';
+        $info->args_by_name = $named_args_tag === 'arguments-by-name';
+        $info->optional_args_by_name = $named_args_tag === 'optional-arguments-by-name';
+        $info->stable_param_names = $named_args_tag === 'stable-parameter-names';
 
         $info->ignore_nullable_return = isset($parsed_docblock->tags['psalm-ignore-nullable-return']);
         $info->ignore_falsable_return = isset($parsed_docblock->tags['psalm-ignore-falsable-return']);

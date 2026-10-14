@@ -668,6 +668,47 @@ Incidentally, it will change the inferred type for the following code:
 ```
 The type of `$a` is `array<array-key, int>` without `@no-named-arguments` but becomes `list<int>` with it, because it excludes the case where the offset would be a string with the name of the parameter
 
+### `@optional-arguments-by-name`
+
+Callers must pass the arguments of optional parameters (the ones that have a default value) by name. Psalm emits a `PositionalArgumentNotAllowed` issue when such an argument is passed by position.
+
+The names of optional parameters are stable, but not their order. An optional parameter can be added, moved or removed without breaking callers. For required parameters, the order is stable and the names are not.
+
+```php
+<?php
+final class Configuration
+{
+    /**
+     * @optional-arguments-by-name
+     */
+    public function __construct(
+        string $dialect,
+        array $groups = [],
+        bool $allowExtraAttributes = true,
+    ) {
+    }
+}
+
+new Configuration('openapi-3.1', groups: ['read']); // OK
+new Configuration('openapi-3.1', ['read']); // PositionalArgumentNotAllowed
+```
+
+This annotation, `@arguments-by-name` and `@stable-parameter-names` can also be used in the docblock of a class, an interface, a trait or an enum. They then apply to all the methods of that class. A method that overrides or implements a tagged method keeps the tag of the parent method, unless the overriding method declares another tag. These annotations can't be combined with each other, nor with `@no-named-arguments`.
+
+Variadic parameters are not affected. When arguments are unpacked from an array, integer keys are passed by position and string keys are passed by name.
+
+### `@arguments-by-name`
+
+Callers must pass all arguments by name, except the ones of variadic parameters. Psalm emits a `PositionalArgumentNotAllowed` issue for each argument passed by position.
+
+Parameter names are stable, but not their order. See `@optional-arguments-by-name` for where this annotation can be used.
+
+### `@stable-parameter-names`
+
+Callers can pass arguments by name or by position. Both the names and the order of the parameters are stable. Psalm doesn't report anything at call sites.
+
+A method that overrides a method with this annotation and renames a parameter is reported as `ParamNameMismatch`, even when `allowNamedArgumentCalls` is `false`. See `@optional-arguments-by-name` for where this annotation can be used.
+
 ### `@psalm-ignore-variable-property` and `@psalm-ignore-variable-method`
 
 Instructs Psalm to ignore variable property fetch / variable method call when looking for dead code.
