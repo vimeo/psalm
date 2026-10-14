@@ -4066,6 +4066,69 @@ final class TaintTest extends TestCase
                         echo (string) $options->getOptions()["greeting"];
                     }',
             ],
+            'taintFreeFetchUnderParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption("greeting");
+                    }',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+
+                        public function getVia(string $key): string {
+                            return $this->getOption($key);
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    echo $base->getVia("greeting");',
+            ],
+            'taintFreeFetchUnderParamKeyOfUnspecializedStaticCall' => [
+                'code' => '<?php
+                    class Registry {
+                        /** @var array<string, string> */
+                        protected static array $options = [];
+
+                        public static function set(string $key, string $value): void {
+                            static::$options[$key] = $value;
+                        }
+
+                        public static function get(string $key): string {
+                            return static::$options[$key] ?? "";
+                        }
+                    }
+
+                    Registry::set("from", (string) $_GET["value"]);
+                    echo Registry::get("greeting");',
+            ],
             'taintFreeAssignmentAndFetchUnderParamKeys' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -5372,6 +5435,124 @@ final class TaintTest extends TestCase
                     function send(Options $options, string $key): void {
                         $options->setOption($key, (string) $_GET["value"]);
                         echo (string) $options->getOptions()["greeting"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption("from");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderNonLiteralParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail, string $key): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption($key);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+
+                        public function getVia(string $key): string {
+                            return $this->getOption($key);
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    echo $base->getVia("from");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfMemoizingUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        protected ?string $first = null;
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            $this->first ??= $this->options[$key] ?? "";
+                            return $this->first;
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    $base->getOption("from");
+                    echo $base->getOption("greeting");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyStashedByAnotherUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        public static ?string $stash = null;
+
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return self::$stash ?? $this->options[$key] ?? "";
+                        }
+                    }
+
+                    function send(Base $base, string $key): void {
+                        $base->setOption("from", (string) $_GET["value"]);
+                        Base::$stash = $base->getOption($key);
+                        echo $base->getOption("greeting");
                     }',
                 'error_message' => 'TaintedHtml',
             ],

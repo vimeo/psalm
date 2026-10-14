@@ -593,6 +593,7 @@ final class MethodCallReturnTypeFetcher
                 $cased_method_id,
                 $method_storage,
             );
+            $declaring_method_call_node = $method_call_node;
 
             if (!$is_declaring) {
                 $declaring_method_call_node = InheritedMethodTaints::withMethodSuffix(
@@ -621,8 +622,15 @@ final class MethodCallReturnTypeFetcher
 
             $graph->addNode($method_call_node);
 
+            $result_node = $taint_flow_graph?->getCallResult(
+                $method_call_node,
+                $declaring_method_call_node,
+                $method_storage,
+                $node_location,
+            ) ?? $method_call_node;
+
             $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
+                $result_node->id => $result_node,
             ]);
         }
 
