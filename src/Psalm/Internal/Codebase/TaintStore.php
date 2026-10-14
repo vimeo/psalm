@@ -598,11 +598,11 @@ final class TaintStore
 
         foreach ($nodes as $node_id => $_) {
             // an empty array has no item to start otherwise
-            if ($graph?->isEmptyArray($node_id) === true) {
+            if ($graph !== null && $graph->isEmptyArray($node_id)) {
                 continue;
             }
 
-            $node_start = $graph?->getStringStart($node_id)
+            $node_start = ($graph !== null ? $graph->getStringStart($node_id) : null)
                 ?? self::getParameterStart($statements_analyzer, $node_id);
             if ($node_start === null) {
                 return null;
