@@ -288,13 +288,22 @@ final class TaintFlowResolution
     private array $path_type_params = [];
 
     /**
-     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()), or of a call a
-     * function-like makes to itself prefixed with '^' (see bindRecursiveCall()) => the file, start and end of the
-     * declaration of the function-like called
+     * Specialization key of an unspecialized call whose body a flow entered (see bindCall()), of a call a
+     * function-like makes to itself prefixed with '^' (see bindRecursiveCall()), or the calls of the flows entering
+     * a convergence (see getConvergenceOpenAssignments()) => the file, start and end of the declaration of the
+     * function-like called
      *
      * @var array<string, array{string, int, int}>
      */
     private array $call_ranges = [];
+
+    /**
+     * The specialization keys of the unspecialized calls passing an array key to a parameter (see $param_keys)
+     * => true
+     *
+     * @var array<string, true>
+     */
+    private array $keyed_calls = [];
 
     /**
      * The path types converting to a scalar a value that may be an array (see
@@ -754,6 +763,12 @@ final class TaintFlowResolution
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
         $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT);
+
+        foreach ($param_keys as $keys) {
+            foreach ($keys as $call => $_) {
+                $this->keyed_calls[$call] = true;
+            }
+        }
     }
 
     public function resolve(Progress $progress): void
@@ -2004,9 +2019,16 @@ final class TaintFlowResolution
         }
 
         if (isset($this->forward_edges[$id])) {
+            $context = $this->state_contexts[$state];
+
+            // A flow at the node of the convergence whose walk it is in (copied into a filter of it, see
+            // copyToFilter()) doesn't converge: it would enter that convergence again.
             if (!isset($this->root_entries[$state])
+                && ($context === -1
+                    || $this->entry_kinds[$context] !== self::ENTRY_CONVERGENCE
+                    || $this->entry_nodes[$context] !== $id)
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
-                && ($this->isOutsideOfCalls($this->state_contexts[$state])
+                && ($this->isOutsideOfCalls($context)
                     || count($this->call_entries_reaching[$id] ?? []) > 1)
             ) {
                 $this->enterConvergence($state, $id);
@@ -2208,11 +2230,19 @@ final class TaintFlowResolution
 
         if (isset($this->path_type_params[$path_type])) {
             [$param, $base] = $this->path_type_params[$path_type];
-            $bound_key = $this->param_keys[$param][$this->open_assignments[$open_assignments][3]] ?? null;
+            $call = $this->open_assignments[$open_assignments][3];
+            $bound_key = $this->param_keys[$param][$call] ?? null;
 
             if ($bound_key !== null && !str_starts_with($bound_key, '@')) {
                 // the flow entered the body through the arguments of an unspecialized call passing it
                 $key = $bound_key;
+            } elseif (str_starts_with($call, '=')) {
+                // the flows entering the convergence did (see getConvergenceOpenAssignments())
+                $key = $this->resolveParamKey($context, $param, $predecessor);
+
+                if ($key === null) {
+                    return;
+                }
             } elseif ($this->isOutsideOfCalls($context)) {
                 $key = '';
                 $guarded_param = $base === 'arrayvalue-fetch' && isset($this->param_keys[$param]) ? $param : null;
@@ -2433,7 +2463,7 @@ final class TaintFlowResolution
      */
     private function getConvergenceOpenAssignments(int $caller, string $id): int
     {
-        [$made, , $guards] = $this->open_assignments[$this->state_open_assignments[$caller]];
+        [$made, , $guards, $call] = $this->open_assignments[$this->state_open_assignments[$caller]];
         $slot = $this->open_assignment_slots[$this->state_open_assignments[$caller]];
         $known = [];
         $known_count = [];
@@ -2445,6 +2475,17 @@ final class TaintFlowResolution
             $known_count[$family] = count($known[$family]);
         }
 
+        // The flows entered the body of an unspecialized call passing array keys to the parameters (see bindCall()):
+        // the walk knows the keys of the calls entering it, in filters (see resolveParamKey()), as long as it stays
+        // in the body. A convergence for each call would walk the body once per call site.
+        if (isset($this->keyed_calls[$call])) {
+            $range = $this->call_ranges[$call];
+            $call = '=' . implode(':', $range);
+            $this->call_ranges[$call] = $range;
+        } elseif (!str_starts_with($call, '=')) {
+            $call = '';
+        }
+
         // the walk of a convergence isn't composed with its callers: it can't inherit their slot
         $open_assignments = $this->truncateOpenAssignments(
             $this->internOpenAssignments(
@@ -2454,13 +2495,16 @@ final class TaintFlowResolution
                     ? $this->getSlot($this->slots[$slot][0], $this->slots[$slot][1])
                     : self::NO_SLOT,
                 $guards,
+                $call,
             ),
             $id,
         );
 
         if (!isset($this->convergence_open_assignments[$id][$open_assignments])) {
             if (count($this->convergence_open_assignments[$id] ?? []) >= self::MAX_CONVERGENCE_KEYS) {
-                return self::CALL_OPEN_ASSIGNMENTS;
+                return $call === ''
+                    ? self::CALL_OPEN_ASSIGNMENTS
+                    : $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT, [], $call);
             }
 
             $this->convergence_open_assignments[$id][$open_assignments] = true;
@@ -3162,7 +3206,21 @@ final class TaintFlowResolution
      */
     private function addParamFilterCaller(int $entry, string $param, int $caller, ?string $specialization_key): void
     {
-        $key = $specialization_key === null ? '' : $this->param_keys[$param][$specialization_key] ?? '';
+        if ($specialization_key === null) {
+            // a flow entering a convergence: the key of the unspecialized call whose body it entered
+            $call = $this->open_assignments[$this->state_open_assignments[$caller]][3];
+
+            $key = str_starts_with($call, '=')
+                ? $this->resolveParamKey($this->state_contexts[$caller], $param, $caller)
+                : $this->param_keys[$param][$call] ?? '';
+
+            if ($key === null) {
+                // the call goes on in the filters of its context (see dependOnParam())
+                return;
+            }
+        } else {
+            $key = $this->param_keys[$param][$specialization_key] ?? '';
+        }
 
         if (str_starts_with($key, '@')) {
             // the call passes on a parameter of the function-like it is made in: the key the call of the context
