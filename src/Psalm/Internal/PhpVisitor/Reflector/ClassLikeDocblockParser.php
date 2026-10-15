@@ -72,7 +72,8 @@ final class ClassLikeDocblockParser
                     throw new IncorrectDocblockException('Invalid @template tag: '.preg_last_error_msg());
                 }
 
-                $template_name = array_shift($template_type);
+                [$template_name, $template_type, $default_type_string]
+                    = TemplateTagParser::splitDefault($template_type);
 
                 if (!$template_name) {
                     throw new IncorrectDocblockException('Empty @template tag');
@@ -95,6 +96,7 @@ final class ClassLikeDocblockParser
                         implode(' ', $template_type),
                         false,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -103,6 +105,7 @@ final class ClassLikeDocblockParser
                         null,
                         false,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 }
             }
@@ -115,7 +118,8 @@ final class ClassLikeDocblockParser
                     throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
                 }
 
-                $template_name = array_shift($template_type);
+                [$template_name, $template_type, $default_type_string]
+                    = TemplateTagParser::splitDefault($template_type);
 
                 if (!$template_name) {
                     throw new IncorrectDocblockException('Empty @template-covariant tag');
@@ -138,6 +142,7 @@ final class ClassLikeDocblockParser
                         implode(' ', $template_type),
                         true,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 } else {
                     $templates[$template_name][$source_prefix] = [
@@ -146,6 +151,7 @@ final class ClassLikeDocblockParser
                         null,
                         true,
                         $offset - $comment->getStartFilePos(),
+                        $default_type_string,
                     ];
                 }
             }
