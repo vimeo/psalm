@@ -375,6 +375,10 @@ final class TaintFlowGraph extends DataFlowGraph
      * graph tracks: the analysis adds every path to the data flow graph, whichever graphs it
      * builds, so that types get the same parent nodes either way.
      *
+     * A path of the same type added again, e.g. by another call into a node every call shares, is merged into
+     * the one there, as mergePath() does: a flow keeps the taints either keeps, and gets those either adds,
+     * rather than the last one deciding for all.
+     *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
@@ -392,14 +396,20 @@ final class TaintFlowGraph extends DataFlowGraph
             return;
         }
 
+        $existing = $this->forward_edges[$from->id][$to->id] ?? null;
+
+        if ($existing !== null && $existing->type === $path_type) {
+            $added_taints = ($existing->added_taints & ~$existing->removed_taints) | ($added_taints & ~$removed_taints);
+            $removed_taints &= $existing->removed_taints;
+        }
+
         parent::addPath($from, $to, $path_type, $added_taints, $removed_taints);
     }
 
     /**
      * Adds a path between two nodes from the graph of another worker (see addGraph()), which may have added
      * one already, from another file: then a flow can take either. Whichever came first, so that the
-     * resolution doesn't depend on the order the workers' graphs are merged in. (The analysis of a file adds
-     * a path again to replace it, e.g. with the taints a call escapes: see addPath().)
+     * resolution doesn't depend on the order the workers' graphs are merged in.
      *
      * Two paths of the same type are merged into one: a flow keeps the taints either keeps, and gets those
      * either adds. Two paths of different types aren't: they handle open assignments differently (see
