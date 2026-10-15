@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
@@ -987,30 +988,42 @@ final class ArithmeticOpAnalyzer
         float|int $operand2,
         bool $allow_float_result,
     ): ?Union {
-        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
-            $result = $operand1 + $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
-            $result = $operand1 - $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
-            if ($operand2 === 0) {
+        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+        ) {
+            // PHP converts float operands of these operators to int implicitly, which raises
+            // a warning/deprecation for non-representable or fractional floats
+            $int1 = LiteralCast::toInt($operand1);
+            $int2 = LiteralCast::toInt($operand2);
+
+            if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod && $int2 === 0) {
                 return Type::getNever();
             }
 
-            $result = $operand1 % $operand2;
+            if ($int1 === null || $int2 === null) {
+                return Type::getInt();
+            }
+
+            $result = match (true) {
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\Mod => $int1 % $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr => $int1 | $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd => $int1 & $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor => $int1 ^ $int2,
+                $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft => $int1 << $int2,
+                default => $int1 >> $int2,
+            };
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+            $result = $operand1 + $operand2;
+        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Minus) {
+            $result = $operand1 - $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
             $result = $operand1 ** $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-            $result = $operand1 | $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-            $result = $operand1 & $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-            $result = $operand1 ^ $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            $result = $operand1 << $operand2;
-        } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
