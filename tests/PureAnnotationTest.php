@@ -676,6 +676,28 @@ final class PureAnnotationTest extends TestCase
                     Date2::tt();
                     ',
             ],
+            'noSuggestionBelowTheLowerBoundOfAPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template write-this-props <= P
+                     */
+                    final class Wrapper {
+                        /**
+                         * @param Iterator[P]<int, T> $source
+                         * @psalm-capabilities read-props
+                         */
+                        public function __construct(private Iterator $source) {}
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function valid(): bool {
+                            return $this->source->valid();
+                        }
+                    }',
+            ],
         ];
     }
 

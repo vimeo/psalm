@@ -76,6 +76,17 @@ final class ElseIfAnalyzer
             return false;
         }
 
+        // the condition is analysed on a copy of $else_context where the earlier conditions being false narrow
+        // it: what the condition assigns is assigned for the elseifs and the else after it too
+        $post_if_context = $if_conditional_scope->post_if_context;
+
+        foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
+            if (isset($post_if_context->vars_in_scope[$var_id])) {
+                $else_context->vars_in_scope[$var_id] = $post_if_context->vars_in_scope[$var_id];
+                $else_context->vars_possibly_in_scope[$var_id] = true;
+            }
+        }
+
         $mixed_var_ids = [];
 
         foreach ($elseif_context->vars_in_scope as $var_id => $type) {

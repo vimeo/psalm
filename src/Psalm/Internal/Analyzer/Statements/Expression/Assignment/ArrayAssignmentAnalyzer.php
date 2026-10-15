@@ -15,7 +15,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -27,11 +30,13 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -43,6 +48,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_keys;
 use function array_pop;
 use function array_reverse;
 use function array_shift;
@@ -52,14 +58,24 @@ use function count;
 use function end;
 use function implode;
 use function is_string;
+use function preg_match;
+use function sort;
 use function str_contains;
+use function str_starts_with;
 use function strlen;
+use function strpos;
+use function substr;
 
 /**
  * @internal
  */
 final class ArrayAssignmentAnalyzer
 {
+    /**
+     * How many literals the key of an array assignment can be, at most, to be assigned under each of them
+     */
+    private const MAX_KEY_VALUES = 8;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -81,6 +97,7 @@ final class ArrayAssignmentAnalyzer
             $assign_value,
             $assignment_value_type,
             $context,
+            true,
         );
 
         if (!$statements_analyzer->node_data->getType($stmt->var) && $var_id) {
@@ -89,6 +106,7 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * @param bool $is_assignment whether $assign_value is the value assigned, not an operand of it
      * @return false|null
      */
     public static function updateArrayType(
@@ -97,6 +115,7 @@ final class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_type,
         Context $context,
+        bool $is_assignment = false,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -166,6 +185,7 @@ final class ArrayAssignmentAnalyzer
             $current_type,
             $current_dim,
             $offset_already_existed,
+            $is_assignment ? $context : null,
         );
 
         $root_is_string = $root_type->isString();
@@ -265,7 +285,11 @@ final class ArrayAssignmentAnalyzer
                 return false;
             }
         } elseif ($root_var_id) {
-            $context->vars_in_scope[$root_var_id] = $root_type;
+            // PHP creates the array an item is assigned to: it's defined from now on
+            $context->vars_in_scope[$root_var_id] = $root_type->possibly_undefined
+                && !$root_type->possibly_undefined_from_try
+                    ? $root_type->setPossiblyUndefined(false)
+                    : $root_type;
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -419,7 +443,172 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * The ids of the parent nodes of a variable of type $type, where those of narrowings (see
+     * DataFlowNode::getNarrowedNodeId()) count as the nodes they narrow: a variable is the same value while they are
+     * (see getElementCopySource()), and a narrowing keeps it
+     *
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    public static function getValueNodeIds(?Union $type): array
+    {
+        $ids = [];
+
+        foreach ($type->parent_nodes ?? [] as $node) {
+            $ids[$node->getNarrowedNodeId() ?? $node->id] = true;
+        }
+
+        $ids = array_keys($ids);
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * Whether the elements of a value of type $type are taken from the value itself (those of an array, or of what
+     * is taken for one), not made by it (those of an object).
+     *
+     * @psalm-pure
+     */
+    public static function hasElementsOfItsOwn(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TMixed
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The parent nodes of the array whose elements assignment $stmt = $assign_value copies under their own key, if
+     * it does. It may copy only some of them. $stmt is analyzed already, $target_type is the type of $stmt->var.
+     * The target is an array too (see hasElementsOfItsOwn()), not mixed: an object puts the value where its
+     * offsetSet() does, maybe under another key. The copies are:
+     * - $r[$k] = $y[$k], with $y an array (see hasElementsOfItsOwn()) and $k the same at both dims;
+     * - $r[$k] = $v in the body of a foreach loop over an array, with $k and $v the key and value variables of
+     *   the loop, not reassigned since (see Context::$foreach_element_copies).
+     * A variable is the same as long as its parent nodes are: an assignment gives it other ones, a narrowing
+     * keeps them.
+     * A key known statically is assigned and fetched under its own key already. The fetch of an element may take
+     * more than the array holds (a taint source: an entry of $_SERVER or $_FILES, what a plugin adds), which a copy
+     * of the array would lose: the assignment of such an element is no copy.
+     *
+     * @return array<string, DataFlowNode>|null
+     * @psalm-capabilities read-props
+     */
+    private static function getElementCopySource(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Union $target_type,
+        ?PhpParser\Node\Expr $assign_value,
+        Context $context,
+    ): ?array {
+        if (!$stmt->dim instanceof PhpParser\Node\Expr\Variable
+            || !is_string($stmt->dim->name)
+            || $assign_value === null
+            || !self::hasElementsOfItsOwn($target_type)
+            || $target_type->hasMixed()
+        ) {
+            return null;
+        }
+
+        $key_type = $statements_analyzer->node_data->getType($stmt->dim);
+        $key_node_ids = self::getValueNodeIds($key_type);
+        $value_type = $statements_analyzer->node_data->getType($assign_value);
+
+        if ($key_type === null
+            || $key_node_ids === []
+            || $value_type === null
+            || $key_type->isSingleStringLiteral()
+            || $key_type->isSingleIntLiteral()
+        ) {
+            return null;
+        }
+
+        if ($taint_flow_graph = $statements_analyzer->taint_flow_graph) {
+            foreach ($value_type->parent_nodes as $value_node) {
+                if ($taint_flow_graph->isSource($value_node)) {
+                    return null;
+                }
+            }
+        }
+
+        if ($assign_value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $fetched_key_type = $assign_value->dim instanceof PhpParser\Node\Expr\Variable
+                && $assign_value->dim->name === $stmt->dim->name
+                ? $statements_analyzer->node_data->getType($assign_value->dim)
+                : null;
+            $array_type = $statements_analyzer->node_data->getType($assign_value->var);
+
+            return $fetched_key_type !== null
+                && self::getValueNodeIds($fetched_key_type) === $key_node_ids
+                && $array_type !== null
+                && $array_type->parent_nodes !== []
+                && self::hasElementsOfItsOwn($array_type)
+                ? $array_type->parent_nodes
+                : null;
+        }
+
+        $value_var_id = $assign_value instanceof PhpParser\Node\Expr\Variable && is_string($assign_value->name)
+            ? '$' . $assign_value->name
+            : null;
+
+        if ($value_var_id === null || !isset($context->foreach_element_copies[$value_var_id])) {
+            return null;
+        }
+
+        [$key_var_id, $loop_key_node_ids, $loop_value_node_ids, $array_nodes] =
+            $context->foreach_element_copies[$value_var_id];
+
+        return $key_var_id === '$' . $stmt->dim->name
+            && $loop_key_node_ids === $key_node_ids
+            && $loop_value_node_ids === self::getValueNodeIds($value_type)
+            ? $array_nodes
+            : null;
+    }
+
+    /**
+     * The marker of the foreach loop (see ForeachAnalyzer::getForeachMarker()) whose body assignment $stmt is
+     * in, if it assigns under the key variable of the loop, not reassigned since (see getElementCopySource()):
+     * the taint analysis puts the value of the element of the iteration back under its key there, as it was in
+     * the array iterated over, if that's what is assigned or what it's made of. $stmt is analyzed already.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getForeachMarker(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        Context $context,
+    ): ?string {
+        $dim = $stmt->dim;
+
+        if (!$dim instanceof PhpParser\Node\Expr\Variable || !is_string($dim->name)) {
+            return null;
+        }
+
+        $key_var_id = '$' . $dim->name;
+
+        if (!isset($context->foreach_keys[$key_var_id])) {
+            return null;
+        }
+
+        [$key_node_ids, $foreach_marker] = $context->foreach_keys[$key_var_id];
+        $key_type = $statements_analyzer->node_data->getType($dim);
+
+        return $key_type !== null && self::getValueNodeIds($key_type) === $key_node_ids ? $foreach_marker : null;
+    }
+
+    /**
      * @param list<TLiteralInt|TLiteralString> $key_values $key_values
+     * @param ?Context $assignment_context the context of the assignment if $child_stmt_type is the type of
+     *                                     the value it assigns, $assign_value: not of an operand of it
      */
     private static function taintArrayAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -428,8 +617,27 @@ final class ArrayAssignmentAnalyzer
         Union $child_stmt_type,
         ?string $var_var_id,
         array $key_values,
+        ?PhpParser\Node\Expr $assign_value = null,
+        ?Context $assignment_context = null,
     ): void {
         if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+            $element_copy_source = $assignment_context
+                ? self::getElementCopySource(
+                    $statements_analyzer,
+                    $expr,
+                    $stmt_type,
+                    $assign_value,
+                    $assignment_context,
+                )
+                : null;
+            // an object (which a mixed value may be) puts the value where its offsetSet() does, maybe under another key
+            $foreach_marker = $assignment_context
+                && $element_copy_source === null
+                && self::hasElementsOfItsOwn($stmt_type)
+                && !$stmt_type->hasMixed()
+                ? self::getForeachMarker($statements_analyzer, $expr, $assignment_context)
+                : null;
+
             $var_location = new CodeLocation($statements_analyzer->getSource(), $expr->var);
 
             $parent_node = DataFlowNode::getForAssignment(
@@ -465,28 +673,102 @@ final class ArrayAssignmentAnalyzer
             }
 
             // what the assigned value cannot hold, given its type
-            $removed_taints = $graph instanceof VariableUseGraph ? 0 : $child_stmt_type->getTaintsToRemove();
+            $removed_taints = $graph instanceof VariableUseGraph
+                ? 0
+                : $child_stmt_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints());
+
+            $value_graph = $graph;
+
+            $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
+
+            if ($element_copy_source !== null && $taint_graph instanceof TaintFlowGraph) {
+                // the elements of the array, under the same keys: the array, as far as its taints go
+                foreach ($stmt_type->parent_nodes as $parent_node) {
+                    foreach ($element_copy_source as $source_node) {
+                        $taint_graph->addPath($source_node, $parent_node, '=');
+                    }
+                }
+
+                // the value is used all the same
+                $value_graph = $graph instanceof CombinedFlowGraph ? $graph->variable_use_graph : null;
+            }
+
+            if (count($key_values) > self::MAX_KEY_VALUES) {
+                $key_values = [];
+            }
+
+            // a global variable, by its name if known: also where the value is a copy of the elements of another array
+            if ($expr->var instanceof Variable
+                && $expr->var->name === 'GLOBALS'
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            ) {
+                foreach ($key_values === [] ? [null] : $key_values as $key_value) {
+                    $global_node = GlobalAnalyzer::getGlobalNode(
+                        $taint_flow_graph,
+                        $key_value === null ? null : (string) $key_value->value,
+                    );
+
+                    foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
+                        $taint_flow_graph->addPath($child_parent_node, $global_node, '=', 0, $removed_taints);
+                    }
+                }
+            }
+
+            if ($value_graph === null) {
+                return;
+            }
 
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
-                    if ($key_values) {
-                        foreach ($key_values as $key_value) {
-                            $graph->addPath(
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys(
+                            $value_graph,
+                            $child_parent_node,
+                            $parent_node,
+                            $key_values,
+                            $var_location,
+                            $removed_taints,
+                        );
+                    } elseif ($key_values) {
+                        $value_graph->addPath(
+                            $child_parent_node,
+                            $parent_node,
+                            'arrayvalue-assignment-\'' . $key_values[0]->value . '\'',
+                            0,
+                            $removed_taints,
+                        );
+                    } else {
+                        $key_path_suffix = ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim);
+
+                        if ($foreach_marker !== null
+                            && $key_path_suffix === null
+                            && $taint_graph instanceof TaintFlowGraph
+                        ) {
+                            // under the key of the element of the iteration (see getForeachMarker())
+                            $taint_graph->addPath(
                                 $child_parent_node,
                                 $parent_node,
-                                'arrayvalue-assignment-\'' . $key_value->value . '\'',
+                                'arrayvalue-assignment@' . $foreach_marker,
+                                0,
+                                $removed_taints,
+                            );
+
+                            if ($value_graph instanceof CombinedFlowGraph) {
+                                $value_graph->variable_use_graph->addPath(
+                                    $child_parent_node,
+                                    $parent_node,
+                                    'arrayvalue-assignment',
+                                );
+                            }
+                        } else {
+                            $value_graph->addPath(
+                                $child_parent_node,
+                                $parent_node,
+                                'arrayvalue-assignment' . ($key_path_suffix ?? ''),
                                 0,
                                 $removed_taints,
                             );
                         }
-                    } else {
-                        $graph->addPath(
-                            $child_parent_node,
-                            $parent_node,
-                            'arrayvalue-assignment',
-                            0,
-                            $removed_taints,
-                        );
                     }
                 }
             }
@@ -495,9 +777,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * The type of the path from an array to the array it becomes once its value under $key is replaced: one
-     * keeping what it held under its other keys only (see DataFlowGraph::isOverwritten()). Assigning an offset of
-     * anything that may not be an array (an ArrayAccess object, a string...) may do anything else with what it held,
-     * so the path keeps it all then.
+     * keeping what it held under its other keys only (see TaintFlowResolution::getNextOpenAssignments()).
+     * Assigning an offset of anything that may not be an array (an ArrayAccess object, a string...) may do anything
+     * else with what it held, so the path keeps it all then.
      *
      * @psalm-mutation-free
      */
@@ -514,6 +796,47 @@ final class ArrayAssignmentAnalyzer
         }
 
         return 'arrayvalue-overwrite-\'' . $key->value . '\'';
+    }
+
+    /**
+     * Adds the paths of the assignment of $value to array $array at $location under a key that is one of
+     * $key_values: one for each, in the taint flow graph, the others than the first through a node of their own (a
+     * path between two nodes has one type). The variable use graph only knows the key is one of them: an unkeyed
+     * assignment there.
+     *
+     * @param non-empty-list<TLiteralInt|TLiteralString> $key_values
+     */
+    private static function taintAssignmentUnderKeys(
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        DataFlowNode $value,
+        DataFlowNode $array,
+        array $key_values,
+        CodeLocation $location,
+        int $removed_taints,
+    ): void {
+        if ($graph instanceof CombinedFlowGraph) {
+            $graph->variable_use_graph->addPath($value, $array, 'arrayvalue-assignment', 0, $removed_taints);
+            $graph = $graph->taint_flow_graph;
+        } elseif ($graph instanceof VariableUseGraph) {
+            $graph->addPath($value, $array, 'arrayvalue-assignment', 0, $removed_taints);
+
+            return;
+        }
+
+        foreach ($key_values as $index => $key_value) {
+            $path_type = 'arrayvalue-assignment-\'' . $key_value->value . '\'';
+
+            if ($index === 0) {
+                $graph->addPath($value, $array, $path_type, 0, $removed_taints);
+
+                continue;
+            }
+
+            $key_node = DataFlowNode::getForAssignment($array->label . ' ' . $path_type, $location);
+            $graph->addNode($key_node);
+            $graph->addPath($value, $key_node, $path_type, 0, $removed_taints);
+            $graph->addPath($key_node, $array, '=');
+        }
     }
 
     private static function updateArrayAssignmentChildType(
@@ -841,8 +1164,10 @@ final class ArrayAssignmentAnalyzer
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
+        ?Context $assignment_context,
     ): void {
         $var_id_additions = [];
+        $written_offsets = [];
 
         $root_var = end($child_stmts)->var;
 
@@ -880,8 +1205,10 @@ final class ArrayAssignmentAnalyzer
                 );
 
                 $var_id_additions[] = $var_id_addition;
+                $written_offsets[] = [$var_id_addition, $offset_type !== null];
             } else {
                 $var_id_additions[] = '';
+                $written_offsets[] = null;
                 $full_var_id = false;
             }
 
@@ -938,17 +1265,14 @@ final class ArrayAssignmentAnalyzer
                 $statements_analyzer->node_data->setType($child_stmt, $assignment_type);
 
                 if ($statements_analyzer->data_flow_graph) {
-                    self::taintArrayAssignment(
+                    self::taintNestedArrayAssignment(
                         $statements_analyzer,
                         $child_stmt,
                         $array_type,
                         $assignment_type,
-                        ExpressionIdentifier::getExtendedVarId(
-                            $child_stmt->var,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        ),
-                        $offset_type !== null ? [$offset_type] : [],
+                        $offset_type,
+                        $assign_value,
+                        $assignment_context,
                     );
                 }
             }
@@ -971,6 +1295,10 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+        }
+
+        if ($root_var_id !== null) {
+            self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
         }
 
         if ($statements_analyzer->data_flow_graph
@@ -1018,7 +1346,7 @@ final class ArrayAssignmentAnalyzer
                 throw new InvalidArgumentException('Should never get here');
             }
 
-            $key_values = $current_dim ? self::getDimKeyValues($statements_analyzer, $current_dim) : [];
+            $key_values = self::getDimKeyValues($statements_analyzer, $current_dim);
 
             if ($key_values) {
                 $new_child_type = self::updateTypeWithKeyValues(
@@ -1085,7 +1413,7 @@ final class ArrayAssignmentAnalyzer
                     $array_type,
                     $new_child_type,
                     $parent_array_var_id,
-                    $child_stmt->dim ? self::getDimKeyValues($statements_analyzer, $child_stmt->dim) : [],
+                    self::getDimKeyValues($statements_analyzer, $child_stmt->dim),
                 );
                 if ($t_orig) {
                     $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
@@ -1106,13 +1434,132 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
+     * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
+     * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
+     * they are equal, or either isn't a literal. An appended offset is a new one, so no known offset is under it.
+     *
+     * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
+     *     null for an appended one
+     */
+    private static function removeAliasedOffsets(Context $context, string $root_var_id, array $written_offsets): void
+    {
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if (!str_starts_with($var_id, $root_var_id . '[')) {
+                continue;
+            }
+
+            $position = strlen($root_var_id);
+            $is_written_path = true;
+
+            foreach ($written_offsets as $written_offset) {
+                if ($written_offset === null) {
+                    continue 2;
+                }
+
+                [$written_key, $written_key_is_literal] = $written_offset;
+                $key = self::getKeyAt($var_id, $position);
+
+                if ($key === null) {
+                    break;
+                }
+
+                if ($key !== $written_key) {
+                    if ($written_key_is_literal && preg_match('/^\[(-?\d+|\'.*\')\]$/', $key) === 1) {
+                        continue 2;
+                    }
+
+                    $is_written_path = false;
+                }
+
+                $position += strlen($key);
+            }
+
+            if (!$is_written_path) {
+                $context->remove($var_id, false);
+                $context->removeVarFromConflictingClauses($var_id);
+            }
+        }
+    }
+
+    /**
+     * Returns the bracketed key of a var id that starts at the given position, null if no key starts there.
+     *
+     * @psalm-pure
+     */
+    private static function getKeyAt(string $var_id, int $position): ?string
+    {
+        if (substr($var_id, $position, 1) !== '[') {
+            return null;
+        }
+
+        $depth = 0;
+        $length = strlen($var_id);
+
+        for ($i = $position; $i < $length; $i++) {
+            if ($var_id[$i] === "'") {
+                // string literals aren't escaped in var ids, so one ends where a quote closes a key
+                $i = strpos($var_id, "']", $i + 1);
+
+                if ($i === false) {
+                    return null;
+                }
+            } elseif ($var_id[$i] === '[') {
+                $depth++;
+            } elseif ($var_id[$i] === ']') {
+                $depth--;
+
+                if ($depth === 0) {
+                    return substr($var_id, $position, $i - $position + 1);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Taints the assignment of $assignment_type to $child_stmt, the innermost dim of a nested array assignment
+     * (see taintArrayAssignment()), under $offset_type if known
+     */
+    private static function taintNestedArrayAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $child_stmt,
+        Union &$array_type,
+        Union $assignment_type,
+        TLiteralInt|TLiteralString|null $offset_type,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Context $assignment_context,
+    ): void {
+        self::taintArrayAssignment(
+            $statements_analyzer,
+            $child_stmt,
+            $array_type,
+            $assignment_type,
+            ExpressionIdentifier::getExtendedVarId(
+                $child_stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ),
+            $offset_type !== null ? [$offset_type] : self::getDimKeyValues($statements_analyzer, $child_stmt->dim),
+            $assign_value,
+            $assignment_context,
+        );
+    }
+
+    /**
+     * The literal keys dim $dim can be: none if there is no dim (an append) or they aren't known
+     *
      * @return list<TLiteralInt|TLiteralString>
      */
     private static function getDimKeyValues(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $dim,
+        ?PhpParser\Node\Expr $dim,
     ): array {
         $key_values = [];
+
+        if ($dim === null) {
+            return $key_values;
+        }
 
         if ($dim instanceof PhpParser\Node\Scalar\String_) {
             $value_type = Type::getAtomicStringFromLiteral($dim->value);

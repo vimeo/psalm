@@ -97,12 +97,35 @@ final class Context
     /**
      * The by-reference parameters of the function-like analyzed that still reference the variables passed
      * to them, with the taint node of what the call leaves in those variables. unset(), =&, global and
-     * static make a parameter stop referencing it.
+     * static make a parameter stop referencing it. The variables `global` binds are here too, with the node
+     * of their global (see GlobalAnalyzer).
      *
      * @internal
      * @var array<string, DataFlowNode>
      */
     public array $by_ref_param_out_nodes = [];
+
+    /**
+     * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
+     * own key (see ArrayAssignmentAnalyzer::getElementCopySource()): value variable id => [key variable id, ids of
+     * its parent nodes, ids of the parent nodes of the value variable, parent nodes of the iterated array]. The
+     * parent nodes are those the loop gave the variables: an assignment gives a variable other ones, a narrowing
+     * keeps them.
+     *
+     * @internal
+     * @var array<string, array{string, list<string>, list<string>, array<string, DataFlowNode>}>
+     */
+    public array $foreach_element_copies = [];
+
+    /**
+     * The foreach loops whose element values an assignment under the key of the element in their body may put
+     * back under that key (see ArrayAssignmentAnalyzer::getForeachMarker()): key variable id => [ids of the
+     * parent nodes the loop gave it, the marker of the loop (see ForeachAnalyzer::getForeachMarker())]
+     *
+     * @internal
+     * @var array<string, array{list<string>, string}>
+     */
+    public array $foreach_keys = [];
 
     /**
      * A set of globals that are referenced somewhere.
@@ -414,7 +437,7 @@ final class Context
      */
     public function isMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -422,7 +445,7 @@ final class Context
      */
     public function isExternalMutationFree(): bool
     {
-        return Capabilities::allows(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::EXTERNAL_MUTATION_FREE, $this->capabilities);
     }
 
     /**
@@ -431,7 +454,7 @@ final class Context
      */
     public function isPure(): bool
     {
-        return Capabilities::allows(Capabilities::NONE, $this->capabilities);
+        return Capabilities::allowsAnyOf(Capabilities::NONE, $this->capabilities);
     }
 
     /**

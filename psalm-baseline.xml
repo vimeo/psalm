@@ -166,11 +166,6 @@
       <code><![CDATA[$matches[3]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/FileSource.php">
-    <MissingInterfaceImmutableAnnotation>
-      <code><![CDATA[FileSource]]></code>
-    </MissingInterfaceImmutableAnnotation>
-  </file>
   <file src="src/Psalm/Internal/Algebra.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$creating_conditional_id]]></code>
@@ -1118,8 +1113,6 @@
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$fq_class_name]]></code>
       <code><![CDATA[$statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName()]]></code>
-      <code><![CDATA[$storage->template_extended_params]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1345,9 +1338,6 @@
     <ComplexMethod>
       <code><![CDATA[infer]]></code>
     </ComplexMethod>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$fq_classlike_name]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/TernaryAnalyzer.php">
     <RiskyTruthyFalsyComparison>
@@ -1715,13 +1705,22 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
+    <ImpureMethodCall>
+      <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>
+    </ImpureMethodCall>
     <ImpureStaticProperty>
+      <code><![CDATA[self::$body_suffix]]></code>
+      <code><![CDATA[self::$body_suffix]]></code>
       <code><![CDATA[self::$forClosureUse]]></code>
       <code><![CDATA[self::$forClosureUse]]></code>
       <code><![CDATA[self::$forUnknownOrigin]]></code>
       <code><![CDATA[self::$forUnknownOrigin]]></code>
       <code><![CDATA[self::$forVariableUse]]></code>
       <code><![CDATA[self::$forVariableUse]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
+      <code><![CDATA[self::$method_suffixes]]></code>
     </ImpureStaticProperty>
     <RedundantPropertyInitializationCheck>
       <code><![CDATA[new self('closure-use', null, null, 'closure use')]]></code>
@@ -1910,11 +1909,6 @@
       <code><![CDATA[$this->body]]></code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Internal/LanguageServer/ProtocolReader.php">
-    <MissingInterfaceImmutableAnnotation>
-      <code><![CDATA[ProtocolReader]]></code>
-    </MissingInterfaceImmutableAnnotation>
-  </file>
   <file src="src/Psalm/Internal/LanguageServer/ProtocolWriter.php">
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[ProtocolWriter]]></code>
@@ -2017,7 +2011,6 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionResolver.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$fq_classlike_name]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>
       <code><![CDATA[$string_value]]></code>
@@ -2051,9 +2044,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
-    <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$source_param_string]]></code>
-    </PossiblyUndefinedArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$aliases->namespace]]></code>
       <code><![CDATA[$classlike_storage->template_types]]></code>
@@ -2641,11 +2631,6 @@
       <code><![CDATA[strpos($key, '&')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Type/TypeAlias.php">
-    <MissingInterfaceImmutableAnnotation>
-      <code><![CDATA[TypeAlias]]></code>
-    </MissingInterfaceImmutableAnnotation>
-  </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
@@ -2867,11 +2852,6 @@
       <code><![CDATA[$parent_issue_type]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Node/VirtualNode.php">
-    <MissingInterfaceImmutableAnnotation>
-      <code><![CDATA[VirtualNode]]></code>
-    </MissingInterfaceImmutableAnnotation>
-  </file>
   <file src="src/Psalm/NodeTypeProvider.php">
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[NodeTypeProvider]]></code>
@@ -3045,11 +3025,6 @@
   <file src="src/Psalm/Plugin/PluginFileExtensionsInterface.php">
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[PluginFileExtensionsInterface]]></code>
-    </MissingInterfaceImmutableAnnotation>
-  </file>
-  <file src="src/Psalm/Plugin/PluginInterface.php">
-    <MissingInterfaceImmutableAnnotation>
-      <code><![CDATA[PluginInterface]]></code>
     </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/Plugin/RegistrationInterface.php">
@@ -3273,8 +3248,6 @@
       <code><![CDATA[$result->offset_start]]></code>
       <code><![CDATA[$result->text]]></code>
       <code><![CDATA[$result->text]]></code>
-      <code><![CDATA[$type->is_enum]]></code>
-      <code><![CDATA[$type->is_interface]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[array_keys($template_type_map[$value])[0]]]></code>
@@ -3742,6 +3715,9 @@
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Type/Atomic/TTemplateParam.php">
+    <ImmutableDependency>
+      <code><![CDATA[#[Override]]]></code>
+    </ImmutableDependency>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$intersection]]></code>
     </RiskyTruthyFalsyComparison>
@@ -3809,7 +3785,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!strpos($key, '$')]]></code>
       <code><![CDATA[!strpos($key, '[')]]></code>
-      <code><![CDATA[$failed_reconciliation]]></code>
       <code><![CDATA[strpos($base_key, '::')]]></code>
       <code><![CDATA[strpos($key, '::')]]></code>
       <code><![CDATA[strpos($nk, '->')]]></code>
@@ -3820,9 +3795,6 @@
     <MissingInterfaceImmutableAnnotation>
       <code><![CDATA[TypeNode]]></code>
     </MissingInterfaceImmutableAnnotation>
-    <ReferenceConstraintViolation>
-      <code><![CDATA[$node]]></code>
-    </ReferenceConstraintViolation>
   </file>
   <file src="src/Psalm/Type/TypeVisitor.php">
     <ImpureMethodCall>

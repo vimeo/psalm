@@ -304,7 +304,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 $template_result,
                 $found_generic_params ?? [],
             );
-            $resolved_capabilities = $method_storage->capabilities | $template_capabilities;
+            $resolved_capabilities = $template_capabilities
+                | CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
 
             $call_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,

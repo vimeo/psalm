@@ -14,6 +14,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -737,7 +738,7 @@ final class AtomicPropertyFetchAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['InternalMethod'])) {
                 $statements_analyzer->addSuppressedIssues(['InternalMethod']);
             }
 
@@ -748,7 +749,7 @@ final class AtomicPropertyFetchAnalyzer
                 false,
             );
 
-            if (!in_array('InternalMethod', $suppressed_issues, true)) {
+            if (!isset($suppressed_issues['InternalMethod'])) {
                 $statements_analyzer->removeSuppressedIssues(['InternalMethod']);
             }
 
@@ -881,6 +882,12 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         $data_flow_graph = $statements_analyzer->data_flow_graph;
+        $property_id = InheritedMethodTaints::getPropertyIdInBody(
+            $statements_analyzer->getCodebase(),
+            $context,
+            $stmt,
+            $property_id,
+        );
 
         $added_taints = 0;
         $removed_taints = 0;

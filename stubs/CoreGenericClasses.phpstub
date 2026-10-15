@@ -156,10 +156,18 @@ interface ArrayAccess {
  * This class allows objects to work as arrays.
  * @link http://php.net/manual/en/class.arrayobject.php
  *
+ * TStorage is what writing the storage costs besides writing the ArrayObject itself: nothing when
+ * the storage is an array, write-props when it is another object, whose properties the mutators
+ * then write. The constructor binds it from what it is given. exchangeArray() can't rebind it, as
+ * other references to the ArrayObject would keep the old binding, so it charges write-props itself.
+ *
  * @template TKey of array-key
  * @template TValue
+ * @psalm-purity-template TStorage(write-props) <= write-props
  * @template-implements IteratorAggregate<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Countable {
     /**
@@ -180,11 +188,14 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param int $flags Flags to control the behaviour of the ArrayObject object.
      * @param string $iterator_class Specify the class that will be used for iteration of the ArrayObject object. ArrayIterator is the default class used.
      * @psalm-param class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>> $iterator_class
+     * @return self[$input is array ? pure : write-props]<TKey, TValue>
      *
      * @since 5.0.0
      * @psalm-flow ($input) -> return
+     *
+     * @psalm-pure
      */
-    public function __construct($input = null, $flags = 0, $iterator_class = "ArrayIterator") { }
+    public function __construct($input = [], $flags = 0, $iterator_class = "ArrayIterator") { }
 
     /**
      * Returns whether the requested index exists
@@ -195,6 +206,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.0.0
      * @no-named-arguments because of conflict with ArrayAccess
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) { }
 
@@ -207,6 +220,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.0.0
      * @no-named-arguments because of conflict with ArrayAccess
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) { }
 
@@ -220,6 +235,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.0.0
      * @no-named-arguments because of conflict with ArrayAccess
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function offsetSet($offset, $value) { }
 
@@ -232,6 +250,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @since 5.0.0
      * @no-named-arguments because of conflict with ArrayAccess
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function offsetUnset($offset) { }
 
@@ -243,6 +264,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.0.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function append($value) { }
 
@@ -254,6 +278,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *                              an array of the public properties of that object will be returned.
      *
      * @since 5.0.0
+     *
+     * @psalm-mutation-free
      */
     public function getArrayCopy() { }
 
@@ -265,6 +291,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return int The number of public properties in the ArrayObject.
      *
      * @since 5.0.0
+     *
+     * @psalm-mutation-free
      */
     public function count() { }
 
@@ -275,6 +303,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return int the behavior flags of the ArrayObject.
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function getFlags() { }
 
@@ -315,6 +345,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setFlags($flags) { }
 
@@ -325,6 +357,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.2.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function asort() { }
 
@@ -335,6 +370,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.2.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function ksort() { }
 
@@ -353,8 +391,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param callable[P](TValue, TValue):int $cmp_function
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
-     * @psalm-purity-from-template P
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P, TStorage
      *
      * @since 5.2.0
      */
@@ -375,8 +413,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @param callable[P](TKey, TKey):int $cmp_function The callable comparison function.
      * @return void
      *
-     * @psalm-capabilities read-props|write-this-props|write-props
-     * @psalm-purity-from-template P
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template P, TStorage
      *
      * @since 5.2.0
      */
@@ -389,6 +427,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.2.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function natsort() { }
 
@@ -399,6 +440,9 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.2.0
+     *
+     * @psalm-capabilities read-props|write-this-props
+     * @psalm-purity-from-template TStorage
      */
     public function natcasesort() { }
 
@@ -410,6 +454,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void The unserialized ArrayObject
      *
      * @since 5.3.0
+     *
+     * @psalm-impure
      */
     public function unserialize($serialized) { }
 
@@ -420,6 +466,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return string The serialized representation of the ArrayObject.
      *
      * @since 5.3.0
+     *
+     * @psalm-impure
      */
     public function serialize() { }
 
@@ -430,6 +478,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return ArrayIterator<TKey, TValue> An iterator from an ArrayObject.
      *
      * @since 5.0.0
+     *
+     * @psalm-mutation-free
      */
     public function getIterator() { }
 
@@ -437,10 +487,15 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Exchange the array for another one.
      * @link http://php.net/manual/en/arrayobject.exchangearray.php
      *
+     * It costs write-props whatever it is given, as it may be given an object, which the mutators
+     * then write whatever TStorage says.
+     *
      * @param mixed $input The new array or object to exchange with the current array.
      * @return array the old array.
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props
      */
     public function exchangeArray($input) { }
 
@@ -453,6 +508,8 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.1.0
+     *
+     * @psalm-capabilities read-props|write-this-props
      */
     public function setIteratorClass($iterator_class) { }
 
@@ -464,8 +521,31 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @psalm-return class-string<ArrayIterator<TKey,TValue>>|class-string<ArrayObject<TKey,TValue>>
      *
      * @since 5.1.0
+     *
+     * @psalm-mutation-free
      */
     public function getIteratorClass() { }
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array {}
+
+    /**
+     * @param array<array-key, mixed> $data
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function __unserialize(array $data): void {}
+
+    /**
+     * @return array<array-key, mixed>
+     *
+     * @psalm-mutation-free
+     */
+    public function __debugInfo(): array {}
 }
 
 interface Serializable {

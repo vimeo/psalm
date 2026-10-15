@@ -23,6 +23,27 @@ final class RedundantConditionTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofThenPropertyOfATemplateParamNarrowedBefore' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class Leaf implements Node {}
+                    final class Branch implements Node {
+                        public bool $open = false;
+                    }
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function visit(Node $node): void {
+                        if ($node instanceof Leaf) {
+                            return;
+                        }
+                        if ($node instanceof Branch && $node->open) {
+                            echo "open";
+                        }
+                    }',
+            ],
             'ignoreIssueAndAssign' => [
                 'code' => '<?php
                     function foo(): stdClass {
@@ -996,6 +1017,24 @@ final class RedundantConditionTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class Branch implements Node {}
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function visit(Node $node): void {
+                        if ($node instanceof Branch) {
+                            if ($node instanceof Branch) {
+                                echo "branch";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'ifFalse' => [
                 'code' => '<?php
                     $y = false;

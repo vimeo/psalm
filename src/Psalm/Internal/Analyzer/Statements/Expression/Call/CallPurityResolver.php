@@ -7,8 +7,10 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -135,6 +137,7 @@ final class CallPurityResolver
      */
     public static function resolvePurity(Union $purity, StatementsAnalyzer $statements_analyzer): int
     {
+        $purity = PurityWildcardInference::claimMarkers($statements_analyzer, $purity);
         $exempt = self::getExemptPurityTemplates($statements_analyzer);
 
         if ($exempt !== []) {
@@ -164,6 +167,31 @@ final class CallPurityResolver
                 self::recordUsedTemplates($atomic->purity, $exempt, $source);
             }
         }
+    }
+
+    /**
+     * What a call of $storage requires of its own, besides what its purity templates are bound to (see
+     * getCallCapabilities()): its capabilities, with those that depend on its arguments
+     * ({@see FunctionLikeStorage::$conditional_capabilities}) resolved for the arguments of the call
+     */
+    public static function getOwnCapabilities(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        ?TemplateResult $template_result,
+    ): int {
+        if ($storage->conditional_capabilities === [] || $template_result === null) {
+            return $storage->capabilities;
+        }
+
+        $capabilities = $storage->unconditional_capabilities;
+
+        foreach ($storage->conditional_capabilities as $conditional) {
+            $capabilities |= Capabilities::fromType(
+                TemplateInferredTypeReplacer::replace($conditional, $template_result, $codebase),
+            );
+        }
+
+        return $capabilities & $storage->capabilities;
     }
 
     /**
@@ -216,6 +244,7 @@ final class CallPurityResolver
                 continue;
             }
 
+            // the markers of a receiver's `_` are claimed there too ({@see PurityWildcardInference})
             $required = self::resolvePurity($bound, $statements_analyzer);
 
             $capabilities |= $on_receiver
@@ -242,6 +271,11 @@ final class CallPurityResolver
             if ($atomic instanceof TCapabilities) {
                 $capabilities |= $atomic->capabilities;
             } elseif ($atomic instanceof TTemplateParam) {
+                // what a receiver's `_` would charge to the callers ({@see PurityWildcardInference})
+                if ($atomic->defining_class === PurityWildcardInference::MARKER_CLASS) {
+                    continue;
+                }
+
                 if (!in_array($atomic->param_name, $exempt, true)) {
                     $capabilities |= self::resolveWithExemptions($atomic->as, $exempt);
                 }

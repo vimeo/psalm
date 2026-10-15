@@ -742,6 +742,7 @@ final class ClassTemplateCovarianceTest extends TestCase
                     /**
                      * @template-covariant TValue
                      * @template-extends \ArrayObject<int,TValue>
+                     * @psalm-capabilities read-props|write-this-props
                      */
                     class Collection extends \ArrayObject {}',
                 'error_message' => 'InvalidTemplateParam',

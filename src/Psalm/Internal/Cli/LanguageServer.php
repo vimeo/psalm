@@ -60,7 +60,6 @@ final class LanguageServer
 {
     /**
      * @param array<int,string> $argv
-     * @psalm-suppress ComplexMethod
      */
     public static function run(array $argv): void
     {

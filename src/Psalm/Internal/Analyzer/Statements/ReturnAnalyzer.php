@@ -703,8 +703,8 @@ final class ReturnAnalyzer
         if ($inferred_type->parent_nodes) {
             // what the returned value cannot hold, given its type or the native return type PHP enforces
             $removed_taints = $storage->removed_taints
-                | $inferred_type->getTaintsToRemove()
-                | ($storage->signature_return_type?->getTaintsToRemove() ?? 0);
+                | $inferred_type->getTaintsToRemove($codebase->getInputTaints())
+                | ($storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0);
 
             foreach ($inferred_type->parent_nodes as $parent_node) {
                 $statements_analyzer->taint_flow_graph->addPath(

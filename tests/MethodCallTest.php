@@ -1116,11 +1116,11 @@ final class MethodCallTest extends TestCase
                         echo strlen($a->getValue());
                     }',
             ],
-            'newSplObjectStorageDefaultEmpty' => [
+            'newSplObjectStorageLeavesItsTemplatesOpen' => [
                 'code' => '<?php
                     $a = new SplObjectStorage();',
                 'assertions' => [
-                    '$a' => 'SplObjectStorage<never, never>',
+                    '$a===' => 'SplObjectStorage<`_0:object, `_1:mixed>',
                 ],
             ],
             'allowIteratorToBeNull' => [

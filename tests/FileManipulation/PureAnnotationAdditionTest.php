@@ -364,6 +364,791 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPurityWildcardToCalledClosureParams' => [
+                'input' => '<?php
+                    /**
+                     * @param Closure(int): string $f
+                     */
+                    function mapInt(Closure $f, int $i): string {
+                        return $f($i);
+                    }
+
+                    function apply(?callable $cb, int $x): int {
+                        return $cb !== null ? $cb($x) : $x;
+                    }
+
+                    function reassigned(Closure $f, Closure $g): int {
+                        $f = $g;
+                        return $f();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     *
+                     * @psalm-pure
+                     */
+                    function mapInt(Closure $f, int $i): string {
+                        return $f($i);
+                    }
+
+                    /**
+                     * @param ?callable[_] $cb
+                     *
+                     * @psalm-pure
+                     */
+                    function apply(?callable $cb, int $x): int {
+                        return $cb !== null ? $cb($x) : $x;
+                    }
+
+                    function reassigned(Closure $f, Closure $g): int {
+                        $f = $g;
+                        return $f();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardReplacingTheDefaultPurityOnly' => [
+                'input' => '<?php
+                    /**
+                     * @param impure-Closure(int): string $f
+                     * @param Closure[read-props](int): string $g
+                     */
+                    function both(Closure $f, Closure $g, int $i): string {
+                        return $f($i) . $g($i);
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Closure[_](int): string $f
+                     * @param Closure[read-props](int): string $g
+                     *
+                     * @psalm-capabilities read-props
+                     */
+                    function both(Closure $f, Closure $g, int $i): string {
+                        return $f($i) . $g($i);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addNestedPurityWildcardToCalledClosures' => [
+                'input' => '<?php
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function sumLoop(array $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{run: Closure(int): int, other: int} $opts
+                     */
+                    function viaShape(array $opts): int {
+                        return $opts["run"]($opts["other"]);
+                    }
+
+                    /**
+                     * @param Closure(): Closure(): int $make
+                     */
+                    function curry(Closure $make): int {
+                        return $make()();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param list<Closure[_](): int> $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumLoop(array $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{run: Closure[_](int): int, other: int} $opts
+                     *
+                     * @psalm-pure
+                     */
+                    function viaShape(array $opts): int {
+                        return $opts["run"]($opts["other"]);
+                    }
+
+                    /**
+                     * @param Closure[_](): Closure[_](): int $make
+                     *
+                     * @psalm-pure
+                     */
+                    function curry(Closure $make): int {
+                        return $make()();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToIteratedParams' => [
+                'input' => '<?php
+                    /**
+                     * @param Traversable<int, int> $t
+                     */
+                    function sumTraversable(Traversable $t): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    function countAll(Traversable $t): int {
+                        $n = 0;
+                        foreach ($t as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+
+                    /**
+                     * @param iterable<int, Closure(): int> $fs
+                     */
+                    function sumIterable(iterable $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param IteratorAggregate<int, int> $a
+                     */
+                    function sumAggregate(IteratorAggregate $a): int {
+                        $s = 0;
+                        foreach ($a as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param Traversable[_]<int, int> $t
+                     *
+                     * @psalm-pure
+                     */
+                    function sumTraversable(Traversable $t): int {
+                        $s = 0;
+                        foreach ($t as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param Traversable[_] $t
+                     *
+                     * @psalm-pure
+                     */
+                    function countAll(Traversable $t): int {
+                        $n = 0;
+                        foreach ($t as $_) {
+                            $n++;
+                        }
+                        return $n;
+                    }
+
+                    /**
+                     * @param iterable[_]<int, Closure[_](): int> $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumIterable(iterable $fs): int {
+                        $s = 0;
+                        foreach ($fs as $f) {
+                            $s += $f();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param IteratorAggregate[_]<int, int> $a
+                     *
+                     * @psalm-pure
+                     */
+                    function sumAggregate(IteratorAggregate $a): int {
+                        $s = 0;
+                        foreach ($a as $x) {
+                            $s += $x;
+                        }
+                        return $s;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToReceiverPurityArguments' => [
+                'input' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /**
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Two {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function b(): int;
+                    }
+
+                    function callDoer(Doer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Doer> $ds
+                     */
+                    function callDoers(array $ds): int {
+                        $s = 0;
+                        foreach ($ds as $d) {
+                            $s += $d->run();
+                        }
+                        return $s;
+                    }
+
+                    function useTwo(Two $t): int {
+                        return $t->b();
+                    }',
+                'output' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /**
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Two {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function b(): int;
+                    }
+
+                    /**
+                     * @param Doer[_] $d
+                     *
+                     * @psalm-pure
+                     */
+                    function callDoer(Doer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Doer[_]> $ds
+                     *
+                     * @psalm-pure
+                     */
+                    function callDoers(array $ds): int {
+                        $s = 0;
+                        foreach ($ds as $d) {
+                            $s += $d->run();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param Two[impure, _] $t
+                     *
+                     * @psalm-pure
+                     */
+                    function useTwo(Two $t): int {
+                        return $t->b();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToGenericReceivers' => [
+                'input' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface SubBox extends Box {}
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template R
+                     * @extends SubBox[R]<T>
+                     */
+                    interface SubSubBox extends SubBox {}
+
+                    /**
+                     * @template-covariant T of object
+                     * @psalm-purity-template P
+                     * @implements Box[P]<T>
+                     */
+                    abstract class ObjectBox implements Box {}
+
+                    /**
+                     * @param Box<int> $b
+                     */
+                    function useBox(Box $b): int {
+                        return $b->get();
+                    }
+
+                    function nativeBox(Box $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param list<Box<int>> $bs
+                     */
+                    function sumBoxes(array $bs): int {
+                        $s = 0;
+                        foreach ($bs as $b) {
+                            $s += $b->get();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{box: Box<int>, n: int} $o
+                     */
+                    function viaShape(array $o): int {
+                        return $o["box"]->get() + $o["n"];
+                    }
+
+                    /**
+                     * @param Pair<string, int> $p
+                     */
+                    function usePair(Pair $p): int {
+                        return $p->value();
+                    }
+
+                    /**
+                     * @param SubBox<int> $b
+                     */
+                    function useSubBox(SubBox $b): int {
+                        return $b->get();
+                    }
+
+                    function nativeSubSubBox(SubSubBox $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    function nativeObjectBox(ObjectBox $b): object {
+                        return $b->get();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface SubBox extends Box {}
+
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template R
+                     * @extends SubBox[R]<T>
+                     */
+                    interface SubSubBox extends SubBox {}
+
+                    /**
+                     * @template-covariant T of object
+                     * @psalm-purity-template P
+                     * @implements Box[P]<T>
+                     */
+                    abstract class ObjectBox implements Box {}
+
+                    /**
+                     * @param Box[_]<int> $b
+                     *
+                     * @psalm-pure
+                     */
+                    function useBox(Box $b): int {
+                        return $b->get();
+                    }
+
+                    /**
+                     * @param Box[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeBox(Box $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param list<Box[_]<int>> $bs
+                     *
+                     * @psalm-pure
+                     */
+                    function sumBoxes(array $bs): int {
+                        $s = 0;
+                        foreach ($bs as $b) {
+                            $s += $b->get();
+                        }
+                        return $s;
+                    }
+
+                    /**
+                     * @param array{box: Box[_]<int>, n: int} $o
+                     *
+                     * @psalm-pure
+                     */
+                    function viaShape(array $o): int {
+                        return $o["box"]->get() + $o["n"];
+                    }
+
+                    /**
+                     * @param Pair[impure, _]<string, int> $p
+                     *
+                     * @psalm-pure
+                     */
+                    function usePair(Pair $p): int {
+                        return $p->value();
+                    }
+
+                    /**
+                     * @param SubBox[_]<int> $b
+                     *
+                     * @psalm-pure
+                     */
+                    function useSubBox(SubBox $b): int {
+                        return $b->get();
+                    }
+
+                    /**
+                     * @param SubSubBox[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeSubSubBox(SubSubBox $b): bool {
+                        return $b->get() !== null;
+                    }
+
+                    /**
+                     * @param ObjectBox[_] $b
+                     *
+                     * @psalm-pure
+                     */
+                    function nativeObjectBox(ObjectBox $b): object {
+                        return $b->get();
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPurityWildcardLeavingOutInvariantTypeArguments' => [
+                'input' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface InvariantBox extends Box {}
+
+                    function nativePair(Pair $p): bool {
+                        return $p->value() !== null;
+                    }
+
+                    /**
+                     * @param list<Pair> $ps
+                     */
+                    function firstPair(array $ps): bool {
+                        return $ps[0]->value() !== null;
+                    }
+
+                    function nativeInvariantBox(InvariantBox $b): bool {
+                        return $b->get() !== null;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @template-covariant T
+                     * @psalm-purity-template P
+                     */
+                    interface Box {
+                        /**
+                         * @return T
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function get();
+                    }
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     * @psalm-purity-template A
+                     * @psalm-purity-template B
+                     */
+                    interface Pair {
+                        /**
+                         * @return V
+                         * @psalm-pure
+                         * @psalm-purity-from-template B
+                         */
+                        public function value();
+                    }
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template Q
+                     * @extends Box[Q]<T>
+                     */
+                    interface InvariantBox extends Box {}
+
+                    function nativePair(Pair $p): bool {
+                        return $p->value() !== null;
+                    }
+
+                    /**
+                     * @param list<Pair> $ps
+                     */
+                    function firstPair(array $ps): bool {
+                        return $ps[0]->value() !== null;
+                    }
+
+                    function nativeInvariantBox(InvariantBox $b): bool {
+                        return $b->get() !== null;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPurityWildcardToTheTypePsalmReads' => [
+                'input' => '<?php
+                    /**
+                     * @psalm-param list<Closure(): int> $fs
+                     * @param array $fs
+                     */
+                    function first(array $fs): int {
+                        return $fs[0]();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-param list<Closure[_](): int> $fs
+                     *
+                     * @param array $fs
+                     *
+                     * @psalm-pure
+                     */
+                    function first(array $fs): int {
+                        return $fs[0]();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'dontAddPurityWildcardWhereItCannotStand' => [
+                'input' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /** @extends Doer[impure] */
+                    interface ImpureDoer extends Doer {}
+
+                    /** @psalm-type Fns = list<Closure(): int> */
+                    final class Aliased {
+                        /**
+                         * @param Fns $fs
+                         */
+                        public static function first(array $fs): int {
+                            return $fs[0]();
+                        }
+                    }
+
+                    function useImpureDoer(ImpureDoer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function viaVariable(array $fs): int {
+                        $g = $fs[0];
+                        return $g();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function reassigned(array $fs): int {
+                        $fs[] = fn(): int => 1;
+                        return $fs[0]();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function inClosure(array $fs): array {
+                        return array_map(fn(Closure $f): int => $f(), $fs);
+                    }',
+                'output' => '<?php
+                    /** @psalm-purity-template P */
+                    interface Doer {
+                        /**
+                         * @psalm-pure
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(): int;
+                    }
+
+                    /** @extends Doer[impure] */
+                    interface ImpureDoer extends Doer {}
+
+                    /** @psalm-type Fns = list<Closure(): int> */
+                    final class Aliased {
+                        /**
+                         * @param Fns $fs
+                         */
+                        public static function first(array $fs): int {
+                            return $fs[0]();
+                        }
+                    }
+
+                    function useImpureDoer(ImpureDoer $d): int {
+                        return $d->run();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function viaVariable(array $fs): int {
+                        $g = $fs[0];
+                        return $g();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function reassigned(array $fs): int {
+                        $fs[] = fn(): int => 1;
+                        return $fs[0]();
+                    }
+
+                    /**
+                     * @param list<Closure(): int> $fs
+                     */
+                    function inClosure(array $fs): array {
+                        return array_map(fn(Closure $f): int => $f(), $fs);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'callsPureFunctionDeclaredLater' => [
                 'input' => '<?php
                     function foo(string $s): string {
@@ -907,6 +1692,30 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'dontAddPureAnnotationToFunctionReadingTheClock' => [
+                'input' => '<?php
+                    function year(): string {
+                        return date("Y");
+                    }
+
+                    function yearOf(int $ts): string {
+                        return date("Y", $ts);
+                    }',
+                'output' => '<?php
+                    function year(): string {
+                        return date("Y");
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function yearOf(int $ts): string {
+                        return date("Y", $ts);
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'dontAddPureAnnotationToMutationFreeMethod' => [
                 'input' => '<?php
                     class A {
@@ -1069,11 +1878,11 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
             ],
             'dontAddPureIfCallableNotPure' => [
                 'input' => '<?php
-                    function pure(callable $callable): string{
+                    function pure(callable &$callable): string{
                         return $callable();
                     }',
                 'output' => '<?php
-                    function pure(callable $callable): string{
+                    function pure(callable &$callable): string{
                         return $callable();
                     }',
                 'php_version' => '7.4',

@@ -134,7 +134,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         // a lone UnusedPsalmSuppress should still be reported as unused
         if (count($storage->suppressed_issues) > 1
-            && in_array('UnusedPsalmSuppress', $storage->suppressed_issues, true)
+            && $codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
         ) {
             return;
         }
@@ -155,6 +155,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     {
         unset($this->source);
         unset($this->file_analyzer);
+    }
+
+    /**
+     * Analyzes method $method_name of this class run on an object of a class inheriting it, `$this` in $context (see
+     * InheritedMethodTaints)
+     */
+    public function analyzeMethodForInheritingClass(string $method_name, Context $context): void
+    {
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && strtolower($stmt->name->name) === strtolower($method_name)
+            ) {
+                (new MethodAnalyzer($stmt, $this))->analyze($context, new NodeDataProvider(), null, true);
+
+                return;
+            }
+        }
     }
 
     public function getMethodMutations(
@@ -929,7 +946,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                             );
                         } elseif ($lower_bound !== null
                             && Capabilities::isPurityType($extended_type)
-                            && !Capabilities::allows(Capabilities::fromType($extended_type), $lower_bound)
+                            && !Capabilities::allowsAnyOf(Capabilities::fromType($extended_type), $lower_bound)
                         ) {
                             // a purity template with a lower bound: the value must require at least that
                             IssueBuffer::maybeAdd(

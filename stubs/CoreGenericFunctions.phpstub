@@ -484,7 +484,7 @@ function sodium_memzero(string &$string): void
  * @return ($return is true ? string : void)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
  * @psalm-taint-sink has_quotes $value
  * @psalm-taint-sink user_secret $value
@@ -532,7 +532,7 @@ function debug_zval_dump($value, ...$values): void {}
  * @return ($return is true ? string : true)
  *
  * @psalm-taint-specialize
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-taint-sink html $value
  * @psalm-taint-sink has_quotes $value
  * @psalm-taint-sink user_secret $value
@@ -603,8 +603,6 @@ function stream_get_line($stream, int $length, string $ending = "") {}
 function show_source($filename, bool $return = false) {}
 
 /**
- * @psalm-pure
- *
  * @psalm-taint-sink file $filename
  */
 function php_strip_whitespace(string $filename) : string {}
@@ -1064,7 +1062,8 @@ function rawurlencode(string $string) : string {}
  * @psalm-taint-escape url_component
  * @psalm-taint-escape url_path
  * @psalm-taint-escape header
- * @psalm-flow ($data, $numeric_prefix, $arg_separator) -> return
+ * @psalm-flow ($data) -(serialization)-> return
+ * @psalm-flow ($numeric_prefix, $arg_separator) -> return
  */
 function http_build_query(array|object $data, string $numeric_prefix = "", ?string $arg_separator = null, int $encoding_type = PHP_QUERY_RFC1738) : string {}
 
@@ -1102,7 +1101,7 @@ function escapeshellcmd(string $command) : string {}
 function strlen(string $string) : int {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1117,7 +1116,7 @@ function strlen(string $string) : int {}
 function str_replace($search, $replace, $subject, &$count = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1278,7 +1277,7 @@ function strrev(string $string): string {}
 function str_word_count(string $string, int $format = 0, string|null $characters = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
@@ -1291,7 +1290,7 @@ function str_word_count(string $string, int $format = 0, string|null $characters
 function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  *
  * @template TKey of array-key
  *
@@ -1382,7 +1381,7 @@ function iterator_count(Traversable $iterator): int {}
 function iterator_apply(Traversable $iterator, callable $callback, ?array $args = null): int {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  * @template TFlags as int
  *
  * @param non-empty-string $pattern
@@ -1418,7 +1417,7 @@ function iterator_apply(Traversable $iterator, callable $callback, ?array $args 
 function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int $offset = 0) {}
 
 /**
- * @psalm-pure
+ * @psalm-capabilities write-refs
  * @template TFlags as int-mask<0, 256, 512>
  *
  * @param non-empty-string $pattern
@@ -1469,7 +1468,8 @@ function sprintf(string $format, ...$values) {}
  * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
- * @psalm-flow ($format, $values) -> return
+ * @psalm-flow ($format) -> return
+ * @psalm-flow ($values) -(arrayvalue-fetch)-> return
  */
 function vsprintf(string $format, array $values) {}
 
@@ -1698,7 +1698,7 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
- * @psalm-flow ($json) -> return
+ * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
@@ -1710,7 +1710,7 @@ function json_decode(string $json, ?bool $associative = null, int $depth = 512, 
  * @param int<1, 2147483647> $depth
  * @return ($flags is int<4194304, 8388607> ? non-empty-string : non-empty-string|false)
  *
- * @psalm-flow ($value) -> return
+ * @psalm-flow ($value) -(serialization)-> return
  * @psalm-ignore-falsable-return
  */
 function json_encode(mixed $value, int $flags = 0, int $depth = 512) {}
@@ -1786,8 +1786,6 @@ function base64_encode(string $string) : string {}
 function bin2hex(string $string): string {}
 
 /**
- * @psalm-pure
- *
  * @param resource|null $context
  *
  * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
@@ -1799,8 +1797,6 @@ function bin2hex(string $string): string {}
 function get_headers(string $url, int $associative = 0, $context = null) : array|false {}
 
 /**
- * @psalm-pure
- *
  * @return array<lowercase-string, string>|false
  *
  * @psalm-taint-sink ssrf $filename
