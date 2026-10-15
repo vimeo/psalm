@@ -273,10 +273,16 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             // Nothing that follows runs after what the block changed, whereas break and continue
-            // leave it to whatever the loop or switch goes on to do.
+            // leave it to whatever the loop or switch goes on to do. Where a catch may resume after a throw, only
+            // a return qualifies, as a throw or a never-returning call may land in it (exit is not told apart).
             if ($context->has_returned
                 && $context->removed_var_log->position() > $removed_var_log_position
-                && ScopeAnalyzer::getControlActions($stmts, $this->node_data, []) === [ScopeAnalyzer::ACTION_END]
+                && ScopeAnalyzer::getControlActions(
+                    $stmts,
+                    $this->node_data,
+                    [],
+                    !$context->inside_catching_try,
+                ) === [$context->inside_catching_try ? ScopeAnalyzer::ACTION_RETURN : ScopeAnalyzer::ACTION_END]
             ) {
                 $context->removed_var_log->discardSince($removed_var_log_position);
             }

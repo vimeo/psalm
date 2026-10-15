@@ -1485,6 +1485,74 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'boolVarNarrowingKeptAfterReassignmentInReturningBranchInsideTry' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            if ($c) {
+                                $x = null;
+                                return;
+                            }
+                        } catch (Exception $e) {
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReassignmentInThrowingBranchInsideTryWithoutCatch' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            if ($c) {
+                                $x = null;
+                                throw new Exception();
+                            }
+                        } finally {
+                            echo 1;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
+            'boolVarNarrowingKeptAfterReassignmentInThrowingBranchInsideTryWhoseCatchRethrows' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            if ($c) {
+                                $x = null;
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                            throw $e;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1835,6 +1903,128 @@ final class TypeAlgebraTest extends TestCase
                                 break;
                             default:
                                 break;
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentBeforeCaughtThrow' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x): void {
+                        $has = $x !== null;
+                        try {
+                            $x = $b;
+                            throw new Exception();
+                        } catch (Exception $e) {
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInLoopBeforeCaughtThrow' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, array $l): void {
+                        $has = $x !== null;
+                        try {
+                            foreach ($l as $_) {
+                                $x = $b;
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBranchBeforeCaughtThrow' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            if ($c) {
+                                $x = $b;
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBranchBeforeThrowCaughtByOuterTry' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            try {
+                                if ($c) {
+                                    $x = $b;
+                                    throw new Exception();
+                                }
+                            } finally {
+                                echo 1;
+                            }
+                        } catch (Exception $e) {
+                        }
+                        if ($has) {
+                            echo $x->get();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'boolVarNarrowingDroppedAfterReassignmentInBranchBeforeNeverReturningCallInTry' => [
+                'code' => '<?php
+                    final class Bag {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @return never */
+                    function fail(): void {
+                        throw new Exception();
+                    }
+
+                    function f(?Bag $b, ?Bag $x, bool $c): void {
+                        $has = $x !== null;
+                        try {
+                            if ($c) {
+                                $x = $b;
+                                fail();
+                            }
+                        } catch (Exception $e) {
                         }
                         if ($has) {
                             echo $x->get();

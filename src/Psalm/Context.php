@@ -192,6 +192,13 @@ final class Context
      */
     public bool $inside_try = false;
 
+    /**
+     * Whether a throw here may be caught by a catch that lets the function go on, e.g. past the end of the try.
+     *
+     * @internal
+     */
+    public bool $inside_catching_try = false;
+
     public ?CodeLocation $include_location = null;
 
     public ?string $parent = null;
