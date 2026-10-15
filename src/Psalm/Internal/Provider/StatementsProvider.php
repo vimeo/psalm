@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
+use Amp\Serialization\NativeSerializer;
+use Amp\Serialization\SerializationException;
+use Amp\Serialization\Serializer;
 use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Node\Stmt;
@@ -14,6 +17,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
+use Psalm\Internal\Fork\IgbinarySerializer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
 use Psalm\Internal\PhpVisitor\CloningVisitor;
 use Psalm\Internal\PhpVisitor\PartialParserVisitor;
@@ -30,6 +34,8 @@ use function array_intersect_key;
 use function array_map;
 use function array_merge;
 use function count;
+use function hash;
+use function is_string;
 use function md5;
 use function str_starts_with;
 use function strlen;
@@ -70,6 +76,17 @@ final class StatementsProvider
      */
     private array $deletion_ranges = [];
 
+    /**
+     * Statements of vendor files, which the parser cache provider refuses to store, kept serialized so that
+     * repeated requests unserialize instead of re-parsing.
+     *
+     * @var array<string, array{string, string|false|null}> file path => [content hash, serialized statements],
+     *     where null means the file was requested once so far and false that its statements cannot be restored
+     */
+    private array $vendor_statements = [];
+
+    private ?Serializer $vendor_serializer = null;
+
     private static ?Parser $parser = null;
 
     public function __construct(
@@ -100,11 +117,61 @@ final class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
+            // ProjectAnalyzer::getMethodMutations() asks for the same vendor base classes and traits over and over,
+            // and each request used to re-parse the file. Keeping the statements serialized turns a repeat into an
+            // unserialize, which yields the same fresh node graph a re-parse would, for a fraction of the cost.
+            //
+            // Without a parser cache provider this branch also carries every project file, and holding all of them
+            // is what made the former StatementsVolatileCache use 8GB+ (#9899, removed in da8c1da8b), so nothing is
+            // memoised then. The CLI always has a provider, even with --no-cache.
+            $vendor_hash = $this->parser_cache_provider === null
+                ? null
+                : hash('xxh128', $analysis_php_version_id . "\0" . $file_contents);
+
+            $memoised = $this->vendor_statements[$file_path] ?? null;
+            $seen_before = false;
+
+            if ($memoised !== null && $memoised[0] === $vendor_hash) {
+                if (is_string($memoised[1])) {
+                    try {
+                        /** @var list<Stmt> */
+                        return $this->getVendorSerializer()->unserialize($memoised[1]);
+                    } catch (SerializationException) {
+                        // The native serializer cannot rebuild statements nested deeper than unserialize_max_depth.
+                        // Parse such a file from source, as before, rather than failing on every repeat request.
+                        $this->vendor_statements[$file_path] = [$vendor_hash, false];
+                        $vendor_hash = null;
+                    }
+                } elseif ($memoised[1] === null) {
+                    $seen_before = true;
+                } else {
+                    $vendor_hash = null;
+                }
+            }
+
             $progress->debug('Parsing ' . $file_path . " because we cannot use cache\n");
 
             $has_errors = false;
 
-            return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
+
+            // Most vendor files are only ever requested once, by the scanner, so a file is serialized on its second
+            // request rather than its first.
+            if ($vendor_hash !== null && !$has_errors) {
+                $serialized = null;
+                if ($seen_before) {
+                    try {
+                        $serialized = $this->getVendorSerializer()->serialize($stmts);
+                    } catch (SerializationException) {
+                        // Serializing deeply nested statements inside a worker's fiber can hit the call stack limit
+                        // (#11967). Keep parsing such a file from source instead of failing the analysis.
+                        $serialized = false;
+                    }
+                }
+                $this->vendor_statements[$file_path] = [$vendor_hash, $serialized];
+            }
+
+            return $stmts;
         }
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(
@@ -434,6 +501,17 @@ final class StatementsProvider
         $resolving_traverser->traverse($stmts);
 
         return $stmts;
+    }
+
+    /**
+     * Follows the configured serializer choice but skips the compressor of the parser cache serializer: compressing
+     * a value that never leaves the process only buys memory at the price of the CPU this is saving.
+     */
+    private function getVendorSerializer(): Serializer
+    {
+        return $this->vendor_serializer ??= Config::getInstance()->use_igbinary
+            ? new IgbinarySerializer
+            : new NativeSerializer;
     }
 
     public static function clearParser(): void
