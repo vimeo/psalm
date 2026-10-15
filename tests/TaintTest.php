@@ -3390,7 +3390,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3424,7 +3424,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
