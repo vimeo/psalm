@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
@@ -42,6 +43,7 @@ final class TryAnalyzer
     ): ?bool {
         $catch_actions = [];
         $all_catches_leave = true;
+        $some_catch_resumes = false;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -53,6 +55,8 @@ final class TryAnalyzer
                 [],
             );
             $all_catches_leave = $all_catches_leave && !in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
+            $some_catch_resumes = $some_catch_resumes
+                || array_diff($catch_actions[$i], [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]) !== [];
         }
 
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
@@ -79,6 +83,8 @@ final class TryAnalyzer
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
+        $was_inside_catching_try = $context->inside_catching_try;
+        $context->inside_catching_try = $was_inside_catching_try || $some_catch_resumes;
 
         // a try nested in the body leaves through the finally of this one too
         $outer_finally_scope = $context->finally_scope;
@@ -90,6 +96,7 @@ final class TryAnalyzer
 
         $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
+        $context->inside_catching_try = $was_inside_catching_try;
 
         $context->has_returned = false;
 
