@@ -1154,8 +1154,9 @@ final class AtomicPropertyFetchAnalyzer
 
     /**
      * Whether accessing a property of the object needs no capability: the object is immutable, or the
-     * caller created it from a class whose contract keeps its changes to itself, so nobody else can see
-     * or change its properties. This is the same waiver a method call on such an object gets.
+     * caller created it, from a class whose contract keeps its changes to itself or with a constructor that
+     * can't keep a reference to it (see NewAnalyzer), so nobody else can see or change its properties. This
+     * is the same waiver a method call on such an object gets, and writing its properties.
      */
     public static function isFreeToAccess(
         StatementsAnalyzer $statements_analyzer,
@@ -1163,8 +1164,7 @@ final class AtomicPropertyFetchAnalyzer
         ClassLikeStorage $class_storage,
     ): bool {
         return $class_storage->isMutationFree()
-            || ($class_storage->isExternalMutationFree()
-                && MethodCallPurityAnalyzer::receiverAllowsInternalMutations($statements_analyzer, $stmt->var)
+            || (MethodCallPurityAnalyzer::receiverAllowsInternalMutations($statements_analyzer, $stmt->var)
                 && !MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $stmt->var));
     }
 

@@ -15,7 +15,7 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 
 | Capability         | Allows                                                                          |
 |--------------------|---------------------------------------------------------------------------------|
-| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor objects the caller created with `new` from a class whose contract needs at most `read-props\|write-this-props\|write-refs`, see [Method calls](#method-calls)) |
+| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor objects the caller created with `new` from a class whose contract needs at most `read-props\|write-this-props\|write-refs`, or whose constructor can't keep a reference to them, see [Method calls](#method-calls)) |
 | `write-this-props` | writing or unsetting properties of `$this`                                      |
 | `write-props`      | writing or unsetting properties of any other object                             |
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
@@ -349,8 +349,9 @@ function currentTally(Tally $tally): int {
 }
 ```
 
-Without a class-level contract, calling a method on an object the caller created with `new` is
-still free, as long as the constructor can't keep a reference to the new object anywhere. Only
+Without a class-level contract, calling a method on an object the caller created with `new`, and
+reading or writing its properties, is still free, as long as the constructor can't keep a reference
+to the new object anywhere. Only
 three things can hand `$this` to someone else: writing another object (`write-props`), global state
 (`write-globals`) or a by-reference parameter (`write-refs`). So a constructor that needs none of
 these qualifies, and so does a class without a constructor:
@@ -483,9 +484,10 @@ function makeAny(string $class): Item {
 }
 ```
 
-This waiver covers calling methods and writing properties. Reading a property of such an object
-directly still costs `read-props`. As described above, only a class-level contract waives reads:
-`$greeting->words` in `hello()` would be an `ImpurePropertyFetch` if the property were public.
+This waiver covers calling methods, and writing and reading properties: reading a property of
+such an object directly is free too, as calling a `read-props` method on it is. What the property
+holds is another matter: reading a property of an object stored in it costs `read-props`, as that
+object may be shared.
 
 The `write-this-props` that a class purity template of the receiver is bound to
 (`Doer[write-this-props]`, see [Purity templates](#purity-templates)) is charged the same way,

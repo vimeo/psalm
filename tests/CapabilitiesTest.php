@@ -2545,6 +2545,33 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertiesOfObjectsWhoseConstructorKeepsNoReferenceToThemMayBeRead' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                        public ?Counter $next = null;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function countTwice(): int {
+                        $counter = new Counter();
+                        $counter->n = 1;
+                        $counter->inc();
+                        return $counter->n + (new Counter())->n;
+                    }
+
+                    /** @psalm-pure */
+                    function freshOrNull(): ?int {
+                        $counter = new Counter();
+                        unset($counter->next);
+                        return isset($counter->next) ? null : $counter->n;
+                    }',
+            ],
             'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
                 'code' => '<?php
                     final class Inner {
@@ -5516,6 +5543,41 @@ final class CapabilitiesTest extends TestCase
                         return $object;
                     }',
                 'error_message' => 'constructor Joined::__construct requires write-props',
+            ],
+            'propertiesOfObjectsWhoseConstructorStoresThemInGlobalStateCostReadProps' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function make(): int {
+                        $object = new Registered();
+                        return $object->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'propertiesOfAPropertyOfAFreshObjectCostReadProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                        public ?Counter $next = null;
+                    }
+
+                    /** @psalm-pure */
+                    function nextCount(Counter $shared): int {
+                        $counter = new Counter();
+                        $counter->next = $shared;
+                        return $counter->next->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
             ],
             'newStaticOfAnExtendableClassIsNotFresh' => [
                 'code' => '<?php
