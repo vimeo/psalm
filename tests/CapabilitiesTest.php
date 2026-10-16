@@ -2572,6 +2572,49 @@ final class CapabilitiesTest extends TestCase
                         return isset($counter->next) ? null : $counter->n;
                     }',
             ],
+            'objectsWhoseUnannotatedConstructorOnlyAssignsItsParametersAreFresh' => [
+                'code' => '<?php
+                    final class Empty_ {
+                        public int $n = 0;
+
+                        public function __construct() {}
+                    }
+
+                    final class Promoted {
+                        public int $n = 0;
+
+                        public function __construct(public string $label, public array $tags = ["a" => 1]) {}
+                    }
+
+                    final class Assigned {
+                        public int $n = 0;
+                        private string $label;
+
+                        public function __construct(string $label, int $n = -1) {
+                            $this->label = $label;
+                            $this->n = $n;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getLabel(): string {
+                            return $this->label;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function useFresh(): string {
+                        $empty = new Empty_();
+                        $empty->n = 1;
+                        $promoted = new Promoted("a");
+                        $promoted->n = $empty->n;
+                        $assigned = new Assigned($promoted->label);
+                        $assigned->n = $promoted->n;
+                        return $assigned->getLabel() . $assigned->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
                 'code' => '<?php
                     final class Inner {
@@ -5578,6 +5621,74 @@ final class CapabilitiesTest extends TestCase
                         return $counter->next->n;
                     }',
                 'error_message' => 'ImpurePropertyFetch',
+            ],
+            'unannotatedConstructorStoringThisInAStaticPropertyIsNotTrivial' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public int $n = 0;
+
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Registered {
+                        return new Registered();
+                    }',
+                'error_message' => 'constructor Registered::__construct requires',
+            ],
+            'unannotatedConstructorStoringThisInAGlobalIsNotTrivial' => [
+                'code' => '<?php
+                    final class Global_ {
+                        public int $n = 0;
+
+                        public function __construct() {
+                            $GLOBALS["last"] = $this;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Global_ {
+                        return new Global_();
+                    }',
+                'error_message' => 'constructor Global_::__construct requires',
+            ],
+            'unannotatedConstructorCallingAFunctionIsNotTrivial' => [
+                'code' => '<?php
+                    final class Stamped {
+                        public int $at = 0;
+
+                        public function __construct() {
+                            $this->at = time();
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Stamped {
+                        return new Stamped();
+                    }',
+                'error_message' => 'constructor Stamped::__construct requires',
+            ],
+            'unannotatedConstructorWithAByReferenceParameterIsNotTrivial' => [
+                'code' => '<?php
+                    final class Linked {
+                        public int $n = 0;
+
+                        /** @param list<int> $sink */
+                        public function __construct(array &$sink) {
+                            $this->n = 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Linked {
+                        $sink = [];
+                        return new Linked($sink);
+                    }',
+                'error_message' => 'constructor Linked::__construct requires',
             ],
             'newStaticOfAnExtendableClassIsNotFresh' => [
                 'code' => '<?php

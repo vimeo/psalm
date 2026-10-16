@@ -2605,6 +2605,8 @@ final class Codebase
 
     /**
      * @return list<CompletionItem>
+     *
+     * @psalm-capabilities read-props
      */
     public function getCompletionItemsForType(Union $type): array
     {
@@ -2685,6 +2687,9 @@ final class Codebase
         return $completion_items;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function getPositionFromOffset(int $offset, string $file_contents): Position
     {
         $file_contents = substr($file_contents, 0, $offset);

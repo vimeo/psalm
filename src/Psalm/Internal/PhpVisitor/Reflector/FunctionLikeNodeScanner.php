@@ -756,6 +756,136 @@ final class FunctionLikeNodeScanner
     }
 
     /**
+     * Gives the constructor $stmt scanned (see start()), if it is unannotated and trivial, what it needs (see
+     * getTrivialConstructorCapabilities())
+     */
+    public function applyTrivialConstructorCapabilities(PhpParser\Node\FunctionLike $stmt): void
+    {
+        $storage = $this->storage;
+        $classlike_storage = $this->classlike_storage;
+
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && $storage instanceof MethodStorage
+            && $classlike_storage !== null
+            && !$classlike_storage->is_trait
+            && strtolower($stmt->name->name) === '__construct'
+            && !$storage->has_mutations_annotation
+            && $storage->purity_from_templates === []
+            && $storage->conditional_capabilities === []
+            && $storage->capabilities_type === null
+            && $storage->capabilities === Capabilities::ALL
+        ) {
+            $storage->capabilities = self::getTrivialConstructorCapabilities($stmt, $classlike_storage)
+                ?? $storage->capabilities;
+        }
+    }
+
+    /**
+     * What a constructor without a purity annotation needs, if it is trivial: it only assigns its parameters or
+     * constant values to properties its class declares before it (or promotes), without hooks. It needs nothing
+     * if it does nothing, else write-this-props: it can't keep a reference to the new object anywhere, so `new`
+     * gives a fresh object (see NewAnalyzer). Decided from the constructor's own syntax only, so it is the same
+     * whatever else is scanned. Anything else (a call, `parent::__construct()` included, a by-reference
+     * parameter, a default making an object or calling something, an undeclared or hooked property, `$this`
+     * stored anywhere) makes it non-trivial: null.
+     *
+     * @return Capabilities::NONE|Capabilities::WRITE_THIS_PROPS|null
+     * @psalm-mutation-free
+     */
+    private static function getTrivialConstructorCapabilities(
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        ClassLikeStorage $classlike_storage,
+    ): ?int {
+        if ($stmt->stmts === null) {
+            return null;
+        }
+
+        $param_names = [];
+        $promotes = false;
+
+        foreach ($stmt->params as $param) {
+            if ($param->byRef
+                || !$param->var instanceof PhpParser\Node\Expr\Variable
+                || !is_string($param->var->name)
+                || ($param->default !== null && !self::isConstantValue($param->default))
+                || $param->hooks !== []
+            ) {
+                return null;
+            }
+
+            $param_names[$param->var->name] = true;
+            $promotes = $promotes || $param->flags !== 0;
+        }
+
+        foreach ($stmt->stmts as $inner_stmt) {
+            if (!$inner_stmt instanceof PhpParser\Node\Stmt\Expression
+                || !$inner_stmt->expr instanceof PhpParser\Node\Expr\Assign
+                || !$inner_stmt->expr->var instanceof PhpParser\Node\Expr\PropertyFetch
+                || !$inner_stmt->expr->var->var instanceof PhpParser\Node\Expr\Variable
+                || $inner_stmt->expr->var->var->name !== 'this'
+                || !$inner_stmt->expr->var->name instanceof PhpParser\Node\Identifier
+            ) {
+                return null;
+            }
+
+            $property = $classlike_storage->properties[$inner_stmt->expr->var->name->name] ?? null;
+            $value = $inner_stmt->expr->expr;
+
+            if ($property === null
+                || $property->is_static
+                || $property->hook_get !== null
+                || $property->hook_set !== null
+                || !($value instanceof PhpParser\Node\Expr\Variable
+                    ? is_string($value->name) && isset($param_names[$value->name])
+                    : self::isConstantValue($value))
+            ) {
+                return null;
+            }
+        }
+
+        return $promotes || $stmt->stmts !== [] ? Capabilities::WRITE_THIS_PROPS : Capabilities::NONE;
+    }
+
+    /**
+     * Whether $expr is a constant value, which evaluating can't do anything: a scalar, a constant, or an array of
+     * those
+     *
+     * @psalm-mutation-free
+     */
+    private static function isConstantValue(PhpParser\Node\Expr $expr): bool
+    {
+        if ($expr instanceof PhpParser\Node\Scalar
+            || $expr instanceof PhpParser\Node\Expr\ConstFetch
+            || ($expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $expr->class instanceof PhpParser\Node\Name
+                && $expr->name instanceof PhpParser\Node\Identifier)
+        ) {
+            return true;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\UnaryMinus || $expr instanceof PhpParser\Node\Expr\UnaryPlus) {
+            return self::isConstantValue($expr->expr);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($expr->items as $item) {
+                if ($item === null
+                    || $item->byRef
+                    || $item->unpack
+                    || ($item->key !== null && !self::isConstantValue($item->key))
+                    || !self::isConstantValue($item->value)
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Merges two docblocks into one by unioning their tags. Used to combine a
      * closure's own inline docblock (primary) with the docblock of the variable
      * it is assigned to (secondary), so annotations declared on the variable

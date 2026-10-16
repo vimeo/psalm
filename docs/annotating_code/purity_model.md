@@ -386,6 +386,31 @@ function hello(): string {
 }
 ```
 
+A constructor without a purity annotation qualifies too when it is trivial: it does nothing, or only
+assigns its parameters (or constant values) to properties its class declares, promoted ones included.
+Such a constructor needs `write-this-props` without being annotated (nothing at all if it is empty), so
+neither `new` nor its class needs an annotation for the waiver. Any other statement makes it non-trivial:
+a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
+object or calls something, a property with hooks or one the class doesn't declare before the
+constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
+anything, as any unannotated method.
+
+```php
+<?php
+final class Point {
+    public int $z = 0;
+
+    public function __construct(public int $x, public int $y) {}
+}
+
+/** @psalm-pure */
+function lift(int $x, int $y): Point {
+    $point = new Point($x, $y);
+    $point->z = 1; // fine: Point's constructor is trivial
+    return $point;
+}
+```
+
 A constructor that may store `$this` somewhere loses the waiver. Here the constructor registers
 every new object in a static property, so calling a method on the new object costs what it would
 on any other one. The object is also reached from global state now, which adds `write-globals`:

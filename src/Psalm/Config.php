@@ -3153,7 +3153,11 @@ final class Config
         return $this->universal_object_crates;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     *
+     * @psalm-capabilities read-props
+     */
     public function getCacheSerializer(): Serializer
     {
         $s = $this->use_igbinary ? new IgbinarySerializer : new NativeSerializer();
