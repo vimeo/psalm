@@ -176,6 +176,8 @@ final class CallPurityResolver
      * What a call of $storage requires of its own, besides what its purity templates are bound to (see
      * getCallCapabilities()): its capabilities, with those that depend on its arguments
      * ({@see FunctionLikeStorage::$conditional_capabilities}) resolved for the arguments of the call
+     *
+     * @return CapabilitySet
      */
     public static function getOwnCapabilities(
         Codebase $codebase,

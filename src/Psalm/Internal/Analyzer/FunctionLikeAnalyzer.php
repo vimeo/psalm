@@ -2499,6 +2499,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * declares them as its own capabilities (see FunctionLikeDocblockScanner::applyPurityTemplateLowerBounds)
      * and its callers pay them anyway, so no stricter annotation can be suggested without them.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private function getPurityTemplateLowerBounds(Codebase $codebase, FunctionLikeStorage $storage): int
