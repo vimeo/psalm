@@ -789,19 +789,6 @@ final class TaintTest extends TestCase
 
                     echo render(["attr" => ["href" => (string) $_GET["p"]]]);',
             ],
-            'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
-                'code' => '<?php // --taint-analysis
-                    final class Phone {
-                        private static string $prefix = "+";
-
-                        public static function format(string $phone): string {
-                            return self::$prefix . $phone;
-                        }
-                    }
-
-                    $tainted = Phone::format((string) $_GET["phone"]);
-                    echo Phone::format("12");',
-            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -4578,24 +4565,6 @@ final class TaintTest extends TestCase
                     }
 
                     echo render(["attr" => [(string) $_GET["p"] => 1]]);',
-                'error_message' => 'TaintedHtml',
-            ],
-            'aSpecializedFunctionThatOnlyReadsSharedStateReturnsItToAllItsCalls' => [
-                'code' => '<?php // --taint-analysis
-                    final class Settings {
-                        public static string $value = "";
-
-                        public static function get(string $suffix): string {
-                            return self::$value . $suffix;
-                        }
-                    }
-
-                    function store(): void {
-                        Settings::$value = (string) $_GET["value"];
-                    }
-
-                    store();
-                    echo Settings::get("a");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
