@@ -1233,7 +1233,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refactoring methods ' . PHP_EOL);
+        $progress->debug('Refactoring methods' . PHP_EOL);
 
         $code_migrations = [];
 
@@ -1401,7 +1401,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refacting properties ' . PHP_EOL);
+        $progress->debug('Refactoring properties' . PHP_EOL);
 
         $code_migrations = [];
 
@@ -1499,7 +1499,7 @@ final class ClassLikes
             return;
         }
 
-        $progress->debug('Refacting constants ' . PHP_EOL);
+        $progress->debug('Refactoring constants' . PHP_EOL);
 
         $code_migrations = [];
 
