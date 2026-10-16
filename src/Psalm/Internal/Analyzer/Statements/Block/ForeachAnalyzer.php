@@ -338,6 +338,11 @@ final class ForeachAnalyzer
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
         }
 
+        if ($stmt->byRef) {
+            // the value stays a reference to an element of the iterated array after the loop
+            $statements_analyzer->addUntrackedReferenceTo($stmt->expr, $foreach_context);
+        }
+
         foreach ($var_comments as $var_comment) {
             if (!$var_comment->var_id || !$var_comment->type) {
                 continue;
