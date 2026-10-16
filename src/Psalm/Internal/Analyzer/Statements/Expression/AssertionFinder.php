@@ -87,6 +87,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -4287,10 +4288,12 @@ final class AssertionFinder
 
                         $instanceof_type = new Union([$instanceof_type]);
 
+                        // instanceof only checks the class: compared with the type arguments, the bare
+                        // class would not fit an `Iterator<K, V>` whose K is a template
                         if (!UnionTypeComparator::canExpressionTypesBeIdentical(
                             $codebase,
                             $instanceof_type,
-                            $var_type,
+                            self::withoutTypeArguments($var_type),
                         )) {
                             if ($var_type->from_docblock) {
                                 IssueBuffer::maybeAdd(
@@ -4320,6 +4323,30 @@ final class AssertionFinder
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function withoutTypeArguments(Union $type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TGenericObject) {
+                $atomic_type = new TNamedObject(
+                    $atomic_type->value,
+                    $atomic_type->is_static,
+                    $atomic_type->definite_class,
+                    $atomic_type->extra_types,
+                    $atomic_type->from_docblock,
+                );
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        return $type->setTypes($atomic_types);
     }
 
     /**

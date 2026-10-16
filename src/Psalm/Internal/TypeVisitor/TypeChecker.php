@@ -28,6 +28,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
@@ -57,8 +58,19 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
+     * Whether the node being visited is in an invariant type param of a generic object, where entering a
+     * callable's parameter types doesn't change the position
+     */
+    private bool $in_invariant_position = false;
+
+    /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
+     * @param bool $prevent_template_covariance whether the type is in an input position, a method's parameter
+     * @param bool $in_output_position whether the type is in an output position, a method's return type, or one
+     *                                 an input position turns into: a covariant template may be there (a method's
+     *                                 `Closure(T): void` parameter hands T out), but the parameter types of a
+     *                                 callable in there are an input position
      * @psalm-mutation-free
      */
     public function __construct(
@@ -70,6 +82,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
         private readonly ?Context $context = null,
+        private bool $in_output_position = false,
     ) {
     }
 
@@ -88,7 +101,32 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
-            $this->checkNamedObject($type);
+            $prevents_covariance = $this->checkNamedObject($type);
+
+            if ($type instanceof TGenericObject && $prevents_covariance !== null) {
+                // each type param is checked with its own variance, and the siblings with the outer one. Variance
+                // composes: a covariant type param is in the position of the type, an invariant one in neither
+                $outer_prevents_covariance = $this->prevent_template_covariance;
+                $outer_in_invariant_position = $this->in_invariant_position;
+
+                foreach ($type->extra_types as $extra_type) {
+                    $this->traverse($extra_type);
+                }
+
+                foreach ($type->type_params as $i => $type_param) {
+                    $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
+                    $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
+                    $this->traverse($type_param);
+                }
+
+                $this->prevent_template_covariance = $outer_prevents_covariance;
+                $this->in_invariant_position = $outer_in_invariant_position;
+
+                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+                $type->checked = true;
+
+                return self::DONT_TRAVERSE_CHILDREN;
+            }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
         } elseif ($type instanceof TTemplateParam) {
@@ -103,12 +141,50 @@ final class TypeChecker extends TypeVisitor
         return null;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
+    #[Override]
+    public function traverse(TypeNode $node): bool
+    {
+        if (!$node instanceof FunctionLikeParameter) {
+            return parent::traverse($node);
+        }
+
+        // a callable's parameter types are in the opposite position. Positions that are neither (constructor
+        // parameters, and what isn't a method's signature) stay unchecked
+        $outer_prevents_covariance = $this->prevent_template_covariance;
+        $outer_in_output_position = $this->in_output_position;
+
+        if (!$this->in_invariant_position) {
+            if ($outer_prevents_covariance) {
+                $this->prevent_template_covariance = false;
+                $this->in_output_position = true;
+            } elseif ($outer_in_output_position) {
+                $this->prevent_template_covariance = true;
+                $this->in_output_position = false;
+            }
+        }
+
+        $result = parent::traverse($node);
+
+        $this->prevent_template_covariance = $outer_prevents_covariance;
+        $this->in_output_position = $outer_in_output_position;
+
+        return $result;
+    }
+
     public function hasErrors(): bool
     {
         return $this->has_errors;
     }
 
-    private function checkNamedObject(TNamedObject $atomic): void
+    /**
+     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
+     *                                template is not allowed, null for one in the position of the generic object, or
+     *                                for all if its type params weren't checked
+     */
+    private function checkNamedObject(TNamedObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
@@ -151,7 +227,7 @@ final class TypeChecker extends TypeVisitor
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false) {
                 $this->has_errors = true;
-                return;
+                return null;
             }
         }
 
@@ -187,18 +263,25 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($atomic instanceof TGenericObject) {
-            $this->checkGenericParams($atomic);
+            return $this->checkGenericParams($atomic);
         }
+
+        return null;
     }
 
-    private function checkGenericParams(TGenericObject $atomic): void
+    /**
+     * @return array<int, ?bool>|null whether each type param is in a position where a covariant template is not
+     *                                allowed, null for one in the position of the generic object (a covariant one),
+     *                                or for all for an unknown class
+     */
+    private function checkGenericParams(TGenericObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
         $expected_type_params = $class_storage->template_types ?: [];
@@ -249,10 +332,13 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
+        $prevents_covariance = [];
+
         foreach ($atomic->type_params as $i => $type_param) {
-            $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
-                && $this->source->getMethodName() !== '__construct'
-                && empty($expected_param_covariants[$i]);
+            // a covariant type param is in the position of the type (null): an invariant one is in neither
+            $prevents_covariance[$i] = empty($expected_param_covariants[$i])
+                ? $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
+                : null;
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];
@@ -315,6 +401,8 @@ final class TypeChecker extends TypeVisitor
                 }
             }
         }
+
+        return $prevents_covariance;
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void

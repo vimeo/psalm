@@ -21,6 +21,8 @@ use function count;
 use function in_array;
 use function mt_rand;
 use function reset;
+use function strcspn;
+use function substr;
 
 /**
  * @internal
@@ -631,7 +633,10 @@ final class Algebra
                 }
 
                 foreach ($left_clause->possibilities as $var => $possible_types) {
-                    if (isset($right_clause->redefined_vars[$var])) {
+                    // the right side assigned the variable, or the variable holding the array or object
+                    if (isset($right_clause->redefined_vars[$var])
+                        || isset($right_clause->redefined_vars[substr($var, 0, strcspn($var, '[-'))])
+                    ) {
                         continue;
                     }
 
@@ -707,9 +712,17 @@ final class Algebra
      */
     public static function negateFormula(array $clauses): array
     {
-        $clauses = array_filter(
+        $reconcilable_clauses = array_filter(
             $clauses,
             static fn(Clause $clause): bool => $clause->reconcilable,
+        );
+
+        // A clause that can't be reconciled, as one of its disjuncts says nothing (`$a === null || !f($a)`, with
+        // f() asserting nothing when false), still lists disjuncts that are all false where it is: where there is
+        // nothing else to negate, that is what the negation says
+        $clauses = $reconcilable_clauses ?: array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => $clause->possibilities && !$clause->wedge,
         );
 
         if (!$clauses) {
