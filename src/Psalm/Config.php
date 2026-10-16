@@ -3099,7 +3099,8 @@ final class Config
             if (!$composer_json) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
-            $php_version = $composer_json['require']['php'] ?? null;
+            // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
+            $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
 
             if (is_string($php_version)) {
                 $version_parser = new VersionParser();

@@ -1830,6 +1830,13 @@ final class ConfigTest extends TestCase
         $this->assertSame('8.0', $cfg->getPhpVersion());
     }
 
+    public function testReadsThePhp64bitRequirementOfComposerJsonForPhpVersion(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
     public function testSetsUsePhpStormMetaPath(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

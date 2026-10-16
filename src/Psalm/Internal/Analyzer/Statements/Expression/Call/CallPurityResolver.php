@@ -36,6 +36,7 @@ use function in_array;
  * body: the responsibility is deferred to its callers.
  *
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class CallPurityResolver
 {
@@ -134,6 +135,8 @@ final class CallPurityResolver
      *
      * A closure relying on such a template is recorded as depending on it: its own type then
      * carries the template instead of a fixed purity (see {@see FunctionLikeAnalyzer::$used_purity_templates}).
+     *
+     * @return CapabilitySet
      */
     public static function resolvePurity(Union $purity, StatementsAnalyzer $statements_analyzer): int
     {
@@ -173,6 +176,8 @@ final class CallPurityResolver
      * What a call of $storage requires of its own, besides what its purity templates are bound to (see
      * getCallCapabilities()): its capabilities, with those that depend on its arguments
      * ({@see FunctionLikeStorage::$conditional_capabilities}) resolved for the arguments of the call
+     *
+     * @return CapabilitySet
      */
     public static function getOwnCapabilities(
         Codebase $codebase,
@@ -209,7 +214,9 @@ final class CallPurityResolver
      * ({@see self::resolvePurity()}), so a closure passing on one relying on a purity template
      * carries the template too.
      *
+     * @param CapabilitySet $capabilities
      * @param array<string, array<string, Union>> $class_template_params
+     * @return CapabilitySet
      */
     public static function getCallCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -261,6 +268,7 @@ final class CallPurityResolver
 
     /**
      * @param list<string> $exempt
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private static function resolveWithExemptions(Union $purity, array $exempt): int
@@ -285,7 +293,7 @@ final class CallPurityResolver
             } elseif ($atomic instanceof TNever || $atomic instanceof TNull) {
                 // no closure was passed (an omitted or null argument): nothing is required
             } else {
-                $capabilities |= Capabilities::ALL;
+                return Capabilities::ALL;
             }
         }
 
