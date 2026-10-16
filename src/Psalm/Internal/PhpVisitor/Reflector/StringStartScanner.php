@@ -7,6 +7,8 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\ArrayDimFetch;
+use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\Node\Expr\BinaryOp\Concat;
 use PhpParser\Node\Expr\CallLike;
@@ -24,16 +26,18 @@ use PhpParser\Node\Param;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeFinder;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use ReflectionProperty;
 
-use function array_key_first;
 use function array_values;
 use function count;
 use function explode;
@@ -41,6 +45,7 @@ use function implode;
 use function in_array;
 use function is_string;
 use function min;
+use function spl_object_id;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -55,8 +60,8 @@ use function substr;
  * processes than the analysis.
  *
  * A start is a list of parts: `L` and a literal, `C` and a class constant (`Class::NAME`), `R` and a property of
- * `$this`, `N` and the offset of an argument of the constructor, then `M` where something the scan doesn't know
- * follows.
+ * `$this`, `N` and the offset of an argument of the constructor, `F` and a method called on `$this`, `self` or
+ * `static`, then `M` where something the scan doesn't know follows.
  *
  * @internal
  */
@@ -92,12 +97,9 @@ final class StringStartScanner
 
         foreach ($class->getMethods() as $method) {
             $stmts = $method->stmts ?? [];
-            $return = count($stmts) === 1 ? $stmts[array_key_first($stmts)] : null;
-            if ($return instanceof Return_ && $return->expr !== null) {
-                $encoded['m:' . $method->name->toLowerString()] = implode(
-                    self::PART_SEPARATOR,
-                    self::getStart($aliases, $self, $return->expr),
-                );
+            $return_start = self::getReturnStart($aliases, $self, $stmts);
+            if ($return_start !== null) {
+                $encoded['m:' . $method->name->toLowerString()] = $return_start;
             }
 
             $is_constructor = $method->name->toLowerString() === '__construct';
@@ -168,14 +170,51 @@ final class StringStartScanner
     }
 
     /**
-     * The start of what the method returns, null if the scan didn't record it
+     * Records how what the function returns starts, as for the methods of a class
+     */
+    public static function scanFunction(Function_ $function, FunctionStorage $storage, Aliases $aliases): void
+    {
+        $return_start = self::getReturnStart($aliases, '', $function->stmts);
+
+        // a start of nothing known is the same as none recorded
+        $storage->return_string_start = $return_start === null
+            || in_array(self::MORE, explode(self::START_SEPARATOR, $return_start), true)
+            ? null
+            : $return_start;
+    }
+
+    /**
+     * The start of what the method returns (of the items of the list it returns), null if the scan didn't record it
      */
     public static function getMethodStart(Codebase $codebase, string $class, string $method): ?string
     {
         $storage = self::getStorage($codebase, $class);
         $encoded = $storage?->string_starts['m:' . strtolower($method)] ?? null;
+        if ($storage === null || $encoded === null) {
+            return null;
+        }
 
-        return $storage === null || $encoded === null ? null : self::resolve($codebase, $storage->name, $encoded);
+        $resolving_id = $storage->name . '::' . strtolower($method) . '()';
+        if (isset(self::$resolving[$resolving_id])) {
+            return '';
+        }
+
+        self::$resolving[$resolving_id] = true;
+        try {
+            return self::getCommonStartOf($codebase, explode(self::START_SEPARATOR, $encoded), $storage->name);
+        } finally {
+            unset(self::$resolving[$resolving_id]);
+        }
+    }
+
+    /**
+     * The start of what the function returns (of the items of the list it returns), null if the scan didn't record it
+     */
+    public static function getFunctionStart(Codebase $codebase, FunctionStorage $storage): ?string
+    {
+        return $storage->return_string_start === null
+            ? null
+            : self::getCommonStartOf($codebase, explode(self::START_SEPARATOR, $storage->return_string_start), '');
     }
 
     /**
@@ -313,6 +352,71 @@ final class StringStartScanner
         }
 
         return (string) $common;
+    }
+
+    /**
+     * The starts of what a function-like returns, separated by START_SEPARATOR: its one statement returning a string
+     * (`return "lock_$id";`), or the items of the list it returns from a variable that it only sets to literal lists
+     * and assigns items of (`$keys[] = "lock_$id"; ... return $keys;`), null if neither
+     *
+     * @param array<array-key, Node\Stmt> $stmts
+     */
+    private static function getReturnStart(Aliases $aliases, string $self, array $stmts): ?string
+    {
+        $stmts = array_values($stmts);
+        $return = $stmts === [] ? null : $stmts[count($stmts) - 1];
+        if (!$return instanceof Return_ || $return->expr === null) {
+            return null;
+        }
+
+        if (count($stmts) === 1) {
+            return implode(self::PART_SEPARATOR, self::getStart($aliases, $self, $return->expr));
+        }
+
+        if (!$return->expr instanceof Variable || !is_string($return->expr->name)) {
+            return null;
+        }
+
+        $finder = new NodeFinder();
+
+        // the last statement is the only return
+        if (count($finder->findInstanceOf($stmts, Return_::class)) !== 1) {
+            return null;
+        }
+
+        $name = $return->expr->name;
+        $known = [spl_object_id($return->expr) => true];
+        $starts = [];
+        foreach ($finder->findInstanceOf($stmts, Assign::class) as $assign) {
+            if ($assign->var instanceof ArrayDimFetch
+                && $assign->var->var instanceof Variable
+                && $assign->var->var->name === $name
+            ) {
+                $known[spl_object_id($assign->var->var)] = true;
+                $starts[] = implode(self::PART_SEPARATOR, self::getStart($aliases, $self, $assign->expr));
+            } elseif ($assign->var instanceof Variable
+                && $assign->var->name === $name
+                && $assign->expr instanceof Array_
+            ) {
+                $known[spl_object_id($assign->var)] = true;
+                foreach ($assign->expr->items as $item) {
+                    if ($item === null || $item->unpack) {
+                        return null;
+                    }
+
+                    $starts[] = implode(self::PART_SEPARATOR, self::getStart($aliases, $self, $item->value));
+                }
+            }
+        }
+
+        // the variable used in any other way may get anything
+        foreach ($finder->findInstanceOf($stmts, Variable::class) as $variable) {
+            if ($variable->name === $name && !isset($known[spl_object_id($variable)])) {
+                return null;
+            }
+        }
+
+        return $starts === [] ? null : implode(self::START_SEPARATOR, $starts);
     }
 
     /**
@@ -538,6 +642,13 @@ final class StringStartScanner
             return ['R' . $property];
         }
 
+        if ($expr instanceof CallLike && !$expr->isFirstClassCallable()) {
+            $method = self::getOwnCallName($expr);
+            if ($method !== null) {
+                return ['F' . $method];
+            }
+        }
+
         if ($expr instanceof InterpolatedString) {
             $start = [];
             foreach ($expr->parts as $part) {
@@ -631,6 +742,10 @@ final class StringStartScanner
                 return $start . (self::getConstructorArgumentStart($codebase, $self, (int) substr($part, 1)) ?? '');
             }
 
+            if ($part[0] === 'F') {
+                return $start . (self::getOwnMethodStart($codebase, $self, substr($part, 1)) ?? '');
+            }
+
             $constant = explode('::', substr($part, 1));
             if (count($constant) !== 2) {
                 return $start;
@@ -651,6 +766,43 @@ final class StringStartScanner
         }
 
         return $start;
+    }
+
+    /**
+     * The start of what the method of the class called on `$this`, `self` or `static` returns, as declared for the
+     * class
+     */
+    private static function getOwnMethodStart(Codebase $codebase, string $self, string $method): ?string
+    {
+        if ($self === '' || !$codebase->classOrInterfaceExists($self)) {
+            return null;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($self, strtolower($method)),
+        );
+
+        return $declaring_method_id === null || !self::isOwnMethodFinal($codebase, $self, $declaring_method_id)
+            ? null
+            : self::getMethodStart($codebase, $declaring_method_id->fq_class_name, $declaring_method_id->method_name);
+    }
+
+    /**
+     * Whether calling the method on `$this` or `static` in the class calls the method declared for it: no class
+     * extending it can override it
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function isOwnMethodFinal(
+        Codebase $codebase,
+        string $self,
+        MethodIdentifier $declaring_method_id,
+    ): bool {
+        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        return self::getStorage($codebase, $self)?->final === true
+            || $method_storage->final
+            || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
     }
 
     /** @psalm-capabilities read-props */
