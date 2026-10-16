@@ -1374,7 +1374,6 @@ trait UnionTrait
         bool $inherited = false,
         bool $prevent_template_covariance = false,
         ?Context $context = null,
-        bool $template_output_position = false,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1389,7 +1388,6 @@ trait UnionTrait
             $inherited,
             $prevent_template_covariance,
             $context,
-            $template_output_position,
         );
 
         $checker->traverseArray($this->types);
