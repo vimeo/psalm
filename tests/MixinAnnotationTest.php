@@ -842,6 +842,24 @@ final class MixinAnnotationTest extends TestCase
                     '$result' => 'string',
                 ],
             ],
+            'PHP81-firstClassCallableStaticCallForwardedThroughMixin' => [
+                'code' => '<?php
+                    class Builder {
+                        public function has(string $relation): self { return $this; }
+                    }
+
+                    /** @mixin Builder */
+                    class Model {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return (new Builder())->$name(...$args);
+                        }
+                    }
+
+                    $has = Model::has(...);',
+                'assertions' => [
+                    '$has' => 'impure-Closure(string):Builder',
+                ],
+            ],
         ];
     }
 
