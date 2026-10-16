@@ -18,6 +18,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class TClosure extends TNamedObject
 {
@@ -35,7 +36,7 @@ final class TClosure extends TNamedObject
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
-     * @param int|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
+     * @param CapabilitySet|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
      *                                        known (e.g. for a first-class callable `foo(...)`). Metadata

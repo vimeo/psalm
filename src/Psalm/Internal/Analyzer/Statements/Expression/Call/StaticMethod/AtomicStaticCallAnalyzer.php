@@ -65,6 +65,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class AtomicStaticCallAnalyzer
 {
@@ -869,6 +870,7 @@ final class AtomicStaticCallAnalyzer
 
     /**
      * @param  list<PhpParser\Node\Arg> $args
+     * @param CapabilitySet|null $magic_method_capabilities
      * @return false|null
      */
     private static function checkPseudoMethod(
