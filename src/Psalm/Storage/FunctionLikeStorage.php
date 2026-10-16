@@ -172,6 +172,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The capabilities declared besides {@see self::$conditional_capabilities}, which a call requires whatever its
      * arguments
+     *
+     * @var CapabilitySet
      */
     public int $unconditional_capabilities = Capabilities::ALL;
 

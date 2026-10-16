@@ -36,7 +36,8 @@ use function trim;
  *     Capabilities::READ_GLOBALS,
  *     Capabilities::WRITE_GLOBALS,
  *     Capabilities::WRITE_REFS,
- *     Capabilities::IO
+ *     Capabilities::IO,
+ *     Capabilities::TIME
  * >
  * @psalm-immutable
  * @api
