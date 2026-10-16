@@ -69,7 +69,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     use MongoDB\BSON\ObjectId;
                     use MongoDB\Driver\Cursor;
-                    use MongoDB\Driver\Monitoring\CommandSubscriber;
+                    use MongoDB\Driver\Monitoring\Subscriber;
                     use MongoDB\Driver\Server;
 
                     /** @psalm-pure */
@@ -93,7 +93,7 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /** @psalm-capabilities read-globals|write-globals */
-                    function subscribe(CommandSubscriber $subscriber): void {
+                    function subscribe(Subscriber $subscriber): void {
                         MongoDB\Driver\Monitoring\addSubscriber($subscriber);
                     }',
             ],
