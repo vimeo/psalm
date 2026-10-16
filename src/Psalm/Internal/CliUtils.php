@@ -28,10 +28,13 @@ use function fgets;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function function_exists;
 use function fwrite;
 use function getenv;
 use function implode;
 use function in_array;
+use function ini_get;
+use function ini_parse_quantity;
 use function ini_set;
 use function is_array;
 use function is_dir;
@@ -66,6 +69,12 @@ use const STDIN;
  */
 final class CliUtils
 {
+    /**
+     * Fibers get their own C stack, sized by the `fiber.stack_size` ini setting, whose default
+     * (2 MiB on 64-bit systems) is a fraction of the ~8 MiB the main thread typically gets.
+     */
+    public const MINIMUM_FIBER_STACK_SIZE = 16 * 1024 * 1024;
+
     public static function requireAutoloaders(
         string $current_dir,
         bool $has_explicit_root,
@@ -480,6 +489,66 @@ final class CliUtils
 
             ini_set('memory_limit', (string) $memoryLimit);
         }
+    }
+
+    /**
+     * Psalm runs recursive workloads (parsing, serializing ASTs into the cache, type resolution)
+     * inside Revolt event loop fibers: every parallel worker executes its task in one, and so does
+     * the language server. A fiber's C stack is capped by `fiber.stack_size`, which on a typical
+     * 64-bit setup is 2 MiB against a main thread stack of about 8 MiB, so deeply nested code aborts with
+     * "Maximum call stack size of 2031616 bytes ... reached. Infinite recursion?" even though the
+     * very same file analyses fine in-process (#11967).
+     *
+     * Give fibers at least as much stack as the main thread typically has. On demand-paged systems
+     * the larger size reserves virtual address space, and only the pages actually used become resident.
+     *
+     * Must run before the first fiber is started, as that is when its stack is allocated.
+     * Unlike the opcache settings, `fiber.stack_size` can be changed at runtime, so this does not
+     * rely on PsalmRestarter and also covers runs that are not restarted. Forked workers inherit it.
+     */
+    public static function ensureFiberStackSize(): void
+    {
+        $current = (string) ini_get('fiber.stack_size');
+        // ini_parse_quantity() also understands hex and octal values, but only exists on PHP 8.2+
+        $current = function_exists('ini_parse_quantity') ? ini_parse_quantity($current) : self::toBytes($current);
+
+        if ($current >= self::MINIMUM_FIBER_STACK_SIZE) {
+            return;
+        }
+
+        ini_set('fiber.stack_size', (string) self::MINIMUM_FIBER_STACK_SIZE);
+    }
+
+    /**
+     * Converts an ini shorthand value such as "64M" to bytes.
+     */
+    public static function toBytes(string $value): int
+    {
+        if (strlen($value) === 0) {
+            return 0;
+        }
+
+        $unit = strtolower($value[strlen($value) - 1]);
+
+        if (in_array($unit, ['g', 'm', 'k'], true)) {
+            $value = (int) $value;
+        } else {
+            $unit = '';
+            $value = (int) $value;
+        }
+
+        switch ($unit) {
+            case 'g':
+                $value *= 1024;
+                // no break
+            case 'm':
+                $value *= 1024;
+                // no break
+            case 'k':
+                $value *= 1024;
+        }
+
+        return $value;
     }
 
     public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
