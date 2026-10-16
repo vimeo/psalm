@@ -83,15 +83,16 @@ use const PHP_INT_MAX;
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, int>,
+ *      mutable_classes: array<string, CapabilitySet>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
 
 /**
- * @internal
- *
  * Called in the analysis phase of Psalm's execution
+ *
+ * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Analyzer
 {
@@ -171,7 +172,7 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, int>
+     * @var array<string, CapabilitySet>
      */
     public array $mutable_classes = [];
 
@@ -1365,6 +1366,7 @@ final class Analyzer
     }
 
     /**
+     * @param CapabilitySet $capabilities
      * @psalm-external-mutation-free
      */
     public function addMutableClass(string $fqcln, int $capabilities): void

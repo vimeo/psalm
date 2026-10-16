@@ -37,6 +37,7 @@ use function array_values;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodCallPurityAnalyzer
 {
@@ -70,6 +71,7 @@ final class MethodCallPurityAnalyzer
      * properties directly would. Callers that know the receiver to be fresh by other means say so
      * with $receiver_is_fresh, and those that know the callee's capabilities for this call with
      * $callee_capabilities.
+     * @return CapabilitySet
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -218,6 +220,8 @@ final class MethodCallPurityAnalyzer
      * write-this-props when the receiver is the caller's `$this`, write-props otherwise, plus
      * write-globals when the receiver was reached from global state.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getCapabilitiesForReceiver(

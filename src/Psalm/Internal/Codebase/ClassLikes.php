@@ -86,6 +86,7 @@ use const T_WHITESPACE;
  * @internal
  *
  * Handles information about classes, interfaces and traits
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikes
 {
@@ -1078,8 +1079,8 @@ final class ClassLikes
      * A class contract binds the subclasses too: what the known subclasses of each class need,
      * apart from what they inherit from it. A subclass with a contract needs what its contract allows.
      *
-     * @param array<string, int> $mutable_classes
-     * @return array<lowercase-string, int>
+     * @param array<string, CapabilitySet> $mutable_classes
+     * @return array<lowercase-string, CapabilitySet>
      * @psalm-capabilities read-props
      */
     private function getSubclassCapabilities(array $mutable_classes): array
@@ -1118,6 +1119,7 @@ final class ClassLikes
      * class, whose methods it inherits, and the upper bounds of its purity templates, which its
      * subclasses may bind up to.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private function getRequiredContractCapabilities(ClassLikeStorage $classlike_storage): int
@@ -1166,7 +1168,9 @@ final class ClassLikes
 
         return true;
     }
-
+    /**
+     * @param CapabilitySet $capabilities
+     */
     private static function makeImmutable(
         int $capabilities,
         bool $change,

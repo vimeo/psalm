@@ -36,6 +36,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionDocblockManipulator
 {
@@ -85,7 +86,11 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet|null
+     */
     private ?int $capabilities = null;
 
     /** @var list<string> */
@@ -612,7 +617,7 @@ final class FunctionDocblockManipulator
     }
 
     /**
-     * @param int $capabilities a bitmask of {@see Capabilities} constants
+     * @param CapabilitySet $capabilities a bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
     public function setCapabilities(int $capabilities): void
