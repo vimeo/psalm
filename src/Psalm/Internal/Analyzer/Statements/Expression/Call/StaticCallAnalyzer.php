@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -339,12 +338,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $node_location,
         ) ? $node_location : null;
 
-        $method_location = $method_storage
-            ? ($graph instanceof VariableUseGraph
-                ? ($method_storage->return_type_location ?: $method_storage->location)
-                : ($method_storage->signature_return_type_location ?: $method_storage->location))
-            : null;
-
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
@@ -420,12 +413,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints && $method_location) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $method_id . '-escaped',
-                $method_location,
-                $method_source->specialization_key,
-            );
+        if ($conditionally_removed_taints) {
+            // a node of this call's own: what it removes depends on its arguments, and $method_source may be
+            // shared with the other calls, the last call deciding for all
+            $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);
+
+            $graph->addNode($assignment_node);
 
             $graph->addPath(
                 $method_source,
@@ -437,7 +430,22 @@ final class StaticCallAnalyzer extends CallAnalyzer
 
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
-            $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            // the result of an unspecialized call of the method declared (see TaintFlowGraph::getCallResult())
+            $result_node = $method_storage
+                && $specialization_location === null
+                && (string) $declaring_method_id === (string) $method_id
+                    ? $statements_analyzer->getTaintFlowGraphWithSuppressed()?->getCallResult(
+                        $method_source,
+                        $method_source,
+                        $method_storage,
+                        $node_location,
+                    )
+                    : null;
+            $result_node ??= $method_source;
+
+            $return_type_candidate = $return_type_candidate->setParentNodes([$result_node->id => $result_node]);
         }
 
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();

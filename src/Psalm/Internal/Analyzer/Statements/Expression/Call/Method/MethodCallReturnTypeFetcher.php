@@ -529,13 +529,7 @@ final class MethodCallReturnTypeFetcher
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
-                    $taint_flow_graph->addPath(
-                        $declaring_method_call_node,
-                        $method_call_node,
-                        'parent',
-                        $added_taints,
-                        $removed_taints,
-                    );
+                    $taint_flow_graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
                 }
 
                 $return_type_candidate = $return_type_candidate->setParentNodes([
@@ -570,13 +564,7 @@ final class MethodCallReturnTypeFetcher
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
-                    $taint_flow_graph->addPath(
-                        $declaring_method_call_node,
-                        $method_call_node,
-                        'parent',
-                        $added_taints,
-                        $removed_taints,
-                    );
+                    $taint_flow_graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
                 }
 
                 $taint_flow_graph->addNode($method_call_node);
@@ -593,6 +581,7 @@ final class MethodCallReturnTypeFetcher
                 $cased_method_id,
                 $method_storage,
             );
+            $declaring_method_call_node = $method_call_node;
 
             if (!$is_declaring) {
                 $declaring_method_call_node = InheritedMethodTaints::withMethodSuffix(
@@ -610,19 +599,20 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 $graph->addNode($declaring_method_call_node);
-                $graph->addPath(
-                    $declaring_method_call_node,
-                    $method_call_node,
-                    'parent',
-                    $added_taints,
-                    $removed_taints,
-                );
+                $graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
             }
 
             $graph->addNode($method_call_node);
 
+            $result_node = $taint_flow_graph?->getCallResult(
+                $method_call_node,
+                $declaring_method_call_node,
+                $method_storage,
+                $node_location,
+            ) ?? $method_call_node;
+
             $return_type_candidate = $return_type_candidate->setParentNodes([
-                $method_call_node->id => $method_call_node,
+                $result_node->id => $result_node,
             ]);
         }
 
@@ -642,8 +632,8 @@ final class MethodCallReturnTypeFetcher
                     $parent_node,
                     $method_call_node,
                     $method_storage->return_source_this,
-                    $added_taints | $method_storage->added_taints,
-                    $removed_taints | $method_storage->removed_taints | $type_removed_taints,
+                    $method_storage->added_taints,
+                    $method_storage->removed_taints | $type_removed_taints,
                 );
             }
         }
@@ -700,6 +690,22 @@ final class MethodCallReturnTypeFetcher
             $method_id,
             $specialize_call ? $node_location : null,
         );
+
+        // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
+        // result comes from may be shared with the other calls, the last call deciding for all
+        if ($added_taints !== 0 || $removed_taints !== 0) {
+            $call_result_node = DataFlowNode::getForAssignment($cased_method_id, $node_location);
+
+            $graph->addNode($call_result_node);
+
+            foreach ($return_type_candidate->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $call_result_node, '=', $added_taints, $removed_taints);
+            }
+
+            $return_type_candidate = $return_type_candidate->setParentNodes([
+                $call_result_node->id => $call_result_node,
+            ]);
+        }
     }
 
     /**

@@ -691,6 +691,61 @@ final class TaintTest extends TestCase
                     showValues([$name => "value"]);
                     showValues(["a" => "value"]);',
             ],
+            'fetchOfAnotherKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["page"])) {
+                        echo $attr["data"]["page"];
+                    }',
+            ],
+            'fetchOfAnotherKeyOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["class" => "button", "data-q" => (string) $_GET["q"]]);
+                    echo is_array($attr) ? (string) ($attr["icon"] ?? "") : "";',
+            ],
+            'recursiveCallReturnsIntoTheBodyMakingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function wrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return ["label" => "safe", "value" => wrap($value["value"])];
+                        }
+                        error_log("wrapped");
+                        return $value;
+                    }
+
+                    $wrapped = wrap(["value" => $_GET["x"]]);
+                    // the inner call returns its value into the array, under "value"
+                    echo $wrapped["label"];',
+            ],
             'fetchOfOneKeyWhereConvergingKeyedArraysConvergeAgain' => [
                 // Differently keyed arrays converge at $row, and its flows converge again at $r with others: the
                 // fetch still ignores those of other keys.
@@ -3294,7 +3349,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3328,7 +3383,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
@@ -3591,6 +3646,372 @@ final class TaintTest extends TestCase
                     echo (string) $b[0];
                     echo (string) $b[2];',
             ],
+            'taintFreeFetchUnderParamKeyOfOtherCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo (string) $holder->get("b");',
+            ],
+            'taintFreeNestedFetchUnderParamKeyOfOtherCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, array<string, string>> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"]["x"] = $value;
+                            $this->data["b"]["x"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key]["x"];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOn' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    /** @psalm-pure */
+                    function getKeyOf(array $array, string $key): mixed {
+                        return getKey($array, $key);
+                    }
+
+                    $array = ["a" => $_GET["value"], "b" => "safe"];
+                    echo (string) getKeyOf($array, "b");',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOnOutsideOfCalls' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key];
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function getLabel(string $key): string {
+                            return "Value: " . $this->get($key);
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->getLabel("b");',
+            ],
+            'taintFreeFetchUnderParamKeyOfOtherReadOnlyCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        public function get(int|string $key): string {
+                            return $this->data[(string) $key];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+            ],
+            'taintFreeAssignmentUnderParamKeyOfOtherUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setVia("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyPassedOnTwiceByUnspecializedCalls' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        public function setViaVia(string $key, mixed $value): void {
+                            $this->setVia($key, $value);
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setViaVia("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyAfterUnspecializedCallReturns' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setWrapped(string $key, string $value): void {
+                            $this->options[$key] = $this->wrap($value);
+                        }
+
+                        public function wrap(string $value): string {
+                            error_log("wrapped");
+                            return "<b>" . $value . "</b>";
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setWrapped("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setOption("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyOfPrivateMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setFrom(string $value): void {
+                            $this->setOption("from", $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setFrom((string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeAssignmentUnderParamKeyPassedOnByFinalMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        final public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setVia("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+            ],
+            'taintFreeFetchUnderParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption("greeting");
+                    }',
+            ],
+            'taintFreeFetchUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+
+                        public function getVia(string $key): string {
+                            return $this->getOption($key);
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    echo $base->getVia("greeting");',
+            ],
+            'taintFreeFetchUnderParamKeyOfUnspecializedStaticCall' => [
+                'code' => '<?php
+                    class Registry {
+                        /** @var array<string, string> */
+                        protected static array $options = [];
+
+                        public static function set(string $key, string $value): void {
+                            static::$options[$key] = $value;
+                        }
+
+                        public static function get(string $key): string {
+                            return static::$options[$key] ?? "";
+                        }
+                    }
+
+                    Registry::set("from", (string) $_GET["value"]);
+                    echo Registry::get("greeting");',
+            ],
+            'taintFreeAssignmentAndFetchUnderParamKeys' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    echo (string) getKey(withKey([], "a", $_GET["value"]), "b");',
+            ],
             'writingToTheTerminalIsNotAnHtmlSink' => [
                 'code' => '<?php
                     fwrite(STDOUT, (string) $_GET["a"]);',
@@ -3783,6 +4204,73 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'fetchOfTheKeyOfAnElementOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["data" => ["q" => (string) $_GET["q"], "page" => "1"]]);
+
+                    if (is_array($attr) && is_array($attr["data"]) && is_string($attr["data"]["q"])) {
+                        echo $attr["data"]["q"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchOfTheKeyOfAnElementARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare(["class" => "button", "icon" => (string) $_GET["q"]]);
+                    echo is_array($attr) ? (string) ($attr["icon"] ?? "") : "";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keysOfTheElementsARecursiveSpecializedCallTransforms' => [
+                'code' => '<?php
+                    final class Attributes {
+                        /** @psalm-taint-specialize */
+                        public static function prepare(mixed $attr): array|string {
+                            if (is_array($attr)) {
+                                $prepared = [];
+                                foreach ($attr as $key => $value) {
+                                    $prepared[$key] = self::prepare($value);
+                                }
+                                return $prepared;
+                            }
+                            return (string) $attr;
+                        }
+                    }
+
+                    $attr = Attributes::prepare([(string) $_GET["q"] => "button"]);
+                    if (is_array($attr)) {
+                        foreach ($attr as $name => $_) {
+                            echo $name;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
@@ -4281,6 +4769,695 @@ final class TaintTest extends TestCase
                     showValues(["value" => $input]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'recursiveCallReturnsIntoTheArrayItBuilds' => [
+                'code' => '<?php // --taint-analysis
+                    function wrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return ["label" => "safe", "value" => wrap($value["value"])];
+                        }
+                        error_log("wrapped");
+                        return $value;
+                    }
+
+                    $wrapped = wrap(["value" => $_GET["x"]]);
+                    echo $wrapped["value"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveCallReturnedByTheBodyMakingIt' => [
+                'code' => '<?php // --taint-analysis
+                    function unwrap(mixed $value): mixed {
+                        if (is_array($value)) {
+                            return unwrap($value["value"]);
+                        }
+                        error_log("unwrapped");
+                        return $value;
+                    }
+
+                    echo unwrap(["value" => $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'recursiveCallKeepingItsValueInAStaticProperty' => [
+                'code' => '<?php // --taint-analysis
+                    final class Box {
+                        public static mixed $last = null;
+                    }
+
+                    function keep(mixed $value): mixed {
+                        if (is_array($value)) {
+                            keep($value["value"]);
+                            return Box::$last;
+                        }
+                        Box::$last = $value;
+                        return "";
+                    }
+
+                    echo keep(["value" => $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfSameCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo (string) $holder->get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderNonLiteralParamKey' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key, ?string $default = null): ?string {
+                            return array_key_exists($key, $this->data) ? $this->data[$key] : $default;
+                        }
+                    }
+
+                    function show(string $key): void {
+                        $holder = new Holder();
+                        $holder->fill((string) $_GET["value"]);
+                        echo (string) $holder->get($key);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderReassignedParamKey' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            if ($key === "b") {
+                                $key = "a";
+                            }
+                            return $this->data[$key];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintNestedFetchUnderParamKeyOfSameCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, array<string, string>> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"]["x"] = $value;
+                            $this->data["b"]["x"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key]["x"];
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOn' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    /** @psalm-pure */
+                    function getKeyOf(array $array, string $key): mixed {
+                        return getKey($array, $key);
+                    }
+
+                    $array = ["a" => $_GET["value"], "b" => "safe"];
+                    echo (string) getKeyOf($array, "b");
+                    echo (string) getKeyOf($array, "a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOnOutsideOfCalls' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function get(string $key): string {
+                            return $this->data[$key];
+                        }
+
+                        /** @psalm-taint-specialize */
+                        public function getLabel(string $key): string {
+                            return "Value: " . $this->get($key);
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    echo $holder->getLabel("a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfCallKeepingIt' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, string> */
+                        private array $data = [];
+
+                        private string $last = "";
+
+                        public function fill(string $value): void {
+                            $this->data["a"] = $value;
+                            $this->data["b"] = "safe";
+                        }
+
+                        public function get(string $key): string {
+                            $this->last = $this->data[$key];
+                            return $this->last;
+                        }
+                    }
+
+                    $holder = new Holder();
+                    $holder->fill((string) $_GET["value"]);
+                    $holder->get("a");
+                    echo $holder->get("b");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfOneOfManyUnspecializedCalls' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    // as many calls as make their flows converge in the body
+                    function send(Mail $mail): void {
+                        $mail->setOption("a", (string) $_GET["a"]);
+                        $mail->setOption("b", (string) $_GET["b"]);
+                        $mail->setOption("c", (string) $_GET["c"]);
+                        $mail->setOption("d", (string) $_GET["d"]);
+                        $mail->setOption("e", (string) $_GET["e"]);
+                        $mail->setOption("f", (string) $_GET["f"]);
+                        $mail->setOption("g", (string) $_GET["g"]);
+                        $mail->setOption("h", (string) $_GET["h"]);
+                        $mail->setOption("i", (string) $_GET["i"]);
+                        $mail->setOption("j", (string) $_GET["j"]);
+                        $mail->setOption("k", (string) $_GET["k"]);
+                        $mail->setOption("l", (string) $_GET["l"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfSameUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function set(Mail $mail, string $key): void {
+                        $mail->setOption($key, (string) $_GET["value"]);
+                    }
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setVia("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyPassedOnTwiceByUnspecializedCalls' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        public function setViaVia(string $key, mixed $value): void {
+                            $this->setVia($key, $value);
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setViaVia("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyAfterUnspecializedCallReturns' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setWrapped(string $key, string $value): void {
+                            $this->options[$key] = $this->wrap($value);
+                        }
+
+                        public function wrap(string $value): string {
+                            error_log("wrapped");
+                            return "<b>" . $value . "</b>";
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setWrapped("from", (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail, string $key): void {
+                        $mail->setVia($key, (string) $_GET["value"]);
+                        echo (string) $mail->getOptions()["greeting"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfRecursiveUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value, bool $again): void {
+                            if ($again) {
+                                $this->setOption("greeting", $value, false);
+                            }
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"], true);
+                    echo (string) $base->getOptions()["greeting"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setOption("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyOfPrivateMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setFrom(string $value): void {
+                            $this->setOption("from", $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setFrom((string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderParamKeyPassedOnByFinalMethod' => [
+                'code' => '<?php
+                    class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        final public function setVia(string $key, mixed $value): void {
+                            $this->setOption($key, $value);
+                        }
+
+                        private function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options): void {
+                        $options->setVia("from", (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["from"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKeyOfFinalClassMethod' => [
+                'code' => '<?php
+                    final class Options {
+                        /** @var array<string, mixed> */
+                        private array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    function send(Options $options, string $key): void {
+                        $options->setOption($key, (string) $_GET["value"]);
+                        echo (string) $options->getOptions()["greeting"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption("from");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderNonLiteralParamKeyOfUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail, string $key): void {
+                        $mail->setOption("from", (string) $_GET["value"]);
+                        echo $mail->getOption($key);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyPassedOnByUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return $this->options[$key] ?? "";
+                        }
+
+                        public function getVia(string $key): string {
+                            return $this->getOption($key);
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    echo $base->getVia("from");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyOfMemoizingUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        protected ?string $first = null;
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            $this->first ??= $this->options[$key] ?? "";
+                            return $this->first;
+                        }
+                    }
+
+                    $base = new Base();
+                    $base->setOption("from", (string) $_GET["value"]);
+                    $base->getOption("from");
+                    echo $base->getOption("greeting");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintFetchUnderParamKeyStashedByAnotherUnspecializedCall' => [
+                'code' => '<?php
+                    class Base {
+                        public static ?string $stash = null;
+
+                        /** @var array<string, string> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, string $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        public function getOption(string $key): string {
+                            return self::$stash ?? $this->options[$key] ?? "";
+                        }
+                    }
+
+                    function send(Base $base, string $key): void {
+                        $base->setOption("from", (string) $_GET["value"]);
+                        Base::$stash = $base->getOption($key);
+                        echo $base->getOption("greeting");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentAndFetchUnderSameParamKeys' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    echo (string) getKey(withKey([], "a", $_GET["value"]), "a");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignmentUnderNonLiteralParamKey' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function withKey(array $array, string $key, mixed $value): array {
+                        $array[$key] = $value;
+                        return $array;
+                    }
+
+                    /** @psalm-pure */
+                    function getKey(array $array, string $key): mixed {
+                        return $array[$key];
+                    }
+
+                    function show(string $key): void {
+                        echo (string) getKey(withKey([], $key, $_GET["value"]), "b");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAPathResolvedFromGlobalsHoldingTheArguments' => [
                 'code' => '<?php
                     function path(string $name): string {
@@ -4293,7 +5470,7 @@ final class TaintTest extends TestCase
                     }
 
                     echo count(args());
-                    unlink(path("file"));',
+                    unlink(path("argv"));',
                 'error_message' => 'TaintedFile',
             ],
             'taintSinkWithoutParameter' => [
@@ -5244,6 +6421,33 @@ final class TaintTest extends TestCase
                     }
 
                     (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAPropertyAnInheritedMethodSetsBeforeACallWithAnUntaintedArgument' => [
+                // the calls of an inherited method share the path into its body for the class: the untainted
+                // argument of a later call removes nothing from what an earlier one passed
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("k", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
@@ -10168,6 +11372,28 @@ final class TaintTest extends TestCase
 
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                    function escape(string $s, bool $escape = true): string {
+                        return $s;
+                    }
+
+                    shell_exec(escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAStaticCallKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public static function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
                 'code' => '<?php

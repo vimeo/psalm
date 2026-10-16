@@ -11,6 +11,9 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function count;
+use function str_starts_with;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -69,6 +72,14 @@ final class VariableUseGraph extends DataFlowGraph
 
         if ($from_id === $to_id) {
             return;
+        }
+
+        // the key of an array fetch or assignment under a parameter is the one of each call: unknown here (see
+        // ArrayFetchAnalyzer::getParamKey())
+        $param_key_position = strpos($path_type, '-@');
+
+        if ($param_key_position !== false && str_starts_with($path_type, 'arrayvalue-')) {
+            $path_type = substr($path_type, 0, $param_key_position);
         }
 
         $length = 0;

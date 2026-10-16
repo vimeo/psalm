@@ -245,6 +245,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     public array $param_nodes = [];
 
     /**
+     * The node of each parameter the body reads as it was passed (see getParamKeyNodeId()) => the node of
+     * the argument it is passed through
+     *
+     * @var array<string, string>
+     */
+    private array $param_key_node_ids = [];
+
+    /**
      * @param TFunction $function
      * @psalm-mutation-free
      */
@@ -1633,6 +1641,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         0,
                         $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
                     );
+
+                    if (!$function_param->by_ref && !$function_param->is_variadic) {
+                        $this->param_key_node_ids[$param_assignment->id] = $type_source->id;
+                    }
                 }
 
                 if ($storage->variadic) {
@@ -2192,6 +2204,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The node of the argument passed to the parameter of node $param_node_id, if it is one of the parameters
+     * of this function-like, as passed: an array key that is it is the one each call passes, in the taint
+     * flow graph (see ArrayFetchAnalyzer::getParamKey()).
+     *
+     * @psalm-mutation-free
+     */
+    public function getParamKeyNodeId(string $param_node_id): ?string
+    {
+        return $this->param_key_node_ids[$param_node_id] ?? null;
     }
 
     /**

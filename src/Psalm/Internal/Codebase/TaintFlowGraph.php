@@ -56,6 +56,7 @@ use function min;
 use function strcmp;
 use function strlen;
 use function strpos;
+use function strtolower;
 use function substr;
 
 /**
@@ -153,12 +154,77 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $speculative_calls = [];
 
     /**
+     * The array keys passed to parameters at call sites: unspecialized argument node id => (specialization key of
+     * the call site, whether the call is specialized or not => key). A literal key is as the keys of array
+     * fetches and assignments are in path types, and a parameter of the function-like making the call, as passed,
+     * is its unspecialized argument node id prefixed with '@'. The body of a function-like whose array key is one
+     * of its parameters, as passed, fetches or assigns the key of each call (see ArrayFetchAnalyzer::getParamKey()
+     * and TaintFlowResolution::resolveParamKey()).
+     *
+     * @var array<string, array<string, string>>
+     */
+    private array $param_keys = [];
+
+    /**
+     * The arguments of unspecialized and despecialized calls: argument node id of the call site => [the
+     * specialization key of the call site, the file, start and end of the declaration of the function-like called].
+     * A flow entering it through them knows the array keys the call passes (see TaintFlowResolution::bindCall()).
+     *
+     * @var array<string, array{string, string, int, int}>
+     */
+    private array $call_arguments = [];
+
+    /**
+     * The arguments of speculatively specialized calls (see isCallSpecialized()), as in $call_arguments: those of
+     * the calls that turn out to be despecialized are resolved as arguments of unspecialized calls (see
+     * despecializeImpureCalls())
+     *
+     * @var array<string, array{string, string, int, int}>
+     */
+    private array $speculative_call_arguments = [];
+
+    /**
+     * The specialization keys of the call sites passing an array key to a parameter (see addParamKey()), for the
+     * analysis of their results (see getCallResult()): specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $keyed_calls = [];
+
+    /**
+     * The results of unspecialized calls passing an array key to a parameter (see getCallResult()): result node id
+     * => [the specialization key of the call site, the function-like node of the method called, the id of its
+     * return node, the id of the return node of its declaration]
+     *
+     * @var array<string, array{string, string, string, string}>
+     */
+    private array $call_results = [];
+
+    /**
+     * The calls a function-like makes to itself, specialized or not: specialization key of the call site => [the
+     * file path and lowercase file name, start and end of the declaration of the function-like, the id of its
+     * return node]. A flow entering one returns to a call site in that declaration (see
+     * TaintFlowResolution::bindRecursiveCall()).
+     *
+     * @var array<string, array{string, string, int, int, string}>
+     */
+    private array $recursive_calls = [];
+
+    /**
      * Speculatively specialized call sites of a callee that turned out not to be pure,
      * which are resolved as if they were not specialized: specialization key => true
      *
      * @var array<string, true>
      */
     private array $despecialized_calls = [];
+
+    /**
+     * The despecialized calls whose callees only read, and so can't keep what a call gets for another one to
+     * return: specialization key => true
+     *
+     * @var array<string, true>
+     */
+    private array $read_only_calls = [];
 
     /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
@@ -338,12 +404,128 @@ final class TaintFlowGraph extends DataFlowGraph
         $mutation_levels = $codebase->code_use_graph->getMutationLevels();
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
+            $is_read_only = true;
+
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                $mutation_level = $mutation_levels[$function_node_id] ?? Capabilities::ALL;
+
+                if ($mutation_level !== Capabilities::NONE) {
                     $this->despecialized_calls[$specialization_key] = true;
-                    break;
                 }
+
+                $is_read_only = $is_read_only
+                    && ($mutation_level & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) === 0;
             }
+
+            if ($is_read_only && isset($this->despecialized_calls[$specialization_key])) {
+                $this->read_only_calls[$specialization_key] = true;
+            }
+        }
+
+        // a despecialized call is entered like an unspecialized one, knowing the array keys it passes
+        foreach ($this->speculative_call_arguments as $argument_id => $argument) {
+            if (isset($this->despecialized_calls[$argument[0]])) {
+                $this->call_arguments[$argument_id] = $argument;
+            }
+        }
+
+        $this->speculative_call_arguments = [];
+    }
+
+    /**
+     * Records that the call at $call_location passes the array key $key (see $param_keys) to the parameter of
+     * $argument_node
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addParamKey(DataFlowNode $argument_node, string $key, CodeLocation $call_location): void
+    {
+        $specialization_key = DataFlowNode::getSpecializationKey($call_location);
+        $this->param_keys[$argument_node->unspecialized_id ?? $argument_node->id][$specialization_key] = $key;
+        $this->keyed_calls[$specialization_key] = true;
+    }
+
+    /**
+     * The node the result of the unspecialized call at $call_location, of the method of storage $storage, is taken
+     * from: $return_node, its return node, or, if the call passes an array key to a parameter (see addParamKey()),
+     * a node of the call site past it (see $call_results). A body that only reads, and fetches under the key of a
+     * parameter, returns what it fetched only to the calls passing that key (see TaintFlowResolution::walkEdges()).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public function getCallResult(
+        DataFlowNode $return_node,
+        DataFlowNode $declaring_return_node,
+        FunctionLikeStorage $storage,
+        CodeLocation $call_location,
+    ): DataFlowNode {
+        $specialization_key = DataFlowNode::getSpecializationKey($call_location);
+        $function_node_id = CodeUseGraph::functionLikeNodeForStorage($storage);
+
+        if (!isset($this->keyed_calls[$specialization_key]) || $function_node_id === null) {
+            return $return_node;
+        }
+
+        // (a node of its own: the plugins add to and remove from the result of the call on the call's node, see
+        // MethodCallReturnTypeFetcher::taintMethodCallResult())
+        $result_node = DataFlowNode::getForAssignment('result of ' . $return_node->label, $call_location);
+        $this->addNode($result_node);
+        $this->addPath($return_node, $result_node, '=');
+        $this->call_results[$result_node->id] = [
+            $specialization_key,
+            $function_node_id,
+            $return_node->id,
+            $declaring_return_node->id,
+        ];
+
+        return $result_node;
+    }
+
+    /**
+     * Records that the call at $call_location, of the function-like declared at $callee_location whose return node
+     * is $callee_return_id, is made in that declaration (see $recursive_calls)
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addRecursiveCall(
+        CodeLocation $call_location,
+        CodeLocation $callee_location,
+        string $callee_return_id,
+    ): void {
+        $this->recursive_calls[DataFlowNode::getSpecializationKey($call_location)] = [
+            $callee_location->file_path,
+            strtolower($callee_location->file_name),
+            $callee_location->raw_file_start,
+            $callee_location->raw_file_end,
+            $callee_return_id,
+        ];
+    }
+
+    /**
+     * Records that $argument_node is an argument of the call at $call_location, of the function-like declared at
+     * $callee_location, if the call is unspecialized (see $call_arguments) or, if $specialized, specialized
+     * speculatively (see $speculative_call_arguments)
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addCallArgument(
+        DataFlowNode $argument_node,
+        CodeLocation $call_location,
+        CodeLocation $callee_location,
+        bool $specialized,
+    ): void {
+        $specialization_key = DataFlowNode::getSpecializationKey($call_location);
+        $argument = [
+            $specialization_key,
+            $callee_location->file_path,
+            $callee_location->raw_file_start,
+            $callee_location->raw_file_end,
+        ];
+
+        if (!$specialized) {
+            $this->call_arguments[$argument_node->id] = $argument;
+        } elseif (isset($this->speculative_calls[$specialization_key])) {
+            $this->speculative_call_arguments[$argument_node->id] = $argument;
         }
     }
 
@@ -585,6 +767,15 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->generator_sends[$key] = ($this->generator_sends[$key] ?? []) + $map;
         }
 
+        foreach ($other->param_keys as $key => $map) {
+            $this->param_keys[$key] = ($this->param_keys[$key] ?? []) + $map;
+        }
+
+        $this->call_arguments += $other->call_arguments;
+        $this->speculative_call_arguments += $other->speculative_call_arguments;
+        $this->call_results += $other->call_results;
+        $this->recursive_calls += $other->recursive_calls;
+
         foreach ($other->speculative_calls as $key => $map) {
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
         }
@@ -736,6 +927,24 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         } unset($map);
 
+        // the results of the calls of methods that only read (see getCallResult())
+        $mutation_levels = $codebase->code_use_graph->getMutationLevels();
+        $call_results = [];
+        $call_result_sources = [];
+
+        foreach ($this->call_results as $result_id => $call_result) {
+            [$specialization_key, $function_node_id, $return_id, $declaring_id] = $call_result;
+            $mutation_level = $mutation_levels[$function_node_id] ?? Capabilities::ALL;
+
+            if (($mutation_level & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) === 0) {
+                $call_results[$result_id] = $specialization_key;
+                $call_result_sources[$return_id] = true;
+                $call_result_sources[$declaring_id] = true;
+            }
+        }
+
+        $this->call_results = [];
+
         $resolution = new TaintFlowResolution(
             $this,
             $this->forward_edges,
@@ -745,6 +954,12 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specializations,
             $this->specialized_calls,
             $this->despecialized_calls,
+            $this->read_only_calls,
+            $this->param_keys,
+            $this->call_arguments,
+            $this->recursive_calls,
+            $call_results,
+            $call_result_sources,
             $this->shared_state,
             Config::getInstance(),
             $project_analyzer,

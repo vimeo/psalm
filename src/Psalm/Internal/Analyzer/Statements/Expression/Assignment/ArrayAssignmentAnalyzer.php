@@ -718,6 +718,9 @@ final class ArrayAssignmentAnalyzer
                 return;
             }
 
+            // the parameter the key is, if it is one: the key each call passes (see ArrayFetchAnalyzer::getParamKey())
+            $param_key = ArrayFetchAnalyzer::getParamKey($statements_analyzer, $expr->dim);
+
             foreach ($stmt_type->parent_nodes as $parent_node) {
                 foreach ($child_stmt_type->parent_nodes as $child_parent_node) {
                     if (count($key_values) > 1) {
@@ -738,7 +741,8 @@ final class ArrayAssignmentAnalyzer
                             $removed_taints,
                         );
                     } else {
-                        $key_path_suffix = ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim);
+                        $key_path_suffix = ArrayFetchAnalyzer::getKeyPrefixPathSuffix($statements_analyzer, $expr->dim)
+                            ?? ($param_key !== null ? '-@' . $param_key : null);
 
                         if ($foreach_marker !== null
                             && $key_path_suffix === null

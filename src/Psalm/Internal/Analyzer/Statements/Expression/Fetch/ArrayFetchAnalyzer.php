@@ -94,6 +94,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -200,6 +201,7 @@ final class ArrayFetchAnalyzer
                 $used_key_type,
                 $context,
                 key_prefix_path_suffix: self::getKeyPrefixPathSuffix($statements_analyzer, $stmt->dim),
+                param_key: self::getParamKey($statements_analyzer, $stmt->dim),
             );
 
             // what is written through a reference to the item doesn't flow through the array
@@ -389,6 +391,7 @@ final class ArrayFetchAnalyzer
             $used_key_type,
             $context,
             key_prefix_path_suffix: self::getKeyPrefixPathSuffix($statements_analyzer, $stmt->dim),
+            param_key: self::getParamKey($statements_analyzer, $stmt->dim),
         );
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -493,6 +496,33 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The node of the argument passed to the parameter that the array key $dim is, if it is one of the function-like
+     * analyzed, as passed: then the key of a fetch or assignment in the taint flow graph is the one each call passes
+     * (see TaintFlowResolution::resolveParamKey()).
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getParamKey(StatementsAnalyzer $statements_analyzer, ?PhpParser\Node\Expr $dim): ?string
+    {
+        if ($dim instanceof PhpParser\Node\Expr\Cast\String_) {
+            // the same key, if the parameter is one (see TaintFlowGraph::addParamKey())
+            $dim = $dim->expr;
+        }
+
+        if (!$dim instanceof PhpParser\Node\Expr\Variable || $statements_analyzer->taint_flow_graph === null) {
+            return null;
+        }
+
+        $source = $statements_analyzer->getSource();
+        $parent_nodes = $statements_analyzer->node_data->getType($dim)?->parent_nodes ?? [];
+
+        // not if the parameter was assigned since, whether or not it was before
+        return $source instanceof FunctionLikeAnalyzer && count($parent_nodes) === 1
+            ? $source->getParamKeyNodeId(array_key_first($parent_nodes))
+            : null;
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -500,6 +530,7 @@ final class ArrayFetchAnalyzer
      *
      * @param ?string $key_prefix_path_suffix how the paths encode the key, if only its start is known (see
      *                                        getKeyPrefixPathSuffix())
+     * @param ?string $param_key the parameter the key is (see getParamKey())
      */
     public static function taintArrayFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -511,6 +542,7 @@ final class ArrayFetchAnalyzer
         ?Union $var_type = null,
         ?string $key_prefix_path_suffix = null,
         ?string $foreach_marker = null,
+        ?string $param_key = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $var_type ?? $statements_analyzer->node_data->getType($var))
@@ -568,7 +600,7 @@ final class ArrayFetchAnalyzer
 
             $key_path_suffix = $dim_value !== null
                 ? '-\'' . $dim_value . '\''
-                : $key_prefix_path_suffix ?? '';
+                : $key_prefix_path_suffix ?? ($param_key !== null ? '-@' . $param_key : '');
 
             // the taint flow graph tells the element values a foreach loop fetches (see ForeachAnalyzer)
             $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
