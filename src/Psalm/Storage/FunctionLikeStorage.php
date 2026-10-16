@@ -160,6 +160,22 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public ?Union $capabilities_type = null;
 
     /**
+     * The capabilities a call requires depending on its arguments (`@psalm-capabilities ($id is null ? io : pure)`),
+     * each a conditional over parameters: a call requires the branch its arguments select (see
+     * CallPurityResolver::getOwnCapabilities()). {@see self::$capabilities} includes every branch: it is what the
+     * body may do, and what is required where there is no call to select one.
+     *
+     * @var list<Union>
+     */
+    public array $conditional_capabilities = [];
+
+    /**
+     * The capabilities declared besides {@see self::$conditional_capabilities}, which a call requires whatever its
+     * arguments
+     */
+    public int $unconditional_capabilities = Capabilities::ALL;
+
+    /**
      * Names of the templates (function-level or class-level) this function-like inherits
      * its purity from (`@psalm-purity-from-template T`): purity templates declared with
      * `@psalm-purity-template`, or type templates bound to a closure/callable type. The

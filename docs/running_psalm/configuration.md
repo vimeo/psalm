@@ -800,7 +800,7 @@ Optional. Settings of the [security analysis](../security_analysis/index.md):
 ```xml
 <taintAnalysis>
   <taints>
-    <taint name="nosql_json">
+    <taint name="file_upload">
       <alias name="input" />
     </taint>
     <taint name="session_id" />

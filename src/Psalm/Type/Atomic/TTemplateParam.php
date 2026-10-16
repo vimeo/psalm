@@ -52,6 +52,18 @@ final class TTemplateParam extends Atomic
         return $cloned;
     }
 
+    /**
+     * The same template is a different type once narrowed: `T as Node` is not `T as U`.
+     */
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type instanceof self
+            && $other_type->param_name === $this->param_name
+            && $other_type->defining_class === $this->defining_class
+            && $other_type->as->equals($this->as, $ensure_source_equality, false);
+    }
+
     #[Override]
     public function getKey(bool $include_extra = true): string
     {

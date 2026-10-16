@@ -148,6 +148,34 @@ final class Service {
 }
 ```
 
+### Conditional capabilities
+
+What a call requires may depend on its arguments, like a conditional return type. Each call
+requires the branch its arguments select. Where the arguments may go either way, or there is no
+call (a callable taken from the function), it requires both. The body may do what either branch
+allows.
+
+```php
+<?php
+/** @psalm-capabilities ($seed is null ? io : pure) */
+function makeId(?int $seed = null): int {
+    return $seed ?? random_int(0, PHP_INT_MAX);
+}
+
+/** @psalm-pure */
+function fromSeed(int $seed): int {
+    return makeId($seed); // fine: $seed can't be null
+}
+
+/** @psalm-pure */
+function fresh(): int {
+    return makeId(); // ImpureFunctionCall: The context is pure but function call on makeid requires io
+}
+```
+
+The constructor of `MongoDB\BSON\ObjectId` is stubbed this way: without an id it generates one
+from the clock and a counter of the process, while given an id it only validates it.
+
 ### Closures
 
 Closures don't need an annotation. Psalm infers their capabilities from their bodies and keeps
@@ -225,6 +253,9 @@ final class Logger {
 
 A class extending or implementing one with a contract must have a contract that fits inside it;
 otherwise Psalm reports [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md).
+A marker interface, declaring no method or property and inheriting none, is pure without an
+annotation, as it does nothing; unlike an interface marked `@psalm-pure`, it caps none of its
+implementers.
 Abstract methods, and the methods of interfaces, have no body to infer anything from, so each of
 them needs its own annotation, even inside a class with a contract
 ([MissingAbstractPureAnnotation](../running_psalm/issues/MissingAbstractPureAnnotation.md)); use
@@ -681,8 +712,9 @@ binds the template to, or its default or upper bound when `Sub` doesn't bind it,
 typed `Closure[P]` binds it from the purity of a closure. To bind it from the *kind* of argument
 instead, give the constructor a `@return`: the type of the `new` expression, which is the class
 itself with its template and purity arguments. Like any return type, it may be conditional.
-`ArrayObject` is the typical case: its mutators only write the object itself when it stores an
-array, but also write the object it wraps when given one. A class like it can say so:
+`ArrayObject` and `ArrayIterator` are declared this way: their mutators only write the object
+itself when it stores an array, but also write the object it wraps when given one. A class like
+them can say so:
 
 ```php
 <?php

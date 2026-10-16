@@ -30,6 +30,375 @@ final class CapabilitiesTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalCapabilitiesTakeTheBranchTheArgumentsSelect' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, int $seed): int {
+                        $id = new Id($seed);
+                        return makeId($seed) + $ids->make($seed) + Ids::makeStatic($seed) + $id->value;
+                    }',
+            ],
+            'mongodbDriverCapabilities' => [
+                'code' => '<?php
+                    use MongoDB\BSON\ObjectId;
+                    use MongoDB\Driver\Cursor;
+                    use MongoDB\Driver\Monitoring\Subscriber;
+                    use MongoDB\Driver\Server;
+
+                    /** @psalm-pure */
+                    function id(string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals|io */
+                    function newId(?string $id): ObjectId {
+                        return new ObjectId($id);
+                    }
+
+                    /** @psalm-mutation-free */
+                    function tags(Server $server): array {
+                        return $server->getTags();
+                    }
+
+                    /** @psalm-capabilities write-props|io */
+                    function documents(Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function subscribe(Subscriber $subscriber): void {
+                        MongoDB\Driver\Monitoring\addSubscriber($subscriber);
+                    }',
+            ],
+            'theLastErrorFunctionsOnlyReadGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function lastErrors(): string {
+                        return preg_last_error() . preg_last_error_msg() . json_last_error() . json_last_error_msg();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'splContainersOnlyRequireWritingTheirOwnContents' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function useContainers(): int {
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $queue->push(2);
+                        $sum = 0;
+                        foreach ($queue as $value) {
+                            $sum += $value;
+                        }
+                        $sum += $queue->dequeue() + $queue->count();
+
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $sum += $fixed->getSize();
+
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        $sum += $heap->count();
+
+                        $object = new ArrayObject([5]);
+                        $object->append(6);
+                        $object[] = 7;
+                        $object->asort();
+                        $sum += count($object);
+
+                        $iterator = new ArrayIterator([8]);
+                        $iterator[] = 9;
+                        $iterator->offsetUnset(0);
+                        return $sum + count($iterator);
+                    }
+
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function readContainers(SplQueue $queue, ArrayObject $object): int {
+                        return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
+                    }',
+            ],
+            'splObjectStorageWithVarStillRequiresWritingProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props */
+                    function useStorage(): int {
+                        // new SplObjectStorage() infers its templates as never, so it needs a @var,
+                        // which drops that the object is fresh until
+                        // https://github.com/vimeo/psalm/pull/12178
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $key = new stdClass();
+                        $storage->attach($key, 1);
+                        $storage[$key] = 2;
+                        return $storage[$key] + (int) $storage->contains($key);
+                    }',
+            ],
+            'mutatingAnSplContainerForgetsWhatItsReadersReturned' => [
+                'code' => '<?php
+                    /** @param SplQueue<int> $queue */
+                    function drainQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param SplQueue<int> $queue */
+                    function fillQueue(SplQueue $queue): void {
+                        if ($queue->isEmpty()) {
+                            $queue->enqueue(1);
+                            if ($queue->isEmpty()) {
+                                echo "still empty";
+                            }
+                        }
+                    }
+
+                    /** @param SplMinHeap<int> $heap */
+                    function drainHeap(SplMinHeap $heap): void {
+                        if ($heap->isEmpty()) {
+                            return;
+                        }
+                        $heap->extract();
+                        if ($heap->isEmpty()) {
+                            echo "drained";
+                        }
+                    }
+
+                    /** @param ArrayIterator<int, int> $iterator */
+                    function walk(ArrayIterator $iterator): void {
+                        if (!$iterator->valid()) {
+                            return;
+                        }
+                        $iterator->next();
+                        if (!$iterator->valid()) {
+                            echo "done";
+                        }
+                    }
+
+                    function drainFreshQueue(): void {
+                        /** @var SplQueue<int> */
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        if ($queue->isEmpty()) {
+                            return;
+                        }
+                        $queue->dequeue();
+                        if ($queue->isEmpty()) {
+                            echo "drained";
+                        }
+                    }',
+            ],
+            'iteratingACallersArrayObjectIsMutationFree' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function sum(ArrayObject $object): int {
+                        $sum = 0;
+                        foreach ($object as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+            ],
+            'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class IntHeap extends SplHeap {
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            return $value1 <=> $value2;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function useHeaps(): int {
+                        /** @var SplMinHeap<int> */
+                        $min = new SplMinHeap();
+                        $min->insert(1);
+                        /** @var SplMaxHeap<int> */
+                        $max = new SplMaxHeap();
+                        $max->insert(2);
+                        $heap = new IntHeap();
+                        $heap->insert(3);
+                        return $min->extract() + $max->extract() + $heap->extract();
+                    }
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function resizeFixedArray(): int {
+                        /** @var SplFixedArray<int> */
+                        $fixed = new SplFixedArray(1);
+                        $fixed->setSize(2);
+                        $fixed[1] = 1;
+                        $sum = 0;
+                        foreach ($fixed->getIterator() as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
+                'php_version' => '8.0',
+            ],
+            'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
+                'code' => '<?php
+                    /**
+                     * @param Iterator[pure]<int, string> $inner
+                     * @param RecursiveIterator[pure]<int, string> $tree
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function count_all(Iterator $inner, RecursiveIterator $tree): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        foreach (new RegexIterator($inner, "/a/") as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveIteratorIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new RecursiveTreeIterator($tree) as $_) {
+                            $count++;
+                        }
+                        foreach (new ParentIterator($tree) as $_) {
+                            $count++;
+                        }
+                        $count += iterator_count(new EmptyIterator());
+                        /** @var AppendIterator[pure]<int, string, Iterator[pure]<int, string>> */
+                        $append = new AppendIterator();
+                        $append->append($inner);
+                        foreach ($append as $_) {
+                            $count++;
+                        }
+                        /** @var MultipleIterator[pure]<int, string> */
+                        $multiple = new MultipleIterator();
+                        $multiple->attachIterator($inner);
+                        foreach ($multiple as $_) {
+                            $count++;
+                        }
+                        $cache = new CachingIterator($inner, CachingIterator::FULL_CACHE);
+                        foreach ($cache as $_) {}
+                        $recursive = new RecursiveIteratorIterator($tree);
+                        $recursive->setMaxDepth(2);
+                        return $count + count($cache->getCache()) + $recursive->getDepth();
+                    }',
+            ],
+            'splContainersSerializeTheirOwnState' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function copyContainers(ArrayObject $object, SplObjectStorage $storage): array {
+                        $copy = new ArrayObject();
+                        $copy->__unserialize($object->__serialize());
+                        return $copy->__debugInfo() + $storage->__serialize();
+                    }',
+            ],
+            'splFileInfoPathsAreMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function describe(SplFileInfo $file): string {
+                        return $file->getPath() . $file->getFilename() . $file->getExtension() . $file->getBasename(".txt");
+                    }',
+            ],
+            'splFilesAndDirectoriesRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function countLines(string $path): int {
+                        $count = 0;
+                        foreach (new SplFileObject($path) as $_) {
+                            $count++;
+                        }
+                        foreach (new DirectoryIterator($path) as $entry) {
+                            if (!$entry->isDot() && $entry->getMTime() > 0) {
+                                $count++;
+                            }
+                        }
+                        $temp = new SplTempFileObject();
+                        $temp->fwrite("line");
+                        return $count;
+                    }',
+            ],
+            'splObserverBindingItsPurityIsMutationFree' => [
+                'code' => '<?php
+                    /** @implements SplObserver[pure] */
+                    final class Observer implements SplObserver {
+                        public int $updates = 0;
+
+                        /** @psalm-mutation-free */
+                        #[Override]
+                        public function update(SplSubject $subject): void {}
+                    }
+
+                    /** @psalm-mutation-free */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
+            ],
+            'mutatingAFreshSplContainerIsMutationFree' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function useFreshContainers(): int {
+                        $queue = new SplQueue();
+                        $queue->enqueue(1);
+                        $stack = new SplStack();
+                        $stack->push(2);
+                        $fixed = new SplFixedArray(1);
+                        $fixed[0] = 3;
+                        $fixed->setSize(2);
+                        $heap = new SplMinHeap();
+                        $heap->insert(4);
+                        $priority_queue = new SplPriorityQueue();
+                        $priority_queue->insert(5, 1);
+                        $queue->dequeue();
+                        $stack->pop();
+                        $heap->extract();
+                        return count($queue) + count($stack) + count($heap) + count($fixed) + count($priority_queue);
+                    }',
+            ],
             'serializeOfScalarsIsPure' => [
                 'code' => '<?php
                     /**
@@ -65,6 +434,8 @@ final class CapabilitiesTest extends TestCase
                     function encode(array $values): mixed {
                         return igbinary_serialize($values);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'phpredisCommandsRequireIo' => [
@@ -241,6 +612,89 @@ final class CapabilitiesTest extends TestCase
                     /** @psalm-capabilities read-globals */
                     function autoloaders(): array {
                         return spl_autoload_functions();
+                    }',
+            ],
+            'splObjectStorageOnlyRequiresWritingItsOwnContents' => [
+                'code' => '<?php
+                    final class Node {
+                        /** @var SplObjectStorage<Node, true> */
+                        private SplObjectStorage $seen;
+
+                        /** @psalm-capabilities read-props */
+                        public function __construct() {
+                            /** @var SplObjectStorage<Node, true> $seen */
+                            $seen = new SplObjectStorage();
+                            $seen[$this] = true;
+                            $this->seen = $seen;
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        public function hasSeen(Node $node): bool {
+                            return isset($this->seen[$node]) && $this->seen->contains($node) && count($this->seen) > 0;
+                        }
+                    }
+
+                    /** @psalm-capabilities pure */
+                    function useFreshStorage(stdClass $key): int {
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $storage->attach($key, 1);
+                        $storage[$key] = $storage[$key] + 1;
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $other = new SplObjectStorage();
+                        $other->addAll($storage);
+                        $other->detach($key);
+                        unset($storage[$key]);
+                        return count($storage) + count($other);
+                    }
+
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function addToStorage(SplObjectStorage $storage, stdClass $key): void {
+                        $storage[$key] = 1;
+                        $storage->attach(new stdClass(), 2);
+                    }',
+            ],
+            'fillingAFreshSplObjectStorageWithoutATypeIsPure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities pure */
+                    function useFreshStorage(object $key): bool {
+                        $storage = new SplObjectStorage();
+                        $storage->offsetSet($key, "a");
+                        $storage->offsetSet($key, $storage->offsetGet($key) . "a");
+                        return $storage->offsetExists($key);
+                    }',
+            ],
+            'mutatingAnSplObjectStorageForgetsWhatItsReadersReturned' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props|write-props|io
+                     */
+                    function attachOnce(SplObjectStorage $storage, stdClass $key): void {
+                        if ($storage->contains($key)) {
+                            return;
+                        }
+                        $storage->attach($key, 1);
+                        if ($storage->contains($key)) {
+                            echo "attached";
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function detachFresh(stdClass $key): void {
+                        /** @var SplObjectStorage<stdClass, int> */
+                        $storage = new SplObjectStorage();
+                        $storage[$key] = 1;
+                        if (!isset($storage[$key])) {
+                            return;
+                        }
+                        unset($storage[$key]);
+                        if (!isset($storage[$key])) {
+                            echo "detached";
+                        }
                     }',
             ],
             'traversableWithPurityCombinesWithIterable' => [
@@ -432,6 +886,8 @@ final class CapabilitiesTest extends TestCase
                     function readTime(): int {
                         return read(fn(): int => time());
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'datesOfAGivenTimestampArePure' => [
@@ -1635,6 +2091,133 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'methodCalledByAnUnknownNameNeedsTheClassContract' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Conn $conn, string $name): mixed {
+                        return $conn->{$name}("k");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodNeedsTheClassContract' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Conn $conn, string $name): mixed {
+                        $callable = [$conn, $name];
+                        return $callable("k");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameOnAnIntersectionNeedsTheContractOfEachPart' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Logs&Counts $object, string $name): mixed {
+                        $callable = [$object, $name];
+                        $callable();
+                        return $object->{$name}();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodOfAnotherPartOfAnIntersectionNeedsItsCapabilities' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    interface Resets {
+                        /** @psalm-capabilities write-globals */
+                        public function reset(): void;
+                    }
+
+                    /** @psalm-capabilities read-props|write-globals */
+                    function resetIt(Named&Resets $object): void {
+                        $callable = [$object, "reset"];
+                        $callable();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodOfThisNeedsWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function call(string $name): void {
+                            [$this, $name]();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function callFresh(string $name): void {
+                        [new Counter(), $name]();
+                    }',
+            ],
+            'callsOfUnknownMethodsWriteOnlyTheReferencesPassed' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /**
+                     * @param list<mixed> $arguments
+                     * @psalm-capabilities read-props|write-props|io
+                     */
+                    function call(Conn $conn, string $name, array $arguments): mixed {
+                        $callable = [$conn, $name];
+                        $callable(...$arguments);
+                        $callable(strtolower($name), "k");
+                        return $conn->{$name}(...$arguments);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1645,6 +2228,358 @@ final class CapabilitiesTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return makeId();
+                    }',
+                'error_message' => 'The context is read-props but function call on makeid requires io',
+            ],
+            'conditionalCapabilitiesOfAMethodCalledWithANullableArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return $ids->make($seed);
+                    }',
+                'error_message' => 'The context is read-props but method Ids::make requires io',
+            ],
+            'conditionalCapabilitiesOfAStaticMethodCalledWithNull' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return Ids::makeStatic(null);
+                    }',
+                'error_message' => 'The context is read-props but method Ids::makeStatic requires io',
+            ],
+            'conditionalCapabilitiesOfAConstructorCalledWithoutTheArgument' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? io : pure) */
+                    function makeId(?int $seed = null): int {
+                        return $seed ?? random_int(0, 10);
+                    }
+
+                    final class Ids {
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function make(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public static function makeStatic(?int $seed = null): int {
+                            return $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Id {
+                        public int $value;
+
+                        /** @psalm-capabilities ($seed is null ? io : pure) */
+                        public function __construct(?int $seed = null) {
+                            $this->value = $seed ?? random_int(0, 10);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function caller(Ids $ids, ?int $seed): int {
+                        return (new Id())->value;
+                    }',
+                'error_message' => 'The context is read-props but constructor Id::__construct requires io',
+            ],
+            'conditionalCapabilitiesBoundTheBodyByEveryBranch' => [
+                'code' => '<?php
+                    /** @psalm-capabilities ($seed is null ? read-props : pure) */
+                    function makeId(?int $seed): int {
+                        return $seed ?? random_int(0, 10);
+                    }',
+                'error_message' => 'The context is read-props but function call on random_int requires io',
+            ],
+            'conditionalCapabilitiesMustBeAConditional' => [
+                'code' => '<?php
+                    /** @psalm-capabilities (io) */
+                    function makeId(): int {
+                        return random_int(0, 10);
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'mongodbObjectIdWithoutAnIdIsGenerated' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function newId(): MongoDB\BSON\ObjectId {
+                        return new MongoDB\BSON\ObjectId();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'mongodbCursorIterationFetches' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function documents(MongoDB\Driver\Cursor $cursor): array {
+                        return $cursor->toArray();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'writingACallersSplObjectStorageRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<stdClass, int> $storage
+                     * @psalm-capabilities read-props
+                     */
+                    function add(SplObjectStorage $storage, stdClass $key): void {
+                        $storage[$key] = 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method SplObjectStorage::offsetSet requires write-props',
+            ],
+            'theLastPcreErrorIsNotPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lastError(): string {
+                        return preg_last_error_msg();
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on preg_last_error_msg requires read-globals',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'writingACallersSplQueueRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param SplQueue<int> $queue
+                     * @psalm-mutation-free
+                     */
+                    function add(SplQueue $queue): int {
+                        $queue->enqueue(1);
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method SplQueue::enqueue requires write-props',
+            ],
+            'serializingAnSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplObjectStorage<object, mixed> $storage
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplObjectStorage $storage): string {
+                        return $storage->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splObjectStorageSubclassesKeepItsContract' => [
+                'code' => '<?php
+                    /** @extends SplObjectStorage<object, mixed> */
+                    final class Storage extends SplObjectStorage {}',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49 - SplObjectStorage is marked with @psalm-capabilities read-props|write-this-props, but Storage is not',
+            ],
+            'splHeapSubclassesMustCompareWithoutSideEffects' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplHeap<int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class LoudHeap extends SplHeap {
+                        #[Override]
+                        protected function compare($value1, $value2): int {
+                            echo "comparing";
+                            return $value1 <=> $value2;
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency',
+            ],
+            'wrappingAnImpureIteratorIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function count_all(Iterator $inner): int {
+                        $count = 0;
+                        foreach (new CachingIterator($inner) as $_) {
+                            $count++;
+                        }
+                        return $count;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'readingFileMetadataRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function modified(SplFileInfo $file): int {
+                        return (int) $file->getMTime();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38 - The context is read-props but method SplFileInfo::getMTime requires io',
+            ],
+            'serializingAnSplDoublyLinkedListMayDoAnything' => [
+                'code' => '<?php
+                    /**
+                     * @param SplDoublyLinkedList<int> $list
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function save(SplDoublyLinkedList $list): string {
+                        return $list->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'splObserverNotBindingItsPurityMayDoAnything' => [
+                'code' => '<?php
+                    final class Observer implements SplObserver {
+                        #[Override]
+                        public function update(SplSubject $subject): void {
+                            echo "updated";
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function notify(Observer $observer, SplSubject $subject): bool {
+                        $observer->update($subject);
+                        return true;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'arrayObjectBackedByAnObjectWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $object = new ArrayObject($storage);
+                        $object["key"] = 1;
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'arrayIteratorBackedByAnObjectWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $iterator = new ArrayIterator($storage);
+                        $iterator["key"] = 1;
+                        return count($iterator);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayIterator::offsetSet requires write-props',
+            ],
+            'arrayObjectExchangingItsStorageWritesProps' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function swap(stdClass $storage): int {
+                        $object = new ArrayObject(["key" => 0]);
+                        $object->exchangeArray($storage);
+                        $object["key"] = 1;
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - The context is pure but method ArrayObject::exchangeArray requires write-props',
+            ],
+            'arrayObjectOfUnknownStorageWritesProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-mutation-free
+                     */
+                    function fill(ArrayObject $object): void {
+                        $object->append(1);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method ArrayObject::append requires write-props',
+            ],
+            'arrayIteratorOfUnknownStorageWritesProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayIterator<int, int> $iterator
+                     * @psalm-mutation-free
+                     */
+                    function fill(ArrayIterator $iterator): void {
+                        $iterator->append(1);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method ArrayIterator::append requires write-props',
+            ],
+            'splContainerSubclassesKeepTheirContract' => [
+                'code' => '<?php
+                    /** @extends SplQueue<int> */
+                    final class Queue extends SplQueue {}',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:47 - SplQueue is marked with @psalm-capabilities read-props|write-this-props, but Queue is not',
+            ],
+            'serializingAFreshSplContainerMayDoAnything' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    function save(): string {
+                        $queue = new SplQueue();
+                        return $queue->serialize();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'serializeOfAnArrayOfObjectsRequiresIo' => [
                 'code' => '<?php
                     /**
@@ -1685,6 +2620,7 @@ final class CapabilitiesTest extends TestCase
                         return igbinary_unserialize($data);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'igbinarySerializeOfAnObjectRequiresIo' => [
@@ -1694,6 +2630,7 @@ final class CapabilitiesTest extends TestCase
                         return igbinary_serialize($value);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'phpredisSubscribeChargesTheCallback' => [
@@ -1763,6 +2700,17 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is io but function call on time requires time',
             ],
+            'callOnMixedMayDoAnything' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-globals */
+                    function pick(mixed $selector): mixed {
+                        /** @psalm-suppress MixedFunctionCall */
+                        return $selector(1);
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - The context is read-globals but function call on mixed requires impure',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'dateWithoutTimestampReadsTheClock' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1786,6 +2734,7 @@ final class CapabilitiesTest extends TestCase
                         return getdate($ts)["year"];
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on getdate requires time',
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'mktimeWithNullArgumentReadsTheClock' => [
@@ -1795,6 +2744,7 @@ final class CapabilitiesTest extends TestCase
                         return (string) mktime(0, 0, 0, 1, $day, 2000);
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:41 - The context is pure but function call on mktime requires time',
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'vprintfRequiresIo' => [
@@ -3678,6 +4628,266 @@ final class CapabilitiesTest extends TestCase
                 'error_message' => 'ImpureMethodCall',
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'methodCalledByAnUnknownNameOfAClassWithoutAContractIsImpure' => [
+                'code' => '<?php
+                    final class Conn {
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function call(Conn $conn, string $name): mixed {
+                        return $conn->{$name}("k");
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameMayDoWhatTheClassContractAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Conn $conn, string $name): mixed {
+                        return $conn->{$name}("k");
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodMayDoWhatTheClassContractAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Conn $conn, string $name): mixed {
+                        $callable = [$conn, $name];
+                        return $callable("k");
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameMayWriteAReferenceParamPassed' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|io */
+                    function call(Conn $conn, string $name, string &$out): mixed {
+                        return $conn->{$name}($out);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameOnAnIntersectionWithAPartWithoutAContractIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    interface Unknown {
+                        /** @psalm-impure */
+                        public function run(): void;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function call(Named&Unknown $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameOfAMarkerInterfaceIsImpure' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @psalm-capabilities read-props */
+                    function call(Marker $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodOfAMarkerInterfaceIsImpure' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    interface Marker {}
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Logs&Marker $object, string $name): void {
+                        $callable = [$object, $name];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCalledByAnUnknownNameOnAnIntersectionMayDoWhatAnyPartAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Logs&Counts $object, string $name): mixed {
+                        return $object->{$name}();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - The context is read-props|io but method (Logs&Counts)::{unknown} requires write-props|io',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodOnAnIntersectionMayDoWhatAnyPartAllows' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    interface Logs {}
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    interface Counts {}
+
+                    /** @psalm-capabilities read-props|write-props */
+                    function call(Counts&Logs $object, string $name): void {
+                        $callable = [$object, $name];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodOfAnotherPartOfAnIntersectionMayDoWhatItDoes' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    interface Named {
+                        /** @psalm-capabilities read-props */
+                        public function name(): string;
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    interface Resets {
+                        /** @psalm-capabilities write-globals */
+                        public function reset(): void;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function resetIt(Named&Resets $object): void {
+                        $callable = [$object, "reset"];
+                        $callable();
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:25 - The context is read-props but method Resets::reset requires write-globals',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayWithAnUnknownMethodOfThisMayWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function call(string $name): void {
+                            [$this, $name]();
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - The context is read-props|write-props but function call on list{Counter, string} requires write-this-props|write-props',
+            ],
+            'callableArrayWithAnUnknownMethodOfAVariableMayWriteThisProps' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    final class Counter {
+                        private int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): void {
+                            $this->count++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function call(string $name): void {
+                            $callable = [$this, $name];
+                            $callable();
+                        }
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'callableArrayWithAnUnknownMethodOfAnObjectFromGlobalStateWritesGlobals' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-props|io */
+                    function call(string $name): void {
+                        /** @var Conn $conn */
+                        global $conn;
+                        [$conn, $name]("k");
+                    }',
+                'error_message' => 'requires write-props|write-globals|io',
+            ],
+            'callableArrayWithAnUnknownMethodMayWriteAPropertyPassed' => [
+                'code' => '<?php
+                    final class Holder {
+                        public string $value = "";
+                    }
+
+                    /** @psalm-capabilities read-props|write-refs|io */
+                    final class Conn {
+                        /** @psalm-capabilities io */
+                        public function get(string $k): string {
+                            echo $k;
+                            return $k;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|io */
+                    function call(Conn $conn, string $name, Holder $holder): mixed {
+                        $callable = [$conn, $name];
+                        return $callable($holder->value);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

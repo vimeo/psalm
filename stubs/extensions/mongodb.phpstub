@@ -20,11 +20,14 @@ namespace MongoDB\BSON
         public function __toString(): string;
     }
 
-    /**
-     * Without an id, the constructor generates a new one, which is not pure.
-     */
     final class ObjectId implements Stringable, ObjectIdInterface, JsonSerializable, Type, Serializable
     {
+        /**
+         * Without an id, the constructor generates a new one from the clock and a counter of the process. Given an
+         * id, it only validates it.
+         *
+         * @psalm-capabilities ($id is null ? read-globals|write-globals|io : pure)
+         */
         final public function __construct(?string $id = null)
         {
         }
@@ -274,12 +277,40 @@ namespace MongoDB\Driver
     }
 
     /**
+     * Iterating fetches the next batches of results from the server, keeping the position and the current
+     * document in the cursor.
+     *
      * @template-covariant TValue of array|object
      *
      * @template-implements CursorInterface<int, TValue>
+     *
+     * @psalm-capabilities read-props|write-this-props|io
      */
     final class Cursor implements CursorInterface
     {
+        /** @psalm-mutation-free */
+        final public function getId(): \MongoDB\BSON\Int64
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getServer(): Server
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isDead(): bool
+        {
+        }
+
+        /**
+         * @param array<string, mixed> $typemap
+         * @psalm-capabilities read-props|write-this-props
+         */
+        final public function setTypeMap(array $typemap): void
+        {
+        }
+
         /**
          * @return TValue
          */
@@ -323,9 +354,35 @@ namespace MongoDB\Driver
         }
     }
 
+    /**
+     * Commands and server selection talk to the servers; the manager keeps their topology, and its own
+     * subscribers.
+     *
+     * @psalm-capabilities read-props|write-this-props|io
+     */
     final class Manager
     {
+        /**
+         * It may resolve the hosts of the URI (mongodb+srv), and reuses the connections of the process.
+         *
+         * @psalm-capabilities read-globals|write-globals|io
+         */
         final public function __construct(?string $uri = null, array $uriOptions = [], array $driverOptions = [])
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getReadConcern(): ReadConcern
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getReadPreference(): ReadPreference
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getWriteConcern(): WriteConcern
         {
         }
 
@@ -340,6 +397,77 @@ namespace MongoDB\Driver
          * @return Cursor<array|object>
          */
         final public function executeCommand(string $db, Command $command, $options = null): Cursor
+        {
+        }
+    }
+
+    /**
+     * A server as the manager last saw it: its getters read that description; commands talk to it.
+     *
+     * @psalm-capabilities read-props|io
+     */
+    final class Server
+    {
+        /** @psalm-mutation-free */
+        final public function getHost(): string
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getInfo(): array
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getLatency(): ?int
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getPort(): int
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getServerDescription(): ServerDescription
+        {
+        }
+
+        /**
+         * @return array<string, string>
+         * @psalm-mutation-free
+         */
+        final public function getTags(): array
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function getType(): int
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isArbiter(): bool
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isHidden(): bool
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isPassive(): bool
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isPrimary(): bool
+        {
+        }
+
+        /** @psalm-mutation-free */
+        final public function isSecondary(): bool
         {
         }
     }
@@ -412,6 +540,29 @@ namespace MongoDB\Driver
         final public function count(): int
         {
         }
+    }
+}
+
+namespace MongoDB\Driver\Monitoring
+{
+    interface Subscriber
+    {
+    }
+
+    /**
+     * Subscribes to the events of every manager of the process
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    function addSubscriber(Subscriber $subscriber): void
+    {
+    }
+
+    /**
+     * @psalm-capabilities read-globals|write-globals
+     */
+    function removeSubscriber(Subscriber $subscriber): void
+    {
     }
 }
 

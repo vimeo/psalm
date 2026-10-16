@@ -25,6 +25,9 @@ final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
         return ['DomNode'];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
     {

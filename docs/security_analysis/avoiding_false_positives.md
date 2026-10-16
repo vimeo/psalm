@@ -28,7 +28,7 @@ echoVar($_GET["text"]);
 
 ## Types
 
-A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, a string can't be a NoSQL query document, and a literal string (a value the code wrote, or one Psalm knows is among such values) can't hold anything the client sent. An array holds what its keys and values can: `list<int>` holds no HTML, while the string keys of `array<string, int>` can hold anything. A union holds what any of its types can hold, and `null` holds nothing.
+A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, a string can't be a NoSQL query document (but what `json_decode()`, `unserialize()`, `parse_str()` and the other decoders build out of it can), and a literal string (a value the code wrote, or one Psalm knows is among such values) can't hold anything the client sent. An array holds what its keys and values can: `list<int>` holds no HTML, while the string keys of `array<string, int>` can hold anything. A union holds what any of its types can hold, and `null` holds nothing.
 
 Psalm removes the taints a value can't carry where it is cast, passed to a function, returned, or assigned to a variable or a property, using the type it infers for the value, and where PHP guarantees a type:
 

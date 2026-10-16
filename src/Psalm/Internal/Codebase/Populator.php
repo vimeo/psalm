@@ -496,6 +496,21 @@ final class Populator
 
         $this->resolveDeferredCapabilities($storage);
 
+        if ($storage->is_interface
+            && !$storage->has_mutations_annotation
+            && $storage->declaring_method_ids === []
+            && $storage->pseudo_methods === []
+            && $storage->pseudo_static_methods === []
+            && $storage->declaring_property_ids === []
+            && $storage->pseudo_property_get_types === []
+            && $storage->pseudo_property_set_types === []
+        ) {
+            // a marker interface does nothing: it is pure
+            $storage->is_marker_interface = true;
+            $storage->has_mutations_annotation = true;
+            $storage->capabilities = Capabilities::NONE;
+        }
+
         foreach ($storage->methods as $method) {
             if ($method->capabilities_type !== null) {
                 $this->resolveDeferredCapabilities($method);
