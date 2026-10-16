@@ -659,7 +659,6 @@ final class SymbolLookupTest extends TestCase
 
     /**
      * @return array<int, array{0: Position, 1: ?string, 2: ?int, 3: ?int}>
-     *
      * @psalm-pure
      */
     public function providerGetSignatureHelp(): array

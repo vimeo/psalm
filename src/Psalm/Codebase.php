@@ -2605,7 +2605,6 @@ final class Codebase
 
     /**
      * @return list<CompletionItem>
-     *
      * @psalm-capabilities read-props
      */
     public function getCompletionItemsForType(Union $type): array

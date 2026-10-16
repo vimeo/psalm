@@ -3155,7 +3155,6 @@ final class Config
 
     /**
      * @internal
-     *
      * @psalm-capabilities read-props
      */
     public function getCacheSerializer(): Serializer
