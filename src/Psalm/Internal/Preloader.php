@@ -22,7 +22,7 @@ final class Preloader
         }
 
         $progress?->startPhase($hasJit ? Phase::JIT_COMPILATION : Phase::PRELOADING);
-        $progress?->expand(count(PreloaderList::CLASSES)+1);
+        $progress?->expand(count(PreloaderList::CLASSES));
 
         foreach (PreloaderList::CLASSES as $class) {
             $progress?->taskDone(0);

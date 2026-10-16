@@ -524,8 +524,6 @@ final class ProjectAnalyzer
             $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
         }
 
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
         $this->codebase->analyzer->analyzeFiles(
             $this,
             $this->threads,
@@ -895,8 +893,6 @@ final class ProjectAnalyzer
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
         $this->codebase->analyzer->analyzeFiles(
             $this,
             $this->threads,
@@ -1003,8 +999,6 @@ final class ProjectAnalyzer
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
-
         $this->codebase->analyzer->analyzeFiles(
             $this,
             $this->threads,
@@ -1068,8 +1062,6 @@ final class ProjectAnalyzer
         $event = new AfterCodebasePopulatedEvent($this->codebase);
 
         $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
-
-        $this->progress->startPhase(Phase::ANALYSIS, $this->threads);
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
