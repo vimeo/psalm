@@ -141,10 +141,6 @@ final class Populator
     }
 
     /**
-     * Applies a `@psalm-capabilities` value naming imported type aliases, which the scanner
-     * could not resolve because the declaring class may not have been scanned yet.
-     */
-    /**
      * A readonly class (whose subclasses PHP requires to be readonly too), or a final class without a parent
      * whose properties are all readonly or computed by a get hook.
      *
@@ -174,6 +170,10 @@ final class Populator
         return true;
     }
 
+    /**
+     * Applies a `@psalm-capabilities` value naming imported type aliases, which the scanner
+     * could not resolve because the declaring class may not have been scanned yet.
+     */
     private function resolveDeferredCapabilities(ClassLikeStorage|FunctionLikeStorage $storage): void
     {
         if ($storage->capabilities_type === null) {
