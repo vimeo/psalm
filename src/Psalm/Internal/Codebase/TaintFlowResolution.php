@@ -964,8 +964,8 @@ final class TaintFlowResolution
 
         $queue = array_keys($key_params);
 
-        while ($queue) {
-            foreach ($this->param_keys[array_pop($queue)] ?? [] as $call => $key) {
+        while (($key_param = array_pop($queue)) !== null) {
+            foreach ($this->param_keys[$key_param] ?? [] as $call => $key) {
                 $this->key_param_calls[$call] = true;
                 $passed_on = substr($key, 1);
 
@@ -2308,6 +2308,40 @@ final class TaintFlowResolution
     }
 
     /**
+     * The path type $path_type, whose key is a parameter (see $path_type_params), with the key the flows in context
+     * $context with open assignments $open_assignments from state $predecessor have bound to it, and the parameter
+     * a fetch outside of any call guards (see addParamGuard()), or null if no call entering the context passes a
+     * key yet (see resolveParamKey())
+     *
+     * @return array{int, ?string}|null
+     */
+    private function resolveParamPathType(int $context, int $open_assignments, int $predecessor, int $path_type): ?array
+    {
+        [$param, $base] = $this->path_type_params[$path_type];
+        $call = $this->open_assignments[$open_assignments][3];
+        $bound_key = $this->resolveBoundKey($param, $call);
+        $guarded_param = null;
+
+        if ($bound_key !== null) {
+            // the flow entered the body through the arguments of an unspecialized call passing it
+            $key = $bound_key;
+        } elseif (!str_starts_with($call, '=') && $this->isOutsideOfCalls($context)) {
+            $key = '';
+            $guarded_param = $base === 'arrayvalue-fetch' && isset($this->param_keys[$param]) ? $param : null;
+        } else {
+            // the calls entering the context, or the flows entering the convergence did (see
+            // getConvergenceOpenAssignments())
+            $key = $this->resolveParamKey($context, $param, $predecessor);
+
+            if ($key === null) {
+                return null;
+            }
+        }
+
+        return [$this->getPathTypeId($key === '' ? $base : $base . '-' . $key), $guarded_param];
+    }
+
+    /**
      * Takes the edge from $from_id to $to_id of type $path_type with the flows in context $context with open
      * assignments $open_assignments before it, and keeping $kept and adding $added taints past it, from state
      * $predecessor (seen through the calls of $link): reports the flow into the sink it reaches if any, and
@@ -2327,32 +2361,13 @@ final class TaintFlowResolution
         $guarded_param = null;
 
         if (isset($this->path_type_params[$path_type])) {
-            [$param, $base] = $this->path_type_params[$path_type];
-            $call = $this->open_assignments[$open_assignments][3];
-            $bound_key = $this->resolveBoundKey($param, $call);
+            $resolved = $this->resolveParamPathType($context, $open_assignments, $predecessor, $path_type);
 
-            if ($bound_key !== null) {
-                // the flow entered the body through the arguments of an unspecialized call passing it
-                $key = $bound_key;
-            } elseif (str_starts_with($call, '=')) {
-                // the flows entering the convergence did (see getConvergenceOpenAssignments())
-                $key = $this->resolveParamKey($context, $param, $predecessor);
-
-                if ($key === null) {
-                    return;
-                }
-            } elseif ($this->isOutsideOfCalls($context)) {
-                $key = '';
-                $guarded_param = $base === 'arrayvalue-fetch' && isset($this->param_keys[$param]) ? $param : null;
-            } else {
-                $key = $this->resolveParamKey($context, $param, $predecessor);
-
-                if ($key === null) {
-                    return;
-                }
+            if ($resolved === null) {
+                return;
             }
 
-            $path_type = $this->getPathTypeId($key === '' ? $base : $base . '-' . $key);
+            [$path_type, $guarded_param] = $resolved;
         }
 
         $next_open_assignments = $this->open_assignment_transitions[$open_assignments][$path_type]

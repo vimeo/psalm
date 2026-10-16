@@ -499,6 +499,8 @@ final class ArrayFetchAnalyzer
      * The node of the argument passed to the parameter that the array key $dim is, if it is one of the function-like
      * analyzed, as passed: then the key of a fetch or assignment in the taint flow graph is the one each call passes
      * (see TaintFlowResolution::resolveParamKey()).
+     *
+     * @psalm-capabilities read-props
      */
     public static function getParamKey(StatementsAnalyzer $statements_analyzer, ?PhpParser\Node\Expr $dim): ?string
     {
