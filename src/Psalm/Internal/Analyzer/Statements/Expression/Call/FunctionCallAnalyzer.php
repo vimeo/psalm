@@ -90,6 +90,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
@@ -516,6 +517,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
      * MethodCallPurityAnalyzer::getClassContractCapabilities()). A method writing the object's own properties writes
      * those of the receiver: the caller's `$this` or another object, unless the callable is written out in the call
      * (`[$this, $method]()`). Any other callable may do anything.
+     *
+     * @return CapabilitySet
      */
     private static function getCallableArrayContractCapabilities(
         StatementsAnalyzer $statements_analyzer,

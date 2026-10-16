@@ -17,11 +17,15 @@ use Psalm\Type\Atomic;
  *
  * @psalm-immutable
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class TCapabilities extends Atomic
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    /**
+     * @param CapabilitySet $capabilities
+     */
     public function __construct(
         public int $capabilities,
         bool $from_docblock = false,
