@@ -20,6 +20,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassDocblockManipulator
 {
@@ -32,7 +33,11 @@ final class ClassDocblockManipulator
 
     private readonly int $docblock_end;
 
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet|null
+     */
     private ?int $capabilities = null;
 
     private readonly string $indentation;
@@ -74,7 +79,7 @@ final class ClassDocblockManipulator
     }
 
     /**
-     * @param int $capabilities a bitmask of {@see Capabilities} constants
+     * @param CapabilitySet $capabilities a bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
     public function setCapabilities(int $capabilities): void
