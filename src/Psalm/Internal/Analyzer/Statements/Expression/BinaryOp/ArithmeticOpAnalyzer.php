@@ -985,7 +985,7 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function arithmeticOperation(
         PhpParser\Node $operation,

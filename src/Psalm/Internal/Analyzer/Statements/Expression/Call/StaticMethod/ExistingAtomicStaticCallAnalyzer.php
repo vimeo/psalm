@@ -303,6 +303,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 Capabilities::NONE,
                 $template_result,
                 $found_generic_params ?? [],
+                args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             );
             $resolved_capabilities = $template_capabilities
                 | CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
@@ -691,7 +692,7 @@ final class ExistingAtomicStaticCallAnalyzer
     /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      *
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-pure
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
     {

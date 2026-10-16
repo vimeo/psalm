@@ -17,10 +17,12 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -418,7 +420,13 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             // unsetting a property is a write, so the set visibility applies
-            if ($context->inside_unset
+            if (UnsetAnalyzer::writesFetchedProperty(
+                $context,
+                $stmt,
+                $codebase->properties->hasStorage($property_id)
+                    ? $codebase->properties->getStorage($property_id)->type
+                    : null,
+            )
                 && ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     $context,
@@ -511,7 +519,7 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->inside_unset) {
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $property_storage->type)) {
                 InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
                     $statements_analyzer,
                     $stmt,
@@ -545,10 +553,8 @@ final class AtomicPropertyFetchAnalyzer
             $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
         }
 
-        if (!($class_storage->isExternalMutationFree()
-            && $class_property_type->allow_mutations)
-        ) {
-            if ($context->inside_unset) {
+        if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
                 $statements_analyzer->signalMutation(
                     $stmt_var_id === '$this'
                         ? Capabilities::WRITE_THIS_PROPS
@@ -1144,6 +1150,22 @@ final class AtomicPropertyFetchAnalyzer
             $stmt,
             new Union($case_values),
         );
+    }
+
+    /**
+     * Whether accessing a property of the object needs no capability: the object is immutable, or the
+     * caller created it, from a class whose contract keeps its changes to itself or with a constructor that
+     * can't keep a reference to it (see NewAnalyzer), so nobody else can see or change its properties. This
+     * is the same waiver a method call on such an object gets, and writing its properties.
+     */
+    public static function isFreeToAccess(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        ClassLikeStorage $class_storage,
+    ): bool {
+        return $class_storage->isMutationFree()
+            || (MethodCallPurityAnalyzer::receiverAllowsInternalMutations($statements_analyzer, $stmt->var)
+                && !MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $stmt->var));
     }
 
     private static function handleUndefinedProperty(

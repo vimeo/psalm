@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 
 /**
  * @api
+ * @psalm-mutable
  * @psalm-import-type CapabilitySet from Capabilities
  */
 final class DynamicFunctionStorage
@@ -56,6 +57,7 @@ final class DynamicFunctionStorage
 
     /**
      * @internal
+     * @psalm-capabilities read-props
      */
     public function toFunctionStorage(string $function_cased_name): FunctionStorage
     {

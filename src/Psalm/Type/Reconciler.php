@@ -1459,14 +1459,14 @@ class Reconciler
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      */
     protected static function refineArrayKey(Union $key_type): Union
     {
         return self::refineArrayKeyInner($key_type) ?? $key_type;
     }
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props
      */
     private static function refineArrayKeyInner(Union $key_type): ?Union
     {
