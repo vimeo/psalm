@@ -177,9 +177,11 @@ final class TaintFlowResolution
      * putting what they return for an element back under its key, components passing arrays of options on through
      * many levels, ... Convergence (see enterConvergence()) doesn't help in a body walk the flows of a single call
      * reach, since it leaves through all the call sites. A node that holds that many states lets the flows reaching
-     * it in more forget what they would only use to tell apart deeper fetches.
+     * it in more forget what they would only use to tell apart deeper fetches. On Psalm's own code, 1024 made
+     * 14M states, most of the 20 GB its self-analysis took: past 16, a fetch takes the flows of a node whose keys
+     * it would tell apart.
      */
-    private const WIDENING_STATES = 1024;
+    private const WIDENING_STATES = 16;
 
     /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
@@ -212,9 +214,11 @@ final class TaintFlowResolution
 
     /**
      * How many convergences of a node know the innermost open assignments of the flows entering them at most
-     * (see getConvergenceOpenAssignments())
+     * (see getConvergenceOpenAssignments()).
+     *
+     * 8 rather than 32: on Psalm's own code, 32 made 630k convergences, two thirds of the memory of the resolution.
      */
-    private const MAX_CONVERGENCE_KEYS = 32;
+    private const MAX_CONVERGENCE_KEYS = 8;
 
     /**
      * The bits of a packed observable depth (see computeObservableDepths()) for each expression type
@@ -626,8 +630,8 @@ final class TaintFlowResolution
     private array $entry_taints = [];
 
     /**
-     * Entry => taint => the flow entering it that gave it that taint first, which traces go back to (see
-     * buildTrace())
+     * Entry => the flow entering it that gave it some taints first, which traces go back to (see buildTrace())
+     * => those taints. A few flows give an entry all its taints: keyed by taint, it took millions of entries.
      *
      * @var array<int, array<int, int>>
      */
@@ -649,9 +653,10 @@ final class TaintFlowResolution
     private array $entry_filter_counts = [];
 
     /**
-     * Entry => the flows of its walk entering another entry: state => that entry => true
+     * Entry => the flows of its walk entering another entry: (state << 32 | that entry) => true. One flat map per
+     * entry: a nested array per state took a third of the memory of the resolution on large code bases.
      *
-     * @var array<int, array<int, array<int, true>>>
+     * @var array<int, array<int, true>>
      */
     private array $entry_taint_dependents = [];
 
@@ -2585,7 +2590,7 @@ final class TaintFlowResolution
         $caller_context = $this->state_contexts[$caller];
 
         if ($caller_context !== -1) {
-            $this->entry_taint_dependents[$caller_context][$caller][$entry] = true;
+            $this->entry_taint_dependents[$caller_context][($caller << 32) | $entry] = true;
         }
 
         $this->addEntryTaints($entry, $caller);
@@ -3254,11 +3259,11 @@ final class TaintFlowResolution
         }
 
         if (!isset($this->entry_class_filters[$entry][$position][$class])
-            && $this->entry_bases[$entry] !== $entry
             && ($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS
         ) {
-            // past MAX_FILTERS, a filter already split by class sends the calls of a class it has no filter for yet
-            // to that of the class of none, which every fetch takes (see tracksClasses())
+            // past MAX_FILTERS, the calls of a class with no filter yet go on in the filter of the class of none,
+            // which every fetch takes (see tracksClasses()): one walk for each class of the arrays a function is
+            // called with made most of the states on large code bases
             $class = '';
         }
 
@@ -3536,11 +3541,9 @@ final class TaintFlowResolution
 
         $this->entry_taints[$convergence] = ($this->entry_taints[$convergence] ?? 0) | $new_taints;
 
-        for ($taint = 1, $remaining = $new_taints; $remaining !== 0; $taint <<= 1) {
-            if (($remaining & $taint) !== 0) {
-                $remaining &= ~$taint;
-                $this->entry_taint_callers[$convergence][$taint] = $caller;
-            }
+        if ($new_taints !== 0) {
+            $this->entry_taint_callers[$convergence][$caller] = ($this->entry_taint_callers[$convergence][$caller] ?? 0)
+                | $new_taints;
         }
 
         // the flows of its walk that left the calls entering it get the new taints too (see leaveCalls())
@@ -3562,10 +3565,8 @@ final class TaintFlowResolution
         }
 
         // so do the flows of its walk entering other convergences
-        foreach ($this->entry_taint_dependents[$convergence] ?? [] as $caller => $convergences) {
-            foreach ($convergences as $dependent => $_) {
-                $this->addEntryTaints($dependent, $caller);
-            }
+        foreach ($this->entry_taint_dependents[$convergence] ?? [] as $pair => $_) {
+            $this->addEntryTaints($pair & 0xFFFFFFFF, $pair >> 32);
         }
     }
 
@@ -3858,7 +3859,13 @@ final class TaintFlowResolution
      */
     private function findTaintCaller(int $entry, int $taint): ?int
     {
-        return $this->entry_taint_callers[$entry][$taint] ?? array_key_first($this->entry_callers[$entry]);
+        foreach ($this->entry_taint_callers[$entry] ?? [] as $caller => $taints) {
+            if (($taints & $taint) !== 0) {
+                return $caller;
+            }
+        }
+
+        return array_key_first($this->entry_callers[$entry]);
     }
 
     /**
