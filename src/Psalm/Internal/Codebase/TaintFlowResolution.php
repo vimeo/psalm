@@ -1867,9 +1867,7 @@ final class TaintFlowResolution
 
         $copied_position = $this->copied_position;
 
-        // (a copy keeps the open assignments of the state it copies, already at the node)
-        if ($copied_position === 0
-            && isset($this->state_ids[$node_id])
+        if (isset($this->state_ids[$node_id])
             && count($this->state_ids[$node_id]) >= self::WIDENING_STATES
         ) {
             $open_assignments = $this->widenOpenAssignments($open_assignments);
@@ -3297,8 +3295,9 @@ final class TaintFlowResolution
      * Copies state $state into filter $filter of its context. For a call whose walk depends on the open assignment
      * at position $position of the calls entering that context, the copy only enters the filters of the walk of
      * the call that depend on it (see addEntryCaller()): the rest of the walk is the same for the calls of the
-     * filter as for the others, and the state itself goes on through it. Nor is it widened (see reach()): it
-     * would lose what the state knows of those calls.
+     * filter as for the others, and the state itself goes on through it. It is widened like any flow past
+     * WIDENING_STATES at its node (see reach()): it then loses what the state knows of those calls, which bounds
+     * the states the copies of many filters make at a node.
      *
      * @psalm-external-mutation-free
      */
