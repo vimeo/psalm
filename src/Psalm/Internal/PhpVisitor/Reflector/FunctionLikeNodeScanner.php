@@ -775,8 +775,11 @@ final class FunctionLikeNodeScanner
             && $storage->capabilities_type === null
             && $storage->capabilities === Capabilities::ALL
         ) {
-            $storage->capabilities = self::getTrivialConstructorCapabilities($stmt, $classlike_storage)
-                ?? $storage->capabilities;
+            $trivial = self::getTrivialConstructorCapabilities($stmt, $classlike_storage);
+
+            if ($trivial !== null) {
+                [$storage->capabilities, $storage->trivial_constructor_properties] = $trivial;
+            }
         }
     }
 
@@ -787,21 +790,23 @@ final class FunctionLikeNodeScanner
      * gives a fresh object (see NewAnalyzer). Decided from the constructor's own syntax only, so it is the same
      * whatever else is scanned. Anything else (a call, `parent::__construct()` included, a by-reference
      * parameter, a default making an object or calling something, an undeclared or hooked property, `$this`
-     * stored anywhere) makes it non-trivial: null.
+     * stored anywhere) makes it non-trivial: null. Also returns the properties it assigns, which a class
+     * extending its class may redeclare with hooks (see NewAnalyzer).
      *
-     * @return Capabilities::NONE|Capabilities::WRITE_THIS_PROPS|null
+     * @return array{Capabilities::NONE|Capabilities::WRITE_THIS_PROPS, list<string>}|null
      * @psalm-mutation-free
      */
     private static function getTrivialConstructorCapabilities(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         ClassLikeStorage $classlike_storage,
-    ): ?int {
+    ): ?array {
         if ($stmt->stmts === null) {
             return null;
         }
 
         $param_names = [];
         $promotes = false;
+        $assigned = [];
 
         foreach ($stmt->params as $param) {
             if ($param->byRef
@@ -814,7 +819,11 @@ final class FunctionLikeNodeScanner
             }
 
             $param_names[$param->var->name] = true;
-            $promotes = $promotes || $param->flags !== 0;
+
+            if ($param->flags !== 0) {
+                $promotes = true;
+                $assigned[] = $param->var->name;
+            }
         }
 
         foreach ($stmt->stmts as $inner_stmt) {
@@ -841,9 +850,11 @@ final class FunctionLikeNodeScanner
             ) {
                 return null;
             }
+
+            $assigned[] = $inner_stmt->expr->var->name->name;
         }
 
-        return $promotes || $stmt->stmts !== [] ? Capabilities::WRITE_THIS_PROPS : Capabilities::NONE;
+        return [$promotes || $stmt->stmts !== [] ? Capabilities::WRITE_THIS_PROPS : Capabilities::NONE, $assigned];
     }
 
     /**

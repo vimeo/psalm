@@ -533,6 +533,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_storage,
                     $template_result,
                     $fq_class_name,
+                    $can_extend,
                 );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -992,6 +993,7 @@ final class NewAnalyzer extends CallAnalyzer
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
         string $fq_class_name,
+        bool $can_extend,
     ): bool {
         $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
 
@@ -1005,9 +1007,19 @@ final class NewAnalyzer extends CallAnalyzer
             self::getConstructorClassTemplateParams($codebase, $context, $method_storage, $fq_class_name),
             args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
+        // a trivial constructor (see FunctionLikeNodeScanner::applyTrivialConstructorCapabilities()) runs the hooks a
+        // class extending its own redeclares its properties with, which may do anything
+        $own_capabilities = self::runsPropertyHooks(
+            $codebase,
+            $method_storage,
+            $declaring_method_id,
+            $fq_class_name,
+            $can_extend,
+        )
+            ? Capabilities::ALL
+            : CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
         $resolved_capabilities = $template_capabilities
-            | (CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result)
-                & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
+            | ($own_capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
 
         $args = $stmt->getArgs();
 
@@ -1057,6 +1069,64 @@ final class NewAnalyzer extends CallAnalyzer
             & (Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS | Capabilities::WRITE_REFS)) === 0;
     }
 
+    /**
+     * Whether the constructor of $method_storage, made write-this-props for only assigning properties (see
+     * FunctionLikeNodeScanner::applyTrivialConstructorCapabilities()), may run property hooks when it constructs an
+     * object of $fq_class_name: that class, or one between it and the class declaring the constructor, redeclares
+     * one of those properties with a hook. When the class may be extended (`new static`, `new $class`), a class
+     * extending it may do that too.
+     *
+     * @psalm-mutation-free
+     */
+    private static function runsPropertyHooks(
+        Codebase $codebase,
+        MethodStorage $method_storage,
+        MethodIdentifier $declaring_method_id,
+        string $fq_class_name,
+        bool $can_extend,
+    ): bool {
+        if ($method_storage->trivial_constructor_properties === null
+            || $method_storage->trivial_constructor_properties === []
+        ) {
+            return false;
+        }
+
+        if ($can_extend) {
+            return true;
+        }
+
+        if (strtolower($fq_class_name) === $declaring_method_id->fq_class_name
+            || !$codebase->classlike_storage_provider->has($fq_class_name)
+        ) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        foreach ($method_storage->trivial_constructor_properties as $property_name) {
+            $declaring_class = $class_storage->declaring_property_ids[$property_name] ?? null;
+
+            if ($declaring_class === null
+                || strtolower($declaring_class) === $declaring_method_id->fq_class_name
+                || !$codebase->classlike_storage_provider->has($declaring_class)
+            ) {
+                continue;
+            }
+
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$property_name] ?? null;
+
+            if ($property_storage === null
+                || $property_storage->hook_get !== null
+                || $property_storage->hook_set !== null
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function checkDynamicConstructorPurity(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1084,6 +1154,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $codebase->methods->getStorage($declaring_method_id),
                 null,
                 $fq_class_name,
+                // the class string may name a class extending it
+                !$codebase->classlike_storage_provider->get($fq_class_name)->final,
             );
 
             return;

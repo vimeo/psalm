@@ -393,7 +393,9 @@ neither `new` nor its class needs an annotation for the waiver. Any other statem
 a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
 object or calls something, a property with hooks or one the class doesn't declare before the
 constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
-anything, as any unannotated method.
+anything, as any unannotated method. So may a trivial constructor run for a class that redeclares one
+of the properties it assigns with a hook (PHP 8.4), or by `new static()` / `new $class()` where the
+class may be extended: the hook may do anything.
 
 ```php
 <?php

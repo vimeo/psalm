@@ -2615,6 +2615,26 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'objectsOfAClassRedeclaringWithoutHooksWhatAnInheritedTrivialConstructorAssignsAreFresh' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(public string $label) {}
+                    }
+
+                    final class Plain extends Base {
+                        public string $label = "";
+                    }
+
+                    /** @psalm-pure */
+                    function makePlain(): Plain {
+                        $plain = new Plain("a");
+                        $plain->label = "b";
+                        return $plain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
                 'code' => '<?php
                     final class Inner {
@@ -5689,6 +5709,29 @@ final class CapabilitiesTest extends TestCase
                         return new Linked($sink);
                     }',
                 'error_message' => 'constructor Linked::__construct requires',
+            ],
+            'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(public string $label) {}
+                    }
+
+                    final class Hooked extends Base {
+                        public string $label {
+                            set {
+                                echo $value;
+                                $this->label = $value;
+                            }
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makeHooked(): Hooked {
+                        return new Hooked("a");
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'newStaticOfAnExtendableClassIsNotFresh' => [
                 'code' => '<?php
