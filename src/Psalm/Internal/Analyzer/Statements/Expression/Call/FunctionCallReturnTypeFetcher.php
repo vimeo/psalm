@@ -1557,12 +1557,12 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        if ($conditionally_removed_taints && $function_storage->location) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $function_id . '-escaped',
-                $function_storage->signature_return_type_location ?: $function_storage->location,
-                $function_call_node->specialization_key,
-            );
+        if ($conditionally_removed_taints) {
+            // a node of this call's own: what it removes depends on its arguments, and $function_call_node may be
+            // shared with the other calls, the last call deciding for all
+            $assignment_node = DataFlowNode::getForAssignment($function_id . '-escaped', $node_location);
+
+            $graph->addNode($assignment_node);
 
             $graph->addPath(
                 $function_call_node,

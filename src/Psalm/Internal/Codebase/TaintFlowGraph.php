@@ -466,7 +466,9 @@ final class TaintFlowGraph extends DataFlowGraph
             return $return_node;
         }
 
-        $result_node = DataFlowNode::getForAssignment($return_node->label, $call_location);
+        // (a node of its own: the plugins add to and remove from the result of the call on the call's node, see
+        // MethodCallReturnTypeFetcher::taintMethodCallResult())
+        $result_node = DataFlowNode::getForAssignment('result of ' . $return_node->label, $call_location);
         $this->addNode($result_node);
         $this->addPath($return_node, $result_node, '=');
         $this->call_results[$result_node->id] = [

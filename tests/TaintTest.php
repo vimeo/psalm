@@ -3349,7 +3349,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3383,7 +3383,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
@@ -11408,6 +11408,28 @@ final class TaintTest extends TestCase
 
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                    function escape(string $s, bool $escape = true): string {
+                        return $s;
+                    }
+
+                    shell_exec(escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAStaticCallKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public static function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
                 'code' => '<?php
