@@ -3837,6 +3837,55 @@ final class TaintTest extends TestCase
                 'error_message' => 'TaintedHtml',
                 'php_version' => '8.2',
             ],
+            'taintWhatAReadonlyObjectKeepsInAStaticArray' => [
+                // A readonly class cannot declare a static property, so the array is in another class
+                'code' => '<?php // --taint-analysis
+                    final class Greetings {
+                        /** @var list<string> */
+                        public static array $texts = [];
+                    }
+
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {
+                            Greetings::$texts[] = $text;
+                        }
+
+                        public function printAll(): void {
+                            foreach (Greetings::$texts as $text) {
+                                echo $text;
+                            }
+                        }
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    $safe->printAll();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'taintWhatAnObjectWithOnlyReadonlyPropertiesKeepsInItsStaticArray' => [
+                'code' => '<?php // --taint-analysis
+                    final class Greeting {
+                        /** @var list<string> */
+                        private static array $texts = [];
+
+                        public function __construct(public readonly string $text) {
+                            self::$texts[] = $text;
+                        }
+
+                        public function printAll(): void {
+                            foreach (self::$texts as $text) {
+                                echo $text;
+                            }
+                        }
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    $safe->printAll();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
