@@ -218,8 +218,9 @@ final class PsalmEndToEndTest extends TestCase
     }
 
     /**
-     * A partial run analyzes the body of a method a subclass inherits again for the subclass only if the file
-     * declaring it was deep-scanned: the classes the body names, like Other here, aren't scanned otherwise.
+     * A partial taint analysis deep-scans the file declaring a method a class named by the files it analyzes
+     * inherits, whose body it analyzes again for that class: the classes the body names, like Other here, are
+     * scanned, and what the body passes from its argument to its result is found.
      */
     public function testPartialTaintAnalysisOfACallOfAnInheritedMethod(): void
     {
@@ -234,9 +235,8 @@ final class PsalmEndToEndTest extends TestCase
 
         $result = $this->runPartialTaintAnalysis(['src/Use.php']);
         $this->assertStringNotContainsString('Could not get class storage', $result);
-        $this->assertStringContainsString('Checks took', $result);
+        $this->assertStringContainsString('TaintedHtml', $result);
 
-        // the file of the subclass deep-scans the file declaring the method
         $result = $this->runPartialTaintAnalysis(['src/Use.php', 'src/Child.php']);
         $this->assertStringContainsString('TaintedHtml', $result);
     }
