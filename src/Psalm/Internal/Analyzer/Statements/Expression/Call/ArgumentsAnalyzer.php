@@ -590,7 +590,7 @@ final class ArgumentsAnalyzer
                     $args[1 - $argument_offset]->value,
                     $param_storage,
                     $method_id === 'array_map'
-                        ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $args)
+                        ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $context, $args)
                         : null,
                 );
             }

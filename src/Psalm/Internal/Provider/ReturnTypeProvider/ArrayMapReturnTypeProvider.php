@@ -34,10 +34,12 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
@@ -52,6 +54,7 @@ use function assert;
 use function count;
 use function explode;
 use function implode;
+use function is_string;
 use function reset;
 use function str_contains;
 use function substr;
@@ -284,7 +287,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
         $graph->addNode($element_node);
 
-        $element_marker = self::getElementMarker($statements_analyzer, $event->getCallArgs());
+        $element_marker = self::getElementMarker($statements_analyzer, $event->getContext(), $event->getCallArgs());
         $taint_graph = $graph instanceof CombinedFlowGraph ? $graph->taint_flow_graph : $graph;
 
         foreach ($mapping_return_type->parent_nodes as $parent_node) {
@@ -308,13 +311,18 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
      * $args over the elements of its array, if the array it returns keeps their keys (it is given one array) and
      * its callback is a closure, whose body the marker bounds: the closure takes each element with its key (see
      * ArgumentsAnalyzer::taintClosureParamWithArrayElements()) and what it returns for it goes back under that key
-     * (see getElementNodes()). A closure with a variable another call of it sees (a by-reference use, a static or
-     * global variable) may return what it took for another element: it has no marker.
+     * (see getElementNodes()). A closure with something another call of it sees may return what it took for
+     * another element: it has no marker. That is a by-reference use, a static or global variable, `$this`, and any
+     * captured value that isn't plainly a value (an object, or what may hold one): the closure may keep what it took
+     * in it (`$acc[] = $value`) and return it for the next element.
      *
      * @param array<int, PhpParser\Node\Arg> $args
      */
-    public static function getElementMarker(StatementsAnalyzer $statements_analyzer, array $args): ?string
-    {
+    public static function getElementMarker(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        array $args,
+    ): ?string {
         if (count($args) !== 2
             || !isset($args[0], $args[1])
             || $args[0]->unpack
@@ -336,13 +344,24 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             return null;
         }
 
-        // the variables of a call of the closure are its own, unless static or global
+        // the variables of a call of the closure are its own, unless static or global, and so are the values it
+        // captured, unless they are objects (or may hold some), which every call sees, as `$this` and $GLOBALS
         if ((new NodeFinder())->findFirst(
             $callback,
             static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt\Static_
-                || $node instanceof PhpParser\Node\Stmt\Global_,
+                || $node instanceof PhpParser\Node\Stmt\Global_
+                || ($node instanceof PhpParser\Node\Expr\Variable
+                    && ($node->name === 'this' || $node->name === 'GLOBALS' || !is_string($node->name))),
         ) !== null) {
             return null;
+        }
+
+        foreach (self::getCapturedVarIds($callback) as $var_id) {
+            $captured_type = $context->vars_in_scope[$var_id] ?? null;
+
+            if ($captured_type !== null && !self::isPlainValue($captured_type)) {
+                return null;
+            }
         }
 
         $array_type = $statements_analyzer->node_data->getType($array);
@@ -365,6 +384,87 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             $array->getEndFilePos() + 1,
             $statements_analyzer->getFilePath(),
         ]);
+    }
+
+    /**
+     * The variables of the enclosing scope closure $callback captures: those it uses, and for an arrow function
+     * those of its body that aren't its parameters (the others aren't in the enclosing scope)
+     *
+     * @return list<string>
+     */
+    private static function getCapturedVarIds(
+        PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $callback,
+    ): array {
+        if ($callback instanceof PhpParser\Node\Expr\Closure) {
+            $var_ids = [];
+
+            foreach ($callback->uses as $use) {
+                if (is_string($use->var->name)) {
+                    $var_ids[] = '$' . $use->var->name;
+                }
+            }
+
+            return $var_ids;
+        }
+
+        $param_ids = [];
+
+        foreach ($callback->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                $param_ids['$' . $param->var->name] = true;
+            }
+        }
+
+        $var_ids = [];
+
+        foreach ((new NodeFinder())->findInstanceOf($callback->expr, PhpParser\Node\Expr\Variable::class) as $var) {
+            if (is_string($var->name) && !isset($param_ids['$' . $var->name])) {
+                $var_ids[] = '$' . $var->name;
+            }
+        }
+
+        return $var_ids;
+    }
+
+    /**
+     * Whether a value of type $type is plainly a value, which a closure can't keep anything in for another call of
+     * it: scalars, and arrays of them
+     *
+     * @psalm-mutation-free
+     */
+    private static function isPlainValue(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof Scalar || $atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if ($atomic_type instanceof TArray) {
+                if (!self::isPlainValue($atomic_type->type_params[1])) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TKeyedArray) {
+                foreach ($atomic_type->properties as $property_type) {
+                    if (!self::isPlainValue($property_type)) {
+                        return false;
+                    }
+                }
+
+                if ($atomic_type->fallback_params !== null && !self::isPlainValue($atomic_type->fallback_params[1])) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

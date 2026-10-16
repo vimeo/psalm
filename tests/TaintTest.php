@@ -1572,6 +1572,21 @@ final class TaintTest extends TestCase
                     );
                     echo $params["city"];',
             ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughCapturedValues' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $prefix = "p";
+                    $suffixes = ["a" => "s"];
+                    $params = array_map(
+                        static function (string $value) use ($prefix, $suffixes): string {
+                            return $prefix . $value . $suffixes["a"];
+                        },
+                        $query,
+                    );
+                    $prefixed = array_map(fn(string $value): string => $prefix . $value, $query);
+                    echo $params["city"];
+                    echo $prefixed["city"];',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -9245,6 +9260,42 @@ final class TaintTest extends TestCase
                         },
                         $query,
                     );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsInACapturedArrayAccessObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen[] = $value;
+                            return $seen[0] ?? "";
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsThroughMethodsOfACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen->append($value);
+                            return $seen->offsetGet(0);
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapArrowFunctionKeepsInACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(fn(string $value): string => [$seen->append($value), $seen[0]][1], $query);
                     echo $params["city"];',
                 'error_message' => 'TaintedHtml',
             ],
