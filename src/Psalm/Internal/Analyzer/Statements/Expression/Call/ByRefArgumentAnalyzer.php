@@ -76,7 +76,9 @@ final class ByRefArgumentAnalyzer
      * Psalm doesn't know) needs, with the callee's write-refs replaced by the cost of the arguments
      * that may be passed by reference: any variable, element or property may, a temporary can't.
      *
+     * @param CapabilitySet $capabilities
      * @param list<Arg|PhpParser\Node\VariadicPlaceholder> $args
+     * @return CapabilitySet
      */
     public static function adjustUnknownParamsCapabilities(
         StatementsAnalyzer $statements_analyzer,
