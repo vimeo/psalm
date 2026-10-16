@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 final class DeprecatedAnnotationTest extends TestCase
 {
@@ -425,5 +430,162 @@ final class DeprecatedAnnotationTest extends TestCase
                 'error_message' => 'DeprecatedFunction',
             ],
         ];
+    }
+
+    public function testDeprecatedClassInTemplateExtendsIsReportedAfterExternalMethodCall(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedClass - tests[\\\\\/]somefile\.php:6:/');
+
+        $this->analyzeCallerBeforeDeclaration(
+            '<?php
+                /** @template T */
+                abstract class ExternalRepository {
+                    /** @return T */
+                    public function find(): mixed {
+                        throw new RuntimeException();
+                    }
+                }',
+            '<?php
+                /** @deprecated */
+                final class TheDeprecatedClass {}
+
+                /** @extends ExternalRepository<TheDeprecatedClass> */
+                final class TheRepository extends ExternalRepository {}',
+            '<?php
+                function findDeprecated(TheRepository $repository): void {
+                    /** @psalm-suppress DeprecatedClass */
+                    $repository->find();
+                }',
+        );
+    }
+
+    public function testDeprecatedClassInTemplateExtendsIsReportedAfterExternalStaticMethodCall(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedClass - tests[\\\\\/]somefile\.php:6:/');
+
+        $this->analyzeCallerBeforeDeclaration(
+            '<?php
+                /** @template T */
+                abstract class ExternalRepository {
+                    /** @return T */
+                    public static function findStatic(): mixed {
+                        throw new RuntimeException();
+                    }
+                }',
+            '<?php
+                /** @deprecated */
+                final class TheDeprecatedClass {}
+
+                /** @extends ExternalRepository<TheDeprecatedClass> */
+                final class TheRepository extends ExternalRepository {}',
+            '<?php
+                function findDeprecated(): void {
+                    /** @psalm-suppress DeprecatedClass */
+                    TheRepository::findStatic();
+                }',
+        );
+    }
+
+    public function testDeprecatedClassInTemplateExtendsIsReportedAfterSuppressingChildClass(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedClass - tests[\\\\\/]somefile\.php:6:/');
+
+        $this->analyzeCallerBeforeDeclaration(
+            '<?php
+                /** @template T */
+                abstract class ExternalRepository {}',
+            '<?php
+                /** @deprecated */
+                final class TheDeprecatedClass {}
+
+                /** @extends ExternalRepository<TheDeprecatedClass> */
+                class TheRepository extends ExternalRepository {}',
+            '<?php
+                /** @psalm-suppress DeprecatedClass */
+                final class TheChildRepository extends TheRepository {}',
+        );
+    }
+
+    public function testDeprecatedClassInMixinIsReportedAfterExternalMethodCall(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedClass - tests[\\\\\/]somefile\.php:6:/');
+
+        $this->analyzeCallerBeforeDeclaration(
+            '<?php
+                /** @template T */
+                abstract class ExternalRepository {
+                    /** @return T */
+                    public function find(): mixed {
+                        throw new RuntimeException();
+                    }
+                }',
+            '<?php
+                /** @deprecated */
+                final class TheDeprecatedClass {}
+
+                /** @mixin ExternalRepository<TheDeprecatedClass> */
+                final class TheRepository {
+                    public function __call(string $name, array $args) {
+                        return null;
+                    }
+                }',
+            '<?php
+                function findDeprecated(TheRepository $repository): void {
+                    /** @psalm-suppress DeprecatedClass */
+                    $repository->find();
+                }',
+        );
+    }
+
+    public function testDeprecatedClassInPropertyTypeIsReportedAfterSuppressingChildClass(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/^DeprecatedClass - tests[\\\\\/]somefile\.php:6:/');
+
+        $this->analyzeCallerBeforeDeclaration(
+            '<?php',
+            '<?php
+                /** @deprecated */
+                final class TheDeprecatedClass {}
+
+                abstract class TheBase {
+                    /** @var TheDeprecatedClass|null */
+                    public $deprecated;
+                }',
+            '<?php
+                /** @psalm-suppress DeprecatedClass */
+                final class TheChild extends TheBase {}',
+        );
+    }
+
+    /**
+     * Analyzes both project files in one run, so they share class storages.
+     * Files are analyzed in path order, so the caller (src/) goes before the declaration (tests/).
+     */
+    private function analyzeCallerBeforeDeclaration(
+        string $external_code,
+        string $declaring_code,
+        string $caller_code,
+    ): void {
+        $base_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+        $external_file_path = $base_dir . 'vendor' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $caller_file_path = $base_dir . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $declaring_file_path = $base_dir . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile($external_file_path, $external_code);
+        $this->addFile($declaring_file_path, $declaring_code);
+        $this->addFile($caller_file_path, $caller_code);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([
+            $caller_file_path => $caller_file_path,
+            $declaring_file_path => $declaring_file_path,
+        ]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
     }
 }
