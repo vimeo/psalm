@@ -109,6 +109,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class AssignmentAnalyzer
 {
@@ -117,6 +118,7 @@ final class AssignmentAnalyzer
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
      * from an enclosing scope, or a reference into another scope (a by-reference parameter).
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public static function getExternalWriteCapabilities(Context $context, string $var_id): int
