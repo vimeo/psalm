@@ -267,10 +267,27 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 self::hoistConstants($this, $stmts, $context);
             }
 
+            $removed_var_log_position = $context->removed_var_log->position();
+
             foreach ($stmts as $stmt) {
-                if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
+                if (self::analyzeStatementInvalidatingClauses($this, $stmt, $context, $global_context) === false) {
                     return false;
                 }
+            }
+
+            // Nothing that follows runs after what the block changed, whereas break and continue
+            // leave it to whatever the loop or switch goes on to do. Where a catch may resume after a throw, only
+            // a return qualifies, as a throw or a never-returning call may land in it (exit is not told apart).
+            if ($context->has_returned
+                && $context->removed_var_log->position() > $removed_var_log_position
+                && ScopeAnalyzer::getControlActions(
+                    $stmts,
+                    $this->node_data,
+                    [],
+                    !$context->inside_catching_try,
+                ) === [$context->inside_catching_try ? ScopeAnalyzer::ACTION_RETURN : ScopeAnalyzer::ACTION_END]
+            ) {
+                $context->removed_var_log->discardSince($removed_var_log_position);
             }
 
             if ($this->root_scope
@@ -407,6 +424,36 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * Analyses a statement, then drops the clauses that held before it and mention a variable that
+     * something nested in it changed.
+     *
+     * @return false|null
+     */
+    private static function analyzeStatementInvalidatingClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        ?Context $global_context,
+    ): ?bool {
+        $clauses_before_statement = $context->clauses;
+        $removed_var_log_position = $context->removed_var_log->position();
+
+        if (self::analyzeStatement($statements_analyzer, $stmt, $context, $global_context) === false) {
+            return false;
+        }
+
+        if ($clauses_before_statement) {
+            $removed_var_ids = $context->removed_var_log->removedSince($removed_var_log_position, $context);
+
+            if ($removed_var_ids) {
+                $context->removeStaleClauses($clauses_before_statement, $removed_var_ids);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -700,7 +747,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $context->has_returned = true;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
             foreach ($stmt->stmts as $sub) {
-                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
+                self::analyzeStatementInvalidatingClauses($statements_analyzer, $sub, $context, $global_context);
             }
         } else {
             if (IssueBuffer::accepts(
