@@ -1163,7 +1163,6 @@ final class AssertionFinder
                         }
 
                         $arg_value = $args[$var_id_int]->value;
-                        assert($arg_value instanceof PhpParser\Node\Expr\Variable);
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
@@ -1290,7 +1289,6 @@ final class AssertionFinder
                             );
                             continue;
                         }
-                        /** @var PhpParser\Node\Expr\Variable $arg_value */
                         $arg_value = $args[$var_id_int]->value;
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
@@ -4375,11 +4373,15 @@ final class AssertionFinder
     }
 
     public static function isPropertyImmutableOnArgument(
-        string                       $property,
-        NodeDataProvider             $node_provider,
-        ClassLikeStorageProvider     $class_provider,
-        PhpParser\Node\Expr\Variable $arg_expr,
+        string $property,
+        NodeDataProvider $node_provider,
+        ClassLikeStorageProvider $class_provider,
+        PhpParser\Node\Expr $arg_expr,
     ): ?string {
+        if (!$arg_expr instanceof PhpParser\Node\Expr\Variable) {
+            return 'Argument is not a variable so the assertion cannot be applied';
+        }
+
         $type = $node_provider->getType($arg_expr);
         /** @var string $name */
         $name = $arg_expr->name;
