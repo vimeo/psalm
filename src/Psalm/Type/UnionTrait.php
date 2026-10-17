@@ -1683,9 +1683,10 @@ trait UnionTrait
     /**
      * The taints of user input a value of this type can't hold
      *
-     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints()); without them, the built-in
+     *                          ones (TaintKind::ALL_INPUT), not the custom taints psalm.xml adds to `input`
      */
-    public function getTaintsToRemove(int $input_taints): int
+    public function getTaintsToRemove(int $input_taints = TaintKind::ALL_INPUT): int
     {
         // a value has a taint only if every type it can have holds it
         $taints_to_remove = $input_taints;
