@@ -742,6 +742,51 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nullCoalesceOnNullableBackedEnumValue #11171' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Suit: string {
+                        case Hearts = "H";
+                        case Spades = "S";
+                    }
+                    function plain(?Suit $suit): string {
+                        return $suit->value ?? "none";
+                    }
+                    function nullsafe(?Suit $suit): string {
+                        return $suit?->value ?? "none";
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullCoalesceOnNullableEnumName #11171' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Direction {
+                        case North;
+                        case South;
+                    }
+                    function name(?Direction $dir): string {
+                        return $dir->name ?? "unknown";
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullCoalesceOnNullableBackedEnumInterfaceValue #11171' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface HasBackingValue extends \BackedEnum {}
+                    function value(?HasBackingValue $enum): string|int {
+                        return $enum->value ?? "none";
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
