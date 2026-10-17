@@ -54008,6 +54008,8 @@ return array (
   'uv_stdio_new' => 
   array (
     0 => 'mixed',
+    'handle=' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'uv_stop' => 
   array (

@@ -265,6 +265,8 @@ When `true`, Psalm will attempt to find all unused variables, the equivalent of 
 ```
 When `true`, Psalm will attempt to find all unused code (including unused variables), the equivalent of running with `--find-unused-code`. Defaults to `true`.
 
+This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
+
 #### forceJit
 ```xml
 <psalm
@@ -537,7 +539,7 @@ Allows you to hard-code the number of threads Psalm will use (similar to `--thre
         scanThreads="[int]"
 >
 ```
-Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads` or `--debug` (which sets threads to 1) on the command line.
+Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads`, `--threads` or `--debug` (which sets threads to 1) on the command line.
 
 #### maxStringLength
 ```xml
@@ -631,12 +633,12 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 #### findUnusedIssueHandlerSuppression
 
 Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
-is not being used to suppress an issue.
+is not being used to suppress an issue. Defaults to `true`.
 
 ## Project settings
 

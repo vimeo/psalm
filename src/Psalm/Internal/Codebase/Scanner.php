@@ -73,6 +73,8 @@ use const PHP_EOL;
  *         array<string, bool>,
  *         array<lowercase-string, bool>,
  *         array<string, bool>,
+ *         array<string, bool>,
+ *         array<lowercase-string, string>,
  *         array<string, bool>
  *     },
  *     scanner_data: ThreadData,
