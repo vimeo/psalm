@@ -467,7 +467,7 @@ final class CliUtils
         }
 
         if (!$config_file) {
-            fwrite(STDERR, "Don't forget to set errorBaseline=\"{$baseline_path}\" to your config.");
+            fwrite(STDERR, "Add errorBaseline=\"{$baseline_path}\" to the config to use it" . PHP_EOL);
 
             return;
         }
@@ -485,7 +485,7 @@ final class CliUtils
             $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
 
             if (!$end_psalm_open_tag) {
-                fwrite(STDERR, " Don't forget to set errorBaseline=\"{$baseline_path}\" in your config.");
+                fwrite(STDERR, "Add errorBaseline=\"{$baseline_path}\" to the config to use it" . PHP_EOL);
                 return;
             }
 
@@ -672,6 +672,14 @@ final class CliUtils
     {
         $value = getenv('NO_COLOR');
         return is_string($value) && $value !== '';
+    }
+
+    /**
+     * Whether to print ANSI colors: not with -m/--monochrome, NO_COLOR, or under an AI agent
+     */
+    public static function useColor(array $options): bool
+    {
+        return !array_key_exists('m', $options) && !self::noColorRequested() && !self::runningUnderAiAgent();
     }
 
     public static function checkRuntimeRequirements(): void
