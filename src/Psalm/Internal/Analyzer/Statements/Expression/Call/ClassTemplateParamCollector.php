@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
@@ -13,6 +14,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -91,6 +93,24 @@ final class ClassTemplateParamCollector
             return null;
         }
 
+        // A receiver resolved from `static`/`$this` against a generic class can end up
+        // as a bare (non-generic) TNamedObject intersected with the actual TGenericObject
+        // sibling that carries the real type args (e.g. `Foo&Foo<42>`), rather than a
+        // TGenericObject itself. Prefer that sibling so the receiver's real args are used
+        // below instead of falling through to the class-level declared default.
+        if (!$lhs_type_part instanceof TGenericObject
+            && $lhs_type_part instanceof TNamedObject
+        ) {
+            foreach ($lhs_type_part->extra_types as $extra_type) {
+                if ($extra_type instanceof TGenericObject
+                    && $extra_type->value === $lhs_type_part->value
+                ) {
+                    $lhs_type_part = $extra_type;
+                    break;
+                }
+            }
+        }
+
         $class_template_params = [];
         $e = $static_class_storage->template_extended_params;
 
@@ -147,7 +167,17 @@ final class ClassTemplateParamCollector
                         $class_storage->name => $output_type_extends ?? Type::getMixed(),
                     ];
                 } else {
-                    $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
+                    $declared_default = $class_storage->template_type_defaults[$type_name] ?? null;
+
+                    $class_template_params[$type_name] = [
+                        $class_storage->name => $declared_default !== null
+                            ? TemplateInferredTypeReplacer::replace(
+                                $declared_default,
+                                new TemplateResult($template_types, $class_template_params),
+                                $codebase,
+                            )
+                            : Type::getMixed(),
+                    ];
                 }
             }
         }
@@ -173,7 +203,22 @@ final class ClassTemplateParamCollector
 
                 if (!$self_call) {
                     if (!isset($class_template_params[$type_name])) {
-                        $class_template_params[$type_name][$class_storage->name] = $type;
+                        $declared_default = (!($lhs_type_part instanceof TGenericObject)
+                            && isset($class_storage->template_type_defaults[$type_name]))
+                            ? $class_storage->template_type_defaults[$type_name]
+                            : null;
+
+                        $default = $declared_default !== null
+                            ? TemplateInferredTypeReplacer::replace(
+                                $declared_default,
+                                new TemplateResult($template_types, $class_template_params),
+                                $codebase,
+                            )
+                            : $type;
+
+                        $class_template_params[$type_name] = [
+                            $class_storage->name => $default,
+                        ];
                     }
                 }
             }

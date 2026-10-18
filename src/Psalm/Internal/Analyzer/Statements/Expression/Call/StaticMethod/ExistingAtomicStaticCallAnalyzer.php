@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function array_map;
 use function count;
 use function explode;
@@ -88,63 +89,15 @@ final class ExistingAtomicStaticCallAnalyzer
             $statements_analyzer->getSuppressedIssues(),
         );
 
-        if ($class_storage->user_defined
-            && $context->self
-            && ($context->collect_mutations || $context->collect_initializations)
-        ) {
-            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-
-            if (!$appearing_method_id) {
-                return;
-            }
-
-            $appearing_method_class_name = $appearing_method_id->fq_class_name;
-
-            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
-                $old_context_include_location = $context->include_location;
-                $old_self = $context->self;
-                $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-                $context->self = $appearing_method_class_name;
-
-                $file_analyzer = $statements_analyzer->getFileAnalyzer();
-
-                if ($context->collect_mutations) {
-                    $file_analyzer->getMethodMutations($appearing_method_id, $context);
-                } else {
-                    // collecting initializations
-                    $local_vars_in_scope = [];
-                    $local_vars_possibly_in_scope = [];
-
-                    foreach ($context->vars_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                        }
-                    }
-
-                    foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                        }
-                    }
-
-                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        $context->initialized_methods[(string) $appearing_method_id] = true;
-
-                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
-
-                        foreach ($local_vars_in_scope as $var => $type) {
-                            $context->vars_in_scope[$var] = $type;
-                        }
-
-                        foreach ($local_vars_possibly_in_scope as $var => $type) {
-                            $context->vars_possibly_in_scope[$var] = $type;
-                        }
-                    }
-                }
-
-                $context->include_location = $old_context_include_location;
-                $context->self = $old_self;
-            }
+        if (!self::collectParentMutationsOrInitializations(
+            $codebase,
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $class_storage,
+            $method_id,
+        )) {
+            return;
         }
 
         $found_generic_params = ClassTemplateParamCollector::collect(
@@ -187,6 +140,8 @@ final class ExistingAtomicStaticCallAnalyzer
         }
 
         $template_result = new TemplateResult([], $found_generic_params ?: []);
+
+        self::seedTemplateTypeDefaults($codebase, $method_id, $method_name_lc, $class_storage, $template_result);
 
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
@@ -260,6 +215,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $fq_class_name,
                 $class_storage,
                 $config,
+                $declaring_method_id,
             );
         }
 
@@ -500,6 +456,7 @@ final class ExistingAtomicStaticCallAnalyzer
         string $fq_class_name,
         ClassLikeStorage $class_storage,
         Config $config,
+        ?MethodIdentifier $declaring_method_id = null,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
@@ -518,14 +475,18 @@ final class ExistingAtomicStaticCallAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class],
                     )) {
-                        $template_result->lower_bounds[$template_type->param_name]
-                            = self::resolveTemplateResultLowerBound(
-                                $codebase,
-                                $stmt,
-                                $class_storage,
-                                $method_id,
-                                $template_type,
-                            );
+                        $resolved_lower_bound = self::resolveTemplateResultLowerBound(
+                            $codebase,
+                            $stmt,
+                            $class_storage,
+                            $method_id,
+                            $template_type,
+                            $declaring_method_id,
+                        );
+
+                        if ($resolved_lower_bound !== null) {
+                            $template_result->lower_bounds[$template_type->param_name] = $resolved_lower_bound;
+                        }
                     }
                 }
             }
@@ -562,7 +523,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 $static_type = $fq_class_name;
             }
 
-            if ($template_result->lower_bounds) {
+            if ($template_result->lower_bounds || $template_result->template_type_defaults) {
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
                     $return_type_candidate,
@@ -623,6 +584,120 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
+     * When calling a method that's collecting mutations or initializations (e.g. analyzing
+     * a subclass constructor that calls `parent::__construct()`), and the called method
+     * appears on a class the current `self` context extends, runs that parent method's
+     * mutations/initializations against $context so its effects (property types set,
+     * assertions recorded) are visible to the caller.
+     *
+     * @return bool false means the caller should return early (mirrors the original inline
+     *     `return;` for a method with no appearing id)
+     */
+    private static function collectParentMutationsOrInitializations(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $method_id,
+    ): bool {
+        if ($class_storage->user_defined
+            && $context->self
+            && ($context->collect_mutations || $context->collect_initializations)
+        ) {
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            if (!$appearing_method_id) {
+                return false;
+            }
+
+            $appearing_method_class_name = $appearing_method_id->fq_class_name;
+
+            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+                $old_context_include_location = $context->include_location;
+                $old_self = $context->self;
+                $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                $context->self = $appearing_method_class_name;
+
+                $file_analyzer = $statements_analyzer->getFileAnalyzer();
+
+                if ($context->collect_mutations) {
+                    $file_analyzer->getMethodMutations($appearing_method_id, $context);
+                } else {
+                    // collecting initializations
+                    $local_vars_in_scope = [];
+                    $local_vars_possibly_in_scope = [];
+
+                    foreach ($context->vars_in_scope as $var => $_) {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                        }
+                    }
+
+                    foreach ($context->vars_possibly_in_scope as $var => $_) {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                        }
+                    }
+
+                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
+                        $context->initialized_methods[(string) $appearing_method_id] = true;
+
+                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
+
+                        foreach ($local_vars_in_scope as $var => $type) {
+                            $context->vars_in_scope[$var] = $type;
+                        }
+
+                        foreach ($local_vars_possibly_in_scope as $var => $type) {
+                            $context->vars_possibly_in_scope[$var] = $type;
+                        }
+                    }
+                }
+
+                $context->include_location = $old_context_include_location;
+                $context->self = $old_self;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Seeds $template_result's template_type_defaults from the called method's declared
+     * `@template T = Default` tags, so TemplateInferredTypeReplacer can apply them later
+     * when nothing was actually inferred for a template.
+     *
+     * The method may be inherited (via extends/use) rather than redeclared on the called
+     * class, so its declared defaults live on the declaring method's own storage, not the
+     * called class's copy of it.
+     */
+    private static function seedTemplateTypeDefaults(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        string $method_name_lc,
+        ClassLikeStorage $class_storage,
+        TemplateResult $template_result,
+    ): void {
+        $declaring_method_id_for_defaults = $codebase->methods->getDeclaringMethodId($method_id);
+        $method_storage_for_defaults = $declaring_method_id_for_defaults
+            && $codebase->methods->hasStorage($declaring_method_id_for_defaults)
+                ? $codebase->methods->getStorage($declaring_method_id_for_defaults)
+                : ($class_storage->methods[$method_name_lc] ?? null);
+
+        if ($method_storage_for_defaults === null || $method_storage_for_defaults->template_type_defaults === null) {
+            return;
+        }
+
+        foreach ($method_storage_for_defaults->template_type_defaults as $template_name => $default_type) {
+            if (isset($method_storage_for_defaults->template_types[$template_name])) {
+                $defining_key = array_key_first($method_storage_for_defaults->template_types[$template_name]);
+                $template_result->template_type_defaults[$template_name][$defining_key] = $default_type;
+            }
+        }
+    }
+
+    /**
      * Dumb way to determine whether a type contains "static" somewhere inside.
      */
     private static function hasStaticInType(Type\TypeNode $type): bool
@@ -633,7 +708,9 @@ final class ExistingAtomicStaticCallAnalyzer
     }
 
     /**
-     * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     * @return non-empty-array<string,non-empty-list<TemplateBound>>|null Null means the
+     *     template is intentionally left unbound (it has a declared default) so
+     *     TemplateInferredTypeReplacer can apply that default instead of a synthetic bound.
      */
     private static function resolveTemplateResultLowerBound(
         Codebase $codebase,
@@ -641,7 +718,8 @@ final class ExistingAtomicStaticCallAnalyzer
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
         TTemplateParam $template_type,
-    ): array {
+        ?MethodIdentifier $declaring_method_id = null,
+    ): ?array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [
                 'fn-' . $method_id->method_name => [
@@ -687,6 +765,19 @@ final class ExistingAtomicStaticCallAnalyzer
                     new TemplateBound($extended_param_type),
                 ],
             ];
+        }
+
+        // The default may be declared on the method as inherited (e.g. via `extends` or
+        // `use`) rather than redeclared on the called class, so look it up from the
+        // declaring method's own storage rather than the called class's copy of it.
+        $declaring_lookup_id = $declaring_method_id ?? $method_id;
+        $method_storage = $codebase->methods->hasStorage($declaring_lookup_id)
+            ? $codebase->methods->getStorage($declaring_lookup_id)
+            : null;
+        if (isset($method_storage->template_type_defaults[$template_type->param_name])) {
+            // Templates with a declared default are intentionally left unbound
+            // here so TemplateInferredTypeReplacer can apply the default.
+            return null;
         }
 
         return [
