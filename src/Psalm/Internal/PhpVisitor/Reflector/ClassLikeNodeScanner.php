@@ -82,6 +82,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function is_array;
 use function ltrim;
 use function pathinfo;
 use function preg_match;
@@ -1840,7 +1841,7 @@ final class ClassLikeNodeScanner
             $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
 
-            if ($property_is_initialized) {
+            if ($property_is_initialized || self::isVirtualProperty($stmt, $property->name->name)) {
                 $storage->initialized_properties[$property->name->name] = true;
             }
 
@@ -1931,6 +1932,72 @@ final class ClassLikeNodeScanner
                 }
             }
         }
+    }
+
+    /**
+     * A hooked property is virtual, and so has no value to initialize, when none of its hooks
+     * reads or writes `$this->propertyName` outside a nested function or class.
+     * A short `set => expr;` hook assigns to the property, so it makes the property backed.
+     */
+    private static function isVirtualProperty(PhpParser\Node\Stmt\Property $stmt, string $property_name): bool
+    {
+        if (!$stmt->hooks) {
+            return false;
+        }
+
+        foreach ($stmt->hooks as $hook) {
+            if ($hook->body instanceof PhpParser\Node\Expr && $hook->name->toLowerString() === 'set') {
+                return false;
+            }
+
+            if ($hook->body !== null && self::nodesUseProperty([$hook->body], $property_name)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array<array-key, mixed> $nodes
+     */
+    private static function nodesUseProperty(array $nodes, string $property_name): bool
+    {
+        foreach ($nodes as $node) {
+            if (is_array($node)) {
+                if (self::nodesUseProperty($node, $property_name)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$node instanceof PhpParser\Node) {
+                continue;
+            }
+
+            if (($node instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
+                && $node->var instanceof PhpParser\Node\Expr\Variable
+                && $node->var->name === 'this'
+                && (($node->name instanceof Identifier && $node->name->name === $property_name)
+                    || ($node->name instanceof PhpParser\Node\Scalar\String_ && $node->name->value === $property_name))
+            ) {
+                return true;
+            }
+
+            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+                continue;
+            }
+
+            foreach ($node->getSubNodeNames() as $sub_node_name) {
+                if (self::nodesUseProperty([$node->$sub_node_name], $property_name)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
