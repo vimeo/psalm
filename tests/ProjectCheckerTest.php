@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
@@ -206,9 +207,7 @@ function checkDirRegression(): int
         );
     }
 
-    /**
-     * @dataProvider entryPointProvider
-     */
+    #[DataProvider('entryPointProvider')]
     public function testAfterCodebasePopulatedIsInvoked(string $entry_point): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {

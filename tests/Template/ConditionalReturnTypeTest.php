@@ -18,7 +18,7 @@ final class ConditionalReturnTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'conditionalReturnTypeSimple' => [
@@ -1139,7 +1139,7 @@ final class ConditionalReturnTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [

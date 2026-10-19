@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
 final class UnresolvableIncludeTest extends TestCase
 {
-    /**
-     * @dataProvider providerUnresolvableInclude
-     */
-    public function testShouldThrowUnresolvableInclude(string $phpCode, int $expectedExceptionLine): void
+    #[DataProvider('providerUnresolvableInclude')]
+    public function testShouldThrowUnresolvableInclude(string $code, int $expectedExceptionLine): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
         $context = new Context();
 
         $this->expectException(CodeException::class);
@@ -23,11 +22,12 @@ final class UnresolvableIncludeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+
     /**
      * @return array<string,array{code:string,expectedExceptionLine:int}>
      * @psalm-pure
      */
-    public function providerUnresolvableInclude(): array
+    public static function providerUnresolvableInclude(): array
     {
         return [
             'basic' => [
@@ -41,23 +41,22 @@ final class UnresolvableIncludeTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerNoUnresolvableInclude
-     */
-    public function testShouldNotThrowUnresolvableInclude(string $phpCode): void
+    #[DataProvider('providerNoUnresolvableInclude')]
+    public function testShouldNotThrowUnresolvableInclude(string $code): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
 
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
     }
 
+
     /**
      * @return array<string,array{code:string}>
      * @psalm-pure
      */
-    public function providerNoUnresolvableInclude(): array
+    public static function providerNoUnresolvableInclude(): array
     {
         return [
             'github_issue_908_file_exists' => [

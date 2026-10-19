@@ -15,7 +15,7 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'addThrowsAnnotationToFunction' => [

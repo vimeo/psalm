@@ -6,6 +6,7 @@ namespace Psalm\Tests\TypeReconciliation;
 
 use Countable;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -71,9 +72,7 @@ final class ReconcilerTest extends TestCase
         $this->project_analyzer->getCodebase()->scanFiles();
     }
 
-    /**
-     * @dataProvider providerTestReconciliation
-     */
+    #[DataProvider('providerTestReconciliation')]
     public function testReconciliation(string $expected_type, Assertion $assertion, string $original_type): void
     {
         $reconciled = AssertionReconciler::reconcile(
@@ -90,12 +89,10 @@ final class ReconcilerTest extends TestCase
             $reconciled->getId(),
         );
 
-        $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getAtomicTypes());
+        $this->assertContainsOnlyInstancesOf(Atomic::class, $reconciled->getAtomicTypes());
     }
 
-    /**
-     * @dataProvider providerTestTypeIsContainedBy
-     */
+    #[DataProvider('providerTestTypeIsContainedBy')]
     public function testTypeIsContainedBy(string $input, string $container): void
     {
         $this->assertTrue(
@@ -110,7 +107,7 @@ final class ReconcilerTest extends TestCase
     /**
      * @return array<string,array{string,Assertion,string}>
      */
-    public function providerTestReconciliation(): array
+    public static function providerTestReconciliation(): array
     {
         return [
             'notNullWithObject' => ['SomeClass', new IsNotType(new TNull()), 'SomeClass'],
@@ -194,7 +191,7 @@ final class ReconcilerTest extends TestCase
      * @return array<string,array{string,string}>
      * @psalm-pure
      */
-    public function providerTestTypeIsContainedBy(): array
+    public static function providerTestTypeIsContainedBy(): array
     {
         return [
             'arrayContainsWithArrayOfStrings' => ['array<string>', 'array'],
@@ -225,9 +222,7 @@ final class ReconcilerTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider constantAssertions
-     */
+    #[DataProvider('constantAssertions')]
     public function testReconciliationOfClassConstantInAssertions(Assertion $assertion, string $expected_type): void
     {
         $this->addFile(
@@ -266,7 +261,7 @@ final class ReconcilerTest extends TestCase
      * @return array<non-empty-string,array{Assertion,string}>
      * @psalm-pure
      */
-    public function constantAssertions(): array
+    public static function constantAssertions(): array
     {
         return [
             'constant-with-prefix' => [

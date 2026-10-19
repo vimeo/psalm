@@ -18,7 +18,7 @@ final class TypeAlgebraTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'twoVarLogicSimple' => [
@@ -1328,7 +1328,7 @@ final class TypeAlgebraTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
@@ -1399,7 +1399,7 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 'code' => '<?php
@@ -1416,7 +1416,7 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'threeVarLogicWithElseifAndAnd' => [
                 'code' => '<?php
@@ -1434,7 +1434,7 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 'code' => '<?php
@@ -1451,7 +1451,7 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'repeatedIfStatements' => [
                 'code' => '<?php
@@ -1466,7 +1466,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'repeatedConditionals' => [
                 'code' => '<?php
@@ -1559,7 +1559,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'dependentTypeInvalidated' => [
                 'code' => '<?php
@@ -1597,7 +1597,7 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'NullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'arrayShapeListCanBeEmpty' => [

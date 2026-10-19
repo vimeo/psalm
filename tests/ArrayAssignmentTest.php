@@ -38,7 +38,7 @@ final class ArrayAssignmentTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'assignUnionOfLiterals' => [
@@ -2368,7 +2368,7 @@ final class ArrayAssignmentTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
@@ -2420,7 +2420,7 @@ final class ArrayAssignmentTest extends TestCase
                     $a = 5;
                     "hello"[0] = $a;',
                 'error_message' => 'MixedStringOffsetAssignment',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'mixedArrayArgument' => [
                 'code' => '<?php
@@ -2433,7 +2433,7 @@ final class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php
@@ -2760,7 +2760,7 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 }',
                 'error_message' => 'MixedArrayAccess',
-                'ignored_issues' => ['InvalidDocblock'],
+                'error_levels' => ['InvalidDocblock'],
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
@@ -2774,7 +2774,7 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateArrayKey',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'unpackTypedTraversableWithStringKeysIntoArray' => [
@@ -2789,7 +2789,7 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateArrayKey',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'unpackArrayWithArrayKeyIntoArray' => [
@@ -2804,7 +2804,7 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateArrayKey',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'unpackNonIterable' => [

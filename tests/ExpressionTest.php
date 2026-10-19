@@ -26,7 +26,7 @@ final class ExpressionTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'maxIntegerInArrayKey' => [
             'code' => <<<'PHP'
@@ -72,14 +72,14 @@ final class ExpressionTest extends TestCase
      *     array{
      *         code: string,
      *         error_message: string,
-     *         ignored_issues?: list<string>,
+     *         error_levels?: list<string>,
      *         php_version?: string,
      *     }
      * >
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'integerOverflowInArrayKey' => [
             'code' => <<<'PHP'

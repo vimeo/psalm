@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Tests\TestConfig;
@@ -28,7 +29,7 @@ final class CliThreadsTest extends TestCase
      * @return iterable<string,array{int,array<string,mixed>,?int}>
      * @psalm-capabilities read-props
      */
-    public function provideScanThreads(): iterable
+    public static function provideScanThreads(): iterable
     {
         yield '--threads applies to scan' => [3, ['threads' => '3'], null];
         yield '--scan-threads beats --threads' => [2, ['threads' => '3', 'scan-threads' => '2'], null];
@@ -39,9 +40,9 @@ final class CliThreadsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideScanThreads
      * @param array<string,mixed> $options
      */
+    #[DataProvider('provideScanThreads')]
     public function testGetThreadsForScan(int $expected, array $options, ?int $config_scan_threads): void
     {
         $config = new TestConfig();

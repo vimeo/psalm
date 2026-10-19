@@ -17,7 +17,7 @@ final class ValueOfTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'valueOfListClassConstant' => [
@@ -259,7 +259,7 @@ final class ValueOfTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'onlyDefinedValuesOfConstantList' => [
@@ -338,7 +338,7 @@ final class ValueOfTest extends TestCase
                 // TODO turn this into an InvalidDocblock with a better error message. This is difficult because it
                 // has to happen after scanning has finished, otherwise the class might not have been scanned yet.
                 'error_message' => 'MismatchingDocblockParamType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
         ];

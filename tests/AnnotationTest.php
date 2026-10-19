@@ -181,7 +181,7 @@ final class AnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nopType' => [
@@ -1467,7 +1467,7 @@ final class AnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidClassMethodReturn' => [
@@ -1614,7 +1614,7 @@ final class AnnotationTest extends TestCase
                     function fooBar() {
                     }',
                 'error_message' => 'MissingReturnType',
-                'ignored_issues' => ['InvalidDocblock'],
+                'error_levels' => ['InvalidDocblock'],
             ],
             'invalidDocblockReturn' => [
                 'code' => '<?php
@@ -1636,7 +1636,7 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'ignored_issues' => ['MethodSignatureMismatch'],
+                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php

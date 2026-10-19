@@ -17,7 +17,7 @@ final class SuperGlobalsTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'http_response_headerIsList' => [
             'code' => '<?php
@@ -57,7 +57,7 @@ final class SuperGlobalsTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'undefined http_response_header' => [
             'code' => '<?php

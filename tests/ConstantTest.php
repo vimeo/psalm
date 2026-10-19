@@ -176,7 +176,7 @@ final class ConstantTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'constantInFunction' => [
@@ -2257,7 +2257,7 @@ final class ConstantTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'constantDefinedInFunctionButNotCalled' => [
@@ -2346,7 +2346,7 @@ final class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'outOfScopeDefinedConstant' => [
@@ -2520,7 +2520,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'enumCaseDuplicatesConstant' => [
@@ -2531,7 +2531,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'returnValueofNonExistentConstant' => [
@@ -2712,7 +2712,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => "InvalidClassConstantType",
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'overrideFinalClassConstFromExtendedClass' => [
@@ -2730,7 +2730,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => "OverriddenFinalConstant",
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'overrideFinalClassConstFromImplementedInterface' => [
@@ -2748,7 +2748,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => "OverriddenFinalConstant",
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'finalConstantIsIllegalBefore8.1' => [
@@ -2760,7 +2760,7 @@ final class ConstantTest extends TestCase
                     }
                 ',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'classStringIsRequiredToAccessClassConstant' => [

@@ -18,7 +18,7 @@ final class AssignmentInConditionalTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'orWithAssignment' => [
@@ -467,7 +467,7 @@ final class AssignmentInConditionalTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'assignmentInBranchOfAnd' => [
@@ -497,7 +497,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return "b";
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
             'assignmentInBranchOfAndReferencedAfterIf' => [

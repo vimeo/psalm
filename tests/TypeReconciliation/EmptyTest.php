@@ -18,7 +18,7 @@ final class EmptyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'ifNotUndefinedAndEmpty' => [
@@ -653,7 +653,7 @@ final class EmptyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'preventImpossibleEmpty' => [
@@ -675,7 +675,7 @@ final class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
             'preventEmptyOnBool' => [
                 'code' => '<?php

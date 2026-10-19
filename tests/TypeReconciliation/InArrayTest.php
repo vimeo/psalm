@@ -20,7 +20,7 @@ final class InArrayTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nullTypeRemovedAfterNegatedAssertionAgainstArrayOfInt' => [
@@ -239,7 +239,7 @@ final class InArrayTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'typeNotChangedAfterNegatedAssertionAgainstUnsealedArrayOfMixed' => [
@@ -367,7 +367,7 @@ final class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
-                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [
                 'code' => '<?php

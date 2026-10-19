@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
 
@@ -37,7 +38,7 @@ final class CliUtilsTest extends TestCase
      * @return iterable<string,array{list<string>,list<string>}>
      * @psalm-mutation-free
      */
-    public function provideGetArguments(): iterable
+    public static function provideGetArguments(): iterable
     {
         $psalter = __DIR__ . '/../../psalter';
         yield 'standardCallWithPsalter' => [
@@ -57,10 +58,10 @@ final class CliUtilsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideGetArguments
      * @param list<string> $expected
      * @param list<string> $_input
      */
+    #[DataProvider('provideGetArguments')]
     public function testGetArgumentsWillReturnExpectedValue(array $expected, array $_input): void
     {
         global $argv;
@@ -70,7 +71,7 @@ final class CliUtilsTest extends TestCase
     }
 
     /** @return iterable<string,list{0: list<string>|null, 1: list<string>, 2?: list<string>}> */
-    public function provideGetPathsToCheck(): iterable
+    public static function provideGetPathsToCheck(): iterable
     {
         $psalm = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'psalm';
         $dummyProjectDir = (string)realpath(
@@ -130,10 +131,10 @@ final class CliUtilsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideGetPathsToCheck
      * @param list<string>|null $expected
      * @param list<string> $_input
      */
+    #[DataProvider('provideGetPathsToCheck')]
     public function testGetPathsToCheckWillReturnExpectedValue(?array $expected, array $_input, array $fpaths = []): void
     {
         global $argv;

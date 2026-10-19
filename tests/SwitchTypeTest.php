@@ -19,7 +19,7 @@ final class SwitchTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
@@ -1144,7 +1144,7 @@ final class SwitchTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'switchReturnTypeWithFallthroughAndBreak' => [
@@ -1317,7 +1317,7 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
-                'ignored_issues' => ['ParadoxicalCondition'],
+                'error_levels' => ['ParadoxicalCondition'],
             ],
             'repeatedCaseValue' => [
                 'code' => '<?php

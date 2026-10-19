@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -41,9 +42,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getAllBasicTypes
-     */
+    #[DataProvider('getAllBasicTypes')]
     public function testTypeAcceptsItself(string $type_string): void
     {
         $type_1 = Type::parseString($type_string);
@@ -62,7 +61,7 @@ final class TypeComparatorTest extends TestCase
      * @return array<array{string}>
      * @psalm-pure
      */
-    public function getAllBasicTypes(): array
+    public static function getAllBasicTypes(): array
     {
         // these types are not valid without generics attached
         $basic_generic_types = [
@@ -100,9 +99,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getSuccessfulComparisons
-     */
+    #[DataProvider('getSuccessfulComparisons')]
     public function testTypeAcceptsType(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -118,9 +115,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getUnsuccessfulComparisons
-     */
+    #[DataProvider('getUnsuccessfulComparisons')]
     public function testTypeDoesNotAcceptType(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -136,7 +131,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /** @dataProvider getCoercibleComparisons */
+    #[DataProvider('getCoercibleComparisons')]
     public function testTypeIsCoercible(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -164,7 +159,7 @@ final class TypeComparatorTest extends TestCase
      * @return iterable<string, list{string, string}>
      * @psalm-mutation-free
      */
-    public function getCoercibleComparisons(): iterable
+    public static function getCoercibleComparisons(): iterable
     {
         yield 'callableStringIntoLowercaseString' => [
             'lowercase-string',
@@ -180,7 +175,7 @@ final class TypeComparatorTest extends TestCase
      * @return array<array{string, string}>
      * @psalm-pure
      */
-    public function getSuccessfulComparisons(): array
+    public static function getSuccessfulComparisons(): array
     {
         return [
             'iterableAcceptsArray' => [
@@ -230,7 +225,7 @@ final class TypeComparatorTest extends TestCase
      * @return iterable<string, list{string,string}>
      * @psalm-mutation-free
      */
-    public function getUnsuccessfulComparisons(): iterable
+    public static function getUnsuccessfulComparisons(): iterable
     {
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
             'list<int>',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -45,14 +46,12 @@ final class JsonOutputTest extends TestCase
         $this->project_analyzer->getCodebase()->reportUnusedCode();
     }
 
-    /**
-     * @dataProvider providerTestJsonOutputErrors
-     */
+    #[DataProvider('providerTestJsonOutputErrors')]
     public function testJsonOutputErrors(
         string $code,
         int $error_count,
         string $message,
-        int $line_number,
+        int $line,
         string $error,
     ): void {
         $this->addFile('somefile.php', $code);
@@ -64,18 +63,19 @@ final class JsonOutputTest extends TestCase
         $this->assertSame('somefile.php', $issue_data->file_path);
         $this->assertSame('error', $issue_data->severity);
         $this->assertSame($message, $issue_data->message);
-        $this->assertSame($line_number, $issue_data->line_from);
+        $this->assertSame($line, $issue_data->line_from);
         $this->assertSame(
             $error,
             substr($code, $issue_data->from, $issue_data->to - $issue_data->from),
         );
     }
 
+
     /**
      * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
      * @psalm-pure
      */
-    public function providerTestJsonOutputErrors(): array
+    public static function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [

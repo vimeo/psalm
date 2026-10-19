@@ -20,7 +20,7 @@ final class RedundantConditionTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
@@ -1042,7 +1042,7 @@ final class RedundantConditionTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
@@ -1210,7 +1210,7 @@ final class RedundantConditionTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'refineTypeInMethodCall' => [
                 'code' => '<?php
@@ -1348,7 +1348,7 @@ final class RedundantConditionTest extends TestCase
                         $b = $a && rand(0, 1);
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['MissingParamType'],
+                'error_levels' => ['MissingParamType'],
             ],
             'negatedInstanceof' => [
                 'code' => '<?php

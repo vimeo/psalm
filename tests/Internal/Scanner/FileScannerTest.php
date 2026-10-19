@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Internal\Scanner;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -17,9 +18,7 @@ use Psalm\Tests\TestConfig;
 
 final class FileScannerTest extends TestCase
 {
-    /**
-     * @dataProvider providerScan
-     */
+    #[DataProvider('providerScan')]
     public function testScan(
         Config $config,
         string $file_contents,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -32,13 +33,13 @@ final class MethodMoveTest extends TestCase
     }
 
     /**
-     * @dataProvider providerValidCodeParse
-     * @param array<string, string> $methods_to_move
+     * @param array<string, string> $migrations
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
-        array $methods_to_move,
+        string $input,
+        string $output,
+        array $migrations,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,12 +62,12 @@ final class MethodMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $this->project_analyzer->refactorCodeAfterCompletion($methods_to_move);
+        $this->project_analyzer->refactorCodeAfterCompletion($migrations);
 
         $this->analyzeFile($file_path, $context);
 
@@ -76,14 +77,15 @@ final class MethodMoveTest extends TestCase
 
         $this->project_analyzer->migrateCode();
 
-        $this->assertSame($output_code, $codebase->getFileContents($file_path));
+        $this->assertSame($output, $codebase->getFileContents($file_path));
     }
+
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticMethodWithForeachIterator' => [

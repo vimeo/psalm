@@ -89,7 +89,7 @@ final class NoDiscardTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'noDiscardFunctionReturnValueAssigned' => [
             'code' => '<?php
@@ -384,7 +384,7 @@ final class NoDiscardTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'noDiscardFunctionReturnValueDiscarded' => [
             'code' => '<?php
@@ -394,7 +394,7 @@ final class NoDiscardTest extends TestCase
                 f();
             ',
             'error_message' => 'UnusedFunctionCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -408,7 +408,7 @@ final class NoDiscardTest extends TestCase
                 f();
             ',
             'error_message' => 'UnusedFunctionCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -424,7 +424,7 @@ final class NoDiscardTest extends TestCase
                 (new Foo())->bar();
             ',
             'error_message' => 'UnusedMethodCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -440,7 +440,7 @@ final class NoDiscardTest extends TestCase
                 Foo::baz();
             ',
             'error_message' => 'UnusedMethodCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -458,7 +458,7 @@ final class NoDiscardTest extends TestCase
                 (new C())->foo();
             ',
             'error_message' => 'UnusedMethodCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -476,7 +476,7 @@ final class NoDiscardTest extends TestCase
                 }
             ',
             'error_message' => 'UnusedMethodCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // nullsafe syntax is 8.0+, but #[\NoDiscard] requires 8.5
             'php_version' => '8.5',
         ];
@@ -495,7 +495,7 @@ final class NoDiscardTest extends TestCase
                 (new Foo())->bar();
             ',
             'error_message' => 'UnusedMethodCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -507,7 +507,7 @@ final class NoDiscardTest extends TestCase
                 function f(): void {}
             ',
             'error_message' => 'InvalidAttribute',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -519,7 +519,7 @@ final class NoDiscardTest extends TestCase
                 function f(): never { exit; }
             ',
             'error_message' => 'InvalidAttribute',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // never syntax is 8.1+, but #[\NoDiscard] requires 8.5
             'php_version' => '8.5',
         ];
@@ -532,7 +532,7 @@ final class NoDiscardTest extends TestCase
                 $x = (void) f();
             ',
             'error_message' => 'InvalidCast',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // the (void) cast is a PHP 8.5-only syntax; NoDiscard itself is not version-gated
             'php_version' => '8.5',
         ];
@@ -545,7 +545,7 @@ final class NoDiscardTest extends TestCase
                 f();
             ',
             'error_message' => 'UnusedFunctionCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // #[\NoDiscard] is only defined in PHP 8.5+; enforcement is version-independent but
             // the attribute must exist to be applied, so these cases analyse as 8.5.
             'php_version' => '8.5',
@@ -566,7 +566,7 @@ final class NoDiscardTest extends TestCase
                 f();
             ',
             'error_message' => 'UnusedFunctionCall',
-            'ignored_issues' => [],
+            'error_levels' => [],
             // Analysed below 8.5: the polyfill makes #[\NoDiscard] available (so no undefined
             // issue) and enforcement still reports the discarded result.
             'php_version' => '8.0',

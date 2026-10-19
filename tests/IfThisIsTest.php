@@ -17,7 +17,7 @@ final class IfThisIsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'worksAfterConvert' => [
@@ -298,7 +298,7 @@ final class IfThisIsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'parameterConditionalTypeIsReportedInsteadOfCrashing' => [

@@ -17,7 +17,7 @@ final class EnumTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'example' => [
@@ -763,7 +763,7 @@ final class EnumTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'enumValueIsNot' => [
@@ -777,7 +777,7 @@ final class EnumTest extends TestCase
 
                     if (Suit::Hearts->value === "a") {}',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'enumValueNotBacked' => [
@@ -791,7 +791,7 @@ final class EnumTest extends TestCase
 
                     echo Suit::Hearts->value;',
                 'error_message' => 'UndefinedPropertyFetch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'badSuit' => [
@@ -807,7 +807,7 @@ final class EnumTest extends TestCase
                         if ($s === Suit::Clu) {}
                     }',
                 'error_message' => 'UndefinedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'cantCompareToSuitTwice' => [
@@ -827,7 +827,7 @@ final class EnumTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'insufficientMatches' => [
@@ -846,7 +846,7 @@ final class EnumTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'insufficientMatchesForCases' => [
@@ -865,7 +865,7 @@ final class EnumTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidBackingType' => [
@@ -873,7 +873,7 @@ final class EnumTest extends TestCase
                     enum Status: array {}
                 ',
                 'error_message' => 'InvalidEnumBackingType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidCaseTypeForBackedEnum' => [
@@ -883,7 +883,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'duplicateValues' => [
@@ -896,7 +896,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'duplicateCases' => [
@@ -908,7 +908,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'DuplicateEnumCase',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'caseWithAValueOfANonBackedEnum' => [
@@ -919,7 +919,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'caseWithoutAValueOfABackedEnum' => [
@@ -930,7 +930,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'caseTypeMismatch' => [
@@ -941,7 +941,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'propsOnEnum' => [
@@ -951,7 +951,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'NoEnumProperties',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'enumInstantiation' => [
@@ -960,7 +960,7 @@ final class EnumTest extends TestCase
                     new Status;
                 ',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'enumsAsAttributes' => [
@@ -969,7 +969,7 @@ final class EnumTest extends TestCase
                     enum Status { }
                     ',
                 'error_message' => 'InvalidAttribute',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'deprecatedAttribute' => [
@@ -984,7 +984,7 @@ final class EnumTest extends TestCase
                     Foo::B;
                     ',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'unknownPsalmTagOnCase' => [
@@ -995,7 +995,7 @@ final class EnumTest extends TestCase
                     }
                     ',
                 'error_message' => 'InvalidDocblock',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenMethod' => [
@@ -1006,7 +1006,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenUnitEnumImplementation' => [
@@ -1020,7 +1020,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidInterfaceImplementation',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenBackedEnumImplementation' => [
@@ -1046,7 +1046,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidInterfaceImplementation',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenUnitEnumCasesMethod' => [
@@ -1060,7 +1060,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenBackedEnumCasesMethod' => [
@@ -1074,7 +1074,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenBackedEnumFromMethod' => [
@@ -1088,7 +1088,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'forbiddenBackedEnumTryFromMethod' => [
@@ -1102,7 +1102,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'functionCallWithInvalidCase' => [
@@ -1118,7 +1118,7 @@ final class EnumTest extends TestCase
                     foo(Status::Closed);
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'issue-7814-1' => [
@@ -1138,7 +1138,7 @@ final class EnumTest extends TestCase
                     test(State::C);
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'issue-7814-2' => [
@@ -1173,7 +1173,7 @@ final class EnumTest extends TestCase
                     withA(new WithState(State::C));
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'backedEnumDoesNotPassNativeType' => [
@@ -1188,7 +1188,7 @@ final class EnumTest extends TestCase
                     f(State::A);
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'stringBackedEnumCaseValueFromClassConstant' => [
@@ -1203,7 +1203,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'intBackedEnumCaseValueFromClassConstant' => [
@@ -1218,7 +1218,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidStringBackedEnumCaseValueFromStringGlobalConstant' => [
@@ -1229,7 +1229,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidIntBackedEnumCaseValueFromIntGlobalConstant' => [
@@ -1240,7 +1240,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidStringBackedEnumCaseValueFromIntGlobalConstant' => [
@@ -1251,7 +1251,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'invalidIntBackedEnumCaseValueFromStringGlobalConstant' => [
@@ -1262,7 +1262,7 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
         ];

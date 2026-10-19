@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -80,7 +81,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
      * @return iterable<array-key, array{0: string}>
      * @psalm-pure
      */
-    public function providerGaps(): iterable
+    public static function providerGaps(): iterable
     {
         return [
             'object-gap' => ['->'],
@@ -88,9 +89,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testSimpleOnceClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -159,9 +158,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testAbstractClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -236,9 +233,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testUseTrait(string $gap): void
     {
         $content = <<<'EOF'
@@ -317,9 +312,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testUseTraitWithAbstractClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -398,9 +391,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testClassWithExtends(string $gap): void
     {
         $content = <<<'EOF'
@@ -468,9 +459,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testAstractClassWithInterface(string $gap): void
     {
         $content = <<<'EOF'
@@ -501,9 +490,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testClassWithAnnotationMixin(string $gap): void
     {
         $content = <<<'EOF'

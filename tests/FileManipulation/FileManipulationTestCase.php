@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -32,12 +33,12 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param string[] $issues_to_fix
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
+        string $input,
+        string $output,
         string $php_version,
         array $issues_to_fix,
         bool $safe_types,
@@ -85,7 +86,7 @@ abstract class FileManipulationTestCase extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
@@ -113,11 +114,11 @@ abstract class FileManipulationTestCase extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
 
         $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
+        $this->assertSame($output, $this->project_analyzer->getCodebase()->getFileContents($file_path));
     }
 
     /**
      * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
-    abstract public function providerValidCodeParse(): array;
+    abstract public static function providerValidCodeParse(): array;
 }

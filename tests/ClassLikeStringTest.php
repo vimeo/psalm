@@ -193,7 +193,7 @@ final class ClassLikeStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'arrayOfClassConstants' => [
@@ -1059,7 +1059,7 @@ final class ClassLikeStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'arrayOfStringClasses' => [
@@ -1128,7 +1128,7 @@ final class ClassLikeStringTest extends TestCase
                         return ["A", "B"];
                     }',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'badClassStringConstructor' => [
                 'code' => '<?php

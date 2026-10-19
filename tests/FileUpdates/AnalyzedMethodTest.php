@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileUpdates;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -49,11 +50,11 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestValidUpdates
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
      * @param array<string, string> $ignored_issues
      */
+    #[DataProvider('providerTestValidUpdates')]
     public function testValidInclude(
         array $start_files,
         array $end_files,
@@ -110,9 +111,9 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,ignored_issues?:array<string,string>}>
      */
-    public function providerTestValidUpdates(): array
+    public static function providerTestValidUpdates(): array
     {
         return [
             'basicRequire' => [
@@ -192,7 +193,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -502,7 +503,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -1178,7 +1179,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\a::__construct' => 2,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'PropertyNotSetInConstructor' => Config::REPORT_INFO,
                     'DocblockTypeContradiction' => Config::REPORT_INFO,
                     'RedundantConditionGivenDocblockType' => Config::REPORT_INFO,

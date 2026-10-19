@@ -8,6 +8,7 @@ use DOMAttr;
 use DOMDocument;
 use DOMXPath;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Constraint\Constraint;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -21,6 +22,7 @@ use Psalm\Internal\RuntimeCaches;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use SebastianBergmann\Exporter\Exporter;
 use UnexpectedValueException;
 
 use function array_diff;
@@ -210,10 +212,9 @@ final class DocumentationTest extends TestCase
     }
 
     /**
-     * @dataProvider providerInvalidCodeParse
-     * @small
      * @param array<string> $ignored_issues
      */
+    #[DataProvider('providerInvalidCodeParse')]
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
@@ -290,7 +291,7 @@ final class DocumentationTest extends TestCase
     /**
      * @return array<string,array{string,string,string[],bool,string}>
      */
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         $invalid_code_data = [];
 
@@ -416,7 +417,7 @@ final class DocumentationTest extends TestCase
         );
     }
 
-    /** @dataProvider knownAnnotations */
+    #[DataProvider('knownAnnotations')]
     public function testAllAnnotationsAreDocumented(string $annotation): void
     {
         if ('' === self::$docContents) {
@@ -438,7 +439,7 @@ final class DocumentationTest extends TestCase
      * @return iterable<string, array{string}>
      * @psalm-mutation-free
      */
-    public function knownAnnotations(): iterable
+    public static function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
             if (in_array('@psalm-' . $annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
@@ -487,7 +488,7 @@ final class DocumentationTest extends TestCase
             #[Override]
             protected function failureDescription(mixed $other): string
             {
-                return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
+                return (new Exporter())->shortenedExport($other) . ' ' . $this->toString();
             }
         };
     }

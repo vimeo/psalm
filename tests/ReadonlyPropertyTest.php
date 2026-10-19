@@ -19,7 +19,7 @@ final class ReadonlyPropertyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'docblockReadonlyPropertySetInConstructor' => [
@@ -142,7 +142,7 @@ final class ReadonlyPropertyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'readonlyPropertySetInConstructorAndAlsoAnotherMethodInsideClass' => [
@@ -213,7 +213,7 @@ final class ReadonlyPropertyTest extends TestCase
                     $a = new A();
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'readonlyPropertySetInConstructorAndAlsoOutsideClassWithAllowPrivate' => [
@@ -282,7 +282,7 @@ final class ReadonlyPropertyTest extends TestCase
                         public readonly string $s = "a";
                     }',
                 'error_message' => 'InvalidPropertyAssignment',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'readonlyPromotedPropertyAssignOperator' => [
@@ -295,7 +295,7 @@ final class ReadonlyPropertyTest extends TestCase
                     $a = new A("hello");
                     $a->bar = "goodbye";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'readonlyPromotedPropertyAccess' => [
@@ -308,7 +308,7 @@ final class ReadonlyPropertyTest extends TestCase
                     $a = new A("hello");
                     $b = $a->bar;',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:26',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'readonlyPhpDocPromotedPropertyAssignOperator' => [
@@ -330,7 +330,7 @@ final class ReadonlyPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
         ];

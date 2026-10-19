@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Traits;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
@@ -34,14 +35,14 @@ trait ValidCodeAnalysisTestTrait
      *     }
      * >
      */
-    abstract public function providerValidCodeParse(): iterable;
+    abstract public static function providerValidCodeParse(): iterable;
+
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
-     * @small
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
         string $code,
         array $assertions = [],

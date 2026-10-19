@@ -27,7 +27,7 @@ final class CapabilitiesTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'conditionalCapabilitiesTakeTheBranchTheArgumentsSelect' => [
@@ -2714,7 +2714,7 @@ final class CapabilitiesTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
@@ -5212,7 +5212,7 @@ final class CapabilitiesTest extends TestCase
                         return new Mt19937();
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'randomizerAdvancesItsEngine' => [
@@ -5224,7 +5224,7 @@ final class CapabilitiesTest extends TestCase
                         return $randomizer->getInt(0, 10);
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'methodCalledByAnUnknownNameOfAClassWithoutAContractIsImpure' => [

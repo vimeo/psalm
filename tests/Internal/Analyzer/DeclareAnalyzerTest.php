@@ -18,7 +18,7 @@ final class DeclareAnalyzerTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'declareStrictTypes1' => [
             'code' => <<<'PHP'
@@ -65,7 +65,7 @@ final class DeclareAnalyzerTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'declareUnknownDirective' => [
             'code' => <<<'PHP'

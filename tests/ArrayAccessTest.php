@@ -476,7 +476,7 @@ final class ArrayAccessTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'allowEmptyList' => [
@@ -1315,7 +1315,7 @@ final class ArrayAccessTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidArrayAccess' => [
@@ -1371,7 +1371,7 @@ final class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1379,7 +1379,7 @@ final class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php

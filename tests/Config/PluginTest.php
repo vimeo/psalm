@@ -6,7 +6,6 @@ namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
 use Override;
-use PHPUnit\Framework\MockObject\MockObject;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -26,7 +25,6 @@ use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
-use stdClass;
 
 use function dirname;
 use function get_class;
@@ -1041,35 +1039,17 @@ final class PluginTest extends TestCase
             ),
         );
 
-        $mock = $this->getMockBuilder(stdClass::class)->setMethods(['check'])->getMock();
-        $mock->expects($this->exactly(4))
-            ->method('check')
-            ->withConsecutive(
-                [$this->equalTo('b')],
-                [$this->equalTo('array_map')],
-                [$this->equalTo('fopen')],
-                [$this->equalTo('a')],
-            );
-        $plugin = new class($mock) implements AfterEveryFunctionCallAnalysisInterface {
-            private static MockObject $m;
+        $plugin = new class implements AfterEveryFunctionCallAnalysisInterface {
+            /** @var list<string> */
+            public static array $function_ids = [];
 
             /**
-             * @psalm-mutation-free
-             */
-            public function __construct(MockObject $m)
-            {
-                self::$m = $m;
-            }
-
-            /**
-             * @psalm-external-mutation-free
+             * @psalm-capabilities read-globals|write-globals
              */
             #[Override]
             public static function afterEveryFunctionCallAnalysis(AfterEveryFunctionCallAnalysisEvent $event): void
             {
-                $function_id = $event->getFunctionId();
-                /** @psalm-suppress UndefinedInterfaceMethod */
-                self::$m->check($function_id);
+                self::$function_ids[] = $event->getFunctionId();
             }
         };
 
@@ -1094,6 +1074,8 @@ final class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(['b', 'array_map', 'fopen', 'a'], $plugin::$function_ids);
     }
 
     public function testAddTaints(): void

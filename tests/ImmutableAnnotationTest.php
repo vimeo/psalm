@@ -17,7 +17,7 @@ final class ImmutableAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'SKIPPED-noMissing' => [
@@ -575,7 +575,7 @@ final class ImmutableAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'impureGlobalImmutable' => [

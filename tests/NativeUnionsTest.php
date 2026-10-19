@@ -17,7 +17,7 @@ final class NativeUnionsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nativeTypeUnionInConstructor' => [
@@ -76,7 +76,7 @@ final class NativeUnionsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidNativeUnionArgument' => [
@@ -87,7 +87,7 @@ final class NativeUnionsTest extends TestCase
                     test(2);
                 ',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'mismatchDocblockNativeUnionArgument' => [
@@ -100,7 +100,7 @@ final class NativeUnionsTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockParamType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'unionsNotAllowedInPHP74' => [
@@ -113,7 +113,7 @@ final class NativeUnionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
         ];

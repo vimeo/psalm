@@ -17,7 +17,7 @@ final class CheckTypeTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'allowSubtype' => [
             'code' => '<?php
@@ -60,7 +60,7 @@ final class CheckTypeTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'checkType' => [
             'code' => '<?php

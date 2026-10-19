@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Aliases;
@@ -44,7 +45,7 @@ final class ClassLikeDocblockParserTest extends TestCase
      * @return iterable<array-key, array{annotation: string, expected: array}>
      * @psalm-pure
      */
-    public function providerMethodAnnotation(): iterable
+    public static function providerMethodAnnotation(): iterable
     {
         $data = [
             'foo()' => [
@@ -245,9 +246,7 @@ final class ClassLikeDocblockParserTest extends TestCase
         return $res;
     }
 
-    /**
-     * @dataProvider providerMethodAnnotation
-     */
+    #[DataProvider('providerMethodAnnotation')]
     public function testMethodAnnotation(string $annotation, array $expected): void
     {
         $full_content = <<<EOF

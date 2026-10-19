@@ -36,6 +36,28 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testVoidAsThrowsMeansNothingIsThrown(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Foo;
+
+                /**
+                 * @throws void
+                 * @psalm-pure
+                 */
+                function bar() : int {
+                    return 1;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+        $this->assertSame(0, IssueBuffer::getErrorCount());
+    }
+
     public function testNonThrowableClassAsThrows(): void
     {
         $this->expectExceptionMessage('InvalidThrow');

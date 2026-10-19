@@ -24,7 +24,7 @@ final class PurityTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'newOfAClassExtendingAPurityTemplatedClassResolvesItsUnboundTemplatesToTheirBounds' => [
@@ -2550,7 +2550,7 @@ final class PurityTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'callbackStoredByAMethodNotWideningThePurityTemplate' => [
@@ -3868,7 +3868,7 @@ final class PurityTemplateTest extends TestCase
                         return $f->getReturn();
                     }',
                 'error_message' => 'method Fiber::start requires io',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'classPurityTemplateInTypeTemplateBoundIsInferred' => [

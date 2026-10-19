@@ -19,7 +19,7 @@ final class TraitTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'accessiblePrivateMethodFromTrait' => [
@@ -1221,7 +1221,7 @@ final class TraitTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'inaccessiblePrivateMethodFromInheritedTrait' => [
@@ -1450,7 +1450,7 @@ final class TraitTest extends TestCase
                     trait A { const B = 0; }
                     PHP,
                 'error_message' => 'ConstantDeclarationInTrait',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'duplicateTraitProperty' => [

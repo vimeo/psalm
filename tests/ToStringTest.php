@@ -17,7 +17,7 @@ final class ToStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'validToString' => [
@@ -218,7 +218,7 @@ final class ToStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'echoClass' => [
@@ -256,7 +256,7 @@ final class ToStringTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidToString',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'implicitCastWithStrictTypes' => [
@@ -412,7 +412,7 @@ final class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'implicitCastInArray' => [

@@ -19,7 +19,7 @@ final class AsymmetricVisibilityTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'privateSetWrittenInsideClass' => [
@@ -286,7 +286,7 @@ final class AsymmetricVisibilityTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'privateSetWrittenFromOutside' => [
@@ -299,7 +299,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a->foo = "b";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - '
                     . 'Cannot modify private(set) property A::$foo',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetWrittenFromChild' => [
@@ -315,7 +315,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - '
                     . 'Cannot modify private(set) property B::$foo from context B',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'protectedSetWrittenFromOutside' => [
@@ -328,7 +328,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a->foo = 2;',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - '
                     . 'Cannot modify protected(set) property A::$foo',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'protectedSetWrittenFromUnrelatedClass' => [
@@ -344,7 +344,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - '
                     . 'Cannot modify protected(set) property A::$foo from context C',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetCompoundAssignmentFromOutside' => [
@@ -356,7 +356,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a = new A();
                     $a->foo .= "b";',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetIncrementFromOutside' => [
@@ -368,7 +368,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a = new A();
                     $a->foo++;',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetArrayPushFromOutside' => [
@@ -381,7 +381,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a = new A();
                     $a->foo[] = 1;',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetUnsetFromOutside' => [
@@ -393,7 +393,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a = new A();
                     unset($a->foo);',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetPromotedPropertyWrittenFromOutside' => [
@@ -405,7 +405,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     $a = new A("a");
                     $a->foo = "b";',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateSetReadonlyWrittenFromChildConstructor' => [
@@ -424,7 +424,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         }
                     }',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'overrideWithNarrowerSetVisibility' => [
@@ -437,7 +437,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public private(set) int $foo = 2;
                     }',
                 'error_message' => 'OverriddenPropertyAccess',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'overrideImplicitlyFinalPrivateSetProperty' => [
@@ -450,7 +450,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public int $foo = 2;
                     }',
                 'error_message' => 'OverriddenFinalProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'overrideExplicitlyFinalProperty' => [
@@ -463,7 +463,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public int $foo = 2;
                     }',
                 'error_message' => 'OverriddenFinalProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'asymmetricVisibilityRequiresType' => [
@@ -472,7 +472,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public private(set) $foo;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => ['MissingPropertyType'],
+                'error_levels' => ['MissingPropertyType'],
                 'php_version' => '8.4',
             ],
             'asymmetricVisibilityOnStaticPropertyBeforePhp85' => [
@@ -483,7 +483,7 @@ final class AsymmetricVisibilityTest extends TestCase
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - '
                     . 'Asymmetric visibility on static properties is only available in PHP 8.5 and later, '
                     . 'but A::$foo uses it',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'staticPrivateSetWrittenFromOutsideOnPhp85' => [
@@ -495,7 +495,7 @@ final class AsymmetricVisibilityTest extends TestCase
                     A::$model = "b";',
                 'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:21 - '
                     . 'Cannot modify private(set) property A::$model',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'staticProtectedSetIncrementFromOutsideOnPhp85' => [
@@ -506,7 +506,7 @@ final class AsymmetricVisibilityTest extends TestCase
 
                     A::$count++;',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'staticPrivateSetArrayPushFromOutsideOnPhp85' => [
@@ -518,7 +518,7 @@ final class AsymmetricVisibilityTest extends TestCase
 
                     A::$list[] = 1;',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'staticPrivateSetPassedByReferenceFromOutsideOnPhp85' => [
@@ -530,7 +530,7 @@ final class AsymmetricVisibilityTest extends TestCase
 
                     sort(A::$list);',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'staticPrivateSetUnsetElementFromOutsideOnPhp85' => [
@@ -542,7 +542,7 @@ final class AsymmetricVisibilityTest extends TestCase
 
                     unset(A::$list[0]);',
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'setVisibilityWiderThanGetVisibility' => [
@@ -551,7 +551,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         protected public(set) int $foo = 1;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'readonlyWithPublicSet' => [
@@ -564,7 +564,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'asymmetricVisibilityBeforePhp84' => [
@@ -573,7 +573,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public private(set) int $foo = 1;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.3',
             ],
         ];

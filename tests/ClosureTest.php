@@ -19,7 +19,7 @@ final class ClosureTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'byRefUseVarUnsetInClosure' => [
@@ -1136,7 +1136,7 @@ final class ClosureTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'wrongArg' => [
@@ -1452,7 +1452,7 @@ final class ClosureTest extends TestCase
                         return fn (int $i) => "";
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'detectImplicitVoidReturn' => [
@@ -1476,7 +1476,7 @@ final class ClosureTest extends TestCase
                     fn(): string => "$a";
                 ',
                 'error_message' => 'UndefinedVariable',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'undefinedVariableInStringCast' => [
@@ -1484,7 +1484,7 @@ final class ClosureTest extends TestCase
                     fn(): string => (string) $a;
                 ',
                 'error_message' => 'UndefinedVariable',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'forbidTemplateAnnotationOnClosure' => [
@@ -1500,7 +1500,7 @@ final class ClosureTest extends TestCase
                     fn(): bool => false;
                 ',
                 'error_message' => 'InvalidDocblock',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'closureInvalidArg' => [
@@ -1518,7 +1518,7 @@ final class ClosureTest extends TestCase
                     $count = $closure();
                 ',
                 'error_message' => 'UndefinedMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:UndefinedMagicInstanceMethod' => [
@@ -1535,7 +1535,7 @@ final class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'UndefinedMagicMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:UndefinedMagicStaticMethod' => [
@@ -1551,7 +1551,7 @@ final class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'MixedAssignment',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:ParentMagicInstanceMethodInStaticContext' => [
@@ -1567,7 +1567,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'error_message' => 'UndefinedMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:ParentMagicInstanceMethodWithoutCall' => [
@@ -1581,7 +1581,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'error_message' => 'UndefinedMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'thisInStaticClosure' => [
@@ -1609,7 +1609,7 @@ final class ClosureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidScope',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'FirstClassCallable:WithNew' => [
@@ -1618,7 +1618,7 @@ final class ClosureTest extends TestCase
                         new stdClass(...);
                     PHP,
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'returnByReferenceNonVariableInClosure' => [

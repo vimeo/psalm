@@ -202,7 +202,7 @@ final class MethodCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'notInCallMapTest' => [
@@ -1502,7 +1502,7 @@ final class MethodCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'staticInvocation' => [
@@ -1540,7 +1540,7 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'ignored_issues' => [
+                'error_levels' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
@@ -1609,7 +1609,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php
@@ -2025,7 +2025,7 @@ final class MethodCallTest extends TestCase
                     $a = fooOrNull()?->getBar();
                     $a->doBaz();',
                 'error_message' => 'PossiblyNullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullReturnedByLaterMethod' => [
@@ -2042,7 +2042,7 @@ final class MethodCallTest extends TestCase
                         $a->nullableB()?->maybeB()->next();
                     }',
                 'error_message' => 'PossiblyNullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullReturnedByMethodAfterShortCircuit' => [
@@ -2061,7 +2061,7 @@ final class MethodCallTest extends TestCase
                         $a?->b()->maybe()->c();
                     }',
                 'error_message' => 'PossiblyNullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullArrayElementMethodCall' => [
@@ -2081,7 +2081,7 @@ final class MethodCallTest extends TestCase
                         $a?->b()->nullableItems()[0]->c();
                     }',
                 'error_message' => 'PossiblyNullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullPropertyFetch' => [
@@ -2100,7 +2100,7 @@ final class MethodCallTest extends TestCase
                         $a?->b()->nullableProp->id;
                     }',
                 'error_message' => 'PossiblyNullPropertyFetch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullNestedArrayAccess' => [
@@ -2117,7 +2117,7 @@ final class MethodCallTest extends TestCase
                         $a?->b()->nullableNested()[0][0];
                     }',
                 'error_message' => 'PossiblyNullArrayAccess',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsNullReturnedByMethodUsedAsClass' => [
@@ -2133,7 +2133,7 @@ final class MethodCallTest extends TestCase
                         $a?->maybe()::done();
                     }',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullsafeChainReportsPossiblyUndefinedArrayElementInCoalesce' => [
@@ -2153,7 +2153,7 @@ final class MethodCallTest extends TestCase
                         return $a?->b()->optionalItems()[0]->c() ?? 0;
                     }',
                 'error_message' => 'PossiblyNullReference',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'undefinedMethodOnParentCallWithMethodExistsOnSelf' => [

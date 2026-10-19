@@ -7,6 +7,7 @@ namespace Psalm\Tests\LanguageServer;
 use LanguageServerProtocol\Position;
 use LanguageServerProtocol\Range;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -661,7 +662,7 @@ final class SymbolLookupTest extends TestCase
      * @return array<int, array{0: Position, 1: ?string, 2: ?int, 3: ?int}>
      * @psalm-pure
      */
-    public function providerGetSignatureHelp(): array
+    public static function providerGetSignatureHelp(): array
     {
         return [
             [new Position(5, 34), null, null, null],
@@ -686,9 +687,7 @@ final class SymbolLookupTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerGetSignatureHelp
-     */
+    #[DataProvider('providerGetSignatureHelp')]
     public function testGetSignatureHelp(
         Position $position,
         ?string $expected_symbol,

@@ -385,7 +385,7 @@ final class BinaryOperationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'regularAddition' => [
@@ -1234,7 +1234,7 @@ final class BinaryOperationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'badAddition' => [
@@ -1297,7 +1297,7 @@ final class BinaryOperationTest extends TestCase
                         return ++$id;
                     }',
                 'error_message' => 'StringIncrement - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Incrementing a non-numeric string is deprecated since PHP 8.5, use str_increment() instead',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.5',
             ],
             'falseIncrement' => [

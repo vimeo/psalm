@@ -17,7 +17,7 @@ final class ParamClosureThisTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'bindThisToExplicitClass' => [
@@ -335,7 +335,7 @@ final class ParamClosureThisTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'sameClosureNodeIsClearedForUnboundUnionReceiver' => [
@@ -360,7 +360,7 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
                 'error_message' => 'InvalidScope',
-                'ignored_issues' => ['PossiblyUndefinedMethod'],
+                'error_levels' => ['PossiblyUndefinedMethod'],
             ],
             'selfOnInheritedMethodStaysAtDeclaringClass' => [
                 'code' => '<?php
@@ -471,7 +471,7 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
                 'error_message' => 'InvalidScope',
-                'ignored_issues' => ['UndefinedDocblockClass'],
+                'error_levels' => ['UndefinedDocblockClass'],
             ],
             'traitSelfOnInheritedMethodStaysAtUsingClass' => [
                 'code' => '<?php

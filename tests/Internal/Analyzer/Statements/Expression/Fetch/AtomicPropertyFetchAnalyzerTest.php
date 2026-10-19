@@ -18,7 +18,7 @@ final class AtomicPropertyFetchAnalyzerTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'allowDynamicProperties' => [
@@ -84,7 +84,7 @@ final class AtomicPropertyFetchAnalyzerTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'undefinedPropertyAccessOnMissingDependency' => [
@@ -96,7 +96,7 @@ final class AtomicPropertyFetchAnalyzerTest extends TestCase
                     make()->prop;
                     PHP,
                 'error_message' => 'UndefinedPropertyFetch',
-                'ignored_issues' => ['MissingDependency'],
+                'error_levels' => ['MissingDependency'],
             ],
         ];
     }

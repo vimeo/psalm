@@ -15,7 +15,7 @@ final class CastTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'voidCastDiscardsValueWithoutError' => [
             'code' => '<?php

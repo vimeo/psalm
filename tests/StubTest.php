@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -648,9 +650,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testPolyfilledFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -680,9 +680,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testConditionalConstantDefined(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -712,9 +710,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testStubbedConstantVarCommentType(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -754,9 +750,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testStubDocblocksWithUnknownPsalmTagsDoNotCrash(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -796,9 +790,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testClassAlias(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1103,7 +1095,7 @@ final class StubTest extends TestCase
      * @return iterable<string, array{string,string}>
      * @psalm-mutation-free
      */
-    public function versionDependentStubsProvider(): iterable
+    public static function versionDependentStubsProvider(): iterable
     {
         yield '7.0' => [
             '7.0',
@@ -1119,7 +1111,7 @@ final class StubTest extends TestCase
         ];
     }
 
-    /** @dataProvider versionDependentStubsProvider */
+    #[DataProvider('versionDependentStubsProvider')]
     public function testVersionDependentStubs(string $php_version, string $code): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

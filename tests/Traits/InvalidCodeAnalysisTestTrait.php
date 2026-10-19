@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Traits;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -22,12 +23,6 @@ use const PHP_OS;
 use const PHP_VERSION_ID;
 
 /**
- * @psalm-type DeprecatedDataProviderArrayNotation = array{
- *     code: string,
- *     error_message: string,
- *     ignored_issues?: list<string>,
- *     php_version?: string
- * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
@@ -39,18 +34,15 @@ use const PHP_VERSION_ID;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<
-     *     string,
-     *     DeprecatedDataProviderArrayNotation|NamedArgumentsDataProviderArrayNotation
-     * >
+     * @return iterable<string, NamedArgumentsDataProviderArrayNotation>
      */
-    abstract public function providerInvalidCodeParse(): iterable;
+    abstract public static function providerInvalidCodeParse(): iterable;
+
 
     /**
-     * @dataProvider providerInvalidCodeParse
-     * @small
      * @param list<string> $error_levels
      */
+    #[DataProvider('providerInvalidCodeParse')]
     public function testInvalidCode(
         string $code,
         string $error_message,

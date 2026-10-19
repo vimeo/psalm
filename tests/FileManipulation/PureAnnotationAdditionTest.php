@@ -12,7 +12,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'correctClassCasing' => [

@@ -20,7 +20,7 @@ final class ClassTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'templateIntersection' => [
@@ -4387,7 +4387,7 @@ final class ClassTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'restrictTemplateInputWithClassString' => [
@@ -4918,7 +4918,7 @@ final class ClassTemplateTest extends TestCase
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'bindClosureParamAccurately' => [

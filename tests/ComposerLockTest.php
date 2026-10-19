@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Internal\PluginManager\ComposerLock;
 use RuntimeException;
 
@@ -11,12 +13,10 @@ use function json_encode;
 
 use const JSON_THROW_ON_ERROR;
 
-/** @group PluginManager */
+#[Group('PluginManager')]
 final class ComposerLockTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function packageIsPsalmPlugin(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[])]);
@@ -65,9 +65,7 @@ final class ComposerLockTest extends TestCase
         ]), 'Invalid plugin should not be considered a plugin');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function seesNonDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
@@ -82,9 +80,7 @@ final class ComposerLockTest extends TestCase
         $this->assertSame('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function seesDevPlugins(): void
     {
         $lock = new ComposerLock([$this->jsonFile((object)[
@@ -99,9 +95,7 @@ final class ComposerLockTest extends TestCase
         $this->assertSame('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function skipsNonPlugins(): void
     {
         $nonPlugin = (object)[
@@ -116,9 +110,7 @@ final class ComposerLockTest extends TestCase
         $this->assertEmpty($lock->getPlugins());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failsOnInvalidJson(): void
     {
         $lock = new ComposerLock(['data:application/json,[']);
@@ -127,9 +119,7 @@ final class ComposerLockTest extends TestCase
         $lock->getPlugins();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failsOnNonObjectJson(): void
     {
         $lock = new ComposerLock(['data:application/json,null']);
@@ -138,9 +128,7 @@ final class ComposerLockTest extends TestCase
         $lock->getPlugins();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failsOnMissingPackagesEntry(): void
     {
         $noPackagesFile = $this->jsonFile((object)[
@@ -151,9 +139,7 @@ final class ComposerLockTest extends TestCase
         $lock->getPlugins();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function failsOnMissingPackagesDevEntry(): void
     {
         $noPackagesDevFile = $this->jsonFile((object)[
@@ -164,7 +150,7 @@ final class ComposerLockTest extends TestCase
         $lock->getPlugins();
     }
 
-    /** @test */
+    #[Test]
     public function mergesMultipleComposerLockFiles(): void
     {
         $lock = new ComposerLock([

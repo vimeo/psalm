@@ -156,7 +156,7 @@ final class AssertAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
@@ -3225,7 +3225,7 @@ final class AssertAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'assertInstanceOfMultipleInterfaces' => [
@@ -3573,7 +3573,7 @@ final class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'NullArgument',
-                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
+                'error_levels' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'assertionOnMagicPropertyWithoutMutationFreeGet' => [
                 'code' => '<?php

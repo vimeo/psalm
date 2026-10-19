@@ -20,7 +20,7 @@ final class FFITest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             // Examples are from https://www.php.net/manual/en/ffi.examples-basic.php

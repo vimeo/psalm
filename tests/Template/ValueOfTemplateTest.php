@@ -18,7 +18,7 @@ final class ValueOfTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'acceptsArrayValuesFn' => [
@@ -91,7 +91,7 @@ final class ValueOfTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'valueOfTemplateNotIncludesString' => [

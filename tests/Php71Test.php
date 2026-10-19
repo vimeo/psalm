@@ -17,7 +17,7 @@ final class Php71Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nullableReturnType' => [
@@ -282,7 +282,7 @@ final class Php71Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidPrivateClassConstFetch' => [
@@ -344,7 +344,7 @@ final class Php71Test extends TestCase
 
                     }',
                 'error_message' => 'ReservedWord',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'objectDoesntWorkIn71' => [
@@ -353,7 +353,7 @@ final class Php71Test extends TestCase
                         return new stdClass();
                     }',
                 'error_message' => 'ReservedWord',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'arrayDestructuringInvalidList' => [

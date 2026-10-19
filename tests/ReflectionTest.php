@@ -15,7 +15,7 @@ final class ReflectionTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'ReflectionClass::isSubclassOf' => [
             'code' => <<<'PHP'

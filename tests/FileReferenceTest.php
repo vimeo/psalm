@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
@@ -43,9 +44,9 @@ final class FileReferenceTest extends TestCase
     }
 
     /**
-     * @dataProvider providerReferenceLocations
      * @param array<int, string> $expected_locations
      */
+    #[DataProvider('providerReferenceLocations')]
     public function testReferenceLocations(string $input_code, string $symbol, array $expected_locations): void
     {
         $test_name = $this->getTestName();
@@ -133,9 +134,9 @@ final class FileReferenceTest extends TestCase
     }
 
     /**
-     * @dataProvider providerReferencedMethods
      * @param array<string,array<string,bool>> $expected_references
      */
+    #[DataProvider('providerReferencedMethods')]
     public function testReferencedMethods(
         string $input_code,
         array $expected_references,
@@ -177,7 +178,7 @@ final class FileReferenceTest extends TestCase
      * @return array<string,array{string,string,array<int,string>}>
      * @psalm-pure
      */
-    public function providerReferenceLocations(): array
+    public static function providerReferenceLocations(): array
     {
         return [
             'getClassLocation' => [
@@ -223,7 +224,7 @@ final class FileReferenceTest extends TestCase
      * }>
      * @psalm-pure
      */
-    public function providerReferencedMethods(): array
+    public static function providerReferencedMethods(): array
     {
         return [
             'getClassReferences' => [

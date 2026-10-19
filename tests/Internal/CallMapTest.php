@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal;
 
 use FilesystemIterator;
+use PHPUnit\Framework\Attributes\Depends;
 use Psalm\Tests\TestCase;
 use RegexIterator;
 
@@ -26,9 +27,9 @@ final class CallMapTest extends TestCase
     }
 
     /**
-     * @depends testDictionaryPathMustBeAReadableDirectory
      * @return array<int, TCallMap>
      */
+    #[Depends('testDictionaryPathMustBeAReadableDirectory')]
     public function testLoadCallMaps(): array
     {
         /** @var iterable<string, string> */
@@ -60,9 +61,9 @@ final class CallMapTest extends TestCase
     }
 
     /**
-     * @depends testLoadCallMaps
      * @param TCallMaps $callMaps
      */
+    #[Depends('testLoadCallMaps')]
     public function testSignatureKeysAreZeroOrStringAndValuesAreTypes(array $callMaps): void
     {
         foreach ($callMaps as $callMap) {
@@ -74,9 +75,9 @@ final class CallMapTest extends TestCase
     }
 
     /**
-     * @depends testLoadCallMaps
      * @param TCallMaps $callMaps
      */
+    #[Depends('testLoadCallMaps')]
     public function testTypesAreParsable(array $callMaps): void
     {
         foreach ($callMaps as $callMap) {
