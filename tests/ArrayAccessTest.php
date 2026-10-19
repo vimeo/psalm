@@ -479,6 +479,30 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructureArrayAccessObjectThatIsNotTraversable' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class Bag implements ArrayAccess {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): string { return ""; }
+                        /**
+                         * @param ?int $offset
+                         * @param string $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                    }
+
+                    [$first, $second] = new Bag();',
+                'assertions' => [
+                    '$first===' => 'string',
+                    '$second===' => 'string',
+                ],
+                'ignored_issues' => ['MissingPureAnnotation', 'MissingImmutableAnnotation', 'MissingOverrideAttribute'],
+            ],
             'allowEmptyList' => [
                 'code' => '<?php
                     function test(): void {

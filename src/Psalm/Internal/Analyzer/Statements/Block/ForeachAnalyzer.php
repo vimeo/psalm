@@ -1787,6 +1787,36 @@ final class ForeachAnalyzer
     }
 
     /**
+     * The type of the values a non-Traversable ArrayAccess object gives, from its ArrayAccess<TKey, TValue>
+     * parameters, or null if it doesn't give them.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function getArrayAccessValueType(Atomic $atomic_type, Codebase $codebase): ?Union
+    {
+        if (!$atomic_type instanceof TNamedObject
+            || !$codebase->classlike_storage_provider->has($atomic_type->value)
+        ) {
+            return null;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+
+        if (!isset($storage->template_extended_params['ArrayAccess'])) {
+            return null;
+        }
+
+        return self::getExtendedType(
+            'TValue',
+            'ArrayAccess',
+            $storage->name,
+            $storage->template_extended_params,
+            $storage->template_types,
+            $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
+        );
+    }
+
+    /**
      * @param array<string, array<string, Union>>  $template_extended_params
      * @param array<string, array<string, Union>>  $class_template_types
      * @param array<int, Union> $calling_type_params

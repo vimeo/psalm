@@ -85,6 +85,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -1462,6 +1463,30 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Adds to $new_assign_type the type of an item destructured from an ArrayAccess object: what it gives
+     * when traversed, else the values of its ArrayAccess parameters.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function addArrayAccessItemType(
+        Atomic $atomic_type,
+        Codebase $codebase,
+        ?Union $new_assign_type,
+    ): Union {
+        $key_type = null;
+        $value_type = null;
+
+        ForeachAnalyzer::getKeyValueParamsForTraversableObject($atomic_type, $codebase, $key_type, $value_type);
+
+        return Type::combineUnionTypes(
+            $value_type
+                ?? ForeachAnalyzer::getArrayAccessValueType($atomic_type, $codebase)
+                ?? Type::getMixed(),
+            $new_assign_type,
+        );
+    }
+
+    /**
      * The type of what a destructured item takes from an array, null if the array can't have it
      */
     private static function getDestructuredArrayItemType(
@@ -1522,6 +1547,7 @@ final class AssignmentAnalyzer
     /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
+     * @psalm-suppress ComplexMethod to be refactored
      */
     private static function analyzeDestructuringAssignment(
         StatementsAnalyzer $statements_analyzer,
@@ -1766,14 +1792,11 @@ final class AssignmentAnalyzer
                             $can_be_empty,
                         );
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
-                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                        $new_assign_type = self::addArrayAccessItemType(
                             $assign_value_atomic_type,
                             $codebase,
-                            $array_access_key_type,
-                            $array_access_value_type,
+                            $new_assign_type,
                         );
-
-                        $new_assign_type = Type::combineUnionTypes($array_access_value_type, $new_assign_type);
                     }
 
                     if ($item_type) {
