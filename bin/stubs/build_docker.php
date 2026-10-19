@@ -26,6 +26,12 @@ const BASE_IMAGE_TAGS = [
     '8.6' => '8.6-rc-alpine',
 ];
 
+/** Alpine packages installed first, for extensions the base image of a version lacks the libraries of. */
+const BASE_IMAGE_PACKAGES = [
+    // the 8.6 release candidate images are built without mbstring
+    '8.6' => ['oniguruma-dev'],
+];
+
 /** Extensions installed in every image. */
 const EXTENSIONS = [
     'memcached', 'grpc', 'soap', 'swoole', 'zookeeper',
@@ -391,6 +397,10 @@ function generateDockerfile(string $version, array $extensions): string
     $bundledStep = $bundled === []
         ? ''
         : 'install-php-extensions ' . implode(' ', $bundled) . " && \\\n    ";
+    $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
+    $packageStep = $packages === []
+        ? ''
+        : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
@@ -405,7 +415,7 @@ function generateDockerfile(string $version, array $extensions): string
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            {$bundledStep}install-php-extensions $extensionList
+            {$packageStep}{$bundledStep}install-php-extensions $extensionList
 
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
