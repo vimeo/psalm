@@ -19,7 +19,12 @@ declare(strict_types=1);
  */
 
 /** PHP versions we build stub images for. Single source of truth (also drives the CI matrix). */
-const VERSIONS = ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+const VERSIONS = ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+
+/** The tag of the PHP base image of versions with no release yet (php:<version>-alpine otherwise). */
+const BASE_IMAGE_TAGS = [
+    '8.6' => '8.6-rc-alpine',
+];
 
 /** Extensions installed in every image. */
 const EXTENSIONS = [
@@ -37,12 +42,14 @@ const INCLUDES = [
     '8.3' => ['uv-beta', 'ffi'],
     '8.4' => ['uv-beta', 'ffi'],
     '8.5' => ['uv-beta', 'ffi'],
+    '8.6' => ['uv-beta', 'ffi'],
 ];
 
 /** Extensions removed for specific versions. */
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
+    '8.6' => ['zmq'],
 ];
 
 /**
@@ -176,12 +183,19 @@ function extensionVersion(string $extension, string $phpBaseDigest): string
     fail("Unknown source '$source' for extension '$base'.");
 }
 
+/** The PHP base image of a version. */
+function phpBaseImage(string $version): string
+{
+    return 'php:' . (BASE_IMAGE_TAGS[$version] ?? "$version-alpine");
+}
+
 /** The manifest digest of the PHP base image for a version. */
 function phpBaseDigest(string $version): string
 {
-    $inspect = capture('docker buildx imagetools inspect ' . escapeshellarg("php:$version-alpine"));
+    $image = phpBaseImage($version);
+    $inspect = capture('docker buildx imagetools inspect ' . escapeshellarg($image));
     if (!preg_match('/^Digest:\s*(\S+)/m', $inspect, $m)) {
-        fail("Could not determine the digest of php:$version-alpine.");
+        fail("Could not determine the digest of $image.");
     }
     return $m[1];
 }
@@ -362,10 +376,11 @@ function generateDockerfile(string $version, array $extensions): string
 {
     $extensionList = implode(' ', $extensions);
     $installerUrl = INSTALLER_URL;
+    $baseImage = phpBaseImage($version);
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
-        FROM php:$version-alpine
+        FROM $baseImage
 
         ADD $installerUrl /usr/local/bin/
 

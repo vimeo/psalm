@@ -103,7 +103,7 @@ $last = array_key_last($baseMaps);
 
 // Load+normalize hand-written diff maps
 $customMaps = [
-    85 => require __DIR__."/../../dictionaries/override/CallMap.php",
+    $last => require __DIR__."/../../dictionaries/override/CallMap.php",
 ];
 
 $customDiffs = [];

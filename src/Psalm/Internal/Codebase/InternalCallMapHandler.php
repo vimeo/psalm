@@ -56,7 +56,7 @@ use const PHP_VERSION;
 final class InternalCallMapHandler
 {
     private const MIN_CALLMAP_VERSION = 70;
-    private const MAX_CALLMAP_VERSION = 85;
+    private const MAX_CALLMAP_VERSION = 86;
 
     /** see keepsStateBetweenCalls() */
     private const STATEFUL_FUNCTIONS = ['strtok' => true, 'inflate_add' => true];
