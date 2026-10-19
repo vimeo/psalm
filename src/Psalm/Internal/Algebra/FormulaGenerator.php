@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
@@ -16,6 +17,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
+use function array_map;
 use function count;
 use function spl_object_id;
 use function substr;
@@ -90,6 +92,27 @@ final class FormulaGenerator
                 $inside_negation,
                 $cache,
             );
+
+            // the right side is only evaluated where the left one is false: a clause that says nothing of what it
+            // assigns (see Algebra::combineOredClauses()) can't keep what the left one tested of the previous value
+            $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
+
+            if ($right_assigned_var_ids) {
+                $right_clauses = array_map(
+                    static fn(Clause $clause): Clause => $clause->wedge || !$clause->reconcilable
+                        ? new Clause(
+                            $clause->possibilities,
+                            $clause->creating_conditional_id,
+                            $clause->creating_object_id,
+                            $clause->wedge,
+                            $clause->reconcilable,
+                            $clause->generated,
+                            [...$clause->redefined_vars, ...$right_assigned_var_ids],
+                        )
+                        : $clause,
+                    $right_clauses,
+                );
+            }
 
             return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
         }
@@ -458,5 +481,55 @@ final class FormulaGenerator
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * The variables an expression assigns, or assigns an item or property of
+     *
+     * @return array<string, true>
+     */
+    private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        $targets = [];
+
+        (new PhpParser\NodeFinder())->find(
+            $expr,
+            static function (PhpParser\Node $node) use (&$targets): bool {
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    if ($node->var instanceof PhpParser\Node\Expr\List_
+                        || $node->var instanceof PhpParser\Node\Expr\Array_
+                    ) {
+                        foreach ($node->var->items as $item) {
+                            if ($item !== null) {
+                                $targets[] = $item->value;
+                            }
+                        }
+                    } else {
+                        $targets[] = $node->var;
+                    }
+                }
+
+                return false;
+            },
+        );
+
+        $var_ids = [];
+
+        foreach ($targets as $target) {
+            $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
+
+            if ($var_id !== null) {
+                $var_ids[$var_id] = true;
+            }
+        }
+
+        return $var_ids;
     }
 }

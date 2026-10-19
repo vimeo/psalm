@@ -54,7 +54,6 @@ final class TypeVariableTest extends TestCase
                         public function __construct(array $array = []) {}
                         /**
                          * @param callable(TKey): mixed $func
-                         * @psalm-suppress InvalidTemplateParam
                          */
                         public function sortBy(callable $func): void {}
                     }
@@ -94,7 +93,6 @@ final class TypeVariableTest extends TestCase
                         public function __construct(array $array = []) {}
                         /**
                          * @param callable(TKey): mixed $func
-                         * @psalm-suppress InvalidTemplateParam
                          */
                         public function sortBy(callable $func): void {}
                     }
