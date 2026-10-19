@@ -55,7 +55,8 @@ const INCLUDES = [
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
-    '8.6' => ['zmq'],
+    // these don't build on the PHP 8.6 release candidates yet (8.6 removed XtOffsetOf, zval_dtor, INI_STR, ...)
+    '8.6' => ['zmq', 'amqp', 'apcu', 'ds', 'ev', 'grpc', 'igbinary', 'memcached', 'redis', 'swoole', 'zookeeper'],
 ];
 
 /**
@@ -395,6 +396,8 @@ function generateDockerfile(string $version, array $extensions): string
             . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
             . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
     }
+    // 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses
+    $cflags = isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
     $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
     $packageStep = $packages === []
         ? ''
@@ -413,7 +416,7 @@ function generateDockerfile(string $version, array $extensions): string
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            {$packageStep}install-php-extensions $extensionList
+            {$packageStep}{$cflags}install-php-extensions $extensionList
 
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
@@ -429,6 +432,19 @@ if ($arg === null) {
 
 if ($arg === '--versions') {
     echo json_encode(VERSIONS) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--excludes') {
+    // the extensions each version's image lacks, by their base name: gen_callmap.php keeps their entries
+    // from the closest earlier version
+    echo json_encode(array_map(
+        static fn(array $extensions): array => array_map(
+            static fn(string $extension): string => explode('-', $extension, 2)[0],
+            $extensions,
+        ),
+        EXCLUDES,
+    )) . PHP_EOL;
     exit(0);
 }
 

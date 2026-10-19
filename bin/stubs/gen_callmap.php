@@ -101,6 +101,38 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
 ksort($baseMaps);
 $last = array_key_last($baseMaps);
 
+// The image of a version lacks the extensions that don't build on it yet (build_docker.php --excludes):
+// the map of the version keeps their entries from the closest earlier version that has them.
+/** @var array<string, list<string>> $excludes */
+$excludes = json_decode(
+    (string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes'),
+    true,
+    512,
+    JSON_THROW_ON_ERROR,
+);
+$extensionsOf = [];
+foreach (array_keys($baseMaps) as $version) {
+    $file = __DIR__ . "/../../dictionaries/autogen/CallMapExtensions_$version.php";
+    $extensionsOf[$version] = is_file($file) ? require $file : [];
+}
+$previous = null;
+foreach ($baseMaps as $version => &$baseMap) {
+    $excluded = $excludes[intdiv((int) $version, 10) . '.' . ((int) $version % 10)] ?? [];
+    if ($previous !== null && $excluded !== []) {
+        foreach ($extensionsOf[$previous] as $func => $extension) {
+            if (in_array($extension, $excluded, true)
+                && !isset($baseMap[$func])
+                && isset($baseMaps[$previous][$func])
+            ) {
+                $baseMap[$func] = $baseMaps[$previous][$func];
+                $extensionsOf[$version][$func] = $extension;
+            }
+        }
+        $baseMap = normalizeCallMap($baseMap);
+    }
+    $previous = $version;
+} unset($baseMap);
+
 // Load+normalize hand-written diff maps
 $customMaps = [
     $last => require __DIR__."/../../dictionaries/override/CallMap.php",
