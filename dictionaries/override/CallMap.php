@@ -5519,7 +5519,7 @@ return array (
   ),
   'dateinterval::__set_state' => 
   array (
-    0 => 'DateInterval',
+    0 => 'static',
     'array' => 'array<array-key, mixed>',
   ),
   'dateinterval::__wakeup' => 
@@ -5733,7 +5733,7 @@ return array (
   ),
   'datetimezone::__set_state' => 
   array (
-    0 => 'DateTimeZone',
+    0 => 'static',
     'array' => 'array<array-key, mixed>',
   ),
   'datetimezone::__wakeup' => 
@@ -6882,7 +6882,7 @@ return array (
   ),
   'directoryiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'int|string',
   ),
   'directoryiterator::next' => 
   array (
@@ -12779,7 +12779,7 @@ return array (
   ),
   'filter_var_array' => 
   array (
-    0 => 'array<array-key, mixed>|false|null',
+    0 => 'array<array-key, mixed>|false',
     'array' => 'array<array-key, mixed>',
     'options=' => 'array<array-key, mixed>|int',
     'add_empty=' => 'bool',
@@ -18335,7 +18335,7 @@ return array (
   ),
   'header_register_callback' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'callback' => 'callable[impure]():void',
   ),
   'header_remove' => 
@@ -25256,7 +25256,7 @@ return array (
   'intlbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'type=' => 'int',
   ),
   'intlbreakiterator::gettext' => 
   array (
@@ -26151,7 +26151,7 @@ return array (
   'intlcodepointbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'type=' => 'int',
   ),
   'intlcodepointbreakiterator::gettext' => 
   array (
@@ -26703,7 +26703,7 @@ return array (
   'intlrulebasedbreakiterator::getpartsiterator' => 
   array (
     0 => 'IntlPartsIterator',
-    'type=' => 'string',
+    'type=' => 'int',
   ),
   'intlrulebasedbreakiterator::getrules' => 
   array (
@@ -38662,7 +38662,7 @@ return array (
     'options=' => 'int',
     'iv=' => 'string',
     'tag=' => 'null|string',
-    'aad=' => 'string',
+    'aad=' => 'null|string',
   ),
   'openssl_dh_compute_key' => 
   array (
@@ -38686,7 +38686,7 @@ return array (
     'options=' => 'int',
     'iv=' => 'string',
     '&w tag=' => 'string',
-    'aad=' => 'string',
+    'aad=' => 'null|string',
     'tag_length=' => 'int',
   ),
   'openssl_error_string' => 
@@ -38924,6 +38924,7 @@ return array (
     'private_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
     'algorithm=' => 'int|string',
     'padding=' => 'int',
+    'salt_length=' => 'int',
   ),
   'openssl_spki_export' => 
   array (
@@ -38955,6 +38956,7 @@ return array (
     'public_key' => 'OpenSSLAsymmetricKey|OpenSSLCertificate|list{OpenSSLAsymmetricKey|OpenSSLCertificate|string, string}|string',
     'algorithm=' => 'int|string',
     'padding=' => 'int',
+    'salt_length=' => 'int',
   ),
   'openssl_x509_check_private_key' => 
   array (
@@ -39813,7 +39815,7 @@ return array (
     0 => 'bool',
     'signal' => 'int',
     'handler' => 'callable[impure]():void|callable[impure](int):void|callable[impure](int, array<array-key, mixed>):void|int',
-    'restart_syscalls=' => 'bool',
+    'restart_syscalls=' => 'bool|null',
   ),
   'pcntl_signal_dispatch' => 
   array (
@@ -45993,7 +45995,7 @@ return array (
   ),
   'readline_completion_function' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'callback' => 'callable[impure](string):array<array-key, string>',
   ),
   'readline_info' => 
@@ -48272,7 +48274,7 @@ return array (
   ),
   'register_tick_function' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'callback' => 'callable[impure]():void',
     '...args=' => 'mixed',
   ),
@@ -58986,6 +58988,7 @@ return array (
     'to' => 'resource',
     'length=' => 'int|null',
     'offset=' => 'int',
+    'context=' => 'mixed',
   ),
   'stream_encoding' => 
   array (
@@ -59055,6 +59058,7 @@ return array (
   array (
     0 => 'bool',
     'stream' => 'resource|string',
+    'context=' => 'mixed',
   ),
   'stream_isatty' => 
   array (
@@ -59091,6 +59095,7 @@ return array (
     '&except' => 'array<array-key, resource>|null',
     'seconds' => 'int|null',
     'microseconds=' => 'int|null',
+    'context=' => 'mixed',
   ),
   'stream_set_blocking' => 
   array (
@@ -59160,6 +59165,7 @@ return array (
     'domain' => 'int',
     'type' => 'int',
     'protocol' => 'int',
+    'context=' => 'mixed',
   ),
   'stream_socket_recvfrom' => 
   array (
@@ -72961,7 +72967,7 @@ return array (
   ),
   'zip_entry_close' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'zip_entry' => 'resource',
   ),
   'zip_entry_compressedsize' => 

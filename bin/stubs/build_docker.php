@@ -19,7 +19,18 @@ declare(strict_types=1);
  */
 
 /** PHP versions we build stub images for. Single source of truth (also drives the CI matrix). */
-const VERSIONS = ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+const VERSIONS = ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+
+/** The tag of the PHP base image of versions with no release yet (php:<version>-alpine otherwise). */
+const BASE_IMAGE_TAGS = [
+    '8.6' => '8.6-rc-alpine',
+];
+
+/** Alpine packages installed first, for extensions the base image of a version lacks the libraries of. */
+const BASE_IMAGE_PACKAGES = [
+    // the 8.6 release candidate images are built without mbstring
+    '8.6' => ['oniguruma-dev'],
+];
 
 /** Extensions installed in every image. */
 const EXTENSIONS = [
@@ -37,12 +48,15 @@ const INCLUDES = [
     '8.3' => ['uv-beta', 'ffi'],
     '8.4' => ['uv-beta', 'ffi'],
     '8.5' => ['uv-beta', 'ffi'],
+    '8.6' => ['uv-beta', 'ffi'],
 ];
 
 /** Extensions removed for specific versions. */
 const EXCLUDES = [
     // php-zmq does not build on PHP 8.5 (it calls zend_exception_get_default(), removed in 8.5).
     '8.5' => ['zmq'],
+    // these don't build on the PHP 8.6 release candidates yet (8.6 removed XtOffsetOf, zval_dtor, INI_STR, ...)
+    '8.6' => ['zmq', 'amqp', 'apcu', 'ds', 'ev', 'grpc', 'igbinary', 'memcached', 'redis', 'swoole', 'zookeeper'],
 ];
 
 /**
@@ -176,12 +190,19 @@ function extensionVersion(string $extension, string $phpBaseDigest): string
     fail("Unknown source '$source' for extension '$base'.");
 }
 
+/** The PHP base image of a version. */
+function phpBaseImage(string $version): string
+{
+    return 'php:' . (BASE_IMAGE_TAGS[$version] ?? "$version-alpine");
+}
+
 /** The manifest digest of the PHP base image for a version. */
 function phpBaseDigest(string $version): string
 {
-    $inspect = capture('docker buildx imagetools inspect ' . escapeshellarg("php:$version-alpine"));
+    $image = phpBaseImage($version);
+    $inspect = capture('docker buildx imagetools inspect ' . escapeshellarg($image));
     if (!preg_match('/^Digest:\s*(\S+)/m', $inspect, $m)) {
-        fail("Could not determine the digest of php:$version-alpine.");
+        fail("Could not determine the digest of $image.");
     }
     return $m[1];
 }
@@ -360,23 +381,42 @@ function explainRebuild(string $image, string $cacheKey, array $components): voi
 
 function generateDockerfile(string $version, array $extensions): string
 {
-    $extensionList = implode(' ', $extensions);
     $installerUrl = INSTALLER_URL;
+    $baseImage = phpBaseImage($version);
+
+    $extensionList = implode(' ', $extensions);
+    // The base images of a version with no release come without pecl, and install-php-extensions
+    // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
+    // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
+    $supportStep = '';
+    if (isset(BASE_IMAGE_TAGS[$version])) {
+        $majorMinor = str_replace('.', '0', $version);
+        $supportStep = " && \\\n    sed -i -E '/^[[:space:]]*505 \\| 506 \\|/ s/\\) ;;\$/ | $majorMinor) ;;/'"
+            . ' /usr/local/bin/install-php-extensions'
+            . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
+            . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
+    }
+    // 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses
+    $cflags = isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
+    $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
+    $packageStep = $packages === []
+        ? ''
+        : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
-        FROM php:$version-alpine
+        FROM $baseImage
 
         ADD $installerUrl /usr/local/bin/
 
-        RUN chmod +x /usr/local/bin/install-php-extensions
+        RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}
 
         # CACHEBUST is a hash of the PHP base image digest and every installed
         # extension's version, resolved from each extension's real source. It changes
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            install-php-extensions $extensionList
+            {$packageStep}{$cflags}install-php-extensions $extensionList
 
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
@@ -392,6 +432,18 @@ if ($arg === null) {
 
 if ($arg === '--versions') {
     echo json_encode(VERSIONS) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--excludes') {
+    // the extensions each version's image lacks, by their base name: gen_callmap.php keeps their overrides
+    echo json_encode(array_map(
+        static fn(array $extensions): array => array_map(
+            static fn(string $extension): string => explode('-', $extension, 2)[0],
+            $extensions,
+        ),
+        EXCLUDES,
+    )) . PHP_EOL;
     exit(0);
 }
 
