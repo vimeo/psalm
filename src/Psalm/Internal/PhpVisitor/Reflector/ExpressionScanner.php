@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Symfony\Component\Filesystem\Path;
 
@@ -31,6 +32,7 @@ use function dirname;
 use function explode;
 use function in_array;
 use function str_contains;
+use function strlen;
 use function strtolower;
 use function substr;
 
@@ -50,6 +52,10 @@ final class ExpressionScanner
         ?FunctionLikeStorage $functionlike_storage,
         ?int $skip_if_descendants,
     ): void {
+        if ($functionlike_storage) {
+            self::scanGlobalWrites($node, $aliases, $functionlike_storage);
+        }
+
         if ($node instanceof PhpParser\Node\Expr\Include_ && !$skip_if_descendants) {
             self::visitInclude(
                 $codebase,
@@ -99,6 +105,100 @@ final class ExpressionScanner
                 );
             }
         }
+    }
+
+    /**
+     * Records the globals the function-like of $storage writes through `$GLOBALS['name']`, and the function-likes it
+     * calls by name, which may write some (see GlobalAnalyzer::getGlobalsWrittenBy())
+     */
+    private static function scanGlobalWrites(
+        PhpParser\Node\Expr $node,
+        Aliases $aliases,
+        FunctionLikeStorage $storage,
+    ): void {
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+        ) {
+            // `$GLOBALS['name']['k'] = ...` writes the global too
+            $var = $node->var;
+
+            while ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && !($var->var instanceof PhpParser\Node\Expr\Variable && $var->var->name === 'GLOBALS')
+            ) {
+                $var = $var->var;
+            }
+
+            if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && $var->dim instanceof PhpParser\Node\Scalar\String_
+                && $var->dim->value !== 'argv'
+                && $var->dim->value !== 'argc'
+            ) {
+                $storage->global_variables['$' . $var->dim->value] = true;
+            }
+        } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
+            foreach (self::getFunctionIds($node->name, $aliases) as $function_id) {
+                // a builtin function writes no global
+                if (!InternalCallMapHandler::inCallMap($function_id)) {
+                    $storage->called_function_like_ids[$function_id] = true;
+                }
+            }
+        } elseif ($node instanceof PhpParser\Node\Expr\StaticCall
+            && $node->class instanceof PhpParser\Node\Name
+            && $node->name instanceof PhpParser\Node\Identifier
+        ) {
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $aliases);
+            $fq_class_name = match (strtolower($fq_class_name)) {
+                'self', 'static' => $storage instanceof MethodStorage ? $storage->defining_fqcln : null,
+                'parent' => null,
+                default => $fq_class_name,
+            };
+
+            if ($fq_class_name !== null && $fq_class_name !== '') {
+                $storage->called_function_like_ids[strtolower($fq_class_name . '::' . $node->name->name)] = true;
+            }
+        } elseif ($node instanceof PhpParser\Node\Expr\MethodCall
+            && $node->var instanceof PhpParser\Node\Expr\Variable
+            && $node->var->name === 'this'
+            && $node->name instanceof PhpParser\Node\Identifier
+            && $storage instanceof MethodStorage
+            && $storage->defining_fqcln !== null
+            && $storage->defining_fqcln !== ''
+        ) {
+            $storage->called_function_like_ids[strtolower($storage->defining_fqcln . '::' . $node->name->name)] = true;
+        }
+    }
+
+    /**
+     * The ids of the functions the name of a function call may refer to: one declared in the namespace, or else
+     * the global one
+     *
+     * @return list<lowercase-string>
+     */
+    private static function getFunctionIds(PhpParser\Node\Name $name, Aliases $aliases): array
+    {
+        if ($name->isFullyQualified()) {
+            return [strtolower($name->toString())];
+        }
+
+        $first = strtolower($name->getFirst());
+        $namespace_prefix = $aliases->namespace !== null && $aliases->namespace !== ''
+            ? $aliases->namespace . '\\'
+            : '';
+
+        if ($name->isUnqualified()) {
+            if (isset($aliases->functions[$first])) {
+                return [strtolower($aliases->functions[$first])];
+            }
+
+            return $namespace_prefix === '' ? [$first] : [strtolower($namespace_prefix . $name->toString()), $first];
+        }
+
+        if (isset($aliases->uses[$first])) {
+            return [strtolower($aliases->uses[$first] . substr($name->toString(), strlen($first)))];
+        }
+
+        return [strtolower($namespace_prefix . $name->toString())];
     }
 
     private static function registerClassMapFunctionCall(
