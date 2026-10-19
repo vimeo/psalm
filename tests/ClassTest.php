@@ -463,12 +463,12 @@ final class ClassTest extends TestCase
             ],
             'classAliasOnNonexistentClass' => [
                 'code' => '<?php
-                    if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
+                    if (!class_exists(\Exception::class)) {
                         /** @psalm-suppress UndefinedClass */
-                        class_alias(\PHPUnit_Framework_TestCase::class, \PHPUnit\Framework\TestCase::class);
+                        class_alias(\Legacy_Exception::class, \Exception::class);
                     }
 
-                    class T extends \PHPUnit\Framework\TestCase {
+                    class T extends \Exception {
 
                     }',
                 'assertions' => [],

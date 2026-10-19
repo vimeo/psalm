@@ -111,7 +111,7 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,ignored_issues?:array<string,string>}>
      */
     public static function providerTestValidUpdates(): array
     {
@@ -193,7 +193,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -503,7 +503,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -1179,7 +1179,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\a::__construct' => 2,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'PropertyNotSetInConstructor' => Config::REPORT_INFO,
                     'DocblockTypeContradiction' => Config::REPORT_INFO,
                     'RedundantConditionGivenDocblockType' => Config::REPORT_INFO,

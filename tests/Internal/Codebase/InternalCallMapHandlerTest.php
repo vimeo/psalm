@@ -7,7 +7,6 @@ namespace Psalm\Tests\Internal\Codebase;
 use InvalidArgumentException;
 use Override;
 use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Depends;
@@ -55,7 +54,6 @@ use const PHP_MINOR_VERSION;
 use const PHP_VERSION;
 use const PHP_VERSION_ID;
 
-#[CoversMethod(InternalCallMapHandler::class, 'getCallMap')]
 #[Group('callmap')]
 final class InternalCallMapHandlerTest extends TestCase
 {

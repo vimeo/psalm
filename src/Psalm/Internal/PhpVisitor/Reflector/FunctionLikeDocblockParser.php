@@ -425,6 +425,11 @@ final class FunctionLikeDocblockParser
                     throw new IncorrectDocblockException('Unexpectedly empty @throws');
                 }
 
+                // `@throws void` says that nothing is thrown
+                if (strtolower($throws_class) === 'void') {
+                    continue;
+                }
+
                 $info->throws[] = [
                     $throws_class,
                     $offset,
