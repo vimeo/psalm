@@ -101,45 +101,9 @@ foreach (glob(__DIR__."/../../dictionaries/autogen/CallMap_*.php") as $file) {
 ksort($baseMaps);
 $last = array_key_last($baseMaps);
 
-// The image of a version lacks the extensions that don't build on it yet (build_docker.php --excludes):
-// the map of the version keeps their entries from the closest earlier version that has them.
-/** @var array<string, list<string>> $excludes */
-$excludes = json_decode(
-    (string) shell_exec(
-        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes',
-    ),
-    true,
-    512,
-    JSON_THROW_ON_ERROR,
-);
-$extensionsOf = [];
-foreach (array_keys($baseMaps) as $version) {
-    $file = __DIR__ . "/../../dictionaries/autogen/CallMapExtensions_$version.php";
-    $extensionsOf[$version] = is_file($file) ? require $file : [];
-}
+// the images of PHP 8.6 are thread safe builds, which lack chroot
 $previous = null;
 foreach ($baseMaps as $version => &$baseMap) {
-    $excluded = $excludes[intdiv((int) $version, 10) . '.' . ((int) $version % 10)] ?? [];
-    if ($previous !== null && $excluded !== []) {
-        // classes an extension defines in PHP code (Swoole's library) have no extension: they go with the
-        // extension whose own classes share their root namespace
-        $namespaces = [];
-        foreach ($extensionsOf[$previous] as $func => $extension) {
-            if (in_array($extension, $excluded, true) && str_contains($func, '\\')) {
-                $namespaces[explode('\\', $func, 2)[0]] = $extension;
-            }
-        }
-        foreach ($baseMaps[$previous] as $func => $entry) {
-            $extension = $extensionsOf[$previous][$func]
-                ?? (str_contains($func, '\\') ? $namespaces[explode('\\', $func, 2)[0]] ?? null : null);
-            if ($extension !== null && in_array($extension, $excluded, true) && !isset($baseMap[$func])) {
-                $baseMap[$func] = $entry;
-                $extensionsOf[$version][$func] = $extension;
-            }
-        }
-        $baseMap = normalizeCallMap($baseMap);
-    }
-    // the images of PHP 8.6 are thread safe builds, which lack chroot
     if ($previous !== null && !isset($baseMap['chroot']) && isset($baseMaps[$previous]['chroot'])) {
         $baseMap['chroot'] = $baseMaps[$previous]['chroot'];
         $baseMap = normalizeCallMap($baseMap);
