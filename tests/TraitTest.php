@@ -19,7 +19,7 @@ final class TraitTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'accessiblePrivateMethodFromTrait' => [
@@ -1221,7 +1221,7 @@ final class TraitTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'inaccessiblePrivateMethodFromInheritedTrait' => [

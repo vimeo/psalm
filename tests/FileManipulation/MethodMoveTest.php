@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -32,9 +33,9 @@ final class MethodMoveTest extends TestCase
     }
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param array<string, string> $methods_to_move
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
         string $input_code,
         string $output_code,
@@ -83,7 +84,7 @@ final class MethodMoveTest extends TestCase
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'moveSimpleStaticMethodWithForeachIterator' => [

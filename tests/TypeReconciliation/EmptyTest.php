@@ -18,7 +18,7 @@ final class EmptyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'ifNotUndefinedAndEmpty' => [
@@ -653,7 +653,7 @@ final class EmptyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'preventImpossibleEmpty' => [

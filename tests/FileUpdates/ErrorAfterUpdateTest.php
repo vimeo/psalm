@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileUpdates;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -51,10 +52,10 @@ final class ErrorAfterUpdateTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestInvalidUpdates
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $ignored_issues
      */
+    #[DataProvider('providerTestInvalidUpdates')]
     public function testErrorAfterUpdate(
         array $file_stages,
         string $error_message,
@@ -106,7 +107,7 @@ final class ErrorAfterUpdateTest extends TestCase
     /**
      * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
-    public function providerTestInvalidUpdates(): array
+    public static function providerTestInvalidUpdates(): array
     {
         return [
             'invalidateParentCaller' => [

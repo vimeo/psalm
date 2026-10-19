@@ -20,7 +20,7 @@ final class ClassTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'templateIntersection' => [
@@ -4387,7 +4387,7 @@ final class ClassTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'restrictTemplateInputWithClassString' => [

@@ -181,7 +181,7 @@ final class AnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nopType' => [
@@ -1467,7 +1467,7 @@ final class AnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidClassMethodReturn' => [

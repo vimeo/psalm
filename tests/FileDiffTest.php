@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PhpParser;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
@@ -19,9 +20,9 @@ use function var_export;
 final class FileDiffTest extends TestCase
 {
     /**
-     * @dataProvider getChanges
      * @param string[] $same_methods
      */
+    #[DataProvider('getChanges')]
     public function testCode(
         string $a,
         string $b,
@@ -74,12 +75,12 @@ final class FileDiffTest extends TestCase
     }
 
     /**
-     * @dataProvider getChanges
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
      */
+    #[DataProvider('getChanges')]
     public function testPartialAstDiff(
         string $a,
         string $b,
@@ -202,7 +203,7 @@ final class FileDiffTest extends TestCase
      * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>,list<array{int,int}>}>
      * @psalm-pure
      */
-    public function getChanges(): array
+    public static function getChanges(): array
     {
         return [
             'sameFile' => [

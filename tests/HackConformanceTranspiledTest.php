@@ -57,7 +57,7 @@ final class HackConformanceTranspiledTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'contexts/inout_local_write' => [
@@ -671,7 +671,7 @@ final class HackConformanceTranspiledTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'contexts/dynamic_new_context' => [

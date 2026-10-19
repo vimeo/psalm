@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -20,7 +22,6 @@ use function array_map;
 use function array_values;
 use function implode;
 use function in_array;
-use function preg_quote;
 use function range;
 use function sort;
 use function str_starts_with;
@@ -55,89 +56,6 @@ final class TaintTest extends TestCase
             }
         }
     }
-    /**
-     * @dataProvider providerValidCodeParse
-     */
-    public function testValidCode(string $code): void
-    {
-        $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
-            $this->markTestSkipped('Skipped due to a bug.');
-        }
-
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        $this->addFile(
-            $file_path,
-            $code,
-        );
-
-        $this->project_analyzer->setPhpVersion('8.0', 'tests');
-
-        $this->project_analyzer->trackTaintedInputs();
-        foreach (self::IGNORE as $issue_name) {
-            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
-        }
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $this->analyzeFile($file_path, new Context(), false);
-    }
-
-    /**
-     * @dataProvider providerInvalidCodeParse
-     */
-    public function testInvalidCode(string $code, string $error_message, string $php_version = '8.0'): void
-    {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
-            $this->markTestSkipped();
-        }
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
-
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        $this->project_analyzer->setPhpVersion($php_version, 'tests');
-
-        $this->addFile(
-            $file_path,
-            $code,
-        );
-
-        $this->project_analyzer->trackTaintedInputs();
-        foreach (self::IGNORE as $issue_name) {
-            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
-        }
-
-        $this->analyzeFile($file_path, new Context(), false);
-    }
-
-    /**
-     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
-     *
-     * @dataProvider providerValidCodeParse
-     */
-    public function testValidCodeTrackingUnusedVariables(string $code): void
-    {
-        $this->trackUnusedVariables();
-        $this->testValidCode($code);
-    }
-
-    /**
-     * Taints are resolved the same when unused variables are tracked too, as the CLI does by default.
-     *
-     * @dataProvider providerInvalidCodeParse
-     */
-    public function testInvalidCodeTrackingUnusedVariables(
-        string $code,
-        string $error_message,
-        string $php_version = '8.0',
-    ): void {
-        $this->trackUnusedVariables();
-        $this->testInvalidCode($code, $error_message, $php_version);
-    }
-
     private function trackUnusedVariables(): void
     {
         $this->project_analyzer->getCodebase()->find_unused_variables = true;
@@ -329,8 +247,8 @@ final class TaintTest extends TestCase
      * one reported.
      *
      * @param list<string> $expected_issues
-     * @dataProvider providerCurlSinks
      */
+    #[DataProvider('providerCurlSinks')]
     public function testCurlSinks(string $code, array $expected_issues, bool $track_unused_variables): void
     {
         if ($track_unused_variables) {
@@ -360,7 +278,7 @@ final class TaintTest extends TestCase
      * @return array<string, array{string, list<string>, bool}>
      * @psalm-pure
      */
-    public function providerCurlSinks(): array
+    public static function providerCurlSinks(): array
     {
         $cases = [
             // a URL may name a local file: file:///etc/passwd
@@ -439,7 +357,7 @@ final class TaintTest extends TestCase
      * @return array<string, array{code:string}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
@@ -4181,7 +4099,7 @@ final class TaintTest extends TestCase
      * @return array<string, array{code: string, error_message: string, php_version?: string}>
      * @psalm-pure
      */
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         return [
             'keysFetchInASpecializedCallWhereManyKeyedArraysConvergeTakesATaintedKey' => [
@@ -12245,9 +12163,9 @@ final class TaintTest extends TestCase
      * @param list<string> $expectedIssuesTypes
      * @param list<int>|null $expectedSourceLines line of each issue's taint origin, in any order
      * @param bool $findUnusedVariables track unused variables, as the CLI does by default
-     * @test
-     * @dataProvider multipleTaintIssuesAreDetectedDataProvider
      */
+    #[DataProvider('multipleTaintIssuesAreDetectedDataProvider')]
+    #[Test]
     public function multipleTaintIssuesAreDetected(
         string $code,
         array $expectedIssuesTypes,
@@ -12298,7 +12216,7 @@ final class TaintTest extends TestCase
      * }>
      * @psalm-pure
      */
-    public function multipleTaintIssuesAreDetectedDataProvider(): array
+    public static function multipleTaintIssuesAreDetectedDataProvider(): array
     {
         return [
             'taintSinkFlow' => [

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use FilesystemIterator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -53,7 +54,7 @@ final class HackConformanceTest extends TestCase
     /**
      * @return iterable<string, array{string, string}>
      */
-    public function provideFixtures(): iterable
+    public static function provideFixtures(): iterable
     {
         $fixtures = [];
         $root = self::HARNESS_DIR . '/fixtures/';
@@ -102,9 +103,7 @@ final class HackConformanceTest extends TestCase
         $this->assertSame(0, $exitCode, implode("\n", $output));
     }
 
-    /**
-     * @dataProvider provideFixtures
-     */
+    #[DataProvider('provideFixtures')]
     public function testHhvmAgreesWithFixture(string $fixture, string $expect): void
     {
         // A malformed fixture header must fail loudly rather than be compared as

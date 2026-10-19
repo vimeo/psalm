@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -57,9 +58,9 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param array<string> $ignored_issues
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(string $code, array $ignored_issues = []): void
     {
         $test_name = $this->getTestName();
@@ -88,9 +89,9 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerInvalidCodeParse
      * @param array<string> $ignored_issues
      */
+    #[DataProvider('providerInvalidCodeParse')]
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
@@ -437,7 +438,7 @@ final class UnusedCodeTest extends TestCase
      * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'pureIteratorCursorMovesAreUsed' => [
@@ -1747,7 +1748,7 @@ final class UnusedCodeTest extends TestCase
      * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
      * @psalm-pure
      */
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         return [
             'unusedClass' => [

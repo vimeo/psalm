@@ -3870,12 +3870,6 @@
       <code><![CDATA[$this->config_file]]></code>
     </InvalidArgument>
   </file>
-  <file src="tests/Config/PluginTest.php">
-    <ImpureStaticProperty>
-      <code><![CDATA[self::$m]]></code>
-      <code><![CDATA[self::$m]]></code>
-    </ImpureStaticProperty>
-  </file>
   <file src="tests/DocumentationTest.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[strpos($error_message, 'ArrayOffset')]]></code>

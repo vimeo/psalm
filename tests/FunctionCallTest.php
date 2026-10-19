@@ -21,7 +21,7 @@ final class FunctionCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'multibyteLiteralArgument' => [
@@ -2510,7 +2510,7 @@ final class FunctionCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidScalarArgument' => [

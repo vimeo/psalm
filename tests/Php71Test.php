@@ -17,7 +17,7 @@ final class Php71Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nullableReturnType' => [
@@ -282,7 +282,7 @@ final class Php71Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidPrivateClassConstFetch' => [

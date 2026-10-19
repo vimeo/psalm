@@ -20,7 +20,7 @@ final class RedundantConditionTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
@@ -1042,7 +1042,7 @@ final class RedundantConditionTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [

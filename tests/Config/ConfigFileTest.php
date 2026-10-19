@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Override;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
@@ -22,7 +24,7 @@ use function unlink;
 
 use const PHP_EOL;
 
-/** @group PluginManager */
+#[Group('PluginManager')]
 final class ConfigFileTest extends TestCase
 {
     private string $file_path;
@@ -52,9 +54,7 @@ final class ConfigFileTest extends TestCase
         @unlink($this->file_path);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canCreateConfigObject(): void
     {
         file_put_contents($this->file_path, trim('
@@ -66,9 +66,7 @@ final class ConfigFileTest extends TestCase
         $this->assertInstanceOf(Config::class, $config_file->getConfig());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function addCanAddPluginClassToExistingPluginsNode(): void
     {
         file_put_contents(
@@ -97,9 +95,7 @@ final class ConfigFileTest extends TestCase
         ));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function addCanCreateMissingPluginsNode(): void
     {
         file_put_contents(
@@ -120,9 +116,7 @@ final class ConfigFileTest extends TestCase
         ));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeDoesNothingWhenThereIsNoPluginsNode(): void
     {
         $noPlugins = '<?xml version="1.0"?>
@@ -141,9 +135,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsEmptyPluginsNode(): void
     {
         $noPlugins = '<?xml version="1.0" encoding="UTF-8"?>
@@ -167,9 +159,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsSpecifiedPlugin(): void
     {
         $noPlugins = trim('
@@ -195,9 +185,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsSpecifiedPluginWithOneRemaining(): void
     {
         $noPlugins = trim('

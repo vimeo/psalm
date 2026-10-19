@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\LanguageServer;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\LanguageServer\PathMapper;
 
@@ -31,9 +32,7 @@ final class PathMapperTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider mappingProvider
-     */
+    #[DataProvider('mappingProvider')]
     public function testMapsClientToServer(
         string $server_root,
         ?string $client_root_reconfigured,
@@ -49,7 +48,7 @@ final class PathMapperTest extends TestCase
         );
     }
 
-    /** @dataProvider mappingProvider */
+    #[DataProvider('mappingProvider')]
     public function testMapsServerToClient(
         string $server_root,
         ?string $client_root_preconfigured,

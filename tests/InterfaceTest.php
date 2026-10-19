@@ -19,7 +19,7 @@ final class InterfaceTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'extendsAndImplements' => [
@@ -820,7 +820,7 @@ final class InterfaceTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidInterface' => [

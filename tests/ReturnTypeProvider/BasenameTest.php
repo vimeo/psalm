@@ -18,7 +18,7 @@ final class BasenameTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         $input = 'a' . DIRECTORY_SEPARATOR . 'b' . DIRECTORY_SEPARATOR . 'c';
 

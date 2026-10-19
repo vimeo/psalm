@@ -19,7 +19,7 @@ final class Php84Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'initializeLazyObject' => [
@@ -96,7 +96,7 @@ final class Php84Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'getLazyInitializerWithBadType' => [

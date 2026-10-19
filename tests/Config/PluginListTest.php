@@ -9,6 +9,8 @@ use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Override;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
@@ -16,7 +18,7 @@ use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\TestCase;
 
-/** @group PluginManager */
+#[Group('PluginManager')]
 final class PluginListTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
@@ -42,9 +44,7 @@ final class PluginListTest extends TestCase
         $this->composer_lock->shouldReceive('getPlugins')->withNoArgs()->andReturns([])->byDefault();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pluginsPresentInConfigAreEnabled(): void
     {
         $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
@@ -60,9 +60,7 @@ final class PluginListTest extends TestCase
         ], $plugin_list->getEnabled());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pluginsPresentInPackageLockOnlyAreAvailable(): void
     {
         $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
@@ -81,9 +79,7 @@ final class PluginListTest extends TestCase
         ], $plugin_list->getAvailable());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pluginsPresentInPackageLockAndConfigHavePluginPackageName(): void
     {
         $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
@@ -101,18 +97,14 @@ final class PluginListTest extends TestCase
         ], $plugin_list->getEnabled());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canFindPluginClassByClassName(): void
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);
         $this->assertSame('a\b\c', $plugin_list->resolvePluginClass('a\b\c'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canFindPluginClassByPackageName(): void
     {
         $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
@@ -123,9 +115,7 @@ final class PluginListTest extends TestCase
         $this->assertSame('a\b\c', $plugin_list->resolvePluginClass('vendor/package'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canShowAvailablePluginsWithoutAConfigFile(): void
     {
         $this->composer_lock->shouldReceive('getPlugins')->once()->withNoArgs()->andReturns([
@@ -140,9 +130,7 @@ final class PluginListTest extends TestCase
         ], $plugin_list->getAvailable());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function enabledPackageIsEnabled(): void
     {
         $this->config->shouldReceive('getPluginClasses')->once()->withNoArgs()->andReturns([
@@ -154,9 +142,7 @@ final class PluginListTest extends TestCase
         $this->assertTrue($plugin_list->isEnabled('a\b\c'));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function errorsOutWhenTryingToResolveUnknownPlugin(): void
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);
@@ -165,9 +151,7 @@ final class PluginListTest extends TestCase
         $plugin_list->resolvePluginClass('vendor/package');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pluginsAreEnabledInConfigFile(): void
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);
@@ -177,9 +161,7 @@ final class PluginListTest extends TestCase
         $plugin_list->enable('a\b\c');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pluginsAreDisabledInConfigFile(): void
     {
         $plugin_list = new PluginList($this->config_file, $this->composer_lock);

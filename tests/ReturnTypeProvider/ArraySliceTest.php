@@ -16,7 +16,7 @@ final class ArraySliceTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'arraySliceWithTemplatedArrayParameter' => [
             'code' => '<?php

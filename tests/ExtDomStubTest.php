@@ -17,7 +17,7 @@ final class ExtDomStubTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'querySelectorAll iterates Dom\Element' => [
@@ -98,7 +98,7 @@ final class ExtDomStubTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'Dom classes are undefined before PHP 8.4' => [

@@ -18,7 +18,7 @@ final class ConditionalTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'orWithACallAssertingNothingWhenFalseNarrowsWhatItsOtherSideTested' => [
@@ -3305,7 +3305,7 @@ final class ConditionalTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'makeNonNullableNull' => [

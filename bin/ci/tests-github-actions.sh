@@ -10,10 +10,8 @@ php bin/ci/generate_testsuites.php "$CHUNK_COUNT"
 
 mkdir -p build/phpunit
 
-# Functional mode runs batches of a file's tests in separate processes, so a long file uses every core.
+# Runs the chunk's test files in parallel on every core.
 vendor/bin/paratest \
-    --functional \
-    --max-batch-size=100 \
     --processes="$(nproc)" \
     --testsuite="chunk_$CHUNK_NUMBER" \
     --log-junit=build/phpunit/junit.xml \

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileUpdates;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -51,11 +52,11 @@ final class ErrorFixTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestErrorFix
      * @param array<int, array<string, string>> $files
      * @param array<int, int> $error_counts
      * @param array<string, string> $ignored_issues
      */
+    #[DataProvider('providerTestErrorFix')]
     public function testErrorFix(
         array $files,
         array $error_counts,
@@ -112,7 +113,7 @@ final class ErrorFixTest extends TestCase
     /**
      * @return array<string,array{files: array<int, array<string,string>>,error_counts:array<int,int>,ignored_issues?:array<string,string>}>
      */
-    public function providerTestErrorFix(): array
+    public static function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [

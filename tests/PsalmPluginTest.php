@@ -9,6 +9,9 @@ use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Internal\PluginManager\Command\DisableCommand;
 use Psalm\Internal\PluginManager\Command\EnableCommand;
 use Psalm\Internal\PluginManager\Command\ShowCommand;
@@ -21,7 +24,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 use function preg_quote;
 
-/** @group PluginManager */
+#[Group('PluginManager')]
 final class PsalmPluginTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
@@ -60,9 +63,7 @@ final class PsalmPluginTest extends TestCase
         $this->plugin_list->shouldReceive('getAvailable')->withNoArgs()->andReturns([])->byDefault();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function showsNoticesWhenTheresNoPlugins(): void
     {
         $show_command = new CommandTester($this->app->find('show'));
@@ -73,9 +74,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertStringContainsString('No plugins available', $output);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function showsEnabledPlugins(): void
     {
         $this->plugin_list
@@ -92,9 +91,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertStringContainsString('a\b\c', $output);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function showsAvailablePlugins(): void
     {
         $this->plugin_list
@@ -111,9 +108,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertStringContainsString('a\b\c', $output);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function passesExplicitConfigToPluginListFactory(): void
     {
         $this->plugin_list_factory
@@ -128,9 +123,7 @@ final class PsalmPluginTest extends TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function showsColumnHeaders(): void
     {
         $this->plugin_list
@@ -146,10 +139,8 @@ final class PsalmPluginTest extends TestCase
         $this->assertStringContainsString('Class', $output);
     }
 
-    /**
-     * @dataProvider commands
-     * @test
-     */
+    #[DataProvider('commands')]
+    #[Test]
     public function listsCommands(string $command): void
     {
         $list_command = new CommandTester($this->app->find('list'));
@@ -158,10 +149,8 @@ final class PsalmPluginTest extends TestCase
         $this->assertStringContainsString($command, $output);
     }
 
-    /**
-     * @dataProvider commands
-     * @test
-     */
+    #[DataProvider('commands')]
+    #[Test]
     public function showsHelpForCommand(string $command): void
     {
         $help_command = new CommandTester($this->app->find('help'));
@@ -170,9 +159,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertMatchesRegularExpression('/Usage:.*$\s+' . preg_quote($command, '/') . '\b/m', $output);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function requiresPluginNameToEnable(): void
     {
         $enable_command = new CommandTester($this->app->find('enable'));
@@ -180,9 +167,7 @@ final class PsalmPluginTest extends TestCase
         $enable_command->execute([]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function enableComplainsWhenPassedUnresolvablePlugin(): void
     {
         $this->plugin_list
@@ -201,9 +186,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function enableComplainsWhenPassedAlreadyEnabledPlugin(): void
     {
         $plugin_class = 'Vendor\Package\PluginClass';
@@ -222,9 +205,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function enableReportsSuccessWhenItEnablesPlugin(): void
     {
         $plugin_class = 'Vendor\Package\PluginClass';
@@ -244,9 +225,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertSame(0, $enable_command->getStatusCode());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function requiresPluginNameToDisable(): void
     {
         $disable_command = new CommandTester($this->app->find('disable'));
@@ -254,9 +233,7 @@ final class PsalmPluginTest extends TestCase
         $disable_command->execute([]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function disableComplainsWhenPassedUnresolvablePlugin(): void
     {
         $this->plugin_list
@@ -275,9 +252,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function disableComplainsWhenPassedNotEnabledPlugin(): void
     {
         $plugin_class = 'Vendor\Package\PluginClass';
@@ -296,9 +271,7 @@ final class PsalmPluginTest extends TestCase
         $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function disableReportsSuccessWhenItDisablesPlugin(): void
     {
         $plugin_class = 'Vendor\Package\PluginClass';
@@ -322,7 +295,7 @@ final class PsalmPluginTest extends TestCase
      * @return string[][]
      * @psalm-pure
      */
-    public function commands(): array
+    public static function commands(): array
     {
         return [
             ['show'],

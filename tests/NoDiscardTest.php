@@ -89,7 +89,7 @@ final class NoDiscardTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'noDiscardFunctionReturnValueAssigned' => [
             'code' => '<?php
@@ -384,7 +384,7 @@ final class NoDiscardTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'noDiscardFunctionReturnValueDiscarded' => [
             'code' => '<?php

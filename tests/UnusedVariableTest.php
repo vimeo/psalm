@@ -26,7 +26,7 @@ final class UnusedVariableTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'callOfCallableNarrowedFromClassStringOrCallable' => [
@@ -2649,7 +2649,7 @@ final class UnusedVariableTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         return [
             'simpleUnusedVariable' => [

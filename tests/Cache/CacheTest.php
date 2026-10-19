@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\Cache;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -79,8 +80,8 @@ final class CacheTest extends TestCase
      *     files: array<string, string|null>,
      *     issues?: array<string, list<string>>,
      * }> $interactions
-     * @dataProvider provideCacheInteractions
      */
+    #[DataProvider('provideCacheInteractions')]
     public function testCacheInteractions(
         array $interactions,
     ): void {

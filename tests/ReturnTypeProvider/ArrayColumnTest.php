@@ -18,7 +18,7 @@ final class ArrayColumnTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'arrayColumnObjectWithProperties' => [
             'code' => '<?php
@@ -152,7 +152,7 @@ final class ArrayColumnTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'arrayColumnWithArrayAndColumnNameNull' => [
             'code' => '<?php

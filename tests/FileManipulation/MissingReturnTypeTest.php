@@ -15,7 +15,7 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'addMissingVoidReturnType56' => [

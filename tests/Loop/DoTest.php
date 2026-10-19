@@ -20,7 +20,7 @@ final class DoTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'doWhileTrue' => [
@@ -381,7 +381,7 @@ final class DoTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'doWhileVarWithPossibleBreakWithoutDefining' => [

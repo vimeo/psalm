@@ -175,7 +175,7 @@ class TestCase extends BaseTestCase
 
     protected function getTestName(bool $withDataSet = true): string
     {
-        return $this->getName($withDataSet);
+        return $withDataSet ? $this->nameWithDataSet() : $this->name();
     }
 
     public static function assertHasIssue(string $expected, string $message = ''): void

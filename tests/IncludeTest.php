@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -20,11 +21,11 @@ use const DIRECTORY_SEPARATOR;
 final class IncludeTest extends TestCase
 {
     /**
-     * @dataProvider providerTestValidIncludes
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param list<string> $ignored_issues
      */
+    #[DataProvider('providerTestValidIncludes')]
     public function testValidInclude(
         array $files,
         array $files_to_check,
@@ -60,11 +61,11 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestInvalidIncludes
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param list<string> $directories
      */
+    #[DataProvider('providerTestInvalidIncludes')]
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
@@ -107,7 +108,7 @@ final class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
-    public function providerTestValidIncludes(): array
+    public static function providerTestValidIncludes(): array
     {
         return [
             'basicRequire' => [
@@ -687,7 +688,7 @@ final class IncludeTest extends TestCase
      *     directories?: list<string>
      * }>
      */
-    public function providerTestInvalidIncludes(): array
+    public static function providerTestInvalidIncludes(): array
     {
         return [
             'undefinedMethodInRequire' => [

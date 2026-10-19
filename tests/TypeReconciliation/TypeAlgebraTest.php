@@ -18,7 +18,7 @@ final class TypeAlgebraTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'twoVarLogicSimple' => [
@@ -1328,7 +1328,7 @@ final class TypeAlgebraTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [

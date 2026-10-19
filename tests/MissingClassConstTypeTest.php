@@ -18,7 +18,7 @@ final class MissingClassConstTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'has type; >= PHP 8.3' => [
@@ -73,7 +73,7 @@ final class MissingClassConstTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'no type; >= PHP 8.3' => [

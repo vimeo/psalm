@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -32,9 +33,9 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param string[] $issues_to_fix
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
         string $input_code,
         string $output_code,
@@ -119,5 +120,5 @@ abstract class FileManipulationTestCase extends TestCase
     /**
      * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
      */
-    abstract public function providerValidCodeParse(): array;
+    abstract public static function providerValidCodeParse(): array;
 }

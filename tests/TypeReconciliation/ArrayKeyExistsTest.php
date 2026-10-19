@@ -20,7 +20,7 @@ final class ArrayKeyExistsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
@@ -585,7 +585,7 @@ final class ArrayKeyExistsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [

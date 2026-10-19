@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Psalm\Codebase;
@@ -40,10 +42,8 @@ final class CodebaseTest extends TestCase
         $this->codebase = $this->project_analyzer->getCodebase();
     }
 
-    /**
-     * @test
-     * @dataProvider typeContainments
-     */
+    #[DataProvider('typeContainments')]
+    #[Test]
     public function isTypeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
@@ -61,7 +61,7 @@ final class CodebaseTest extends TestCase
      * @return iterable<int,array{string,string,bool}>
      * @psalm-mutation-free
      */
-    public function typeContainments(): iterable
+    public static function typeContainments(): iterable
     {
         yield ['int', 'int|string', true];
         yield ['int|string', 'int', false];
@@ -72,10 +72,8 @@ final class CodebaseTest extends TestCase
         // yield ['Exception', 'RuntimeException', false];
     }
 
-    /**
-     * @test
-     * @dataProvider typeIntersections
-     */
+    #[DataProvider('typeIntersections')]
+    #[Test]
     public function canTypeBeContainedByType(string $input, string $container, bool $expected): void
     {
         $input = Type::parseString($input);
@@ -93,7 +91,7 @@ final class CodebaseTest extends TestCase
      * @return iterable<int,array{string,string,bool}>
      * @psalm-mutation-free
      */
-    public function typeIntersections(): iterable
+    public static function typeIntersections(): iterable
     {
         yield ['int', 'int|string', true];
         yield ['int|string', 'int', true];
@@ -103,10 +101,10 @@ final class CodebaseTest extends TestCase
     }
 
     /**
-     * @test
-     * @dataProvider iterableParams
      * @param array{string,string} $expected
      */
+    #[DataProvider('iterableParams')]
+    #[Test]
     public function getKeyValueParamsForTraversableObject(string $input, array $expected): void
     {
         [$input] = array_values(Type::parseString($input)->getAtomicTypes());
@@ -133,15 +131,13 @@ final class CodebaseTest extends TestCase
      * @return iterable<int,array{string,array{string,string}}>
      * @psalm-mutation-free
      */
-    public function iterableParams(): iterable
+    public static function iterableParams(): iterable
     {
         yield ['iterable<int,string>', ['int', 'string']];
         yield ['iterable<int|string,bool|float>', ['int|string', 'bool|float']];
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function customMetadataIsPersisted(): void
     {
         $this->addFile(
@@ -215,9 +211,7 @@ final class CodebaseTest extends TestCase
         self::assertSame('j', $file_storage->custom_metadata['i']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function classExtendsRejectsUnpopulatedClasslikes(): void
     {
         $this->codebase->classlike_storage_provider->create('A');
@@ -228,9 +222,7 @@ final class CodebaseTest extends TestCase
         $this->codebase->classExtends('A', 'B');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function addingCodeIssueIsIntercepted(): void
     {
         $this->addFile(
@@ -273,9 +265,7 @@ final class CodebaseTest extends TestCase
         $this->analyzeFile('somefile.php', new Context);
         self::assertSame(0, IssueBuffer::getErrorCount());
     }
-    /**
-     * @test
-     */
+    #[Test]
     public function addingCodeIssueIsMarkedAsRedundant(): void
     {
         $this->expectException(CodeException::class);

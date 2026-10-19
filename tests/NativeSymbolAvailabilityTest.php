@@ -23,7 +23,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
      * @psalm-capabilities read-props
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'classAvailableFromItsVersion' => [
             'code' => '<?php
@@ -182,7 +182,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
      * @psalm-capabilities read-props
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'classBelowItsVersion' => [
             'code' => '<?php

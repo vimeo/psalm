@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\LanguageServer;
 
 use Amp\DeferredFuture;
+use Amp\TimeoutCancellation;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
@@ -76,7 +77,6 @@ final class DiagnosticTest extends AsyncTestCase
         // Create a new promisor
         $deferred = new DeferredFuture;
 
-        $this->setTimeout(5);
         $clientConfiguration = new ClientConfiguration();
 
         $read = new MockProtocolStream();
@@ -116,7 +116,7 @@ final class DiagnosticTest extends AsyncTestCase
             }
         });
 
-        $deferred->getFuture()->await();
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
     }
 
     public function testOnChangeDebounceMs(): void
@@ -127,7 +127,6 @@ final class DiagnosticTest extends AsyncTestCase
         // Create a new promisor
         $deferred = new DeferredFuture;
 
-        $this->setTimeout(5);
         $clientConfiguration = new ClientConfiguration();
         $clientConfiguration->onChangeDebounceMs = 100;
         $clientConfiguration->provideDiagnostics = true;
@@ -180,7 +179,7 @@ final class DiagnosticTest extends AsyncTestCase
         });
         delay(0.5); // Wait for debounce
 
-        $deferred->getFuture()->await();
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
     }
 
     /**

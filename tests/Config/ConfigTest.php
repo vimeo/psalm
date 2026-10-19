@@ -7,6 +7,10 @@ namespace Psalm\Tests\Config;
 use Composer\Autoload\ClassLoader;
 use ErrorException;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresOperatingSystem;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -163,9 +167,7 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
-    /**
-     * @requires OS ^(?!WIN)
-     */
+    #[RequiresOperatingSystem('^(?!WIN)')]
     public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -1357,7 +1359,7 @@ final class ConfigTest extends TestCase
 
         parent::tearDown();
 
-        if ($this->getName() === 'testTemplatedFiles') {
+        if ($this->name() === 'testTemplatedFiles') {
             $project_root = dirname(__DIR__, 2);
             foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
                 @unlink($project_root . DIRECTORY_SEPARATOR . $file_name);
@@ -1369,7 +1371,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: string, 1: string|null}>
      * @psalm-pure
      */
-    public function providerCustomTaintsOfTheConfig(): array
+    public static function providerCustomTaintsOfTheConfig(): array
     {
         $functions = '<?php
             /** @psalm-taint-sink nosql_json $query */
@@ -1480,9 +1482,7 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerCustomTaintsOfTheConfig
-     */
+    #[DataProvider('providerCustomTaintsOfTheConfig')]
     public function testCustomTaintsOfTheConfig(string $code, ?string $error): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1524,7 +1524,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: string, 1: string}>
      * @psalm-pure
      */
-    public function providerInvalidCustomTaintsOfTheConfig(): array
+    public static function providerInvalidCustomTaintsOfTheConfig(): array
     {
         return [
             'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
@@ -1537,9 +1537,7 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerInvalidCustomTaintsOfTheConfig
-     */
+    #[DataProvider('providerInvalidCustomTaintsOfTheConfig')]
     public function testInvalidCustomTaintsOfTheConfig(string $taints, string $error): void
     {
         $this->expectException(ConfigException::class);
@@ -1881,7 +1879,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: int, 1: int|null}>
      * @psalm-pure
      */
-    public function pluginRegistersScannerAndAnalyzerDataProvider(): array
+    public static function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {
         return [
             'regular' => [0, null], // flags, expected exception code
@@ -1892,13 +1890,12 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     * @dataProvider pluginRegistersScannerAndAnalyzerDataProvider
-     */
+    #[DataProvider('pluginRegistersScannerAndAnalyzerDataProvider')]
+    #[Test]
     public function pluginRegistersScannerAndAnalyzer(int $flags, ?int $expectedExceptionCode): void
     {
         $extension = uniqid('test');
+        /** @var array{scanner: class-string, analyzer: class-string, extension: string} $names */
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
             'analyzer' => uniqid('PsalmTestFileTypeAnalyzer'),
@@ -2103,9 +2100,9 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @requires extension apcu
      * @deprecated Remove in Psalm 6.
      */
+    #[RequiresPhpExtension('apcu')]
     public function testConfigWarnsAboutDeprecatedWayToLoadStubsButLoadsTheStub(): void
     {
         $config_xml = Config::loadFromXML(
@@ -2131,9 +2128,9 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @requires extension apcu
      * @deprecated Remove deprecation warning part in Psalm 6.
      */
+    #[RequiresPhpExtension('apcu')]
     public function testConfigWithDisableExtensionsDoesNotLoadExtensionStubsAndHidesDeprecationWarning(): void
     {
         $config_xml = Config::loadFromXML(

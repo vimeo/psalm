@@ -16,7 +16,7 @@ final class PowReturnTypeProviderTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'test' => [
             'code' => '<?php

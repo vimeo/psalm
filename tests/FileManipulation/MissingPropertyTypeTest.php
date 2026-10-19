@@ -15,7 +15,7 @@ final class MissingPropertyTypeTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'addMissingUnionType56' => [

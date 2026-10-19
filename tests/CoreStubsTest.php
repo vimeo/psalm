@@ -17,7 +17,7 @@ final class CoreStubsTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'RecursiveArrayIterator::CHILD_ARRAYS_ONLY (#6464)' => [
             'code' => '<?php
@@ -514,7 +514,7 @@ final class CoreStubsTest extends TestCase
      * @psalm-mutation-free
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'json_decode invalid depth' => [
             'code' => '<?php

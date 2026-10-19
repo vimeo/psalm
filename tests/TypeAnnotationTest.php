@@ -17,7 +17,7 @@ final class TypeAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'atInArrayKey' => [
@@ -1103,7 +1103,7 @@ final class TypeAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidTypeAlias' => [

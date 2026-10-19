@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use Psalm\Aliases;
@@ -97,9 +98,9 @@ final class CommentAnalyzerTest extends BaseTestCase
     }
 
     /**
-     * @dataProvider providerSplitDocLine
      * @param string[] $expected
      */
+    #[DataProvider('providerSplitDocLine')]
     public function testSplitDocLine(string $doc_line, array $expected): void
     {
         $this->assertSame($expected, CommentAnalyzer::splitDocLine($doc_line));
@@ -109,7 +110,7 @@ final class CommentAnalyzerTest extends BaseTestCase
      * @return iterable<array-key, array{doc_line: string, expected: string[]}>
      * @psalm-pure
      */
-    public function providerSplitDocLine(): iterable
+    public static function providerSplitDocLine(): iterable
     {
         return [
             'typeWithVar' => [
