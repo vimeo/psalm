@@ -942,6 +942,14 @@ final class Codebase
     {
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
+        // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
+        // InheritedMethodTaints): in a partial run, their files are deep-scanned too
+        while ($this->taint_flow_graph !== null && $this->scanner->queueFilesOfInheritedMethods()) {
+            if ($this->scanner->scanFiles($this->classlikes, $threads)) {
+                $has_changes = true;
+            }
+        }
+
         if ($has_changes) {
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
