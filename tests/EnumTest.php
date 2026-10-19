@@ -987,6 +987,17 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'unknownPsalmTagOnCase' => [
+                'code' => '<?php
+                    enum Foo {
+                        /** @psalm-supress DeprecatedConstant */
+                        case A;
+                    }
+                    ',
+                'error_message' => 'InvalidDocblock',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'forbiddenMethod' => [
                 'code' => '<?php
                     enum Foo {

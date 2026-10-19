@@ -757,6 +757,48 @@ final class StubTest extends TestCase
     /**
      * @runInSeparateProcess
      */
+    public function testStubDocblocksWithUnknownPsalmTagsDoNotCrash(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/unknown_psalm_annotation.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $stub = new StubWithTypoedAnnotations();
+                $name = (string) $stub->name;
+                echo StubWithTypoedAnnotations::LIMIT;
+                echo StubEnumWithTypoedAnnotation::Foo->name;',
+        );
+
+        // reported like the other docblock issues of stubs, instead of crashing the scan
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/InvalidDocblock.*Unrecognised annotation @psalm-supress/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
     public function testClassAlias(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
