@@ -189,24 +189,6 @@ function extensionVersion(string $extension, string $phpBaseDigest): string
     fail("Unknown source '$source' for extension '$base'.");
 }
 
-/** The latest release of a PECL extension at least as stable as $stability (stable, beta or alpha). */
-function peclRelease(string $extension, string $stability): string
-{
-    $accepted = match ($stability) {
-        'alpha' => ['stable', 'beta', 'alpha'],
-        'beta' => ['stable', 'beta'],
-        default => ['stable'],
-    };
-    $xml = fetch("https://pecl.php.net/rest/r/$extension/allreleases.xml");
-    preg_match_all('#<r><v>([^<]+)</v><s>([^<]+)</s></r>#', $xml, $releases, PREG_SET_ORDER);
-    foreach ($releases as [, $release, $releaseStability]) {
-        if (in_array($releaseStability, $accepted, true)) {
-            return $release;
-        }
-    }
-    fail("No $stability release of PECL extension '$extension'.");
-}
-
 /** The PHP base image of a version. */
 function phpBaseImage(string $version): string
 {
@@ -401,42 +383,17 @@ function generateDockerfile(string $version, array $extensions): string
     $installerUrl = INSTALLER_URL;
     $baseImage = phpBaseImage($version);
 
-    // install-php-extensions doesn't support a PHP version with no release yet, and installs its PECL
-    // extensions with pickle, which needs some of the bundled ones: install those first.
-    $bundled = [];
-    if (isset(BASE_IMAGE_TAGS[$version])) {
-        $bundled = array_values(array_filter(
-            $extensions,
-            static fn(string $extension): bool => (SOURCES[explode('-', $extension)[0]] ?? null) === 'php',
-        ));
-        $extensions = array_values(array_diff($extensions, $bundled));
-    }
-    if (isset(BASE_IMAGE_TAGS[$version])) {
-        // The base images of a version with no release have no pecl, and pickle doesn't run on them:
-        // install-php-extensions builds PECL extensions from their source archives instead.
-        $extensions = array_map(
-            static function (string $extension): string {
-                $base = explode('-', $extension, 2)[0];
-                if (SOURCES[$base] !== 'pecl') {
-                    return $extension;
-                }
-                return "https://pecl.php.net/get/$base-" . peclRelease($base, explode('-', $extension, 2)[1] ?? 'stable')
-                    . '.tgz';
-            },
-            $extensions,
-        );
-    }
     $extensionList = implode(' ', $extensions);
-    $bundledStep = $bundled === []
-        ? ''
-        : 'install-php-extensions ' . implode(' ', $bundled) . " && \\\n    ";
-    // install-php-extensions refuses a PHP version it doesn't know yet, and falls back to pickle, which
-    // doesn't run on it either: let it treat the version like the ones it supports.
+    // The base images of a version with no release come without pecl, and install-php-extensions
+    // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
+    // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
     $supportStep = '';
     if (isset(BASE_IMAGE_TAGS[$version])) {
         $majorMinor = str_replace('.', '0', $version);
         $supportStep = " && \\\n    sed -i -E '/^[[:space:]]*505 \\| 506 \\|/ s/\\) ;;\$/ | $majorMinor) ;;/'"
-            . ' /usr/local/bin/install-php-extensions';
+            . ' /usr/local/bin/install-php-extensions'
+            . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
+            . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
     }
     $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
     $packageStep = $packages === []
@@ -456,7 +413,7 @@ function generateDockerfile(string $version, array $extensions): string
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            {$packageStep}{$bundledStep}install-php-extensions $extensionList
+            {$packageStep}install-php-extensions $extensionList
 
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
