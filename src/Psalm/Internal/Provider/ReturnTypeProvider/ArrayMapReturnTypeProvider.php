@@ -430,7 +430,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
      * Whether a value of type $type is plainly a value, which a closure can't keep anything in for another call of
      * it: scalars, and arrays of them
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isPlainValue(Union $type): bool
     {

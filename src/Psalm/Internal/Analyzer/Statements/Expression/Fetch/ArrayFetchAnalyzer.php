@@ -499,7 +499,7 @@ final class ArrayFetchAnalyzer
      * TaintFlowResolution::getFetchedKeys()). What it fetches is what is under one of them. Null if the key isn't
      * one of a few literals, or if one of them has a quote or a '|', which would split it.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getFetchedKeys(Union $offset_type): ?string
     {
