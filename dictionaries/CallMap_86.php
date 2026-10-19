@@ -12499,7 +12499,7 @@ return array (
   ),
   'directoryiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'int|string',
   ),
   'directoryiterator::next' => 
   array (

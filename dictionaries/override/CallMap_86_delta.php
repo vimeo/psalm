@@ -32,6 +32,17 @@ return array (
         'array' => 'array<array-key, mixed>',
       ),
     ),
+    'directoryiterator::key' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int|string',
+      ),
+    ),
     'filter_var_array' => 
     array (
       'old' => 

@@ -172,8 +172,8 @@ final class InternalCallMapHandlerTest extends TestCase
         'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
         'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
-        'datetime::createfrominterface',
-        'datetimeimmutable::createfrominterface',
+        'datetime::createfrominterface' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
+        'datetimeimmutable::createfrominterface' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
         'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
         'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
         'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
