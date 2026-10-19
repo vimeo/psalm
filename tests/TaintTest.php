@@ -440,6 +440,19 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
+                'code' => '<?php // --taint-analysis
+                    final class Phone {
+                        private static string $prefix = "+";
+
+                        public static function format(string $phone): string {
+                            return self::$prefix . $phone;
+                        }
+                    }
+
+                    $tainted = Phone::format((string) $_GET["phone"]);
+                    echo Phone::format("12");',
+            ],
             'fetchOfAnotherKeyOfAForeachCopyOfTheElements' => [
                 // Each element is copied under its own key: "city" isn't "name_tail".
                 'code' => '<?php
@@ -3294,7 +3307,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3328,7 +3341,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
@@ -3783,6 +3796,24 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'aSpecializedFunctionThatOnlyReadsSharedStateReturnsItToAllItsCalls' => [
+                'code' => '<?php // --taint-analysis
+                    final class Settings {
+                        public static string $value = "";
+
+                        public static function get(string $suffix): string {
+                            return self::$value . $suffix;
+                        }
+                    }
+
+                    function store(): void {
+                        Settings::$value = (string) $_GET["value"];
+                    }
+
+                    store();
+                    echo Settings::get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
@@ -5244,6 +5275,33 @@ final class TaintTest extends TestCase
                     }
 
                     (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAPropertyAnInheritedMethodSetsBeforeACallWithAnUntaintedArgument' => [
+                // the calls of an inherited method share the path into its body for the class: the untainted
+                // argument of a later call removes nothing from what an earlier one passed
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("k", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
@@ -10168,6 +10226,28 @@ final class TaintTest extends TestCase
 
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                    function escape(string $s, bool $escape = true): string {
+                        return $s;
+                    }
+
+                    shell_exec(escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAStaticCallKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public static function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
                 'code' => '<?php

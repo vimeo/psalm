@@ -49,7 +49,7 @@ abstract class TaintedInput extends CodeIssue implements SecurityIssue
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,

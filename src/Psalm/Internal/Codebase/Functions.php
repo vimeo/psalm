@@ -620,7 +620,14 @@ final class Functions
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
 
-                if ($arg_type) {
+                // a closure literal: without what it does to the variables it captured by reference
+                $argument_purity = $statements_analyzer
+                    ? CallPurityResolver::getArgumentPurity($statements_analyzer, $args[$i])
+                    : null;
+
+                if ($argument_purity !== null && $statements_analyzer) {
+                    $mutations |= CallPurityResolver::resolvePurity($argument_purity, $statements_analyzer);
+                } elseif ($arg_type) {
                     foreach ($arg_type->getAtomicTypes() as $possible_callable) {
                         $possible_callable = CallableTypeComparator::getCallableFromAtomic(
                             $codebase,

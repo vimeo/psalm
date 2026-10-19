@@ -184,7 +184,7 @@ final class ConcatAnalyzer
 
     /**
      * @return list<string>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getLiteralValues(Union $type): array
     {

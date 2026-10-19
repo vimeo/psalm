@@ -18,6 +18,9 @@ use function get_object_vars;
  */
 final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
 {
+    /**
+     * @psalm-capabilities read-props
+     */
     public function __construct(public string $code, public ?string $title = null, public ?string $description = null)
     {
         $markdown = '';

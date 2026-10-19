@@ -82,7 +82,7 @@ final class CapabilitiesExpressionResolver
      *
      * @param CapabilitySet $capabilities
      * @param list<Union> $deferred
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     public static function deferred(int $capabilities, array $deferred): Union
     {

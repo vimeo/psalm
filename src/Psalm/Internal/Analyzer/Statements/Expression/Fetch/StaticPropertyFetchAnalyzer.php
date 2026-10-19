@@ -553,7 +553,7 @@ final class StaticPropertyFetchAnalyzer
      * or null when the type does not name specific classes.
      *
      * @return non-empty-list<string>|null
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     public static function getClassNamesFromClassStringType(Atomic $class_type): ?array
     {

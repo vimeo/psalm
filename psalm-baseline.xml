@@ -3803,8 +3803,6 @@
   </file>
   <file src="src/Psalm/Type/UnionTrait.php">
     <ImpureMethodCall>
-      <code><![CDATA[$checker->traverseArray($this->types)]]></code>
-      <code><![CDATA[$object_type_visitor->traverseArray($this->types)]]></code>
       <code><![CDATA[$visitor->traverse($type)]]></code>
       <code><![CDATA[(new ClasslikeReplacer(
             $old,

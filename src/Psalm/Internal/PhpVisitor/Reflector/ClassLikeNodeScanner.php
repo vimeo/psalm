@@ -2298,7 +2298,7 @@ final class ClassLikeNodeScanner
     /**
      * @return array{0: string, 1: string}|null
      * @throws DocblockParseException if there was a problem parsing the docblock
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     private static function parseTypeAliasDeclarationLine(string $var_line): ?array
     {

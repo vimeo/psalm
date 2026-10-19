@@ -295,6 +295,10 @@ abstract class SourceAnalyzer implements StatementsSource
             // the level known at this point, used for the types of closures
             $src->inferred_capabilities |= $mutation_level;
 
+            if (!$src->signalling_by_ref_capture) {
+                $src->inferred_capabilities_beyond_captures |= $mutation_level;
+            }
+
             if ($storage !== null
                 && !$storage->has_mutations_annotation
                 && $storage->location !== null
