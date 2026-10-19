@@ -79,6 +79,7 @@ final class FileDiffTest extends TestCase
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
+     * @param array<array-key,array{int,int}> $_deletion_ranges the same data sets serve testCode()
      */
     #[DataProvider('getChanges')]
     public function testPartialAstDiff(
@@ -88,6 +89,7 @@ final class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets,
+        array $_deletion_ranges,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();

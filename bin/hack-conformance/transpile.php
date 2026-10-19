@@ -152,7 +152,7 @@ function hc_transpiled_suite(array $fixtures, array $trees): string
              * @psalm-pure
              */
             #[Override]
-            public function providerValidCodeParse(): iterable
+            public static function providerValidCodeParse(): iterable
             {
                 return [
         $valid        ];
@@ -162,7 +162,7 @@ function hc_transpiled_suite(array $fixtures, array $trees): string
              * @psalm-pure
              */
             #[Override]
-            public function providerInvalidCodeParse(): iterable
+            public static function providerInvalidCodeParse(): iterable
             {
                 return [
         $invalid        ];
