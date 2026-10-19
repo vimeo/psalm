@@ -10,8 +10,10 @@ php bin/ci/generate_testsuites.php "$CHUNK_COUNT"
 
 mkdir -p build/phpunit
 
-# Runs the chunk's test files in parallel on every core.
+# Runs the chunk's test files in parallel on every core, each in a fresh worker (--max-batch-size=1):
+# test files leave global state behind, such as the classes of the plugins they load.
 vendor/bin/paratest \
+    --max-batch-size=1 \
     --processes="$(nproc)" \
     --testsuite="chunk_$CHUNK_NUMBER" \
     --log-junit=build/phpunit/junit.xml \

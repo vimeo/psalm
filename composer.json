@@ -118,7 +118,7 @@
         "lint": "@php parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "@php paratest"
+            "@php paratest --max-batch-size=1"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
