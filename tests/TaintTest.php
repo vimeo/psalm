@@ -395,7 +395,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code:string}>
+     * @return array<string, array{code: string, php_version?: string}>
      * @psalm-pure
      */
     public static function providerValidCodeParse(): array
@@ -2988,7 +2988,7 @@ final class TaintTest extends TestCase
                     }',
             ],
             'taintPropertyPassingObjectWithDifferentValue' => [
-                'code' => '<?phps
+                'code' => '<?php
                     /** @psalm-immutable */
                     class User {
                         public string $id;
@@ -4285,6 +4285,46 @@ final class TaintTest extends TestCase
                         public function printAll(): void {
                             foreach (self::$texts as $text) {
                                 echo $text;
+                            }
+                        }
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    $safe->printAll();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintWhatAReadonlyObjectKeepsInAGlobalArray' => [
+                'code' => '<?php // --taint-analysis
+                    final readonly class Greeting {
+                        public function __construct(public string $text) {
+                            $GLOBALS["texts"][] = $text;
+                        }
+
+                        public function printAll(): void {
+                            foreach ((array) ($GLOBALS["texts"] ?? []) as $text) {
+                                echo (string) $text;
+                            }
+                        }
+                    }
+
+                    $tainted = new Greeting((string) $_GET["text"]);
+                    $safe = new Greeting("Hello");
+                    $safe->printAll();',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.2',
+            ],
+            'taintWhatAnObjectWithOnlyReadonlyPropertiesKeepsInAGlobalArray' => [
+                'code' => '<?php // --taint-analysis
+                    final class Greeting {
+                        public function __construct(public readonly string $text) {
+                            $GLOBALS["texts"][] = $text;
+                        }
+
+                        public function printAll(): void {
+                            foreach ((array) ($GLOBALS["texts"] ?? []) as $text) {
+                                echo (string) $text;
                             }
                         }
                     }
