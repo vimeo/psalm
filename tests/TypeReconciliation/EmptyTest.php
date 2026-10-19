@@ -675,7 +675,7 @@ final class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType'],
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
             'preventEmptyOnBool' => [
                 'code' => '<?php

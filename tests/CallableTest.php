@@ -2535,7 +2535,7 @@ final class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'ignored_issues' => ['UndefinedClass'],
+                'error_levels' => ['UndefinedClass'],
             ],
             'undefinedCallableMethodFullString' => [
                 'code' => '<?php
@@ -2840,7 +2840,7 @@ final class CallableTest extends TestCase
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'ignored_issues' => ['InvalidReturnType'],
+                'error_levels' => ['InvalidReturnType'],
             ],
             'callableMissingRequiredMultipleParams' => [
                 'code' => '<?php
@@ -2854,7 +2854,7 @@ final class CallableTest extends TestCase
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'ignored_issues' => ['InvalidReturnType'],
+                'error_levels' => ['InvalidReturnType'],
             ],
             'callableAdditionalRequiredParam' => [
                 'code' => '<?php
@@ -2868,7 +2868,7 @@ final class CallableTest extends TestCase
 
                     foo("bar");',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => ['InvalidReturnType'],
+                'error_levels' => ['InvalidReturnType'],
             ],
             'callableMultipleParamsWithOptional' => [
                 'code' => '<?php
@@ -2882,7 +2882,7 @@ final class CallableTest extends TestCase
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'ignored_issues' => ['InvalidReturnType'],
+                'error_levels' => ['InvalidReturnType'],
             ],
             'preventStringDocblockType' => [
                 'code' => '<?php
@@ -3516,7 +3516,7 @@ final class CallableTest extends TestCase
                     echo $c;
                 ',
                 'error_message' => 'ImpureFunctionCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'constructCallableFromClassStringArray' => [
                 'code' => '<?php
@@ -3609,7 +3609,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'callableParentConstantDeprecated' => [
@@ -3634,7 +3634,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'callableSelfConstantDeprecated' => [
@@ -3657,7 +3657,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'callableStaticConstantDeprecated' => [
@@ -3680,7 +3680,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'callableArrayStaticConstantDeprecated' => [
@@ -3703,7 +3703,7 @@ final class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'invalidFirstClassCallableCannotBeInferred' => [
@@ -3744,7 +3744,7 @@ final class CallableTest extends TestCase
                     $result = (new App(param1: [42]))->run(appHandler(...));
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'variadicClosureAssignability' => [
@@ -3767,7 +3767,7 @@ final class CallableTest extends TestCase
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'callableWithInvalidNamedArguments' => [
@@ -3779,7 +3779,7 @@ final class CallableTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'InvalidNamedArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'parentCallableArrayWithoutParent' => [

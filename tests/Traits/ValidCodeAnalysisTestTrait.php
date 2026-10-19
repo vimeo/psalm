@@ -37,6 +37,7 @@ trait ValidCodeAnalysisTestTrait
      */
     abstract public static function providerValidCodeParse(): iterable;
 
+
     /**
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues

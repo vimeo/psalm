@@ -1476,7 +1476,7 @@ final class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedReturnStatement'],
+                'error_levels' => ['MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 'code' => '<?php
@@ -1918,7 +1918,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'returnByReferenceNonVariableInStaticMethod' => [
@@ -1963,7 +1963,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'implicitReturnFromFunctionWithNeverReturnType2' => [
@@ -1979,7 +1979,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'constructorsShouldReturnVoid' => [

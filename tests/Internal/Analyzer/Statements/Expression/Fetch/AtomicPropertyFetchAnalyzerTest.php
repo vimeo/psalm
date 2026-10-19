@@ -96,7 +96,7 @@ final class AtomicPropertyFetchAnalyzerTest extends TestCase
                     make()->prop;
                     PHP,
                 'error_message' => 'UndefinedPropertyFetch',
-                'ignored_issues' => ['MissingDependency'],
+                'error_levels' => ['MissingDependency'],
             ],
         ];
     }

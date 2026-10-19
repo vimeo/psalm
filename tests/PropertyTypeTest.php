@@ -2982,7 +2982,7 @@ final class PropertyTypeTest extends TestCase
                         return new Foo();
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'undefinedPropertyFetch' => [
@@ -3228,7 +3228,7 @@ final class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'ignored_issues' => [
+                'error_levels' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
@@ -3245,7 +3245,7 @@ final class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'ignored_issues' => [
+                'error_levels' => [
                     'MissingPropertyType',
                     'MixedAssignment',
                 ],
@@ -3739,7 +3739,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'ignored_issues' => ['MixedArgument', 'MissingPropertyType'],
+                'error_levels' => ['MixedArgument', 'MissingPropertyType'],
             ],
             'uninitializedObjectProperty' => [
                 'code' => '<?php
@@ -3835,7 +3835,7 @@ final class PropertyTypeTest extends TestCase
                         public function __construct() {}
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nullableTypedPropertyNoConstructor' => [

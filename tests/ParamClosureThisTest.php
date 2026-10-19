@@ -360,7 +360,7 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
                 'error_message' => 'InvalidScope',
-                'ignored_issues' => ['PossiblyUndefinedMethod'],
+                'error_levels' => ['PossiblyUndefinedMethod'],
             ],
             'selfOnInheritedMethodStaysAtDeclaringClass' => [
                 'code' => '<?php
@@ -471,7 +471,7 @@ final class ParamClosureThisTest extends TestCase
                     });
                 ',
                 'error_message' => 'InvalidScope',
-                'ignored_issues' => ['UndefinedDocblockClass'],
+                'error_levels' => ['UndefinedDocblockClass'],
             ],
             'traitSelfOnInheritedMethodStaysAtUsingClass' => [
                 'code' => '<?php

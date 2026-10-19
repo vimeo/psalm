@@ -256,7 +256,7 @@ final class ToStringTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidToString',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'implicitCastWithStrictTypes' => [
@@ -412,7 +412,7 @@ final class ToStringTest extends TestCase
 
                     foo(new Bar());',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'implicitCastInArray' => [

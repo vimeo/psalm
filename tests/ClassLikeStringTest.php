@@ -1128,7 +1128,7 @@ final class ClassLikeStringTest extends TestCase
                         return ["A", "B"];
                     }',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'badClassStringConstructor' => [
                 'code' => '<?php

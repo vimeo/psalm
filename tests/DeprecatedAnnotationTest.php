@@ -341,7 +341,7 @@ final class DeprecatedAnnotationTest extends TestCase
                     Foo::B;
                 ',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'deprecatedEnumCaseFetchAttr' => [
@@ -356,7 +356,7 @@ final class DeprecatedAnnotationTest extends TestCase
                     Foo::B;
                 ',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'deprecatedClassConstFetch' => [

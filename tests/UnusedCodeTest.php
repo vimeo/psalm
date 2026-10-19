@@ -89,10 +89,10 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @param array<string> $ignored_issues
+     * @param array<string> $error_levels
      */
     #[DataProvider('providerInvalidCodeParse')]
-    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
+    public function testInvalidCode(string $code, string $error_message, array $error_levels = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -103,7 +103,7 @@ final class UnusedCodeTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        foreach ($ignored_issues as $error_level) {
+        foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -1745,7 +1745,7 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @return array<string,array{code:string,error_message:string,error_levels?:list<string>}>
      * @psalm-pure
      */
     public static function providerInvalidCodeParse(): array
@@ -1918,7 +1918,7 @@ final class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'possiblyUnusedPropertyWrittenNeverRead' => [
                 'code' => '<?php
@@ -1930,7 +1930,7 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'possiblyUnusedPropertyWithArrayWrittenNeverRead' => [
                 'code' => '<?php
@@ -1942,7 +1942,7 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo[] = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'unusedProperty' => [
                 'code' => '<?php
@@ -1953,7 +1953,7 @@ final class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'UnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'privateUnusedMethod' => [
                 'code' => '<?php

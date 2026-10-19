@@ -72,7 +72,7 @@ final class ExpressionTest extends TestCase
      *     array{
      *         code: string,
      *         error_message: string,
-     *         ignored_issues?: list<string>,
+     *         error_levels?: list<string>,
      *         php_version?: string,
      *     }
      * >

@@ -33,13 +33,13 @@ final class ClassConstantMoveTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $constants_to_move
+     * @param array<string, string> $migrations
      */
     #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
-        array $constants_to_move,
+        string $input,
+        string $output,
+        array $migrations,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -62,12 +62,12 @@ final class ClassConstantMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $this->project_analyzer->refactorCodeAfterCompletion($constants_to_move);
+        $this->project_analyzer->refactorCodeAfterCompletion($migrations);
 
         $this->analyzeFile($file_path, $context);
 
@@ -77,8 +77,9 @@ final class ClassConstantMoveTest extends TestCase
 
         $this->project_analyzer->migrateCode();
 
-        $this->assertSame($output_code, $codebase->getFileContents($file_path));
+        $this->assertSame($output, $codebase->getFileContents($file_path));
     }
+
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>

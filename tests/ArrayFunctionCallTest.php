@@ -2941,7 +2941,7 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     array_filter( $arg, null, ARRAY_FILTER_USE_BOTH );',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'arrayFilterThirdArgInvalidBehavesLike0' => [
@@ -3057,7 +3057,7 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => ['MixedTypeCoercion'],
+                'error_levels' => ['MixedTypeCoercion'],
             ],
             'arrayReduceInvalidItemType' => [
                 'code' => '<?php
@@ -3071,7 +3071,7 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => ['MissingClosureReturnType'],
+                'error_levels' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryType' => [
                 'code' => '<?php
@@ -3085,7 +3085,7 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => ['MissingClosureReturnType'],
+                'error_levels' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryOutputType' => [
                 'code' => '<?php
@@ -3144,7 +3144,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $list = [3, 2, 5, 9];
                     usort($list, fn(int $a, string $b): int => (int) ($a > $b));',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
             'usortInvalidComparison' => [
@@ -3346,7 +3346,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_diff_ukey($array1, $array2, $array3, "compareKey", "compareKey");
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'badArrayCb2' => [
@@ -3362,7 +3362,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_udiff_uassoc($array1, $array2, $array3, "compareKey");
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'badArrayCb3' => [
@@ -3377,7 +3377,7 @@ final class ArrayFunctionCallTest extends TestCase
                     array_udiff($array1, $array2, $array3, "compareKey");
                 ',
                 'error_message' => 'PossiblyInvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
         ];

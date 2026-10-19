@@ -255,7 +255,7 @@ final class MatchTest extends TestCase
                         A::class => $a->barBar(),
                     };',
                 'error_message' => 'UndefinedMethod',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getClassMissingClass' => [
@@ -269,7 +269,7 @@ final class MatchTest extends TestCase
                         C::class => 5,
                     };',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'allMatchedDefaultImpossible' => [
@@ -283,7 +283,7 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'allMatchedAnotherImpossible' => [
@@ -297,7 +297,7 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'notAllEnumsMet' => [
@@ -311,7 +311,7 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'notAllConstEnumsMet' => [
@@ -332,7 +332,7 @@ final class MatchTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'paradoxWithDuplicateValue' => [
@@ -344,7 +344,7 @@ final class MatchTest extends TestCase
                         };
                     };',
                 'error_message' => 'ParadoxicalCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'noCrashWithEmptyMatch' => [
@@ -355,7 +355,7 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'UnhandledMatchCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'exitIsLikeThrow' => [
@@ -371,7 +371,7 @@ final class MatchTest extends TestCase
                         $a === "aaa";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'matchTrueImpossible' => [
@@ -382,7 +382,7 @@ final class MatchTest extends TestCase
                         $foo instanceof \Exception => 1,
                     };',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'multipleInstanceOfConditionsNotMetInOneArm' => [
@@ -404,7 +404,7 @@ final class MatchTest extends TestCase
                         };
                     }',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
         ];

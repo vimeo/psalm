@@ -344,7 +344,7 @@ final class Php71Test extends TestCase
 
                     }',
                 'error_message' => 'ReservedWord',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'objectDoesntWorkIn71' => [
@@ -353,7 +353,7 @@ final class Php71Test extends TestCase
                         return new stdClass();
                     }',
                 'error_message' => 'ReservedWord',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'arrayDestructuringInvalidList' => [

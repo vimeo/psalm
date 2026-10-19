@@ -1450,7 +1450,7 @@ final class TraitTest extends TestCase
                     trait A { const B = 0; }
                     PHP,
                 'error_message' => 'ConstantDeclarationInTrait',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'duplicateTraitProperty' => [

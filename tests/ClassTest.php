@@ -1351,7 +1351,7 @@ final class ClassTest extends TestCase
                     class C implements Throwable {}
                 ',
                 'error_message' => 'InvalidInterfaceImplementation',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'directConstructorCall' => [
@@ -1394,7 +1394,7 @@ final class ClassTest extends TestCase
                     $foo->a = 33;
                     PHP,
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassRequiresTypedProperties' => [
@@ -1406,7 +1406,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'MissingPropertyType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassCannotHaveDynamicProperties' => [
@@ -1416,7 +1416,7 @@ final class ClassTest extends TestCase
                     readonly class Foo {}
                     PHP,
                 'error_message' => 'InvalidAttribute',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassesCannotBeExtendedByNonReadonlyOnes' => [
@@ -1426,7 +1426,7 @@ final class ClassTest extends TestCase
                     class Bar extends Foo {}
                     PHP,
                 'error_message' => 'InvalidExtendClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'classCannotExtendIfNotInInheritors' => [
@@ -1439,7 +1439,7 @@ final class ClassTest extends TestCase
                     class BazClass extends BaseClass {} // this is an error
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'classCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'
@@ -1451,7 +1451,7 @@ final class ClassTest extends TestCase
                     class BazClass implements BaseInterface {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'interfaceCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'
@@ -1463,7 +1463,7 @@ final class ClassTest extends TestCase
                     interface BazInterface extends BaseInterface {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'UnfulfilledInterfaceInheritors' => [
                 'code' => <<<'PHP'
@@ -1479,7 +1479,7 @@ final class ClassTest extends TestCase
                     class BazClass implements InterFaceA, InterFaceB {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateInstanceProperties' => [
                 'code' => <<<'PHP'
@@ -1490,7 +1490,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateStaticProperties' => [
                 'code' => <<<'PHP'
@@ -1501,7 +1501,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateMixedProperties' => [
                 'code' => <<<'PHP'
@@ -1512,7 +1512,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicatePropertiesDifferentVisibility' => [
                 'code' => <<<'PHP'
@@ -1523,7 +1523,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
         ];
     }

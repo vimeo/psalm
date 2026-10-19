@@ -44,12 +44,6 @@ use const PHP_VERSION;
  * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
  *
- * @psalm-type DeprecatedDataProviderArrayNotation = array{
- *     code: string,
- *     error_message: string,
- *     ignored_issues?: list<string>,
- *     php_version?: string
- * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
@@ -61,12 +55,10 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisWithIssuesTestTrait
 {
     /**
-     * @return iterable<
-     *     string,
-     *     DeprecatedDataProviderArrayNotation|NamedArgumentsDataProviderArrayNotation
-     * >
+     * @return iterable<string, NamedArgumentsDataProviderArrayNotation>
      */
     abstract public static function providerInvalidCodeParse(): iterable;
+
 
     /**
      * @param list<string> $error_levels

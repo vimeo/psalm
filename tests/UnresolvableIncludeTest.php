@@ -11,9 +11,9 @@ use Psalm\Exception\CodeException;
 final class UnresolvableIncludeTest extends TestCase
 {
     #[DataProvider('providerUnresolvableInclude')]
-    public function testShouldThrowUnresolvableInclude(string $phpCode, int $expectedExceptionLine): void
+    public function testShouldThrowUnresolvableInclude(string $code, int $expectedExceptionLine): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
         $context = new Context();
 
         $this->expectException(CodeException::class);
@@ -21,6 +21,7 @@ final class UnresolvableIncludeTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
 
     /**
      * @return array<string,array{code:string,expectedExceptionLine:int}>
@@ -41,14 +42,15 @@ final class UnresolvableIncludeTest extends TestCase
     }
 
     #[DataProvider('providerNoUnresolvableInclude')]
-    public function testShouldNotThrowUnresolvableInclude(string $phpCode): void
+    public function testShouldNotThrowUnresolvableInclude(string $code): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
 
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
     }
+
 
     /**
      * @return array<string,array{code:string}>

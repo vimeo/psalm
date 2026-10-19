@@ -1405,7 +1405,7 @@ final class TypeAnnotationTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidDocblock',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
         ];

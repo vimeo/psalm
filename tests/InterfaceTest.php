@@ -854,7 +854,7 @@ final class InterfaceTest extends TestCase
                         public string $value { get; }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.3',
             ],
             'interfacePropertyWithoutHooks' => [
@@ -863,7 +863,7 @@ final class InterfaceTest extends TestCase
                         public string $value;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'privateInterfacePropertyWithHooks' => [
@@ -872,7 +872,7 @@ final class InterfaceTest extends TestCase
                         private string $value { get; }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'protectedInterfacePropertyWithHooks' => [
@@ -881,7 +881,7 @@ final class InterfaceTest extends TestCase
                         protected string $value { get; }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'staticInterfacePropertyWithHooks' => [
@@ -890,7 +890,7 @@ final class InterfaceTest extends TestCase
                         public static string $value { get; }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'noVisibilityInterfacePropertyWithHooks' => [
@@ -899,7 +899,7 @@ final class InterfaceTest extends TestCase
                         string $value { get; }
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'unimplementedInterfaceMethod' => [

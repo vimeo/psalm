@@ -43,7 +43,7 @@ final class TraceTest extends TestCase
                     /** @psalm-trace $b */
                     echo 1;',
                 'error_message' => 'UndefinedTrace',
-                'ignored_issues' => [
+                'error_levels' => [
                     'MixedAssignment',
                 ],
             ],

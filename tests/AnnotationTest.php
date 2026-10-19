@@ -1592,7 +1592,7 @@ final class AnnotationTest extends TestCase
                     function fooBar() {
                     }',
                 'error_message' => 'MissingReturnType',
-                'ignored_issues' => ['InvalidDocblock'],
+                'error_levels' => ['InvalidDocblock'],
             ],
             'invalidDocblockReturn' => [
                 'code' => '<?php
@@ -1614,7 +1614,7 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'ignored_issues' => ['MethodSignatureMismatch'],
+                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php

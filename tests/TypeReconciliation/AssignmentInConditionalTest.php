@@ -497,7 +497,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return "b";
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
             'assignmentInBranchOfAndReferencedAfterIf' => [

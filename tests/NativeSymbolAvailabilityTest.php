@@ -191,7 +191,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - WeakMap is not'
                 . ' defined for the analysed PHP version 7.4 (it was introduced in PHP 8.0);'
                 . ' install symfony/polyfill-php80',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '7.4',
         ];
 
@@ -201,7 +201,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 function f($m): void {}
             ',
             'error_message' => 'UndefinedDocblockClass',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '7.4',
         ];
 
@@ -212,7 +212,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 }
             ',
             'error_message' => 'UndefinedClass',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '7.4',
         ];
 
@@ -224,7 +224,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 }
             ',
             'error_message' => 'UndefinedPropertyFetch',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
 
@@ -239,7 +239,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 echo $x;
             ',
             'error_message' => 'UndefinedAttributeClass',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
 
@@ -254,7 +254,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 }
             ',
             'error_message' => 'UndefinedClass',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '7.4',
         ];
 
@@ -264,7 +264,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'Function fdiv is not defined for the analysed PHP version 7.4'
                 . ' (it was introduced in PHP 8.0',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '7.4',
         ];
 
@@ -276,7 +276,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'Method ReflectionClass::isEnum is not defined for the analysed PHP version 8.0'
                 . ' (it was introduced in PHP 8.1',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
     }

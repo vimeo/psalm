@@ -3868,7 +3868,7 @@ final class PurityTemplateTest extends TestCase
                         return $f->getReturn();
                     }',
                 'error_message' => 'method Fiber::start requires io',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'classPurityTemplateInTypeTemplateBoundIsInferred' => [

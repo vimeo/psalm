@@ -348,7 +348,7 @@ final class IntMaskComparisonTest extends TestCase
                         };
                     }',
                 'error_message' => 'IntMaskComparison',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'matchArmWithSeveralConditions' => [
@@ -361,7 +361,7 @@ final class IntMaskComparisonTest extends TestCase
                         };
                     }',
                 'error_message' => 'IntMaskComparison',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'switchCase' => [
@@ -442,7 +442,7 @@ final class IntMaskComparisonTest extends TestCase
                         }
                     }',
                 'error_message' => 'IntMaskComparison',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'masksTooLargeToCombinePairwise' => [

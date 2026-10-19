@@ -37,8 +37,8 @@ abstract class FileManipulationTestCase extends TestCase
      */
     #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
+        string $input,
+        string $output,
         string $php_version,
         array $issues_to_fix,
         bool $safe_types,
@@ -86,7 +86,7 @@ abstract class FileManipulationTestCase extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
@@ -114,7 +114,7 @@ abstract class FileManipulationTestCase extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
 
         $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
+        $this->assertSame($output, $this->project_analyzer->getCodebase()->getFileContents($file_path));
     }
 
     /**

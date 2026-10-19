@@ -533,7 +533,7 @@ final class CoreStubsTest extends TestCase
                 str_contains("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
         yield 'str_starts_with literal haystack' => [
@@ -541,7 +541,7 @@ final class CoreStubsTest extends TestCase
                 str_starts_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
         yield 'str_ends_with literal haystack' => [
@@ -549,7 +549,7 @@ final class CoreStubsTest extends TestCase
                 str_ends_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
     }

@@ -2584,7 +2584,7 @@ final class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'nullArgument' => [
                 'code' => '<?php
@@ -2640,7 +2640,7 @@ final class FunctionCallTest extends TestCase
                      */
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam',
-                'ignored_issues' => ['MissingParamType'],
+                'error_levels' => ['MissingParamType'],
             ],
             'invalidParamDefault' => [
                 'code' => '<?php
@@ -2681,7 +2681,7 @@ final class FunctionCallTest extends TestCase
 
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [
+                'error_levels' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
@@ -3032,7 +3032,7 @@ final class FunctionCallTest extends TestCase
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'maxCallWithArray' => [
@@ -3084,7 +3084,7 @@ final class FunctionCallTest extends TestCase
                     $list = [1 => 0, 0 => 1];
                     assert(array_is_list($list));',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'passingObjectToStringableObjectParam' => [
@@ -3246,7 +3246,7 @@ final class FunctionCallTest extends TestCase
                     }
                     ',
                 'error_message' => 'ParadoxicalCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'extractVarCheckInvalid' => [
@@ -3263,7 +3263,7 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     unserialize("", ["max_depth" => "foo"]);',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
             ],
         ];

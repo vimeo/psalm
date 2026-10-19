@@ -5212,7 +5212,7 @@ final class CapabilitiesTest extends TestCase
                         return new Mt19937();
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'randomizerAdvancesItsEngine' => [
@@ -5224,7 +5224,7 @@ final class CapabilitiesTest extends TestCase
                         return $randomizer->getInt(0, 10);
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'methodCalledByAnUnknownNameOfAClassWithoutAContractIsImpure' => [

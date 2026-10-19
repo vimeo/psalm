@@ -740,7 +740,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a class',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnFunctionWithNonFunctionAttribute' => [
@@ -785,7 +785,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a property',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnClassConstantWithNonClassConstantAttribute' => [
@@ -802,7 +802,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a class constant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnClassConstantWithOverrideAttribute' => [
@@ -816,7 +816,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(\Override::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Override cannot be used on a class constant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnParameterWithNonParameterAttribute' => [
@@ -830,7 +830,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a function/method parameter',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesWithNonAttribute' => [
@@ -843,7 +843,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(NonAttr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - The class NonAttr doesn\'t have the Attribute attribute',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'analyzeConstructorForNonexistentAttributes' => [
@@ -905,7 +905,7 @@ final class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'UndefinedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'sensitiveParameterOnMethod' => [
@@ -923,7 +923,7 @@ final class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
         ];

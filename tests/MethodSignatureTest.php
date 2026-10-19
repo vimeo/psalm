@@ -1535,7 +1535,7 @@ final class MethodSignatureTest extends TestCase
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => ['MoreSpecificImplementedParamType'],
+                'error_levels' => ['MoreSpecificImplementedParamType'],
             ],
             'preventOneOfUnionMoreSpecific' => [
                 'code' => '<?php
@@ -1575,7 +1575,7 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => ['InvalidParent'],
+                'error_levels' => ['InvalidParent'],
             ],
             // not sure how to handle it
             'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
@@ -1587,7 +1587,7 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => ['InvalidParent'],
+                'error_levels' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
                 'code' => '<?php
@@ -1679,7 +1679,7 @@ final class MethodSignatureTest extends TestCase
                         use FooTrait;
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.3',
             ],
             'inconsistentConstructorExplicitParentConstructorArgCount' => [
@@ -1774,7 +1774,7 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'noTypehintInNativeDescendant' => [
@@ -1786,7 +1786,7 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'absentByRefReturnInDescendant' => [

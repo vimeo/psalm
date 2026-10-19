@@ -12160,7 +12160,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * @param list<string> $expectedIssuesTypes
+     * @param list<string> $expectedIssueTypes
      * @param list<int>|null $expectedSourceLines line of each issue's taint origin, in any order
      * @param bool $findUnusedVariables track unused variables, as the CLI does by default
      */
@@ -12168,7 +12168,7 @@ final class TaintTest extends TestCase
     #[Test]
     public function multipleTaintIssuesAreDetected(
         string $code,
-        array $expectedIssuesTypes,
+        array $expectedIssueTypes,
         ?array $expectedSourceLines = null,
         bool $findUnusedVariables = false,
     ): void {
@@ -12194,7 +12194,7 @@ final class TaintTest extends TestCase
             $issues,
         );
         // The order issues are reported in depends on the resolution rounds their flows take
-        self::assertEqualsCanonicalizing($expectedIssuesTypes, $actualIssueTypes);
+        self::assertEqualsCanonicalizing($expectedIssueTypes, $actualIssueTypes);
 
         if ($expectedSourceLines !== null) {
             $actualSourceLines = [];
@@ -12206,6 +12206,7 @@ final class TaintTest extends TestCase
             self::assertEqualsCanonicalizing($expectedSourceLines, $actualSourceLines);
         }
     }
+
 
     /**
      * @return array<string, array{

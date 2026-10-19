@@ -1317,7 +1317,7 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
-                'ignored_issues' => ['ParadoxicalCondition'],
+                'error_levels' => ['ParadoxicalCondition'],
             ],
             'repeatedCaseValue' => [
                 'code' => '<?php

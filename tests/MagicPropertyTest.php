@@ -1291,7 +1291,7 @@ final class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion',
-                'ignored_issues' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'magicInterfacePropertyWrongProperty' => [
                 'code' => '<?php
