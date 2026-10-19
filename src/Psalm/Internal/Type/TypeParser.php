@@ -1722,7 +1722,7 @@ final class TypeParser
     /**
      * @param array<string, array<string, Union>> $template_type_map
      * @throws TypeParseTreeException
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getTypeFromIndexedAccess(
         string $array_param_name,

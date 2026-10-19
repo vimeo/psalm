@@ -66,6 +66,7 @@ final class SecurityIssueReportTest extends TestCase
 
     /**
      * @param class-string<ConsoleReport|CompactReport> $report_class
+     * @psalm-pure
      */
     private function createReport(string $report_class): string
     {

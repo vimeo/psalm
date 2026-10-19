@@ -105,7 +105,7 @@ final class TValueOf extends Atomic
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function isViableTemplateType(Union $template_type): bool
     {

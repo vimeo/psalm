@@ -31,7 +31,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 $c = $m->count();
             ',
             'assertions' => [
-                '$c===' => 'int',
+                '$c===' => 'int<0, max>',
             ],
             'ignored_issues' => [],
             'php_version' => '8.0',

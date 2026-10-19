@@ -419,7 +419,7 @@ final class DataFlowNode implements Stringable
      * The sink of the values of the array a parameter is given, for its value sinks (see
      * FunctionLikeParameter::$value_sinks): the parameter's node flows into it through a fetch of any value.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForArgumentValues(self $param_node, int $taints): self
     {
@@ -522,7 +522,7 @@ final class DataFlowNode implements Stringable
      * Reconciler. It stands for $node when types compare their parent nodes (see
      * getNarrowedNodeId()). $node itself if it is one already.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForNarrowingToScalar(self $node): self
     {
@@ -546,7 +546,7 @@ final class DataFlowNode implements Stringable
      * Reconciler. Like the nodes of getForNarrowingToScalar(), it stands for $node when types compare their
      * parent nodes (see getNarrowedNodeId()). $node itself if it doesn't take those taints already.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForNarrowingAway(self $node, int $taints): self
     {
@@ -600,7 +600,7 @@ final class DataFlowNode implements Stringable
      * in (see combineParentNodes()). The same removal from a node it made is that node: the key is already
      * gone (e.g. in the next iteration of a loop).
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForKeyRemoval(self $node, self $removal): self
     {
@@ -899,7 +899,7 @@ final class DataFlowNode implements Stringable
      * the node the path comes from: its label and location, a pure function of its id, are those of that
      * node.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForPathVariant(string $from_id, ?self $from, string $path_type): self
     {

@@ -15,7 +15,7 @@ mark the issues they are about: Psalm also suggests annotations for the unannota
 
 | Capability         | Allows                                                                          |
 |--------------------|---------------------------------------------------------------------------------|
-| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it) |
+| `read-props`       | reading properties of mutable objects, including `$this` (immutable objects never need it, nor objects the caller created with `new` from a class whose contract needs at most `read-props\|write-this-props\|write-refs`, or whose constructor can't keep a reference to them, see [Method calls](#method-calls)) |
 | `write-this-props` | writing or unsetting properties of `$this`                                      |
 | `write-props`      | writing or unsetting properties of any other object                             |
 | `read-globals`     | reading static properties and superglobals, and binding `global` variables      |
@@ -101,6 +101,11 @@ function tamper(): void {
     }
 }
 ```
+
+A new object the caller created (see [Method calls](#method-calls)) is not global state itself,
+even when its constructor read global state, or when it is a clone of an object reached from
+global state: writing its own properties is free. What it holds may be global state, so writing
+another object through it, or calling a method that does, costs `write-globals` too.
 
 ## Annotations
 
@@ -274,7 +279,8 @@ caller's. The call is charged according to the receiver:
 - the caller's own `$this`, also when a call on it of a method returning its receiver gives it
   back (see [Fluent calls](#fluent-calls)): `write-this-props`;
 - an object the caller created with `new`, from a class whose contract needs at most
-  `read-props|write-this-props|write-refs`: nothing, as nobody else can see it change;
+  `read-props|write-this-props|write-refs`, or whose constructor can't keep a reference to it:
+  nothing, as nobody else can see it change;
 - any other object, including a parameter, a property of `$this`, or an object returned by
   another call: `write-props`.
 
@@ -313,9 +319,202 @@ function bump(Counter $counter): int {
 }
 ```
 
-The waiver for new objects needs the class-level contract. If `Counter` had no
-`@psalm-capabilities` on the class, `new Counter()` followed by `->inc()` would cost
-`write-props`, because a subclass could do more.
+Reading or unsetting a property gets the same waiver: it is free on an object the caller created
+with `new`, from a class whose contract needs at most `read-props|write-this-props|write-refs`, as
+nobody else can change it. Reading a property of any other mutable object, including `$this`, a
+parameter or an object held in a property, costs `read-props`, whatever the class's contract:
+
+```php
+<?php
+/** @psalm-capabilities read-props|write-this-props */
+final class Tally {
+    public int $n = 0;
+
+    public function inc(): void {
+        $this->n++;
+    }
+}
+
+/** @psalm-pure */
+function tallyTwice(): int {
+    $tally = new Tally();
+    $tally->inc();
+    $tally->inc();
+    return $tally->n; // fine: $tally was created here
+}
+
+/** @psalm-pure */
+function currentTally(Tally $tally): int {
+    return $tally->n; // ImpurePropertyFetch: The context is pure but accessing a property on a mutable object requires read-props
+}
+```
+
+Without a class-level contract, calling a method on an object the caller created with `new`, and
+reading or writing its properties, is still free, as long as the constructor can't keep a reference
+to the new object anywhere. Only
+three things can hand `$this` to someone else: writing another object (`write-props`), global state
+(`write-globals`) or a by-reference parameter (`write-refs`). So a constructor that needs none of
+these qualifies, and so does a class without a constructor:
+
+```php
+<?php
+final class Greeting {
+    /** @var list<string> */
+    private array $words = [];
+
+    /** @psalm-capabilities read-props */
+    public function __construct(string $first) {
+        $this->words[] = $first;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function add(string $word): void {
+        $this->words[] = $word;
+    }
+
+    /** @psalm-capabilities read-props */
+    public function text(): string {
+        return implode(" ", $this->words);
+    }
+}
+
+/** @psalm-pure */
+function hello(): string {
+    $greeting = new Greeting("hello");
+    $greeting->add("world"); // fine: the constructor can't hand $greeting to anyone
+    return $greeting->text();
+}
+```
+
+A constructor without a purity annotation qualifies too when it is trivial: it does nothing, or only
+assigns its parameters (or constant values) to properties its class declares, promoted ones included.
+Such a constructor needs `write-this-props` without being annotated (nothing at all if it is empty), so
+neither `new` nor its class needs an annotation for the waiver. Any other statement makes it non-trivial:
+a call (`parent::__construct()` included), a by-reference parameter, a default value that creates an
+object or calls something, a property with hooks or one the class doesn't declare before the
+constructor, or `$this` stored anywhere. A non-trivial constructor without an annotation may do
+anything, as any unannotated method. So may a trivial constructor run for a class that redeclares one
+of the properties it assigns with a hook (PHP 8.4), or by `new static()` / `new $class()` where the
+class may be extended: the hook may do anything.
+
+```php
+<?php
+final class Point {
+    public int $z = 0;
+
+    public function __construct(public int $x, public int $y) {}
+}
+
+/** @psalm-pure */
+function lift(int $x, int $y): Point {
+    $point = new Point($x, $y);
+    $point->z = 1; // fine: Point's constructor is trivial
+    return $point;
+}
+```
+
+A constructor that may store `$this` somewhere loses the waiver. Here the constructor registers
+every new object in a static property, so calling a method on the new object costs what it would
+on any other one. The object is also reached from global state now, which adds `write-globals`:
+
+```php
+<?php
+final class Registered {
+    /** @var list<Registered> */
+    public static array $all = [];
+
+    public int $uses = 0;
+
+    /** @psalm-capabilities read-globals|write-globals */
+    public function __construct() {
+        self::$all[] = $this;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function use(): void {
+        $this->uses++;
+    }
+}
+
+/** @psalm-capabilities read-globals|write-globals */
+function register(): Registered {
+    $registered = new Registered();
+    $registered->use(); // ImpureMethodCall: The context is read-globals|write-globals but method Registered::use requires write-props|write-globals
+    return $registered;
+}
+```
+
+A constructor that writes another object, such as linking the new object to a parent passed to
+it, or that writes a by-reference parameter, loses it the same way.
+
+A `clone` is a new object too, by the same rule: the copy is free to mutate unless the class's
+`__clone` needs `write-props`, `write-globals` or `write-refs`, and so may hand the copy to someone
+else. A class-level contract keeps the waiver, for a clone as for a new object:
+
+```php
+<?php
+final class Tracked {
+    /** @var list<Tracked> */
+    public static array $copies = [];
+
+    public int $uses = 0;
+
+    /** @psalm-capabilities read-props|read-globals|write-globals */
+    public function __clone() {
+        self::$copies[] = $this;
+    }
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function use(): void {
+        $this->uses++;
+    }
+}
+
+/** @psalm-capabilities read-props|read-globals|write-globals */
+function copyTracked(Tracked $tracked): Tracked {
+    $copy = clone $tracked;
+    $copy->use(); // ImpureMethodCall: The context is read-props|read-globals|write-globals but method Tracked::use requires write-props
+    return $copy;
+}
+```
+
+When the class isn't known exactly, there is no waiver: `new static()` in a class that may be
+extended, and `new $class()`, may run the constructor of a subclass that keeps a reference:
+
+```php
+<?php
+/** @psalm-consistent-constructor */
+class Item {
+    public int $count = 0;
+
+    /** @psalm-capabilities read-props|write-this-props */
+    public function bump(): void {
+        $this->count++;
+    }
+}
+
+/** @psalm-capabilities read-props|write-this-props */
+function makeItem(): Item {
+    $item = new Item();
+    $item->bump(); // fine: an Item, whose constructor can't keep $item
+    return $item;
+}
+
+/**
+ * @param class-string<Item> $class
+ * @psalm-capabilities read-props|write-this-props
+ */
+function makeAny(string $class): Item {
+    $item = new $class();
+    $item->bump(); // ImpureMethodCall: The context is read-props|write-this-props but method Item::bump requires write-props
+    return $item;
+}
+```
+
+This waiver covers calling methods, and writing and reading properties: reading a property of
+such an object directly is free too, as calling a `read-props` method on it is. What the property
+holds is another matter: reading a property of an object stored in it costs `read-props`, as that
+object may be shared.
 
 The `write-this-props` that a class purity template of the receiver is bound to
 (`Doer[write-this-props]`, see [Purity templates](#purity-templates)) is charged the same way,

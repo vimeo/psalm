@@ -819,7 +819,7 @@ final class AtomicTypeComparator
 
     /**
      * @psalm-assert-if-true TKeyedArray $array
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function isLegacyTListLike(Atomic $array): bool
     {
@@ -833,7 +833,7 @@ final class AtomicTypeComparator
     }
     /**
      * @psalm-assert-if-true TKeyedArray $array
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function isLegacyTNonEmptyListLike(Atomic $array): bool
     {
