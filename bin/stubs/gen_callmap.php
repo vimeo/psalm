@@ -105,7 +105,9 @@ $last = array_key_last($baseMaps);
 // the map of the version keeps their entries from the closest earlier version that has them.
 /** @var array<string, list<string>> $excludes */
 $excludes = json_decode(
-    (string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes'),
+    (string) shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes',
+    ),
     true,
     512,
     JSON_THROW_ON_ERROR,
