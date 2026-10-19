@@ -41,6 +41,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class CallableTypeComparator
 {
@@ -585,6 +586,7 @@ final class CallableTypeComparator
      * invokable object), or their bounds when nothing binds them: no call binds them any more.
      *
      * @param array<string, non-empty-array<string, Union>> $class_template_types
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private static function getCallableCapabilities(

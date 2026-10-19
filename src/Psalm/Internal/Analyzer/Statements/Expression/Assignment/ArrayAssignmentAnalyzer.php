@@ -250,7 +250,9 @@ final class ArrayAssignmentAnalyzer
 
         $statements_analyzer->node_data->setType($root_array_expr, $root_type);
 
-        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
+        // an element of an object (an ArrayAccess) is written by its offsetSet(), charged as that call: the
+        // property keeps holding the same object, so it isn't assigned
+        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch && !$root_type->isObjectType()) {
             if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
                 InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
@@ -781,7 +783,7 @@ final class ArrayAssignmentAnalyzer
      * Assigning an offset of anything that may not be an array (an ArrayAccess object, a string...) may do anything
      * else with what it held, so the path keeps it all then.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getOverwritePathType(Union $array_type, TLiteralInt|TLiteralString $key): string
     {

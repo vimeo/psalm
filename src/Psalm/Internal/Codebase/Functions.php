@@ -44,6 +44,7 @@ use const PATHINFO_EXTENSION;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Functions
 {
@@ -434,6 +435,7 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
+     * @return CapabilitySet
      */
     public function getCallMapFunctionCapabilities(
         ?StatementsAnalyzer $statements_analyzer,
@@ -613,11 +615,19 @@ final class Functions
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
         $mutations = Capabilities::NONE;
+        $writes_refs = false;
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
 
-                if ($arg_type) {
+                // a closure literal: without what it does to the variables it captured by reference
+                $argument_purity = $statements_analyzer
+                    ? CallPurityResolver::getArgumentPurity($statements_analyzer, $args[$i])
+                    : null;
+
+                if ($argument_purity !== null && $statements_analyzer) {
+                    $mutations |= CallPurityResolver::resolvePurity($argument_purity, $statements_analyzer);
+                } elseif ($arg_type) {
                     foreach ($arg_type->getAtomicTypes() as $possible_callable) {
                         $possible_callable = CallableTypeComparator::getCallableFromAtomic(
                             $codebase,
@@ -636,12 +646,12 @@ final class Functions
 
             if ($param->by_ref && isset($args[$i])) {
                 $must_use = false;
-                // what this costs depends on the argument: see ByRefArgumentAnalyzer
-                $mutations |= Capabilities::WRITE_REFS;
+                $writes_refs = true;
             }
         }
 
-        return $mutations;
+        // what this costs depends on the argument: see ByRefArgumentAnalyzer
+        return $writes_refs ? $mutations | Capabilities::WRITE_REFS : $mutations;
     }
 
     /**

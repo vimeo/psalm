@@ -50,6 +50,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodComparator
 {
@@ -464,6 +465,7 @@ final class MethodComparator
      * will be bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and an override may
      * use the rest only through `@psalm-purity-from-template P`, like Hack's abstract context constants.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getBoundCapabilities(
@@ -487,6 +489,21 @@ final class MethodComparator
             }
 
             foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
+                // the extended params chain the templates: Iterator's may be that of an abstract parent, which the
+                // class binds in turn
+                while ($bound_atomic instanceof TTemplateParam
+                    && $bound_atomic->defining_class !== $binding_classlike_storage->name
+                ) {
+                    $next_type = $binding_classlike_storage
+                        ->template_extended_params[$bound_atomic->defining_class][$bound_atomic->param_name] ?? null;
+
+                    if ($next_type === null || !$next_type->isSingle()) {
+                        break;
+                    }
+
+                    $bound_atomic = $next_type->getSingleAtomic();
+                }
+
                 if ($bound_atomic instanceof TTemplateParam
                     && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
                 ) {

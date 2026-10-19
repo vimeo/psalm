@@ -9,11 +9,20 @@ use Psalm\Type\Union;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodStorage extends FunctionLikeStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
     public bool $is_static = false;
+
+    /**
+     * The properties a constructor without a purity annotation assigns, if it only does that and was given what
+     * that needs (see FunctionLikeNodeScanner::applyTrivialConstructorCapabilities())
+     *
+     * @var list<string>|null
+     */
+    public ?array $trivial_constructor_properties = null;
 
     public int $visibility = 0;
 
@@ -43,6 +52,7 @@ final class MethodStorage extends FunctionLikeStorage
      */
     public bool $mutation_free_assumed = false;
     
+    /** @var CapabilitySet */
     public int $containing_class_capabilities = Capabilities::ALL;
 
     /**

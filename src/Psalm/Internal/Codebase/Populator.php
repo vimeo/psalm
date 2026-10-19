@@ -59,6 +59,7 @@ use function strtolower;
  * @internal
  *
  * Populates file and class information so that analysis can work properly
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Populator
 {
@@ -255,7 +256,13 @@ final class Populator
             }
 
             $parent_storage = $this->classlike_storage_provider->get($parent_name);
-            $index = array_search('TPurity', array_keys($parent_storage->template_types ?? []), true);
+            $template_name = self::getIterationPurityTemplateName($parent_storage);
+
+            if ($template_name === null) {
+                continue;
+            }
+
+            $index = array_search($template_name, array_keys($parent_storage->template_types ?? []), true);
 
             if ($index !== false && isset($type_params[$index])) {
                 return true;
@@ -263,6 +270,40 @@ final class Populator
         }
 
         return false;
+    }
+
+    /**
+     * The purity template that iterating an object of the class is bound to: `TPurity` of the
+     * iterator interfaces, or the template of a class passing its own on to them
+     * (`@implements Iterator[P]<K, V>`), which its subclasses then bind with `@extends Base[pure]`.
+     *
+     * @psalm-mutation-free
+     */
+    private static function getIterationPurityTemplateName(ClassLikeStorage $storage): ?string
+    {
+        if (isset($storage->template_types['TPurity'])) {
+            return 'TPurity';
+        }
+
+        // the extended params chain the templates (Traversable's is Iterator's, which is the class's own)
+        $purity = $storage->template_extended_params['Traversable']['TPurity'] ?? null;
+
+        while ($purity !== null && $purity->isSingle()) {
+            $purity_atomic = $purity->getSingleAtomic();
+
+            if (!$purity_atomic instanceof TTemplateParam) {
+                return null;
+            }
+
+            if ($purity_atomic->defining_class === $storage->name) {
+                return $purity_atomic->param_name;
+            }
+
+            $purity = $storage->template_extended_params[$purity_atomic->defining_class][$purity_atomic->param_name]
+                ?? null;
+        }
+
+        return null;
     }
 
     /**
@@ -305,6 +346,7 @@ final class Populator
      * reading its properties is like reading an argument. A method that is missing, or whose
      * purity depends on templates, counts for the worst.
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private function getIterationMethodCapabilities(ClassLikeStorage $storage, string $method_name): int
@@ -333,6 +375,8 @@ final class Populator
     /**
      * What iterating over a value of a type getIterator() returns may do: the purity template of a
      * Generator/Iterator type, or the one bound for a class, or anything for the rest.
+     *
+     * @return CapabilitySet
      */
     private function getIterationPurityOfType(Atomic $iterator_atomic_type, int $depth): int
     {
@@ -364,6 +408,7 @@ final class Populator
     }
 
     /**
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     private function resolveCapabilitiesType(Union $type, int $depth = 0): int

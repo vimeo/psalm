@@ -91,6 +91,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
@@ -527,6 +528,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
      * MethodCallPurityAnalyzer::getClassContractCapabilities()). A method writing the object's own properties writes
      * those of the receiver: the caller's `$this` or another object, unless the callable is written out in the call
      * (`[$this, $method]()`). Any other callable may do anything.
+     *
+     * @return CapabilitySet
      */
     private static function getCallableArrayContractCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -1447,6 +1450,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $template_result,
                         ),
                         $template_result,
+                        args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     )
                     : null);
 
@@ -1633,7 +1637,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
      * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
      * chosen by the client, whatever data it was built from.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isOnlyObjects(Union $type): bool
     {

@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -349,12 +348,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $node_location,
         ) ? $node_location : null;
 
-        $method_location = $method_storage
-            ? ($graph instanceof VariableUseGraph
-                ? ($method_storage->return_type_location ?: $method_storage->location)
-                : ($method_storage->signature_return_type_location ?: $method_storage->location))
-            : null;
-
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
@@ -430,12 +423,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints && $method_location) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $method_id . '-escaped',
-                $method_location,
-                $method_source->specialization_key,
-            );
+        if ($conditionally_removed_taints) {
+            // a node of this call's own: what it removes depends on its arguments, and $method_source may be
+            // shared with the other calls, the last call deciding for all
+            $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);
+
+            $graph->addNode($assignment_node);
 
             $graph->addPath(
                 $method_source,

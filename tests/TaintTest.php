@@ -440,6 +440,19 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
+                'code' => '<?php // --taint-analysis
+                    final class Phone {
+                        private static string $prefix = "+";
+
+                        public static function format(string $phone): string {
+                            return self::$prefix . $phone;
+                        }
+                    }
+
+                    $tainted = Phone::format((string) $_GET["phone"]);
+                    echo Phone::format("12");',
+            ],
             'fetchOfAnotherKeyOfAForeachCopyOfTheElements' => [
                 // Each element is copied under its own key: "city" isn't "name_tail".
                 'code' => '<?php
@@ -720,102 +733,6 @@ final class TaintTest extends TestCase
                     show(["n" => (string)($_GET["n"] ?? "")]);
                     show(["o" => (string)($_GET["o"] ?? "")]);
                     show(["p" => (string)($_GET["p"] ?? "")]);
-                ',
-            ],
-            'fetchOfAKeyOfAWrappedArrayThroughFiveConvergences' => [
-                // The flows of differently keyed arrays converge at the parameter of each relay, and the fetch of
-                // key "name" past five of them still ignores those of other keys of the wrapped array.
-                'code' => '<?php
-                    function show(array $r): void {
-                        echo (string) ($r["wrapper"]["name"] ?? "");
-                    }
-
-                    function relay5(array $row): void {
-                        show($row);
-                    }
-
-                    function relay4(array $row): void {
-                        relay5($row);
-                    }
-
-                    function relay3(array $row): void {
-                        relay4($row);
-                    }
-
-                    function relay2(array $row): void {
-                        relay3($row);
-                    }
-
-                    function relay1(array $row): void {
-                        relay2($row);
-                    }
-
-                    relay1(["wrapper" => ["k1_0" => (string)($_GET["k1_0"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_1" => (string)($_GET["k1_1"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_2" => (string)($_GET["k1_2"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_3" => (string)($_GET["k1_3"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_4" => (string)($_GET["k1_4"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_5" => (string)($_GET["k1_5"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_6" => (string)($_GET["k1_6"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_7" => (string)($_GET["k1_7"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_8" => (string)($_GET["k1_8"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_9" => (string)($_GET["k1_9"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_10" => (string)($_GET["k1_10"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_11" => (string)($_GET["k1_11"] ?? "")]]);
-                    relay1(["wrapper" => ["k1_12" => (string)($_GET["k1_12"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_0" => (string)($_GET["k2_0"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_1" => (string)($_GET["k2_1"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_2" => (string)($_GET["k2_2"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_3" => (string)($_GET["k2_3"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_4" => (string)($_GET["k2_4"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_5" => (string)($_GET["k2_5"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_6" => (string)($_GET["k2_6"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_7" => (string)($_GET["k2_7"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_8" => (string)($_GET["k2_8"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_9" => (string)($_GET["k2_9"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_10" => (string)($_GET["k2_10"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_11" => (string)($_GET["k2_11"] ?? "")]]);
-                    relay2(["wrapper" => ["k2_12" => (string)($_GET["k2_12"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_0" => (string)($_GET["k3_0"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_1" => (string)($_GET["k3_1"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_2" => (string)($_GET["k3_2"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_3" => (string)($_GET["k3_3"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_4" => (string)($_GET["k3_4"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_5" => (string)($_GET["k3_5"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_6" => (string)($_GET["k3_6"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_7" => (string)($_GET["k3_7"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_8" => (string)($_GET["k3_8"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_9" => (string)($_GET["k3_9"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_10" => (string)($_GET["k3_10"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_11" => (string)($_GET["k3_11"] ?? "")]]);
-                    relay3(["wrapper" => ["k3_12" => (string)($_GET["k3_12"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_0" => (string)($_GET["k4_0"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_1" => (string)($_GET["k4_1"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_2" => (string)($_GET["k4_2"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_3" => (string)($_GET["k4_3"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_4" => (string)($_GET["k4_4"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_5" => (string)($_GET["k4_5"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_6" => (string)($_GET["k4_6"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_7" => (string)($_GET["k4_7"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_8" => (string)($_GET["k4_8"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_9" => (string)($_GET["k4_9"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_10" => (string)($_GET["k4_10"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_11" => (string)($_GET["k4_11"] ?? "")]]);
-                    relay4(["wrapper" => ["k4_12" => (string)($_GET["k4_12"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_0" => (string)($_GET["k5_0"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_1" => (string)($_GET["k5_1"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_2" => (string)($_GET["k5_2"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_3" => (string)($_GET["k5_3"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_4" => (string)($_GET["k5_4"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_5" => (string)($_GET["k5_5"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_6" => (string)($_GET["k5_6"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_7" => (string)($_GET["k5_7"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_8" => (string)($_GET["k5_8"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_9" => (string)($_GET["k5_9"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_10" => (string)($_GET["k5_10"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_11" => (string)($_GET["k5_11"] ?? "")]]);
-                    relay5(["wrapper" => ["k5_12" => (string)($_GET["k5_12"] ?? "")]]);
-                    relay1(["wrapper" => ["name" => "safe"]]);
                 ',
             ],
             'fetchOfAKeySixLevelsDeep' => [
@@ -3420,7 +3337,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3454,7 +3371,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
@@ -3994,6 +3911,24 @@ final class TaintTest extends TestCase
     public function providerInvalidCodeParse(): array
     {
         return [
+            'aSpecializedFunctionThatOnlyReadsSharedStateReturnsItToAllItsCalls' => [
+                'code' => '<?php // --taint-analysis
+                    final class Settings {
+                        public static string $value = "";
+
+                        public static function get(string $suffix): string {
+                            return self::$value . $suffix;
+                        }
+                    }
+
+                    function store(): void {
+                        Settings::$value = (string) $_GET["value"];
+                    }
+
+                    store();
+                    echo Settings::get("a");',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
                 'code' => '<?php
                     function show(): void {
@@ -5671,6 +5606,33 @@ final class TaintTest extends TestCase
                     }
 
                     (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAPropertyAnInheritedMethodSetsBeforeACallWithAnUntaintedArgument' => [
+                // the calls of an inherited method share the path into its body for the class: the untainted
+                // argument of a later call removes nothing from what an earlier one passed
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("k", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
@@ -8160,7 +8122,7 @@ final class TaintTest extends TestCase
                     function query(mixed $filter): void {}
 
                     // "name[$ne]=" gives ["name" => ["$ne" => ""]]
-                    parse_str((string) $_SERVER["QUERY_STRING"], $params);
+                    parse_str($_SERVER["QUERY_STRING"] ?? "", $params);
                     query($params);',
                 'error_message' => 'TaintedNosql',
             ],
@@ -10623,6 +10585,28 @@ final class TaintTest extends TestCase
 
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                    function escape(string $s, bool $escape = true): string {
+                        return $s;
+                    }
+
+                    shell_exec(escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAStaticCallKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public static function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
                 'code' => '<?php

@@ -22,6 +22,7 @@ use Psalm\Type\Union;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 abstract class SourceAnalyzer implements StatementsSource
 {
@@ -238,6 +239,9 @@ abstract class SourceAnalyzer implements StatementsSource
         return $this->source->getNodeTypeProvider();
     }
 
+    /**
+     * @param CapabilitySet $mutation_level
+     */
     #[Override]
     public function signalMutationOnlyInferred(
         int $mutation_level,
@@ -291,6 +295,10 @@ abstract class SourceAnalyzer implements StatementsSource
             // the level known at this point, used for the types of closures
             $src->inferred_capabilities |= $mutation_level;
 
+            if (!$src->signalling_by_ref_capture) {
+                $src->inferred_capabilities_beyond_captures |= $mutation_level;
+            }
+
             if ($storage !== null
                 && !$storage->has_mutations_annotation
                 && $storage->location !== null
@@ -322,8 +330,10 @@ abstract class SourceAnalyzer implements StatementsSource
     }
 
     /**
+     * @param CapabilitySet $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
+     * @param CapabilitySet|null $inferred_mutation_level
      */
     #[Override]
     public function signalMutation(

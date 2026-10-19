@@ -1566,7 +1566,7 @@ final class Config
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
@@ -1575,7 +1575,7 @@ final class Config
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
     {
@@ -3099,7 +3099,8 @@ final class Config
             if (!$composer_json) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
-            $php_version = $composer_json['require']['php'] ?? null;
+            // php-64bit is the platform package of a 64-bit php: it constrains the version just as well
+            $php_version = $composer_json['require']['php'] ?? $composer_json['require']['php-64bit'] ?? null;
 
             if (is_string($php_version)) {
                 $version_parser = new VersionParser();
@@ -3152,7 +3153,10 @@ final class Config
         return $this->universal_object_crates;
     }
 
-    /** @internal */
+    /**
+     * @internal
+     * @psalm-capabilities read-props
+     */
     public function getCacheSerializer(): Serializer
     {
         $s = $this->use_igbinary ? new IgbinarySerializer : new NativeSerializer();

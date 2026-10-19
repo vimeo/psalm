@@ -23,6 +23,7 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -115,6 +116,7 @@ use const SORT_NUMERIC;
 /**
  * @internal
  * @template-covariant TFunction as Closure|Function_|ClassMethod|ArrowFunction
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
@@ -146,11 +148,30 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     public bool $track_mutations = false;
 
+    /** @var CapabilitySet */
     public int $inferred_capabilities = Capabilities::NONE;
+
+    /**
+     * The part of $inferred_capabilities a closure needs for something other than reading and
+     * writing the variables it captured by reference: a closure literal passed as an argument
+     * reads and writes them in the scope calling with it, which already required what writing
+     * them needs where it created the closure.
+     *
+     * @var CapabilitySet
+     */
+    public int $inferred_capabilities_beyond_captures = Capabilities::NONE;
+
+    /**
+     * Whether the mutation being signalled is the closure's reading or writing of a variable it
+     * captured by reference.
+     */
+    public bool $signalling_by_ref_capture = false;
 
     /**
      * The mutations performed by this function-like itself, excluding those of
      * the unannotated callees in $deferred_callees.
+     *
+     * @var CapabilitySet
      */
     public int $intrinsic_capabilities = Capabilities::NONE;
 
@@ -171,6 +192,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * The mutations performed by the parameter default values themselves.
+     *
+     * @var CapabilitySet
      */
     public int $param_default_intrinsic_capabilities = Capabilities::NONE;
 
@@ -937,6 +960,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     )->setProperties(['reference_free' => true]);
                 }
 
+                $this->function->setAttribute(
+                    CallPurityResolver::ARGUMENT_PURITY_ATTRIBUTE,
+                    self::getClosurePurity(
+                        $this->inferred_capabilities_beyond_captures,
+                        $this->used_purity_templates,
+                    ),
+                );
+
                 // a closure is a fresh object: its enclosing scope may call it freely
                 $statements_analyzer->node_data->setType(
                     $this->function,
@@ -1491,6 +1522,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * The capabilities the parameter default values of a function-like with $capabilities may use.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getParamDefaultCapabilities(int $capabilities): int
@@ -2364,6 +2397,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * A purity made of capabilities and purity templates, where no capabilities (`pure`) are left
      * out of a union with templates: `P|pure` is just `P`.
      *
+     * @param CapabilitySet $capabilities
      * @param array<string, TTemplateParam> $templates
      * @psalm-pure
      */
@@ -2466,6 +2500,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      * declares them as its own capabilities (see FunctionLikeDocblockScanner::applyPurityTemplateLowerBounds)
      * and its callers pay them anyway, so no stricter annotation can be suggested without them.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private function getPurityTemplateLowerBounds(Codebase $codebase, FunctionLikeStorage $storage): int

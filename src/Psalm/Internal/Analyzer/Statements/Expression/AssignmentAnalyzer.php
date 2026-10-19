@@ -109,6 +109,7 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class AssignmentAnalyzer
 {
@@ -117,6 +118,7 @@ final class AssignmentAnalyzer
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
      * from an enclosing scope, or a reference into another scope (a by-reference parameter).
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public static function getExternalWriteCapabilities(Context $context, string $var_id): int
@@ -242,6 +244,7 @@ final class AssignmentAnalyzer
 
                 if ($closure instanceof ClosureAnalyzer) {
                     $closure->captured_by_ref_writes[$root_var_name] = true;
+                    $closure->signalling_by_ref_capture = true;
                 }
 
                 $statements_analyzer->signalMutation(
@@ -251,6 +254,10 @@ final class AssignmentAnalyzer
                     ImpureByReferenceAssignment::class,
                     $root_expr,
                 );
+
+                if ($closure instanceof ClosureAnalyzer) {
+                    $closure->signalling_by_ref_capture = false;
+                }
             } elseif (isset($context->referenced_globals[$root_var_name])) {
                 $statements_analyzer->signalMutation(
                     Capabilities::WRITE_GLOBALS,

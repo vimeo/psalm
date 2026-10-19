@@ -37,6 +37,7 @@ use function array_values;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodCallPurityAnalyzer
 {
@@ -65,11 +66,14 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
-     * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
+     * receiver is pure-compatible or external-mutation-free (fresh), needs write-this-props when it is
      * `$this` or state of the closure being analysed and write-props otherwise, as writing its
      * properties directly would. Callers that know the receiver to be fresh by other means say so
      * with $receiver_is_fresh, and those that know the callee's capabilities for this call with
      * $callee_capabilities.
+     *
+     * @param CapabilitySet|null $callee_capabilities
+     * @return CapabilitySet
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -94,6 +98,7 @@ final class MethodCallPurityAnalyzer
      * or with the contract of a marker interface, which caps no implementer, the call may do anything.
      *
      * @param array<string, Atomic> $intersection_types
+     * @return CapabilitySet
      */
     public static function getUnknownMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -120,6 +125,8 @@ final class MethodCallPurityAnalyzer
      * it caps them: the parts of an intersection, and the bound of a template. A method may be one
      * of any part, so it may do what any of them allows; a part that isn't a class, one without a
      * contract, or a marker interface, whose contract caps no implementer, allows anything.
+     *
+     * @return CapabilitySet
      */
     public static function getClassContractCapabilities(Codebase $codebase, Atomic $type): int
     {
@@ -158,6 +165,9 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a call of a method that may use $method_capabilities requires from its
      * caller, given the receiver (see getMethodCapabilities())
+     *
+     * @param CapabilitySet $method_capabilities
+     * @return CapabilitySet
      */
     public static function getReceiverCallCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -167,10 +177,14 @@ final class MethodCallPurityAnalyzer
     ): int {
         $capabilities = $method_capabilities & ~Capabilities::READ_PROPS;
 
-        if (!self::isFromGlobalState($statements_analyzer, $var)
-            && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
-        ) {
-            return $capabilities & ~Capabilities::RECEIVER_LOCAL;
+        if ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var)) {
+            // Nobody else sees the receiver's own state change, even when it holds global state (a clone of a
+            // global object, an object whose constructor read global state): what else it writes may be that.
+            return self::getCapabilitiesForReceiver(
+                $capabilities & ~Capabilities::RECEIVER_LOCAL,
+                false,
+                self::isFromGlobalState($statements_analyzer, $var),
+            );
         }
 
         return self::getCapabilitiesForReceiver(
@@ -184,6 +198,8 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a plugin (MethodCapabilitiesProviderInterface) registered for the class
      * declaring the method gives this call of it
+     *
+     * @return CapabilitySet|null
      */
     private static function getProvidedCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -218,6 +234,8 @@ final class MethodCallPurityAnalyzer
      * write-this-props when the receiver is the caller's `$this`, write-props otherwise, plus
      * write-globals when the receiver was reached from global state.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getCapabilitiesForReceiver(
@@ -328,6 +346,7 @@ final class MethodCallPurityAnalyzer
             $class_template_params,
             self::isReceiverThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
         $method_capabilities |= $template_capabilities;
 
@@ -360,7 +379,7 @@ final class MethodCallPurityAnalyzer
         );
 
         // the same for the inferred purity, which some template capabilities may be left out of
-        $inferred_capabilities = $inferred_template_capabilities === $template_capabilities
+        $inferred_capabilities = Capabilities::equals($inferred_template_capabilities, $template_capabilities)
             ? $method_capabilities
             : ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,
@@ -378,8 +397,10 @@ final class MethodCallPurityAnalyzer
             // implicit calls (__get, __invoke, offsetGet, ...) are virtual nodes without a
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
-            // mutating a receiver other than `$this` writes another object's properties
-            $callee_capabilities | ($inferred_capabilities & Capabilities::WRITE_PROPS),
+            // what the call costs the caller, as checked above: the callee's writes to a receiver
+            // other than `$this` are write-props, and reading the receiver needs nothing (without
+            // what a purity wildcard of a parameter leaves out, see getInferredTemplateCapabilities())
+            $inferred_capabilities,
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
@@ -557,6 +578,8 @@ final class MethodCallPurityAnalyzer
      * the callers, so it is left out of the inferred purity.
      *
      * @param array<string, array<string, Union>> $class_template_params
+     * @param CapabilitySet $template_capabilities
+     * @return CapabilitySet
      */
     private static function getInferredTemplateCapabilities(
         StatementsAnalyzer $statements_analyzer,

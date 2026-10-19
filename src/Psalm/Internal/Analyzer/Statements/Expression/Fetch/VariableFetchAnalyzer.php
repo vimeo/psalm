@@ -390,6 +390,10 @@ final class VariableFetchAnalyzer
                 $source = $statements_analyzer->getSource();
 
                 if (!$source instanceof ClosureAnalyzer || $source->getRecursiveVarId() !== $var_name) {
+                    if ($source instanceof ClosureAnalyzer) {
+                        $source->signalling_by_ref_capture = true;
+                    }
+
                     $statements_analyzer->signalMutation(
                         Capabilities::READ_PROPS,
                         $context,
@@ -397,6 +401,10 @@ final class VariableFetchAnalyzer
                         ImpureVariable::class,
                         $stmt,
                     );
+
+                    if ($source instanceof ClosureAnalyzer) {
+                        $source->signalling_by_ref_capture = false;
+                    }
                 }
             }
 

@@ -82,29 +82,41 @@ use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class NewAnalyzer extends CallAnalyzer
 {
     /**
-     * Whether the class gives the template to a class it extends (`@extends Parent<T>`): what the constructor
-     * arguments bound for the parent's template is then the template's. A template it doesn't give, like one beside
-     * the purity template of a parent, is resolved like that of a class extending nothing.
+     * Whether the class gives the template to a class it extends (`@extends Parent<T>`) whose template the
+     * constructor arguments bound: that is then the template's. A template it doesn't give, like one beside
+     * the purity template of a parent, or one given to a parent template the arguments didn't bind, like a purity
+     * template given to that of a parent (`@extends Parent[P]`), is resolved like that of a class extending nothing.
      *
      * @param array<string, array<string, Union>>|null $template_extended_params
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds
      * @psalm-assert-if-true !null $template_extended_params
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    private static function isGivenToParent(
+    private static function isGivenToBoundParentTemplate(
         string $fq_class_name,
         string $template_name,
         ?array $template_extended_params,
+        array $lower_bounds,
     ): bool {
-        foreach ($template_extended_params ?? [] as $type_map) {
-            foreach ($type_map as $extended_type) {
+        foreach ($template_extended_params ?? [] as $extended_class_name => $type_map) {
+            foreach ($type_map as $extended_template_name => $extended_type) {
                 foreach ($extended_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TTemplateParam
                         && $atomic_type->param_name === $template_name
                         && $atomic_type->defining_class === $fq_class_name
+                        && (isset($lower_bounds[$extended_template_name][$extended_class_name])
+                            || self::isGivenToBoundParentTemplate(
+                                $extended_class_name,
+                                $extended_template_name,
+                                $template_extended_params,
+                                $lower_bounds,
+                            )
+                        )
                     ) {
                         return true;
                     }
@@ -445,6 +457,9 @@ final class NewAnalyzer extends CallAnalyzer
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
+        // whether the constructor, if any, can't keep a reference to the new object (see analyzeConstructorPurity())
+        $keeps_no_reference = true;
+
         if ($codebase->methodExists(
             $method_id,
             $context->calling_method_id,
@@ -490,6 +505,7 @@ final class NewAnalyzer extends CallAnalyzer
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             $method_storage = null;
+            $keeps_no_reference = false;
 
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
@@ -508,7 +524,7 @@ final class NewAnalyzer extends CallAnalyzer
                     );
                 }
 
-                self::analyzeConstructorPurity(
+                $keeps_no_reference = self::analyzeConstructorPurity(
                     $statements_analyzer,
                     $codebase,
                     $context,
@@ -517,6 +533,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_storage,
                     $template_result,
                     $fq_class_name,
+                    $can_extend,
                 );
 
                 if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
@@ -633,9 +650,12 @@ final class NewAnalyzer extends CallAnalyzer
                                 new TTypeVariable($type_variable_name, $type_variable_bounds),
                             ]);
                         }
-                    } elseif ($template_result->lower_bounds
-                        && self::isGivenToParent($fq_class_name, $template_name, $storage->template_extended_params)
-                    ) {
+                    } elseif (self::isGivenToBoundParentTemplate(
+                        $fq_class_name,
+                        $template_name,
+                        $storage->template_extended_params,
+                        $template_result->lower_bounds,
+                    )) {
                         $generic_param_type = self::getGenericParamForOffset(
                             $fq_class_name,
                             $template_name,
@@ -751,8 +771,16 @@ final class NewAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($storage->isExternalMutationFree()) {
+        $is_external_mutation_free = $storage->isExternalMutationFree();
+
+        if ($is_external_mutation_free) {
             $stmt->setAttribute('external_mutation_free', true);
+        }
+
+        // Nothing else holds the new object when its class contract says so, or when the constructor run can't
+        // keep a reference to it. That of a child class may run instead when the class may be extended
+        // (`new static`, `new $class_string`).
+        if ($is_external_mutation_free || ($keeps_no_reference && !$can_extend)) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             if ($stmt_type) {
@@ -934,20 +962,27 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * The capabilities recorded in the CALLEE_CAPABILITIES_ATTRIBUTE of a `new` or static call,
      * null when none were.
+     *
+     * @return CapabilitySet|null
      */
     public static function getCalleeCapabilities(PhpParser\Node $stmt): ?int
     {
-        if (!is_int($stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE))) {
+        $capabilities = $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+
+        if (!is_int($capabilities) || $capabilities < Capabilities::NONE || $capabilities > Capabilities::ALL) {
             return null;
         }
 
-        return (int) $stmt->getAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE);
+        return $capabilities;
     }
 
     /**
      * What calling a constructor costs: its capabilities (with those of the closures its purity
      * templates are bound to), less what it does to the new object, with its by-reference
      * parameters costing what the arguments passed to them are.
+     *
+     * Returns whether the constructor can't keep a reference to the new object: it can only store `$this`
+     * by writing another object, global state or a by-reference parameter.
      */
     private static function analyzeConstructorPurity(
         StatementsAnalyzer $statements_analyzer,
@@ -958,7 +993,8 @@ final class NewAnalyzer extends CallAnalyzer
         MethodStorage $method_storage,
         ?TemplateResult $template_result,
         string $fq_class_name,
-    ): void {
+        bool $can_extend,
+    ): bool {
         $cased_method_id = 'constructor ' . $codebase->methods->getCasedMethodId($declaring_method_id);
 
         // the constructor only mutates the new object: what it does to it is fine
@@ -969,10 +1005,21 @@ final class NewAnalyzer extends CallAnalyzer
             Capabilities::NONE,
             $template_result,
             self::getConstructorClassTemplateParams($codebase, $context, $method_storage, $fq_class_name),
+            args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
+        // a trivial constructor (see FunctionLikeNodeScanner::applyTrivialConstructorCapabilities()) runs the hooks a
+        // class extending its own redeclares its properties with, which may do anything
+        $own_capabilities = self::runsPropertyHooks(
+            $codebase,
+            $method_storage,
+            $declaring_method_id,
+            $fq_class_name,
+            $can_extend,
+        )
+            ? Capabilities::ALL
+            : CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result);
         $resolved_capabilities = $template_capabilities
-            | (CallPurityResolver::getOwnCapabilities($codebase, $method_storage, $template_result)
-                & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
+            | ($own_capabilities & ~(Capabilities::READ_PROPS | Capabilities::WRITE_THIS_PROPS));
 
         $args = $stmt->getArgs();
 
@@ -1017,6 +1064,67 @@ final class NewAnalyzer extends CallAnalyzer
             ImpureMethodCall::class,
             $cased_method_id,
         );
+
+        return ($resolved_capabilities
+            & (Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS | Capabilities::WRITE_REFS)) === 0;
+    }
+
+    /**
+     * Whether the constructor of $method_storage, made write-this-props for only assigning properties (see
+     * FunctionLikeNodeScanner::applyTrivialConstructorCapabilities()), may run property hooks when it constructs an
+     * object of $fq_class_name: that class, or one between it and the class declaring the constructor, redeclares
+     * one of those properties with a hook. When the class may be extended (`new static`, `new $class`), a class
+     * extending it may do that too.
+     *
+     * @psalm-mutation-free
+     */
+    private static function runsPropertyHooks(
+        Codebase $codebase,
+        MethodStorage $method_storage,
+        MethodIdentifier $declaring_method_id,
+        string $fq_class_name,
+        bool $can_extend,
+    ): bool {
+        if ($method_storage->trivial_constructor_properties === null
+            || $method_storage->trivial_constructor_properties === []
+        ) {
+            return false;
+        }
+
+        if ($can_extend) {
+            return true;
+        }
+
+        if (strtolower($fq_class_name) === $declaring_method_id->fq_class_name
+            || !$codebase->classlike_storage_provider->has($fq_class_name)
+        ) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        foreach ($method_storage->trivial_constructor_properties as $property_name) {
+            $declaring_class = $class_storage->declaring_property_ids[$property_name] ?? null;
+
+            if ($declaring_class === null
+                || strtolower($declaring_class) === $declaring_method_id->fq_class_name
+                || !$codebase->classlike_storage_provider->has($declaring_class)
+            ) {
+                continue;
+            }
+
+            $property_storage = $codebase->classlike_storage_provider->get($declaring_class)
+                ->properties[$property_name] ?? null;
+
+            if ($property_storage === null
+                || $property_storage->hook_get !== null
+                || $property_storage->hook_set !== null
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function checkDynamicConstructorPurity(
@@ -1046,6 +1154,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $codebase->methods->getStorage($declaring_method_id),
                 null,
                 $fq_class_name,
+                // the class string may name a class extending it
+                !$codebase->classlike_storage_provider->get($fq_class_name)->final,
             );
 
             return;

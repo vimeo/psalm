@@ -588,12 +588,16 @@ final class WeakReference
  * @implements Traversable<TKey,TVal>
  *
  * @since 8.0.0
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traversable
 {
     /**
      * @param TKey $offset
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) {}
 
@@ -601,6 +605,8 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @param TKey $offset
      * @return TVal|null
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) {}
 
@@ -617,7 +623,20 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      */
     public function offsetUnset($offset) {}
 
-    /** @return Traversable<TKey, TVal> */
+    /**
+     * @return int<0, max>
+     *
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * Iterating over the map reads it
+     *
+     * @return Traversable[read-props]<TKey, TVal>
+     *
+     * @psalm-mutation-free
+     */
     public function getIterator() { }
 }
 

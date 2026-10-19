@@ -46,6 +46,36 @@ final class PurityTemplateTest extends TestCase
                         return new Table([1]);
                     }',
             ],
+            'newOfAClassGivingItsPurityTemplateToItsParentResolvesItLikeAClassExtendingNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P
+                     */
+                    abstract class View {}
+
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P(pure) <= io
+                     * @extends View[P]<TValue>
+                     */
+                    final class Table extends View {
+                        /**
+                         * @param list<TValue> $values
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(public readonly array $values = []) {}
+                    }
+
+                    $table = new Table([1]);
+                    $empty = new Table();',
+                'assertions' => [
+                    '$table===' => 'Table[io]<1>',
+                    '$empty===' => 'Table[io]<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'callbackStoredByAMethodWideningThePurityTemplate' => [
                 'code' => '<?php
                     /**
@@ -1525,6 +1555,23 @@ final class PurityTemplateTest extends TestCase
                 'assertions' => [
                     '$w' => 'Wrapper[pure]<int, string, Generator[pure]<int, string, mixed, int>>',
                 ],
+            ],
+            'omittedPurityArgumentTakesItsDefaultInTypeTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {}
+
+                    /**
+                     * @param Wrapper<int, int, Iterator<int, int>> $w
+                     * @param IteratorIterator<int, string, ArrayIterator<int, string>> $i
+                     * @psalm-capabilities read-props
+                     */
+                    function f(Wrapper $w, IteratorIterator $i): void {}',
             ],
             'forwardedClassPurityTemplateOverrideUsesTheTemplate' => [
                 'code' => '<?php
@@ -3871,6 +3918,20 @@ final class PurityTemplateTest extends TestCase
                     /** @param Wrapper[pure]<int, int, Iterator[io]<int, int>> $w */
                     function f(Wrapper $w): void {}',
                 'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Extended template param TIterator of Wrapper[pure]<int, int, Iterator[io]<int, int>> expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
+            ],
+            'omittedPurityArgumentChecksTypeTemplateBoundsWithItsDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(pure)
+                     */
+                    final class Wrapper {}
+
+                    /** @param Wrapper<int, int, Iterator[io]<int, int>> $w */
+                    function f(Wrapper $w): void {}',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Extended template param TIterator of Wrapper<int, int, Iterator[io]<int, int>> expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
             ],
             'classPurityTemplateInTypeTemplateBoundChecksExtends' => [
                 'code' => '<?php
