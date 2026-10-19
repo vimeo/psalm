@@ -43,7 +43,6 @@ jobs:
     env:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
-      PARALLEL_PROCESSES: 4
 
     steps:
       - name: Set git to use LF
@@ -104,4 +103,4 @@ jobs:
         run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
       - name: Run unit tests
-        run: vendor/bin/paratest --processes=$env:PARALLEL_PROCESSES --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
+        run: vendor/bin/paratest --functional --runner=WrapperRunner --max-batch-size=50 --processes=$env:NUMBER_OF_PROCESSORS --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml

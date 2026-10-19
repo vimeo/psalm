@@ -143,8 +143,6 @@ jobs:
     env:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
-      PARALLEL_PROCESSES: 5
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
     steps:
       - name: Set up PHP
@@ -190,6 +188,15 @@ jobs:
 
       - name: Run unit tests
         run: bin/ci/tests-github-actions.sh
+
+      # How long each test file took, to refresh bin/ci/test_times.json with bin/ci/update_test_times.php
+      - name: Upload test times
+        if: ${{ !cancelled() && matrix.php-version == '8.3' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-times-${{ matrix.chunk }}
+          path: build/phpunit/junit.xml
+          if-no-files-found: ignore
 
   hack-conformance:
     name: Hack conformance
