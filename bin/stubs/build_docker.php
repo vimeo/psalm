@@ -397,6 +397,14 @@ function generateDockerfile(string $version, array $extensions): string
     $bundledStep = $bundled === []
         ? ''
         : 'install-php-extensions ' . implode(' ', $bundled) . " && \\\n    ";
+    // install-php-extensions refuses a PHP version it doesn't know yet, and falls back to pickle, which
+    // doesn't run on it either: let it treat the version like the ones it supports.
+    $supportStep = '';
+    if (isset(BASE_IMAGE_TAGS[$version])) {
+        $majorMinor = str_replace('.', '0', $version);
+        $supportStep = " && \\\n    sed -i -E '/^[[:space:]]*505 \\| 506 \\|/ s/\\) ;;\$/ | $majorMinor) ;;/'"
+            . ' /usr/local/bin/install-php-extensions';
+    }
     $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
     $packageStep = $packages === []
         ? ''
@@ -408,7 +416,7 @@ function generateDockerfile(string $version, array $extensions): string
 
         ADD $installerUrl /usr/local/bin/
 
-        RUN chmod +x /usr/local/bin/install-php-extensions
+        RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}
 
         # CACHEBUST is a hash of the PHP base image digest and every installed
         # extension's version, resolved from each extension's real source. It changes
