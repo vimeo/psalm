@@ -2029,16 +2029,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
-    <InvalidReturnStatement>
-      <code><![CDATA[$line_parts]]></code>
-    </InvalidReturnStatement>
-    <InvalidReturnType>
-      <code><![CDATA[array{string, string}&array<int<0, max>, string>]]></code>
-    </InvalidReturnType>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$line_parts[0]]]></code>
-      <code><![CDATA[$line_parts[1]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($since_match[4])]]></code>
     </RiskyTruthyFalsyComparison>
@@ -3813,8 +3803,6 @@
   </file>
   <file src="src/Psalm/Type/UnionTrait.php">
     <ImpureMethodCall>
-      <code><![CDATA[$checker->traverseArray($this->types)]]></code>
-      <code><![CDATA[$object_type_visitor->traverseArray($this->types)]]></code>
       <code><![CDATA[$visitor->traverse($type)]]></code>
       <code><![CDATA[(new ClasslikeReplacer(
             $old,

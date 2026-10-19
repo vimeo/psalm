@@ -313,6 +313,7 @@ final class ProjectAnalyzer
     /**
      * @param  array<string>  $report_file_paths
      * @return list<ReportOptions>
+     * @psalm-pure
      */
     public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
     {

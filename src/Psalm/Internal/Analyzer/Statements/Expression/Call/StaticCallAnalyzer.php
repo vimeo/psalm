@@ -18,7 +18,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
-use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -68,14 +67,24 @@ final class StaticCallAnalyzer extends CallAnalyzer
             }
         }
 
-        // parent::/self:: run the method on `$this`, an object of its class (see InheritedMethodTaints)
+        // parent::/self::, and A:: naming a class `$this` is an object of, run the method on `$this`, an object of
+        // its class (see InheritedMethodTaints)
         if ($stmt->class instanceof PhpParser\Node\Name
-            && in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
+            && $stmt->class->toLowerString() !== 'static'
             && !$stmt->isFirstClassCallable()
             && isset($context->vars_in_scope['$this'])
         ) {
+            $named_class = in_array($stmt->class->toLowerString(), ['parent', 'self'], true)
+                ? null
+                : ClassLikeAnalyzer::getFQCLNFromNameObject($stmt->class, $statements_analyzer->getAliases());
+
             foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $this_atomic) {
-                if ($this_atomic instanceof TNamedObject) {
+                if ($this_atomic instanceof TNamedObject
+                    && ($named_class === null
+                        || strtolower($named_class) === strtolower($this_atomic->value)
+                        || ($codebase->classlike_storage_provider->has($this_atomic->value)
+                            && $codebase->classlikes->classExtends($this_atomic->value, $named_class)))
+                ) {
                     $stmt->setAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE, $this_atomic->value);
 
                     foreach ($stmt->getArgs() as $arg) {
@@ -339,12 +348,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $node_location,
         ) ? $node_location : null;
 
-        $method_location = $method_storage
-            ? ($graph instanceof VariableUseGraph
-                ? ($method_storage->return_type_location ?: $method_storage->location)
-                : ($method_storage->signature_return_type_location ?: $method_storage->location))
-            : null;
-
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
@@ -420,12 +423,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints && $method_location) {
-            $assignment_node = DataFlowNode::getForAssignment(
-                $method_id . '-escaped',
-                $method_location,
-                $method_source->specialization_key,
-            );
+        if ($conditionally_removed_taints) {
+            // a node of this call's own: what it removes depends on its arguments, and $method_source may be
+            // shared with the other calls, the last call deciding for all
+            $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);
+
+            $graph->addNode($assignment_node);
 
             $graph->addPath(
                 $method_source,

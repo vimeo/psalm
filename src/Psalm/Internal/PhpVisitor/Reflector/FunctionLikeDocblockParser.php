@@ -785,7 +785,7 @@ final class FunctionLikeDocblockParser
     /**
      * @param list<int> $offsets
      * @return list<int>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function tagOffsetsToLines(array $offsets, PhpParser\Comment\Doc $comment): array
     {
@@ -797,7 +797,7 @@ final class FunctionLikeDocblockParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function docblockLineNumber(PhpParser\Comment\Doc $comment, int $offset): int
     {

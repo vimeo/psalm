@@ -442,6 +442,19 @@ final class TaintTest extends TestCase
     public function providerValidCodeParse(): array
     {
         return [
+            'specializeTheCallsOfAFunctionThatOnlyReadsSharedState' => [
+                'code' => '<?php // --taint-analysis
+                    final class Phone {
+                        private static string $prefix = "+";
+
+                        public static function format(string $phone): string {
+                            return self::$prefix . $phone;
+                        }
+                    }
+
+                    $tainted = Phone::format((string) $_GET["phone"]);
+                    echo Phone::format("12");',
+            ],
             'fetchOfAnotherKeyOfAForeachCopyOfTheElements' => [
                 // Each element is copied under its own key: "city" isn't "name_tail".
                 'code' => '<?php
@@ -657,6 +670,17 @@ final class TaintTest extends TestCase
 
                     show([], 1);
                 ',
+            ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsTakesNothingUnderOtherKeys' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        $trimmed = [];
+                        foreach (["mode", "ids"] as $key) {
+                            $trimmed[$key] = trim((string) $options[$key]);
+                        }
+                        echo $trimmed["ids"];
+                    }
+                    show(["comment" => $_GET["comment"], "mode" => "a", "ids" => "b"]);',
             ],
             'taintFreeAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
@@ -1096,6 +1120,76 @@ final class TaintTest extends TestCase
                     echo store_get("pf");
                     echo store_get("other");',
             ],
+            'keyedStoreKeyStartsOfAppendedItemsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        echo store_get_many($keys);
+                    }',
+            ],
+            'keyedStoreKeyStartsOfAListAMethodReturnsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        private function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
+            ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
                     trait Escapes {
@@ -1386,6 +1480,36 @@ final class TaintTest extends TestCase
                     new Checkbox(["label" => (string) $_GET["label"]]);
                     (new Button([]))->render();',
             ],
+            'dontTaintThePropertiesOfASubclassWithWhatAnAncestorConstructorCalledByNameSetsOnAnotherSubclass' => [
+                'code' => '<?php // --taint-analysis
+                    class Field {
+                        /** @var array<string, string> */
+                        protected array $opts;
+
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            $this->opts = $opts;
+                        }
+                    }
+
+                    class Select extends Field {}
+
+                    final class MultiSelect extends Select {
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            Field::__construct($opts);
+                        }
+                    }
+
+                    final class Button extends Field {
+                        public function render(): void {
+                            echo $this->opts["label"] ?? "";
+                        }
+                    }
+
+                    new MultiSelect(["label" => (string) $_GET["label"]]);
+                    (new Button([]))->render();',
+            ],
             'dontTaintThePrintfOutputOfWhatIsFormattedAsANumber' => [
                 'code' => '<?php // --taint-analysis
                     printf("%d", (string) $_GET["x"]);
@@ -1631,6 +1755,39 @@ final class TaintTest extends TestCase
                     foreach (array_map(fn(array $link): array => $link, $links) as $link) {
                         echo (string) $link["url"];
                     }',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["city"];',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughClosureVariables' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(
+                        static function (string $value): string {
+                            $trimmed = trim($value);
+                            return $trimmed;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughCapturedValues' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $prefix = "p";
+                    $suffixes = ["a" => "s"];
+                    $params = array_map(
+                        static function (string $value) use ($prefix, $suffixes): string {
+                            return $prefix . $value . $suffixes["a"];
+                        },
+                        $query,
+                    );
+                    $prefixed = array_map(fn(string $value): string => $prefix . $value, $query);
+                    echo $params["city"];
+                    echo $prefixed["city"];',
             ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
@@ -3453,7 +3610,7 @@ final class TaintTest extends TestCase
             'conditionallyEscapedTaintPassedTrue' => [
                 'code' => '<?php
                     /**
-                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                      */
                     function foo(string $string, bool $escape = true): string {
                         if ($escape) {
@@ -3487,7 +3644,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     class U {
                         /**
-                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         * @psalm-taint-escape ($escape is true ? "html"|"has_quotes" : null)
                          */
                         public static function foo(string $string, bool $escape = true): string {
                             if ($escape) {
@@ -3810,6 +3967,91 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'taintFreeTopLevelVariableOfAnotherName' => [
+                'code' => '<?php
+                    $tainted = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $safe;
+                        echo (string) $safe;
+                        echo (string) $GLOBALS["other"];
+                    }',
+            ],
+            'taintFreeLocalVariableWithTheNameOfAGlobal' => [
+                'code' => '<?php
+                    function compute(): string {
+                        $value = (string) $_GET["a"];
+                        return $value;
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }',
+            ],
+            'taintFreeTopLevelVariableSetByAFunctionThroughAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = "safe";
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    $other = (string) $_GET["a"];
+                    stashLater();
+                    echo (string) $value;',
+            ],
+            'taintFreeLocalVariableAfterACallOfAMethodBindingTheGlobal' => [
+                'code' => '<?php
+                    class Stash {
+                        public static function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    function show(): void {
+                        $value = "safe";
+                        Stash::stash();
+                        echo (string) $value;
+                    }',
+            ],
+            'taintFreeLocalVariableAfterACallOfAFunctionBindingTheGlobal' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        $value = "safe";
+                        stash();
+                        echo (string) $value;
+                    }',
+            ],
+            'taintFreeTopLevelVariableSanitizedBeforeItIsRead' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+                    $value = htmlspecialchars($value, ENT_QUOTES);
+                    echo $value;',
+            ],
+            'taintFreeByRefParamOverwrittenBeforeReturning' => [
+                'code' => '<?php
+                    function fill(string &$out): void {
+                        $out = (string) $_GET["a"];
+                        $out = "safe";
+                    }
+
+                    function show(): void {
+                        $value = "";
+                        fill($value);
+                        echo $value;
+                    }',
+            ],
             'getoptOptionCastToInt' => [
                 'code' => '<?php
                     $options = getopt("n:");
@@ -3971,6 +4213,24 @@ final class TaintTest extends TestCase
                     relay(["b" => ["name" => (string)($_GET["b"] ?? "")]]);
                     relay(["c" => ["name" => (string)($_GET["c"] ?? "")]]);
                     relay(["wrapper" => [(string)($_GET["key"] ?? "") => "x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'aSpecializedFunctionThatOnlyReadsSharedStateReturnsItToAllItsCalls' => [
+                'code' => '<?php // --taint-analysis
+                    final class Settings {
+                        public static string $value = "";
+
+                        public static function get(string $suffix): string {
+                            return self::$value . $suffix;
+                        }
+                    }
+
+                    function store(): void {
+                        Settings::$value = (string) $_GET["value"];
+                    }
+
+                    store();
+                    echo Settings::get("a");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintGlobalsItemCopiedFromTheSameKeyOfAnotherArray' => [
@@ -4430,6 +4690,26 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsTakesWhatIsUnderEach' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        foreach (["mode", "ids"] as $key) {
+                            echo (string) $options[$key];
+                        }
+                    }
+                    show(["ids" => $_GET["ids"], "other" => "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsWithAQuoteAndABarTakesWhatIsUnderEach' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        foreach (["mode", "x\'|\'y"] as $key) {
+                            echo (string) $options[$key];
+                        }
+                    }
+                    show(["x\'|\'y" => $_GET["ids"], "other" => "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
@@ -4883,6 +5163,222 @@ final class TaintTest extends TestCase
                     echo show();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTopLevelVariableReadAsGlobal' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableReadThroughGlobals' => [
+                'code' => '<?php
+                    $value = (string) $_GET["a"];
+
+                    function show(): void {
+                        echo (string) $GLOBALS["value"];
+                    }
+
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelArrayItemReadAsGlobal' => [
+                'code' => '<?php
+                    $config = [];
+                    $config["value"] = (string) $_GET["a"];
+
+                    function show(): void {
+                        global $config;
+                        echo (string) $config["value"];
+                    }
+
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableAssignedInABranch' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    show();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableOverwrittenAfterACall' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    $value = (string) $_GET["a"];
+                    show();
+                    $value = "safe";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunction' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAStaticMethod' => [
+                'code' => '<?php
+                    class Stash {
+                        public static function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    $value = "safe";
+                    Stash::stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAnInstanceMethod' => [
+                'code' => '<?php
+                    class Stash {
+                        public function stash(): void {
+                            global $value;
+                            $value = (string) $_GET["a"];
+                        }
+                    }
+
+                    $value = "safe";
+                    (new Stash())->stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetThroughGlobalsByAFunction' => [
+                'code' => '<?php
+                    function stash(): void {
+                        $GLOBALS["value"] = (string) $_GET["a"];
+                    }
+
+                    $value = "safe";
+                    stash();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunctionThroughAnother' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    stashLater();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAMethodThroughAnother' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    class Stash {
+                        public static function stash(): void {
+                            $GLOBALS["value"] = (string) $_GET["a"];
+                        }
+
+                        public function stashLater(): void {
+                            self::stash();
+                        }
+
+                        public function stashLaterStill(): void {
+                            $this->stashLater();
+                        }
+                    }
+
+                    $value = "safe";
+                    (new Stash())->stashLaterStill();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTopLevelVariableSetByAFunctionThroughANamespacedOne' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function stashLater(): void {
+                        stash();
+                    }
+
+                    $value = "safe";
+                    \Ns\stashLater();
+                    echo (string) $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableOverwrittenAfterACall' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $value;
+                        echo (string) $value;
+                    }
+
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                        show();
+                        $value = "safe";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableChangedByACall' => [
+                'code' => '<?php
+                    function stash(): void {
+                        global $value;
+                        $value = (string) $_GET["a"];
+                    }
+
+                    function show(): void {
+                        global $value;
+                        $value = "safe";
+                        stash();
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintGlobalVariableAppendedToThenReset' => [
+                'code' => '<?php
+                    function show(): void {
+                        global $values;
+                        foreach ((array) $values as $value) {
+                            echo (string) $value;
+                        }
+                    }
+
+                    function stash(): void {
+                        global $values;
+                        $values[] = (string) $_GET["a"];
+                        show();
+                        $values = [];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'keyedStoreExactKey' => [
                 'code' => '<?php
                     /** @psalm-flow ($value) -> Store::$data[$key] */
@@ -5028,6 +5524,159 @@ final class TaintTest extends TestCase
 
                     store_set("a", (string) $_GET["x"]);
                     echo store_get_many(["b", "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsAreWhatAllStartWith' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids, string $key): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        $keys[] = $key;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsReachTheirKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAListChangedByReferenceAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id, string $key): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        array_push($keys, $key);
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnReachesItsKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAListAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        protected function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = "data_" . $id;
+                            }
+                            return $keys;
+                        }
+                    }
+
+                    final class AnyKeys extends Reader {
+                        #[Override]
+                        protected function keys(array $ids): array {
+                            return $ids;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfItemsAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        protected function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }
+
+                    final class AnyKey extends Reader {
+                        #[Override]
+                        protected function key(string $id): string {
+                            return $id;
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreAnyKey' => [
@@ -5532,6 +6181,33 @@ final class TaintTest extends TestCase
                     (new Activity(["ids" => (string) $_GET["ids"]]))->printIds();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintAPropertyAnInheritedMethodSetsBeforeACallWithAnUntaintedArgument' => [
+                // the calls of an inherited method share the path into its body for the class: the untainted
+                // argument of a later call removes nothing from what an earlier one passed
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @var array<string, mixed> */
+                        protected array $options = [];
+
+                        public function setOption(string $key, mixed $value): void {
+                            $this->options[$key] = $value;
+                        }
+
+                        /** @return array<string, mixed> */
+                        public function getOptions(): array {
+                            return $this->options;
+                        }
+                    }
+
+                    class Mail extends Base {}
+
+                    function send(Mail $mail): void {
+                        $mail->setOption("k", (string) $_GET["value"]);
+                        $mail->setOption("greeting", "hello");
+                        echo (string) $mail->getOptions()["k"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThePropertiesOfAnObjectWithWhatAParentConstructorSetsOnIt' => [
                 'code' => '<?php // --taint-analysis
                     class Field {
@@ -5556,6 +6232,34 @@ final class TaintTest extends TestCase
                     }
 
                     (new Button(["label" => (string) $_GET["label"]]))->render();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThePropertiesOfAnObjectWithWhatAnAncestorConstructorCalledByNameSetsOnIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Field {
+                        /** @var array<string, string> */
+                        protected array $opts;
+
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            $this->opts = $opts;
+                        }
+                    }
+
+                    class Select extends Field {}
+
+                    final class MultiSelect extends Select {
+                        /** @param array<string, string> $opts */
+                        public function __construct(array $opts) {
+                            Field::__construct($opts);
+                        }
+
+                        public function render(): void {
+                            echo $this->opts["label"] ?? "";
+                        }
+                    }
+
+                    (new MultiSelect(["label" => (string) $_GET["label"]]))->render();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintWhatAnInheritedMethodReturnsOfItsObject' => [
@@ -9183,6 +9887,71 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheKeyOfTheElementArrayMapReturns' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["tail"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsByReferenceUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $previous = "";
+                    $params = array_map(
+                        static function (string $value) use (&$previous): string {
+                            $result = $previous;
+                            $previous = $value;
+                            return $result;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsInACapturedArrayAccessObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen[] = $value;
+                            return $seen[0] ?? "";
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsThroughMethodsOfACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen->append($value);
+                            return $seen->offsetGet(0);
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapArrowFunctionKeepsInACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(fn(string $value): string => [$seen->append($value), $seen[0]][1], $query);
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheElementsOfAnArrayMapOverTwoArraysUnderAnyKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $pairs = array_map(fn(string $a, string $b): string => $a . $b, $query, $query);
+                    echo $pairs[1];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintThroughArrayMapClosureIntoWholeArray' => [
                 'code' => '<?php
                     /** @var array<string, string> $a */
@@ -10506,6 +11275,28 @@ final class TaintTest extends TestCase
 
                     echo foo($_GET["foo"], false);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintPassedTrueKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                    function escape(string $s, bool $escape = true): string {
+                        return $s;
+                    }
+
+                    shell_exec(escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
+            ],
+            'conditionallyEscapedTaintPassedTrueToAStaticCallKeepsTheOtherTaints' => [
+                'code' => '<?php
+                    class U {
+                        /** @psalm-taint-escape ($escape is true ? "html" : null) */
+                        public static function escape(string $s, bool $escape = true): string {
+                            return $s;
+                        }
+                    }
+
+                    shell_exec(U::escape((string) $_GET["x"], true));',
+                'error_message' => 'TaintedShell',
             ],
             'suppressOneCatchAnother' => [
                 'code' => '<?php

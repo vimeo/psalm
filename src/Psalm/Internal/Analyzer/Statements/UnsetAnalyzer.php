@@ -37,6 +37,24 @@ use function strtok;
  */
 final class UnsetAnalyzer
 {
+    /**
+     * Marks an expression unset() is given, as opposed to one an unset expression goes through
+     */
+    private const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
+
+    /**
+     * Whether unsetting writes the property the expression fetches: when it's the expression unset() removes, or
+     * holds the array an element is removed from. An element of an object (an ArrayAccess) is removed by its
+     * offsetUnset(), charged as that call, and the property keeps holding the same object
+     */
+    public static function writesFetchedProperty(Context $context, PhpParser\Node\Expr $stmt, ?Union $type): bool
+    {
+        return $context->inside_unset
+            && ($stmt->getAttribute(self::TARGET_ATTRIBUTE) === true
+                || $type === null
+                || !$type->isObjectType());
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,
@@ -45,6 +63,8 @@ final class UnsetAnalyzer
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
+            $var->setAttribute(self::TARGET_ATTRIBUTE, true);
+
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;
 

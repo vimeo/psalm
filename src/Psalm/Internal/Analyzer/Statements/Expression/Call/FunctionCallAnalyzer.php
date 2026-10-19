@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -398,8 +399,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         foreach ($function_call_info->global_variables as $var_id => $_) {
-            $context->vars_in_scope[$var_id] = Type::getMixed();
+            $context->vars_in_scope[$var_id] = GlobalAnalyzer::taintGlobalRead(
+                $statements_analyzer,
+                $context,
+                $var_id,
+                Type::getMixed(),
+            );
             $context->vars_possibly_in_scope[$var_id] = true;
+        }
+
+        if ($function_call_info->function_storage) {
+            // and those the functions it calls write
+            GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
         }
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -1439,6 +1450,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $template_result,
                         ),
                         $template_result,
+                        args: $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                     )
                     : null);
 
@@ -1625,7 +1637,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
      * Only a string or an array can name the function a call calls: a closure or an invokable object can't be
      * chosen by the client, whatever data it was built from.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isOnlyObjects(Union $type): bool
     {

@@ -16,6 +16,14 @@ final class MethodStorage extends FunctionLikeStorage
     use UnserializeMemoryUsageSuppressionTrait;
     public bool $is_static = false;
 
+    /**
+     * The properties a constructor without a purity annotation assigns, if it only does that and was given what
+     * that needs (see FunctionLikeNodeScanner::applyTrivialConstructorCapabilities())
+     *
+     * @var list<string>|null
+     */
+    public ?array $trivial_constructor_properties = null;
+
     public int $visibility = 0;
 
     public bool $final = false;

@@ -52,6 +52,11 @@ use function count;
  */
 final class CloneAnalyzer
 {
+    /**
+     * Only these hand `$this` to someone else: writing another object, global state or a by-reference parameter
+     */
+    private const KEEPS_REFERENCE = Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS | Capabilities::WRITE_REFS;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Clone_ $stmt,
@@ -230,6 +235,8 @@ final class CloneAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $immutable_cloned = false;
+        // whether the __clone of a class of the object may keep a reference to the copy
+        $keeps_reference = false;
 
         $invalid_clones = [];
         $mixed_clone = false;
@@ -284,6 +291,15 @@ final class CloneAnalyzer
                         ) {
                             // __clone only mutates the copy: what it does to it is fine
                             $clone_method_storage = $codebase->methods->getStorage($declaring_clone_method_id);
+
+                            // the copy is a new object, unless __clone may hand it to someone else, as a
+                            // constructor may (see NewAnalyzer::analyzeConstructorPurity())
+                            if (($clone_method_storage->capabilities & self::KEEPS_REFERENCE) !== 0
+                                && !$codebase->classlike_storage_provider->get($clone_type_part->value)
+                                    ->isExternalMutationFree()
+                            ) {
+                                $keeps_reference = true;
+                            }
 
                             $statements_analyzer->signalMutation(
                                 $clone_method_storage->capabilities & ~Capabilities::RECEIVER_LOCAL,
@@ -353,7 +369,7 @@ final class CloneAnalyzer
             return null;
         }
 
-        if ($immutable_cloned) {
+        if ($immutable_cloned && !$keeps_reference) {
             $clone_type = $clone_type->setProperties([
                 'reference_free' => true,
                 'allow_mutations' => true,

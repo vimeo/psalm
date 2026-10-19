@@ -76,9 +76,19 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $defined_constants = [];
 
     /**
+     * The globals the body binds with `global` or writes through `$GLOBALS['name']`, by variable id
+     *
      * @var array<string, bool>
      */
     public array $global_variables = [];
+
+    /**
+     * The function-likes the body calls by name, whose bodies may write globals too (see
+     * GlobalAnalyzer::getGlobalsWrittenBy()): lowercase function ids, and `fq_class_name::method_name` method ids
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $called_function_like_ids = [];
 
     /**
      * @var array<string, Union>

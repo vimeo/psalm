@@ -17,6 +17,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
@@ -31,6 +32,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -865,14 +867,11 @@ final class ReturnTypeAnalyzer
                 $parent_class,
             );
 
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $fleshed_out_return_type->check(
+            self::checkTypeAsReturned(
+                $fleshed_out_return_type,
                 $function_like_analyzer,
                 $storage->return_type_location,
                 $storage->suppressed_issues,
-                [],
-                false,
-                false,
                 false,
                 $context,
             );
@@ -928,14 +927,14 @@ final class ReturnTypeAnalyzer
             $fleshed_out_return_type = $storage->return_type;
         }
 
-        if ($fleshed_out_return_type->check(
+        if (!self::checkTypeAsReturned(
+            $fleshed_out_return_type,
             $function_like_analyzer,
             $storage->return_type_location,
             $storage->suppressed_issues,
-            [],
-            false,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
-        ) === false) {
+            null,
+        )) {
             return false;
         }
 
@@ -1065,5 +1064,44 @@ final class ReturnTypeAnalyzer
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null,
         );
+    }
+
+    /**
+     * Checks the return type $type of $function_like_analyzer like Union::check(), as an output position for a
+     * method: a covariant template may be there, but not in the parameter types of a callable in it (see
+     * TypeChecker)
+     *
+     * @param array<string> $suppressed_issues
+     */
+    private static function checkTypeAsReturned(
+        Union $type,
+        FunctionLikeAnalyzer $function_like_analyzer,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $inherited,
+        ?Context $context,
+    ): bool {
+        if ($type->checked) {
+            return true;
+        }
+
+        $checker = new TypeChecker(
+            $function_like_analyzer,
+            $code_location,
+            $suppressed_issues,
+            [],
+            false,
+            $inherited,
+            false,
+            $context,
+            $function_like_analyzer instanceof MethodAnalyzer,
+        );
+
+        $checker->traverseArray($type->getAtomicTypes());
+
+        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
+        $type->checked = true;
+
+        return !$checker->hasErrors();
     }
 }

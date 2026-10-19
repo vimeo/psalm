@@ -145,6 +145,14 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $string_starts = [];
 
     /**
+     * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
+     * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
+     *
+     * @var array<string, true>
+     */
+    private array $empty_arrays = [];
+
+    /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
      * specialization key => (function-like node of the callee => true)
      *
@@ -339,7 +347,12 @@ final class TaintFlowGraph extends DataFlowGraph
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                // A callee that only reads what other calls can see too (properties, globals) can't pass what one
+                // call gives it to another: its call stays specialized, and what it reads still flows out of all
+                // its calls (see the exits reached through shared state in TaintFlowResolution).
+                if ((($mutation_levels[$function_node_id] ?? Capabilities::ALL)
+                        & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) !== 0
+                ) {
                     $this->despecialized_calls[$specialization_key] = true;
                     break;
                 }
@@ -530,6 +543,34 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * Records that the variable whose node $node is was assigned an empty array: its items start with anything
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addEmptyArray(DataFlowNode $node): void
+    {
+        $this->empty_arrays[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmptyArray(string $node_id): bool
+    {
+        return isset($this->empty_arrays[$node_id]);
+    }
+
+    /**
+     * Forgets what the analysis recorded of the start of the string assigned to the variable whose node $node is
+     *
+     * @psalm-external-mutation-free
+     */
+    public function removeStringStart(DataFlowNode $node): void
+    {
+        unset($this->string_starts[$node->id]);
+    }
+
+    /**
      * The start of the string assigned to the variable whose node has the id, null if the analysis doesn't know it
      *
      * @psalm-mutation-free
@@ -682,7 +723,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
