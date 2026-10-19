@@ -104,7 +104,7 @@ final class TypeTokenizer
     ];
 
     /**
-     * @var array<string, list<array{0: string, 1: int}>>
+     * @var array<string, non-empty-list<array{0: string, 1: int}>>
      */
     private static array $memoized_tokens = [];
 
@@ -112,7 +112,7 @@ final class TypeTokenizer
      * Tokenises a type string into an array of tuples where the first element
      * contains the string token and the second element contains its offset,
      *
-     * @return list<array{0: string, 1: int}>
+     * @return non-empty-list<array{0: string, 1: int}>
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {
@@ -318,7 +318,7 @@ final class TypeTokenizer
             $was_space = false;
         }
 
-        /** @var list<array{0: string, 1: int}> $type_tokens */
+        /** @var non-empty-list<array{0: string, 1: int}> $type_tokens */
         self::$memoized_tokens[$string_type] = $type_tokens;
 
         return $type_tokens;
@@ -348,7 +348,7 @@ final class TypeTokenizer
     /**
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
-     * @return list<array{0: string, 1: int, 2?: string}>
+     * @return non-empty-list<array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
         string $string_type,
@@ -502,7 +502,7 @@ final class TypeTokenizer
             }
         }
 
-        /** @var list<array{0: string, 1: int, 2?: string}> */
+        /** @var non-empty-list<array{0: string, 1: int, 2?: string}> */
         return $type_tokens;
     }
 

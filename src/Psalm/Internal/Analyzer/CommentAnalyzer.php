@@ -29,6 +29,7 @@ use UnexpectedValueException;
 
 use function count;
 use function is_string;
+use function ksort;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -59,6 +60,7 @@ final class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
+        bool $allow_global_tag = false,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -69,6 +71,7 @@ final class CommentAnalyzer
             $aliases,
             $template_type_map,
             $type_aliases,
+            $allow_global_tag,
         );
     }
 
@@ -85,20 +88,30 @@ final class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
+        bool $allow_global_tag = false,
     ): array {
         $var_id = null;
-
-        $var_type_tokens = null;
-        $original_type = null;
 
         $var_comments = [];
 
         $comment_text = $comment->getText();
 
         $var_line_number = $comment->getStartLine();
-
+        $var_tags = [];
         if (isset($parsed_docblock->combined_tags['var'])) {
-            foreach ($parsed_docblock->combined_tags['var'] as $offset => $var_line) {
+            $var_tags = $parsed_docblock->combined_tags['var'];
+        }
+
+        if ($allow_global_tag && isset($parsed_docblock->tags['global'])) {
+            $var_tags = $var_tags + $parsed_docblock->tags['global'];
+            ksort($var_tags);
+        }
+
+        if ($var_tags !== []) {
+            foreach ($var_tags as $offset => $var_line) {
+                $var_type_tokens = null;
+                $original_type = null;
+
                 $var_line = trim($var_line);
 
                 if (!$var_line) {
@@ -157,7 +170,7 @@ final class CommentAnalyzer
                     }
                 }
 
-                if (!$var_type_tokens || !$original_type) {
+                if (!$var_type_tokens || $original_type === null) {
                     continue;
                 }
 
@@ -184,6 +197,105 @@ final class CommentAnalyzer
                 $var_comment = new VarDocblockComment();
                 $var_comment->type = $defined_type;
                 $var_comment->var_id = $var_id;
+                $var_comment->line_number = $var_line_number;
+                $var_comment->type_start = $type_start;
+                $var_comment->type_end = $type_end;
+                $var_comment->description = $description;
+
+                self::decorateVarDocblockComment($var_comment, $parsed_docblock);
+
+                $var_comments[] = $var_comment;
+            }
+        }
+
+        if (isset($parsed_docblock->tags['psalm-scope-this'])) {
+            foreach ($parsed_docblock->tags['psalm-scope-this'] as $offset => $var_line) {
+                $var_type_tokens = null;
+                $original_type = null;
+
+                $var_line = trim($var_line);
+
+                if (!$var_line) {
+                    continue;
+                }
+
+                $type_start = null;
+                $type_end = null;
+
+                $line_parts = self::splitDocLine($var_line);
+
+                $line_number = $comment->getStartLine() + substr_count(
+                    $comment_text,
+                    "\n",
+                    0,
+                    $offset - $comment->getStartFilePos(),
+                );
+                $description = $parsed_docblock->description;
+
+                if ($line_parts[0]) {
+                    $type_start = $offset;
+                    $type_end = $type_start + strlen($line_parts[0]);
+
+                    $line_parts[0] = self::sanitizeDocblockType($line_parts[0]);
+
+                    if ($line_parts[0] === ''
+                        || $line_parts[0][0] === '$'
+                    ) {
+                        throw new IncorrectDocblockException('Misplaced variable');
+                    }
+
+                    try {
+                        $var_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                            $line_parts[0],
+                            $aliases,
+                            $template_type_map,
+                            $type_aliases,
+                        );
+                    } catch (TypeParseTreeException) {
+                        throw new DocblockParseException($line_parts[0] . ' is not a valid type');
+                    }
+
+                    $original_type = $line_parts[0];
+
+                    $var_line_number = $line_number;
+
+                    if (count($line_parts) > 1) {
+                        if ($line_parts[1][0] === '$') {
+                            $description = trim(substr($var_line, strlen($line_parts[0]) + strlen($line_parts[1]) + 2));
+                        } else {
+                            $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
+                        }
+                        $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
+                    }
+                }
+
+                if (!$var_type_tokens || $original_type === null) {
+                    continue;
+                }
+
+                try {
+                    $defined_type = TypeParser::parseTokens(
+                        $var_type_tokens,
+                        null,
+                        $template_type_map ?? [],
+                        $type_aliases ?? [],
+                        true,
+                    );
+                } catch (TypeParseTreeException $e) {
+                    throw new DocblockParseException(
+                        $line_parts[0] .
+                        ' is not a valid type' .
+                        ' ('.$e->getMessage().' in ' .
+                        $source->getFilePath() .
+                        ':' .
+                        $comment->getStartLine() .
+                        ')',
+                    );
+                }
+
+                $var_comment = new VarDocblockComment();
+                $var_comment->type = $defined_type;
+                $var_comment->var_id = '$this';
                 $var_comment->line_number = $var_line_number;
                 $var_comment->type_start = $type_start;
                 $var_comment->type_end = $type_end;
@@ -421,6 +533,7 @@ final class CommentAnalyzer
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $var,
+        bool $allow_global_tag = false,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $parsed_docblock = $statements_analyzer->getParsedDocblock();
@@ -445,6 +558,7 @@ final class CommentAnalyzer
                     $statements_analyzer->getSource()->getAliases(),
                     $statements_analyzer->getSource()->getTemplateTypeMap(),
                     $file_storage->type_aliases,
+                    $allow_global_tag,
                 );
         } catch (IncorrectDocblockException $e) {
             IssueBuffer::maybeAdd(
