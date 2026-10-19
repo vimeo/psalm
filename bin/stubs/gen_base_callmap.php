@@ -129,9 +129,10 @@ $f = __DIR__.'/../../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_
 file_put_contents($f, $payload);
 
 ksort($extensions);
-file_put_contents(
-    __DIR__.'/../../dictionaries/autogen/CallMapExtensions_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php',
-    '<?php // phpcs:ignoreFile
+$payload = '<?php // phpcs:ignoreFile
 
-return '.var_export($extensions, true).';',
-);
+return '.var_export($extensions, true).';';
+$f = __DIR__.'/../../dictionaries/autogen/CallMapExtensions_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
+
+// one argument per line would need a trailing comma, which PHP 7.0-7.2 don't parse
+file_put_contents($f, $payload);
