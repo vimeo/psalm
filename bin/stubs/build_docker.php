@@ -374,9 +374,23 @@ function explainRebuild(string $image, string $cacheKey, array $components): voi
 
 function generateDockerfile(string $version, array $extensions): string
 {
-    $extensionList = implode(' ', $extensions);
     $installerUrl = INSTALLER_URL;
     $baseImage = phpBaseImage($version);
+
+    // install-php-extensions doesn't support a PHP version with no release yet, and installs its PECL
+    // extensions with pickle, which needs some of the bundled ones: install those first.
+    $bundled = [];
+    if (isset(BASE_IMAGE_TAGS[$version])) {
+        $bundled = array_values(array_filter(
+            $extensions,
+            static fn(string $extension): bool => (SOURCES[explode('-', $extension)[0]] ?? null) === 'php',
+        ));
+        $extensions = array_values(array_diff($extensions, $bundled));
+    }
+    $extensionList = implode(' ', $extensions);
+    $bundledStep = $bundled === []
+        ? ''
+        : 'install-php-extensions ' . implode(' ', $bundled) . " && \\\n    ";
 
     return <<<DOCKERFILE
         # Generated on the fly by bin/stubs/build_docker.php - do not commit.
@@ -391,7 +405,7 @@ function generateDockerfile(string $version, array $extensions): string
         # exactly when PHP or any extension version changes, rebuilding the layer below.
         ARG CACHEBUST
         RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            install-php-extensions $extensionList
+            {$bundledStep}install-php-extensions $extensionList
 
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
         DOCKERFILE;
