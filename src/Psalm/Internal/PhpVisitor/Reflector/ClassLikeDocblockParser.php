@@ -197,19 +197,24 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-require-extends'])
-            && count($extension_requirements = $parsed_docblock->tags['psalm-require-extends']) > 0) {
+        $extension_requirements = $parsed_docblock->tags['psalm-require-extends']
+            ?? $parsed_docblock->tags['phpstan-require-extends']
+            ?? [];
+
+        if (count($extension_requirements) > 0) {
             $info->extension_requirement = CommentAnalyzer::sanitizeDocblockType(
                 $extension_requirements[array_key_first($extension_requirements)],
             );
         }
 
-        if (isset($parsed_docblock->tags['psalm-require-implements'])) {
-            foreach ($parsed_docblock->tags['psalm-require-implements'] as $implementation_requirement) {
-                $info->implementation_requirements[] = CommentAnalyzer::sanitizeDocblockType(
-                    $implementation_requirement,
-                );
-            }
+        $implementation_requirements = $parsed_docblock->tags['psalm-require-implements']
+            ?? $parsed_docblock->tags['phpstan-require-implements']
+            ?? [];
+
+        foreach ($implementation_requirements as $implementation_requirement) {
+            $info->implementation_requirements[] = CommentAnalyzer::sanitizeDocblockType(
+                $implementation_requirement,
+            );
         }
 
         if (isset($parsed_docblock->combined_tags['implements'])) {

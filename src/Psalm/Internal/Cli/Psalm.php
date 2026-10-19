@@ -460,6 +460,8 @@ final class Psalm
         if ($for_scan) {
             if (isset($options['scan-threads'])) {
                 $threads = max(1, (int)$options['scan-threads']);
+            } elseif (isset($options['threads'])) {
+                $threads = max(1, (int)$options['threads']);
             } elseif (isset($options['debug'])) {
                 $threads = 1;
             } elseif ($config->scan_threads) {
@@ -793,7 +795,8 @@ final class Psalm
 
         fwrite(STDERR, "Baseline saved to $error_baseline.");
 
-        if ($error_baseline !== $config->error_baseline) {
+        // --use-baseline selects a baseline for this run only, so the config must keep its own
+        if ($error_baseline !== $config->error_baseline && !isset($options['use-baseline'])) {
             CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
@@ -1255,14 +1258,6 @@ final class Psalm
     ): array {
         $issue_baseline = [];
 
-        if (isset($options['set-baseline'])) {
-            if ($paths_to_check !== null) {
-                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
-                exit(1);
-            }
-            $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
-        }
-
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
                 fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
@@ -1273,6 +1268,14 @@ final class Psalm
             $config->error_baseline = $baseline_file_path;
         } else {
             $baseline_file_path = $config->error_baseline;
+        }
+
+        if (isset($options['set-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
+            $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
         if (isset($options['update-baseline'])) {

@@ -2840,6 +2840,59 @@ final class PropertyTypeTest extends TestCase
                     '$test2===' => "'lmao'",
                 ],
             ],
+            'virtualPropertyWithGetHookIsNotSetInConstructor' => [
+                'code' => '<?php
+                    final class WithConstructor {
+                        public int $prop { get => 5 * 40; }
+
+                        public function __construct() {}
+                    }
+
+                    final class WithoutConstructor {
+                        public int $prop { get => 5 * 40; }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'virtualPropertyWithGetAndSetHooksIsNotSetInConstructor' => [
+                'code' => '<?php
+                    final class MyLocale {
+                        public string $languageCode;
+
+                        public string $countryCode {
+                            set (string $countryCode) {
+                                $this->countryCode = strtoupper($countryCode);
+                            }
+                        }
+
+                        public string $combinedCode {
+                            get => sprintf("%s_%s", $this->languageCode, $this->countryCode);
+                            set (string $value) {
+                                [$this->languageCode, $this->countryCode] = explode("_", $value, 2);
+                            }
+                        }
+
+                        public function __construct(string $languageCode, string $countryCode) {
+                            $this->languageCode = $languageCode;
+                            $this->countryCode = $countryCode;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyReadOnlyInClosureOfItsHookIsVirtual' => [
+                'code' => '<?php
+                    final class A {
+                        public int $prop { get => (fn(): int => $this->prop)(); }
+
+                        public function __construct() {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -3978,6 +4031,28 @@ final class PropertyTypeTest extends TestCase
                         public function init(): void {}
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'backedPropertyWithGetHookNotSetInConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        public int $prop { get => $this->prop * 2; }
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'backedPropertyWithShortSetHookNotSetInConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        public int $prop { set => $value * 2; }
+
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'propertyWithSameNameUndefined' => [
                 'code' => '<?php

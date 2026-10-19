@@ -4,6 +4,8 @@
 declare(strict_types=1);
 
 $callmap = [];
+// the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
+$extensions = [];
 
 function namedTypeName(ReflectionNamedType $refl): string
 {
@@ -100,6 +102,9 @@ foreach (get_defined_functions() as $sub) {
         $args = paramsToEntries($func, 'mixed');
 
         $callmap[$name] = $args;
+        if ($func->getExtensionName() !== false) {
+            $extensions[$name] = strtolower($func->getExtensionName());
+        }
     }
 }
 
@@ -110,6 +115,9 @@ foreach (get_declared_classes() as $class) {
         $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
+        if ($refl->getExtensionName() !== false) {
+            $extensions[strtolower($class.'::'.$method->getName())] = strtolower($refl->getExtensionName());
+        }
     }
 }
 
@@ -118,4 +126,13 @@ $payload = '<?php // phpcs:ignoreFile
 return '.var_export($callmap, true).';';
 $f = __DIR__.'/../../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
 
+file_put_contents($f, $payload);
+
+ksort($extensions);
+$payload = '<?php // phpcs:ignoreFile
+
+return '.var_export($extensions, true).';';
+$f = __DIR__.'/../../dictionaries/autogen/CallMapExtensions_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
+
+// one argument per line would need a trailing comma, which PHP 7.0-7.2 don't parse
 file_put_contents($f, $payload);

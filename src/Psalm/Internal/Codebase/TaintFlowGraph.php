@@ -1003,6 +1003,17 @@ final class TaintFlowGraph extends DataFlowGraph
             $issue_location = $sink->code_location;
         } elseif ($predecessor->code_location !== null) {
             $issue_location = $predecessor->code_location;
+
+            // the values of an argument (see addArgumentValuesSink()) are reported like a sink on the argument
+            // itself: where the argument comes from, when its parameter is declared where issues aren't
+            // reported (a stub)
+            $argument_location = $predecessor->taintSource?->code_location;
+            if ($argument_location !== null
+                && $sink->id === ($predecessor->unspecialized_id ?? $predecessor->id) . '[*]'
+                && !$config->reportIssueInFile('TaintedInput', $issue_location->file_path)
+            ) {
+                $issue_location = $argument_location;
+            }
         } else {
             return;
         }

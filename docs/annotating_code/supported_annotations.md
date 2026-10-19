@@ -626,6 +626,8 @@ class User {
 
 The `@psalm-require-extends` annotation allows you to define the requirements that a trait imposes on the using class.
 
+Psalm also reads the `@phpstan-require-extends` spelling. When a docblock has both, `@psalm-require-extends` is used.
+
 ```php
 <?php
 abstract class DatabaseModel {
@@ -654,6 +656,8 @@ class NormalClass {
 ### `@psalm-require-implements`
 
 Behaves the same way as `@psalm-require-extends`, but for interfaces.
+
+Psalm also reads the `@phpstan-require-implements` spelling. When a docblock has both, only the `@psalm-require-implements` tags are used.
 
 ### `@no-named-arguments`
 

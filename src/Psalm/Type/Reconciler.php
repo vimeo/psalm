@@ -10,10 +10,14 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\PsalmInternalError;
@@ -62,6 +66,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -962,12 +967,17 @@ class Reconciler
                                     );
 
                                     if ($method_return_type) {
-                                        $class_property_type = TypeExpander::expandUnion(
+                                        $class_property_type = self::resolveZeroArgCallReturnType(
                                             $codebase,
-                                            $method_return_type,
-                                            $declaring_class,
-                                            $declaring_class,
-                                            null,
+                                            TypeExpander::expandUnion(
+                                                $codebase,
+                                                $method_return_type,
+                                                $declaring_class,
+                                                $declaring_class,
+                                                null,
+                                            ),
+                                            $declaring_method_id,
+                                            $existing_key_type_part,
                                         );
                                     } else {
                                         $class_property_type = Type::getMixed();
@@ -1032,6 +1042,64 @@ class Reconciler
         return self::getPropertyType($codebase, $fq_class_name, $property_name);
     }
 
+    /**
+     * The key `$x->m()` denotes a call without arguments, so the method's parameters take their defaults.
+     * Templates that neither defaults nor the receiver can bind would become `never`, so the declared type is kept.
+     */
+    private static function resolveZeroArgCallReturnType(
+        Codebase $codebase,
+        Union $return_type,
+        MethodIdentifier $declaring_method_id,
+        TNamedObject $receiver,
+    ): Union {
+        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        if ($method_storage->if_this_is_type !== null) {
+            return $return_type;
+        }
+
+        $template_result = new TemplateResult(
+            $method_storage->template_types ?? [],
+            ClassTemplateParamCollector::collect(
+                $codebase,
+                $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name),
+                $codebase->classlike_storage_provider->get($receiver->value),
+                $declaring_method_id->method_name,
+                $receiver,
+            ) ?? [],
+        );
+
+        $defaulted_templates = [];
+
+        foreach ($method_storage->params as $offset => $param) {
+            if ($param->type && $param->default_type instanceof Union) {
+                TemplateStandinTypeReplacer::fillTemplateResult(
+                    $param->type,
+                    $template_result,
+                    $codebase,
+                    null,
+                    $param->default_type,
+                    $offset,
+                );
+
+                foreach ($param->type->getTemplateTypes() as $template_type) {
+                    $defaulted_templates[$template_type->param_name] = true;
+                }
+            }
+        }
+
+        if (array_diff_key($method_storage->template_types ?? [], $defaulted_templates) !== []) {
+            return $return_type;
+        }
+
+        return MethodCallReturnTypeFetcher::replaceTemplateTypes(
+            $return_type,
+            $template_result,
+            $declaring_method_id,
+            0,
+            $codebase,
+        );
+    }
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,

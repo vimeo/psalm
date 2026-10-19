@@ -38,6 +38,18 @@ final class ExtensionRequirementTest extends TestCase
                 trait ImposesExtensionRequirements { }
             ',
         );
+
+        $this->addFile(
+            'phpstan_trait.php',
+            '<?php
+                namespace ExtensionRequirements\Trait;
+
+                use ExtensionRequirements\Base\MyBaseClass as MyAliasedBaseClass;
+
+                /** @phpstan-require-extends MyAliasedBaseClass */
+                trait ImposesPhpstanExtensionRequirements { }
+            ',
+        );
     }
 
     /**
@@ -57,6 +69,16 @@ final class ExtensionRequirementTest extends TestCase
                     }
                 ',
             ],
+            'extendsBaseClassWithPhpstanTag' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Base\MyBaseClass;
+                    use ExtensionRequirements\Trait\ImposesPhpstanExtensionRequirements;
+
+                    class Valid extends MyBaseClass {
+                        use ImposesPhpstanExtensionRequirements;
+                    }
+                ',
+            ],
         ];
     }
 
@@ -73,6 +95,16 @@ final class ExtensionRequirementTest extends TestCase
 
                     class Invalid {
                         use ImposesExtensionRequirements;
+                    }
+                ',
+                'error_message' => 'requires using class to extend',
+            ],
+            'extendsBaseClassWithPhpstanTag' => [
+                'code' => '<?php
+                    use ExtensionRequirements\Trait\ImposesPhpstanExtensionRequirements;
+
+                    class Invalid {
+                        use ImposesPhpstanExtensionRequirements;
                     }
                 ',
                 'error_message' => 'requires using class to extend',

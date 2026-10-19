@@ -233,6 +233,74 @@ final class ReferenceConstraintTest extends TestCase
                     '$a' => 'int',
                 ],
             ],
+            'paramOutSelfResolvesToDeclaringClass' => [
+                'code' => '<?php
+                    namespace App;
+
+                    class A {
+                        public function name(): string {
+                            return "a";
+                        }
+                    }
+
+                    class B extends A {
+                        /** @param-out self $out */
+                        public function setSelf(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        /** @param-out self $out */
+                        public static function setSelfStatic(?self &$out): void {
+                            $out = new self();
+                        }
+                    }
+
+                    $b = new B();
+
+                    $direct = null;
+                    $b->setSelf($direct);
+
+                    $setSelf = $b->setSelf(...);
+                    $viaClosure = null;
+                    $setSelf($viaClosure);
+                    $name = $viaClosure->name();
+
+                    $setSelfStatic = B::setSelfStatic(...);
+                    $viaStaticClosure = null;
+                    $setSelfStatic($viaStaticClosure);
+
+                    $fromCallable = \Closure::fromCallable([$b, "setSelf"]);
+                    $viaFromCallable = null;
+                    $fromCallable($viaFromCallable);',
+                'assertions' => [
+                    '$direct' => 'App\\B',
+                    '$viaClosure' => 'App\\B',
+                    '$name' => 'string',
+                    '$viaStaticClosure' => 'App\\B',
+                    '$viaFromCallable' => 'App\\B',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutParentResolvesToParentClass' => [
+                'code' => '<?php
+                    namespace App;
+
+                    class A {}
+
+                    class B extends A {
+                        /** @param-out parent $out */
+                        public function setParent(?A &$out): void {
+                            $out = new A();
+                        }
+                    }
+
+                    $parent = null;
+                    (new B())->setParent($parent);',
+                'assertions' => [
+                    '$parent' => 'App\\A',
+                ],
+            ],
         ];
     }
 
