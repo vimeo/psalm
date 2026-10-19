@@ -435,6 +435,18 @@ if ($arg === '--versions') {
     exit(0);
 }
 
+if ($arg === '--excludes') {
+    // the extensions each version's image lacks, by their base name: gen_callmap.php keeps their overrides
+    echo json_encode(array_map(
+        static fn(array $extensions): array => array_map(
+            static fn(string $extension): string => explode('-', $extension, 2)[0],
+            $extensions,
+        ),
+        EXCLUDES,
+    )) . PHP_EOL;
+    exit(0);
+}
+
 if ($arg === '--versions-plain') {
     echo implode(' ', VERSIONS) . PHP_EOL;
     exit(0);

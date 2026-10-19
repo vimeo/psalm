@@ -151,7 +151,24 @@ foreach ($customDiffs as $version => $customDiff) {
 }
 krsort($customMaps);
 
+// The image of a version lacks the extensions that don't build on it yet (build_docker.php --excludes): the
+// overrides of their functions are kept, rather than dropped as if the version had removed them.
+/** @var array<string, list<string>> $excludes */
+$excludes = json_decode(
+    (string) shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/build_docker.php') . ' --excludes',
+    ),
+    true,
+    512,
+    JSON_THROW_ON_ERROR,
+);
+$extensionOf = [];
+foreach (glob(__DIR__ . '/../../dictionaries/autogen/CallMapExtensions_*.php') as $file) {
+    $extensionOf += require $file;
+}
+
 foreach ($customMaps as $version => &$data) {
+    $unbuilt = $excludes[intdiv((int) $version, 10) . '.' . ((int) $version % 10)] ?? [];
     foreach ($data as $func => &$params) {
         if (isset($baseMaps[$version][$func])) {
             $baseParams = $baseMaps[$version][$func];
@@ -161,6 +178,7 @@ foreach ($customMaps as $version => &$data) {
             && !str_starts_with($func, 'ftp')
             && !str_starts_with($func, 'db2')
             && isset($allFuncs[$func])
+            && !in_array($extensionOf[$func] ?? null, $unbuilt, true)
         ) {
             unset($data[$func]);
         }
