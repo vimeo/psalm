@@ -77,18 +77,18 @@ if (isKnownCity($city)) {
 
 A slightly modified version of the previous example is using a condition to determine whether the return value
 is considered secure. Only in case function argument `$escape` is true, the corresponding annotation
-`@psalm-taint-escape` is applied for taint type `html` .
+`@psalm-taint-escape` is applied for taint types `html` and `has_quotes`.
 
 ```php
 <?php
 /**
  * @param string $str
  * @param bool $escape
- * @psalm-taint-escape ($escape is true ? 'html' : null)
+ * @psalm-taint-escape ($escape is true ? 'html'|'has_quotes' : null)
  */
 function processVar(string $str, bool $escape = true) : string {
     if ($escape) {
-      $str = str_replace(['<', '>'], '', $str);
+      $str = htmlspecialchars($str, ENT_QUOTES);
     }
     return $str;
 }
