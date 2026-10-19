@@ -282,6 +282,47 @@ final class TaintTest extends TestCase
         );
     }
 
+    /**
+     * A sink on the values of a parameter of a stubbed method is reported where the argument comes from, like
+     * a sink on the parameter itself: the stub isn't a file issues are reported in.
+     */
+    public function testSinkOnTheValuesOfAParameterOfAStubbedMethod(): void
+    {
+        $this->addStubFile(
+            'loader.phpstub',
+            '<?php
+                final class TemplateLoader {
+                    /**
+                     * @param array<string, string> $templates
+                     * @psalm-taint-sink eval $templates[*]
+                     */
+                    public function __construct(array $templates) {}
+                }
+            ',
+        );
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            $input = is_string($_GET["input"]) ? $_GET["input"] : "";
+            new TemplateLoader(["name" => $input]);
+            new TemplateLoader([$input => "template"]);
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertSame(
+            [[3, 'TaintedEval']],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowThroughNestedSpecializedCallsAndStaticProperty(): void
     {
         $depth = 20;
