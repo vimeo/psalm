@@ -669,6 +669,17 @@ final class TaintTest extends TestCase
                     show([], 1);
                 ',
             ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsTakesNothingUnderOtherKeys' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        $trimmed = [];
+                        foreach (["mode", "ids"] as $key) {
+                            $trimmed[$key] = trim((string) $options[$key]);
+                        }
+                        echo $trimmed["ids"];
+                    }
+                    show(["comment" => $_GET["comment"], "mode" => "a", "ids" => "b"]);',
+            ],
             'taintFreeAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
@@ -949,6 +960,76 @@ final class TaintTest extends TestCase
 
                     echo store_get("pf");
                     echo store_get("other");',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        echo store_get_many($keys);
+                    }',
+            ],
+            'keyedStoreKeyStartsOfAListAMethodReturnsDoNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    final class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        private function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnDoesNotReachOtherKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
             ],
             'traitMethodEscapingWhatItReturns' => [
                 'code' => '<?php
@@ -1486,6 +1567,39 @@ final class TaintTest extends TestCase
                         echo (string) $link["url"];
                     }',
             ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturns' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["city"];',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughClosureVariables' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(
+                        static function (string $value): string {
+                            $trimmed = trim($value);
+                            return $trimmed;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+            ],
+            'dontTaintTheOtherKeysOfTheArrayArrayMapReturnsThroughCapturedValues' => [
+                'code' => '<?php // --taint-analysis
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $prefix = "p";
+                    $suffixes = ["a" => "s"];
+                    $params = array_map(
+                        static function (string $value) use ($prefix, $suffixes): string {
+                            return $prefix . $value . $suffixes["a"];
+                        },
+                        $query,
+                    );
+                    $prefixed = array_map(fn(string $value): string => $prefix . $value, $query);
+                    echo $params["city"];
+                    echo $prefixed["city"];',
+            ],
             'dontTaintUnserializeOfWhatSerializeReturns' => [
                 'code' => '<?php // --taint-analysis
                     unserialize(serialize((string) $_GET["value"]));',
@@ -1585,6 +1699,56 @@ final class TaintTest extends TestCase
                     $id = new MongoDB\BSON\ObjectId((string) $_GET["id"]);
                     echo (string) $id;
                     echo "<a href=\'/o/{$id}\'>";',
+            ],
+            'dontTaintTheValueAWholeArrayPassedToASpecializedCallHeldUnderAKeyAssignedThere' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
+                        return $value["d"];
+                    }
+                    /** @var array<string, string> */
+                    $a = $_GET["a"];
+                    echo f($a);',
+            ],
+            'dontTaintTheValueWholeArraysPassedToASpecializedCallHeldUnderAKeyAssignedInALoopThere' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @param list<array<string, string>> $values
+                     * @return list<string>
+                     */
+                    function f(array $values): array {
+                        $r = [];
+                        foreach ($values as $value) {
+                            $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
+                            $r[] = $value["d"];
+                        }
+                        return $r;
+                    }
+                    /** @var list<array<string, string>> */
+                    $a = $_GET["a"];
+                    echo implode(",", f($a));',
+            ],
+            'dontTaintTheValueAnArrayPassedToASpecializedCallHeldUnderAKeyAssignedThere' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "", ENT_QUOTES);
+                        return $value["d"];
+                    }
+                    echo f(["d" => (string) $_GET["a"]]);',
+            ],
+            'dontTaintTheValueAWholeArrayPassedToASpecializedCallHeldUnderAKeyAssignedThereOnceFetched' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param array<string, array<string, string>> $value */
+                    function f(array $value): string {
+                        $v = $value["x"] ?? [];
+                        $v["d"] = htmlspecialchars($v["d"] ?? "", ENT_QUOTES);
+                        return $v["d"];
+                    }
+                    /** @var array<string, string> */
+                    $a = $_GET["a"];
+                    echo f(["x" => $a]);',
             ],
             'dontTaintTheStringConversionOfAnObjectWhoseToStringEscapesIt' => [
                 'code' => '<?php // --taint-analysis
@@ -4271,6 +4435,26 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsTakesWhatIsUnderEach' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        foreach (["mode", "ids"] as $key) {
+                            echo (string) $options[$key];
+                        }
+                    }
+                    show(["ids" => $_GET["ids"], "other" => "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'fetchUnderAKeyThatIsOneOfAFewLiteralsWithAQuoteAndABarTakesWhatIsUnderEach' => [
+                'code' => '<?php
+                    function show(array $options): void {
+                        foreach (["mode", "x\'|\'y"] as $key) {
+                            echo (string) $options[$key];
+                        }
+                    }
+                    show(["x\'|\'y" => $_GET["ids"], "other" => "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignmentUnderOneOfLiteralKeys' => [
                 'code' => '<?php
                     function show(string $key): void {
@@ -4773,6 +4957,159 @@ final class TaintTest extends TestCase
 
                     store_set("a", (string) $_GET["x"]);
                     echo store_get_many(["b", "a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsAreWhatAllStartWith' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    /** @param list<string> $ids */
+                    function read(array $ids, string $key): void {
+                        $keys = [];
+                        foreach ($ids as $id) {
+                            $keys[] = "data_" . $id;
+                        }
+                        $keys[] = $key;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAppendedItemsReachTheirKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAListChangedByReferenceAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    function read(string $id, string $key): void {
+                        $keys = [];
+                        $keys[] = "data_" . $id;
+                        array_push($keys, $key);
+                        echo store_get_many($keys);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartOfAFunctionReturnReachesItsKeys' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$key] -> return */
+                    function store_get(string $key): string {}
+
+                    function data_key(string $id): string {
+                        return "data_" . $id;
+                    }
+
+                    store_set("data_1", (string) $_GET["x"]);
+
+                    function read(string $id): void {
+                        echo store_get(data_key($id));
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfAListAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        protected function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = "data_" . $id;
+                            }
+                            return $keys;
+                        }
+                    }
+
+                    final class AnyKeys extends Reader {
+                        #[Override]
+                        protected function keys(array $ids): array {
+                            return $ids;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreKeyStartsOfItemsAnOverridableMethodReturnsAreUnknown' => [
+                'code' => '<?php
+                    /** @psalm-flow ($value) -> Store::$data[$key] */
+                    function store_set(string $key, string $value): void {}
+
+                    /** @psalm-flow Store::$data[$keys[*]] -> return */
+                    function store_get_many(array $keys): string {}
+
+                    store_set("other", (string) $_GET["x"]);
+
+                    class Reader {
+                        /** @param list<string> $ids */
+                        public function read(array $ids): void {
+                            echo store_get_many($this->keys($ids));
+                        }
+
+                        /**
+                         * @param list<string> $ids
+                         * @return list<string>
+                         */
+                        private function keys(array $ids): array {
+                            $keys = [];
+                            foreach ($ids as $id) {
+                                $keys[] = $this->key($id);
+                            }
+                            return $keys;
+                        }
+
+                        protected function key(string $id): string {
+                            return "data_" . $id;
+                        }
+                    }
+
+                    final class AnyKey extends Reader {
+                        #[Override]
+                        protected function key(string $id): string {
+                            return $id;
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'keyedStoreAnyKey' => [
@@ -5876,6 +6213,65 @@ final class TaintTest extends TestCase
                     foreach ($items as $item) {
                         echo (string) $item["zip"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAWholeArrayPassedToASpecializedCallAfterAKeyIsAssignedThere' => [
+                'code' => '<?php
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "");
+                        return $value["o"] ?? "";
+                    }
+                    /** @var array<string, string> */
+                    $a = $_GET["a"];
+                    echo f($a);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAWholeArrayPassedToASpecializedCallConvertedAfterAKeyIsAssignedThere' => [
+                'code' => '<?php
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "");
+                        return implode(",", $value);
+                    }
+                    /** @var array<string, string> */
+                    $a = $_GET["a"];
+                    echo f($a);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueAnArrayPassedToASpecializedCallHeldUnderAnotherKeyThanTheOneAssignedThere' => [
+                'code' => '<?php
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "");
+                        return $value["o"] ?? "";
+                    }
+                    echo f(["o" => (string) $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheValueAnArrayPassedToASpecializedCallHeldUnderAnUnknownKeyAfterAKeyIsAssignedThere' => [
+                'code' => '<?php
+                    /** @param array<string, string> $value */
+                    function f(array $value): string {
+                        $value["d"] = htmlspecialchars($value["d"] ?? "");
+                        return $value["o"] ?? "";
+                    }
+                    function g(string $k): void {
+                        echo f([$k => (string) $_GET["a"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheOtherValuesOfAWholeArrayPassedToASpecializedCallAfterAKeyIsAssignedThereOnceFetched' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, string>> $value */
+                    function f(array $value): string {
+                        $v = $value["x"] ?? [];
+                        $v["d"] = htmlspecialchars($v["d"] ?? "");
+                        return $v["o"] ?? "";
+                    }
+                    /** @var array<string, string> */
+                    $a = $_GET["a"];
+                    echo f(["x" => $a]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheOtherValuesOfWholeArraysIteratedOverAfterAKeyIsAssigned' => [
@@ -8901,6 +9297,71 @@ final class TaintTest extends TestCase
                     foreach ($links as $link) {
                         echo $link["title"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheKeyOfTheElementArrayMapReturns' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $params = array_map(fn(string $value): string => $value, $query);
+                    echo $params["tail"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsByReferenceUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $previous = "";
+                    $params = array_map(
+                        static function (string $value) use (&$previous): string {
+                            $result = $previous;
+                            $previous = $value;
+                            return $result;
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsInACapturedArrayAccessObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen[] = $value;
+                            return $seen[0] ?? "";
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapClosureKeepsThroughMethodsOfACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(
+                        static function (string $value) use ($seen): string {
+                            $seen->append($value);
+                            return $seen->offsetGet(0);
+                        },
+                        $query,
+                    );
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnArrayMapArrowFunctionKeepsInACapturedObjectUnderTheNextKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $seen = new ArrayObject();
+                    $params = array_map(fn(string $value): string => [$seen->append($value), $seen[0]][1], $query);
+                    echo $params["city"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheElementsOfAnArrayMapOverTwoArraysUnderAnyKey' => [
+                'code' => '<?php
+                    $query = ["tail" => (string) $_GET["tail"], "city" => "msk"];
+                    $pairs = array_map(fn(string $a, string $b): string => $a . $b, $query, $query);
+                    echo $pairs[1];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapClosureIntoWholeArray' => [

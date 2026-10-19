@@ -34,6 +34,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\TaintedInput;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use SplObjectStorage;
@@ -647,6 +648,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
                 if ($functionlike_node_scanner->storage->has_visitor_issues) {
                     $this->file_storage->has_visitor_issues = true;
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Function_
+                    && $functionlike_node_scanner->storage instanceof FunctionStorage
+                ) {
+                    StringStartScanner::scanFunction($node, $functionlike_node_scanner->storage, $this->aliases);
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getLine() === $this->skip_if_descendants) {

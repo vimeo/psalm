@@ -144,9 +144,11 @@ echo Cache::get('title_1');   // no issue
 + Keys are told apart by what the analysis knows of them: the exact keys of literal strings and class names, else how
   the key starts: the start of a concatenation, of an interpolated string, of a `sprintf()` format up to its first
   conversion other than `%s`, of an `implode()` of a list with a literal separator, `__CLASS__`, or what the variable
-  (also one a closure uses), the property of `$this` or the method of the class giving the key starts with. A
-  property set only by its default and its constructor starts like what the constructor is given by the `new` of the
-  classes analyzed. A key the analysis knows nothing of can be any key.
+  (also one a closure uses), the property of `$this`, the method of the class or the function giving the key starts
+  with. A property set only by its default and its constructor starts like what the constructor is given by the `new`
+  of the classes analyzed. The keys of a list start like all its items: those of a literal list, those assigned to it
+  (`$keys[] = 'lock_' . $id;`), and those of a list a method or a function builds this way and returns. A key the
+  analysis knows nothing of can be any key.
 + Psalm's stubs declare the keyed store of phpredis, `Redis::$data`, and that of APCu, `APCu::$data`. Plugins can
   connect their own nodes to a store with `Codebase::addTaintStoreWrite()` (paths from a node into the store under
   the names) and `Codebase::addTaintStoreRead()` (paths from the store to a node), with the names
