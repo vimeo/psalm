@@ -51,6 +51,7 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDependentGetClass;
@@ -582,6 +583,7 @@ final class NewAnalyzer extends CallAnalyzer
                         $codebase,
                         $storage,
                         $template_name,
+                        $template_result,
                     );
 
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
@@ -1586,9 +1588,10 @@ final class NewAnalyzer extends CallAnalyzer
      * The constraint of a class template at a construction site. It may name the class's
      * other templates (`TIterator as Iterator[TPurity]<TKey, TValue>`): those stand for
      * their own constraints, resolved through one another (`T3 of list<T2>`,
-     * `T2 of list<T1>`), or nothing could satisfy it. A sibling the constructor arguments
-     * bound still stands for its constraint, not that binding, since the sibling's type
-     * variable can widen past it (`new Box('x')` then `set('y')`).
+     * `T2 of list<T1>`), or nothing could satisfy it. A type template the constructor
+     * arguments bound still stands for its constraint, not that binding, since its type
+     * variable can widen past it (`new Box('x')` then `set('y')`); a purity template they
+     * bound stands for that binding, which doesn't widen.
      *
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -1596,14 +1599,24 @@ final class NewAnalyzer extends CallAnalyzer
         Codebase $codebase,
         ClassLikeStorage $storage,
         string $template_name,
+        TemplateResult $template_result,
     ): Union {
         $fq_class_name = $storage->name;
         $sibling_constraints = [];
 
         foreach ($storage->template_types ?? [] as $sibling_name => $type_map) {
-            if ($sibling_name !== $template_name) {
-                $sibling_constraints[$sibling_name] = array_values($type_map)[0];
+            if ($sibling_name === $template_name) {
+                continue;
             }
+
+            $sibling_constraint = array_values($type_map)[0];
+            $sibling_bounds = $template_result->lower_bounds[$sibling_name][$fq_class_name] ?? null;
+
+            $sibling_constraints[$sibling_name] = $sibling_bounds !== null
+                && $sibling_constraint->isSingle()
+                && $sibling_constraint->getSingleAtomic() instanceof TCapabilities
+                ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($sibling_bounds, $codebase)
+                : $sibling_constraint;
         }
 
         /** @param array<string, Union> $constraints */
