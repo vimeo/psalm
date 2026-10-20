@@ -1453,6 +1453,42 @@ final class ReturnTypeTest extends TestCase
                     '$a===' => 'non-empty-literal-string',
                 ],
             ],
+            'scalarAndConditionalIntersections' => [
+                'code' => '<?php
+                    /** @return lowercase-string&non-falsy-string */
+                    function nonce(): string {
+                        return "abc";
+                    }
+
+                    /** @return ($prefix is "" ? numeric-string : string)&non-falsy-string */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return int<0, max>&int<min, 10> */
+                    function digit(): int {
+                        return 5;
+                    }
+
+                    /**
+                     * @param string&callable $callback
+                     * @return callable-string
+                     */
+                    function callbackName($callback): string {
+                        return $callback;
+                    }
+
+                    $a = nonce();
+                    $b = uniqueId();
+                    $c = uniqueId("id-");
+                    $d = digit();',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'numeric-string',
+                    '$c===' => 'non-falsy-string',
+                    '$d===' => 'int<0, 10>',
+                ],
+            ],
             'laravelStyleStrLowerConditionalReturnType' => [
                 'code' => '<?php
                     /**

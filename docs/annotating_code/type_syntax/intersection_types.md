@@ -33,7 +33,14 @@ function foo($a, $b) {
 
 The returned type will contain the properties of both `A` and `B`. In other words, it will be `{a: int, b: int}`.
 
-Intersections are only valid for lists of only *object types* and lists of only *object-like arrays*.
+Intersections of objects are only valid for lists of only *object types* and lists of only *object-like arrays*.
+
+Scalar types can be intersected too: `lowercase-string&non-empty-string` is a `non-empty-lowercase-string`,
+`int<0, max>&int<min, 10>` is an `int<0, 10>` and `string&callable` is a `callable-string`. When Psalm has no type for
+the exact intersection, it uses the most specific of the two: `lowercase-string&non-falsy-string` is a `non-falsy-string`.
+A template can be intersected with scalar types to narrow its bound.
+
+A conditional type can be intersected with other types: `(T is int ? A : B)&C` is `(T is int ? A&C : B&C)`.
 
 You can also intersect a class with an object shape to describe properties the class doesn't declare. This helps with
 classes that read properties through the magic `__get` method, where Psalm can't know which properties exist:

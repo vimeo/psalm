@@ -425,22 +425,88 @@ final class TypeParseTest extends TestCase
         Type::parseString('non-empty-string&int');
     }
 
-    public function testIntersectionOfNumericStringAndLowercaseStringRejected(): void
+    public function testIntersectionOfNumericStringAndLowercaseString(): void
     {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('numeric-string&lowercase-string');
+        $this->assertSame(
+            'numeric-string',
+            Type::parseString('numeric-string&lowercase-string')->getId(),
+        );
     }
 
-    public function testIntersectionOfNonFalsyStringAndLowercaseStringRejected(): void
+    public function testIntersectionOfNonFalsyStringAndLowercaseString(): void
     {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('non-falsy-string&lowercase-string');
+        $this->assertSame(
+            'non-falsy-string',
+            Type::parseString('lowercase-string&non-falsy-string')->getId(),
+        );
     }
 
-    public function testIntersectionOfNonEmptyStringAndCallableStringRejected(): void
+    public function testIntersectionOfCallableStringAndLowercaseString(): void
+    {
+        $this->assertSame(
+            'callable-string',
+            Type::parseString('callable-string&lowercase-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfStringAndCallable(): void
+    {
+        $this->assertSame(
+            'callable-string',
+            Type::parseString('string&(callable(string): string)')->getId(),
+        );
+    }
+
+    public function testIntersectionOfNumericAndString(): void
+    {
+        $this->assertSame(
+            'numeric-string',
+            Type::parseString('numeric&string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfIntRanges(): void
+    {
+        $this->assertSame(
+            'int<1, 5>',
+            Type::parseString('int<0, max>&int<1, 5>')->getId(),
+        );
+    }
+
+    public function testIntersectionOfDisjointIntRangesRejected(): void
     {
         $this->expectException(TypeParseTreeException::class);
-        Type::parseString('callable-string&lowercase-string');
+        Type::parseString('int<0, max>&int<min, -1>');
+    }
+
+    public function testIntersectionOfLiteralStringNotContainedRejected(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('"Abc"&lowercase-string');
+    }
+
+    public function testIntersectionOfTemplateAndStrings(): void
+    {
+        $this->assertSame(
+            'T:fn-foo as non-falsy-string',
+            Type::parseString(
+                'T&lowercase-string&non-falsy-string',
+                null,
+                ['T' => ['fn-foo' => Type::getString()]],
+            )->getId(),
+        );
+    }
+
+    public function testIntersectionOfConditionalTypes(): void
+    {
+        $this->assertSame(
+            '(T is int ? (T is string ? numeric-string : non-falsy-string) : never)',
+            Type::parseString(
+                '(T is int ? lowercase-string : int)&non-falsy-string&(T is string ? numeric-string : string)',
+                null,
+                ['T' => ['' => Type::getMixed()]],
+            )->getId(),
+        );
     }
 
     public function testGlobalConstantWildcard(): void
