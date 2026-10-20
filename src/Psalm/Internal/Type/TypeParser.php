@@ -1704,7 +1704,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isMixedArray(TArray $type): bool
     {
@@ -1714,7 +1714,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isObjectIntersectionMember(Atomic $type): bool
     {
@@ -1727,7 +1727,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isScalarIntersectionMember(Atomic $type): bool
     {
@@ -1885,6 +1885,8 @@ final class TypeParser
     /**
      * Returns the narrower of two string types that don't contain each other, or null if no value has
      * both types.
+     *
+     * @psalm-pure
      */
     private static function intersectStringTypes(
         TString $type_1,
@@ -1925,7 +1927,7 @@ final class TypeParser
 
     /**
      * @psalm-assert-if-true TInt $type
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isIntRange(Atomic $type): bool
     {
@@ -1935,7 +1937,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isSingleValue(Atomic $type): bool
     {
@@ -1945,7 +1947,7 @@ final class TypeParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getScalarFamily(Atomic $type): ?string
     {

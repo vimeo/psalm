@@ -465,7 +465,7 @@ final class TypeParseTest extends TestCase
         );
     }
 
-    public function testIntersectionOfIntRanges(): void
+    public function testIntersectionOfScalarIntRanges(): void
     {
         $this->assertSame(
             'int<1, 5>',
