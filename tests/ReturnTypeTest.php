@@ -69,6 +69,36 @@ final class ReturnTypeTest extends TestCase
                     '$b' => 'array<array-key, array<array-key, mixed>>',
                 ],
             ],
+            'spacedShapesThatAreNotWordPressHashNotation' => [
+                'code' => '<?php
+                    /**
+                     * @return array { \'user@host\': int }
+                     */
+                    function host(): array {
+                        return ["user@host" => 1];
+                    }
+
+                    /**
+                     * @return array { cb: callable(int $x): void, n: ($flag is true ? int : string) }
+                     */
+                    function callbacks(bool $flag): array {
+                        return ["cb" => static function (int $x): void {}, "n" => $flag ? 1 : "a"];
+                    }
+
+                    /**
+                     * @param array { \'a$b\': int } $p
+                     */
+                    function takes(array $p): int {
+                        return $p["a\$b"];
+                    }
+
+                    $a = host();
+                    $b = callbacks(true);',
+                'assertions' => [
+                    '$a===' => 'array{\'user@host\': int}',
+                    '$b===' => 'array{cb: callable[impure](int):void, n: int}',
+                ],
+            ],
             'arrayCombine' => [
                 'code' => '<?php
                     class a {}
