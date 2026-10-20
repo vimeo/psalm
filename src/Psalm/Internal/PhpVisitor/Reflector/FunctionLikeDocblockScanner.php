@@ -692,7 +692,15 @@ final class FunctionLikeDocblockScanner
                     if ('$' . $param_storage->name === $token_body) {
                         if (!isset($param_type_mapping[$token_body])) {
                             $template_name = 'TGeneratedFromParam' . $j;
-                            if (isset($storage->template_types[$template_name])) {
+                            $param_atomic = $param_storage->type?->isSingle()
+                                ? $param_storage->type->getSingleAtomic()
+                                : null;
+                            // a stub re-scanning the method replaces its params, so the generated template of the
+                            // first scan only holds while the param is still typed with it
+                            if (isset($storage->template_types[$template_name])
+                                && $param_atomic instanceof TTemplateParam
+                                && $param_atomic->param_name === $template_name
+                            ) {
                                 $function_template_types[$template_name]
                                     = $storage->template_types[$template_name];
                                 $param_type_mapping[$token_body] = $template_name;
