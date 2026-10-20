@@ -717,15 +717,6 @@ final class ValueTest extends TestCase
                         return (string) $v;
                     }',
             ],
-            'numericStringCastFromFloat' => [
-                'code' => '<?php
-                    /**
-                     * @return numeric-string
-                     */
-                    function makeNumStringFromFloat(float $v) {
-                        return (string) $v;
-                    }',
-            ],
             'compareNegatedValue' => [
                 'code' => '<?php
                     $i = rand(-1, 5);
@@ -921,6 +912,17 @@ final class ValueTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringCastFromFloatMayBeInfOrNan' => [
+                'code' => '<?php
+                    /**
+                     * @return numeric-string
+                     */
+                    function makeNumStringFromFloat(float $v) {
+                        // (string) INF is "INF" and (string) NAN is "NAN"
+                        return (string) $v;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'neverEqualsType' => [
                 'code' => '<?php
                     $a = 4;
