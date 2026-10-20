@@ -218,6 +218,34 @@ final class TypeComparatorTest extends TestCase
                 'callable',
                 "callable-list{class-string, 'from'}",
             ],
+            'decimalIntStringAcceptsDecimalIntLiteral' => [
+                'decimal-int-string',
+                "'-5'|'0'|'123'",
+            ],
+            'numericStringAcceptsDecimalIntString' => [
+                'numeric-string',
+                'decimal-int-string',
+            ],
+            'nonEmptyLowercaseStringAcceptsDecimalIntString' => [
+                'non-empty-lowercase-string',
+                'decimal-int-string',
+            ],
+            'arrayKeyAcceptsDecimalIntString' => [
+                'array-key',
+                'decimal-int-string',
+            ],
+            'nonDecimalIntStringAcceptsNonDecimalIntLiteral' => [
+                'non-decimal-int-string',
+                "''|'-0'|'0123'|'1.0'|'abc'|'+1'|' 1'|'9223372036854775808'",
+            ],
+            'nonDecimalIntStringAcceptsClassString' => [
+                'non-decimal-int-string',
+                'class-string',
+            ],
+            'stringAcceptsNonDecimalIntString' => [
+                'string',
+                'non-decimal-int-string',
+            ],
         ];
     }
 
@@ -227,6 +255,42 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'decimalIntStringDoesNotAcceptNumericString' => [
+            'decimal-int-string',
+            'numeric-string',
+        ];
+        yield 'decimalIntStringDoesNotAcceptNonCanonicalLiteral' => [
+            'decimal-int-string',
+            "'0123'",
+        ];
+        yield 'decimalIntStringDoesNotAcceptNegativeZero' => [
+            'decimal-int-string',
+            "'-0'",
+        ];
+        yield 'decimalIntStringDoesNotAcceptNonDecimalIntString' => [
+            'decimal-int-string',
+            'non-decimal-int-string',
+        ];
+        yield 'nonFalsyStringDoesNotAcceptDecimalIntString' => [
+            'non-falsy-string',
+            'decimal-int-string',
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptDecimalIntLiteral' => [
+            'non-decimal-int-string',
+            "'123'",
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptDecimalIntString' => [
+            'non-decimal-int-string',
+            'decimal-int-string',
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptString' => [
+            'non-decimal-int-string',
+            'string',
+        ];
+        yield 'nonEmptyStringDoesNotAcceptNonDecimalIntString' => [
+            'non-empty-string',
+            'non-decimal-int-string',
+        ];
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
             'list<int>',
             'list{int, string}',

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -18,6 +19,7 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -35,6 +37,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
@@ -51,6 +54,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -1096,6 +1100,14 @@ final class TypeCombiner
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
+                    && ($combination->value_types['string'] instanceof TDecimalIntString
+                        || $combination->value_types['string'] instanceof TNonDecimalIntString)
+                ) {
+                    $combination->value_types['string'] = self::combineDecimalIntString(
+                        $combination->value_types['string'],
+                        $type,
+                    );
+                } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNumericString
                     && is_numeric($type->value)
                 ) {
@@ -1154,7 +1166,13 @@ final class TypeCombiner
 
             if (!isset($combination->value_types['string'])) {
                 if ($combination->strings) {
-                    if ($type instanceof TNumericString) {
+                    if ($type instanceof TDecimalIntString || $type instanceof TNonDecimalIntString) {
+                        foreach ($combination->strings as $string_type) {
+                            $type = self::combineDecimalIntString($type, $string_type);
+                        }
+
+                        $combination->value_types['string'] = $type;
+                    } elseif ($type instanceof TNumericString) {
                         $has_only_numeric_strings = true;
                         $has_only_non_empty_strings = true;
 
@@ -1257,7 +1275,18 @@ final class TypeCombiner
                 if ($type::class === TString::class) {
                     $combination->value_types['string'] = $type;
                 } elseif ($combination->value_types['string']::class !== $type::class) {
-                    if ($type::class === TNonEmptyString::class
+                    if ($type instanceof TString
+                        && $combination->value_types['string'] instanceof TString
+                        && ($type instanceof TDecimalIntString
+                            || $type instanceof TNonDecimalIntString
+                            || $combination->value_types['string'] instanceof TDecimalIntString
+                            || $combination->value_types['string'] instanceof TNonDecimalIntString)
+                    ) {
+                        $combination->value_types['string'] = self::combineDecimalIntString(
+                            $combination->value_types['string'],
+                            $type,
+                        );
+                    } elseif ($type::class === TNonEmptyString::class
                         && $combination->value_types['string']::class === TNumericString::class
                     ) {
                         $combination->value_types['string'] = $type;
@@ -1317,6 +1346,64 @@ final class TypeCombiner
 
             $combination->strings = null;
         }
+    }
+
+    /**
+     * The narrowest string type containing both types, when one is a decimal-int-string or a non-decimal-int-string
+     *
+     * @psalm-pure
+     */
+    private static function combineDecimalIntString(TString $type_1, TString $type_2): TString
+    {
+        if (!$type_1 instanceof TDecimalIntString && !$type_1 instanceof TNonDecimalIntString) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        if ($type_1::class === $type_2::class) {
+            return $type_1;
+        }
+
+        if ($type_1 instanceof TNonDecimalIntString) {
+            if (($type_2 instanceof TLiteralString && ArrayAnalyzer::getLiteralArrayKeyInt($type_2->value) === false)
+                || $type_2 instanceof TClassString
+                || $type_2 instanceof TTraitString
+            ) {
+                return $type_1;
+            }
+
+            return new TString();
+        }
+
+        // a decimal-int-string is a non-empty lowercase numeric string
+        if ($type_2 instanceof TLiteralString) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($type_2->value) !== false) {
+                return $type_1;
+            }
+
+            if (is_numeric($type_2->value)) {
+                return new TNumericString();
+            }
+
+            if (strtolower($type_2->value) === $type_2->value) {
+                return $type_2->value === '' ? new TLowercaseString() : new TNonEmptyLowercaseString();
+            }
+
+            return $type_2->value === '' ? new TString() : new TNonEmptyString();
+        }
+
+        if ($type_2::class === TNumericString::class
+            || $type_2::class === TLowercaseString::class
+            || $type_2::class === TNonEmptyLowercaseString::class
+            || $type_2::class === TNonEmptyString::class
+        ) {
+            return $type_2;
+        }
+
+        if ($type_2 instanceof TNonEmptyString) {
+            return new TNonEmptyString();
+        }
+
+        return new TString();
     }
 
     private static function scrapeIntProperties(

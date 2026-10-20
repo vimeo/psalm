@@ -1474,9 +1474,10 @@ class Reconciler
                             $properties = $base_atomic_type->properties;
                             $properties[$array_key_offset] = $result_type;
                             if ($base_atomic_type->is_list
-                            && (ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) === false
-                                || ($array_key_offset
-                                    && !isset($properties[$array_key_offset-1])
+                            && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    === false
+                                || ($int_array_key_offset
+                                    && !isset($properties[$int_array_key_offset - 1])
                                 )
                             )
                             ) {

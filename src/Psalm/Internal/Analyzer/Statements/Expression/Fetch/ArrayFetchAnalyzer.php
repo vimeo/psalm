@@ -67,6 +67,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -1350,6 +1351,9 @@ final class ArrayFetchAnalyzer
                     $offset_type->addType(new TLiteralInt($string_to_int));
                     $offset_type->removeType($key);
                 }
+            } elseif ($offset_type_part instanceof TDecimalIntString) {
+                $offset_type->addType(new TInt());
+                $offset_type->removeType($key);
             } elseif ($offset_type_part instanceof TBool) {
                 if ($offset_type_part instanceof TFalse) {
                     if (!$offset_type->ignore_falsable_issues) {

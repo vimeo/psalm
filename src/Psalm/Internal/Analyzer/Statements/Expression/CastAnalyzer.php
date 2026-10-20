@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -762,7 +763,8 @@ final class CastAnalyzer
                         $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
                     }
                 } else {
-                    $castable_types[] = new TNumericString();
+                    // an int is cast to its canonical decimal form
+                    $castable_types[] = $atomic_type instanceof TInt ? new TDecimalIntString() : new TNumericString();
                 }
 
                 continue;

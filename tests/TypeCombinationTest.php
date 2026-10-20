@@ -645,6 +645,48 @@ final class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineDecimalIntStringWithDecimalIntLiteral' => [
+                'decimal-int-string',
+                [
+                    'decimal-int-string',
+                    "'123'",
+                ],
+            ],
+            'combineDecimalIntStringWithNumericLiteral' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    "'1.5'",
+                ],
+            ],
+            'combineDecimalIntStringWithNumericString' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNonDecimalIntString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    'non-decimal-int-string',
+                ],
+            ],
+            'combineNonDecimalIntStringWithNonDecimalIntLiteral' => [
+                'non-decimal-int-string',
+                [
+                    'non-decimal-int-string',
+                    "'abc'",
+                ],
+            ],
+            'combineNonDecimalIntStringWithDecimalIntLiteral' => [
+                'string',
+                [
+                    'non-decimal-int-string',
+                    "'123'",
+                ],
+            ],
             'combineClassStringWithNumericString' => [
                 'class-string|numeric-string',
                 [

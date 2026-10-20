@@ -41,6 +41,48 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decimalIntStringKeysAreInts' => [
+                'code' => '<?php
+                    /** @return decimal-int-string */
+                    function decimalInt(): string {
+                        return "12";
+                    }
+
+                    /** @return non-decimal-int-string */
+                    function nonDecimalInt(): string {
+                        return "abc";
+                    }
+
+                    /** @return array<decimal-int-string, string> */
+                    function byId(): array {
+                        return [];
+                    }
+
+                    $d = decimalInt();
+                    $n = nonDecimalInt();
+                    $a = [$d => 1];
+                    $b = [$n => 1];
+                    $c = [];
+                    $c[$d] = 1;
+                    $keys = array_keys(byId());
+                    $e = byId()[$d] ?? null;
+                    $f = (string) random_int(0, PHP_INT_MAX);
+                    $g = (int) $d;
+                    $h = null;
+                    if ($d === "12") {
+                        $h = $d;
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<int, 1>',
+                    '$b===' => 'non-empty-array<non-decimal-int-string, 1>',
+                    '$c===' => 'non-empty-array<int, 1>',
+                    '$keys===' => 'list<int>',
+                    '$e===' => 'null|string',
+                    '$f===' => 'decimal-int-string',
+                    '$g===' => 'int',
+                    '$h===' => "'12'|null",
+                ],
+            ],
             'assignUnionOfLiterals' => [
                 'code' => '<?php
                     $result = [];
@@ -2371,6 +2413,22 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'decimalIntLiteralIsNotNonDecimalIntString' => [
+                'code' => '<?php
+                    /** @param non-decimal-int-string $n */
+                    function f(string $n): void {
+                        if ($n === "12") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'nonCanonicalLiteralIsNotDecimalIntString' => [
+                'code' => '<?php
+                    /** @param decimal-int-string $d */
+                    function f(string $d): void {}
+
+                    f("012");',
+                'error_message' => 'InvalidArgument',
+            ],
             'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
                 'code' => '<?php
                     /** @param array<string, array<string, int|string>> $a */

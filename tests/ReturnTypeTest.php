@@ -1437,7 +1437,7 @@ final class ReturnTypeTest extends TestCase
 
                     $a = ids("1");',
                 'assertions' => [
-                    '$a' => 'array<string, int>',
+                    '$a===' => 'array<non-decimal-int-string, int>',
                 ],
             ],
             'nonEmptyStringLowercaseStringIntersection' => [

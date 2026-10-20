@@ -46,14 +46,10 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
-use function filter_var;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function substr;
-use function trim;
 
-use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -234,7 +230,8 @@ final class ArrayAnalyzer
     }
 
     /**
-     * @psalm-assert-if-false !numeric $literal_array_key
+     * The int PHP casts an array key to, or false if it stays a string
+     *
      * @psalm-pure
      */
     public static function getLiteralArrayKeyInt(
@@ -244,24 +241,10 @@ final class ArrayAnalyzer
             return $literal_array_key;
         }
 
-        if (!is_numeric($literal_array_key)) {
-            return false;
-        }
+        // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
+        $int_array_key = (int) $literal_array_key;
 
-        // PHP 8 values with whitespace after number are counted as numeric
-        // and filter_var treats them as such too
-        // ensures that '15 ' will stay '15 '
-        if (trim($literal_array_key) !== $literal_array_key) {
-            return false;
-        }
-
-        // '+5' will pass the filter_var check but won't be changed in keys
-        if ($literal_array_key[0] === '+') {
-            return false;
-        }
-
-        // e.g. 015 is numeric but won't be typecast as it's not a valid int
-        return filter_var($literal_array_key, FILTER_VALIDATE_INT);
+        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
     }
 
     private static function analyzeArrayItem(
@@ -324,6 +307,13 @@ final class ArrayAnalyzer
 
                 if ($key_type->isNull()) {
                     $key_type = Type::getString('');
+                }
+
+                // PHP casts a decimal int string key to an int
+                if ($key_type->hasType('decimal-int-string')) {
+                    $key_type_builder = $key_type->getBuilder();
+                    $key_type_builder->removeType('decimal-int-string');
+                    $key_type = $key_type_builder->addType(new TInt())->freeze();
                 }
 
                 if ($item->key instanceof PhpParser\Node\Scalar\String_

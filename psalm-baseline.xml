@@ -2686,9 +2686,6 @@
                     : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
                 )]]></code>
     </InvalidArgument>
-    <InvalidOperand>
-      <code><![CDATA[$property_key - 1]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
       <code><![CDATA[$const_name]]></code>
@@ -3768,9 +3765,6 @@
       <code><![CDATA[self::$broken_paths]]></code>
       <code><![CDATA[self::$broken_paths]]></code>
     </ImpureStaticProperty>
-    <InvalidOperand>
-      <code><![CDATA[$array_key_offset-1]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$const_name]]></code>
     </PossiblyUndefinedIntArrayOffset>

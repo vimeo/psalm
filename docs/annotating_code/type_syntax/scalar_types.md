@@ -81,9 +81,9 @@ Psalm also supports a `enum-string` annotation denote an enum that exists.
 
 ## decimal-int-string, non-decimal-int-string
 
-`decimal-int-string` denotes a string holding a decimal integer, which PHP casts to an `int` when it is used as an array key (`"0"`, `"-5"`, but not `"05"` or `"1.0"`): Psalm treats it as a `numeric-string`.
+`decimal-int-string` denotes a string holding an integer in its canonical decimal form (`"0"`, `"123"`, `"-5"`, but not `"05"`, `"+5"`, `"-0"` or `"1.0"`). It is a `numeric-string`, and PHP casts it to an `int` when it is used as an array key: the keys of an `array<decimal-int-string, Foo>` are `int`s.
 
-`non-decimal-int-string` denotes any other string, which stays a string when used as an array key: Psalm treats it as a `string`.
+`non-decimal-int-string` denotes any other string, including `""`: it stays a string when it is used as an array key.
 
 ## literal-string
 
