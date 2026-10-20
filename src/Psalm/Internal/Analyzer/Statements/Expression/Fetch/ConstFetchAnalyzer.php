@@ -265,6 +265,15 @@ final class ConstFetchAnalyzer
      */
     public static function getGlobalConstTypesByWildcard(Codebase $codebase, string $pattern): array
     {
+        return $codebase->global_constant_types_by_wildcard[$pattern]
+            ??= self::findGlobalConstTypesByWildcard($codebase, $pattern);
+    }
+
+    /**
+     * @return array<string, Union>
+     */
+    private static function findGlobalConstTypesByWildcard(Codebase $codebase, string $pattern): array
+    {
         $regex = '/^' . str_replace('\\*', '.*', preg_quote($pattern, '/')) . '$/';
         $types = [];
 

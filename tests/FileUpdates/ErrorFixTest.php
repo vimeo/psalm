@@ -154,6 +154,51 @@ final class ErrorFixTest extends TestCase
                 ],
                 'error_counts' => [0, 1, 0],
             ],
+            'declareConstantMatchingWildcard' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            const MODE_READ = 1;
+
+                            final class A {
+                                /** @param MODE_* $mode */
+                                public static function open(int $mode): void {}
+                            }
+
+                            A::open(2);',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            const MODE_READ = 1;
+                            const MODE_WRITE = 2;
+
+                            final class A {
+                                /** @param MODE_* $mode */
+                                public static function open(int $mode): void {}
+                            }
+
+                            A::open(2);',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            const MODE_READ = 1;
+
+                            final class A {
+                                /** @param MODE_* $mode */
+                                public static function open(int $mode): void {}
+                            }
+
+                            A::open(2);',
+                    ],
+                ],
+                'error_counts' => [1, 0, 1],
+            ],
             'addReturnTypesToSingleMethod' => [
                 'files' => [
                     [

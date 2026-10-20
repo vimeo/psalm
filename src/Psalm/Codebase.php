@@ -204,6 +204,15 @@ final class Codebase
      */
     public ?array $constructor_argument_starts = null;
 
+    /**
+     * The types of the global constants matching each wildcard expanded since the files were last scanned, by name
+     * (see ConstFetchAnalyzer::getGlobalConstTypesByWildcard())
+     *
+     * @internal
+     * @var array<string, array<string, Union>>
+     */
+    public array $global_constant_types_by_wildcard = [];
+
     public bool $server_mode = false;
 
     public bool $store_node_types = false;
@@ -908,6 +917,8 @@ final class Codebase
         // the classes scanned again may make other `new`
         $this->constructor_argument_starts = null;
         $this->populator->populateCodebase();
+        // the files scanned again may declare other constants
+        $this->global_constant_types_by_wildcard = [];
     }
 
     /**
@@ -974,6 +985,8 @@ final class Codebase
             // the classes scanned again may make other `new`
             $this->constructor_argument_starts = null;
             $this->populator->populateCodebase();
+            // the files scanned again may declare other constants
+            $this->global_constant_types_by_wildcard = [];
         }
     }
 
@@ -1558,6 +1571,7 @@ final class Codebase
         }
 
         $this->file_storage_provider->remove($file_path);
+        $this->global_constant_types_by_wildcard = [];
     }
 
     /**
