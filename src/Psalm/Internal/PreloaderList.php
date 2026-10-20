@@ -1827,7 +1827,6 @@ final class PreloaderList {
         \Psalm\Type\Union::class,
         \Psalm\Type\UnionTrait::class,
         \Revolt\EventLoop::class,
-        \Revolt\EventLoop\Driver\TracingDriver::class,
         \Revolt\EventLoop\FiberLocal::class,
         \SebastianBergmann\Diff\Differ::class,
         \SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder::class,
