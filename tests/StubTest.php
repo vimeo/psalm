@@ -1777,6 +1777,7 @@ final class StubTest extends TestCase
 
     /**
      * @return iterable<string, array{string}>
+     * @psalm-pure
      */
     public static function providerDestructiveDsCollections(): iterable
     {
