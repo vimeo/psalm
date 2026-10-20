@@ -100,6 +100,42 @@ final class ForeachTest extends TestCase
                         /** @psalm-check-type-exact $continued = list<\'skipped\'|null> */;
                     }',
             ],
+            'variableAssignedBeforeEveryBreakOfANonEmptyLoopInsideALoopIsDefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                $picked = $candidate;
+                                if ($picked !== "x") {
+                                    break;
+                                }
+                            }
+                            /** @psalm-check-type-exact $picked = string */;
+                        }
+                    }',
+            ],
+            'variablePossiblyUndefinedFromATryAssignedBeforeEveryBreakIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function mayThrow(): int {
+                        return 1;
+                    }
+
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        try {
+                            $picked = mayThrow();
+                        } catch (Exception $_) {
+                        }
+                        foreach ($candidates as $candidate) {
+                            $picked = $candidate;
+                            if ($candidate !== "x") {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $picked = string */;
+                    }',
+            ],
             'superglobalReadInALoopIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): array {
@@ -1350,6 +1386,40 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterABreakTwoLevelsOutIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<non-empty-list<string>> $rows */
+                    function pick(array $rows): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($rows as $row) {
+                                foreach ($row as $cell) {
+                                    if ($cell === "x") {
+                                        break 2;
+                                    }
+                                    $picked = $cell;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterABreakInsideALoopIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<string> $candidates */
+                    function pick(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate === "x") {
+                                    break;
+                                }
+                                $picked = $candidate;
+                            }
+                            echo $picked;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
                     /** @param non-empty-array<int, array{int, string|null}> $argument_map */
