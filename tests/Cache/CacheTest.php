@@ -153,7 +153,7 @@ final class CacheTest extends TestCase
      *         issues?: array<string, list<string>>,
      *     }>,
      * }>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function provideCacheInteractions(): iterable
     {

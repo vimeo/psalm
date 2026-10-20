@@ -1876,6 +1876,22 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
+            'addPureAnnotationToGeneratorWithoutReturn' => [
+                'input' => '<?php
+                    function gen(): Generator {
+                        yield 1;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function gen(): Generator {
+                        yield 1;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
             'dontAddPureIfCallableNotPure' => [
                 'input' => '<?php
                     function pure(callable &$callable): string{

@@ -13,7 +13,7 @@ final class InArrayTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable

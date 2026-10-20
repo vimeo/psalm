@@ -36,7 +36,7 @@ final class CliUtilsTest extends TestCase
 
     /**
      * @return iterable<string,array{list<string>,list<string>}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function provideGetArguments(): iterable
     {

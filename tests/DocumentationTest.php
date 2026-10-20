@@ -437,7 +437,7 @@ final class DocumentationTest extends TestCase
 
     /**
      * @return iterable<string, array{string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function knownAnnotations(): iterable
     {

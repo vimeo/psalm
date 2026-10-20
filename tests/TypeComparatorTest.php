@@ -157,7 +157,7 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return iterable<string, list{string, string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getCoercibleComparisons(): iterable
     {
@@ -223,7 +223,7 @@ final class TypeComparatorTest extends TestCase
 
     /**
      * @return iterable<string, list{string,string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
