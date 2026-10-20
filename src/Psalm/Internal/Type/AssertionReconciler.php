@@ -983,8 +983,8 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * A type containing the values that a decimal-int-string or a non-decimal-int-string shares with another string
-     * type when neither contains the other: the decimal-int-string itself (e.g. for a non-falsy-string, still with "0"),
-     * or the other type for a non-decimal-int-string (e.g. a numeric-string, still with "1")
+     * type when neither contains the other: the decimal-int-string itself (e.g. for a non-falsy-string, still with
+     * "0"), or the other type for a non-decimal-int-string (e.g. a numeric-string, still with "1")
      *
      * @psalm-pure
      */
