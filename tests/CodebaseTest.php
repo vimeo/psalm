@@ -243,7 +243,7 @@ final class CodebaseTest extends TestCase
 
     /**
      * @return iterable<string, array{string, array<int, string>, ?string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function receiverTaintPaths(): iterable
     {
