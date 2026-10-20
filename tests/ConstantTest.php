@@ -1204,6 +1204,40 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'globalConstantWildcard' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    const MODE_READ = "r";
+                    define("Ns\\MODE_WRITE", "w");
+
+                    /**
+                     * @param MODE_* $mode
+                     * @param PHP_URL_* $component
+                     * @return list{MODE_*, PHP_URL_*}
+                     */
+                    function f(string $mode, int $component): array {
+                        return [$mode, $component];
+                    }
+
+                    /**
+                     * @template TComponent of (-1|PHP_URL_*)
+                     * @param TComponent $component
+                     * @return (TComponent is -1 ? array<string, string> : string|null)
+                     */
+                    function parse(string $url, int $component = -1): array|string|null {
+                        return $component === -1 ? [] : null;
+                    }
+
+                    $a = f(MODE_READ, PHP_URL_HOST);
+                    $b = parse("https://example.com", PHP_URL_HOST);',
+                'assertions' => [
+                    '$a===' => "list{'r'|'w', 0|1|2|3|4|5|6|7}",
+                    '$b===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'wildcardEnumAnyConstant' => [
                 'code' => '<?php
                     class A {
@@ -2437,6 +2471,20 @@ final class ConstantTest extends TestCase
 
                     A::foo(A::D_4);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'globalConstantWildcardBadValue' => [
+                'code' => '<?php
+                    /** @param PHP_URL_* $component */
+                    function f(int $component): void {}
+
+                    f(42);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'globalConstantWildcardWithoutConstants' => [
+                'code' => '<?php
+                    /** @param NO_SUCH_CONSTANT_* $flag */
+                    function f(int $flag): void {}',
+                'error_message' => 'UndefinedConstant',
             ],
             'wildcardEnumAnyTemplateExtendConstantBadValue' => [
                 'code' => '<?php

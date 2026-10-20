@@ -443,6 +443,11 @@ final class TypeParseTest extends TestCase
         Type::parseString('callable-string&lowercase-string');
     }
 
+    public function testGlobalConstantWildcard(): void
+    {
+        $this->assertSame('-1|PHP_URL_*', Type::parseString('-1|PHP_URL_*')->getId());
+    }
+
     public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, list{int}>', Type::parseString('iterable<string, array{int}>')->getId());

@@ -46,3 +46,7 @@ bar(AChild::class); // fails
 bar(B::class); // works
 bar(BChild::class); // fails
 ```
+
+## Constant wildcards
+
+`Foo::BAR_*` stands for the values of all the constants of `Foo` whose name starts with `BAR_`, and `PHP_URL_*` for the values of all the global constants whose name starts with `PHP_URL_`, built-in or defined in your code, e.g. `@param PHP_URL_* $component` accepts `PHP_URL_SCHEME`, `PHP_URL_HOST` and the other `PHP_URL_*` constants. In a namespace, an unqualified wildcard matches the constants of the namespace, or the global ones if none of the namespace match.

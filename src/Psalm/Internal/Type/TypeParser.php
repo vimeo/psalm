@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
@@ -100,6 +101,7 @@ use function in_array;
 use function is_a;
 use function is_int;
 use function is_numeric;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -463,6 +465,17 @@ final class TypeParser
 
         if (preg_match('/^\-?(0|[1-9]([0-9_]*[0-9])?)$/', $parse_tree->value)) {
             return new TLiteralInt((int) strtr($parse_tree->value, ['_' => '']), $from_docblock);
+        }
+
+        // global constants matching a wildcard, e.g. `PHP_URL_*`
+        if (str_contains($parse_tree->value, '*')
+            && preg_match('@^\\\\?(?:[\w\x7f-\xff]+\\\\)*[a-zA-Z_\x7f-\xff][\w*\x7f-\xff]*$@', $parse_tree->value)
+        ) {
+            return new TGlobalConstant(
+                ltrim($parse_tree->value, '\\'),
+                $parse_tree->text !== null && !str_contains($parse_tree->text, '\\') ? $parse_tree->text : null,
+                $from_docblock,
+            );
         }
 
         if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $parse_tree->value)) {

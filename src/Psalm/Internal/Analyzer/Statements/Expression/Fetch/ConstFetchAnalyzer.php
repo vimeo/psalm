@@ -30,6 +30,9 @@ use function array_key_exists;
 use function array_pop;
 use function explode;
 use function implode;
+use function preg_match;
+use function preg_quote;
+use function str_replace;
 use function strtolower;
 
 /**
@@ -253,6 +256,45 @@ final class ConstFetchAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The types of the global constants whose names match a wildcard (`PHP_URL_*`), by name
+     *
+     * @return array<string, Union>
+     */
+    public static function getGlobalConstTypesByWildcard(Codebase $codebase, string $pattern): array
+    {
+        $regex = '/^' . str_replace('\\*', '.*', preg_quote($pattern, '/')) . '$/';
+        $types = [];
+
+        foreach ($codebase->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->constants as $const_name => $const_type) {
+                if (preg_match($regex, $const_name) === 1) {
+                    $types[$const_name] = isset($file_storage->unresolved_constants[$const_name])
+                        ? new Union([ConstantTypeResolver::resolve(
+                            $codebase->classlikes,
+                            $file_storage->unresolved_constants[$const_name],
+                        )])
+                        : $const_type;
+                }
+            }
+        }
+
+        foreach ($codebase->getAllStubbedConstants() as $const_name => $const_type) {
+            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
+                $types[$const_name] = $const_type;
+            }
+        }
+
+        foreach ($codebase->config->getPredefinedConstants() as $const_name => $_) {
+            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
+                $types[$const_name] = self::getGlobalConstType($codebase, $const_name, $const_name)
+                    ?? Type::getMixed();
+            }
+        }
+
+        return $types;
     }
 
     public static function getConstType(

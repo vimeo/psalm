@@ -12,6 +12,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateBound;
@@ -33,6 +34,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -130,6 +132,8 @@ final class TypeChecker extends TypeVisitor
             }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
+        } elseif ($type instanceof TGlobalConstant) {
+            $this->checkGlobalConstant($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
@@ -475,6 +479,28 @@ final class TypeChecker extends TypeVisitor
                 $this->source->getSuppressedIssues(),
             );
         }
+    }
+
+    private function checkGlobalConstant(TGlobalConstant $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        if (ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->const_name) !== []
+            || ($atomic->fallback_const_name !== null
+                && ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->fallback_const_name) !== [])
+        ) {
+            return;
+        }
+
+        $this->has_errors = true;
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'No constant matches ' . ($atomic->fallback_const_name ?? $atomic->const_name),
+                $this->code_location,
+            ),
+            $this->source->getSuppressedIssues(),
+        );
     }
 
     public function checkTemplateParam(TTemplateParam $atomic): void

@@ -1771,6 +1771,7 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TFalse::class,
         \Psalm\Type\Atomic\TFloat::class,
         \Psalm\Type\Atomic\TGenericObject::class,
+        \Psalm\Type\Atomic\TGlobalConstant::class,
         \Psalm\Type\Atomic\TInt::class,
         \Psalm\Type\Atomic\TIntMask::class,
         \Psalm\Type\Atomic\TIntMaskOf::class,
