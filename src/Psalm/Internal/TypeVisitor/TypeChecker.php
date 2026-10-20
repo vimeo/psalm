@@ -9,6 +9,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -19,8 +20,10 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -35,6 +38,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -44,9 +48,12 @@ use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_any;
 use function array_keys;
+use function array_map;
 use function array_search;
 use function array_slice;
+use function array_values;
 use function count;
 use function explode;
 use function str_contains;
@@ -138,6 +145,8 @@ final class TypeChecker extends TypeVisitor
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
+        } elseif ($type instanceof TIntersection) {
+            $this->checkIntersection($type);
         }
 
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
@@ -541,6 +550,80 @@ final class TypeChecker extends TypeVisitor
                     );
                 }
             }
+        }
+    }
+
+    /**
+     * Checks the intersections of a declared type that were deferred until the class constants and type aliases they
+     * refer to are known: expanding the type replaces them, so that checking the expanded type doesn't check them
+     *
+     * @param array<string> $suppressed_issues
+     * @psalm-capabilities read-props
+     */
+    public static function checkDeferredIntersections(
+        Union $type,
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        ?Context $context = null,
+    ): void {
+        $collector = new DeferredIntersectionCollector();
+        $collector->traverseArray($type->getAtomicTypes());
+
+        foreach ($collector->getIntersections() as $intersection) {
+            (new self($source, $code_location, $suppressed_issues, [], false, false, false, $context))
+                ->traverse($intersection);
+        }
+    }
+
+    /**
+     * Reports an intersection deferred until the class constants and type aliases it refers to are known, when
+     * Psalm has no type for it or no value has all of its types, as for one Psalm intersects when parsing it
+     */
+    public function checkIntersection(TIntersection $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+        $self_class = $this->source->getFQCLN();
+
+        $types = [];
+
+        foreach ($atomic->types as $type) {
+            $type = TypeExpander::expandUnion(
+                $codebase,
+                $type,
+                $self_class,
+                $self_class,
+                $this->source->getParentFQCLN(),
+            );
+
+            if (array_any($type->getAtomicTypes(), TypeParser::hasUnresolvedReference(...))) {
+                // an undefined class constant or type alias, reported on its own
+                return;
+            }
+
+            $types[] = $type;
+        }
+
+        try {
+            $atomic_types = TypeParser::intersectTypes(
+                array_map(static fn(Union $type): array => array_values($type->getAtomicTypes()), $types),
+                $codebase,
+                $atomic->from_docblock,
+            );
+        } catch (TypeParseTreeException $e) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock($e->getMessage(), $this->code_location),
+                $this->suppressed_issues,
+            );
+
+            return;
+        }
+
+        if ($atomic_types === []) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock('No value has all the types of the intersection', $this->code_location),
+                $this->suppressed_issues,
+            );
         }
     }
 

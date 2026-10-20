@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
@@ -912,10 +913,17 @@ final class TypeExpander
                 $return_type->from_docblock,
             );
         } catch (TypeParseTreeException) {
-            // a type still refers to an unknown class constant, or Psalm has no type for the intersection
-            return [new TIntersection($types, $return_type->from_docblock)];
+            if (!$evaluate_class_constants) {
+                // intersected once the class constants and type aliases its types refer to are evaluated
+                return [new TIntersection($types, $return_type->from_docblock)];
+            }
+
+            // Psalm has no type for the intersection: as a docblock type it can't parse, it's ignored (and reported
+            // by TypeChecker)
+            return [new TMixed($return_type->from_docblock)];
         }
 
+        // an intersection no value has all the types of, reported by TypeChecker when the declared type is one
         return $atomic_types === [] ? [new TNever($return_type->from_docblock)] : $atomic_types;
     }
 

@@ -69,6 +69,27 @@ final class TIntersection extends Atomic
 
     /**
      * @param array<lowercase-string, string> $aliased_classes
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function toNamespacedString(
+        ?string $namespace,
+        array $aliased_classes,
+        ?string $this_class,
+        bool $use_phpdoc_format,
+    ): string {
+        $type_strings = [];
+
+        foreach ($this->types as $type) {
+            $type_string = $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
+            $type_strings[] = count($type->getAtomicTypes()) > 1 ? '(' . $type_string . ')' : $type_string;
+        }
+
+        return implode('&', $type_strings);
+    }
+
+    /**
+     * @param array<lowercase-string, string> $aliased_classes
      * @psalm-pure
      */
     #[Override]
@@ -97,5 +118,21 @@ final class TIntersection extends Atomic
     public function getAssertionString(): string
     {
         return 'mixed';
+    }
+
+    /**
+     * @param non-empty-list<Union> $types
+     * @return static
+     */
+    public function setTypes(array $types): self
+    {
+        if ($types === $this->types) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->types = $types;
+
+        return $cloned;
     }
 }

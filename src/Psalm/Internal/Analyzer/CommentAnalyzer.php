@@ -22,6 +22,7 @@ use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
@@ -568,6 +569,13 @@ final class CommentAnalyzer
             }
 
             try {
+                TypeChecker::checkDeferredIntersections(
+                    $var_comment->type,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $var),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+
                 $var_comment_type = TypeExpander::expandUnion(
                     $codebase,
                     $var_comment->type,

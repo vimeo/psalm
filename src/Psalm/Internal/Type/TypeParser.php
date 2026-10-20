@@ -1578,7 +1578,7 @@ final class TypeParser
      *
      * @psalm-pure
      */
-    private static function hasUnresolvedReference(Atomic $type): bool
+    public static function hasUnresolvedReference(Atomic $type): bool
     {
         if ($type instanceof TConditional) {
             return array_any($type->if_type->getAtomicTypes(), self::hasUnresolvedReference(...))

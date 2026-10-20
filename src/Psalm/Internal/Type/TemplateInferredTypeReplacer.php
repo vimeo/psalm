@@ -12,6 +12,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -196,6 +197,14 @@ final class TemplateInferredTypeReplacer
                     $should_set = false;
                     $new_types[] = $new_type;
                 }
+            } elseif ($atomic_type instanceof TIntersection) {
+                $intersected_types = [];
+
+                foreach ($atomic_type->types as $intersected_type) {
+                    $intersected_types[] = self::replace($intersected_type, $template_result, $codebase);
+                }
+
+                $atomic_type = $atomic_type->setTypes($intersected_types);
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {

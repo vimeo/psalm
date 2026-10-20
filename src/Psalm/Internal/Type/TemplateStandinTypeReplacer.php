@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -403,6 +404,30 @@ final class TemplateStandinTypeReplacer
                 $atomic_type->visibility_filter,
             );
             return [$atomic_type];
+        }
+
+        if ($atomic_type instanceof TIntersection) {
+            // the argument has the type of each member of the intersection
+            $intersected_types = [];
+
+            foreach ($atomic_type->types as $intersected_type) {
+                $intersected_types[] = self::replace(
+                    $intersected_type,
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $input_type,
+                    $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
+                    $replace,
+                    $add_lower_bound,
+                    $bound_equality_classlike,
+                    $depth + 1,
+                );
+            }
+
+            return [$atomic_type->setTypes($intersected_types)];
         }
 
         $matching_atomic_types = [];

@@ -1547,11 +1547,6 @@ final class ReturnTypeTest extends TestCase
                         return 0;
                     }
 
-                    /** @return Flags::A&int<2, 5> */
-                    function e(): int {
-                        throw new RuntimeException();
-                    }
-
                     final class Flags {
                         const A = 1;
                         const B = 2;
@@ -1570,6 +1565,73 @@ final class ReturnTypeTest extends TestCase
                     '$c===' => '2|4',
                     '$d===' => '0|1|2|3',
                 ],
+            ],
+            'templateInClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @param-out value-of<Flags::LIST>&(T is int ? int : string) $out
+                     */
+                    function flag($t, mixed &$out): void {
+                        $out = 1;
+                    }
+
+                    flag(5, $a);
+                    flag("x", $b);
+
+                    final class Flags {
+                        const LIST = [1, 2, "x"];
+                    }',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateInferredFromClassConstantIntersection' => [
+                'code' => '<?php
+                    interface Card {}
+
+                    enum Suit implements Card {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T of Card
+                     * @param Suit::Hearts&T $card
+                     * @return T
+                     */
+                    function card(Card $card): Card {
+                        return $card;
+                    }
+
+                    $a = card(Suit::Hearts);',
+                'assertions' => [
+                    '$a===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidClassConstantIntersectionIsIgnored' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }
+
+                    $a = name();
+                    $b = is_string($a);',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
+                'ignored_issues' => ['InvalidDocblock', 'MixedAssignment'],
             ],
             'truthyAndFalsyNumericString' => [
                 'code' => '<?php
@@ -1650,6 +1712,56 @@ final class ReturnTypeTest extends TestCase
                     function f(string $s): void {}
                     f("0");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'emptyClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Flags::A&int<2, 5> */
+                    function f(): int {
+                        throw new RuntimeException();
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'unrepresentableClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }',
+                'error_message' => "Psalm has no type for the intersection of 'Foo' and class-string",
+            ],
+            'templateAndClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     * @return value-of<Flags::LIST>&T
+                     */
+                    function flag(int $t) {
+                        return $t;
+                    }
+
+                    final class Flags {
+                        const LIST = [1, 2];
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of',
+            ],
+            'emptyClassConstantIntersectionParam' => [
+                'code' => '<?php
+                    /** @param Flags::A&string $flag */
+                    function f($flag): void {}
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
             ],
             'emptyScalarIntersection' => [
                 'code' => '<?php
