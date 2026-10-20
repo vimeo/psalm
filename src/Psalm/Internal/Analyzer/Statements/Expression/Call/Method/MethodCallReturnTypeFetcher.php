@@ -367,11 +367,9 @@ final class MethodCallReturnTypeFetcher
         );
 
         // what the object holds before the call, which a specialized call may replace in the context below
-        $receiver_parent_nodes = $method_storage->return_source_this === null
-            ? []
-            : (($var_id !== null && isset($context->vars_in_scope[$var_id])
-                ? $context->vars_in_scope[$var_id]
-                : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
+        $receiver_parent_nodes = (($var_id !== null && isset($context->vars_in_scope[$var_id])
+            ? $context->vars_in_scope[$var_id]
+            : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
 
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
@@ -613,6 +611,15 @@ final class MethodCallReturnTypeFetcher
 
         if ($dispatch_node) {
             $return_type_candidate = $return_type_candidate->addParentNodes([$dispatch_node->id => $dispatch_node]);
+
+            // the overrides specialized by call take the object as their `$this` too
+            $this_dispatch_node = self::getThisDispatchNode($codebase, $taint_flow_graph, $method_id, $method_storage);
+
+            if ($this_dispatch_node) {
+                foreach ($receiver_parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $this_dispatch_node, '=', $added_taints, $removed_taints);
+                }
+            }
         }
 
         FunctionCallReturnTypeFetcher::taintUsingFlows(
@@ -767,6 +774,83 @@ final class MethodCallReturnTypeFetcher
         $taint_flow_graph->addPath($dispatch_node, $call_node, 'dispatch');
 
         return $call_node;
+    }
+
+    /**
+     * The node of the object a virtual call of a method gives the overrides that may run instead whose calls are
+     * specialized, or null if there are none (see getReturnDispatchNode()).
+     *
+     * Their bodies take `$this` from the node of the `$this` of the specialization the dispatch of their returns
+     * leaves (see getReturnDispatchNode()): without it, what they return of the object, as a parent class's method
+     * calling a method its subclass overrides to return `$this` or a property, wouldn't reach the call. The node
+     * is shared by the virtual calls of the method on the class, like the dispatch of its returns.
+     */
+    private static function getThisDispatchNode(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): ?DataFlowNode {
+        if ($method_storage->is_static) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        $cased_method_id = $class_storage->name . '::' . (string) $method_storage->cased_name;
+        $dispatch_node = DataFlowNode::getForThisDispatch($cased_method_id);
+
+        if ($taint_flow_graph->hasNode($dispatch_node)) {
+            return $dispatch_node;
+        }
+
+        $this_nodes = [];
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+        foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+            $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
+
+            $dependent_appearing_method_id = $codebase->methods->getAppearingMethodId($dependent_method_id);
+            $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+
+            if ($dependent_appearing_method_id === null
+                || $dependent_declaring_method_id === null
+                || (string) $dependent_appearing_method_id === (string) $appearing_method_id
+                || !$codebase->methods->hasStorage($dependent_declaring_method_id)
+            ) {
+                continue;
+            }
+
+            $dependent_storage = $codebase->methods->getStorage($dependent_declaring_method_id);
+            $dependent_location = $dependent_storage->location;
+
+            // only the body of a method specialized by call takes `$this` from a node (see FunctionLikeAnalyzer)
+            if ($dependent_location === null || !$dependent_storage->specialize_call) {
+                continue;
+            }
+
+            // in the specialization keyed by the location of the method, which the dispatch of its returns leaves
+            $this_node = DataFlowNode::getForAssignment(
+                '$this in ' . (string) FunctionLikeAnalyzer::getBodyMethodId($codebase, $dependent_method_id),
+                $dependent_location,
+                DataFlowNode::getSpecializationKey($dependent_location),
+            );
+
+            $this_nodes[$this_node->id] = $this_node;
+        }
+
+        if ($this_nodes === []) {
+            return null;
+        }
+
+        $taint_flow_graph->addNode($dispatch_node);
+
+        foreach ($this_nodes as $this_node) {
+            $taint_flow_graph->addNode($this_node);
+            $taint_flow_graph->addPath($dispatch_node, $this_node, '=');
+        }
+
+        return $dispatch_node;
     }
 
     public static function replaceTemplateTypes(
