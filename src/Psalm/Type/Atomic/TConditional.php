@@ -64,7 +64,9 @@ final class TConditional extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'TConditional<' . $this->param_name . '>';
+        return 'TConditional<'
+            . ($this->subject_type !== null ? $this->subject_type->getKey() : $this->param_name)
+            . '>';
     }
 
     /**

@@ -854,6 +854,18 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testUnionOfConditionalTypesOnATemplateAndOnATypeDependingOnIt(): void
+    {
+        $this->assertSame(
+            "(T is string ? 'a' : 'b')|(value-of<T: as array<array-key, mixed>> is string ? 'c' : 'd')",
+            Type::parseString(
+                "(T is string ? 'a' : 'b')|(value-of<T> is string ? 'c' : 'd')",
+                null,
+                ['T' => ['' => Type::getArray()]],
+            )->getId(),
+        );
+    }
+
     public function testConditionalTypeWithIntersection(): void
     {
         $this->assertSame(
