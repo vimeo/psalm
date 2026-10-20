@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -44,6 +45,7 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseNumericString;
 use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -718,10 +720,13 @@ trait UnionTrait
      */
     public function hasLowercaseString(): bool
     {
-        return isset($this->types['string'])
-            && ($this->types['string'] instanceof TLowercaseString
-                || $this->types['string'] instanceof TNonEmptyLowercaseString
-                || $this->types['string'] instanceof TNonFalsyLowercaseString);
+        return (isset($this->types['string'])
+                && ($this->types['string'] instanceof TLowercaseString
+                    || $this->types['string'] instanceof TNonEmptyLowercaseString
+                    || $this->types['string'] instanceof TNonFalsyLowercaseString))
+            || (isset($this->types['numeric-string'])
+                && ($this->types['numeric-string'] instanceof TLowercaseNumericString
+                    || $this->types['numeric-string'] instanceof TNonFalsyLowercaseNumericString));
     }
 
     /**

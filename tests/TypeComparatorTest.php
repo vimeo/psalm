@@ -234,6 +234,38 @@ final class TypeComparatorTest extends TestCase
                 'lowercase-string&non-falsy-string',
                 "'abc'",
             ],
+            'numericStringAcceptsNonFalsyNumericString' => [
+                'numeric-string',
+                'non-falsy-string&numeric-string',
+            ],
+            'nonFalsyStringAcceptsNonFalsyNumericString' => [
+                'non-falsy-string',
+                'non-falsy-string&numeric-string',
+            ],
+            'nonFalsyNumericStringAcceptsNonZeroNumericLiteral' => [
+                'non-falsy-string&numeric-string',
+                "'5'",
+            ],
+            'lowercaseStringAcceptsLowercaseNumericString' => [
+                'lowercase-string',
+                'lowercase-string&numeric-string',
+            ],
+            'numericStringAcceptsLowercaseNumericString' => [
+                'numeric-string',
+                'lowercase-string&numeric-string',
+            ],
+            'lowercaseNumericStringAcceptsLowercaseNumericLiteral' => [
+                'lowercase-string&numeric-string',
+                "'1e3'",
+            ],
+            'nonFalsyLowercaseStringAcceptsNonFalsyLowercaseNumericString' => [
+                'lowercase-string&non-falsy-string',
+                'lowercase-string&non-falsy-string&numeric-string',
+            ],
+            'nonFalsyNumericStringAcceptsNonFalsyLowercaseNumericString' => [
+                'non-falsy-string&numeric-string',
+                'lowercase-string&non-falsy-string&numeric-string',
+            ],
         ];
     }
 
@@ -262,6 +294,30 @@ final class TypeComparatorTest extends TestCase
         yield 'nonFalsyLowercaseStringDoesNotAcceptCallableString' => [
             'lowercase-string&non-falsy-string',
             'callable-string',
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptZero' => [
+            'non-falsy-string&numeric-string',
+            "'0'",
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptNumericString' => [
+            'non-falsy-string&numeric-string',
+            'numeric-string',
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptLowercaseNumericString' => [
+            'non-falsy-string&numeric-string',
+            'lowercase-string&numeric-string',
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptUppercaseNumericLiteral' => [
+            'lowercase-string&numeric-string',
+            "'1E3'",
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptNonFalsyLowercaseString' => [
+            'lowercase-string&numeric-string',
+            'lowercase-string&non-falsy-string',
+        ];
+        yield 'nonFalsyLowercaseNumericStringDoesNotAcceptNonFalsyNumericString' => [
+            'lowercase-string&non-falsy-string&numeric-string',
+            'non-falsy-string&numeric-string',
         ];
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
             'list<int>',

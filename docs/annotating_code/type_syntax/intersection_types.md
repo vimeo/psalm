@@ -36,9 +36,12 @@ The returned type will contain the properties of both `A` and `B`. In other word
 Intersections of objects are only valid for lists of only *object types* and lists of only *object-like arrays*.
 
 Scalar types can be intersected too: `lowercase-string&non-empty-string` is a `non-empty-lowercase-string`,
-`lowercase-string&non-falsy-string` a non-falsy lowercase string, `int<0, max>&int<min, 10>` an `int<0, 10>`,
-`int&int-mask<1, 2>` is `0|1|2|3`, `array-key&string` is `string` and `string&callable` is a `callable-string`.
-An intersection Psalm has no exact type for (e.g. `numeric-string&non-falsy-string`) is reported as an invalid
+`lowercase-string&non-falsy-string` a non-falsy lowercase string, `numeric-string&non-falsy-string` a numeric string
+other than `'0'`, `lowercase-string&numeric-string` a numeric string such as `'1e3'` but not `'1E3'`,
+`int<0, max>&int<min, 10>` an `int<0, 10>`, `int&int-mask<1, 2>` is `0|1|2|3`, `array-key&string` is `string` and
+`string&callable` is a `callable-string`. Types referring to class constants, such as `value-of<Foo::BAR>&int` or
+`(Foo::A|Foo::B)&int<2, 5>`, are intersected once the constants are known.
+An intersection Psalm has no exact type for (e.g. `literal-string&non-falsy-string`) is reported as an invalid
 docblock, and so is one no value can have (e.g. `int<0, 5>&int<6, 10>`).
 
 A conditional type can be intersected with other types: `(T is int ? A : B)&C` is `(T is int ? A&C : B&C)`, a

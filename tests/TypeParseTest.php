@@ -427,16 +427,83 @@ final class TypeParseTest extends TestCase
         Type::parseString('non-empty-string&int');
     }
 
-    public function testIntersectionOfNumericStringAndLowercaseStringRejected(): void
+    public function testIntersectionOfNumericStringAndLowercaseString(): void
     {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('numeric-string&lowercase-string');
+        $this->assertSame(
+            'lowercase-string&numeric-string',
+            Type::parseString('numeric-string&lowercase-string')->getId(),
+        );
+        $this->assertSame(
+            'lowercase-string&numeric-string',
+            Type::parseString('lowercase-string&non-empty-string&numeric-string')->getId(),
+        );
+        $this->assertSame(
+            'lowercase-string&numeric-string',
+            Type::parseString('lowercase-string&numeric-string')->getId(),
+        );
     }
 
-    public function testIntersectionOfNumericStringAndNonFalsyStringRejected(): void
+    public function testIntersectionOfNumericStringAndNonFalsyString(): void
     {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('numeric-string&non-falsy-string');
+        $this->assertSame(
+            'non-falsy-string&numeric-string',
+            Type::parseString('numeric-string&non-falsy-string')->getId(),
+        );
+        $this->assertSame(
+            'non-falsy-string&numeric-string',
+            Type::parseString('non-falsy-string&numeric-string')->getId(),
+        );
+        $this->assertSame(
+            'lowercase-string&non-falsy-string&numeric-string',
+            Type::parseString('numeric-string&non-falsy-string&lowercase-string')->getId(),
+        );
+        $this->assertSame(
+            'lowercase-string&non-falsy-string&numeric-string',
+            Type::parseString('lowercase-string&non-falsy-string&numeric-string')->getId(),
+        );
+    }
+
+    public function testIntersectionOfLiteralStringsAndStringType(): void
+    {
+        $this->assertSame("'0'|'1'", Type::parseString("('0'|'1'|'x')&numeric-string")->getId());
+        $this->assertSame("'1'", Type::parseString("('0'|'1'|'x')&non-falsy-string&numeric-string")->getId());
+        $this->assertSame("'a'", Type::parseString("(''|'a'|'B')&lowercase-string&non-falsy-string")->getId());
+        $this->assertSame("'1e3'", Type::parseString("('1e3'|'1E3')&lowercase-string&numeric-string")->getId());
+    }
+
+    public function testIntersectionOfLiteralStringAndNonFalsyStringRejected(): void
+    {
+        $this->expectExceptionMessage('Psalm has no type for the intersection of literal-string and non-falsy-string');
+        Type::parseString('literal-string&non-falsy-string');
+    }
+
+    public function testIntersectionOfObjectAndScalarRejected(): void
+    {
+        $this->expectExceptionMessage('No value has all the types of the intersection');
+        Type::parseString('stdClass&int');
+    }
+
+    public function testIntersectionOfClassConstantReferences(): void
+    {
+        $this->assertSame('value-of<Foo::BAR>&int', Type::parseString('value-of<Foo::BAR>&int')->getId());
+        $this->assertSame('key-of<Foo::BAR>&string', Type::parseString('key-of<Foo::BAR>&string')->getId());
+        $this->assertSame(
+            'int-mask-of<class-constant(Foo::*)>&(0|1|2|3)',
+            Type::parseString('int-mask-of<Foo::*>&int-mask<1, 2>')->getId(),
+        );
+        $this->assertSame('(Foo::A|Foo::B)&int<2, 5>', Type::parseString('(Foo::A|Foo::B)&int<2, 5>')->getId());
+    }
+
+    public function testIntersectionInConditionalBranch(): void
+    {
+        $this->assertSame(
+            '(T is int ? lowercase-string&numeric-string : string)',
+            Type::parseString(
+                '(T is int ? lowercase-string&non-empty-string&numeric-string : string)',
+                null,
+                ['T' => ['' => Type::getMixed()]],
+            )->getId(),
+        );
     }
 
     public function testIntersectionOfNonFalsyStringAndLowercaseString(): void

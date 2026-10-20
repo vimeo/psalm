@@ -11,6 +11,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -41,7 +42,6 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -995,6 +995,12 @@ abstract class Type
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
                     $intersection_performed = true;
+                } elseif ($type_1_atomic instanceof TString
+                    && $type_2_atomic instanceof TString
+                    && ($refined_string = StringRefinement::intersect($type_1_atomic, $type_2_atomic)) !== null
+                ) {
+                    $intersection_atomic = $refined_string;
+                    $intersection_performed = true;
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)
                     || ($type_1_atomic instanceof TNonEmptyString
@@ -1007,10 +1013,7 @@ abstract class Type
                     || ($type_1_atomic instanceof TNonEmptyString
                         && $type_2_atomic instanceof TLowercaseString)
                 ) {
-                    $intersection_atomic = $type_1_atomic instanceof TNonFalsyString
-                        || $type_2_atomic instanceof TNonFalsyString
-                        ? new TNonFalsyLowercaseString()
-                        : new TNonEmptyLowercaseString();
+                    $intersection_atomic = new TNonEmptyLowercaseString();
                     $intersection_performed = true;
                 }
 

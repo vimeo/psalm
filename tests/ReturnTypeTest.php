@@ -1496,6 +1496,104 @@ final class ReturnTypeTest extends TestCase
                     '$e===' => '0|2',
                 ],
             ],
+            'numericStringIntersections' => [
+                'code' => '<?php
+                    /**
+                     * @return ($prefix is ""|numeric-string ? numeric-string : string)&non-falsy-string&($prefix is lowercase-string ? lowercase-string : string)
+                     */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @return ($threshold is 0 ? lowercase-string&non-empty-string&numeric-string : lowercase-string&non-empty-string)
+                     */
+                    function sizeFormat(int $threshold = 0): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = uniqueId();
+                    $b = uniqueId("ID-");
+                    $c = uniqueId("id-");
+                    $d = sizeFormat();
+                    $e = sizeFormat(1);',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&non-falsy-string&numeric-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'lowercase-string&non-falsy-string',
+                    '$d===' => 'lowercase-string&numeric-string',
+                    '$e===' => 'non-empty-lowercase-string',
+                ],
+            ],
+            'classConstantIntersections' => [
+                'code' => '<?php
+                    /** @return value-of<Flags::LIST>&int */
+                    function a(): int {
+                        return 1;
+                    }
+
+                    /** @return key-of<Flags::MAP>&string */
+                    function b(): string {
+                        return "a";
+                    }
+
+                    /** @return (Flags::A|Flags::B|Flags::C)&int<2, 5> */
+                    function c(): int {
+                        return 2;
+                    }
+
+                    /** @return int-mask-of<Flags::*>&int-mask<1, 2> */
+                    function d(): int {
+                        return 0;
+                    }
+
+                    /** @return Flags::A&int<2, 5> */
+                    function e(): int {
+                        throw new RuntimeException();
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+                        const C = 4;
+                        const LIST = [1, 2, "x"];
+                        const MAP = ["a" => 1, 5 => 2];
+                    }
+
+                    $a = a();
+                    $b = b();
+                    $c = c();
+                    $d = d();',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'a'",
+                    '$c===' => '2|4',
+                    '$d===' => '0|1|2|3',
+                ],
+            ],
+            'truthyAndFalsyNumericString' => [
+                'code' => '<?php
+                    /** @var numeric-string $s */
+                    $s = "1";
+                    /** @var lowercase-string&numeric-string $l */
+                    $l = "1";
+                    $t = null;
+                    $f = null;
+                    $u = null;
+                    if ($s) {
+                        $t = $s;
+                    } else {
+                        $f = $s;
+                    }
+                    if ($l) {
+                        $u = $l;
+                    }',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string&numeric-string|null',
+                    '$f===' => "'0'|null",
+                    '$u===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                ],
+            ],
             'truthyLowercaseStringIsNonFalsy' => [
                 'code' => '<?php
                     /** @var lowercase-string $s */
@@ -1540,11 +1638,18 @@ final class ReturnTypeTest extends TestCase
         return [
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
-                    /** @return numeric-string&non-falsy-string */
+                    /** @return literal-string&non-falsy-string */
                     function f(): string {
                         return "1";
                     }',
-                'error_message' => 'Psalm has no type for the intersection of numeric-string and non-falsy-string',
+                'error_message' => 'Psalm has no type for the intersection of literal-string and non-falsy-string',
+            ],
+            'nonFalsyNumericStringRejectsZero' => [
+                'code' => '<?php
+                    /** @param non-falsy-string&numeric-string $s */
+                    function f(string $s): void {}
+                    f("0");',
+                'error_message' => 'InvalidArgument',
             ],
             'emptyScalarIntersection' => [
                 'code' => '<?php

@@ -680,6 +680,69 @@ final class TypeCombinationTest extends TestCase
                     'lowercase-string&non-falsy-string',
                 ],
             ],
+            'combineNonFalsyNumericStringWithZero' => [
+                'numeric-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    "'0'",
+                ],
+            ],
+            'combineNonFalsyNumericStringWithNonNumericLiteral' => [
+                'non-falsy-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    "'abc'",
+                ],
+            ],
+            'combineLowercaseNumericStringWithUppercaseNumericLiteral' => [
+                'numeric-string',
+                [
+                    'lowercase-string&numeric-string',
+                    "'1E3'",
+                ],
+            ],
+            'combineLowercaseNumericStringWithLowercaseLiteral' => [
+                'non-empty-lowercase-string',
+                [
+                    "'abc'",
+                    'lowercase-string&numeric-string',
+                ],
+            ],
+            'combineLowercaseNumericStringWithNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&numeric-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineNonFalsyLowercaseNumericStringWithNonFalsyNumericString' => [
+                'non-falsy-string&numeric-string',
+                [
+                    'lowercase-string&non-falsy-string&numeric-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithLowercaseNumericString' => [
+                'numeric-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    'lowercase-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithNumericString' => [
+                'numeric-string',
+                [
+                    'numeric-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithString' => [
+                'string',
+                [
+                    'non-falsy-string&numeric-string',
+                    'string',
+                ],
+            ],
             'combineClassStringWithNumericString' => [
                 'class-string|numeric-string',
                 [

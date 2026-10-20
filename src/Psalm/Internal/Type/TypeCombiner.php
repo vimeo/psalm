@@ -40,7 +40,6 @@ use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
-use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -1097,9 +1096,10 @@ final class TypeCombiner
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TNonFalsyLowercaseString
+                    && $combination->value_types['string'] instanceof TString
+                    && StringRefinement::isCombinedRefinement($combination->value_types['string'])
                 ) {
-                    $combination->value_types['string'] = self::combineNonFalsyLowercaseString(
+                    $combination->value_types['string'] = self::combineRefinedStrings(
                         $combination->value_types['string'],
                         $type,
                     );
@@ -1162,9 +1162,9 @@ final class TypeCombiner
 
             if (!isset($combination->value_types['string'])) {
                 if ($combination->strings) {
-                    if ($type instanceof TNonFalsyLowercaseString) {
+                    if ($type instanceof TString && StringRefinement::isCombinedRefinement($type)) {
                         foreach ($combination->strings as $string_type) {
-                            $type = self::combineNonFalsyLowercaseString($type, $string_type);
+                            $type = self::combineRefinedStrings($type, $string_type);
                         }
 
                         $combination->value_types['string'] = $type;
@@ -1273,10 +1273,10 @@ final class TypeCombiner
                 } elseif ($combination->value_types['string']::class !== $type::class) {
                     if ($type instanceof TString
                         && $combination->value_types['string'] instanceof TString
-                        && ($type instanceof TNonFalsyLowercaseString
-                            || $combination->value_types['string'] instanceof TNonFalsyLowercaseString)
+                        && (StringRefinement::isCombinedRefinement($type)
+                            || StringRefinement::isCombinedRefinement($combination->value_types['string']))
                     ) {
-                        $combination->value_types['string'] = self::combineNonFalsyLowercaseString(
+                        $combination->value_types['string'] = self::combineRefinedStrings(
                             $combination->value_types['string'],
                             $type,
                         );
@@ -1343,43 +1343,20 @@ final class TypeCombiner
     }
 
     /**
-     * The narrowest string type containing both types, when one is a non-falsy lowercase string
+     * The narrowest string type containing both types, when either is only modelled by its refinements: the
+     * refinements both types have
      *
      * @psalm-pure
      */
-    private static function combineNonFalsyLowercaseString(TString $type_1, TString $type_2): TString
+    private static function combineRefinedStrings(TString $type_1, TString $type_2): TString
     {
-        if (!$type_1 instanceof TNonFalsyLowercaseString) {
-            [$type_1, $type_2] = [$type_2, $type_1];
-        }
+        $refinements = StringRefinement::getImplied($type_1) & StringRefinement::getImplied($type_2);
 
-        if ($type_2 instanceof TNonFalsyLowercaseString) {
-            return $type_1;
-        }
+        // the refinements shared by two string types, without the literal one, always make a string type
+        $type = StringRefinement::getType($refinements & ~StringRefinement::LITERAL);
+        assert($type !== null);
 
-        if ($type_2 instanceof TLiteralString) {
-            $non_empty = $type_2->value !== '';
-            $non_falsy = $non_empty && $type_2->value !== '0';
-            $lowercase = strtolower($type_2->value) === $type_2->value;
-        } else {
-            $non_empty = $type_2 instanceof TNonEmptyString;
-            $non_falsy = $type_2 instanceof TNonFalsyString;
-            $lowercase = $type_2 instanceof TLowercaseString || $type_2 instanceof TNonEmptyLowercaseString;
-        }
-
-        if ($lowercase) {
-            if ($non_falsy) {
-                return $type_1;
-            }
-
-            return $non_empty ? new TNonEmptyLowercaseString() : new TLowercaseString();
-        }
-
-        if ($non_falsy) {
-            return new TNonFalsyString();
-        }
-
-        return $non_empty ? new TNonEmptyString() : new TString();
+        return $type;
     }
 
     private static function scrapeIntProperties(
