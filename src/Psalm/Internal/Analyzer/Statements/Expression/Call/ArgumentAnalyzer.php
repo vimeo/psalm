@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -1937,9 +1938,11 @@ final class ArgumentAnalyzer
 
                 $dispatch_node = DataFlowNode::getForDispatch($cased_method_id, $param_offset, $specialize_taint);
 
-                // the first of these calls links it to the overrides
-                if (!$taint_flow_graph->hasNode($dispatch_node)) {
-                    $taint_flow_graph->addNode($dispatch_node);
+                if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
+                    $dispatch_node = null;
+                } elseif (!$taint_flow_graph->hasNode($dispatch_node)) {
+                    // the first of these calls links it to the methods that may run
+                    $new_sinks = [];
 
                     $cased_method_name = explode('::', $cased_method_id)[1];
                     $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
@@ -1960,26 +1963,28 @@ final class ArgumentAnalyzer
                             && $codebase->methods->hasStorage($dependent_declaring_method_id)
                             ? $codebase->methods->getStorage($dependent_declaring_method_id)
                             : null;
+                        $is_override = $dependent_appearing_method_id !== null
+                            && (string) $dependent_appearing_method_id !== (string) $appearing_method_id;
 
-                        if ($specialize_taint) {
-                            // a specialized call takes the method itself through its own parameter: only the
-                            // overrides, which it used not to take at all
-                            if ($dependent_appearing_method_id === null
-                                || (string) $dependent_appearing_method_id === (string) $appearing_method_id
-                            ) {
-                                continue;
-                            }
+                        // a specialized call takes the method itself through its own parameter: only the overrides,
+                        // which it used not to take at all
+                        if ($specialize_taint && !$is_override) {
+                            continue;
                         }
 
                         // The parameter of an override specialized by call, in the specialization keyed by the
                         // location of the method, which the dispatch of its returns leaves (see
                         // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
                         // argument then reaches the call.
-                        if ($dependent_storage
-                            && $dependent_storage->specialize_call
+                        if ($is_override
+                            && $dependent_storage
                             && $dependent_storage->location
-                            && $dependent_appearing_method_id !== null
-                            && (string) $dependent_appearing_method_id !== (string) $appearing_method_id
+                            && TaintFlowGraph::isCallSpecialized(
+                                $taint_flow_graph,
+                                $codebase,
+                                $dependent_storage,
+                                $dependent_storage->location,
+                            )
                         ) {
                             $new_sink = DataFlowNode::getForMethodArgument(
                                 FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id),
@@ -2005,8 +2010,20 @@ final class ArgumentAnalyzer
                             );
                         }
 
-                        $taint_flow_graph->addNode($new_sink);
-                        $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
+                        $new_sinks[$new_sink->id] = $new_sink;
+                    }
+
+                    if ($new_sinks === []) {
+                        // no override may run: the classes extending this one inherit the method
+                        $taint_flow_graph->addEmptyDispatch($dispatch_node);
+                        $dispatch_node = null;
+                    } else {
+                        $taint_flow_graph->addNode($dispatch_node);
+
+                        foreach ($new_sinks as $new_sink) {
+                            $taint_flow_graph->addNode($new_sink);
+                            $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
+                        }
                     }
                 }
             }

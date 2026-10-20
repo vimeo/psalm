@@ -4128,7 +4128,34 @@ final class TaintTest extends TestCase
 
                     $tainted = new Child((string) $_GET["value"]);
                     $clean = new Child("clean");
+                    $x = $tainted->me();
                     echo $clean->me()->value;',
+            ],
+            'dontTaintWhatAnOverrideSpecializedByInstanceReturnsOfAnotherObjectThroughAVirtualCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(public string $value) {}
+
+                        public function get(): string {
+                            return "literal";
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        public function get(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    function show(Base $base): string {
+                        return $base->get();
+                    }
+
+                    show(new Child((string) $_GET["value"]));
+                    echo show(new Child("clean"));',
             ],
             'dontTaintTheResultOfAParentCallWithTheReturnOfASiblingOverride' => [
                 'code' => '<?php

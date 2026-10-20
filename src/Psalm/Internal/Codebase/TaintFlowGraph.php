@@ -153,6 +153,16 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $empty_arrays = [];
 
     /**
+     * The ids of the nodes the virtual calls of a method would dispatch to its overrides through, when no class
+     * extending its class overrides it (see MethodCallReturnTypeFetcher::getReturnDispatchNode()): not added, so that
+     * the calls don't go to a node going nowhere, but remembered, so that they don't look for the overrides again. Only
+     * used while analysing, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $empty_dispatches = [];
+
+    /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
      * specialization key => (function-like node of the callee => true)
      *
@@ -558,6 +568,24 @@ final class TaintFlowGraph extends DataFlowGraph
     public function isEmptyArray(string $node_id): bool
     {
         return isset($this->empty_arrays[$node_id]);
+    }
+
+    /**
+     * Records that the virtual calls would dispatch nothing through $node: no override may run instead of the method
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addEmptyDispatch(DataFlowNode $node): void
+    {
+        $this->empty_dispatches[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmptyDispatch(DataFlowNode $node): bool
+    {
+        return isset($this->empty_dispatches[$node->id]);
     }
 
     /**
