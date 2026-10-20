@@ -211,6 +211,77 @@ final class CodebaseTest extends TestCase
         self::assertSame('j', $file_storage->custom_metadata['i']);
     }
 
+    /**
+     * @param array<int, string> $arg_types
+     */
+    #[DataProvider('receiverTaintPaths')]
+    #[Test]
+    public function getReceiverTaintPath(string $method_id, array $arg_types, ?string $expected): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+
+                /**
+                 * @extends \ArrayObject<string, string>
+                 * @psalm-capabilities read-props|write-this-props
+                 */
+                class Items extends \ArrayObject {}
+
+                /** @psalm-capabilities read-props|write-this-props */
+                class MoreItems extends Items {}',
+        );
+
+        $this->analyzeFile('somefile.php', new Context);
+
+        self::assertSame(
+            $expected,
+            $this->codebase->getReceiverTaintPath($method_id, array_map(Type::parseString(...), $arg_types)),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, array<int, string>, ?string}>
+     * @psalm-mutation-free
+     */
+    public static function receiverTaintPaths(): iterable
+    {
+        yield 'whole object' => ['ArrayObject::getArrayCopy', [], '='];
+        yield 'element' => ['ArrayIterator::current', [], 'arrayvalue-fetch'];
+        yield 'key' => ['ArrayIterator::key', [], 'arraykey-fetch'];
+        yield 'element of an unknown key' => ['ArrayObject::offsetGet', ['string'], 'arrayvalue-fetch'];
+        yield 'element of a literal string key' => [
+            'ArrayObject::offsetGet',
+            ["'a'"],
+            "arrayvalue-fetch-'a'",
+        ];
+        yield 'element of a literal int key' => [
+            'ArrayObject::offsetGet',
+            ['1'],
+            "arrayvalue-fetch-'1'",
+        ];
+        yield 'literal argument that is not a key' => [
+            'ArrayIterator::current',
+            ["'a'"],
+            'arrayvalue-fetch',
+        ];
+        yield 'method of a parent class' => ['Psalm\\CurrentTest\\Items::getArrayCopy', [], '='];
+        yield 'method of a grandparent class' => [
+            'Psalm\\CurrentTest\\MoreItems::offsetGet',
+            ["'a'"],
+            "arrayvalue-fetch-'a'",
+        ];
+        yield 'method keeping its arguments' => ['ArrayObject::offsetSet', [], null];
+        yield 'method giving back nothing' => ['ArrayObject::count', [], null];
+        yield 'method of a class with no paths' => ['Psalm\\CurrentTest\\Items::undefined', [], null];
+        yield 'yielded value' => ['Generator::current', [], 'arrayvalue-fetch'];
+        yield 'yielded value after a send' => ['Generator::send', ["'a'"], 'arrayvalue-fetch'];
+        yield 'yielded key' => ['Generator::key', [], 'arraykey-fetch'];
+        yield 'returned value' => ['Generator::getReturn', [], 'return'];
+        yield 'generator method giving back nothing' => ['Generator::rewind', [], null];
+    }
+
     #[Test]
     public function classExtendsRejectsUnpopulatedClasslikes(): void
     {

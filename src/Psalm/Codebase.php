@@ -27,6 +27,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -738,6 +739,25 @@ final class Codebase
     {
         // the built-in aliases are always registered, this is for Psalm
         return $this->taint_map['input'] ?? TaintKind::ALL_INPUT;
+    }
+
+    /**
+     * The path along which the taints of the object a method of a builtin class is called on flow into what the
+     * method returns, as taint analysis follows a call of it: `=` for all of it (ArrayObject::getArrayCopy()),
+     * `arrayvalue-fetch` for its elements (ArrayIterator::current(), Generator::current() and Generator::send(), what
+     * the generator yields), `arraykey-fetch` for its keys (ArrayIterator::key(), Generator::key()), `return` for what
+     * a generator returns (Generator::getReturn()). A method of a class extending a builtin class follows the closest
+     * class having such a path for it. Null if the method gives back none of what its object holds: then only its
+     * body or its `@psalm-flow` annotations can return it.
+     *
+     * @param array<int, Union> $arg_types the types of the arguments of the call, by offset: when the method takes the
+     *   key of the element it returns, like ArrayObject::offsetGet(), a literal key restricts the path to that element
+     *   (`arrayvalue-fetch-'key'`), as with `$array['key']`
+     * @return ?non-empty-string
+     */
+    public function getReceiverTaintPath(string|MethodIdentifier $method_id, array $arg_types = []): ?string
+    {
+        return NativeClassTaintAnalyzer::getReturnPath($this, MethodIdentifier::wrap($method_id), $arg_types);
     }
 
     /**
