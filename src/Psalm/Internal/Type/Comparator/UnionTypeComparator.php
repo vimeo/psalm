@@ -9,11 +9,14 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -147,6 +150,36 @@ final class UnionTypeComparator
                     if ($template_type->as->isArrayKey()) {
                         continue 2;
                     }
+                }
+            }
+
+            if ($input_type_part instanceof TIterable
+                && !$input_type_part->extra_types
+                && $container_type->hasArray()
+                && $container_type->containsClassLike('traversable')
+            ) {
+                // an iterable is an array or a Traversable
+                [$key_type, $value_type] = $input_type_part->type_params;
+
+                if (self::isContainedBy(
+                    $codebase,
+                    new Union([
+                        new TArray([
+                            self::isContainedBy($codebase, $key_type, Type::getArrayKey())
+                                ? $key_type
+                                : Type::getArrayKey(),
+                            $value_type,
+                        ]),
+                        new TGenericObject('Traversable', [$key_type, $value_type]),
+                    ]),
+                    $container_type,
+                    $ignore_null,
+                    $ignore_false,
+                    $union_comparison_result,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    continue;
                 }
             }
 
@@ -295,13 +328,6 @@ final class UnionTypeComparator
                     && $container_type->hasString()
                     && $container_type->hasInt()
                     && $container_type->hasFloat()
-                ) {
-                    $scalar_type_match_found = false;
-                    $is_atomic_contained_by = true;
-                }
-
-                if ($input_type_part instanceof Atomic\TIterable
-                    && ($container_type->hasArray() || $container_type->containsClassLike('traversable'))
                 ) {
                     $scalar_type_match_found = false;
                     $is_atomic_contained_by = true;

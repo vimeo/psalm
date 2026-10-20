@@ -200,6 +200,56 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$d===' => "'A'|'B'",
                 ],
             ],
+            'conditionalReturnTypeOnArrayThatMayBeEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $x
+                     * @return (T is non-empty-array ? "ne" : "e")
+                     */
+                    function emptiness(array $x): string {
+                        return $x ? "ne" : "e";
+                    }
+
+                    /**
+                     * @param mixed $mixed
+                     * @param array<string, int> $typed
+                     */
+                    function f($mixed, array $untyped, array $typed): void {
+                        /** @psalm-suppress MixedArgument */
+                        $a = emptiness($mixed);
+                        /** @psalm-check-type-exact $a = "e"|"ne" */
+                        /** @psalm-suppress MixedArgumentTypeCoercion */
+                        $b = emptiness($untyped);
+                        /** @psalm-check-type-exact $b = "e"|"ne" */
+                        $c = emptiness($typed);
+                        /** @psalm-check-type-exact $c = "e"|"ne" */
+                        $d = emptiness(["a" => 1]);
+                        /** @psalm-check-type-exact $d = "ne" */
+                    }',
+            ],
+            'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of iterable<mixed>
+                     * @param T $x
+                     * @return (T is array<array-key, mixed> ? "Y" : "N")
+                     */
+                    function isArray(iterable $x): string {
+                        return is_array($x) ? "Y" : "N";
+                    }
+
+                    /** @param mixed $mixed */
+                    function f($mixed, iterable $iterable): void {
+                        /** @psalm-suppress MixedArgument */
+                        $a = isArray($mixed);
+                        /** @psalm-check-type-exact $a = "N"|"Y" */
+                        $b = isArray($iterable);
+                        /** @psalm-check-type-exact $b = "N"|"Y" */
+                        $c = isArray([1]);
+                        /** @psalm-check-type-exact $c = "Y" */
+                    }',
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**

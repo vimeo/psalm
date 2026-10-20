@@ -10,6 +10,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
@@ -20,6 +21,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
@@ -534,6 +536,12 @@ final class TemplateInferredTypeReplacer
                 );
 
                 if ($if_part === null) {
+                    // only a candidate that can't be of the condition is decidably in the else branch: the
+                    // intersection of some overlapping types is unknown
+                    if (!self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                        $is_decidable = false;
+                    }
+
                     continue;
                 }
 
@@ -648,5 +656,52 @@ final class TemplateInferredTypeReplacer
         }
 
         return self::replace($branch_type, $refined_template_result, $codebase);
+    }
+
+    /**
+     * Whether no value of $candidate is of $conditional_type
+     */
+    private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
+    {
+        // the empty array is never a non-empty one, nor the reverse
+        if (self::isEmptyArray($candidate) || self::isNonEmptyArray($candidate)) {
+            $all_disjoint = true;
+
+            foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
+                if (!(self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
+                    && !(self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
+                ) {
+                    $all_disjoint = false;
+                    break;
+                }
+            }
+
+            if ($all_disjoint) {
+                return true;
+            }
+        }
+
+        return !UnionTypeComparator::canExpressionTypesBeIdentical(
+            $codebase,
+            new Union([$candidate]),
+            $conditional_type,
+            false,
+        );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isEmptyArray(Atomic $type): bool
+    {
+        return $type instanceof TArray && $type->isEmptyArray();
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isNonEmptyArray(Atomic $type): bool
+    {
+        return $type instanceof TNonEmptyArray || ($type instanceof TKeyedArray && $type->isNonEmpty());
     }
 }
