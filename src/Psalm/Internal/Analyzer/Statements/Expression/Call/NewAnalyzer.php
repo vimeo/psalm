@@ -51,6 +51,7 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TAnonymousClassInstance;
+use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TDependentGetClass;
@@ -577,7 +578,14 @@ final class NewAnalyzer extends CallAnalyzer
             if ($storage->template_types) {
                 $unconstrainable_templates = null;
 
-                foreach ($storage->template_types as $template_name => $base_type) {
+                foreach ($storage->template_types as $template_name => $_) {
+                    $constraint = self::getConstructedTemplateConstraint(
+                        $codebase,
+                        $storage,
+                        $template_name,
+                        $template_result,
+                    );
+
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
@@ -591,64 +599,17 @@ final class NewAnalyzer extends CallAnalyzer
                         // bounds as lower bounds and the declared constraint as an upper
                         // bound; the bounds reconcile when the surrounding function-like
                         // has been analyzed.
-                        // the constraint may name the class's other templates
-                        // (`TIterator as Traversable<TKey, TValue>`): those are what the
-                        // arguments bound them to
-                        $constraint = TemplateInferredTypeReplacer::replace(
-                            array_values($base_type)[0],
-                            $template_result,
-                            $codebase,
-                        );
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
                         if (!isset($unconstrainable_templates[$template_name])) {
-                            $new_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                            $lower_bounds = [];
-
-                            foreach ($template_result->lower_bounds[$template_name][$fq_class_name] as $arg_bound) {
-                                // the appearance depth is normalized: the inference is
-                                // lifted onto the variable itself, where it competes with
-                                // the (depth-0) bounds later code records
-                                $lower_bounds[] = new TemplateBound(
-                                    $arg_bound->type,
-                                    0,
-                                    $arg_bound->arg_offset,
-                                    $arg_bound->equality_bound_classlike,
-                                    $new_location,
-                                );
-                            }
-
-                            $upper_bounds = [new TemplateBound($constraint, 0, null, null, $new_location)];
-
-                            // A constructor argument that binds this template through a
-                            // `class-string<T>` position names the type exactly
-                            // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
-                            // wider): the inferred bounds pin the variable's upper bounds
-                            // too, so a later conflicting use fails reconciliation.
-                            if ($method_storage
-                                && self::templateBoundThroughClassString($method_storage, $template_name)
-                            ) {
-                                foreach ($lower_bounds as $lower_bound) {
-                                    $upper_bounds[] = new TemplateBound(
-                                        $lower_bound->type,
-                                        0,
-                                        $lower_bound->arg_offset,
-                                        null,
-                                        $new_location,
-                                    );
-                                }
-                            }
-
-                            $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
-
-                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                $type_variable_bounds,
+                            $generic_param_type = self::addArgBoundTypeVariable(
+                                $statements_analyzer,
+                                $template_result->lower_bounds[$template_name][$fq_class_name],
+                                $constraint,
+                                $method_storage
+                                    && self::templateBoundThroughClassString($method_storage, $template_name),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                             );
-
-                            $generic_param_type = new Union([
-                                new TTypeVariable($type_variable_name, $type_variable_bounds),
-                            ]);
                         }
                     } elseif (self::isGivenToBoundParentTemplate(
                         $fq_class_name,
@@ -673,7 +634,7 @@ final class NewAnalyzer extends CallAnalyzer
                             ),
                         );
                     } else {
-                        $generic_param_type = array_values($base_type)[0];
+                        $generic_param_type = $constraint;
 
                         // The constructor arguments did not bind this template, but later
                         // code may still constrain it (Hack's `new Foo<_>(...)` model):
@@ -688,25 +649,20 @@ final class NewAnalyzer extends CallAnalyzer
                         $unconstrainable_templates ??= self::getUnconstrainableTemplates($storage);
 
                         if (!isset($unconstrainable_templates[$template_name])) {
-                            $type_variable_bounds = new TypeVariableBounds(
-                                [],
-                                [new TemplateBound(
-                                    $generic_param_type,
-                                    0,
-                                    null,
-                                    null,
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $generic_param_type = self::addTypeVariable(
+                                $statements_analyzer,
+                                new TypeVariableBounds(
+                                    [],
+                                    [new TemplateBound(
+                                        $generic_param_type,
+                                        0,
+                                        null,
+                                        null,
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    ),
+                                    ],
                                 ),
-                                ],
                             );
-
-                            $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable(
-                                $type_variable_bounds,
-                            );
-
-                            $generic_param_type = new Union([
-                                new TTypeVariable($type_variable_name, $type_variable_bounds),
-                            ]);
                         }
                     }
 
@@ -1626,6 +1582,134 @@ final class NewAnalyzer extends CallAnalyzer
         $statements_analyzer->node_data->setType($stmt, $self_out_candidate);
 
         return $self_out_candidate;
+    }
+
+    /**
+     * The constraint of a class template at a construction site. It may name the class's
+     * other templates (`TIterator as Iterator[TPurity]<TKey, TValue>`): those stand for
+     * their own constraints, resolved through one another (`T3 of list<T2>`,
+     * `T2 of list<T1>`), or nothing could satisfy it. A type template the constructor
+     * arguments bound still stands for its constraint, not that binding, since its type
+     * variable can widen past it (`new Box('x')` then `set('y')`); a purity template they
+     * bound stands for that binding, which doesn't widen.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function getConstructedTemplateConstraint(
+        Codebase $codebase,
+        ClassLikeStorage $storage,
+        string $template_name,
+        TemplateResult $template_result,
+    ): Union {
+        $fq_class_name = $storage->name;
+        $sibling_constraints = [];
+
+        foreach ($storage->template_types ?? [] as $sibling_name => $type_map) {
+            if ($sibling_name === $template_name) {
+                continue;
+            }
+
+            $sibling_constraint = array_values($type_map)[0];
+            $sibling_bounds = $template_result->lower_bounds[$sibling_name][$fq_class_name] ?? null;
+
+            $sibling_constraints[$sibling_name] = $sibling_bounds !== null
+                && $sibling_constraint->isSingle()
+                && $sibling_constraint->getSingleAtomic() instanceof TCapabilities
+                ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($sibling_bounds, $codebase)
+                : $sibling_constraint;
+        }
+
+        /** @param array<string, Union> $constraints */
+        $with_siblings = static fn(array $constraints): TemplateResult => new TemplateResult([], array_map(
+            static fn(Union $constraint): array => [$fq_class_name => $constraint],
+            $constraints,
+        ));
+
+        // each pass resolves one more link of a chain of constraints, so one pass per
+        // sibling settles any chain; a cycle (`TA of Box<TB>`, `TB of Box<TA>`) is cut
+        // off there, still naming a template, as is the template itself
+        // (`T of Comparable<T>`)
+        $resolved_constraints = $sibling_constraints;
+
+        foreach ($sibling_constraints as $_) {
+            $sibling_result = $with_siblings($resolved_constraints);
+
+            $resolved_constraints = array_map(
+                static fn(Union $constraint): Union
+                    => TemplateInferredTypeReplacer::replace($constraint, $sibling_result, $codebase),
+                $sibling_constraints,
+            );
+        }
+
+        return TemplateInferredTypeReplacer::replace(
+            array_values($storage->template_types[$template_name] ?? [Type::getMixed()])[0],
+            $with_siblings($resolved_constraints),
+            $codebase,
+        );
+    }
+
+    /**
+     * Mints the type variable for a class template the constructor arguments bound:
+     * those arguments' types below it, its constraint above it.
+     *
+     * @param non-empty-list<TemplateBound> $arg_bounds
+     * @param bool $bound_through_class_string whether an argument binds the template
+     *     through a `class-string<T>` position
+     */
+    private static function addArgBoundTypeVariable(
+        StatementsAnalyzer $statements_analyzer,
+        array $arg_bounds,
+        Union $constraint,
+        bool $bound_through_class_string,
+        CodeLocation $location,
+    ): Union {
+        $lower_bounds = [];
+
+        foreach ($arg_bounds as $arg_bound) {
+            // the appearance depth is normalized: the inference is
+            // lifted onto the variable itself, where it competes with
+            // the (depth-0) bounds later code records
+            $lower_bounds[] = new TemplateBound(
+                $arg_bound->type,
+                0,
+                $arg_bound->arg_offset,
+                $arg_bound->equality_bound_classlike,
+                $location,
+            );
+        }
+
+        $upper_bounds = [new TemplateBound($constraint, 0, null, null, $location)];
+
+        // A constructor argument that binds this template through a
+        // `class-string<T>` position names the type exactly
+        // (`new ReflectionClass(Foo::class)` reflects Foo, nothing
+        // wider): the inferred bounds pin the variable's upper bounds
+        // too, so a later conflicting use fails reconciliation.
+        if ($bound_through_class_string) {
+            foreach ($lower_bounds as $lower_bound) {
+                $upper_bounds[] = new TemplateBound(
+                    $lower_bound->type,
+                    0,
+                    $lower_bound->arg_offset,
+                    null,
+                    $location,
+                );
+            }
+        }
+
+        return self::addTypeVariable($statements_analyzer, new TypeVariableBounds($lower_bounds, $upper_bounds));
+    }
+
+    /**
+     * Mints a type variable with the given bounds in the analyzed function-like.
+     */
+    private static function addTypeVariable(
+        StatementsAnalyzer $statements_analyzer,
+        TypeVariableBounds $bounds,
+    ): Union {
+        return new Union([
+            new TTypeVariable($statements_analyzer->type_variable_tracker->addVariable($bounds), $bounds),
+        ]);
     }
 
     /**

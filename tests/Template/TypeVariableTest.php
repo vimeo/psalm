@@ -23,6 +23,26 @@ final class TypeVariableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unboundConstructorTemplateFollowsAWideningBoundSibling' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TIterator of Iterator<int, TValue>
+                     */
+                    final class Holder {
+                        /** @param TValue $value */
+                        public function __construct($value) {}
+
+                        /** @param TIterator $iterator */
+                        public function put(Iterator $iterator): void {}
+                    }
+
+                    /** @param Iterator<int, int> $ints */
+                    function widened(Iterator $ints): void {
+                        $holder = new Holder("x");
+                        $holder->put($ints);
+                    }',
+            ],
             'possiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -421,6 +441,50 @@ final class TypeVariableTest extends TestCase
                         return new Holder();
                     }',
             ],
+            'unboundConstructorTemplateConstrainedBySiblings' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function good(): void {
+                        $lists = new Lists();
+                        $lists->add([1, 2]);
+                    }
+
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    function chained(): void {
+                        $chain = new Chain();
+                        $chain->add([[1]]);
+                    }
+
+                    /**
+                     * @param Iterator<int, SplFileInfo> $files
+                     */
+                    function append(Iterator $files, RecursiveDirectoryIterator $dir): void {
+                        $all = new AppendIterator();
+                        $all->append($files);
+                        $all->append(new RecursiveIteratorIterator($dir));
+                    }',
+            ],
             'constructorBoundWidening' => [
                 'code' => '<?php
                     /**
@@ -650,6 +714,45 @@ final class TypeVariableTest extends TestCase
                         });
                     }',
                 'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'unboundConstructorTemplateViolatesSiblingConstraint' => [
+                'code' => '<?php
+                    /**
+                     * @template TItem of int
+                     * @template TList as list<TItem>
+                     */
+                    final class Lists {
+                        public function __construct() {}
+
+                        /** @param TList $list */
+                        public function add(array $list): void {}
+                    }
+
+                    function bad(): void {
+                        $lists = new Lists();
+                        $lists->add(["a"]);
+                    }',
+                'error_message' => 'Type list{\'a\'} should be a subtype of list<int',
+            ],
+            'unboundConstructorTemplateViolatesChainedSiblingConstraints' => [
+                'code' => '<?php
+                    /**
+                     * @template T1 of int
+                     * @template T2 of list<T1>
+                     * @template T3 of list<T2>
+                     */
+                    final class Chain {
+                        public function __construct() {}
+
+                        /** @param T3 $lists */
+                        public function add(array $lists): void {}
+                    }
+
+                    function bad(): void {
+                        $chain = new Chain();
+                        $chain->add([["a"]]);
+                    }',
+                'error_message' => 'Type list{list{\'a\'}} should be a subtype of list<list<int',
             ],
             'typeVariableBoundViolation' => [
                 'code' => '<?php
