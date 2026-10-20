@@ -181,6 +181,15 @@ final class TypeTokenizer
             } elseif ($was_space
                 && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
+                // the negated condition of a conditional type, `($a is not int ? A : B)`
+                if (implode('', array_slice($chars, $i, 7)) === 'is not ') {
+                    $type_tokens[++$rtc] = ['is not', $i - 1];
+                    $i += 5;
+                    $type_tokens[++$rtc] = ['', $i];
+                    $was_char = false;
+                    continue;
+                }
+
                 $type_tokens[++$rtc] = [$char . $chars[$i+1], $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
@@ -389,6 +398,7 @@ final class TypeTokenizer
                 $string_type_token[0],
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
+                    'is not',
                     'covariant', 'contravariant',
                 ],
                 true,

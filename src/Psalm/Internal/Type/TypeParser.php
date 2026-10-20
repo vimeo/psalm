@@ -409,6 +409,11 @@ final class TypeParser
                 $else_type = new Union([$else_type], ['from_docblock' => $from_docblock]);
             }
 
+            // `(T is not A ? B : C)` is `(T is A ? C : B)`
+            if ($parse_tree->condition->negated) {
+                [$if_type, $else_type] = [$else_type, $if_type];
+            }
+
             return new TConditional(
                 $template_param_name,
                 $first_class,

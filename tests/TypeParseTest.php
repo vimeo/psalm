@@ -849,6 +849,26 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testConditionalTypeWithNegatedCondition(): void
+    {
+        $this->assertSame(
+            '(T is non-empty-string ? bool : false)',
+            Type::parseString(
+                '(T is not non-empty-string ? false : bool)',
+                null,
+                ['T' => ['' => Type::getString()]],
+            )->getId(),
+        );
+    }
+
+    public function testConditionalTypeWithNullableBranches(): void
+    {
+        $this->assertSame(
+            "(T is 'U' ? int|null : null|string)",
+            Type::parseString('(T is "U" ? ?int : ?string)', null, ['T' => ['' => Type::getString()]])->getId(),
+        );
+    }
+
     public function testConditionalTypeWithIntersection(): void
     {
         $this->assertSame(

@@ -8,6 +8,8 @@ Conditional types have the form:
 
 All conditional types must be wrapped inside brackets e.g. `(...)`
 
+The condition can be negated: `(T is not int ? float : int)` is the same as `(T is int ? int : float)`.
+
 Conditional types are dependent on [template parameters](../templated_annotations.md), so you can only use them in a function where template parameters are defined.
 
 ## Example application

@@ -53,6 +53,44 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$c' => 'array<string, string>|string',
                 ],
             ],
+            'conditionalReturnTypeWithNegatedCondition' => [
+                'code' => '<?php
+                    /**
+                     * @return ($handle is not non-empty-string ? false : ($status is not "registered" ? bool : int))
+                     */
+                    function query(string $handle, string $status = "registered"): int|bool {
+                        return false;
+                    }
+
+                    $a = query("");
+                    $b = query("x");
+                    $c = query("x", "done");',
+                'assertions' => [
+                    '$a===' => 'false',
+                    '$b===' => 'int',
+                    '$c===' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalReturnTypeWithNullableBranches' => [
+                'code' => '<?php
+                    /**
+                     * @return ($format is "U" ? ?int : ?string)
+                     */
+                    function get_date(string $format = "j"): int|string|null {
+                        return null;
+                    }
+
+                    $a = get_date("U");
+                    $b = get_date();',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**
