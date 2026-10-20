@@ -645,6 +645,87 @@ final class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineNumericStringWithNonNumericLiteral' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    "'a'",
+                ],
+            ],
+            'combineDecimalIntStringWithDecimalIntLiteral' => [
+                'decimal-int-string',
+                [
+                    'decimal-int-string',
+                    "'123'",
+                ],
+            ],
+            'combineDecimalIntStringWithNumericLiteral' => [
+                "'1.5'|decimal-int-string",
+                [
+                    'decimal-int-string',
+                    "'1.5'",
+                ],
+            ],
+            'combineDecimalIntStringWithLiterals' => [
+                "'a'|decimal-int-string",
+                [
+                    "'5'",
+                    'decimal-int-string',
+                    "'a'",
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndEmptyLiteralWithNonEmptyString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    "''",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNumericString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'numeric-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNumericString' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNonDecimalIntString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    'non-decimal-int-string',
+                ],
+            ],
+            'combineNonDecimalIntStringWithNonDecimalIntLiteral' => [
+                'non-decimal-int-string',
+                [
+                    'non-decimal-int-string',
+                    "'abc'",
+                ],
+            ],
+            'combineNonDecimalIntStringWithDecimalIntLiteral' => [
+                "'123'|non-decimal-int-string",
+                [
+                    'non-decimal-int-string',
+                    "'123'",
+                ],
+            ],
             'combineClassStringWithNumericString' => [
                 'class-string|numeric-string',
                 [

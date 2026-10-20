@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -706,11 +707,13 @@ final class TKeyedArray extends Atomic
         }
         $fallback_params = $this->fallback_params;
         foreach ($fallback_params ?? [] as $offset => $property) {
-            $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
+            $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
             );
+            // PHP casts a decimal int string key to an int
+            $fallback_params[$offset] = $offset === 0 ? ArrayAnalyzer::castArrayKeyType($property) : $property;
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;

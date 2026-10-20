@@ -888,7 +888,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersArrowClosureReturnTypes' => [
@@ -928,7 +928,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypes' => [
@@ -950,7 +950,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypesWithPartialTypehinting' => [
@@ -972,7 +972,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersObjectShapeOfCastScalar' => [
@@ -1422,6 +1422,23 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'decimalIntStringTypes' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param decimal-int-string $id
+                     * @return array<non-decimal-int-string, int>
+                     */
+                    function ids(string $id): array {
+                        throw new \\RuntimeException($id);
+                    }
+
+                    $a = ids("1");',
+                'assertions' => [
+                    '$a===' => 'array<non-decimal-int-string, int>',
+                ],
             ],
             'nonEmptyStringLowercaseStringIntersection' => [
                 'code' => '<?php

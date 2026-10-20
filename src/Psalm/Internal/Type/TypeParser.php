@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
@@ -816,6 +817,14 @@ final class TypeParser
                     $builder = $generic_params[0]->getBuilder();
                     $builder->removeType($key);
                     $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
+                // PHP casts a decimal int string key to an int
+                if ($atomic_type instanceof TDecimalIntString) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TInt($from_docblock))->freeze();
                     continue;
                 }
 
@@ -1873,11 +1882,11 @@ final class TypeParser
                     $property_key = $property_branch->value;
                 }
                 if ($is_list && (
-                        ArrayAnalyzer::getLiteralArrayKeyInt($property_key) === false
+                        ($int_property_key = ArrayAnalyzer::getLiteralArrayKeyInt($property_key)) === false
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'
-                        || $previous_property_key != ($property_key - 1)
+                        || $previous_property_key != ($int_property_key - 1)
                     )
                 ) {
                     $is_list = false;

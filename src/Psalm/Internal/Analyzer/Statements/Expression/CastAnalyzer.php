@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -745,52 +746,11 @@ final class CastAnalyzer
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            if ($atomic_type instanceof TFloat
-                || $atomic_type instanceof TInt
-                || $atomic_type instanceof TNumeric
-            ) {
-                if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
-                    $castable_types[] = new TNonspecificLiteralString();
-                } elseif ($atomic_type instanceof TIntRange
-                    && $atomic_type->min_bound !== null
-                    && $atomic_type->max_bound !== null
-                    && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
-                ) {
-                    foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
-                        $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
-                    }
-                } else {
-                    $castable_types[] = new TNumericString();
-                }
+            $scalar_strings = self::castScalarToString($atomic_type);
 
-                continue;
-            }
+            if ($scalar_strings !== null) {
+                $valid_strings = [...$valid_strings, ...$scalar_strings];
 
-            if ($atomic_type instanceof TString) {
-                $valid_strings[] = $atomic_type;
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull
-                || $atomic_type instanceof TFalse
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
-                continue;
-            }
-
-            if ($atomic_type instanceof TTrue
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                continue;
-            }
-
-            if ($atomic_type instanceof TBool
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
@@ -938,6 +898,100 @@ final class CastAnalyzer
             'string',
             $stmt_type,
         );
+    }
+
+    /**
+     * The strings a scalar or null is cast to, e.g. `'5'` for `5` and `decimal-int-string` for `int`, or null if
+     * $atomic_type is neither
+     *
+     * @return list<Atomic>|null
+     */
+    public static function castScalarToString(Atomic $atomic_type): ?array
+    {
+        if ($atomic_type instanceof TFloat
+            || $atomic_type instanceof TInt
+            || $atomic_type instanceof TNumeric
+        ) {
+            if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
+                return [Type::getAtomicStringFromLiteral((string) $atomic_type->value)];
+            }
+
+            if ($atomic_type instanceof TNonspecificLiteralInt) {
+                return [new TNonspecificLiteralString()];
+            }
+
+            if ($atomic_type instanceof TIntRange
+                && $atomic_type->min_bound !== null
+                && $atomic_type->max_bound !== null
+                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+            ) {
+                $strings = [];
+                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                    $strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
+                }
+
+                return $strings;
+            }
+
+            // an int is cast to its canonical decimal form
+            if ($atomic_type instanceof TInt) {
+                return [new TDecimalIntString()];
+            }
+
+            // a float is numeric unless it is infinite or not a number
+            return [
+                new TNumericString(),
+                Type::getAtomicStringFromLiteral('INF'),
+                Type::getAtomicStringFromLiteral('-INF'),
+                Type::getAtomicStringFromLiteral('NAN'),
+            ];
+        }
+
+        if ($atomic_type instanceof TString) {
+            return [$atomic_type];
+        }
+
+        if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+            return [Type::getAtomicStringFromLiteral('')];
+        }
+
+        if ($atomic_type instanceof TTrue) {
+            return [Type::getAtomicStringFromLiteral('1')];
+        }
+
+        if ($atomic_type instanceof TBool) {
+            return [Type::getAtomicStringFromLiteral('1'), Type::getAtomicStringFromLiteral('')];
+        }
+
+        return null;
+    }
+
+    /**
+     * What an object is cast to: what the __toString of its class returns, or null if it has none
+     */
+    public static function castObjectToString(
+        Codebase $codebase,
+        TNamedObject|TObjectWithProperties $atomic_type,
+    ): ?Union {
+        foreach ([$atomic_type, ...array_values($atomic_type->extra_types)] as $intersection_type) {
+            if ($intersection_type instanceof TNamedObject) {
+                $to_string_id = new MethodIdentifier($intersection_type->value, '__tostring');
+
+                if ($codebase->methodExists($to_string_id)) {
+                    $self_class = null;
+
+                    return $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+                }
+            }
+
+            if ($intersection_type instanceof TObjectWithProperties
+                && isset($intersection_type->methods['__tostring'])
+            ) {
+                return Type::getString();
+            }
+        }
+
+        return null;
     }
 
     /**
