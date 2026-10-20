@@ -195,6 +195,7 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'string':
             case 'uppercase-string': // TODO implement TUppercaseString
+            case 'non-decimal-int-string': // a string that isn't cast to an int when used as an array key
                 return new TString();
 
             case 'bool':
@@ -400,6 +401,7 @@ abstract class Atomic implements TypeNode, Stringable
                 return new TCallableString();
 
             case 'numeric-string':
+            case 'decimal-int-string': // a string that is cast to an int when used as an array key
                 return new TNumericString();
 
             case 'literal-string':

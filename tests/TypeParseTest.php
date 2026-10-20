@@ -448,6 +448,19 @@ final class TypeParseTest extends TestCase
         $this->assertSame('-1|PHP_URL_*', Type::parseString('-1|PHP_URL_*')->getId());
     }
 
+    public function testDecimalIntString(): void
+    {
+        $this->assertSame('numeric-string', Type::parseString('decimal-int-string')->getId());
+    }
+
+    public function testNonDecimalIntString(): void
+    {
+        $this->assertSame(
+            'array<string, int>',
+            Type::parseString('array<non-decimal-int-string, int>')->getId(),
+        );
+    }
+
     public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, list{int}>', Type::parseString('iterable<string, array{int}>')->getId());

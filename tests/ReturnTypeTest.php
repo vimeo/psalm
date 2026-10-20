@@ -1423,6 +1423,23 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'decimalIntStringTypes' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param decimal-int-string $id
+                     * @return array<non-decimal-int-string, int>
+                     */
+                    function ids(string $id): array {
+                        return ["id_" . $id => (int) $id];
+                    }
+
+                    $a = ids("1");',
+                'assertions' => [
+                    '$a' => 'array<string, int>',
+                ],
+            ],
             'nonEmptyStringLowercaseStringIntersection' => [
                 'code' => '<?php
                     /**
