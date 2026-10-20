@@ -1,0 +1,38 @@
+name: Automatic release
+
+# Releases master and 6.x every hour when they have unreleased commits and all checks of their head passed;
+# see bin/ci/auto-release.php. Scheduled workflows only run from the default branch, which releases both.
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.repository == 'vimeo/psalm'
+    permissions:
+      contents: write # to tag and publish releases
+      actions: write # to dispatch the phar and docker builds of the release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          fetch-depth: 0 # for the tags of every branch
+
+      - name: Release
+        run: php bin/ci/auto-release.php master 6.x
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
