@@ -193,6 +193,40 @@ final class AnnotationTest extends TestCase
                     '$_a' => 'int',
                 ],
             ],
+            'wordPressHashNotationAfterReturnAndVarType' => [
+                'code' => '<?php
+                    /**
+                     * @return array<string, mixed> {
+                     *     Output of the process.
+                     *
+                     *     @type string $stdout    Output that was sent to STDOUT.
+                     *     @type int    $exit_code Exit code of the process.
+                     * }
+                     */
+                    function run(): array {
+                        return ["stdout" => "", "exit_code" => 0];
+                    }
+
+                    final class Db {
+                        /**
+                         * @var array[] {
+                         *     Array of queries that were executed.
+                         *
+                         *     @type array ...$0 {
+                         *         @type string $0 The query.
+                         *     }
+                         * }
+                         */
+                        public array $queries = [];
+                    }
+
+                    $a = run();
+                    $b = (new Db)->queries;',
+                'assertions' => [
+                    '$a' => 'array<string, mixed>',
+                    '$b' => 'array<array-key, array<array-key, mixed>>',
+                ],
+            ],
             'validDocblockReturn' => [
                 'code' => '<?php
                     /**

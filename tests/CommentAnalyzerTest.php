@@ -207,6 +207,31 @@ final class CommentAnalyzerTest extends BaseTestCase
                     EOT,
                 ],
             ],
+            'wordPressHashNotation' => [
+                'doc_line' =>
+                    'array {
+                     *     Output of the process.
+                     *',
+                'expected' => [
+                    'array',
+                    '{',
+                    'Output',
+                    'of',
+                    'the',
+                    'process.',
+                ],
+            ],
+            'wordPressHashNotationAfterGeneric' => [
+                'doc_line' =>
+                    'array<string, mixed> {
+                     *     Arguments.
+                     *',
+                'expected' => [
+                    'array<string, mixed>',
+                    '{',
+                    'Arguments.',
+                ],
+            ],
             'func_num_args' => [
                 'doc_line' =>
                     '(

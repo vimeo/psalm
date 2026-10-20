@@ -382,7 +382,7 @@ final class CommentAnalyzer
                     continue;
                 }
 
-                if ($next_char === '{') {
+                if ($next_char === '{' && !self::isHashNotation($return_block, $i + 1)) {
                     $type .= ' ';
                     continue;
                 }
@@ -430,6 +430,35 @@ final class CommentAnalyzer
         }
 
         return [$type];
+    }
+
+    /**
+     * Whether the braces opening at $offset hold a description in the WordPress hash notation
+     * (`@return array {` followed by `@type` entries) rather than an array shape: an array
+     * shape is closed, and holds neither tags nor variables.
+     *
+     * @psalm-pure
+     */
+    private static function isHashNotation(string $docblock, int $offset): bool
+    {
+        $depth = 0;
+
+        for ($i = $offset, $l = strlen($docblock); $i < $l; ++$i) {
+            $char = $docblock[$i];
+
+            if ($char === '@' || $char === '$') {
+                return true;
+            }
+
+            if ($char === '{') {
+                ++$depth;
+            } elseif ($char === '}' && --$depth === 0) {
+                return false;
+            }
+        }
+
+        // the `@type` entries of the hash are tags of their own, so the braces are left unclosed
+        return true;
     }
 
     /** @return list<VarDocblockComment> */
