@@ -2063,6 +2063,10 @@ final class AssertionFinder
             } elseif ($first_var_type
                 && $codebase
                 && $assertion_type instanceof IsType
+                // these assertions only hold one way (ctype_digit("-5") is false),
+                // so containment in the asserted type doesn't make the call redundant
+                && $function_name !== 'ctype_digit'
+                && $function_name !== 'ctype_lower'
             ) {
                 self::processIrreconcilableFunctionCall(
                     $first_var_type,
