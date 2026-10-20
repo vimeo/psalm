@@ -26,6 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -34,6 +35,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -247,6 +249,42 @@ final class ArrayAnalyzer
         return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
     }
 
+    /**
+     * The type of an array key after PHP casts decimal int strings to ints, e.g. `'5'` to `5` and
+     * `decimal-int-string` to `int`
+     *
+     * @psalm-pure
+     */
+    public static function castArrayKeyType(Union $key_type): Union
+    {
+        // an int contains every literal int
+        $has_int = $key_type->hasType('int') || $key_type->hasType('decimal-int-string');
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($key_type->getAtomicTypes() as $key => $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString) {
+                $atomic_type = new TInt($atomic_type->from_docblock);
+                $key = 'int';
+                $changed = true;
+            } elseif ($atomic_type instanceof TLiteralString
+                && !$atomic_type instanceof TLiteralClassString
+                && ($int_key = self::getLiteralArrayKeyInt($atomic_type->value)) !== false
+            ) {
+                $atomic_type = $has_int ? new TInt($atomic_type->from_docblock) : new TLiteralInt(
+                    $int_key,
+                    $atomic_type->from_docblock,
+                );
+                $key = $atomic_type->getKey();
+                $changed = true;
+            }
+
+            $atomic_types[$key] ??= $atomic_type;
+        }
+
+        return $changed ? $key_type->setTypes($atomic_types) : $key_type;
+    }
+
     private static function analyzeArrayItem(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -309,12 +347,7 @@ final class ArrayAnalyzer
                     $key_type = Type::getString('');
                 }
 
-                // PHP casts a decimal int string key to an int
-                if ($key_type->hasType('decimal-int-string')) {
-                    $key_type_builder = $key_type->getBuilder();
-                    $key_type_builder->removeType('decimal-int-string');
-                    $key_type = $key_type_builder->addType(new TInt())->freeze();
-                }
+                $key_type = self::castArrayKeyType($key_type);
 
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
                     && self::getLiteralArrayKeyInt($item->key->value) !== false

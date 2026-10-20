@@ -645,6 +645,13 @@ final class TypeCombinationTest extends TestCase
                     'Exception::class',
                 ],
             ],
+            'combineNumericStringWithNonNumericLiteral' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    "'a'",
+                ],
+            ],
             'combineDecimalIntStringWithDecimalIntLiteral' => [
                 'decimal-int-string',
                 [
@@ -653,10 +660,42 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineDecimalIntStringWithNumericLiteral' => [
-                'numeric-string',
+                "'1.5'|decimal-int-string",
                 [
                     'decimal-int-string',
                     "'1.5'",
+                ],
+            ],
+            'combineDecimalIntStringWithLiterals' => [
+                "'a'|decimal-int-string",
+                [
+                    "'5'",
+                    'decimal-int-string',
+                    "'a'",
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndEmptyLiteralWithNonEmptyString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    "''",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNumericString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'numeric-string',
                 ],
             ],
             'combineDecimalIntStringWithNumericString' => [
@@ -681,7 +720,7 @@ final class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonDecimalIntStringWithDecimalIntLiteral' => [
-                'string',
+                "'123'|non-decimal-int-string",
                 [
                     'non-decimal-int-string',
                     "'123'",

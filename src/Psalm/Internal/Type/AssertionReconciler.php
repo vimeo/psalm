@@ -35,8 +35,10 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -50,6 +52,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -60,6 +63,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -966,11 +970,57 @@ final class AssertionReconciler extends Reconciler
             $matching_atomic_type = new TNonEmptyLowercaseString();
         }
 
+        if ($matching_atomic_type === null) {
+            $matching_atomic_type = self::intersectDecimalIntString($type_1_atomic, $type_2_atomic);
+        }
+
         if (!$atomic_comparison_results->type_coerced && $atomic_comparison_results->scalar_type_match_found) {
             $any_scalar_type_match_found = true;
         }
 
         return $matching_atomic_type;
+    }
+
+    /**
+     * A type containing the values that a decimal-int-string or a non-decimal-int-string shares with another string
+     * type when neither contains the other: the decimal-int-string itself (e.g. for a non-falsy-string, still with "0"),
+     * or the other type for a non-decimal-int-string (e.g. a numeric-string, still with "1")
+     *
+     * @psalm-pure
+     */
+    private static function intersectDecimalIntString(Atomic $type_1_atomic, Atomic $type_2_atomic): ?Atomic
+    {
+        if (!$type_1_atomic instanceof TString
+            || !$type_2_atomic instanceof TString
+            || $type_1_atomic instanceof TLiteralString
+            || $type_2_atomic instanceof TLiteralString
+        ) {
+            return null;
+        }
+
+        if ($type_2_atomic instanceof TDecimalIntString || $type_2_atomic instanceof TNonDecimalIntString) {
+            [$type_1_atomic, $type_2_atomic] = [$type_2_atomic, $type_1_atomic];
+        }
+
+        if ($type_2_atomic instanceof TDecimalIntString || $type_2_atomic instanceof TNonDecimalIntString) {
+            // a decimal-int-string and a non-decimal-int-string share no value
+            return null;
+        }
+
+        if ($type_1_atomic instanceof TNonDecimalIntString) {
+            return $type_2_atomic;
+        }
+
+        if ($type_1_atomic instanceof TDecimalIntString
+            // no class, function or trait name is a decimal int
+            && !$type_2_atomic instanceof TClassString
+            && !$type_2_atomic instanceof TCallableString
+            && !$type_2_atomic instanceof TTraitString
+        ) {
+            return $type_1_atomic;
+        }
+
+        return null;
     }
 
     private static function refineContainedAtomicWithAnother(

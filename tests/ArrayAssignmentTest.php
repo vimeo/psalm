@@ -83,6 +83,77 @@ final class ArrayAssignmentTest extends TestCase
                     '$h===' => "'12'|null",
                 ],
             ],
+            'decimalIntStringKeysOfInferredArraysAreInts' => [
+                'code' => '<?php
+                    /** @return decimal-int-string */
+                    function decimalInt(): string {
+                        return "12";
+                    }
+
+                    /** @return non-decimal-int-string */
+                    function nonDecimalInt(): string {
+                        return "abc";
+                    }
+
+                    $flipped = array_flip([decimalInt()]);
+                    $filled = array_fill_keys([decimalInt()], 1);
+                    $combined = array_combine([decimalInt()], [1]);
+                    $kept = array_flip([nonDecimalInt()]);',
+                'assertions' => [
+                    '$flipped===' => 'non-empty-array<int, 0>',
+                    '$filled===' => 'array<int, 1>',
+                    '$combined===' => 'false|non-empty-array<int, 1>',
+                    '$kept===' => 'non-empty-array<non-decimal-int-string, 0>',
+                ],
+            ],
+            'decimalIntStringKeysAreIntsInEveryArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Id = decimal-int-string
+                     */
+                    final class A {
+                        /** @return array<Id, int> */
+                        public static function aliased(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return non-empty-array<decimal-int-string, int> */
+                    function nonEmpty(): array {
+                        return [1];
+                    }
+
+                    /** @return array{a: int, ...<decimal-int-string, int>} */
+                    function unsealed(): array {
+                        return ["a" => 1];
+                    }
+
+                    /** @return array<decimal-int-string|"a", int> */
+                    function withLiteral(): array {
+                        return [];
+                    }
+
+                    /** @return iterable<decimal-int-string, int> */
+                    function generator(): iterable {
+                        yield "1" => 1;
+                    }
+
+                    foreach (A::aliased() as $aliased => $_) {
+                        /** @psalm-check-type-exact $aliased = int */
+                    }
+                    foreach (nonEmpty() as $non_empty => $_) {
+                        /** @psalm-check-type-exact $non_empty = int */
+                    }
+                    foreach (unsealed() as $unsealed => $_) {
+                        /** @psalm-check-type-exact $unsealed = "a"|int */
+                    }
+                    foreach (withLiteral() as $with_literal => $_) {
+                        /** @psalm-check-type-exact $with_literal = "a"|int */
+                    }
+                    foreach (generator() as $yielded => $_) {
+                        /** @psalm-check-type-exact $yielded = decimal-int-string */
+                    }',
+            ],
             'assignUnionOfLiterals' => [
                 'code' => '<?php
                     $result = [];

@@ -1092,26 +1092,41 @@ final class TypeCombiner
                 }
             }
         } elseif ($type instanceof TLiteralString) {
-            if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
+            $string_type = $combination->value_types['string'] ?? null;
+
+            if (($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString)
+                && self::isLiteralInDecimalIntString($string_type, $type)
+            ) {
+                // do nothing
+            } elseif ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                 $combination->strings[$type_key] = $type;
+            } elseif (($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString)
+                && $combination->strings !== null
+            ) {
+                // too many literals to keep beside a (non-)decimal-int-string: they all join it
+                $literals = $combination->strings;
+                $literals[$type_key] = $type;
+                $combination->strings = null;
+
+                foreach ($literals as $literal_key => $literal) {
+                    self::scrapeStringProperties($literal_key, $literal, $combination, $codebase, $literal_limit);
+                }
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
                 $combination->strings = null;
 
-                if (isset($combination->value_types['string'])
-                    && ($combination->value_types['string'] instanceof TDecimalIntString
-                        || $combination->value_types['string'] instanceof TNonDecimalIntString)
-                ) {
-                    $combination->value_types['string'] = self::combineDecimalIntString(
-                        $combination->value_types['string'],
-                        $type,
-                    );
+                if ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
+                    $combination->value_types['string'] = self::combineDecimalIntString($string_type, $type);
                 } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNumericString
-                    && is_numeric($type->value)
+                    && !$type instanceof TLiteralClassString
                 ) {
-                    // do nothing
+                    if (!is_numeric($type->value)) {
+                        $combination->value_types['string'] = $type->value === ''
+                            ? new TString()
+                            : new TNonEmptyString();
+                    }
                 } elseif (isset($combination->value_types['class-string'])
                     && $type instanceof TLiteralClassString
                 ) {
@@ -1163,15 +1178,15 @@ final class TypeCombiner
             }
         } else {
             $type_key = 'string';
+            $had_string_type = isset($combination->value_types['string']);
 
             if (!isset($combination->value_types['string'])) {
                 if ($combination->strings) {
                     if ($type instanceof TDecimalIntString || $type instanceof TNonDecimalIntString) {
-                        foreach ($combination->strings as $string_type) {
-                            $type = self::combineDecimalIntString($type, $string_type);
-                        }
-
                         $combination->value_types['string'] = $type;
+                        $combination->strings = self::removeLiteralsInDecimalIntString($type, $combination->strings);
+
+                        return;
                     } elseif ($type instanceof TNumericString) {
                         $has_only_numeric_strings = true;
                         $has_only_non_empty_strings = true;
@@ -1344,8 +1359,46 @@ final class TypeCombiner
                 }
             }
 
-            $combination->strings = null;
+            $literals = $had_string_type ? $combination->strings : null;
+            $string_type = $combination->value_types['string'] ?? null;
+
+            if ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
+                // the literals it doesn't contain stay beside it
+                $combination->strings = self::removeLiteralsInDecimalIntString($string_type, $literals ?? []);
+            } else {
+                // the literals kept beside the previous string type join the new one
+                $combination->strings = null;
+
+                foreach ($literals ?? [] as $literal_key => $literal) {
+                    self::scrapeStringProperties($literal_key, $literal, $combination, $codebase, $literal_limit);
+                }
+            }
         }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isLiteralInDecimalIntString(TString $type, TLiteralString $literal): bool
+    {
+        return (ArrayAnalyzer::getLiteralArrayKeyInt($literal->value) !== false)
+            === $type instanceof TDecimalIntString;
+    }
+
+    /**
+     * @param array<string, TLiteralString> $literals
+     * @return array<string, TLiteralString>
+     * @psalm-pure
+     */
+    private static function removeLiteralsInDecimalIntString(TString $type, array $literals): array
+    {
+        foreach ($literals as $key => $literal) {
+            if (self::isLiteralInDecimalIntString($type, $literal)) {
+                unset($literals[$key]);
+            }
+        }
+
+        return $literals;
     }
 
     /**
