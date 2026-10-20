@@ -258,7 +258,7 @@ function checkDirRegression(): int
 
     /**
      * @return iterable<string, array{string}>
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     public static function entryPointProvider(): iterable
     {

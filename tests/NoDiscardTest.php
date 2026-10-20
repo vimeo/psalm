@@ -86,7 +86,7 @@ final class NoDiscardTest extends TestCase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
@@ -381,7 +381,7 @@ final class NoDiscardTest extends TestCase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public static function providerInvalidCodeParse(): iterable

@@ -1093,7 +1093,7 @@ final class StubTest extends TestCase
 
     /**
      * @return iterable<string, array{string,string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function versionDependentStubsProvider(): iterable
     {

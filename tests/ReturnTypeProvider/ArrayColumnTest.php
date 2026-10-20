@@ -15,7 +15,7 @@ final class ArrayColumnTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
@@ -149,7 +149,7 @@ final class ArrayColumnTest extends TestCase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public static function providerInvalidCodeParse(): iterable

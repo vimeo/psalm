@@ -20,7 +20,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
@@ -179,7 +179,7 @@ final class NativeSymbolAvailabilityTest extends TestCase
     }
 
     /**
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     #[Override]
     public static function providerInvalidCodeParse(): iterable

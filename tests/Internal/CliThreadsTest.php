@@ -27,7 +27,7 @@ final class CliThreadsTest extends TestCase
 
     /**
      * @return iterable<string,array{int,array<string,mixed>,?int}>
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     public static function provideScanThreads(): iterable
     {

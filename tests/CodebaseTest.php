@@ -59,7 +59,7 @@ final class CodebaseTest extends TestCase
 
     /**
      * @return iterable<int,array{string,string,bool}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function typeContainments(): iterable
     {
@@ -89,7 +89,7 @@ final class CodebaseTest extends TestCase
 
     /**
      * @return iterable<int,array{string,string,bool}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function typeIntersections(): iterable
     {
@@ -129,7 +129,7 @@ final class CodebaseTest extends TestCase
 
     /**
      * @return iterable<int,array{string,array{string,string}}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function iterableParams(): iterable
     {
