@@ -1,0 +1,11 @@
+<?php
+namespace Foo;
+
+interface ConditionallyReturning
+{
+    /**
+     * @param mixed $x
+     * @return ($x is string ? StringResult : OtherResult)
+     */
+    public function m($x = null);
+}

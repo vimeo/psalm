@@ -1190,6 +1190,62 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubbedMethodWithConditionalReturnOverridingSource(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_return_method.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                interface ConditionallyReturning
+                {
+                    /**
+                     * @param mixed $x
+                     * @return ($x is string ? StringResult : OtherResult)
+                     */
+                    public function m($x = null);
+                }
+
+                final class StringResult {}
+                final class OtherResult {}
+
+                function stringArg(ConditionallyReturning $c): StringResult {
+                    return $c->m("a");
+                }
+
+                function intArg(ConditionallyReturning $c): OtherResult {
+                    return $c->m(1);
+                }
+
+                function defaultArg(ConditionallyReturning $c): OtherResult {
+                    return $c->m();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testExtendOnlyStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
