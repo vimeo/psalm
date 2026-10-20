@@ -382,7 +382,7 @@ final class CommentAnalyzer
                     continue;
                 }
 
-                if ($next_char === '{') {
+                if ($next_char === '{' && !self::isHashNotation($return_block, $i + 1)) {
                     $type .= ' ';
                     continue;
                 }
@@ -430,6 +430,70 @@ final class CommentAnalyzer
         }
 
         return [$type];
+    }
+
+    /**
+     * Whether the braces opening at $offset hold a description in the WordPress hash notation
+     * (`@return array {` followed by `@type` entries) rather than an array shape: the entries of the
+     * hash are tags of their own lines, so its braces hold a tag at the start of a line or are left
+     * unclosed, while an array shape is closed and holds no tag (quoted keys and comments of a shape
+     * may hold anything).
+     *
+     * @psalm-pure
+     */
+    private static function isHashNotation(string $docblock, int $offset): bool
+    {
+        $depth = 0;
+        $line_start = false;
+
+        for ($i = $offset, $l = strlen($docblock); $i < $l; ++$i) {
+            $char = $docblock[$i];
+
+            if ($char === "\n") {
+                $line_start = true;
+
+                continue;
+            }
+
+            if ($line_start && ($char === ' ' || $char === "\t" || $char === '*')) {
+                continue;
+            }
+
+            if ($line_start && $char === '@') {
+                return true;
+            }
+
+            $line_start = false;
+
+            if ($char === '"' || $char === "'") {
+                for (++$i; $i < $l && $docblock[$i] !== $char; ++$i) {
+                    if ($docblock[$i] === '\\') {
+                        ++$i;
+                    }
+                }
+
+                continue;
+            }
+
+            if ($char === '/' && ($docblock[$i + 1] ?? '') === '/') {
+                $newline = strpos($docblock, "\n", $i);
+                if ($newline === false) {
+                    break;
+                }
+
+                $i = $newline - 1;
+
+                continue;
+            }
+
+            if ($char === '{') {
+                ++$depth;
+            } elseif ($char === '}' && --$depth === 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** @return list<VarDocblockComment> */

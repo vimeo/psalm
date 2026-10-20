@@ -35,6 +35,70 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'wordPressHashNotationAfterReturnAndVarType' => [
+                'code' => '<?php
+                    /**
+                     * @return array<string, mixed> {
+                     *     Output of the process.
+                     *
+                     *     @type string $stdout    Output that was sent to STDOUT.
+                     *     @type int    $exit_code Exit code of the process.
+                     * }
+                     */
+                    function run(): array {
+                        return ["stdout" => "", "exit_code" => 0];
+                    }
+
+                    final class Db {
+                        /**
+                         * @var array[] {
+                         *     Array of queries that were executed.
+                         *
+                         *     @type array ...$0 {
+                         *         @type string $0 The query.
+                         *     }
+                         * }
+                         */
+                        public array $queries = [];
+                    }
+
+                    $a = run();
+                    $b = (new Db)->queries;',
+                'assertions' => [
+                    '$a' => 'array<string, mixed>',
+                    '$b' => 'array<array-key, array<array-key, mixed>>',
+                ],
+            ],
+            'spacedShapesThatAreNotWordPressHashNotation' => [
+                'code' => '<?php
+                    /**
+                     * @return array { \'user@host\': int }
+                     */
+                    function host(): array {
+                        return ["user@host" => 1];
+                    }
+
+                    /**
+                     * @return array { cb: callable(int $x): void, n: ($flag is true ? int : string) }
+                     */
+                    function callbacks(bool $flag): array {
+                        return ["cb" => static function (int $x): void {}, "n" => $flag ? 1 : "a"];
+                    }
+
+                    /**
+                     * @param array { \'a$b\': int } $p
+                     */
+                    function takes(array $p): int {
+                        return $p["a\$b"];
+                    }
+
+                    $a = host();
+                    $b = callbacks(true);',
+                'assertions' => [
+                    '$a===' => 'array{\'user@host\': int}',
+                    '$b===' => 'array{cb: callable[impure](int):void, n: int}',
+                ],
+            ],
             'arrayCombine' => [
                 'code' => '<?php
                     class a {}

@@ -207,6 +207,48 @@ final class CommentAnalyzerTest extends BaseTestCase
                     EOT,
                 ],
             ],
+            'wordPressHashNotation' => [
+                'doc_line' =>
+                    'array {
+                     *     Output of the process.
+                     *',
+                'expected' => [
+                    'array',
+                    '{',
+                    'Output',
+                    'of',
+                    'the',
+                    'process.',
+                ],
+            ],
+            'wordPressHashNotationAfterGeneric' => [
+                'doc_line' =>
+                    'array<string, mixed> {
+                     *     Arguments.
+                     *',
+                'expected' => [
+                    'array<string, mixed>',
+                    '{',
+                    'Arguments.',
+                ],
+            ],
+            'spacedShapeWithVariablesInCallablesAndConditionals' => [
+                'doc_line' => 'array { a: ($flag is true ? int : string), cb: callable(int $x): void }',
+                'expected' => ['array { a: ($flag is true ? int : string), cb: callable(int $x): void }'],
+            ],
+            'spacedShapeWithTagsAndVariablesInQuotedKeysAndComments' => [
+                'doc_line' =>
+                    'array {
+                     *     \'user@host\': int,
+                     *     "$var": string, // not @type
+                     * }',
+                'expected' => [
+                    'array {
+                     *     \'user@host\': int,
+                     *     "$var": string,
+                     * }',
+                ],
+            ],
             'func_num_args' => [
                 'doc_line' =>
                     '(
