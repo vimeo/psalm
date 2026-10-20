@@ -283,7 +283,11 @@ final class ConstFetchAnalyzer
 
         foreach ($codebase->getAllStubbedConstants() as $const_name => $const_type) {
             if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
-                $types[$const_name] = $const_type;
+                $unresolved = $codebase->getUnresolvedGlobalConstant($const_name);
+
+                $types[$const_name] = $unresolved !== null
+                    ? new Union([ConstantTypeResolver::resolve($codebase->classlikes, $unresolved)])
+                    : $const_type;
             }
         }
 

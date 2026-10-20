@@ -103,6 +103,77 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testGlobalConstantWildcardOfConstantsFromOtherFiles(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                namespace Foo;
+
+                enum Action {
+                    case Skip;
+                }
+
+                const MODE_SKIP = Action::Skip;
+                const MODE_READ = "r";
+                define("Foo\\MODE_WRITE", 2);
+
+                const KEY_A = "a";
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                namespace Foo;
+
+                /**
+                 * @param MODE_* $mode
+                 * @return MODE_*
+                 */
+                function mode(mixed $mode): mixed {
+                    return $mode;
+                }
+
+                /**
+                 * @param array<KEY_*, PHP_URL_*> $modes
+                 * @return list<KEY_*>
+                 */
+                function modes(array $modes): array {
+                    return array_keys($modes);
+                }
+
+                /** @psalm-assert PHP_URL_* $component */
+                function assertComponent(mixed $component): void {
+                    if (!is_int($component) || $component < 0 || $component > 7) {
+                        throw new \Exception();
+                    }
+                }
+
+                /** @psalm-check-type-exact $mode = \Foo\Action::Skip|"r"|2|3 */
+                $mode = mode("r");
+                /** @psalm-check-type-exact $modes = list<"a"|"b"> */
+                $modes = modes(["a" => PHP_URL_HOST]);
+
+                /** @var mixed */
+                $component = $_GET["component"];
+                assertComponent($component);
+                /** @psalm-check-type-exact $component = 0|1|2|3|4|5|6|7 */
+                $component;
+
+                const MODE_LATER = 3;
+                const KEY_B = "b";
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
     // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
     // {
@@ -2479,6 +2550,28 @@ final class ConstantTest extends TestCase
 
                     f(42);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'globalConstantWildcardPrefersNamespacedConstants' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    const PHP_URL_CUSTOM = "custom";
+
+                    /** @param PHP_URL_* $component */
+                    function f(string $component): void {}
+
+                    f(PHP_URL_HOST);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'globalConstantWildcardFullyQualified' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    const MODE_A = 1;
+
+                    /** @param \\MODE_* $mode */
+                    function f(int $mode): void {}',
+                'error_message' => 'UndefinedConstant',
             ],
             'globalConstantWildcardWithoutConstants' => [
                 'code' => '<?php

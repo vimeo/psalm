@@ -823,6 +823,7 @@ final class TypeParser
                     || $atomic_type instanceof TString
                     || $atomic_type instanceof TArrayKey
                     || $atomic_type instanceof TClassConstant // @todo resolve and check types
+                    || $atomic_type instanceof TGlobalConstant
                     || $atomic_type instanceof TMixed
                     || $atomic_type instanceof TNever
                     || $atomic_type instanceof TTemplateParam

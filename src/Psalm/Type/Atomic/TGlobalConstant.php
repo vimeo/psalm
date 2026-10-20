@@ -34,7 +34,8 @@ final class TGlobalConstant extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'global-constant(' . $this->const_name . ')';
+        return 'global-constant(' . $this->const_name
+            . ($this->fallback_const_name === null ? '' : '|' . $this->fallback_const_name) . ')';
     }
 
     #[Override]
