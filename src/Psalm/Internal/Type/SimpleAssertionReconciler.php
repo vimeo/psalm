@@ -1506,8 +1506,14 @@ final class SimpleAssertionReconciler extends Reconciler
 
         if ($existing_var_type->hasString()) {
             $redundant = false;
+            $string_type = $existing_var_type->getAtomicTypes()['string'] ?? null;
+            $refinements = $string_type instanceof TString ? StringRefinement::get($string_type) : null;
             $existing_var_type->removeType('string');
-            $existing_var_type->addType(new TNumericString);
+            // e.g. lowercase-string&numeric-string for a lowercase-string
+            $existing_var_type->addType(
+                ($refinements !== null ? StringRefinement::getType($refinements | StringRefinement::NUMERIC) : null)
+                    ?? new TNumericString,
+            );
         }
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {

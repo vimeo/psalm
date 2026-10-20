@@ -1656,6 +1656,32 @@ final class ReturnTypeTest extends TestCase
                     '$u===' => 'lowercase-string&non-falsy-string&numeric-string|null',
                 ],
             ],
+            'isNumericKeepsStringRefinements' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    /** @var lowercase-string&non-falsy-string $l */
+                    $l = "a";
+                    /** @var non-falsy-string $f */
+                    $f = "a";
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    if (is_numeric($s)) {
+                        $a = $s;
+                    }
+                    if (is_numeric($l)) {
+                        $b = $l;
+                    }
+                    if (is_numeric($f)) {
+                        $c = $f;
+                    }',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&numeric-string|null',
+                    '$b===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                    '$c===' => 'non-falsy-string&numeric-string|null',
+                ],
+            ],
             'truthyLowercaseStringIsNonFalsy' => [
                 'code' => '<?php
                     /** @var lowercase-string $s */
