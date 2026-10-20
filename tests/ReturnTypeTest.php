@@ -888,7 +888,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersArrowClosureReturnTypes' => [
@@ -928,7 +928,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypes' => [
@@ -950,7 +950,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypesWithPartialTypehinting' => [
@@ -972,7 +972,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersObjectShapeOfCastScalar' => [
@@ -1432,7 +1432,7 @@ final class ReturnTypeTest extends TestCase
                      * @return array<non-decimal-int-string, int>
                      */
                     function ids(string $id): array {
-                        return ["id_" . $id => (int) $id];
+                        throw new \\RuntimeException($id);
                     }
 
                     $a = ids("1");',
