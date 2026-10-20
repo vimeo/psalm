@@ -106,6 +106,15 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $suppressed_issues = [];
 
     /**
+     * The `@psalm-suppress` annotations of the class-like's own docblock, keyed by the char offset of the issue
+     * name. Unlike $suppressed_issues, plugins don't append to this, so it only holds suppressions that have a source
+     * location to report when unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
+
+    /**
      * Is this class user-defined
      */
     public bool $user_defined = false;
