@@ -12,12 +12,16 @@ declare(strict_types=1);
  *   (`arrayvalue-assignment`), as a key (`arraykey-assignment`), or as a whole (`=`, the parameter holds what it adds,
  *   e.g. another container);
  * - `out`: the path through which what the object keeps flows into the return value: one of its elements
- *   (`arrayvalue-fetch`), one of its keys (`arraykey-fetch`), or all of it (`=`);
+ *   (`arrayvalue-fetch`), one of its keys (`arraykey-fetch`), all of it (`=`), or, for a generator, what its body
+ *   returns (`return`);
  * - `key`: the offset of the parameter naming the element the method puts or takes: when given a literal, only that
  *   element's taints flow, as with `$array['key']`.
  *
  * What a builtin object is built from flows into it through the `@psalm-flow (...) -> return` of its constructor in
- * the stubs.
+ * the stubs. A generator keeps what it yields, as the values and keys of an array, and what it returns (see
+ * YieldAnalyzer::taintGenerator()).
+ *
+ * Plugins get the `out` path of a method with Codebase::getReceiverTaintPath().
  *
  * @var array<lowercase-string, array{in?: non-empty-array<int, non-empty-string>, out?: non-empty-string, key?: int}>
  */
@@ -67,6 +71,11 @@ return [
     'splpriorityqueue::extract' => ['out' => 'arrayvalue-fetch'],
     'splpriorityqueue::insert' => ['in' => [0 => 'arrayvalue-assignment']],
     'splpriorityqueue::top' => ['out' => 'arrayvalue-fetch'],
+    // generators
+    'generator::current' => ['out' => 'arrayvalue-fetch'],
+    'generator::getreturn' => ['out' => 'return'],
+    'generator::key' => ['out' => 'arraykey-fetch'],
+    'generator::send' => ['out' => 'arrayvalue-fetch'],
     // iterators over other iterators
     'appenditerator::append' => ['in' => [0 => '=']],
     'iteratoriterator::current' => ['out' => 'arrayvalue-fetch'],

@@ -278,55 +278,28 @@ final class MethodCallReturnTypeFetcher
             $context,
         );
 
-        // what a generator gives comes from what it yields (see YieldAnalyzer::taintGenerator())
-        $generator_path_type = match (strtolower((string) $declaring_method_id)) {
-            'generator::current', 'generator::send' => 'arrayvalue-fetch',
-            'generator::key' => 'arraykey-fetch',
-            'generator::getreturn' => 'return',
-            default => null,
-        };
-
-        if ($generator_path_type !== null
-            && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
+        // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
+        // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
+        if (strtolower((string) $declaring_method_id) === 'generator::send'
+            && isset($args[0])
+            && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
             && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $var_type->parent_nodes
+            && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
+            && $sent_type->parent_nodes
         ) {
-            $generator_node = DataFlowNode::getForAssignment(
-                'generator ' . $cased_method_id,
-                new CodeLocation($statements_analyzer, $stmt->name),
+            $sent_node = DataFlowNode::getForAssignment(
+                'sent to the generator',
+                new CodeLocation($statements_analyzer, $args[0]->value),
             );
 
-            $graph->addNode($generator_node);
+            $taint_flow_graph->addNode($sent_node);
 
-            foreach ($var_type->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $generator_node, $generator_path_type);
+            foreach ($sent_type->parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $sent_node, 'arg');
             }
 
-            $return_type_candidate = $return_type_candidate->addParentNodes(
-                [$generator_node->id => $generator_node],
-            );
-
-            // what is sent becomes the value of the yield expressions of the generator
-            if ($generator_path_type === 'arrayvalue-fetch'
-                && isset($args[0])
-                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-                && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
-                && $sent_type->parent_nodes
-                && strtolower((string) $declaring_method_id) === 'generator::send'
-            ) {
-                $sent_node = DataFlowNode::getForAssignment(
-                    'sent to the generator',
-                    new CodeLocation($statements_analyzer, $args[0]->value),
-                );
-
-                $taint_flow_graph->addNode($sent_node);
-
-                foreach ($sent_type->parent_nodes as $parent_node) {
-                    $taint_flow_graph->addPath($parent_node, $sent_node, 'arg');
-                }
-
-                $taint_flow_graph->addGeneratorSend($sent_node, $var_type->parent_nodes);
-            }
+            $taint_flow_graph->addGeneratorSend($sent_node, $var_type->parent_nodes);
         }
 
         return NativeClassTaintAnalyzer::taint(

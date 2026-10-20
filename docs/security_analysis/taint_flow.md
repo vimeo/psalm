@@ -75,6 +75,14 @@ what they were given. This is useful for methods whose bodies Psalm doesn't anal
 stubs and vendor code. With `@psalm-taint-specialize`, each call returns what its own object holds; without it, what
 any object the method is called on holds flows into what every call returns.
 
+The methods of the builtin containers and iterators (`ArrayObject`, `ArrayIterator`, `SplObjectStorage`, …) and of
+`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what
+is stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator
+returns. Plugins that follow calls themselves (such as the method calls of a template) get the path along which a
+method returns what its object holds with `Codebase::getReceiverTaintPath()`: `=`, `arrayvalue-fetch`,
+`arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key, `arraykey-fetch` or `return`,
+or null for a method returning none of it.
+
 ### Callable result to return value hint
 
 ```php
