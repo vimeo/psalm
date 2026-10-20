@@ -4103,6 +4103,60 @@ final class TaintTest extends TestCase
                         echo $named->name();
                     }',
             ],
+            'dontTaintWhatAnInheritedBodyReturnsOfAnotherObjectThroughAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(public string $value) {}
+
+                        public function me(): self {
+                            return $this->pick();
+                        }
+
+                        protected function pick(): self {
+                            return new self("literal");
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        protected function pick(): self {
+                            return $this;
+                        }
+                    }
+
+                    $tainted = new Child((string) $_GET["value"]);
+                    $clean = new Child("clean");
+                    $x = $tainted->me();
+                    echo $clean->me()->value;',
+            ],
+            'dontTaintWhatAnOverrideSpecializedByInstanceReturnsOfAnotherObjectThroughAVirtualCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(public string $value) {}
+
+                        public function get(): string {
+                            return "literal";
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        public function get(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    function show(Base $base): string {
+                        return $base->get();
+                    }
+
+                    show(new Child((string) $_GET["value"]));
+                    echo show(new Child("clean"));',
+            ],
             'dontTaintTheResultOfAParentCallWithTheReturnOfASiblingOverride' => [
                 'code' => '<?php
                     class Named {
@@ -7881,6 +7935,119 @@ final class TaintTest extends TestCase
                     function findAny(SiteMapper $mapper): void {
                         $mapper->find((string) $_GET["id"]);
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnInheritedBodyReturnsOfTheObjectThroughAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(public string $value) {}
+
+                        public function me(): self {
+                            return $this->pick();
+                        }
+
+                        protected function pick(): self {
+                            return new self("literal");
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        protected function pick(): self {
+                            return $this;
+                        }
+                    }
+
+                    $child = new Child((string) $_GET["value"]);
+                    echo $child->me()->value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnInheritedBodyReturnsOfAnObjectHeldByTheObjectThroughAnOverrideSpecializedByInstance' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    final class Inner {
+                        public function __construct(private string $value) {}
+
+                        public function getValue(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(protected Inner $inner) {}
+
+                        public function getInner(): Inner {
+                            return $this->pick();
+                        }
+
+                        protected function pick(): Inner {
+                            return new Inner("literal");
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        protected function pick(): Inner {
+                            return $this->inner;
+                        }
+                    }
+
+                    $child = new Child(new Inner((string) $_GET["value"]));
+                    echo $child->getInner()->getValue();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAnOverrideSpecializedByInstanceReturnsOfTheObjectThroughAVirtualCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-immutable */
+                    class Base {
+                        public function __construct(public string $value) {}
+
+                        public function get(): string {
+                            return "literal";
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class Child extends Base {
+                        #[Override]
+                        public function get(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    function show(Base $base): void {
+                        echo $base->get();
+                    }
+
+                    show(new Child((string) $_GET["value"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWhatAPureOverrideReturnsOfItsArgumentThroughAVirtualCallOfAPureMethod' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        /** @psalm-pure */
+                        public function get(string $value): string {
+                            return "literal";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @psalm-pure */
+                        #[Override]
+                        public function get(string $value): string {
+                            return $value;
+                        }
+                    }
+
+                    function show(Base $base): void {
+                        echo $base->get((string) $_GET["value"]);
+                    }
+
+                    show(new Child());',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAStaticOverrideThroughACallOnAnIntermediateClass' => [

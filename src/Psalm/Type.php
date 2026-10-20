@@ -39,6 +39,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -1001,6 +1002,40 @@ abstract class Type
                 ) {
                     $intersection_atomic = $refined_string;
                     $intersection_performed = true;
+                } elseif ($type_1_atomic instanceof TArray
+                    && $type_2_atomic instanceof TArray
+                    && ($type_1_atomic instanceof TNonEmptyArray || $type_2_atomic instanceof TNonEmptyArray)
+                ) {
+                    // e.g. array<string, int> and non-empty-array are non-empty-array<string, int>
+                    $key_intersection = self::intersectUnionTypes(
+                        $type_1_atomic->type_params[0],
+                        $type_2_atomic->type_params[0],
+                        $codebase,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    );
+                    $value_intersection = self::intersectUnionTypes(
+                        $type_1_atomic->type_params[1],
+                        $type_2_atomic->type_params[1],
+                        $codebase,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    );
+
+                    // a non-empty array of never is no array
+                    if ($key_intersection !== null
+                        && $value_intersection !== null
+                        && !$key_intersection->isNever()
+                        && !$value_intersection->isNever()
+                    ) {
+                        $non_empty_array = $type_1_atomic instanceof TNonEmptyArray
+                            ? $type_1_atomic
+                            : $type_2_atomic;
+                        $intersection_atomic = $non_empty_array->setTypeParams(
+                            [$key_intersection, $value_intersection],
+                        );
+                        $intersection_performed = true;
+                    }
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)
                     || ($type_1_atomic instanceof TNonEmptyString

@@ -182,13 +182,18 @@ final class DataFlowNode implements Stringable
 
     /**
      * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
-     * overrides of the classes extending it: shared by all those calls, so it has no location.
+     * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
+     * specialized to their location have one of their own, which only goes to the overrides.
      *
      * @psalm-pure
      */
-    public static function getForDispatch(string $cased_method_id, int $argument_offset): self
-    {
-        $label = 'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1);
+    public static function getForDispatch(
+        string $cased_method_id,
+        int $argument_offset,
+        bool $specialized_calls = false,
+    ): self {
+        $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
+            . '#' . ($argument_offset + 1);
 
         return self::make(strtolower($label), $label, null);
     }
@@ -731,6 +736,19 @@ final class DataFlowNode implements Stringable
             $specialization_key,
             $taints,
         );
+    }
+
+    /**
+     * What the virtual calls of a method on a class give the `$this` of the overrides of the classes extending it
+     * that may run instead: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForThisDispatch(string $cased_method_id): self
+    {
+        $label = 'dispatch of $this to ' . $cased_method_id;
+
+        return self::make(strtolower($label), $label, null);
     }
 
     /**
