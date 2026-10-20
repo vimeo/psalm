@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -146,6 +147,9 @@ final class StringRefinement
     public static function getImplied(TString $type): int
     {
         return self::get($type) ?? match (true) {
+            // "0", "123" or "-5"
+            $type instanceof TDecimalIntString => self::NON_EMPTY | self::LOWERCASE | self::NUMERIC,
+            $type instanceof TNumericString => self::NON_EMPTY | self::NUMERIC,
             $type instanceof TNonFalsyString => self::NON_EMPTY | self::NON_FALSY,
             $type instanceof TNonEmptyString => self::NON_EMPTY,
             default => 0,

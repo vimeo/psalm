@@ -67,6 +67,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -2020,6 +2021,16 @@ final class TypeParser
             if ($type !== null) {
                 return [$type];
             }
+        }
+
+        $is_decimal_int_type_1 = $type_1 instanceof TDecimalIntString || $type_1 instanceof TNonDecimalIntString;
+        $is_decimal_int_type_2 = $type_2 instanceof TDecimalIntString || $type_2 instanceof TNonDecimalIntString;
+
+        if (($is_decimal_int_type_1 && ($is_decimal_int_type_2 || $type_2 instanceof TLiteralString))
+            || ($is_decimal_int_type_2 && $type_1 instanceof TLiteralString)
+        ) {
+            // a string is a decimal int string or not: the other type of these, or a literal string neither contains
+            return [];
         }
 
         throw self::getUnrepresentableIntersectionException($type_1, $type_2);

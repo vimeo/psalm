@@ -290,6 +290,10 @@ final class TypeComparatorTest extends TestCase
                 'non-decimal-int-string',
                 'class-string',
             ],
+            'lowercaseNumericStringAcceptsDecimalIntString' => [
+                'lowercase-string&numeric-string',
+                'decimal-int-string',
+            ],
             'stringAcceptsNonDecimalIntString' => [
                 'string',
                 'non-decimal-int-string',
@@ -346,6 +350,14 @@ final class TypeComparatorTest extends TestCase
         yield 'nonFalsyLowercaseNumericStringDoesNotAcceptNonFalsyNumericString' => [
             'lowercase-string&non-falsy-string&numeric-string',
             'non-falsy-string&numeric-string',
+        ];
+        yield 'nonFalsyLowercaseNumericStringDoesNotAcceptDecimalIntString' => [
+            'lowercase-string&non-falsy-string&numeric-string',
+            'decimal-int-string',
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptNonDecimalIntString' => [
+            'lowercase-string&numeric-string',
+            'non-decimal-int-string',
         ];
         yield 'decimalIntStringDoesNotAcceptNumericString' => [
             'decimal-int-string',

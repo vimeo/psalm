@@ -632,6 +632,23 @@ final class TypeParseTest extends TestCase
         $this->assertSame('non-decimal-int-string', Type::parseString('non-decimal-int-string')->getId());
     }
 
+    public function testIntersectionOfDecimalIntStringAndStringTypes(): void
+    {
+        $this->assertSame('decimal-int-string', Type::parseString('decimal-int-string&lowercase-string')->getId());
+        $this->assertSame(
+            'decimal-int-string',
+            Type::parseString('lowercase-string&numeric-string&decimal-int-string')->getId(),
+        );
+        $this->assertSame("'5'", Type::parseString("('5'|'05'|'a')&decimal-int-string")->getId());
+        $this->assertSame("'05'|'a'", Type::parseString("('5'|'05'|'a')&non-decimal-int-string")->getId());
+    }
+
+    public function testIntersectionOfDecimalIntStringAndNonDecimalIntStringRejected(): void
+    {
+        $this->expectExceptionMessage('No value has all the types of the intersection');
+        Type::parseString('decimal-int-string&non-decimal-int-string');
+    }
+
     public function testDecimalIntStringArrayKeyIsInt(): void
     {
         $this->assertSame('array<int, int>', Type::parseString('array<decimal-int-string, int>')->getId());

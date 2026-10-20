@@ -750,6 +750,34 @@ final class TypeCombinationTest extends TestCase
                     "'a'",
                 ],
             ],
+            'combineDecimalIntStringWithNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'decimal-int-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineLowercaseNumericStringWithDecimalIntString' => [
+                'lowercase-string&numeric-string',
+                [
+                    'lowercase-string&numeric-string',
+                    'decimal-int-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNonFalsyNumericString' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonDecimalIntStringWithNonFalsyLowercaseString' => [
+                'string',
+                [
+                    'non-decimal-int-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
             'combineDecimalIntStringWithDecimalIntLiteral' => [
                 'decimal-int-string',
                 [
