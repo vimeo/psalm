@@ -380,7 +380,7 @@ final class LoopAnalyzer
                         }
                     } else {
                         // the next iteration starts with what this one left in the variable (see below)
-                        if (self::isLoopVar($var_id)
+                        if (self::isLoopVar($statements_analyzer, $var_id)
                             && (!isset($loop_var_types_at_start[$var_id])
                                 || !$type->setPossiblyUndefined(false)->equals($loop_var_types_at_start[$var_id]))
                         ) {
@@ -469,7 +469,9 @@ final class LoopAnalyzer
                 $force_pass = false;
 
                 foreach ($vars_to_remove as $var_id) {
-                    if (!self::isLoopVar($var_id) || isset($continue_context->references_in_scope[$var_id])) {
+                    if (!self::isLoopVar($statements_analyzer, $var_id)
+                        || isset($continue_context->references_in_scope[$var_id])
+                    ) {
                         $continue_context->removePossibleReference($var_id);
 
                         continue;
@@ -1898,13 +1900,15 @@ final class LoopAnalyzer
 
     /**
      * A variable the loop can define, rather than an array item, a property or a static property of one, or a
-     * superglobal, which the loop only reads (and which is always defined)
+     * superglobal, which the loop only reads (and which is always defined), or a variable read where it's
+     * undefined and not assigned since, which a call can narrow but the loop doesn't define
      *
      * @psalm-pure
      */
-    private static function isLoopVar(string $var_id): bool
+    private static function isLoopVar(StatementsAnalyzer $statements_analyzer, string $var_id): bool
     {
-        return !str_contains($var_id, '[')
+        return !$statements_analyzer->hasUndefinedVariableRead($var_id)
+            && !str_contains($var_id, '[')
             && !str_contains($var_id, '->')
             && !str_contains($var_id, '::')
             && !VariableFetchAnalyzer::isSuperGlobal($var_id);
