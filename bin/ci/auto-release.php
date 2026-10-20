@@ -8,7 +8,8 @@
  * Run hourly by .github/workflows/auto-release.yml. For each branch:
  *  - the last release is the highest version tagged on the branch (master also contains the 6.x tags);
  *  - nothing happens if the branch has no commits since, or if a workflow run or a commit status of its head
- *    is still running, failed, or the unit tests haven't run yet;
+ *    is still running, failed, or the unit tests haven't run yet. A failed check is reported as a warning, and
+ *    fails the run once the head has been blocked for a day, so that the maintainers are notified;
  *  - the next version keeps the readiness of the last one: 7.0.0-alpha1 is followed by 7.0.0-alpha2, likewise
  *    for betas and release candidates, and a stable 7.0.0 by 7.1.0 if a feature or deprecation was merged, else
  *    by 7.0.1. A removal needs a new major version, which is left to the maintainers;
@@ -73,8 +74,10 @@ $getLastTag = static function (string $ref) use ($run, $version_pattern): ?strin
     return $tags[0] ?? null;
 };
 
-// why the commit can't be released yet, or null if every workflow run and commit status of it passed
-$getChecksFailure = static function (string $sha) use ($api, $required_workflows, $own_workflow): ?string {
+// why the commit can't be released yet, and whether that's because a check failed rather than hasn't finished,
+// or null if every workflow run and commit status of it passed
+/** @return ?array{bool, string} */
+$getChecksFailure = static function (string $sha) use ($api, $required_workflows, $own_workflow): ?array {
     // the latest attempt of each workflow
     $latest = [];
     foreach ($api("actions/runs?head_sha=$sha&event=push&per_page=100")['workflow_runs'] as $workflow_run) {
@@ -88,27 +91,27 @@ $getChecksFailure = static function (string $sha) use ($api, $required_workflows
 
     foreach ($required_workflows as $name) {
         if (!isset($latest[$name])) {
-            return "$name hasn't run";
+            return [false, "$name hasn't run"];
         }
     }
 
     foreach ($latest as $name => $workflow_run) {
         if ($workflow_run['status'] !== 'completed') {
-            return "$name is {$workflow_run['status']}";
+            return [false, "$name is {$workflow_run['status']}"];
         }
 
         if (!in_array($workflow_run['conclusion'], ['success', 'skipped', 'neutral'], true)) {
-            return "$name: {$workflow_run['conclusion']} ({$workflow_run['html_url']})";
+            return [true, "$name: {$workflow_run['conclusion']} ({$workflow_run['html_url']})"];
         }
     }
 
     // the statuses of other CI services, such as CircleCI
     $status = $api("commits/$sha/status");
     if ($status['total_count'] > 0 && $status['state'] !== 'success') {
-        return implode(', ', array_map(
+        return [$status['state'] !== 'pending', implode(', ', array_map(
             static fn(array $context): string => "{$context['context']}: {$context['state']}",
             array_filter($status['statuses'], static fn(array $context): bool => $context['state'] !== 'success'),
-        ));
+        ))];
     }
 
     return null;
@@ -139,6 +142,10 @@ $generateNotes = static fn(string $tag, string $target, string $previous_tag): s
     '--jq', '.body',
 ]);
 
+// a branch whose head has failed checks for this long fails the run, so that the maintainers are notified
+$max_blocked_seconds = 24 * 60 * 60;
+$stuck = false;
+
 foreach ($branches as $branch) {
     echo "== $branch" . PHP_EOL;
 
@@ -159,7 +166,17 @@ foreach ($branches as $branch) {
 
     $failure = $getChecksFailure($head);
     if ($failure !== null) {
-        echo "Not releasing $head ($unreleased commits since $last_tag): $failure" . PHP_EOL;
+        [$failed, $reason] = $failure;
+        if (!$failed) {
+            echo "Not releasing $head ($unreleased commits since $last_tag) yet: $reason" . PHP_EOL;
+            continue;
+        }
+
+        $blocked_seconds = time() - (int) trim($run(['git', 'log', '-1', '--format=%ct', $head]));
+        $level = $blocked_seconds > $max_blocked_seconds ? 'error' : 'warning';
+        $stuck = $stuck || $level === 'error';
+        echo "::$level::Not releasing $branch at $head ($unreleased commits since $last_tag, committed "
+            . intdiv($blocked_seconds, 3600) . " hours ago): $reason" . PHP_EOL;
         continue;
     }
 
@@ -206,3 +223,5 @@ foreach ($branches as $branch) {
         $run(['gh', 'workflow', 'run', $workflow, '--repo', $repository, '--ref', $next]);
     }
 }
+
+exit($stuck ? 1 : 0);
