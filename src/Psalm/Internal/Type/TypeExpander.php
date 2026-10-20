@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -20,6 +21,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
@@ -311,6 +313,33 @@ final class TypeExpander
 
                 if ($class_constant) {
                     return array_values($class_constant->getAtomicTypes());
+                }
+            }
+
+            return [$return_type];
+        }
+
+        if ($return_type instanceof TGlobalConstant) {
+            if ($evaluate_class_constants) {
+                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $return_type->const_name);
+
+                if ($const_types === [] && $return_type->fallback_const_name !== null) {
+                    $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard(
+                        $codebase,
+                        $return_type->fallback_const_name,
+                    );
+                }
+
+                $const_atomic_types = [];
+
+                foreach ($const_types as $const_type) {
+                    foreach ($const_type->getAtomicTypes() as $const_atomic_type) {
+                        $const_atomic_types[] = $const_atomic_type;
+                    }
+                }
+
+                if ($const_atomic_types !== []) {
+                    return $const_atomic_types;
                 }
             }
 
