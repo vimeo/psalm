@@ -751,8 +751,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $codebase,
                     )
                     : Type::getVoid();
-                
-                $isVoid = $inferred_return->isVoid();
+
+                // a generator returns the generator, whatever its own return statements return
+                $isVoid = !$storage->has_yield && $inferred_return->isVoid();
             }
             if ($isVoid
                 && !$this->function instanceof Closure

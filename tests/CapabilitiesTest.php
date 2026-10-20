@@ -30,6 +30,26 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'pureGeneratorWithoutReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return iterable<int, int>
+                     * @psalm-pure
+                     */
+                    function gen() {
+                        yield 1;
+                    }
+
+                    final class Provider {
+                        /**
+                         * @return Generator<int, int, mixed, void>
+                         * @psalm-pure
+                         */
+                        public static function gen(): Generator {
+                            yield 1;
+                        }
+                    }',
+            ],
             'conditionalCapabilitiesTakeTheBranchTheArgumentsSelect' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
