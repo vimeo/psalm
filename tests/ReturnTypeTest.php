@@ -1566,6 +1566,18 @@ final class ReturnTypeTest extends TestCase
                     '$d===' => '0|1|2|3',
                 ],
             ],
+            'globalConstantWildcardIntersection' => [
+                'code' => '<?php
+                    /** @return PHP_URL_*&int<0, 2> */
+                    function component(): int {
+                        return PHP_URL_HOST;
+                    }
+
+                    $a = component();',
+                'assertions' => [
+                    '$a===' => '0|1|2',
+                ],
+            ],
             'templateInClassConstantIntersection' => [
                 'code' => '<?php
                     /**

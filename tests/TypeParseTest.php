@@ -621,6 +621,11 @@ final class TypeParseTest extends TestCase
         $this->assertSame('-1|PHP_URL_*', Type::parseString('-1|PHP_URL_*')->getId());
     }
 
+    public function testIntersectionOfGlobalConstantWildcard(): void
+    {
+        $this->assertSame('PHP_URL_*&int<0, 2>', Type::parseString('PHP_URL_*&int<0, 2>')->getId());
+    }
+
     public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, list{int}>', Type::parseString('iterable<string, array{int}>')->getId());

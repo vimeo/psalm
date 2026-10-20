@@ -1574,7 +1574,8 @@ final class TypeParser
     }
 
     /**
-     * Whether a type refers to class constants or type aliases, which are only known once every file is scanned
+     * Whether a type refers to class constants, global constants or type aliases, which are only known once every
+     * file is scanned
      *
      * @psalm-pure
      */
@@ -1592,6 +1593,7 @@ final class TypeParser
             || $type instanceof TIntMaskOf
             || $type instanceof TTypeAlias
             || $type instanceof TPropertiesOf
+            || $type instanceof TGlobalConstant
             || $type instanceof TIntersection;
     }
 
