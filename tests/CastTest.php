@@ -17,6 +17,40 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'strvalAndInterpolationConvertLikeAStringCast' => [
+            'code' => '<?php
+                /**
+                 * @param int<0, 2> $range
+                 * @param non-empty-lowercase-string $lower
+                 */
+                function f(int $int, ?int $nullable, bool $bool, int $range, string $lower): void {
+                    $cast = (string) $int;
+                    $strval = strval($int);
+                    $interpolated = "$int";
+                    /** @psalm-check-type-exact $cast = decimal-int-string */
+                    /** @psalm-check-type-exact $strval = decimal-int-string */
+                    /** @psalm-check-type-exact $interpolated = decimal-int-string */
+                    $nullable_strval = strval($nullable);
+                    $nullable_interpolated = "{$nullable}";
+                    /** @psalm-check-type-exact $nullable_strval = \'\'|decimal-int-string */
+                    /** @psalm-check-type-exact $nullable_interpolated = \'\'|decimal-int-string */
+                    $bool_strval = strval($bool);
+                    /** @psalm-check-type-exact $bool_strval = \'\'|\'1\' */
+                    $range_strval = strval($range);
+                    $range_interpolated = "$range";
+                    /** @psalm-check-type-exact $range_strval = \'0\'|\'1\'|\'2\' */
+                    /** @psalm-check-type-exact $range_interpolated = \'0\'|\'1\'|\'2\' */
+                    $lower_strval = strval($lower);
+                    $lower_interpolated = "$lower";
+                    /** @psalm-check-type-exact $lower_strval = non-empty-lowercase-string */
+                    /** @psalm-check-type-exact $lower_interpolated = non-empty-lowercase-string */
+                    $five = strval(5);
+                    /** @psalm-check-type-exact $five = \'5\' */
+                    $concatenated = "id $int";
+                    /** @psalm-check-type-exact $concatenated = non-empty-string */
+                }
+            ',
+        ];
         yield 'voidCastDiscardsValueWithoutError' => [
             'code' => '<?php
                 $x = strlen("hello");

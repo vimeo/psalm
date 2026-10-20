@@ -106,6 +106,49 @@ final class ArrayAssignmentTest extends TestCase
                     '$kept===' => 'non-empty-array<non-decimal-int-string, 0>',
                 ],
             ],
+            'templateBoundedByDecimalIntStringsKeysAreInts' => [
+                'code' => '<?php
+                    /**
+                     * @template T of decimal-int-string
+                     * @param array<T, string> $a
+                     * @param T $t
+                     * @return list<int>
+                     */
+                    function keys(array $a, string $t): array {
+                        $keys = [];
+                        foreach ($a as $k => $_) {
+                            /** @psalm-check-type-exact $k = int */
+                            $keys[] = $k;
+                        }
+                        $b = [$t => 1];
+                        /** @psalm-check-type-exact $b = non-empty-array<int, 1> */
+                        $c = [];
+                        $c[$t] = 1;
+                        /** @psalm-check-type-exact $c = non-empty-array<int, 1> */
+                        return $keys;
+                    }
+
+                    /**
+                     * @template T of \'5\'|\'x\'
+                     * @param array<T, string> $a
+                     * @return list<5|T>
+                     */
+                    function literalKeys(array $a): array {
+                        $keys = [];
+                        foreach ($a as $k => $_) {
+                            if (is_int($k)) {
+                                /** @psalm-check-type-exact $k = 5 */
+                            }
+                            $keys[] = $k;
+                        }
+                        return $keys;
+                    }
+
+                    /** @param array<int, string> $a */
+                    function takesInts(array $a): void {
+                        keys($a, "5");
+                    }',
+            ],
             'decimalIntStringKeysAreIntsInEveryArrayType' => [
                 'code' => '<?php
                     /**
@@ -2484,6 +2527,21 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of decimal-int-string
+                     * @param array<T, string> $a
+                     * @return T|null
+                     */
+                    function firstKey(array $a): ?string {
+                        foreach ($a as $k => $_) {
+                            return $k;
+                        }
+                        return null;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'decimalIntLiteralIsNotNonDecimalIntString' => [
                 'code' => '<?php
                     /** @param non-decimal-int-string $n */

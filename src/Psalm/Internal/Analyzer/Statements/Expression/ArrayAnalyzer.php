@@ -23,6 +23,7 @@ use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -257,32 +258,102 @@ final class ArrayAnalyzer
      */
     public static function castArrayKeyType(Union $key_type): Union
     {
-        // an int contains every literal int
-        $has_int = $key_type->hasType('int') || $key_type->hasType('decimal-int-string');
-        $atomic_types = [];
+        $input_types = [];
         $changed = false;
 
-        foreach ($key_type->getAtomicTypes() as $key => $atomic_type) {
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T
+                [$cast_types, $template] = self::splitTemplateArrayKey($atomic_type);
+
+                if ($cast_types !== []) {
+                    $changed = true;
+                    $input_types = [...$input_types, ...$cast_types];
+
+                    if ($template !== null) {
+                        $input_types[] = $template;
+                    }
+
+                    continue;
+                }
+            }
+
+            $input_types[] = $atomic_type;
+        }
+
+        // an int contains every literal int
+        $has_int = false;
+        foreach ($input_types as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString
+                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+            ) {
+                $has_int = true;
+            }
+        }
+
+        $atomic_types = [];
+
+        foreach ($input_types as $atomic_type) {
             if ($atomic_type instanceof TDecimalIntString) {
                 $atomic_type = new TInt($atomic_type->from_docblock);
-                $key = 'int';
                 $changed = true;
-            } elseif ($atomic_type instanceof TLiteralString
-                && !$atomic_type instanceof TLiteralClassString
-                && ($int_key = self::getLiteralArrayKeyInt($atomic_type->value)) !== false
-            ) {
+            } elseif (self::isIntArrayKeyString($atomic_type)) {
                 $atomic_type = $has_int ? new TInt($atomic_type->from_docblock) : new TLiteralInt(
-                    $int_key,
+                    (int) $atomic_type->value,
                     $atomic_type->from_docblock,
                 );
-                $key = $atomic_type->getKey();
                 $changed = true;
             }
 
-            $atomic_types[$key] ??= $atomic_type;
+            $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
         }
 
-        return $changed ? $key_type->setTypes($atomic_types) : $key_type;
+        return $changed && $atomic_types !== [] ? $key_type->setTypes($atomic_types) : $key_type;
+    }
+
+    /**
+     * @psalm-pure
+     * @psalm-assert-if-true TLiteralString $atomic_type
+     */
+    private static function isIntArrayKeyString(Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TLiteralString
+            && !$atomic_type instanceof TLiteralClassString
+            && self::getLiteralArrayKeyInt($atomic_type->value) !== false;
+    }
+
+    /**
+     * Splits the bound of a template used as an array key into the types PHP casts to ints and the template
+     * narrowed to the rest, or null if every value of the template is cast
+     *
+     * @return array{list<TDecimalIntString|TLiteralString>, ?TTemplateParam}
+     * @psalm-pure
+     */
+    private static function splitTemplateArrayKey(TTemplateParam $template): array
+    {
+        $cast_types = [];
+        $kept_types = [];
+
+        foreach ($template->as->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString || self::isIntArrayKeyString($atomic_type)) {
+                $cast_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                [$nested_cast_types, $nested_template] = self::splitTemplateArrayKey($atomic_type);
+                $cast_types = [...$cast_types, ...$nested_cast_types];
+
+                if ($nested_template !== null) {
+                    $kept_types[] = $nested_template;
+                }
+            } else {
+                $kept_types[] = $atomic_type;
+            }
+        }
+
+        if ($cast_types === []) {
+            return [[], $template];
+        }
+
+        return [$cast_types, $kept_types === [] ? null : $template->replaceAs(new Union($kept_types))];
     }
 
     private static function analyzeArrayItem(

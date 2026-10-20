@@ -746,53 +746,11 @@ final class CastAnalyzer
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            if ($atomic_type instanceof TFloat
-                || $atomic_type instanceof TInt
-                || $atomic_type instanceof TNumeric
-            ) {
-                if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
-                    $castable_types[] = new TNonspecificLiteralString();
-                } elseif ($atomic_type instanceof TIntRange
-                    && $atomic_type->min_bound !== null
-                    && $atomic_type->max_bound !== null
-                    && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
-                ) {
-                    foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
-                        $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
-                    }
-                } else {
-                    // an int is cast to its canonical decimal form
-                    $castable_types[] = $atomic_type instanceof TInt ? new TDecimalIntString() : new TNumericString();
-                }
+            $scalar_strings = self::castScalarToString($atomic_type);
 
-                continue;
-            }
+            if ($scalar_strings !== null) {
+                $valid_strings = [...$valid_strings, ...$scalar_strings];
 
-            if ($atomic_type instanceof TString) {
-                $valid_strings[] = $atomic_type;
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull
-                || $atomic_type instanceof TFalse
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
-                continue;
-            }
-
-            if ($atomic_type instanceof TTrue
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                continue;
-            }
-
-            if ($atomic_type instanceof TBool
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
@@ -940,6 +898,62 @@ final class CastAnalyzer
             'string',
             $stmt_type,
         );
+    }
+
+    /**
+     * The strings a scalar or null is cast to, e.g. `'5'` for `5` and `decimal-int-string` for `int`, or null if
+     * $atomic_type is neither
+     *
+     * @return list<Atomic>|null
+     */
+    public static function castScalarToString(Atomic $atomic_type): ?array
+    {
+        if ($atomic_type instanceof TFloat
+            || $atomic_type instanceof TInt
+            || $atomic_type instanceof TNumeric
+        ) {
+            if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
+                return [Type::getAtomicStringFromLiteral((string) $atomic_type->value)];
+            }
+
+            if ($atomic_type instanceof TNonspecificLiteralInt) {
+                return [new TNonspecificLiteralString()];
+            }
+
+            if ($atomic_type instanceof TIntRange
+                && $atomic_type->min_bound !== null
+                && $atomic_type->max_bound !== null
+                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+            ) {
+                $strings = [];
+                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                    $strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
+                }
+
+                return $strings;
+            }
+
+            // an int is cast to its canonical decimal form
+            return [$atomic_type instanceof TInt ? new TDecimalIntString() : new TNumericString()];
+        }
+
+        if ($atomic_type instanceof TString) {
+            return [$atomic_type];
+        }
+
+        if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+            return [Type::getAtomicStringFromLiteral('')];
+        }
+
+        if ($atomic_type instanceof TTrue) {
+            return [Type::getAtomicStringFromLiteral('1')];
+        }
+
+        if ($atomic_type instanceof TBool) {
+            return [Type::getAtomicStringFromLiteral('1'), Type::getAtomicStringFromLiteral('')];
+        }
+
+        return null;
     }
 
     /**

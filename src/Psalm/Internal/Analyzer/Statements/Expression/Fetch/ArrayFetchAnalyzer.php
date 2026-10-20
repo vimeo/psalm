@@ -67,7 +67,6 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -1341,20 +1340,11 @@ final class ArrayFetchAnalyzer
      */
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
-        $offset_type = $offset_type->getBuilder();
+        $offset_type = ArrayAnalyzer::castArrayKeyType($offset_type)->getBuilder();
         $offset_types = $offset_type->getAtomicTypes();
 
         foreach ($offset_types as $key => $offset_type_part) {
-            if ($offset_type_part instanceof TLiteralString) {
-                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_type_part->value);
-                if ($string_to_int !== false) {
-                    $offset_type->addType(new TLiteralInt($string_to_int));
-                    $offset_type->removeType($key);
-                }
-            } elseif ($offset_type_part instanceof TDecimalIntString) {
-                $offset_type->addType(new TInt());
-                $offset_type->removeType($key);
-            } elseif ($offset_type_part instanceof TBool) {
+            if ($offset_type_part instanceof TBool) {
                 if ($offset_type_part instanceof TFalse) {
                     if (!$offset_type->ignore_falsable_issues) {
                         $offset_type->addType(new TLiteralInt(0));
