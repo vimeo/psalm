@@ -41,6 +41,162 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decimalIntStringKeysAreInts' => [
+                'code' => '<?php
+                    /** @return decimal-int-string */
+                    function decimalInt(): string {
+                        return "12";
+                    }
+
+                    /** @return non-decimal-int-string */
+                    function nonDecimalInt(): string {
+                        return "abc";
+                    }
+
+                    /** @return array<decimal-int-string, string> */
+                    function byId(): array {
+                        return [];
+                    }
+
+                    $d = decimalInt();
+                    $n = nonDecimalInt();
+                    $a = [$d => 1];
+                    $b = [$n => 1];
+                    $c = [];
+                    $c[$d] = 1;
+                    $keys = array_keys(byId());
+                    $e = byId()[$d] ?? null;
+                    $f = (string) random_int(0, PHP_INT_MAX);
+                    $g = (int) $d;
+                    $h = null;
+                    if ($d === "12") {
+                        $h = $d;
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<int, 1>',
+                    '$b===' => 'non-empty-array<non-decimal-int-string, 1>',
+                    '$c===' => 'non-empty-array<int, 1>',
+                    '$keys===' => 'list<int>',
+                    '$e===' => 'null|string',
+                    '$f===' => 'decimal-int-string',
+                    '$g===' => 'int',
+                    '$h===' => "'12'|null",
+                ],
+            ],
+            'decimalIntStringKeysOfInferredArraysAreInts' => [
+                'code' => '<?php
+                    /** @return decimal-int-string */
+                    function decimalInt(): string {
+                        return "12";
+                    }
+
+                    /** @return non-decimal-int-string */
+                    function nonDecimalInt(): string {
+                        return "abc";
+                    }
+
+                    $flipped = array_flip([decimalInt()]);
+                    $filled = array_fill_keys([decimalInt()], 1);
+                    $combined = array_combine([decimalInt()], [1]);
+                    $kept = array_flip([nonDecimalInt()]);',
+                'assertions' => [
+                    '$flipped===' => 'non-empty-array<int, 0>',
+                    '$filled===' => 'array<int, 1>',
+                    '$combined===' => 'false|non-empty-array<int, 1>',
+                    '$kept===' => 'non-empty-array<non-decimal-int-string, 0>',
+                ],
+            ],
+            'templateBoundedByDecimalIntStringsKeysAreInts' => [
+                'code' => '<?php
+                    /**
+                     * @template T of decimal-int-string
+                     * @param array<T, string> $a
+                     * @param T $t
+                     * @return list<int>
+                     */
+                    function keys(array $a, string $t): array {
+                        $keys = [];
+                        foreach ($a as $k => $_) {
+                            /** @psalm-check-type-exact $k = int */
+                            $keys[] = $k;
+                        }
+                        $b = [$t => 1];
+                        /** @psalm-check-type-exact $b = non-empty-array<int, 1> */
+                        $c = [];
+                        $c[$t] = 1;
+                        /** @psalm-check-type-exact $c = non-empty-array<int, 1> */
+                        return $keys;
+                    }
+
+                    /**
+                     * @template T of \'5\'|\'x\'
+                     * @param array<T, string> $a
+                     * @return list<5|T>
+                     */
+                    function literalKeys(array $a): array {
+                        $keys = [];
+                        foreach ($a as $k => $_) {
+                            if (is_int($k)) {
+                                /** @psalm-check-type-exact $k = 5 */
+                            }
+                            $keys[] = $k;
+                        }
+                        return $keys;
+                    }
+
+                    /** @param array<int, string> $a */
+                    function takesInts(array $a): void {
+                        keys($a, "5");
+                    }',
+            ],
+            'decimalIntStringKeysAreIntsInEveryArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Id = decimal-int-string
+                     */
+                    final class A {
+                        /** @return array<Id, int> */
+                        public static function aliased(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @return non-empty-array<decimal-int-string, int> */
+                    function nonEmpty(): array {
+                        return [1];
+                    }
+
+                    /** @return array{a: int, ...<decimal-int-string, int>} */
+                    function unsealed(): array {
+                        return ["a" => 1];
+                    }
+
+                    /** @return array<decimal-int-string|"a", int> */
+                    function withLiteral(): array {
+                        return [];
+                    }
+
+                    /** @return iterable<decimal-int-string, int> */
+                    function generator(): iterable {
+                        yield "1" => 1;
+                    }
+
+                    foreach (A::aliased() as $aliased => $_) {
+                        /** @psalm-check-type-exact $aliased = int */
+                    }
+                    foreach (nonEmpty() as $non_empty => $_) {
+                        /** @psalm-check-type-exact $non_empty = int */
+                    }
+                    foreach (unsealed() as $unsealed => $_) {
+                        /** @psalm-check-type-exact $unsealed = "a"|int */
+                    }
+                    foreach (withLiteral() as $with_literal => $_) {
+                        /** @psalm-check-type-exact $with_literal = "a"|int */
+                    }
+                    foreach (generator() as $yielded => $_) {
+                        /** @psalm-check-type-exact $yielded = decimal-int-string */
+                    }',
+            ],
             'assignUnionOfLiterals' => [
                 'code' => '<?php
                     $result = [];
@@ -2371,6 +2527,37 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of decimal-int-string
+                     * @param array<T, string> $a
+                     * @return T|null
+                     */
+                    function firstKey(array $a): ?string {
+                        foreach ($a as $k => $_) {
+                            return $k;
+                        }
+                        return null;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'decimalIntLiteralIsNotNonDecimalIntString' => [
+                'code' => '<?php
+                    /** @param non-decimal-int-string $n */
+                    function f(string $n): void {
+                        if ($n === "12") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'nonCanonicalLiteralIsNotDecimalIntString' => [
+                'code' => '<?php
+                    /** @param decimal-int-string $d */
+                    function f(string $d): void {}
+
+                    f("012");',
+                'error_message' => 'InvalidArgument',
+            ],
             'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
                 'code' => '<?php
                     /** @param array<string, array<string, int|string>> $a */

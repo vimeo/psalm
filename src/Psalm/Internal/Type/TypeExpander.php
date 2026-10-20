@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Exception\UnresolvableConstantException;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Storage\Assertion\IsType;
@@ -552,6 +553,10 @@ final class TypeExpander
             }
             unset($type_param);
 
+            if ($return_type instanceof TArray) {
+                $type_params[0] = ArrayAnalyzer::castArrayKeyType($type_params[0]);
+            }
+
             // `Foo[pure]` for a class with type templates
             if ($return_type instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($return_type->value)
@@ -620,6 +625,9 @@ final class TypeExpander
                         $expand_templates,
                         $throw_on_unresolvable_constant,
                     );
+                    if ($k === 0) {
+                        $property_type = ArrayAnalyzer::castArrayKeyType($property_type);
+                    }
                     if ($property_type !== $fallback_params[$k]) {
                         $changed = true;
                         $fallback_params[$k] = $property_type;

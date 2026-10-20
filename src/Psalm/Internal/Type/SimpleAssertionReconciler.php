@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
@@ -1522,6 +1523,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 // is_numeric($a) && is_string($a)
                 $redundant = false;
                 $numeric_types[] = $type;
+            } elseif ($type instanceof TNonDecimalIntString) {
+                // e.g. "1.5" or "05"
+                $redundant = false;
+                $numeric_types[] = new TNumericString();
             } elseif ($type->isNumericType()) {
                 $numeric_types[] = $type;
             } elseif ($type instanceof TScalar) {

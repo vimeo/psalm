@@ -23,9 +23,11 @@ use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -34,6 +36,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -46,14 +49,10 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
-use function filter_var;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function substr;
-use function trim;
 
-use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -234,7 +233,8 @@ final class ArrayAnalyzer
     }
 
     /**
-     * @psalm-assert-if-false !numeric $literal_array_key
+     * The int PHP casts an array key to, or false if it stays a string
+     *
      * @psalm-pure
      */
     public static function getLiteralArrayKeyInt(
@@ -244,24 +244,116 @@ final class ArrayAnalyzer
             return $literal_array_key;
         }
 
-        if (!is_numeric($literal_array_key)) {
-            return false;
+        // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
+        $int_array_key = (int) $literal_array_key;
+
+        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
+    }
+
+    /**
+     * The type of an array key after PHP casts decimal int strings to ints, e.g. `'5'` to `5` and
+     * `decimal-int-string` to `int`
+     *
+     * @psalm-pure
+     */
+    public static function castArrayKeyType(Union $key_type): Union
+    {
+        $input_types = [];
+        $changed = false;
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T
+                [$cast_types, $template] = self::splitTemplateArrayKey($atomic_type);
+
+                if ($cast_types !== []) {
+                    $changed = true;
+                    $input_types = [...$input_types, ...$cast_types];
+
+                    if ($template !== null) {
+                        $input_types[] = $template;
+                    }
+
+                    continue;
+                }
+            }
+
+            $input_types[] = $atomic_type;
         }
 
-        // PHP 8 values with whitespace after number are counted as numeric
-        // and filter_var treats them as such too
-        // ensures that '15 ' will stay '15 '
-        if (trim($literal_array_key) !== $literal_array_key) {
-            return false;
+        // an int contains every literal int
+        $has_int = false;
+        foreach ($input_types as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString
+                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+            ) {
+                $has_int = true;
+            }
         }
 
-        // '+5' will pass the filter_var check but won't be changed in keys
-        if ($literal_array_key[0] === '+') {
-            return false;
+        $atomic_types = [];
+
+        foreach ($input_types as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString) {
+                $atomic_type = new TInt($atomic_type->from_docblock);
+                $changed = true;
+            } elseif (self::isIntArrayKeyString($atomic_type)) {
+                $atomic_type = $has_int ? new TInt($atomic_type->from_docblock) : new TLiteralInt(
+                    (int) $atomic_type->value,
+                    $atomic_type->from_docblock,
+                );
+                $changed = true;
+            }
+
+            $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
         }
 
-        // e.g. 015 is numeric but won't be typecast as it's not a valid int
-        return filter_var($literal_array_key, FILTER_VALIDATE_INT);
+        return $changed && $atomic_types !== [] ? $key_type->setTypes($atomic_types) : $key_type;
+    }
+
+    /**
+     * @psalm-pure
+     * @psalm-assert-if-true TLiteralString $atomic_type
+     */
+    private static function isIntArrayKeyString(Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TLiteralString
+            && !$atomic_type instanceof TLiteralClassString
+            && self::getLiteralArrayKeyInt($atomic_type->value) !== false;
+    }
+
+    /**
+     * Splits the bound of a template used as an array key into the types PHP casts to ints and the template
+     * narrowed to the rest, or null if every value of the template is cast
+     *
+     * @return array{list<TDecimalIntString|TLiteralString>, ?TTemplateParam}
+     * @psalm-pure
+     */
+    private static function splitTemplateArrayKey(TTemplateParam $template): array
+    {
+        $cast_types = [];
+        $kept_types = [];
+
+        foreach ($template->as->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString || self::isIntArrayKeyString($atomic_type)) {
+                $cast_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                [$nested_cast_types, $nested_template] = self::splitTemplateArrayKey($atomic_type);
+                $cast_types = [...$cast_types, ...$nested_cast_types];
+
+                if ($nested_template !== null) {
+                    $kept_types[] = $nested_template;
+                }
+            } else {
+                $kept_types[] = $atomic_type;
+            }
+        }
+
+        if ($cast_types === []) {
+            return [[], $template];
+        }
+
+        return [$cast_types, $kept_types === [] ? null : $template->replaceAs(new Union($kept_types))];
     }
 
     private static function analyzeArrayItem(
@@ -325,6 +417,8 @@ final class ArrayAnalyzer
                 if ($key_type->isNull()) {
                     $key_type = Type::getString('');
                 }
+
+                $key_type = self::castArrayKeyType($key_type);
 
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
                     && self::getLiteralArrayKeyInt($item->key->value) !== false

@@ -21,6 +21,45 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'decimalIntStringReconciliation' => [
+                'code' => '<?php
+                    /**
+                     * @param decimal-int-string $d
+                     * @param non-decimal-int-string $n
+                     */
+                    function f(string $d, string $n): void {
+                        $numeric = null;
+                        $digits = null;
+                        $falsy_decimal = null;
+                        $falsy_non_decimal = null;
+                        $asserted = null;
+                        if (is_numeric($n)) {
+                            $numeric = $n;
+                        }
+                        if (ctype_digit($n)) {
+                            $digits = $n;
+                        }
+                        if (!$d) {
+                            $falsy_decimal = $d;
+                        }
+                        if (!$n) {
+                            $falsy_non_decimal = $n;
+                        }
+                        if (assertNonEmpty($n)) {
+                            $asserted = $n;
+                        }
+                        /** @psalm-check-type-exact $numeric = numeric-string|null */
+                        /** @psalm-check-type-exact $digits = numeric-string|null */
+                        /** @psalm-check-type-exact $falsy_decimal = "0"|null */
+                        /** @psalm-check-type-exact $falsy_non_decimal = ""|null */
+                        /** @psalm-check-type-exact $asserted = non-empty-string|null */
+                    }
+
+                    /** @psalm-assert-if-true non-empty-string $s */
+                    function assertNonEmpty(string $s): bool {
+                        return $s !== "";
+                    }',
+            ],
             'orWithACallAssertingNothingWhenFalseNarrowsWhatItsOtherSideTested' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true =non-empty-string $s */

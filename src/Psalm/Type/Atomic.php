@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEmptyNumeric;
@@ -47,6 +48,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
@@ -402,6 +404,12 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'numeric-string':
                 return new TNumericString();
+
+            case 'decimal-int-string':
+                return new TDecimalIntString();
+
+            case 'non-decimal-int-string':
+                return new TNonDecimalIntString();
 
             case 'literal-string':
                 return new TNonspecificLiteralString();

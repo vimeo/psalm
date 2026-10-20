@@ -52,6 +52,8 @@ final class TypeTokenizer
         'null' => true,
         'mixed' => true,
         'numeric-string' => true,
+        'decimal-int-string' => true,
+        'non-decimal-int-string' => true,
         'class-string' => true,
         'interface-string' => true,
         'enum-string' => true,

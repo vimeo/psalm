@@ -1032,6 +1032,17 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             }
         }
 
+        // "0" is the only falsy decimal int string, "" the only other falsy string
+        if ($existing_var_type->hasType('decimal-int-string')) {
+            $existing_var_type->removeType('decimal-int-string');
+            $existing_var_type->addType(Type::getAtomicStringFromLiteral('0'));
+        }
+
+        if ($existing_var_type->hasType('non-decimal-int-string')) {
+            $existing_var_type->removeType('non-decimal-int-string');
+            $existing_var_type->addType(Type::getAtomicStringFromLiteral(''));
+        }
+
         if ($existing_var_type->hasInt()) {
             $existing_range_types = $existing_var_type->getRangeInts();
 

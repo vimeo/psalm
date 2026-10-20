@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Closure;
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -298,8 +299,10 @@ trait GenericTrait
                 $codebase,
             );
 
-            if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {
-                $type_param = Type::getArrayKey();
+            if ($this instanceof TArray && $offset === 0) {
+                $type_param = $type_param->isMixed()
+                    ? Type::getArrayKey()
+                    : ArrayAnalyzer::castArrayKeyType($type_param);
             }
 
             $type_params[$offset] = $type_param;

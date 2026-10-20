@@ -626,6 +626,25 @@ final class TypeParseTest extends TestCase
         $this->assertSame('PHP_URL_*&int<0, 2>', Type::parseString('PHP_URL_*&int<0, 2>')->getId());
     }
 
+    public function testDecimalIntString(): void
+    {
+        $this->assertSame('decimal-int-string', Type::parseString('decimal-int-string')->getId());
+        $this->assertSame('non-decimal-int-string', Type::parseString('non-decimal-int-string')->getId());
+    }
+
+    public function testDecimalIntStringArrayKeyIsInt(): void
+    {
+        $this->assertSame('array<int, int>', Type::parseString('array<decimal-int-string, int>')->getId());
+    }
+
+    public function testNonDecimalIntStringArrayKeyIsString(): void
+    {
+        $this->assertSame(
+            'array<non-decimal-int-string, int>',
+            Type::parseString('array<non-decimal-int-string, int>')->getId(),
+        );
+    }
+
     public function testIterableContainingTKeyedArray(): void
     {
         $this->assertSame('iterable<string, list{int}>', Type::parseString('iterable<string, array{int}>')->getId());

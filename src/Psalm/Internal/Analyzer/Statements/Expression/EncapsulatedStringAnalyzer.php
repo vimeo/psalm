@@ -26,6 +26,8 @@ use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use function count;
+
 /**
  * @internal
  */
@@ -48,6 +50,8 @@ final class EncapsulatedStringAnalyzer
         // they are all literals, so what the next part starts with follows them
         $literal_prefixes = [''];
         $literal_prefixes_extendable = true;
+
+        $single_part_type = null;
 
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
@@ -146,6 +150,8 @@ final class EncapsulatedStringAnalyzer
                     $literal_prefixes_extendable = $extended_prefixes !== null;
                     $literal_prefixes = $extended_prefixes ?? $literal_prefixes;
                 }
+
+                $single_part_type = $casted_part_type;
             } else {
                 $all_literals = false;
                 $literal_string = null;
@@ -157,7 +163,10 @@ final class EncapsulatedStringAnalyzer
             $statements_analyzer->node_data->setLiteralPrefixes($stmt, $literal_prefixes);
         }
 
-        if ($non_empty) {
+        if (count($stmt->parts) === 1 && $single_part_type !== null) {
+            // e.g. "$int" is the same string as (string) $int
+            $stmt_type = $single_part_type->setParentNodes($parent_nodes);
+        } elseif ($non_empty) {
             if ($literal_string !== null) {
                 $stmt_type = new Union(
                     [Type::getAtomicStringFromLiteral($literal_string)],
