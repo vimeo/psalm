@@ -890,6 +890,24 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testConditionalTypeOnTypeDependingOnTemplate(): void
+    {
+        $this->assertSame(
+            '(value-of<T> is string ? string : int)',
+            (string) Type::parseString(
+                '(value-of<T> is string ? string : int)',
+                null,
+                ['T' => ['' => Type::getArray()]],
+            ),
+        );
+    }
+
+    public function testConditionalTypeOnTypeNotDependingOnTemplate(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('(value-of<array> is string ? string : int)', null, ['T' => ['' => Type::getArray()]]);
+    }
+
     public function testConditionalTypeWithoutSpaces(): void
     {
         $this->assertSame(

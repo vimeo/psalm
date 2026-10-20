@@ -444,6 +444,31 @@ final class TemplateInferredTypeReplacer
             )
             : null;
 
+        $subject_type = $atomic_type->subject_type;
+
+        if ($template_type && $subject_type !== null) {
+            $template_type = TypeExpander::expandUnion(
+                $codebase,
+                self::replace($subject_type, $template_result, $codebase),
+                null,
+                null,
+                null,
+            );
+
+            foreach ($template_type->getAtomicTypes() as $subject_atomic_type) {
+                if ($subject_atomic_type instanceof TTemplateParam
+                    || $subject_atomic_type instanceof TTemplateKeyOf
+                    || $subject_atomic_type instanceof TTemplateValueOf
+                    || $subject_atomic_type instanceof TTemplateIndexedAccess
+                    || $subject_atomic_type instanceof TTemplatePropertiesOf
+                ) {
+                    // still unknown
+                    $template_type = null;
+                    break;
+                }
+            }
+        }
+
         $if_template_type = null;
         $else_template_type = null;
 
@@ -513,12 +538,14 @@ final class TemplateInferredTypeReplacer
 
                 $refined_template_result = clone $template_result;
 
-                $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                    = [
-                    new TemplateBound(
-                        $if_candidate_type,
-                    ),
-                ];
+                if ($subject_type === null) {
+                    $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                        = [
+                        new TemplateBound(
+                            $if_candidate_type,
+                        ),
+                    ];
+                }
 
                 $if_template_type = self::replace(
                     $if_template_type,
@@ -528,27 +555,30 @@ final class TemplateInferredTypeReplacer
             }
 
             if ($else_candidate_type
-                && UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $else_candidate_type,
-                    $as_type,
-                    false,
-                    false,
-                    null,
-                    false,
-                    false,
-                )
+                && ($subject_type !== null
+                    || UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $else_candidate_type,
+                        $as_type,
+                        false,
+                        false,
+                        null,
+                        false,
+                        false,
+                    ))
             ) {
                 $else_template_type = $else_type;
 
                 $refined_template_result = clone $template_result;
 
-                $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
-                    = [
-                    new TemplateBound(
-                        $else_candidate_type,
-                    ),
-                ];
+                if ($subject_type === null) {
+                    $refined_template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class]
+                        = [
+                        new TemplateBound(
+                            $else_candidate_type,
+                        ),
+                    ];
+                }
 
                 $else_template_type = self::replace(
                     $else_template_type,

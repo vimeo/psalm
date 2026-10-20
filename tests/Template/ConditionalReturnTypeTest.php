@@ -102,6 +102,29 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$b===' => 'true',
                 ],
             ],
+            'conditionalReturnTypeOnValueOfTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $input
+                     * @return array<key-of<T>, (value-of<T> is string ? non-empty-string : value-of<T>)>
+                     */
+                    function quote(array $input): array {
+                        throw new RuntimeException();
+                    }
+
+                    /** @param array{a: "x", b: int} $x */
+                    function f(array $x): array {
+                        return quote($x);
+                    }
+
+                    $a = quote(["a" => "x", "b" => 1]);
+                    $b = quote(["a" => 1, "b" => 2]);',
+                'assertions' => [
+                    '$a' => "array<'a'|'b', 1|non-empty-string>",
+                    '$b' => "array<'a'|'b', 1|2>",
+                ],
+            ],
             'nestedConditionalOnIntReturnType' => [
                 'code' => '<?php
                     /**

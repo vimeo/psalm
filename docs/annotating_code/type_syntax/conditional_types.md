@@ -10,6 +10,8 @@ All conditional types must be wrapped inside brackets e.g. `(...)`
 
 The condition can be negated with `is not`: `(T is not int ? string : int)` is the same as `(T is int ? int : string)`.
 
+Instead of a template param, the condition can be on a type depending on one, e.g. `(value-of<T> is string ? string : int)`.
+
 Conditional types are dependent on [template parameters](../templated_annotations.md), so you can only use them in a function where template parameters are defined.
 
 ## Example application
