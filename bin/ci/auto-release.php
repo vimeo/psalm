@@ -16,7 +16,8 @@
  *  - the release notes are the ones GitHub generates from the labels of the merged pull requests
  *    (.github/release.yml);
  *  - a release made with the workflow's token doesn't trigger other workflows, so the phar and docker builds
- *    are dispatched on the new tag.
+ *    are dispatched on the new tag, and dispatched again next hour on the last tag of each branch if they never
+ *    ran (if dispatching failed).
  *
  * Needs the GitHub CLI, authenticated (GH_TOKEN), and GITHUB_REPOSITORY (default: vimeo/psalm).
  */
@@ -63,15 +64,43 @@ $api = static fn(string $path): array => json_decode(
     JSON_THROW_ON_ERROR,
 );
 
-// the highest version tagged on the branch
-$getLastTag = static function (string $ref) use ($run, $version_pattern): ?string {
+// the highest version tagged on the branch; on a branch of a major version such as 6.x, of that major version, even
+// if tags of a later one were merged in
+$getLastTag = static function (string $branch) use ($run, $version_pattern): ?string {
+    $major = preg_match('/^(\d+)\.x$/', $branch, $branch_matches) ? $branch_matches[1] : null;
     $tags = array_filter(
-        explode("\n", trim($run(['git', 'tag', '--merged', $ref]))),
-        static fn(string $tag): bool => preg_match($version_pattern, $tag) === 1,
+        explode("\n", trim($run(['git', 'tag', '--merged', "origin/$branch"]))),
+        static fn(string $tag): bool => preg_match($version_pattern, $tag, $matches) === 1
+            && ($major === null || $matches['major'] === $major),
     );
     usort($tags, static fn(string $a, string $b): int => version_compare($b, $a));
 
     return $tags[0] ?? null;
+};
+
+// dispatches the phar and docker builds of a release that have never run, also when dispatching them right after
+// publishing it failed; returns whether they all ran or were dispatched
+$dispatchBuilds = static function (string $tag) use ($api, $run, $repository, $dispatched_workflows, $dry_run): bool {
+    $dispatched = true;
+    foreach ($dispatched_workflows as $workflow) {
+        if ($api("actions/workflows/$workflow/runs?branch=" . rawurlencode($tag) . '&per_page=1')['total_count'] > 0) {
+            continue;
+        }
+
+        echo "Dispatching $workflow on $tag" . PHP_EOL;
+        if ($dry_run) {
+            continue;
+        }
+
+        try {
+            $run(['gh', 'workflow', 'run', $workflow, '--repo', $repository, '--ref', $tag]);
+        } catch (RuntimeException $e) {
+            echo "::error::Cannot dispatch $workflow on $tag, retrying next hour: {$e->getMessage()}" . PHP_EOL;
+            $dispatched = false;
+        }
+    }
+
+    return $dispatched;
 };
 
 // why the commit can't be released yet, and whether that's because a check failed rather than hasn't finished,
@@ -152,11 +181,13 @@ foreach ($branches as $branch) {
     $run(['git', 'fetch', '--quiet', '--force', '--tags', 'origin', "+refs/heads/$branch:refs/remotes/origin/$branch"]);
     $head = trim($run(['git', 'rev-parse', "origin/$branch"]));
 
-    $last_tag = $getLastTag("origin/$branch");
+    $last_tag = $getLastTag($branch);
     if ($last_tag === null) {
         echo "No release tag on $branch" . PHP_EOL;
         continue;
     }
+
+    $stuck = !$dispatchBuilds($last_tag) || $stuck;
 
     $unreleased = (int) trim($run(['git', 'rev-list', '--count', "$last_tag..$head"]));
     if ($unreleased === 0) {
@@ -219,9 +250,7 @@ foreach ($branches as $branch) {
         ...($isPrerelease($next) ? ['--prerelease'] : []),
     ]);
 
-    foreach ($dispatched_workflows as $workflow) {
-        $run(['gh', 'workflow', 'run', $workflow, '--repo', $repository, '--ref', $next]);
-    }
+    $stuck = !$dispatchBuilds($next) || $stuck;
 }
 
 exit($stuck ? 1 : 0);
