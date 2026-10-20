@@ -121,8 +121,8 @@ final class ConditionalReturnTypeTest extends TestCase
                     $a = quote(["a" => "x", "b" => 1]);
                     $b = quote(["a" => 1, "b" => 2]);',
                 'assertions' => [
-                    '$a' => "array<'a'|'b', 1|non-empty-string>",
-                    '$b' => "array<'a'|'b', 1|2>",
+                    '$a===' => "array<'a'|'b', 1|non-empty-string>",
+                    '$b===' => "array<'a'|'b', 1|2>",
                 ],
             ],
             'nestedConditionalOnIntReturnType' => [
