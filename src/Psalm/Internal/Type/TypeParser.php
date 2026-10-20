@@ -1414,7 +1414,11 @@ final class TypeParser
                 throw new TypeParseTreeException('Invalid intersection member');
             }
 
-            if (!self::isObjectIntersectionMember($type) && !$type instanceof TArray && !$type instanceof TKeyedArray) {
+            if (!self::isObjectIntersectionMember($type)
+                && !$type instanceof TArray
+                && !$type instanceof TKeyedArray
+                && !$type instanceof TTypeAlias
+            ) {
                 $only_object_types = false;
             }
 

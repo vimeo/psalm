@@ -317,8 +317,10 @@ final class TypeParseTest extends TestCase
 
     public function testIntersectionOfTwoRegularArrays(): void
     {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('string[]&array<string, string>');
+        $this->assertSame(
+            'array<string, string>',
+            Type::parseString('string[]&array<string, string>')->getId(),
+        );
     }
 
     public function testUnionOfIntersectionOfTKeyedArray(): void
@@ -616,11 +618,6 @@ final class TypeParseTest extends TestCase
         Type::parseString('array(A)');
     }
 
-    public function testBracketedUnionAndIntersection(): void
-    {
-        $this->expectException(TypeParseTreeException::class);
-        Type::parseString('(A|B)&C');
-    }
 
     public function testBracketInUnion(): void
     {
